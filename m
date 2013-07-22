@@ -1,88 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3GVAGE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 20:06:04 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46757 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab3GVAGC (ORCPT
+	id S1753412Ab3GVAKT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 20:10:19 -0400
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:62589 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab3GVAKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 20:06:02 -0400
-Date: Mon, 22 Jul 2013 10:05:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
+	Sun, 21 Jul 2013 20:10:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130704162641.GG27646@sirena.org.uk>
+References: <cover.1372211451.git.dvhart@linux.intel.com> <a459c0b97ea41148af901fc73dbeff98778c7419.1372211451.git.dvhart@linux.intel.com>
+ <CACRpkda8QGdoAvjsUs7Uu+ukUu7ST63g=H9arA7SS7ceWmMTaQ@mail.gmail.com>
+ <1372398218.9243.29.camel@envy.home> <20130704162641.GG27646@sirena.org.uk>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Mon, 22 Jul 2013 01:09:55 +0100
+X-Google-Sender-Auth: XpviQGKdco4xr0rrsIcTDlbyxWs
+Message-ID: <CACxGe6vOOMAj18LSzNHfgsDeJr1V7_d2CcB08jx_ZekOZ61jRQ@mail.gmail.com>
+Subject: Re: [PATCH 4/8] minnowboard: Add base platform driver for the MinnowBoard
 To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (sound-asoc tree related)
-Message-Id: <20130722100550.553af77b06c5de6a2471a47b@canb.auug.org.au>
-In-Reply-To: <20130719100237.GC9858@sirena.org.uk>
-References: <20130719135253.2689f6c0e42838f330b60df9@canb.auug.org.au>
-	<20130719100237.GC9858@sirena.org.uk>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__22_Jul_2013_10_05_50_+1000_PqX/FFABN3o.7.Y9"
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "peter.p.waskiewicz.jr" <peter.p.waskiewicz.jr@intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        danders <danders@circuitco.com>,
+        "vishal.l.verma" <vishal.l.verma@intel.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        platform-driver-x86 <platform-driver-x86@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__22_Jul_2013_10_05_50_+1000_PqX/FFABN3o.7.Y9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-HI Mark,
-
-On Fri, 19 Jul 2013 11:02:37 +0100 Mark Brown <broonie@kernel.org> wrote:
+On Thu, Jul 4, 2013 at 5:26 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Thu, Jun 27, 2013 at 10:43:38PM -0700, Darren Hart wrote:
 >
-> On Fri, Jul 19, 2013 at 01:52:53PM +1000, Stephen Rothwell wrote:
->=20
-> > After merging the final tree, today's linux-next build (powerpc
-> > allyesconfig) failed like this:
->=20
-> What goes into the final tree that might cause such breakage that didn't
-> appear in the earlier merges or is this additional testing that isn't
-> performed on the earlier merges?
+>> minnow_hwid() just returns an int that the minnowboard platform driver
+>> read from the GPIO. This seems like a proper abstraction to me. Do you
+>> object to this one as well?
+>
+> We should really have a subsystem for this too - the general idea idea
+> of identifying boards, fit options and so on by looking at things like
+> GPIOs or numbers in flash is really common.
 
-=46rom my daily release message:
+And yet this is a platform with ACPI. I would expect the ACPI to
+identify the board, not a custom driver. The newest ACPI spec adds a
+lot of nice useful things like GPIO and SPI bindings. Talk to Al Stone
+about the progress his team has made on adding GPIO support to ACPICA.
 
-"You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc,
-sparc64 and arm defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary."
+This driver shouldn't be merged into mainline. Keep it as an
+out-of-tree patch until the proper solution is implemented. That
+shouldn't be too onerous since we now have available not one, but two
+mechanisms for describing exactly what you want to do; ACPI or FDT.
 
-The powerpc allyesconfig catches quite a few build problems.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Mon__22_Jul_2013_10_05_50_+1000_PqX/FFABN3o.7.Y9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR7HdjAAoJEECxmPOUX5FEeTwP/icReOVl6wa2FiKrpn/VbEZK
-7Et/W5x/ErnwGNldUCqUIMFEyYoLHO2WgMPdI2yyTyQLBHqI5QeEkJutlDinozed
-Y31PjkB6pBrGHjGgOzy4/I0/bcWEsu9zOgVgQ0aCdjw5UnZlH7Gawiv2Z9YH4r6h
-yJ0NWekxA5wo5l1fDtnFrXbf3/7JJ1n4zAq5E2+a10+AQpG5lZcSNB6oeRObRdd0
-xx2g2Zu+oi+emXu/Ev7DuP3bvt5NNhikykWX68O5HohxOcZEULElrK82nDJ1yvW0
-Mi4OgJ3BrDuOeHN4QNsFJxhuyd85EryJPCrMEHVCQHhe5G25+JiLS+yTYPpObnX0
-4YwRB4bmNDWydhKnnubHEJ2igSADuZiR+UxlF6JE7Biw2Ki7evux5jZAO1xtTh+E
-hJiereNa9+6ojhIKbMw74oojjcc/FV1EezadqsIBDUprp8cdZe1EUSbnkEB0wit2
-s/XvQdfEqHxWiaLTwDdsSwiv2RkNVahpS3aIB/XHYzh6mMXbk+8+SXZQbdMmnM92
-3Y20mb0D+P/7fAxpfVlQfY7ghHPl6X05WXj4geH2XRizI8Pb6n96smhY6LBwsEVO
-25ma73bVzwCBbEFcZJCNmsRp3ynLj9qeMg1G2IhrtqowuWwBEKkCjHyI5LP/g4hK
-xUpJX9K9+fm/nQHx6CnC
-=5ICy
------END PGP SIGNATURE-----
-
---Signature=_Mon__22_Jul_2013_10_05_50_+1000_PqX/FFABN3o.7.Y9--
+g.
