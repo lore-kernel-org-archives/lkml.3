@@ -1,125 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3GVMVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:21:18 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56125 "EHLO comal.ext.ti.com"
+	id S1753572Ab3GVMXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 08:23:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36934 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab3GVMVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:21:16 -0400
-Message-ID: <51ED2385.60108@ti.com>
-Date: Mon, 22 Jul 2013 17:50:21 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1750876Ab3GVMXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 08:23:47 -0400
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: <tony@atomide.com>, <benoit.cousson@linaro.org>, <rnayak@ti.com>,
+        <peter.ujfalusi@ti.com>, <kishon@ti.com>, <jic23@cam.ac.uk>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <lars@metafoo.de>, <sameo@linux.intel.com>, <ch.naveen@samsung.com>,
+        <poeschel@lemonage.de>, <milo.kim@ti.com>, <balajitk@ti.com>,
+        <gg@slimlogic.co.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-iio@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: [PATCH v7 0/2] TWL6030, TWL6032 GPADC driver
+Date: Mon, 22 Jul 2013 15:22:50 +0300
+Message-ID: <1374495772-17758-1-git-send-email-oleksandr.kozaruk@ti.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Nishanth Menon <nm@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
-In-Reply-To: <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-On Sunday 21 July 2013 10:19 PM, Linus Walleij wrote:
-> On Thu, Jul 18, 2013 at 8:56 PM, Nishanth Menon <nm@ti.com> wrote:
->
->> I carry forward my TI internal objection to this approach:
-> It is actually a very good sign of FOSS-maturity that you as a company
-> take unresolved architectural issues to the community. Kudos!
->
->> Lets see what happens as a result of this:
->>
->> https://patchwork.kernel.org/patch/2825148/ (introducing DTS for DRA7)
->> uart1 to uart6 is defined. while in fact 10 uarts exist on IP block.
->> uart1: serial@4806a000 {
->> <snip>
->> +                       interrupts = <0 72 0x4>;
->> Assumes that GIC interrupt by default mapping used.
-> So introducing this inbetween the GIC lines and its actual device IRQ
-> lines inevitably means that the GIC three-cell concept is completely
-> ill-devised to handle this.
->
-> For routing IRQs, I think the proper solution would be to use a
-> cascaded struct irqchip, which in turn contains an irqdomain
-> translation to remux the signal onto the GIC inputs.
->
-> I.e. the interrupt-controller given to that serial would be the
-> crossbar irqchip, and that in turn will hog and allocate apropriate
-> lines from the gic to it would probably itself list *all* the IRQs
-> of the GIC as "its" IRQs.
->
-> We already have plenty of cascading irqchips such as GPIO
-> controller providing IRQs, just that they only multiplex on a
-> single GIC line instead of the whole lot.
->
-> Mock example:
->
->                 intc: interrupt-controller@0 {
->                         compatible = "arm,cortex-a9-gic";
->                         #interrupt-cells = <3>;
->                         #address-cells = <1>;
->                         interrupt-controller;
->                         reg = ...;
->                 };
->
->                 crossbar: crossbar@0 {
->                         compatible = "...";
->                         interrupt-controller;
->                         #interrupt-cells = <1>;
->                         interrupt-parent = <&intc>;
->                         interrupts = <0 0 IRQ_TYPE_LEVEL_HIGH>,
->                                           <0 1 IRQ_TYPE_LEVEL_HIGH>,
->                                           <0 2 IRQ_TYPE_LEVEL_HIGH>,
->                                           ....
->                                           <0 n IRQ_TYPE_LEVEL_HIGH>;
->                 };
->
->                 uart0: serial@0 {
->                         compatible = "...";
->                         interrupt-parent = <&crossbar>;
->                         interrupts = <1234>;
->                  };
->
-> Maybe the interrupts provided from crossbar cannot even be
-> specified by a number, maybe a line name need to be used
-> or so. I don't know the particulars.
->
-> Whether this as a whole is a good idea, I don't know,
-> but you would have to go about it something like this.
->
-> What happens if there is no line to mux in a certain IRQ?
- Thanks for this.
- Was thinking of a similar kind of approach with irqchip.
- But then, there was a GAP since crossbar does not have an irq unlike
- other irqchips. But as you said  this can be done by setting the crossbar
- to map and receive the GIC interrupts and then direct to devices.
- Only thing is, this is fine for IRQs, and something different has to be done
- for DMA crossbars  again. Also when we allocate dynamically here,
- finding out a irq line when there is no free line is a question.
+Hello,
 
-  With the other approach of using/extending  the pinctrl framework that you
- gave, it is good to handle both irqs/dma.  I looked at the other example in
- drivers/dma/amba-pl08x.c and i see that data is getting populated and passed
- from the platform. I initially started with something similar, where the data
- was passed statically from DT and a driver to use that.  So now it looks good
- to extend the pinctrl fw. I will try a approach for that first and see how it looks.
+v7 - addressed clean up comments, removed test channels
+v6 - addressed comments about trim bits, checkpatch clean up
+v5 - gpadc DT node renamed from "gpadc" to generic "adc", added
+     temperature channels; raw code is corracted with calibration
+     data.
+v4 - addressed comments: fixed style violation, bug in freeing memory,
+     added comments explaining calibration method, removed test network
+     channels from exposing to userspace, error handling for 
+     wait_for_complition
+v3 - fixed compiler warning
+v2 - the driver put in drivers/iio, and
+converted using iio facilities as suggested by Graeme.
 
-Regards,
- Sricharan
+TWL603[02] GPADC is used to measure battery voltage,
+battery temperature, battery presence ID, and could
+be used to measure twl603[02] die temperature.
+This is used on TI blaze, blaze tablet platforms.
 
+The TWL6030/TWL6032 is a PMIC that has a GPADC with 17/19
+channels respectively. Some channels have current
+source and are used for measuring voltage drop
+on resistive load for detecting battery ID resistance,
+or measuring voltage drop on NTC resistors for external
+temperature measurements, other channels measure voltage,
+(i.e. battery voltage), and have inbuilt voltage dividers,
+thus, capable to scale voltage. Some channels are dedicated
+for measuring die temperature.
+
+Some channels could be calibrated in 2 points, having
+offsets from ideal values in trim registers.
+
+The difference between GPADC in TWL6030 and TWL6032:
+- 10 bit vs 12 bit ADC;
+- 17 vs 19 channels;
+- channels have different purpose(i. e. battery voltage
+  channel 8 vs channel 18);
+- trim values are interpreted differently.
+
+The driver is derived from git://git.omapzoom.org/kernel/omap.git
+The original driver's authors and contributors are Balaji T K,
+Graeme Gregory, Ambresh K, Girish S Ghongdemath.
+
+The changes to the original driver:
+- device tree adaptation;
+- drop ioctl support - never been used;
+- unified measurement method for both devices;
+- get rid of "if (device == X)" code style to data driven;
+- drop polling end of conversion and use interrupt instead;
+- iio framework is used
+
+Tested with on blaze tablet 2 with OMAP4430(twl6030), and
+OMAP4470(twl6032) SOMs.
+
+The patches were tested against 3.11-rc2
+
+Oleksandr Kozaruk (2):
+  ARM: dts: twl: Add GPADC data to device tree
+  iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+
+ arch/arm/boot/dts/twl6030.dtsi  |   6 +
+ drivers/iio/adc/Kconfig         |  14 +
+ drivers/iio/adc/Makefile        |   1 +
+ drivers/iio/adc/twl6030-gpadc.c | 981 ++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 1002 insertions(+)
+ create mode 100644 drivers/iio/adc/twl6030-gpadc.c
+
+-- 
+1.8.1.2
 
