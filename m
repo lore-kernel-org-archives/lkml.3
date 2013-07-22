@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757934Ab3GVVEe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 17:04:34 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50737 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757907Ab3GVVEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 17:04:32 -0400
-Date: Mon, 22 Jul 2013 17:04:23 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] mm: page_alloc: fair zone allocator policy
-Message-ID: <20130722210423.GG715@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
- <1374267325-22865-4-git-send-email-hannes@cmpxchg.org>
- <51ED9433.60707@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51ED9433.60707@redhat.com>
+	id S1757910Ab3GVVFH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 17:05:07 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:52453 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757212Ab3GVVFE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 17:05:04 -0400
+Message-ID: <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
+        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Mon, 22 Jul 2013 14:10:36 -0700
+In-Reply-To: <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+References: <20130717161909.GB21468@dhcp-26-207.brq.redhat.com>
+	 <1374173515.7397.948.camel@haakon3.risingtidesystems.com>
+	 <51E83E32.9050306@cs.wisc.edu>
+	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
+	 <20130719003034.GG28005@kernel.dk>
+	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+	 <1374248000.2266.20.camel@dabdike>
+	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 04:21:07PM -0400, Rik van Riel wrote:
-> On 07/19/2013 04:55 PM, Johannes Weiner wrote:
+On Mon, 2013-07-22 at 17:03 +0200, Alexander Gordeev wrote:
+> On Fri, Jul 19, 2013 at 09:56:02PM -0700, Nicholas A. Bellinger wrote:
+> > On Fri, 2013-07-19 at 14:01 -0700, Nicholas A. Bellinger wrote:
+> > OK, after further investigation the root cause is a actually a missing
+> > bio->bio_end_io() -> bio_copy_kern_endio() -> bio_put() from the
+> > blk_end_sync_rq() callback path that scsi-mq REQ_TYPE_BLOCK_PC is
+> > currently using.
 > 
-> >@@ -1984,7 +1992,8 @@ this_zone_full:
-> >  		goto zonelist_scan;
-> >  	}
-> >
-> >-	if (page)
-> >+	if (page) {
-> >+		atomic_sub(1U << order, &zone->alloc_batch);
-> >  		/*
-> >  		 * page->pfmemalloc is set when ALLOC_NO_WATERMARKS was
-> >  		 * necessary to allocate the page. The expectation is
+> Yes, missing bio_copy_kern_endio() callback is exactly the reason I
+> turned to blk_mq_execute_rq() initially. I should have been more
+> specific on this :|
 > 
-> Could this be moved into the slow path in buffered_rmqueue and
-> rmqueue_bulk, or would the effect of ignoring the pcp buffers be
-> too detrimental to keeping the balance between zones?
-
-What I'm worried about is not the inaccury that comes from the buffer
-size but the fact that there are no guaranteed buffer empty+refill
-cycles.  The reclaimer could end up feeding the pcp list that the
-allocator is using indefinitely, which brings us back to the original
-problem.  If you have >= NR_CPU jobs running, the kswapds are bound to
-share CPUs with the allocating tasks, so the scenario is not unlikely.
-
-> It would be kind of nice to not have this atomic operation on every
-> page allocation...
-
-No argument there ;)
-
-> I like the overall approach though. This is something Linux has needed
-> for a long time, and could be extremely useful to automatic NUMA
-> balancing as well...
+> I will try Mike's and your other change, hopefully soon (sorry,
+> constantly getting distracted).
 > 
-> -- 
-> All rights reversed
+
+Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
+target-pending/scsi-mq, which now has functioning scsi-generic support.
+
+Also, your scsi_times_out patch from earlier has not been included just
+yet, but that should be the only extra patch you need to apply in order
+to get scsi-mq enabled libata/ata_piix running.
+
+--nab
+
