@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab3GVAg7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 20:36:59 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:36871 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753459Ab3GVAg6 (ORCPT
+	id S1753786Ab3GVAk2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 20:40:28 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:52791 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3GVAk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 20:36:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>
- <1374290388-19308-3-git-send-email-grant.likely@linaro.org>
- <CAOesGMhaAy93J=Q1STZUHHA-SbH+WXCVuUn0ef14_18du2dk6w@mail.gmail.com>
- <1374366577.1940.10.camel@joe-AO722> <CACxGe6tqisx19LP=5gPyF1iuBKedTLp0yK+WgmqG5Cf+a95Taw@mail.gmail.com>
+	Sun, 21 Jul 2013 20:40:27 -0400
 From: Grant Likely <grant.likely@linaro.org>
-Date: Mon, 22 Jul 2013 01:36:37 +0100
-X-Google-Sender-Auth: v50FYQTBkgjx4zRVxqT8oXu635I
-Message-ID: <CACxGe6tJedLnM6FmvuQWTpGNFsefTn14cbnBMoWnr1gfA0seoQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-To: Joe Perches <joe@perches.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        devicetree@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Subject: [PATCH] MAINTAINERS: Fix incorrect status tag
+Date: Mon, 22 Jul 2013 01:40:22 +0100
+Message-Id: <1374453622-22925-1-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 21, 2013 at 10:46 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Sun, Jul 21, 2013 at 1:29 AM, Joe Perches <joe@perches.com> wrote:
->> On Sat, 2013-07-20 at 17:17 -0700, Olof Johansson wrote:
->>> On Fri, Jul 19, 2013 at 8:19 PM, Grant Likely <grant.likely@linaro.org> wrote:
->>> > Device tree bindings require a lot more attention than they used to.
->>> > We've got a group of volunteers willing to take over maintaining
->>> > bindings. This patch adds them to the MAINTAINERS file.
->> []
->>> > diff --git a/MAINTAINERS b/MAINTAINERS
->> []
->>> > +OPEN FIRMWARE AND FLATTENED DEVICE TREE BINDINGS
->> []
->>> > +F:     arch/*/
->> []
->>> This seems a bit broad.
->>
->> Yep, that's every file anywhere under arch.
->
-> yeah, that was a c/p mistake. I'll drop that line before committing.
+When I removed myself from the xilinx drivers I used the wrong tag. Fix
+it.
 
-In fact, if things go well with the schema tool, it would be possible
-to leave out the .dts files entirely as far as binding review goes.
-The binding would be the important part and the .dts files would be
-checked against that. That's something for the future though.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
 
-g.
+I'll merge this through my tree with my other MAINTAINERS changes.
+
+ MAINTAINERS | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 1128d92..198f3cd 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4986,7 +4986,7 @@ F:	arch/powerpc/platforms/44x/
+ 
+ LINUX FOR POWERPC EMBEDDED XILINX VIRTEX
+ L:	linuxppc-dev@lists.ozlabs.org
+-S:	Unmaintained
++S:	Orphan
+ F:	arch/powerpc/*/*virtex*
+ F:	arch/powerpc/*/*/*virtex*
+ 
+@@ -9294,7 +9294,7 @@ S:	Maintained
+ F:	drivers/net/ethernet/xilinx/xilinx_axienet*
+ 
+ XILINX SYSTEMACE DRIVER
+-S:	Unmaintained
++S:	Orphan
+ F:	drivers/block/xsysace.c
+ 
+ XILINX UARTLITE SERIAL DRIVER
+-- 
+1.8.1.2
+
