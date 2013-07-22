@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab3GVKCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:02:07 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:35649 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756117Ab3GVKCE (ORCPT
+	id S1757341Ab3GVKCi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:02:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51008 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757311Ab3GVKCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:02:04 -0400
-Date: Mon, 22 Jul 2013 12:01:58 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Subject: Re: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
- text_poke_smp_batch
-Message-ID: <20130722100158.GB908@gmail.com>
-References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
- <20130718114753.26675.18714.stgit@mhiramat-M0-7522>
- <20130722074339.GA25976@gmail.com>
- <20130722082104.GA26823@gmail.com>
- <51ECEF8D.60109@hitachi.com>
+	Mon, 22 Jul 2013 06:02:37 -0400
+Date: Mon, 22 Jul 2013 11:02:11 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Ashish Chavan <ashish.chavan@kpitcummins.com>
+Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "kiran.padwal" <kiran.padwal@kpitcummins.com>
+Message-ID: <20130722100211.GP9858@sirena.org.uk>
+References: <1373024862.3233.63.camel@matrix>
+ <20130705114456.GV27646@sirena.org.uk>
+ <1373031306.3233.131.camel@matrix>
+ <20130705133752.GX27646@sirena.org.uk>
+ <1373270091.11222.12.camel@matrix>
+ <20130708112613.GQ27646@sirena.org.uk>
+ <1373542576.9286.101.camel@matrix>
+ <20130717103651.GP22506@sirena.org.uk>
+ <1374482594.13726.11.camel@matrix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BoUn3CGrEP/1RgSh"
 Content-Disposition: inline
-In-Reply-To: <51ECEF8D.60109@hitachi.com>
+In-Reply-To: <1374482594.13726.11.camel@matrix>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ASoC: codecs: da9055: Update driver name to
+ fix breakage due to pmic driver with same name
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+--BoUn3CGrEP/1RgSh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> (2013/07/22 17:21), Ingo Molnar wrote:
-> > 
-> > * Ingo Molnar <mingo@kernel.org> wrote:
-> > 
-> >>
-> >> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> >>
-> >>> Since introducing the text_poke_bp for all text_poke_smp*
-> >>> callers, text_poke_smp* are now unused. This basically
-> >>> reverts 3d55cc8a, 7deb18dc and related commits.
-> >>>
-> >>> This also fixes a Kconfig dependency issue on STOP_MACHINE
-> >>> in the case of CONFIG_SMP && !CONFIG_MODULE_UNLOAD.
-> >>>
-> >>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> >>> ---
-> >>>  arch/x86/Kconfig                   |    5 --
-> >>>  arch/x86/include/asm/alternative.h |   11 ----
-> >>>  arch/x86/kernel/alternative.c      |   98 +-----------------------------------
-> >>>  3 files changed, 2 insertions(+), 112 deletions(-)
-> >>
-> >> Hm, it does not build with the attached config:
-> >>
-> >> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
-> >> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
-> >> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
-> >> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
-> > 
-> > 32-bit appears to be the key pattern.
-> 
-> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
-> This 3/3 strongly depends on the previous 1/3 and 2/3.
-> Without it, kprobes/opt.c can not be build because it still uses the
-> text_poke_params data structure which 3/3 removes.
+On Mon, Jul 22, 2013 at 02:13:14PM +0530, Ashish Chavan wrote:
 
-Yes I know, and it was on top of -tip which already had these included:
+> working on it and hope to submit updated drivers in next 5-6 weeks. In
+> the meanwhile you may apply quick fix (one which I already posted), if
+> you find it worth.
 
- 51b2c07b2226 x86: Make jump_label use int3-based patching
- fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
+You would need to resend, as I indicated orginally I discarded it.
 
-without these the third patch wouldn't even apply I think.
+--BoUn3CGrEP/1RgSh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-	Ingo
+iQIcBAEBAgAGBQJR7QMfAAoJELSic+t+oim9lRQP/RiM9MCCcBZWYVs9XUoPCNm1
+psg1ilynXmeUiKyJ2/8cg0MSKb9peqRfijGuWX/XaO7Sfj6jaX7TtPdsrHzUZZIG
+9pGdEXf/79OHVjanlXdeYrM/MSa/8y8RA0pMleJf1bpjeBYQfbJvwswOIubCbAQZ
+IMuq3qxtuGs553eaKHkJvb31DXRGUqgW+HPRkkbJWdBdEuWwMlvLVKcEOFkoVL3H
+UBVDrUV9v36uEXh1TbWZ2nPD0PHtW0ANytRwYTerZyLoxWoQQpScU4+VlVvxUKNm
+HFraBoKBMmmq7q4zKeCsAfBW30goI1KgzMeWtEJuSSyH56uDBF0+4UzAGIfMih1f
+Cpx+YdcfqZ5rA6627dbs7FxXwIRnpIgMhcMLPhYh+ftD145iGdkLxWF45uvhHMcM
+oBR7UzJsOQzsazpQxh9lP5nLfHAAjJ7gvNxXt9F8kvuHIXz/HvlkE2F/62or9ji9
+665AFydGkE3+BnnM/L8jGRfxqJRvKVCprl1Z4OxO6q2ZhUxrWZRuJFVDxQCU87JA
+3srrM9oyurA5PNe0lhwIRjqklz3qcpL8/3NeA8Y7WtdSGfgfS/HOMxkHFxWP4IOA
+/S3jMlJZYvRgjfHtkKDx1U2F8o9Felt6XMIcvJnmpBHH/KAY/bMKleKTVaJQlx/D
+fixa1FShFdx3HJMZxbuR
+=OZ7g
+-----END PGP SIGNATURE-----
+
+--BoUn3CGrEP/1RgSh--
