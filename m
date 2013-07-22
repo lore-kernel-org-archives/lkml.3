@@ -1,82 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567Ab3GVBFh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Jul 2013 21:05:37 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:33147 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010Ab3GVBFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Jul 2013 21:05:35 -0400
-X-AuditID: 85900ec0-d4ccab900000151e-14-51ec855be7a8
-Message-ID: <51EC8556.9040101@hitachi.com>
-Date: Mon, 22 Jul 2013 10:05:26 +0900
-From: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1754656Ab3GVBIA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Jul 2013 21:08:00 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23061 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab3GVBH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Jul 2013 21:07:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,715,1367996400"; 
+   d="scan'208";a="368871688"
+Date: Mon, 22 Jul 2013 09:07:56 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [x86] Kernel panic - not syncing: Fatal exception in interrupt
+Message-ID: <20130722010756.GA3365@localhost>
+References: <20130720131226.GA13893@localhost>
+ <51EB29FD.60508@zytor.com>
+ <alpine.LNX.2.00.1307211004100.31632@pobox.suse.cz>
 MIME-Version: 1.0
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: Re: [PATCH V2 0/2] [BUGFIX] virtio/console: Fix two bugs of
- splice_write
-References: <20130719091951.9698.95194.stgit@yunodevel> <20130719100543.GM3087@amit-x200.redhat.com>
-In-Reply-To: <20130719100543.GM3087@amit-x200.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1307211004100.31632@pobox.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Amit,
+Hi Jiri,
 
-Sorry for the late reply.
+> What I am however wondering whether can't be case here is that the jump 
+> label was used before int3_notifier has been registered.
+> I am thinking about ways around this, but we'll probably have to do the 
+> same ftrace is doing, i.e. hook into do_int3() directly instead of relying 
+> on the notifier to be registered in time.
+> 
+> Fengguang, as I am not able to reproduce this bug locally, could you do me 
+> a favor and test whether the patch below works the problem around, just 
+> for the sake of testing the hypothesis?
 
-(2013/07/19 19:05), Amit Shah wrote:
-> On (Fri) 19 Jul 2013 [18:19:51], Yoshihiro YUNOMAE wrote:
->> Hi,
->>
->> This patch set fixes two bugs of splice_write in the virtio-console driver.
->>
->> [BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
->>         => This induces oops in sg_init_table().
->>
->> [BUG2] No lock for competition of splice_write.
->>         => This induces oops in splice_from_pipe_feed() by bug of any user
->>            application.
->>
->> These reports are written in each patch.
->>
->> Changes in V2:
->> - Fix a locking problem for error
->>
->> Thanks!
->
-> Reviewed-by: Amit Shah <amit.shah@redhat.com>
-
-Thank you for reviewing this patch set.
-
-> For the patches to be picked up in the stable trees, you need to
-> include CC: <stable@vger.kernel.org> in the sign-off area of the
-> patches, just cc'ing in the patch posting doesn't help.  See
-> Documentation/stable_kernel_rules.txt.
->
-> Can you submit a v3 with that change, and also add my reviewed-by
-> line?
-
-Sure. I'll add stable@ line, your reviewed-by line, and Masami's
-reviewed-by line in sign-off area for each patch.
+I tested 1000 boots with the patch and find no more boot problem.
 
 Thanks,
-Yoshihiro YUNOMAE
+Fengguang
 
--- 
-Yoshihiro YUNOMAE
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: yoshihiro.yunomae.ez@hitachi.com
-
-
+> From: Jiri Kosina <jkosina@suse.cz>
+> Subject: [PATCH] x86: call out into int3 handler directly instead of using notifier
+> 
+> ---
+>  arch/x86/include/asm/alternative.h |    2 ++
+>  arch/x86/kernel/alternative.c      |   22 +++++++++++++++++++++-
+>  arch/x86/kernel/traps.c            |    4 ++++
+>  3 files changed, 27 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+> index 3abf8dd..c22a41d 100644
+> --- a/arch/x86/include/asm/alternative.h
+> +++ b/arch/x86/include/asm/alternative.h
+> @@ -5,6 +5,7 @@
+>  #include <linux/stddef.h>
+>  #include <linux/stringify.h>
+>  #include <asm/asm.h>
+> +#include <asm/ptrace.h>
+>  
+>  /*
+>   * Alternative inline assembly for SMP.
+> @@ -232,6 +233,7 @@ struct text_poke_param {
+>  	size_t len;
+>  };
+>  
+> +extern int poke_bp_int3_handler(struct pt_regs *regs);
+>  extern void *text_poke(void *addr, const void *opcode, size_t len);
+>  extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
+>  extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
+> diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+> index 0ab4936..e1088f2 100644
+> --- a/arch/x86/kernel/alternative.c
+> +++ b/arch/x86/kernel/alternative.c
+> @@ -605,6 +605,24 @@ static void do_sync_core(void *info)
+>  static bool bp_patching_in_progress;
+>  static void *bp_int3_handler, *bp_int3_addr;
+>  
+> +int poke_bp_int3_handler(struct pt_regs *regs)
+> +{
+> +	/* bp_patching_in_progress */
+> +	smp_rmb();
+> +
+> +	if (likely(!bp_patching_in_progress))
+> +		return 0;
+> +
+> +	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
+> +		return 0;
+> +
+> +	/* set up the specified breakpoint handler */
+> +	regs->ip = (unsigned long) bp_int3_handler;
+> +
+> +	return 1;
+> +
+> +}
+> +
+>  static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
+>  {
+>  	struct die_args *args = data;
+> @@ -689,6 +707,7 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+>  	return addr;
+>  }
+>  
+> +#if 0
+>  /* this one needs to run before anything else handles it as a
+>   * regular exception */
+>  static struct notifier_block int3_nb = {
+> @@ -700,8 +719,9 @@ static int __init int3_init(void)
+>  {
+>  	return register_die_notifier(&int3_nb);
+>  }
+> -
+>  arch_initcall(int3_init);
+> +#endif
+> +
+>  /*
+>   * Cross-modifying kernel text with stop_machine().
+>   * This code originally comes from immediate value.
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index 772e2a8..e464764 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -58,6 +58,7 @@
+>  #include <asm/mce.h>
+>  #include <asm/fixmap.h>
+>  #include <asm/mach_traps.h>
+> +#include <asm/alternative.h>
+>  
+>  #ifdef CONFIG_X86_64
+>  #include <asm/x86_init.h>
+> @@ -324,6 +325,9 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+>  	    ftrace_int3_handler(regs))
+>  		return;
+>  #endif
+> +	if (poke_bp_int3_handler(regs))
+> +		return;
+> +
+>  	prev_state = exception_enter();
+>  #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+>  	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+> 
+> -- 
+> Jiri Kosina
+> SUSE Labs
