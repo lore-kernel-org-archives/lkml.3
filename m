@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab3GVLTo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 07:19:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22370 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932318Ab3GVLTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 07:19:42 -0400
-Date: Mon, 22 Jul 2013 13:22:37 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>
-Cc: Arend van Spriel <arend@broadcom.com>, linux-kernel@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: Re: [BUG] 3.10 regression: hang on suspend
-Message-ID: <20130722112236.GA7364@redhat.com>
-References: <20130716065626.GA1587@redhat.com>
- <51E4F790.6090308@odi.ch>
- <51E51712.4020609@broadcom.com>
- <51E58FA5.4000804@odi.ch>
- <20130717122944.GA25894@redhat.com>
- <51E6E1AB.5010300@odi.ch>
- <20130718105550.GA4628@redhat.com>
- <51E83AB7.6020002@odi.ch>
- <20130719120842.GA1570@redhat.com>
- <51E9899E.3080307@odi.ch>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51E9899E.3080307@odi.ch>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932565Ab3GVLVf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 07:21:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:42538 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932413Ab3GVLVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 07:21:32 -0400
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Sudeep.KarkadaNagesha@arm.com, Mark Rutland <mark.rutland@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v2 2/3] ARM: arch_timer: add macros for bits in control register
+Date: Mon, 22 Jul 2013 12:21:21 +0100
+Message-Id: <1374492082-13686-3-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+References: <1371575223-21702-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1374492082-13686-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+X-OriginalArrivalTime: 22 Jul 2013 11:21:28.0996 (UTC) FILETIME=[9C5B2640:01CE86CD]
+X-MC-Unique: 113072212213007901
+Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6MBLdiu009566
 
-On Fri, Jul 19, 2013 at 08:46:54PM +0200, Ortwin Glück wrote:
-> On 07/19/2013 02:08 PM, Stanislaw Gruszka wrote:
-> >I'm attaching patch, which should prevent crash (but not fix the issue,
-> >just workaround it), plese apply it. If it make suspend work, please then
-> >reload iwlwifi module with debug=0x3 option, suspend/resume machine and
-> >provide dmesg output after that.
-> 
-> 
-> Here the requested dmesg. Please note that two different WARN_ONs
-> trigger here directly after each other.
-> 
-> To me it looks like iwlagn_mac_remove_interface() is called twice,
-> but I am not familiar with the code.
+From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
 
-We remove interface that we do not add in the driver. I think I found
-reason of that - I removed below code in bad commit:
+Add macros to describe the bitfields in the ARM architected timer
+control register to make code easy to understand.
 
-        list_for_each_entry(sdata, &local->interfaces, list) {
-[snip]
--               switch (sdata->vif.type) {
--               case NL80211_IFTYPE_AP_VLAN:
--               case NL80211_IFTYPE_MONITOR:
--                       /* skip these */
--                       continue;
+Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Reviewed-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+---
+ arch/arm/include/asm/arch_timer.h    |  9 +++++++--
+ arch/arm64/include/asm/arch_timer.h  | 10 ++++++++--
+ include/clocksource/arm_arch_timer.h |  8 ++++++++
+ 3 files changed, 23 insertions(+), 4 deletions(-)
 
-Attached patch should correct that. Please test if it fixes the
-crash.
-
-Thanks
-Stanislaw
-
-
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="mac80211_fix_suspend_crash.patch"
-
-diff --git a/net/mac80211/pm.c b/net/mac80211/pm.c
-index 7fc5d0d..3401262 100644
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -99,10 +99,13 @@ int __ieee80211_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
- 	}
- 	mutex_unlock(&local->sta_mtx);
+diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
+index c3d9ef7..26c65ae 100644
+--- a/arch/arm/include/asm/arch_timer.h
++++ b/arch/arm/include/asm/arch_timer.h
+@@ -96,8 +96,13 @@ static inline void arch_counter_set_user_access(int divider)
+ 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
  
--	/* remove all interfaces */
-+	/* remove all interfaces that were created in the driver */
- 	list_for_each_entry(sdata, &local->interfaces, list) {
--		if (!ieee80211_sdata_running(sdata))
-+		if (!ieee80211_sdata_running(sdata) ||
-+		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
-+		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
- 			continue;
+ 	/* disable user access to everything */
+-	cntkctl &= ~((3 << 8) | (0xf << 4) | (3 << 0));
+-	cntkctl |= (divider << 4) | (1 << 2);
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_EVT_TRIGGER_MASK
++			| ARCH_TIMER_USR_VCT_ACCESS_EN
++			| ARCH_TIMER_USR_PCT_ACCESS_EN);
++	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++			| ARCH_TIMER_VIRT_EVT_EN;
+ 
+ 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
+ }
+diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
+index 8c1e42f..3494102 100644
+--- a/arch/arm64/include/asm/arch_timer.h
++++ b/arch/arm64/include/asm/arch_timer.h
+@@ -103,10 +103,16 @@ static inline void arch_counter_set_user_access(int divider)
+ 
+ 	/* Disable user access to the timers and the physical counter. */
+ 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
+-	cntkctl &= ~((3 << 8) | (0xf << 4) | (1 << 0));
++	cntkctl &= ~(ARCH_TIMER_USR_PT_ACCESS_EN
++			| ARCH_TIMER_USR_VT_ACCESS_EN
++			| ARCH_TIMER_EVT_TRIGGER_MASK
++			| ARCH_TIMER_USR_PCT_ACCESS_EN)
+ 
+ 	/* Enable user access to the virtual counter and frequency. */
+-	cntkctl |= (divider << 4) | (1 << 2) | (1 << 1);
++	cntkctl |= (divider << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++			| ARCH_TIMER_VIRT_EVT_EN
++			| ARCH_TIMER_USR_VCT_ACCESS_EN;
 +
- 		drv_remove_interface(local, sdata);
- 	}
+ 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
+ }
  
+diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
+index 24dc140..c4d0fc4 100644
+--- a/include/clocksource/arm_arch_timer.h
++++ b/include/clocksource/arm_arch_timer.h
+@@ -29,6 +29,14 @@
+ #define ARCH_TIMER_PHYS_ACCESS		0
+ #define ARCH_TIMER_VIRT_ACCESS		1
+ 
++#define ARCH_TIMER_USR_PCT_ACCESS_EN	(1 << 0) /* physical counter */
++#define ARCH_TIMER_USR_VCT_ACCESS_EN	(1 << 1) /* virtual counter */
++#define ARCH_TIMER_VIRT_EVT_EN		(1 << 2)
++#define ARCH_TIMER_EVT_TRIGGER_SHIFT	(4)
++#define ARCH_TIMER_EVT_TRIGGER_MASK	(0xF << ARCH_TIMER_EVT_TRIGGER_SHIFT)
++#define ARCH_TIMER_USR_VT_ACCESS_EN	(1 << 8) /* virtual timer registers */
++#define ARCH_TIMER_USR_PT_ACCESS_EN	(1 << 9) /* physical timer registers */
++
+ #define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
+ 
+ #ifdef CONFIG_ARM_ARCH_TIMER
+-- 
+1.8.1.2
 
---9jxsPFA5p3P2qPhR--
+
