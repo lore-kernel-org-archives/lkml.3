@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab3GVH3U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 03:29:20 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:43629 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755101Ab3GVH3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 03:29:19 -0400
-Message-ID: <1374478157.2061.32.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] staging: gdm7240: added contacts for code
- maintanance
-From: Joe Perches <joe@perches.com>
-To: Won Kang <wkang77@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, jonathankim@gctsemi.com,
-        deanahn@gctsemi.com, wonkang@gctsemi.com
-Date: Mon, 22 Jul 2013 00:29:17 -0700
-In-Reply-To: <1374476192-7801-2-git-send-email-wonkang@gctsemi.com>
-References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
-	 <1374476192-7801-2-git-send-email-wonkang@gctsemi.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1756644Ab3GVHf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 03:35:26 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:59546 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab3GVHfZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 03:35:25 -0400
+Message-ID: <51ECE0BA.70406@hitachi.com>
+Date: Mon, 22 Jul 2013 16:35:22 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: rostedt@goodmis.org, Oleg Nesterov <oleg@redhat.com>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>, jovi.zhangwei@huawei.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/9] tracing: trace event triggers
+References: <cover.1374245042.git.tom.zanussi@linux.intel.com>
+In-Reply-To: <cover.1374245042.git.tom.zanussi@linux.intel.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 15:56 +0900, Won Kang wrote:
-[]
-> diff --git a/drivers/staging/gdm724x/TODO b/drivers/staging/gdm724x/TODO
-[]
-> @@ -1,2 +1,6 @@
->  TODO:
-> -- Clean up coding style to meet kernel standard.
-> \ No newline at end of file
-> +- Clean up coding style to meet kernel standard.
-> +
-> +Patches to:
-> +	Jonathan Kim <jonathankim@gctsemi.com>
-> +	Dean ahn <deanahn@gctsemi.com>
+(2013/07/20 0:09), Tom Zanussi wrote:
+> Hi,
+> 
+> This is v3 of the trace event triggers patchset, addressing comments
+> from Masami Hiramatsu, zhangwei(Jovi), and Steve Rostedt.
 
-It would be better to add a MAINTAINERS section entry.
+Steven, Oleg, would you think this can go at this time?
+Or Tom is better to wait for Oleg's bugfix?
+I'd like to clarify that first.
+
+Thank you,
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
