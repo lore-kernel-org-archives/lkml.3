@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab3GVK4j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 06:56:39 -0400
-Received: from mail-ea0-f179.google.com ([209.85.215.179]:50920 "EHLO
-	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932326Ab3GVKxO (ORCPT
+	id S932428Ab3GVK4i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 06:56:38 -0400
+Received: from mail-ea0-f181.google.com ([209.85.215.181]:51478 "EHLO
+	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328Ab3GVKxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 06:53:14 -0400
+	Mon, 22 Jul 2013 06:53:15 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: arnd@arndb.de, linus.walleij@stericsson.com,
         Lee Jones <lee.jones@linaro.org>,
         =?UTF-8?q?Beno=C3=AEt=20Cousson?= <b-cousson@ti.com>,
         Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: [PATCH 13/22] ARM: dts: Remove '0x's from OMAP3 IGEP0020 DTS file
-Date: Mon, 22 Jul 2013 11:52:32 +0100
-Message-Id: <1374490361-25769-13-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH 14/22] ARM: dts: Remove '0x's from OMAP3 IGEP0030 DTS file
+Date: Mon, 22 Jul 2013 11:52:33 +0100
+Message-Id: <1374490361-25769-14-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
 References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
@@ -31,14 +31,14 @@ Cc: Tony Lindgren <tony@atomide.com>
 Cc: linux-omap@vger.kernel.org
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- arch/arm/boot/dts/omap3-igep0020.dts | 8 ++++----
+ arch/arm/boot/dts/omap3-igep0030.dts | 8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/boot/dts/omap3-igep0020.dts b/arch/arm/boot/dts/omap3-igep0020.dts
-index e8c4828..f7a8122 100644
---- a/arch/arm/boot/dts/omap3-igep0020.dts
-+++ b/arch/arm/boot/dts/omap3-igep0020.dts
-@@ -99,19 +99,19 @@
+diff --git a/arch/arm/boot/dts/omap3-igep0030.dts b/arch/arm/boot/dts/omap3-igep0030.dts
+index 644d0538..f628200 100644
+--- a/arch/arm/boot/dts/omap3-igep0030.dts
++++ b/arch/arm/boot/dts/omap3-igep0030.dts
+@@ -74,19 +74,19 @@
  			label = "SPL";
  			reg = <0 0x100000>;
  		};
