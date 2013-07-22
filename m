@@ -1,100 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab3GVMmb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 08:42:31 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:63381 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3GVMm3 (ORCPT
+	id S1754055Ab3GVMoN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 08:44:13 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:48136 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab3GVMoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 08:42:29 -0400
-Message-ID: <51ED28AC.4080300@gmail.com>
-Date: Mon, 22 Jul 2013 20:42:20 +0800
-From: Paul Bolle <paul.bollee@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Mon, 22 Jul 2013 08:44:09 -0400
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-07-18-16-40 uploaded
-References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com> <51E8B34B.1070200@gmail.com> <20130719180035.GI17812@cmpxchg.org>
-In-Reply-To: <20130719180035.GI17812@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51DAB9B8.7060303@citrix.com>
+References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com>
+	<CAOvdn6XcEwFa2CRGqUhsaTeTMKHsQeFHJ-KmyCTBZRLbAoimmQ@mail.gmail.com>
+	<2101936.oHXzxvYCX4@vostro.rjw.lan>
+	<51DAB9B8.7060303@citrix.com>
+Date: Mon, 22 Jul 2013 08:44:08 -0400
+X-Google-Sender-Auth: Gmr8VjtltW42JUz8d9HJFQoHjjA
+Message-ID: <CAOvdn6Wv1mXD-RDCZ750YQFEFf7GR0QxVARACEg0jNrUEEkBYA@mail.gmail.com>
+Subject: Re: [Xen-devel] [PATCH v6 0/5] Xen/ACPI: support sleep state entering
+ on hardware reduced systems
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Bob Moore <robert.moore@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
+        Shane Wang <shane.wang@intel.com>, tboot-devel@lists.sourceforge.net,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2013 02:00 AM, Johannes Weiner wrote:
-> On Thu, Jul 18, 2013 at 11:32:27PM -0400, Paul Bolle wrote:
->> On 07/18/2013 07:41 PM, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2013-07-18-16-40 has been uploaded to
->>>
->>>     http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> mmotm-readme.txt says
->>>
->>> README for mm-of-the-moment:
->>>
->>> http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
->>> more than once a week.
->>>
->>> You will need quilt to apply these patches to the latest Linus release (3.x
->>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
->>> http://ozlabs.org/~akpm/mmotm/series
->>>
->>> The file broken-out.tar.gz contains two datestamp files: .DATE and
->>> .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
->>> followed by the base kernel version against which this patch series is to
->>> be applied.
->>>
->>> This tree is partially included in linux-next.  To see which patches are
->>> included in linux-next, consult the `series' file.  Only the patches
->>> within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
->>> linux-next.
->>>
->>> A git tree which contains the memory management portion of this tree is
->>> maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
->>> by Michal Hocko.  It contains the patches which are between the
->>> "#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
->>> file, http://www.ozlabs.org/~akpm/mmotm/series.
->>>
->>>
->>> A full copy of the full kernel tree with the linux-next and mmotm patches
->>> already applied is available through git within an hour of the mmotm
->>> release.  Individual mmotm releases are tagged.  The master branch always
->>> points to the latest release, so it's constantly rebasing.
->>>
->>> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
->>>
->>> To develop on top of mmotm git:
->>>
->>>    $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
->>>    $ git remote update mmotm
->>>    $ git checkout -b topic mmotm/master
->>>    <make changes, commit>
->>>    $ git send-email mmotm/master.. [...]
->>>
->>> To rebase a branch with older patches to a new mmotm release:
->>>
->>>    $ git remote update mmotm
->>>    $ git rebase --onto mmotm/master <topic base> topic
-> Andrew, that workflow is actually meant for
-> http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
-> (i.e. the git remote add mmotm <michal's tree> does not make much
-> sense).  Michal's tree is append-only, so all this precision-rebasing
-> is unnecessary.
+On Mon, Jul 8, 2013 at 9:08 AM, Ben Guthro <Benjamin.Guthro@citrix.com> wrote:
 >
->> The -mm tree is
->> git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git or
->> linux-next -mm branch?
-> It depends what you want for the base.  What's in linux-next is based
-> on linux-next, so the latest and greatest.
 >
-> Michal's -mm tree is based on the latest Linus release, and so more
-> stable.  Or at least the craziness is contained to mm stuff.
+> On 07/08/2013 09:10 AM, Rafael J. Wysocki wrote:
+>> On Sunday, July 07, 2013 08:13:15 PM Ben Guthro wrote:
+>>> On Mon, Jul 1, 2013 at 7:48 AM, Ben Guthro <benjamin.guthro@citrix.com> wrote:
+>>>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+>>>> reduced hardware sleep support, and the two changes didn't get
+>>>> synchronized: The new code doesn't call the hook function (if so
+>>>> requested). Fix this, requiring a boolean parameter to be added to the
+>>>> hook function to distinguish "extended" from "legacy" sleep.
+>>>>
+>>>> This requires adjusting TXT, but the adjustments only go as far as
+>>>> failing the extended mode call (since, looking at the TXT interface,
+>>>> there doesn't even appear to be precautions to deal with that
+>>>> alternative interface).
+>>>>
+>>>> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+>>>> v5 (reduced HW) sleep interface") on the master branch of
+>>>> git://xenbits.xen.org/xen.git.
+>>>>
+>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+>>>> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+>>>> Cc: Gang Wei <gang.wei@intel.com>
+>>>> Cc: Shane Wang <shane.wang@intel.com>
+>>>> Cc: Bob Moore <robert.moore@intel.com>
+>>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+>>>> Cc: linux-acpi@vger.kernel.org
+>>>> Cc: tboot-devel@lists.sourceforge.net
+>>>>
+>>>> v2: Extend description to include reference to hypervisor side change
+>>>> v3: Split into multiple patches, separating subsystems
+>>>>     Remove bool parameters, in favor of u8
+>>>> v4: Remove linux/acpi.h dependencies
+>>>>     Further patch split to break out acpica from OSL
+>>>>     More bool vs u8 fixes
+>>>> v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
+>>>>     so intermediate builds of partial patch series will not fail.
+>>>> v6: Rebased to linux-pm linux-next branch
+>>>>     Added warning in tboot early return code
+>>>>     Added Reviewed-by lines
+>>>>
+>>>> Ben Guthro (5):
+>>>>   acpi: Remove need to include linux/acpi.h in common acpica code
+>>>>   acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+>>>>   acpi/xen/tboot: Adjust linux acpi OS functions to new extended
+>>>>     parameter
+>>>>   x86/tboot: Fail extended mode reduced hardware sleep
+>>>>   xen/acpi: notify xen when reduced hardware sleep is available
+>>>
+>>> Rafael, Bob -
+>>>
+>>> Is this version of the series something that you may consider taking?
+>>> If not - is there something specific you would like to see addressed?
+>>
+>> Well, I'm afraid you need to give us some more time to process that,
+>> sorry.
+>
+> My apologies - I know it is a busy time during the merge window. I did
+> not mean to seem impatient.
+>
+> With the volume of things on the mailing list, I merely wanted to try to
+> avoid the series getting buried. If a week is too frequent to re-bump a
+> series, do you have a set of recommendations of how to best interact
+> with your workflow?
 
--mm branch against linux-next is newer than master branch against 
-linux-next. Michal's -mm tree is newer than Linus's tree or older?
+Rafael (et al.)
+
+I never heard back on this point of how you prefer your workflow to
+proceed - that is, if I haven't heard anything in a couple weeks -
+should I try to re-bump the thread?
+
+Since this was sent around the time of the merge window, I realize
+there were other things to occupy people's time.
+Now that rc2 is out - I'm hoping that the dust has settled a bit, such
+that there may be a cycle, or two to review this series.
+
+Thanks for your time
+
+Ben
+
+>
+> I'm just trying to balance people's time to review such things, with the
+> volume of the list.
+>
+> Thanks for your time.
+>
+> Ben
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
