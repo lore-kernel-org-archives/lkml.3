@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934015Ab3GWTOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:14:16 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:52122 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933733Ab3GWTOO (ORCPT
+	id S934042Ab3GWTP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:15:56 -0400
+Received: from mail-qc0-f174.google.com ([209.85.216.174]:48151 "EHLO
+	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933819Ab3GWTPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:14:14 -0400
-Date: Tue, 23 Jul 2013 21:14:13 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        eranian@google.com
-Subject: Re: [PATCH] perf, x86: Enable PEBS mode automatically for
- mem-{loads,stores} v3
-Message-ID: <20130723191413.GS6123@two.firstfloor.org>
-References: <1374188619-19220-1-git-send-email-andi@firstfloor.org>
- <20130723083834.GS27075@twins.programming.kicks-ass.net>
- <20130723161334.GQ6123@two.firstfloor.org>
- <20130723165739.GD27075@twins.programming.kicks-ass.net>
+	Tue, 23 Jul 2013 15:15:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723165739.GD27075@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <8638rt3svt.fsf@void.printf.net>
+References: <201307051751.20729.arnd@arndb.de>
+	<8638rt3svt.fsf@void.printf.net>
+Date: Tue, 23 Jul 2013 12:15:54 -0700
+Message-ID: <CAOesGMiVzH7qyu_tBpKV5PTHBvvwE9E6Q9f39ENfVOO-6wY3+w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: pxa: propagate errors from regulator_enable() to pxamci
+From: Olof Johansson <olof@lixom.net>
+To: Chris Ball <cjb@laptop.org>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:57:39PM +0200, Peter Zijlstra wrote:
-> On Tue, Jul 23, 2013 at 06:13:34PM +0200, Andi Kleen wrote:
-> > On Tue, Jul 23, 2013 at 10:38:34AM +0200, Peter Zijlstra wrote:
-> > > On Thu, Jul 18, 2013 at 04:03:39PM -0700, Andi Kleen wrote:
-> > > > From: Andi Kleen <ak@linux.intel.com>
-> > > > 
-> > > > [The patch to enable this in the user tools has been sent separately]
-> > > > 
-> > > > With the earlier patches to automatically try cpu// and add
-> > > > a precise sys attribute, we can now enable PEBS for the mem-loads,
-> > > > mem-stores events everywhere.
-> > > > 
-> > > > This allows to use
-> > > > 
-> > > > perf record -e mem-loads ...
-> > > > 
-> > > > instead of
-> > > > 
-> > > > perf record -e cpu/mem-loads/p ...
-> > > > 
-> > > > Always use precise=2 even though it is costly pre-Haswell
-> > > 
-> > > This Changelog fails to give a reason _why_ we'd want to do this.
-> > 
-> > The first is much nicer to type and understand? Just in the spirit of
-> > making perf easier to use.
-> 
-> And here I was thinking that maybe these events don't make sense without
-> pebs or so. But no, rather than giving an actual useful reason you'd
-> have me look things up myself. *sigh*
+On Fri, Jul 5, 2013 at 8:53 AM, Chris Ball <cjb@laptop.org> wrote:
+> Hi,
+>
+> On Fri, Jul 05 2013, Arnd Bergmann wrote:
+>> The em_x270_mci_setpower() and em_x270_usb_hub_init() functions
+>> call regulator_enable(), which may return an error that must
+>> be checked.
+>>
+>> This changes the em_x270_usb_hub_init() function to bail out
+>> if it fails, and changes the pxamci_platform_data->setpower
+>> callback so that the a failed em_x270_mci_setpower call
+>> can be propagated by the pxamci driver into the mmc core.
+>>
+>> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>
+> For pxamci:
+>
+> Acked-by: Chris Ball <cjb@laptop.org>
 
-You can use them without PEBS, but they're much more useful with PEBS
-(e.g. due to skid or if you want the address or data source, although
-you can also use perf mem for the later)
+Applied with your ack to arm-soc fixes branch for 3.11, after fixing
+the set/test ordering pointed out in the thread.
 
-I think PEBS on is a better default here.
+Thanks!
 
-BTW I should add i have some other events (for HSW TSX) that would
-really like a PEBS default. That was the original motivation,
-but then I realized it makes other things nicer too.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+-Olof
