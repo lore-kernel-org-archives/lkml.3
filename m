@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933911Ab3GWTEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:04:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56428 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756943Ab3GWTEf (ORCPT
+	id S933961Ab3GWTFz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:05:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50127 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933129Ab3GWTFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:04:35 -0400
-Date: Tue, 23 Jul 2013 14:04:26 -0500
-From: Serge Hallyn <serge.hallyn@ubuntu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
-Message-ID: <20130723190426.GA9577@tp>
-References: <20130723181606.GA6342@sergelap>
- <20130723183018.GF21100@mtj.dyndns.org>
- <20130723183841.GA9021@tp>
- <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+	Tue, 23 Jul 2013 15:05:53 -0400
+Date: Tue, 23 Jul 2013 15:05:21 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, alex@alex.org.uk, dcrisan@flexiant.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out pages
+Message-ID: <20130723190521.GA7073@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
+ <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1374602409.6623.138.camel@hastur.hellion.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+In-Reply-To: <1374602409.6623.138.camel@hastur.hellion.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> On Tue, Jul 23, 2013 at 2:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
-> > This doesn't delegate it into the container.  It allows me, on the host,
-> > to set the cgroup for a container.
+On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
+> On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
+> > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
+> > +				    unsigned long action, void *hcpu)
+> > +{
+> > +	int cpu = (long)hcpu;
+> > +	switch (action) {
+> > +	case CPU_UP_PREPARE:
+> > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
+> > +			break;
 > 
-> Hmmm? I'm a bit confused. Isn't the description saying that the patch
-> allows pseudo-root in userns to change cgroup membership even if it
-> isn't actually root?
+> Thinking about this a bit more -- do we know what happens to the per-cpu
+> area for a CPU which is unplugged and then reintroduced? Is it preserved
+> or is it reset?
+> 
+> If it is reset then this gets more complicated :-( We might be able to
+> use the core mm page reference count, so that when the last reference is
+> removed the page is automatically reclaimed. We can obviously take a
+> reference whenever we add a mapping of the trade page, but I'm not sure
+> we are always on the path which removes such mappings... Even then you
+> could waste pages for some potentially large amount of time each time
+> you replug a VCPU.
+> 
+> Urg, I really hope the per-cpu area is preserved!
 
-If task A is uid 1000 on the host, and creates task B as uid X in a new
-user namespace, then task A, still being uid 1000 on the host, is
-privileged with respect to B and his namespace - i.e.
-ns_capable(B->userns, CAP_SYS_ADMIN) is true.
+It is. During bootup time you see this:
 
-> Besides, I find the whole check rather bogus and would actually much
-> prefer just nuking the check and just follow the standard permission
-> checks.
+[    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
+[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
 
-I'd be ok with that - but there's one case I'm not sure about:  If PAM
-sets me up with /sys/fs/cgroup/devices/serge owned by me, then if I'm
-thinking right, removing can_attach would mean I could move init into
-/sys/fs/cgroup/devices/serge...
+which means that all of the per_CPU are shrunk down to 128 (from 
+CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
 
-Is there something else stopping that from happening?
+You might have to clear it when the vCPU comes back up though - otherwise you
+will have garbage.
 
--serge
+Or you can use the zalloc_cpumask_var_node which will allocate a dynamic
+version of this. (based on the possible_cpus - so in this case 128).
+> 
+> Ian.
+> 
