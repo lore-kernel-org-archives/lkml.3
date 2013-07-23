@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab3GWCHs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:07:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56627 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab3GWCHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:07:46 -0400
-Message-ID: <1374545252.24933.6.camel@cr0>
-Subject: Re: [Patch net-next 7/7] selinux: use generic union inet_addr
-From: Cong Wang <amwang@redhat.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        James Morris <james.l.morris@oracle.com>,
-        Stephen Smalley <sds@tycho.nsa.gov>,
-        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Date: Tue, 23 Jul 2013 10:07:32 +0800
-In-Reply-To: <15803221.LSzpdzDYPS@sifl>
-References: <1374476713-8838-1-git-send-email-amwang@redhat.com>
-	 <1374476713-8838-8-git-send-email-amwang@redhat.com>
-	 <15803221.LSzpdzDYPS@sifl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753000Ab3GWCLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:11:47 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:45992 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab3GWCLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 22:11:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAELBVzCUrJXWB1dO2mOwoX97x+RO2AeCNEazXzG4DrHXSk9JmQ@mail.gmail.com>
+References: <CAELBVzCK3Dm-HtAn3iy0Nz-MeOJVvRO20KqE0WojWF1nFv_-1Q@mail.gmail.com>
+	<CAELBVzCUrJXWB1dO2mOwoX97x+RO2AeCNEazXzG4DrHXSk9JmQ@mail.gmail.com>
+Date: Mon, 22 Jul 2013 19:11:44 -0700
+X-Google-Sender-Auth: b8NCOyw9DZBUGvBIwYbULdRyJNI
+Message-ID: <CA+55aFwQ02N=Q8ArztM-XhdC-cSj=GE-EvwvkarkpZfDUt+Rsg@mail.gmail.com>
+Subject: Re: [Panic - Bisected] f1a18a10566081abfce1649c2f3884b28fff7372 cases
+ panic on boot
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Kevin Winchester <kjwinchester@gmail.com>
+Cc: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 16:36 -0400, Paul Moore wrote:
-> 
-> These changes are going to affect Smack as well.  You either need to respin 
-> this patch to include all of the LSMs (Smack should be the only other affected 
-> LSM) or add a new patch to the patchset.
-> 
+On 22 July 2013 21:45, Kevin Winchester <kjwinchester@gmail.com> wrote:
+> I have found that the new CPU Package temperature thermal driver introduced
+> in this merge window causes my HP laptop to panic on boot.
 
-Yeah, I will include the Smack part as well.
+I just merged Zhang's pull request that should contain a fix for this,
+but was planning on the allmoconfig build finishing before pushing it
+out. Give me a few minutes..
 
-Thanks!
-
+               Linus
