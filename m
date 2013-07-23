@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab3GWJkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:40:09 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38202 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab3GWJkG (ORCPT
+	id S1756171Ab3GWJpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:45:20 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:36265 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab3GWJpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:40:06 -0400
-Date: Tue, 23 Jul 2013 10:39:50 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@vger.kernel.org, Mark Brown <broonie@kernel.org>
-Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
-	driver for DT usage
-Message-ID: <20130723093950.GR24642@n2100.arm.linux.org.uk>
-References: <20130723104615.3696f1a9@armhf> <20130723085346.GQ24642@n2100.arm.linux.org.uk> <20130723090820.GN9434@pengutronix.de>
+	Tue, 23 Jul 2013 05:45:17 -0400
+Date: Tue, 23 Jul 2013 11:45:13 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, "Shi, Alex" <alex.shi@intel.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130723094513.GA24522@gmail.com>
+References: <1372292701.22432.152.camel@schen9-DESK>
+ <20130627083651.GA3730@gmail.com>
+ <1372366385.22432.185.camel@schen9-DESK>
+ <1372375873.22432.200.camel@schen9-DESK>
+ <20130628093809.GB29205@gmail.com>
+ <1372453461.22432.216.camel@schen9-DESK>
+ <20130629071245.GA5084@gmail.com>
+ <1372710497.22432.224.camel@schen9-DESK>
+ <20130702064538.GB3143@gmail.com>
+ <1373997195.22432.297.camel@schen9-DESK>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130723090820.GN9434@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1373997195.22432.297.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:08:20AM +0200, Sascha Hauer wrote:
-> On Tue, Jul 23, 2013 at 09:53:46AM +0100, Russell King - ARM Linux wrote:
-> > On Tue, Jul 23, 2013 at 10:46:15AM +0200, Jean-Francois Moine wrote:
-> > > The kirkwood i2s driver is used without DT in the Kirkwood machine.
-> > > This patch adds a DT compatible definition for use in other Marvell
-> > > machines as the Armada 88AP510 (Dove).
-> > 
-> > Yet again, this illustrates why converting to DT causes backwards
-> > steps in drivers: the conversion of devm_clk_get() to of_clk_get()
-> > necessitates a clk_put().
-> > 
-> > Can someone please provide a devm_of_clk_get() function before we
-> > accept any more patches doing this kind of thing?
-> 
-> The question is why isn't regular [devm_]clk_get used here? I don't know
-> what the Marvell stuff is doing here, but if the clk stuff is
-> implemented correctly then
-> 
-> 	np = pdev->dev.of_node;
-> 	priv->clk = of_clk_get(np, 0);
-> 
-> and
-> 
-> 	devm_clk_get(&pdev->dev, "label");
-> 
-> should both work
 
-You tell me - I keep seeing patches on this list converting drivers from
-using devm_clk_get() to using of_clk_get().  Maybe of_clk_get() should be
-marked deprecated to stop people using it?
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> Ingo,
+> 
+> I tried MCS locking to order the writers but it didn't make much 
+> difference on my particular workload. After thinking about this some 
+> more, a likely explanation of the performance difference between mutex 
+> and rwsem performance is:
+> 
+> 1) Jobs acquiring mutex put itself on the wait list only after 
+> optimistic spinning.  That's only 2% of the time on my test workload so 
+> they access the wait list rarely.
+> 
+> 2) Jobs acquiring rw-sem for write *always* put itself on the wait list 
+> first before trying lock stealing and optimistic spinning.  This creates 
+> a bottleneck at the wait list, and also more cache bouncing.
+
+Indeed ...
+
+> One possible optimization is to delay putting the writer on the wait 
+> list till after optimistic spinning, but we may need to keep track of 
+> the number of writers waiting.  We could add a WAIT_BIAS to count for 
+> each write waiter and remove the WAIT_BIAS each time a writer job 
+> completes.  This is tricky as I'm changing the semantics of the count 
+> field and likely will require a number of changes to rwsem code.  Your 
+> thoughts on a better way to do this?
+
+Why not just try the delayed addition approach first? The spinning is time 
+limited AFAICS, so we don't _have to_ recognize those as writers per se, 
+only if the spinning fails and it wants to go on the waitlist. Am I 
+missing something?
+
+It will change patterns, it might even change the fairness balance - but 
+is a legit change otherwise, especially if it helps performance.
+
+Thanks,
+
+	Ingo
