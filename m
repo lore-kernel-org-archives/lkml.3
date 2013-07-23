@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab3GWSCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:02:37 -0400
-Received: from sauhun.de ([89.238.76.85]:58696 "EHLO pokefinder.org"
+	id S933903Ab3GWSCt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:02:49 -0400
+Received: from sauhun.de ([89.238.76.85]:58713 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933845Ab3GWSCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:02:33 -0400
+	id S1757772Ab3GWSCr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:02:47 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: [PATCH 04/27] drivers/dma: don't check resource with devm_ioremap_resource
-Date: Tue, 23 Jul 2013 20:01:37 +0200
-Message-Id: <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org
+Subject: [PATCH 07/27] drivers/input/serio: don't check resource with devm_ioremap_resource
+Date: Tue, 23 Jul 2013 20:01:40 +0200
+Message-Id: <1374602524-3398-8-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
 References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
@@ -27,38 +28,23 @@ Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
 Please apply via the subsystem-tree.
 
- drivers/dma/mmp_pdma.c |    3 ---
- drivers/dma/mmp_tdma.c |    3 ---
- 2 files changed, 6 deletions(-)
+ drivers/input/serio/olpc_apsp.c |    3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
-index c26699f..7eba967 100644
---- a/drivers/dma/mmp_pdma.c
-+++ b/drivers/dma/mmp_pdma.c
-@@ -778,9 +778,6 @@ static int mmp_pdma_probe(struct platform_device *op)
- 	pdev->dev = &op->dev;
+diff --git a/drivers/input/serio/olpc_apsp.c b/drivers/input/serio/olpc_apsp.c
+index 818aa46..51b1d40 100644
+--- a/drivers/input/serio/olpc_apsp.c
++++ b/drivers/input/serio/olpc_apsp.c
+@@ -183,9 +183,6 @@ static int olpc_apsp_probe(struct platform_device *pdev)
  
- 	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
--	if (!iores)
--		return -EINVAL;
+ 	np = pdev->dev.of_node;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -ENOENT;
 -
- 	pdev->base = devm_ioremap_resource(pdev->dev, iores);
- 	if (IS_ERR(pdev->base))
- 		return PTR_ERR(pdev->base);
-diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
-index 9b93665..1f1885a 100644
---- a/drivers/dma/mmp_tdma.c
-+++ b/drivers/dma/mmp_tdma.c
-@@ -549,9 +549,6 @@ static int mmp_tdma_probe(struct platform_device *pdev)
- 	}
- 
- 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!iores)
--		return -EINVAL;
--
- 	tdev->base = devm_ioremap_resource(&pdev->dev, iores);
- 	if (IS_ERR(tdev->base))
- 		return PTR_ERR(tdev->base);
+ 	priv->base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(priv->base)) {
+ 		dev_err(&pdev->dev, "Failed to map WTM registers\n");
 -- 
 1.7.10.4
 
