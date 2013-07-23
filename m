@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935241Ab3GWW7H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:59:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41441 "EHLO
+	id S935102Ab3GWW7F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:59:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41459 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934151Ab3GWW04 (ORCPT
+	with ESMTP id S934430Ab3GWW07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:26:56 -0400
+	Tue, 23 Jul 2013 18:26:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Neuling <mikey@neuling.org>,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 002/103] powerpc/hw_brk: Fix clearing of extraneous IRQ
-Date: Tue, 23 Jul 2013 15:25:13 -0700
-Message-Id: <20130723220418.839450369@linuxfoundation.org>
+Subject: [ 006/103] powerpc/tm: Fix 32 bit non-rt signals
+Date: Tue, 23 Jul 2013 15:25:17 -0700
+Message-Id: <20130723220419.288598959@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -30,40 +29,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Neuling <mikey@neuling.org>
 
-commit 540e07c67efe42ef6b6be4f1956931e676d58a15 upstream.
+commit fee55450710dff32a13ae30b4129ec7b5a4b44d0 upstream.
 
-In 9422de3 "powerpc: Hardware breakpoints rewrite to handle non DABR breakpoint
-registers" we changed the way we mark extraneous irqs with this:
+Currently sys_sigreturn() is TM unaware.  Therefore, if we take a 32 bit signal
+without SIGINFO (non RT) inside a transaction, on signal return we don't
+restore the signal frame correctly.
 
--	info->extraneous_interrupt = !((bp->attr.bp_addr <= dar) &&
--			(dar - bp->attr.bp_addr < bp->attr.bp_len));
-+	if (!((bp->attr.bp_addr <= dar) &&
-+	      (dar - bp->attr.bp_addr < bp->attr.bp_len)))
-+		info->type |= HW_BRK_TYPE_EXTRANEOUS_IRQ;
-
-Unfortunately this is bogus as it never clears extraneous IRQ if it's already
-set.
-
-This correctly clears extraneous IRQ before possibly setting it.
+This checks if the signal frame being restoring is an active transaction, and
+if so, it copies the additional state to ptregs so it can be restored.
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/hw_breakpoint.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/powerpc/kernel/signal_32.c |   30 +++++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/kernel/hw_breakpoint.c
-+++ b/arch/powerpc/kernel/hw_breakpoint.c
-@@ -250,6 +250,7 @@ int __kprobes hw_breakpoint_handler(stru
- 	 * we still need to single-step the instruction, but we don't
- 	 * generate an event.
- 	 */
-+	info->type &= ~HW_BRK_TYPE_EXTRANEOUS_IRQ;
- 	if (!((bp->attr.bp_addr <= dar) &&
- 	      (dar - bp->attr.bp_addr < bp->attr.bp_len)))
- 		info->type |= HW_BRK_TYPE_EXTRANEOUS_IRQ;
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -1494,16 +1494,22 @@ badframe:
+ long sys_sigreturn(int r3, int r4, int r5, int r6, int r7, int r8,
+ 		       struct pt_regs *regs)
+ {
++	struct sigframe __user *sf;
+ 	struct sigcontext __user *sc;
+ 	struct sigcontext sigctx;
+ 	struct mcontext __user *sr;
+ 	void __user *addr;
+ 	sigset_t set;
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	struct mcontext __user *mcp, *tm_mcp;
++	unsigned long msr_hi;
++#endif
+ 
+ 	/* Always make any pending restarted system calls return -EINTR */
+ 	current_thread_info()->restart_block.fn = do_no_restart_syscall;
+ 
+-	sc = (struct sigcontext __user *)(regs->gpr[1] + __SIGNAL_FRAMESIZE);
++	sf = (struct sigframe __user *)(regs->gpr[1] + __SIGNAL_FRAMESIZE);
++	sc = &sf->sctx;
+ 	addr = sc;
+ 	if (copy_from_user(&sigctx, sc, sizeof(sigctx)))
+ 		goto badframe;
+@@ -1520,11 +1526,25 @@ long sys_sigreturn(int r3, int r4, int r
+ #endif
+ 	set_current_blocked(&set);
+ 
+-	sr = (struct mcontext __user *)from_user_ptr(sigctx.regs);
+-	addr = sr;
+-	if (!access_ok(VERIFY_READ, sr, sizeof(*sr))
+-	    || restore_user_regs(regs, sr, 1))
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	mcp = (struct mcontext __user *)&sf->mctx;
++	tm_mcp = (struct mcontext __user *)&sf->mctx_transact;
++	if (__get_user(msr_hi, &tm_mcp->mc_gregs[PT_MSR]))
+ 		goto badframe;
++	if (MSR_TM_ACTIVE(msr_hi<<32)) {
++		if (!cpu_has_feature(CPU_FTR_TM))
++			goto badframe;
++		if (restore_tm_user_regs(regs, mcp, tm_mcp))
++			goto badframe;
++	} else
++#endif
++	{
++		sr = (struct mcontext __user *)from_user_ptr(sigctx.regs);
++		addr = sr;
++		if (!access_ok(VERIFY_READ, sr, sizeof(*sr))
++		    || restore_user_regs(regs, sr, 1))
++			goto badframe;
++	}
+ 
+ 	set_thread_flag(TIF_RESTOREALL);
+ 	return 0;
 
 
