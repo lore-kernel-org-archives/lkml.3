@@ -1,68 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab3GWCEv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:04:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:22541 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3GWCEu (ORCPT
+	id S1752907Ab3GWCGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:06:03 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:63290 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015Ab3GWCGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:04:50 -0400
-Message-ID: <51EDE49B.7080601@huawei.com>
-Date: Tue, 23 Jul 2013 10:04:11 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 22 Jul 2013 22:06:00 -0400
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Ric Wheeler <ricwheeler@gmail.com>,
-        <ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Chris Ball <cjb@laptop.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-References: <1373944014.17876.255.camel@gandalf.local.home>  <51E4BFA9.1030600@zytor.com>  <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>  <1373991399.6458.6.camel@gandalf.local.home>  <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>  <51E59F79.1040903@zytor.com>  <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>  <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>  <20130717144043.GA16513@xanatos>  <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>  <20130719120841.GH26716@gmail.com>  <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>  <1374339860.16533.6.camel@deadeye.wl.decadent.org.uk>  <51EBE097.1060204@gmail.com> <51EDDBD2.7090605@huawei.com> <1374543566.3356.121.camel@gandalf.local.home>
-In-Reply-To: <1374543566.3356.121.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <1374488380-26428-1-git-send-email-manjunath.goudar@linaro.org>
+References: <1372347109-5563-1-git-send-email-manjunath.goudar@linaro.org> <1374488380-26428-1-git-send-email-manjunath.goudar@linaro.org>
+From: Wan ZongShun <mcuos.com@gmail.com>
+Date: Tue, 23 Jul 2013 10:05:39 +0800
+Message-ID: <CAKT61h_fdTHH=K2-6oHM4L+Ec6h2zRjS19gDKOZVyv2BCrpJhA@mail.gmail.com>
+Subject: Re: [PATCH V2] USB: EHCI: make ehci-w90X900 a separate driver
+To: Manjunath Goudar <manjunath.goudar@linaro.org>
+Cc: linux-usb@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        patches@linaro.org, Alan Stern <stern@rowland.harvard.edu>,
+        Arnd Bergmann <arnd@linaro.org>, linaro-kernel@lists.linaro.org,
+        Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/23 9:39, Steven Rostedt wrote:
-> On Tue, 2013-07-23 at 09:26 +0800, Li Zefan wrote:
-> 
->> IT companies in China, they try to make sure there's at least one (most the
->> time the result is just one) female developer/tester in a team, and a team
->> is ~10 people. Even if it's a kernel team, but it's harder to meet.
->>
->> Don't know if the same strategy is applied in other countries.
-> 
-> Just my observation, but it seems that I see more women in tech from the
-> Asian countries than from the US.
-> 
-> Watching my two teenage daughters grow up here as well as their friends,
-> the focus of our schools still seem more bent on being good in sports
-> than in academics, and even worse for science. Sports for girls happen
-> to be much more serious than when I was in school. Being a "nerd" for a
-> boy is starting to get a bit more acceptance (see Big Bang Theory), but
-> for girls they seem a bit more harsh. At least from what I can tell by
-> watching how things are with my kids and their friends. One of the
-> friends of my daughter, who does very well in school, hides her grades
-> and "pretends" to be stupid. This is really a sad state of affairs if
-> you ask me :-(
-> 
+2013/7/22 Manjunath Goudar <manjunath.goudar@linaro.org>:
+> Separate the W90X900(W90P910) on-chip host controller driver from
+> ehci-hcd host code so that it can be built as a separate driver module.
+> This work is part of enabling multi-platform kernels on ARM;
+> however, note that other changes are still needed before W90X900(W90P910)
+> can be booted with a multi-platform kernel
+>
+> and an ehci driver that only works on one of them.
+>
+> With the infrastructure added by Alan Stern in patch 3e0232039
+> "USB: EHCI: prepare to make ehci-hcd a library module", we can
+> avoid this problem by turning a bus glue into a separate
+> module, as we do here for the w90X900 bus glue.
+>
+> Signed-off-by: Manjunath Goudar <manjunath.goudar@linaro.org>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Greg KH <greg@kroah.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: Wan ZongShun <mcuos.com@gmail.com>
+> Cc: linux-usb@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+>
 
-In china we are in the opposite. In college girls like to stay in school
-library to study, and in general they get better scores than boys, and
-they don't like sports. But being good in study is not the same as being
-good at programming, and in fact they are not keen in coding!
+Manjunath,
 
-And I think IT companies in China tend to lower their requirements when
-the job interviewee is a female.
+Thanks for your patch, it is good to me.
 
+Acked-by: Wan Zongshun <mcuos.com@gmail.com>
+
+> V2:
+>  -Arranged  #include's in alphabetical order.
+>  -Replaced "w90p910" by "w90x900" because it is supports
+>   all series of w90x900.
+> ---
+>  drivers/usb/host/Kconfig        |    2 +-
+>  drivers/usb/host/Makefile       |    1 +
+>  drivers/usb/host/ehci-hcd.c     |    5 ---
+>  drivers/usb/host/ehci-w90x900.c |   85 ++++++++++++++++-----------------------
+>  4 files changed, 37 insertions(+), 56 deletions(-)
+>
+> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> index ba52912..7bc598b 100644
+> --- a/drivers/usb/host/Kconfig
+> +++ b/drivers/usb/host/Kconfig
+> @@ -244,7 +244,7 @@ config USB_EHCI_MV
+>           SoCs, see USB_EHCI_HCD_ORION for those.
+>
+>  config USB_W90X900_EHCI
+> -       bool "W90X900(W90P910) EHCI support"
+> +       tristate "W90X900(W90P910) EHCI support"
+>         depends on ARCH_W90X900
+>         ---help---
+>                 Enables support for the W90X900 USB controller
+> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+> index 7664db8..28adb3f 100644
+> --- a/drivers/usb/host/Makefile
+> +++ b/drivers/usb/host/Makefile
+> @@ -35,6 +35,7 @@ obj-$(CONFIG_USB_EHCI_HCD_AT91) += ehci-atmel.o
+>  obj-$(CONFIG_USB_EHCI_MSM)     += ehci-msm.o
+>  obj-$(CONFIG_USB_EHCI_TEGRA)   += ehci-tegra.o
+>  obj-$(CONFIG_USB_EHCI_MV)       += ehci-mv.o
+> +obj-$(CONFIG_USB_W90X900_EHCI) += ehci-w90x900.o
+>
+>  obj-$(CONFIG_USB_OXU210HP_HCD) += oxu210hp-hcd.o
+>  obj-$(CONFIG_USB_ISP116X_HCD)  += isp116x-hcd.o
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index 5717dcd..4a5644e 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -1249,11 +1249,6 @@ MODULE_LICENSE ("GPL");
+>  #define XILINX_OF_PLATFORM_DRIVER      ehci_hcd_xilinx_of_driver
+>  #endif
+>
+> -#ifdef CONFIG_USB_W90X900_EHCI
+> -#include "ehci-w90x900.c"
+> -#define        PLATFORM_DRIVER         ehci_hcd_w90x900_driver
+> -#endif
+> -
+>  #ifdef CONFIG_USB_OCTEON_EHCI
+>  #include "ehci-octeon.c"
+>  #define PLATFORM_DRIVER                ehci_octeon_driver
+> diff --git a/drivers/usb/host/ehci-w90x900.c b/drivers/usb/host/ehci-w90x900.c
+> index 59e0e24..4d6631d 100644
+> --- a/drivers/usb/host/ehci-w90x900.c
+> +++ b/drivers/usb/host/ehci-w90x900.c
+> @@ -11,13 +11,28 @@
+>   *
+>   */
+>
+> +#include <linux/dma-mapping.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/usb.h>
+> +#include <linux/usb/hcd.h>
+> +
+> +#include "ehci.h"
+>
+>  /* enable phy0 and phy1 for w90p910 */
+>  #define        ENPHY           (0x01<<8)
+>  #define PHY0_CTR       (0xA4)
+>  #define PHY1_CTR       (0xA8)
+>
+> +#define DRIVER_DESC "EHCI w90x900 driver"
+> +
+> +static const char hcd_name[] = "ehci-w90x900 ";
+> +
+> +static struct hc_driver __read_mostly ehci_w90x900_hc_driver;
+> +
+>  static int usb_w90x900_probe(const struct hc_driver *driver,
+>                       struct platform_device *pdev)
+>  {
+> @@ -99,54 +114,6 @@ void usb_w90x900_remove(struct usb_hcd *hcd, struct platform_device *pdev)
+>         usb_put_hcd(hcd);
+>  }
+>
+> -static const struct hc_driver ehci_w90x900_hc_driver = {
+> -       .description = hcd_name,
+> -       .product_desc = "Nuvoton w90x900 EHCI Host Controller",
+> -       .hcd_priv_size = sizeof(struct ehci_hcd),
+> -
+> -       /*
+> -        * generic hardware linkage
+> -        */
+> -       .irq = ehci_irq,
+> -       .flags = HCD_USB2|HCD_MEMORY,
+> -
+> -       /*
+> -        * basic lifecycle operations
+> -        */
+> -       .reset = ehci_setup,
+> -       .start = ehci_run,
+> -
+> -       .stop = ehci_stop,
+> -       .shutdown = ehci_shutdown,
+> -
+> -       /*
+> -        * managing i/o requests and associated device resources
+> -        */
+> -       .urb_enqueue = ehci_urb_enqueue,
+> -       .urb_dequeue = ehci_urb_dequeue,
+> -       .endpoint_disable = ehci_endpoint_disable,
+> -       .endpoint_reset = ehci_endpoint_reset,
+> -
+> -       /*
+> -        * scheduling support
+> -        */
+> -       .get_frame_number = ehci_get_frame,
+> -
+> -       /*
+> -        * root hub support
+> -        */
+> -       .hub_status_data = ehci_hub_status_data,
+> -       .hub_control = ehci_hub_control,
+> -#ifdef CONFIG_PM
+> -       .bus_suspend = ehci_bus_suspend,
+> -       .bus_resume = ehci_bus_resume,
+> -#endif
+> -       .relinquish_port        = ehci_relinquish_port,
+> -       .port_handed_over       = ehci_port_handed_over,
+> -
+> -       .clear_tt_buffer_complete = ehci_clear_tt_buffer_complete,
+> -};
+> -
+>  static int ehci_w90x900_probe(struct platform_device *pdev)
+>  {
+>         if (usb_disabled())
+> @@ -173,7 +140,25 @@ static struct platform_driver ehci_hcd_w90x900_driver = {
+>         },
+>  };
+>
+> +static int __init ehci_w90X900_init(void)
+> +{
+> +       if (usb_disabled())
+> +               return -ENODEV;
+> +
+> +       pr_info("%s: " DRIVER_DESC "\n", hcd_name);
+> +
+> +       ehci_init_driver(&ehci_w90x900_hc_driver, NULL);
+> +       return platform_driver_register(&ehci_hcd_w90x900_driver);
+> +}
+> +module_init(ehci_w90X900_init);
+> +
+> +static void __exit ehci_w90X900_cleanup(void)
+> +{
+> +       platform_driver_unregister(&ehci_hcd_w90x900_driver);
+> +}
+> +module_exit(ehci_w90X900_cleanup);
+> +
+> +MODULE_DESCRIPTION(DRIVER_DESC);
+>  MODULE_AUTHOR("Wan ZongShun <mcuos.com@gmail.com>");
+> -MODULE_DESCRIPTION("w90p910 usb ehci driver!");
+> -MODULE_LICENSE("GPL");
+>  MODULE_ALIAS("platform:w90p910-ehci");
+> +MODULE_LICENSE("GPL v2");
+> --
+> 1.7.9.5
+>
+
+
+
+--
+Wan ZongShun.
+www.mcuos.com
