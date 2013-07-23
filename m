@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab3GWQDF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:03:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54617 "EHLO mx1.redhat.com"
+	id S933491Ab3GWQEE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:04:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1738 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932595Ab3GWQDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:03:03 -0400
-Date: Tue, 23 Jul 2013 12:02:58 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
-        Milosz Tanski <milosz@adfin.com>,
-        Yacine Belkadi <yacine.belkadi.1@gmail.com>
-Subject: Re: [PATCH] Fix __wait_on_atomic_t() to call the action func if the
- counter != 0
-Message-ID: <20130723120258.01024e81@tlielax.poochiereds.net>
-In-Reply-To: <20130723154924.24306.42326.stgit@warthog.procyon.org.uk>
-References: <20130723154924.24306.42326.stgit@warthog.procyon.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932595Ab3GWQEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:04:01 -0400
+Date: Tue, 23 Jul 2013 17:58:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ptrace(PTRACE_ATTACH)  [no intervering wait]
+	ptrace(PTRACE_DETACH) may leave tracee stuck
+Message-ID: <20130723155854.GA26211@redhat.com>
+References: <1374573914.30532.68.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374573914.30532.68.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013 16:49:24 +0100
-David Howells <dhowells@redhat.com> wrote:
+On 07/23, Mike Galbraith wrote:
+>
+> I received a report that glibc:elf/pldd hangs occasionally, and indeed..
+>
+>   for i in `seq 1 1000`; do taskset -c 3 pldd $$ > /dev/null 2>&1; done
+>
+> ..will do so.  Rummage.....
+>
+> ptrace(PTRACE_DETACH) returns -ESRCH when the trap hasn't happened yet,
+> which happens because pldd doesn't wait() before ptrace(PTRACE_DETACH).
+>
+> pldd source:
+>
+[...snip...]
+>
+> Seems this usually works only because cycles expended between attach and
+> detach is usually enough to let trap happen so tracee can set its state
+> to TASK_TRACED as PTRACE_DETACH expects it to be.
+>
+> Is this expected behavior?
 
-> Fix __wait_on_atomic_t() so that it calls the action func if the counter != 0
-> rather than if the counter is 0 so as to be analogous to __wait_on_bit().
-> 
-> Thanks to Yacine who found this by visual inspection.
-> 
-> This will affect FS-Cache in that it will could fail to sleep correctly when
-> trying to clean up after a netfs cookie is withdrawn.
-> 
-> Reported-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>
-> cc: Milosz Tanski <milosz@adfin.com>
-> cc: Jeff Layton <jlayton@redhat.com>
-> ---
-> 
->  kernel/wait.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/wait.c b/kernel/wait.c
-> index ce0daa3..dec68bd 100644
-> --- a/kernel/wait.c
-> +++ b/kernel/wait.c
-> @@ -333,7 +333,8 @@ int __wait_on_atomic_t(wait_queue_head_t *wq, struct wait_bit_queue *q,
->  		prepare_to_wait(wq, &q->wait, mode);
->  		val = q->key.flags;
->  		if (atomic_read(val) == 0)
-> -			ret = (*action)(val);
-> +			break;
-> +		ret = (*action)(val);
->  	} while (!ret && atomic_read(val) != 0);
+Yes. PTRACE_ATTACH + PTRACE_DETACH is not correct without wait() in
+between, this is expected.
 
-nit: can you now eliminate the check for "val" in the while condition?
-It doesn't look like it harms anything, but eliminating it would
-probably simplify the code slightly...
+PTRACE_DETACH like (almost) any other ptrace request needs the stopped
+tracee. Otherwise, say, ptrace_disable() or flush_ptrace_hw_breakpoint()
+are not safe.
 
->  	finish_wait(wq, &q->wait);
->  	return ret;
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+We could probably add PTRACE_UNTRACE which only does __ptrace_unlink/etc
+like the exiting tracer does. (In particular, it could help to detach a
+zombie).
 
+But note that even PTRACE_ATTACH + PTRACE_UNTRACE won't be really correct.
+PTRACE_ATTACH sends SIGSTOP, so without sys_wait() in between the tracee
+can stop in TASK_STOPPED.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Oleg.
+
