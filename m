@@ -1,122 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508Ab3GWNr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:47:59 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41124 "EHLO mx2.suse.de"
+	id S932794Ab3GWNtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:49:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36192 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756615Ab3GWNr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:47:58 -0400
-Date: Tue, 23 Jul 2013 15:47:56 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Paul Bolle <paul.bollee@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
-        linux-next@vger.kernel.org
-Subject: Re: mmotm 2013-07-18-16-40 uploaded
-Message-ID: <20130723134756.GF8677@dhcp22.suse.cz>
-References: <20130718234123.4170F31C022@corp2gmr1-1.hot.corp.google.com>
- <51E8B34B.1070200@gmail.com>
- <20130719180035.GI17812@cmpxchg.org>
- <20130719111744.ce87390c8d8fa6b0b1c52eb6@linux-foundation.org>
- <20130719195812.GJ17812@cmpxchg.org>
+	id S1757510Ab3GWNtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:49:05 -0400
+Date: Tue, 23 Jul 2013 16:48:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        pbonzini@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] x86: introduce hypervisor_cpuid_base()
+Message-ID: <20130723134855.GA6029@redhat.com>
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130719195812.GJ17812@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-07-13 15:58:12, Johannes Weiner wrote:
-> On Fri, Jul 19, 2013 at 11:17:44AM -0700, Andrew Morton wrote:
-> > On Fri, 19 Jul 2013 14:00:35 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > 
-> > > > >A git tree which contains the memory management portion of this tree is
-> > > > >maintained at git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > > > >by Michal Hocko.  It contains the patches which are between the
-> > > > >"#NEXT_PATCHES_START mm" and "#NEXT_PATCHES_END" markers, from the series
-> > > > >file, http://www.ozlabs.org/~akpm/mmotm/series.
-> > > > >
-> > > > >
-> > > > >A full copy of the full kernel tree with the linux-next and mmotm patches
-> > > > >already applied is available through git within an hour of the mmotm
-> > > > >release.  Individual mmotm releases are tagged.  The master branch always
-> > > > >points to the latest release, so it's constantly rebasing.
-> > > > >
-> > > > >http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary
-> > > > >
-> > > > >To develop on top of mmotm git:
-> > > > >
-> > > > >   $ git remote add mmotm git://git.kernel.org/pub/scm/linux/kernel/git/mhocko/mm.git
-> > > > >   $ git remote update mmotm
-> > > > >   $ git checkout -b topic mmotm/master
-> > > > >   <make changes, commit>
-> > > > >   $ git send-email mmotm/master.. [...]
-> > > > >
-> > > > >To rebase a branch with older patches to a new mmotm release:
-> > > > >
-> > > > >   $ git remote update mmotm
-> > > > >   $ git rebase --onto mmotm/master <topic base> topic
-> > > 
-> > > Andrew, that workflow is actually meant for
-> > > http://git.cmpxchg.org/?p=linux-mmotm.git;a=summary, not Michal's tree
-> > > (i.e. the git remote add mmotm <michal's tree> does not make much
-> > > sense).  Michal's tree is append-only, so all this precision-rebasing
-> > > is unnecessary.
-> > 
-> > Gee, I haven't looked at that text in a while...
-> > 
-> > Could you guys please check it, propose any fixes we should make?
-> > 
-> > 
-> > 
-> > README for mm-of-the-moment:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/
-> > 
-> > This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> > more than once a week.
-> > 
-> > You will need quilt to apply these patches to the latest Linus release (3.x
-> > or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> > http://ozlabs.org/~akpm/mmotm/series
-> > 
-> > The file broken-out.tar.gz contains two datestamp files: .DATE and
-> > .DATE-yyyy-mm-dd-hh-mm-ss.  Both contain the string yyyy-mm-dd-hh-mm-ss,
-> > followed by the base kernel version against which this patch series is to
-> > be applied.
-> > 
-> > This tree is partially included in linux-next.  To see which patches are
-> > included in linux-next, consult the `series' file.  Only the patches
-> > within the #NEXT_PATCHES_START/#NEXT_PATCHES_END markers are included in
-> > linux-next.
-> > 
-> > A git tree which contains the memory management portion of this tree is
+On Tue, Jul 23, 2013 at 05:41:02PM +0800, Jason Wang wrote:
+> This patch introduce hypervisor_cpuid_base() which loop test the hypervisor
+> existence function until the signature match and check the number of leaves if
+> required. This could be used by Xen/KVM guest to detect the existence of
+> hypervisor.
 > 
->                                                                 ^^^
->                                                        on top of the latest
->                                                        Linus release
+Looks good to me.
+
+Since this touches common code, kvm and xen I expect this to be taken
+via the tip tree, correct?
+
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: "Paolo Bonzini" <pbonzini@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: x86@kernel.org
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  arch/x86/include/asm/processor.h |   20 ++++++++++++++++++++
+>  1 files changed, 20 insertions(+), 0 deletions(-)
 > 
-> maybe?
+> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+> index 24cf5ae..a8136d0 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -971,6 +971,26 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
+>  	return ratio;
+>  }
+>  
+> +static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
+> +{
+> +	uint32_t base, eax, ebx, ecx, edx;
+> +	char signature[13];
+> +
+> +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> +		cpuid(base, &eax, &ebx, &ecx, &edx);
+> +		*(uint32_t *)(signature + 0) = ebx;
+> +		*(uint32_t *)(signature + 4) = ecx;
+> +		*(uint32_t *)(signature + 8) = edx;
+> +		signature[12] = 0;
+> +
+> +		if (!strcmp(sig, signature) &&
+> +		    (leaves == 0 || ((eax - base) >= leaves)))
+> +			return base;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+>  extern unsigned long arch_align_stack(unsigned long sp);
+>  extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
+>  
+> -- 
+> 1.7.1
 
-Yes and also a mention that the lastest since-X.Y branch should be used.
- 
-[...]
-> Michal started his mm.git to have a stable memory management
-> development base, yet here is a long section on how to work with the
-> much more awkward mmotm.git.  So I wonder if this whole section on how
-> to develop against mmotm.git should be removed and only a reference to
-> where it could be found left in.
-> 
-> However, I have actually no idea what people use as an mm development
-> base these days...  
-
-I guess Glauber was using it for his shrinker patchset. Few other random
-people have asked about the tree in the past but I have no idea how many
-people use the tree, to be honest.
-
--- 
-Michal Hocko
-SUSE Labs
+--
+			Gleb.
