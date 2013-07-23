@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757551Ab3GWMpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 08:45:33 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:65151 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757438Ab3GWMp1 (ORCPT
+	id S1757586Ab3GWMpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 08:45:40 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40849 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757438Ab3GWMpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 08:45:27 -0400
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-To: <joe@perches.com>, <devel@linuxdriverproject.org>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <gregkh@linuxfoundation.org>
-Subject: [PATCH v3 5/5] staging: ozwpan: Rename Kbuild to Makefile
-Date: Tue, 23 Jul 2013 13:45:03 +0100
-Message-ID: <1374583503-5642-6-git-send-email-rupesh.gujare@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20130722175535.GA3682@kroah.com>
-References: <20130722175535.GA3682@kroah.com>
+	Tue, 23 Jul 2013 08:45:38 -0400
+Date: Tue, 23 Jul 2013 14:45:25 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 8/8] watchdog: Remove hack to make full dynticks working
+Message-ID: <20130723124525.GA27075@twins.programming.kicks-ass.net>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
+ <20130723123331.GE126784@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723123331.GE126784@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+On Tue, Jul 23, 2013 at 08:33:31AM -0400, Don Zickus wrote:
+> On Tue, Jul 23, 2013 at 02:31:06AM +0200, Frederic Weisbecker wrote:
+> > A perf event can be used without forcing the tick to
+> > stay alive if it doesn't use a frequency but a sample
+> > period and if it doesn't throttle (raise storm of events).
+> > 
+> > Since the lockup detector neither use a perf event frequency
+> > nor should ever throttle due to its high period, it can now
+> > run concurrently with the full dynticks feature.
+> 
+> Thanks.  Dumb question, I keep wondering if the lockup detector would be
+> better or worse off if it used the perf event frequency as opposed to
+> using a sample period?  The idea is it could follow the varying cpu
+> frequencies better (and probably simplify some of the code too).
 
-Rename Kbuild to usual Makefile, consistent with
-Kernel build structure.
+Right, trouble is that someone didn't consider fractional frequencies
+when writing the interface :/ Lowest we can go is 1 Hz while we'd want
+something like 0.1 Hz or smaller.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
----
- drivers/staging/ozwpan/Kbuild   |   16 ----------------
- drivers/staging/ozwpan/Makefile |   16 ++++++++++++++++
- 2 files changed, 16 insertions(+), 16 deletions(-)
- delete mode 100644 drivers/staging/ozwpan/Kbuild
- create mode 100644 drivers/staging/ozwpan/Makefile
+Also, like the above says, that would interfere with the nohz efforts as
+perf needs the tick to re-compute those frequency thingies.
 
-diff --git a/drivers/staging/ozwpan/Kbuild b/drivers/staging/ozwpan/Kbuild
-deleted file mode 100644
-index 29529c1..0000000
---- a/drivers/staging/ozwpan/Kbuild
-+++ /dev/null
-@@ -1,16 +0,0 @@
--# -----------------------------------------------------------------------------
--# Copyright (c) 2011 Ozmo Inc
--# Released under the GNU General Public License Version 2 (GPLv2).
--# -----------------------------------------------------------------------------
--
--obj-$(CONFIG_USB_WPAN_HCD) += ozwpan.o
--ozwpan-y := \
--	ozmain.o \
--	ozpd.o \
--	ozusbsvc.o \
--	ozusbsvc1.o \
--	ozhcd.o \
--	ozeltbuf.o \
--	ozproto.o \
--	ozcdev.o \
--	ozurbparanoia.o
-diff --git a/drivers/staging/ozwpan/Makefile b/drivers/staging/ozwpan/Makefile
-new file mode 100644
-index 0000000..29529c1
---- /dev/null
-+++ b/drivers/staging/ozwpan/Makefile
-@@ -0,0 +1,16 @@
-+# -----------------------------------------------------------------------------
-+# Copyright (c) 2011 Ozmo Inc
-+# Released under the GNU General Public License Version 2 (GPLv2).
-+# -----------------------------------------------------------------------------
-+
-+obj-$(CONFIG_USB_WPAN_HCD) += ozwpan.o
-+ozwpan-y := \
-+	ozmain.o \
-+	ozpd.o \
-+	ozusbsvc.o \
-+	ozusbsvc1.o \
-+	ozhcd.o \
-+	ozeltbuf.o \
-+	ozproto.o \
-+	ozcdev.o \
-+	ozurbparanoia.o
--- 
-1.7.9.5
 
