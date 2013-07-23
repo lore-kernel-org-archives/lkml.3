@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934658Ab3GWWzN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:55:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41502 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934428Ab3GWW1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934496Ab3GWW1H (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Jul 2013 18:27:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41457 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934428Ab3GWW06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:26:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
+        Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 017/103] powerpc/perf: Rework disable logic in pmu_disable()
-Date: Tue, 23 Jul 2013 15:25:28 -0700
-Message-Id: <20130723220420.492517297@linuxfoundation.org>
+Subject: [ 005/103] powerpc/tm: Fix writing top half of MSR on 32 bit signals
+Date: Tue, 23 Jul 2013 15:25:16 -0700
+Message-Id: <20130723220419.172177103@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,103 +27,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Michael Neuling <mikey@neuling.org>
 
-commit 378a6ee99e4a431ec84e4e61893445c041c93007 upstream.
+commit 1d25f11fdbcc5390d68efd98c28900bfd29b264c upstream.
 
-In pmu_disable() we disable the PMU by setting the FC (Freeze Counters)
-bit in MMCR0. In order to do this we have to read/modify/write MMCR0.
+The MSR TM controls are in the top 32 bits of the MSR hence on 32 bit signals,
+we stick the top half of the MSR in the checkpointed signal context so that the
+user can access it.
 
-It's possible that we read a value from MMCR0 which has PMAO (PMU Alert
-Occurred) set. When we write that value back it will cause an interrupt
-to occur. We will then end up in the PMU interrupt handler even though
-we are supposed to have just disabled the PMU.
+Unfortunately, we don't currently write anything to the checkpointed signal
+context when coming in a from a non transactional process and hence the top MSR
+bits can contain junk.
 
-We can avoid this by making sure we never write PMAO back. We should not
-lose interrupts because when the PMU is re-enabled the overflowed values
-will cause another interrupt.
+This updates the 32 bit signal handling code to always write something to the
+top MSR bits so that users know if the process is transactional or not and the
+kernel can use it on signal return.
 
-We also reorder the clearing of SAMPLE_ENABLE so that is done after the
-PMU is frozen. Otherwise there is a small window between the clearing of
-SAMPLE_ENABLE and the setting of FC where we could take an interrupt and
-incorrectly see SAMPLE_ENABLE not set. This would for example change the
-logic in perf_read_regs().
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/core-book3s.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ arch/powerpc/kernel/signal_32.c |   29 +++++++++++++++++++++--------
+ 1 file changed, 21 insertions(+), 8 deletions(-)
 
---- a/arch/powerpc/perf/core-book3s.c
-+++ b/arch/powerpc/perf/core-book3s.c
-@@ -75,6 +75,7 @@ static unsigned int freeze_events_kernel
- 
- #define MMCR0_FCHV		0
- #define MMCR0_PMCjCE		MMCR0_PMCnCE
-+#define MMCR0_PMAO		0
- 
- #define SPRN_MMCRA		SPRN_MMCR2
- #define MMCRA_SAMPLE_ENABLE	0
-@@ -852,7 +853,7 @@ static void write_mmcr0(struct cpu_hw_ev
- static void power_pmu_disable(struct pmu *pmu)
+--- a/arch/powerpc/kernel/signal_32.c
++++ b/arch/powerpc/kernel/signal_32.c
+@@ -407,7 +407,8 @@ inline unsigned long copy_transact_fpr_f
+  * altivec/spe instructions at some point.
+  */
+ static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
+-		int sigret, int ctx_has_vsx_region)
++			  struct mcontext __user *tm_frame, int sigret,
++			  int ctx_has_vsx_region)
  {
- 	struct cpu_hw_events *cpuhw;
--	unsigned long flags;
-+	unsigned long flags, val;
+ 	unsigned long msr = regs->msr;
  
- 	if (!ppmu)
- 		return;
-@@ -860,9 +861,6 @@ static void power_pmu_disable(struct pmu
- 	cpuhw = &__get_cpu_var(cpu_hw_events);
+@@ -475,6 +476,12 @@ static int save_user_regs(struct pt_regs
  
- 	if (!cpuhw->disabled) {
--		cpuhw->disabled = 1;
--		cpuhw->n_added = 0;
--
- 		/*
- 		 * Check if we ever enabled the PMU on this cpu.
- 		 */
-@@ -872,6 +870,21 @@ static void power_pmu_disable(struct pmu
- 		}
- 
- 		/*
-+		 * Set the 'freeze counters' bit, clear PMAO.
-+		 */
-+		val  = mfspr(SPRN_MMCR0);
-+		val |= MMCR0_FC;
-+		val &= ~MMCR0_PMAO;
+ 	if (__put_user(msr, &frame->mc_gregs[PT_MSR]))
+ 		return 1;
++	/* We need to write 0 the MSR top 32 bits in the tm frame so that we
++	 * can check it on the restore to see if TM is active
++	 */
++	if (tm_frame && __put_user(0, &tm_frame->mc_gregs[PT_MSR]))
++		return 1;
 +
-+		/*
-+		 * The barrier is to make sure the mtspr has been
-+		 * executed and the PMU has frozen the events etc.
-+		 * before we return.
-+		 */
-+		write_mmcr0(cpuhw, val);
-+		mb();
-+
-+		/*
- 		 * Disable instruction sampling if it was enabled
- 		 */
- 		if (cpuhw->mmcr[2] & MMCRA_SAMPLE_ENABLE) {
-@@ -880,14 +893,8 @@ static void power_pmu_disable(struct pmu
- 			mb();
- 		}
- 
--		/*
--		 * Set the 'freeze counters' bit.
--		 * The barrier is to make sure the mtspr has been
--		 * executed and the PMU has frozen the events
--		 * before we return.
--		 */
--		write_mmcr0(cpuhw, mfspr(SPRN_MMCR0) | MMCR0_FC);
--		mb();
-+		cpuhw->disabled = 1;
-+		cpuhw->n_added = 0;
+ 	if (sigret) {
+ 		/* Set up the sigreturn trampoline: li r0,sigret; sc */
+ 		if (__put_user(0x38000000UL + sigret, &frame->tramp[0])
+@@ -952,6 +959,7 @@ int handle_rt_signal32(unsigned long sig
+ {
+ 	struct rt_sigframe __user *rt_sf;
+ 	struct mcontext __user *frame;
++	struct mcontext __user *tm_frame = NULL;
+ 	void __user *addr;
+ 	unsigned long newsp = 0;
+ 	int sigret;
+@@ -985,23 +993,24 @@ int handle_rt_signal32(unsigned long sig
  	}
- 	local_irq_restore(flags);
- }
+ 
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	tm_frame = &rt_sf->uc_transact.uc_mcontext;
+ 	if (MSR_TM_ACTIVE(regs->msr)) {
+-		if (save_tm_user_regs(regs, &rt_sf->uc.uc_mcontext,
+-				      &rt_sf->uc_transact.uc_mcontext, sigret))
++		if (save_tm_user_regs(regs, frame, tm_frame, sigret))
+ 			goto badframe;
+ 	}
+ 	else
+ #endif
+-		if (save_user_regs(regs, frame, sigret, 1))
++	{
++		if (save_user_regs(regs, frame, tm_frame, sigret, 1))
+ 			goto badframe;
++	}
+ 	regs->link = tramp;
+ 
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+ 	if (MSR_TM_ACTIVE(regs->msr)) {
+ 		if (__put_user((unsigned long)&rt_sf->uc_transact,
+ 			       &rt_sf->uc.uc_link)
+-		    || __put_user(to_user_ptr(&rt_sf->uc_transact.uc_mcontext),
+-				  &rt_sf->uc_transact.uc_regs))
++		    || __put_user((unsigned long)tm_frame, &rt_sf->uc_transact.uc_regs))
+ 			goto badframe;
+ 	}
+ 	else
+@@ -1170,7 +1179,7 @@ long sys_swapcontext(struct ucontext __u
+ 		mctx = (struct mcontext __user *)
+ 			((unsigned long) &old_ctx->uc_mcontext & ~0xfUL);
+ 		if (!access_ok(VERIFY_WRITE, old_ctx, ctx_size)
+-		    || save_user_regs(regs, mctx, 0, ctx_has_vsx_region)
++		    || save_user_regs(regs, mctx, NULL, 0, ctx_has_vsx_region)
+ 		    || put_sigset_t(&old_ctx->uc_sigmask, &current->blocked)
+ 		    || __put_user(to_user_ptr(mctx), &old_ctx->uc_regs))
+ 			return -EFAULT;
+@@ -1392,6 +1401,7 @@ int handle_signal32(unsigned long sig, s
+ {
+ 	struct sigcontext __user *sc;
+ 	struct sigframe __user *frame;
++	struct mcontext __user *tm_mctx = NULL;
+ 	unsigned long newsp = 0;
+ 	int sigret;
+ 	unsigned long tramp;
+@@ -1425,6 +1435,7 @@ int handle_signal32(unsigned long sig, s
+ 	}
+ 
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++	tm_mctx = &frame->mctx_transact;
+ 	if (MSR_TM_ACTIVE(regs->msr)) {
+ 		if (save_tm_user_regs(regs, &frame->mctx, &frame->mctx_transact,
+ 				      sigret))
+@@ -1432,8 +1443,10 @@ int handle_signal32(unsigned long sig, s
+ 	}
+ 	else
+ #endif
+-		if (save_user_regs(regs, &frame->mctx, sigret, 1))
++	{
++		if (save_user_regs(regs, &frame->mctx, tm_mctx, sigret, 1))
+ 			goto badframe;
++	}
+ 
+ 	regs->link = tramp;
+ 
 
 
