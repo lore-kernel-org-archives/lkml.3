@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934596Ab3GWW1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41549 "EHLO
+	id S934663Ab3GWW1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:27:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41589 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934553Ab3GWW1Q (ORCPT
+	with ESMTP id S934598Ab3GWW1X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:16 -0400
+	Tue, 23 Jul 2013 18:27:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 030/103] ALSA: hda - Fix the max length of control name in generic parser
-Date: Tue, 23 Jul 2013 15:25:41 -0700
-Message-Id: <20130723220421.922009398@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [ 040/103] hwmon: (nct6775) Drop unsupported fan alarm attributes for NCT6775
+Date: Tue, 23 Jul 2013 15:25:51 -0700
+Message-Id: <20130723220423.060251183@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,34 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 0c055b3413868227f2e85701c4e6938c9581f0e2 upstream.
+commit 41fa9a944fce1d7efd5ee3d50ac85b92f42dcc3d upstream.
 
-add_control_with_pfx() in hda_generic.c assumes a shorter name string
-for the control element, and this resulted in the truncation of the
-long but valid string like "Headphone Surround Switch" in the middle.
+NCT6775 does not support alarms for fans 4 and 5. Drop the attributes.
 
-This patch aligns the max size to the actual limit of snd_ctl_elem_id,
-44.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_generic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/hwmon/nct6775.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/sound/pci/hda/hda_generic.c
-+++ b/sound/pci/hda/hda_generic.c
-@@ -840,7 +840,7 @@ static int add_control_with_pfx(struct h
- 				const char *pfx, const char *dir,
- 				const char *sfx, int cidx, unsigned long val)
- {
--	char name[32];
-+	char name[44];
- 	snprintf(name, sizeof(name), "%s %s %s", pfx, dir, sfx);
- 	if (!add_control(spec, type, name, cidx, val))
- 		return -ENOMEM;
+--- a/drivers/hwmon/nct6775.c
++++ b/drivers/hwmon/nct6775.c
+@@ -199,7 +199,7 @@ static const s8 NCT6775_ALARM_BITS[] = {
+ 	0, 1, 2, 3, 8, 21, 20, 16,	/* in0.. in7 */
+ 	17, -1, -1, -1, -1, -1, -1,	/* in8..in14 */
+ 	-1,				/* unused */
+-	6, 7, 11, 10, 23,		/* fan1..fan5 */
++	6, 7, 11, -1, -1,		/* fan1..fan5 */
+ 	-1, -1, -1,			/* unused */
+ 	4, 5, 13, -1, -1, -1,		/* temp1..temp6 */
+ 	12, -1 };			/* intrusion0, intrusion1 */
+@@ -3877,10 +3877,12 @@ static int nct6775_probe(struct platform
+ 						 &sda_fan_input[i].dev_attr);
+ 			if (err)
+ 				goto exit_remove;
+-			err = device_create_file(dev,
+-						 &sda_fan_alarm[i].dev_attr);
+-			if (err)
+-				goto exit_remove;
++			if (data->ALARM_BITS[FAN_ALARM_BASE + i] >= 0) {
++				err = device_create_file(dev,
++						&sda_fan_alarm[i].dev_attr);
++				if (err)
++					goto exit_remove;
++			}
+ 			if (data->kind != nct6776 &&
+ 			    data->kind != nct6779) {
+ 				err = device_create_file(dev,
 
 
