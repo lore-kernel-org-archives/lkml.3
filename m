@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab3GWVEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49541 "EHLO mx1.redhat.com"
+	id S934217Ab3GWVEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:04:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40522 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754968Ab3GWVE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:04:28 -0400
-Date: Tue, 23 Jul 2013 22:59:09 +0200
+	id S1754968Ab3GWVEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:04:33 -0400
+Date: Tue, 23 Jul 2013 22:59:13 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -20,8 +20,9 @@ Cc: Alexander Z Lam <azl@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] tracing: Turn event/id->i_private into call->event.type
-Message-ID: <20130723205909.GA9055@redhat.com>
+Subject: [PATCH 2/6] tracing: Change event_enable/disable_read() to verify
+	i_private != NULL
+Message-ID: <20130723205913.GA9058@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,79 +32,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-event_id_read() is racy, ftrace_event_call can be already freed
-by trace_remove_event_call() callers.
+tracing_open_generic_file() is racy, ftrace_event_file can be
+already freed by rmdir or trace_remove_event_call().
 
-Change event_create_dir() to pass "data = call->event.type", this
-is all event_id_read() needs. ftrace_event_id_fops no longer needs
-tracing_open_generic().
+Change event_enable_read() and event_disable_read() to read and
+verify "file = i_private" under event_mutex.
 
-We add the new helper, event_file_data(), to read ->i_private, it
-will have more users.
-
-Note: currently ACCESS_ONCE() and "id != 0" check are not needed,
-but we are going to change event_remove/rmdir to clear ->i_mutex.
+This fixes nothing, but now we can change debugfs_remove("enable")
+callers to nullify ->i_private and fix the the problem.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_events.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
+ kernel/trace/trace_events.c |   32 ++++++++++++++++++++------------
+ 1 files changed, 20 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 76eed53..77990c4 100644
+index 77990c4..821768e 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -409,6 +409,11 @@ static void put_system(struct ftrace_subsystem_dir *dir)
- 	mutex_unlock(&event_mutex);
- }
- 
-+static void *event_file_data(struct file *filp)
-+{
-+	return ACCESS_ONCE(file_inode(filp)->i_private);
-+}
-+
- /*
-  * Open and update trace_array ref count.
-  * Must have the current trace_array passed to it.
-@@ -946,14 +951,17 @@ static int trace_format_open(struct inode *inode, struct file *file)
- static ssize_t
- event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+@@ -684,19 +684,28 @@ static ssize_t
+ event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 		  loff_t *ppos)
  {
--	struct ftrace_event_call *call = filp->private_data;
-+	int id = (long)event_file_data(filp);
- 	char buf[32];
- 	int len;
+-	struct ftrace_event_file *file = filp->private_data;
++	struct ftrace_event_file *file;
++	unsigned long flags;
+ 	char buf[4] = "0";
  
- 	if (*ppos)
- 		return 0;
- 
--	len = sprintf(buf, "%d\n", call->event.type);
-+	if (unlikely(!id))
+-	if (file->flags & FTRACE_EVENT_FL_ENABLED &&
+-	    !(file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
++	mutex_lock(&event_mutex);
++	file = event_file_data(filp);
++	if (likely(file))
++		flags = file->flags;
++	mutex_unlock(&event_mutex);
++
++	if (!file)
 +		return -ENODEV;
 +
-+	len = sprintf(buf, "%d\n", id);
- 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
++	if (flags & FTRACE_EVENT_FL_ENABLED &&
++	    !(flags & FTRACE_EVENT_FL_SOFT_DISABLED))
+ 		strcpy(buf, "1");
+ 
+-	if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
+-	    file->flags & FTRACE_EVENT_FL_SOFT_MODE)
++	if (flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
++	    flags & FTRACE_EVENT_FL_SOFT_MODE)
+ 		strcat(buf, "*");
+ 
+ 	strcat(buf, "\n");
+-
+ 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, strlen(buf));
  }
  
-@@ -1240,7 +1248,6 @@ static const struct file_operations ftrace_event_format_fops = {
- };
+@@ -704,13 +713,10 @@ static ssize_t
+ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+-	struct ftrace_event_file *file = filp->private_data;
++	struct ftrace_event_file *file;
+ 	unsigned long val;
+ 	int ret;
  
- static const struct file_operations ftrace_event_id_fops = {
--	.open = tracing_open_generic,
- 	.read = event_id_read,
- 	.llseek = default_llseek,
- };
-@@ -1488,8 +1495,8 @@ event_create_dir(struct dentry *parent,
+-	if (!file)
+-		return -EINVAL;
+-
+ 	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
+ 	if (ret)
+ 		return ret;
+@@ -722,8 +728,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	switch (val) {
+ 	case 0:
+ 	case 1:
++		ret = -ENODEV;
+ 		mutex_lock(&event_mutex);
+-		ret = ftrace_event_enable_disable(file, val);
++		file = event_file_data(filp);
++		if (likely(file))
++			ret = ftrace_event_enable_disable(file, val);
+ 		mutex_unlock(&event_mutex);
+ 		break;
  
- #ifdef CONFIG_PERF_EVENTS
- 	if (call->event.type && call->class->reg)
--		trace_create_file("id", 0444, file->dir, call,
--		 		  id);
-+		trace_create_file("id", 0444, file->dir,
-+				  (void *)(long)call->event.type, id);
- #endif
+@@ -732,7 +741,6 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	}
  
- 	/*
+ 	*ppos += cnt;
+-
+ 	return ret ? ret : cnt;
+ }
+ 
 -- 
 1.5.5.1
 
