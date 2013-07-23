@@ -1,73 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab3GWEZp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 00:25:45 -0400
-Received: from ozlabs.org ([203.10.76.45]:56611 "EHLO ozlabs.org"
+	id S1755019Ab3GWEZo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 00:25:44 -0400
+Received: from ozlabs.org ([203.10.76.45]:45365 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753399Ab3GWEZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753862Ab3GWEZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 00:25:40 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: monstr@monstr.eu
-Cc: Jens Axboe <axboe@kernel.dk>, LKML <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: scatterlist: sg_set_buf() argument must be in linear mapping (sha1: ac4e97abce9b80c020e7113325f49e58b7b15e3f)
-In-Reply-To: <51ED2C74.7050502@monstr.eu>
-References: <51E64C6B.3080306@monstr.eu> <87siz7xt4z.fsf@rustcorp.com.au> <51ED2C74.7050502@monstr.eu>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [QUERY] lguest64
+In-Reply-To: <51E97779.3020103@zytor.com>
+References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com> <51E97779.3020103@zytor.com>
 User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 23 Jul 2013 12:00:30 +0930
-Message-ID: <87ppua9feh.fsf@rustcorp.com.au>
+Date: Tue, 23 Jul 2013 10:58:06 +0930
+Message-ID: <87zjte9iah.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek <monstr@monstr.eu> writes:
-> + Ohad
->
-> On 07/22/2013 03:47 AM, Rusty Russell wrote:
->> Michal Simek <monstr@monstr.eu> writes:
->>> Hi Rusty and Jens,
->>>
->>> I am getting problem with your patch which you have added to the kernel.
->>> The problem is with my arm zynq remoteproc driver where
->>> I use dma_declare_coherent_memory() to specify memory for remoteproc
->>> which is ioremap to the vmalloc area.
->>>
->>> Based on that buf addr is not inside ram even this coherent memory is in ram.
->>> That's why virt_addr_valid(buf) is failing.
+"H. Peter Anvin" <hpa@zytor.com> writes:
+> On 07/19/2013 02:06 AM, Ramkumar Ramachandra wrote:
+>> Hi,
 >> 
->> But sg_set_buf() calls virt_to_page(buf).  So does that work?
+>> I tried building lguest to play with it, but was disappointed to find
+>> this in the Kconfig:
 >> 
->> I would think calling sg_set_page() directly would be what you want
->> here...
+>>   depends on X86_32
+>> 
+>> Why is this [1]?  What is so hard about supporting 64-bit machines?  I
+>> found a five-year old tree that claims to do lguest64 [2], but didn't
+>> investigate further.
+>> 
 >
-> Let me take some code from virtio_rpmsg_bus.c to show that problematic part.
+> Please don't have us deal with another lguest unless there is a use case
+> for it.  We want to reduce pvops and pvops users, not increase them...
 >
-> bufs_va = dma_alloc_coherent(vdev->dev.parent->parent,
-> 				RPMSG_TOTAL_BUF_SPACE,
-> 				&vrp->bufs_dma, GFP_KERNEL);
-> vrp->rbufs = bufs_va;
-> for (i = 0; i < RPMSG_NUM_BUFS / 2; i++) {
-> 	struct scatterlist sg;
-> 	void *cpu_addr = vrp->rbufs + i * RPMSG_BUF_SIZE;
->
-> 	sg_init_one(&sg, cpu_addr, RPMSG_BUF_SIZE);
-> }
+> 	-hpa
 
-Hmm.  Looking at arch/arm/include/asm/memory.h:
-
-#define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
-#define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >= PAGE_OFFSET && (unsigned long)(kaddr) < (unsigned long)high_memory)
-
-pfn_to_page in ARM seems to be the asm-generic one, which depends on
-CONFIG_SPARSEMEM/CONFIG_DISCONTIGMEM/CONFIG_FLATMEM etc.
-
-Perhaps virt_addr_valid() is wrong for your config?  It's pretty clear
-that you shouldn't call virt_to_page() on something for which
-!virt_addr_valid().
+Yes, the subset of x86-64 machines for which there isn't hardware
+virtualization support is pretty uninteresting.
 
 Cheers,
 Rusty.
