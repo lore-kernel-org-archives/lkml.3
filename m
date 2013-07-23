@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934937Ab3GWWcU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:32:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41875 "EHLO
+	id S935123Ab3GWWck (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:32:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41867 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934901Ab3GWW17 (ORCPT
+	with ESMTP id S934890Ab3GWW16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:59 -0400
+	Tue, 23 Jul 2013 18:27:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 093/103] perf: Clone child context from parent context pmu
-Date: Tue, 23 Jul 2013 15:26:44 -0700
-Message-Id: <20130723220431.842038561@linuxfoundation.org>
+        David Daney <david.daney@cavium.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [ 091/103] MIPS: Octeon: Dont clobber bootloader data structures.
+Date: Tue, 23 Jul 2013 15:26:42 -0700
+Message-Id: <20130723220431.420250347@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -31,85 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: David Daney <david.daney@cavium.com>
 
-commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
+commit d949b4fe6d23dd92b5fa48cbf7af90ca32beed2e upstream.
 
-Currently when the child context for inherited events is
-created, it's based on the pmu object of the first event
-of the parent context.
+Commit abe77f90dc (MIPS: Octeon: Add kexec and kdump support) added a
+bootmem region for the kernel image itself.  The problem is that this
+is rounded up to a 0x100000 boundary, which is memory that may not be
+owned by the kernel.  Depending on the kernel's configuration based
+size, this 'extra' memory may contain data passed from the bootloader
+to the kernel itself, which if clobbered makes the kernel crash in
+various ways.
 
-This is wrong for the following scenario:
+The fix: Quit rounding the size up, so that we only use memory
+assigned to the kernel.
 
-  - HW context having HW and SW event
-  - HW event got removed (closed)
-  - SW event stays in HW context as the only event
-    and its pmu is used to clone the child context
-
-The issue starts when the cpu context object is touched
-based on the pmu context object (__get_cpu_context). In
-this case the HW context will work with SW cpu context
-ending up with following WARN below.
-
-Fixing this by using parent context pmu object to clone
-from child context.
-
-Addresses the following warning reported by Vince Weaver:
-
-[ 2716.472065] ------------[ cut here ]------------
-[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
-[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
-[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
-[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
-[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
-[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
-[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
-[ 2716.476035] Call Trace:
-[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
-[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
-[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
-[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
-[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
-[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
-[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
-[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
-[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
-[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
-[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
-[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
-[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
-[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
-[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
-[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
-[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: David Daney <david.daney@cavium.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5449/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    2 +-
+ arch/mips/cavium-octeon/setup.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7228,7 +7228,7 @@ inherit_task_group(struct perf_event *ev
- 		 * child.
- 		 */
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -996,7 +996,7 @@ void __init plat_mem_setup(void)
+ 	cvmx_bootmem_unlock();
+ 	/* Add the memory region for the kernel. */
+ 	kernel_start = (unsigned long) _text;
+-	kernel_size = ALIGN(_end - _text, 0x100000);
++	kernel_size = _end - _text;
  
--		child_ctx = alloc_perf_context(event->pmu, child);
-+		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
- 		if (!child_ctx)
- 			return -ENOMEM;
- 
+ 	/* Adjust for physical offset. */
+ 	kernel_start &= ~0xffffffff80000000ULL;
 
 
