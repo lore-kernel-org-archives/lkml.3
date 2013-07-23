@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934867Ab3GWWlg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:41:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41742 "EHLO
+	id S934966Ab3GWWlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:41:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41739 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934709Ab3GWW1i (ORCPT
+	with ESMTP id S934608Ab3GWW1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:38 -0400
+	Tue, 23 Jul 2013 18:27:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 062/103] SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
-Date: Tue, 23 Jul 2013 15:26:13 -0700
-Message-Id: <20130723220425.679813150@linuxfoundation.org>
+Subject: [ 061/103] SCSI: aacraid: Fix for arrays are going offline in the system. System hangs
+Date: Tue, 23 Jul 2013 15:26:12 -0700
+Message-Id: <20130723220425.503774796@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -28,46 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
 
-commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
+commit c5bebd829dd95602c15f8da8cc50fa938b5e0254 upstream.
 
-FCP device remains in status ERP_FAILED when device is switched online
-or adapter recovery is triggered  while link to SAN is down.
+One of the customer had reported that the set of raid logical arrays will
+become unavailable (I/O offline) after a long hours of IO stress test.  The OS
+wouldn`t be accessible afterwards and require a hard reset.
 
-When Exchange Configuration Data command returns the FSF status
-FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
-The only retries are done during the common error recovery procedure
-(i.e. max. 3 retries with 8sec sleep between) and remains in status
-ERP_FAILED with QDIO down.
+This driver patch has a fix for race condition between the doorbell and the
+circular buffer. The driver is modified to do an extra read after clearing the
+doorbell in case there had been a completion posted during the small timing
+window.
 
-This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
-(zfcp: Fix adapter activation on link down).
-When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
-adapter recovery will be finished without any retries. QDIO will be
-up now and status changes such as LINK UP will be received now.
+With this fix, we ran IO stress for ~13 days. There were no IO failures.
 
-Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_fsf.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/scsi/aacraid/src.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -563,6 +563,10 @@ static void zfcp_fsf_exchange_config_dat
- 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
- 		adapter->hydra_version = 0;
+--- a/drivers/scsi/aacraid/src.c
++++ b/drivers/scsi/aacraid/src.c
+@@ -93,6 +93,9 @@ static irqreturn_t aac_src_intr_message(
+ 			int send_it = 0;
+ 			extern int aac_sync_mode;
  
-+		/* avoids adapter shutdown to be able to recognize
-+		 * events such as LINK UP */
-+		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
-+				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
- 		break;
++			src_writel(dev, MUnit.ODR_C, bellbits);
++			src_readl(dev, MUnit.ODR_C);
++
+ 			if (!aac_sync_mode) {
+ 				src_writel(dev, MUnit.ODR_C, bellbits);
+ 				src_readl(dev, MUnit.ODR_C);
 
 
