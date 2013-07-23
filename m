@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab3GWCCX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:02:23 -0400
-Received: from home.keithp.com ([63.227.221.253]:43592 "EHLO keithp.com"
+	id S1754507Ab3GWCCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:02:25 -0400
+Received: from home.keithp.com ([63.227.221.253]:43593 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752559Ab3GWCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754224Ab3GWCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 22 Jul 2013 22:02:19 -0400
 From: Keith Packard <keithp@keithp.com>
 To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
 Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 5/5] drm/i915: Add async page flip support for SNB
-Date: Mon, 22 Jul 2013 18:50:02 -0700
-Message-Id: <1374544202-15496-6-git-send-email-keithp@keithp.com>
+Subject: [PATCH 3/5] drm: Advertise async page flip ability through GETCAP ioctl
+Date: Mon, 22 Jul 2013 18:50:00 -0700
+Message-Id: <1374544202-15496-4-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374544202-15496-1-git-send-email-keithp@keithp.com>
 References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
@@ -19,81 +19,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just copies the IVB code
+Let applications know whether the kernel supports asynchronous page
+flipping.
 
 Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 39 ++++++++++++++++++++++++++++++++----
- 1 file changed, 35 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/drm_crtc.c  | 3 +++
+ drivers/gpu/drm/drm_ioctl.c | 3 +++
+ include/drm/drm_crtc.h      | 3 +++
+ include/uapi/drm/drm.h      | 1 +
+ 4 files changed, 10 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 1bcc6b4..9d7919b 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7463,20 +7463,51 @@ static int intel_gen6_queue_flip(struct drm_device *dev,
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
- 	uint32_t pf, pipesrc;
-+	uint32_t cmd;
-+	uint32_t base;
- 	int ret;
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 989072c..0909af6 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -3514,6 +3514,9 @@ int drm_mode_page_flip_ioctl(struct drm_device *dev,
+ 	    page_flip->reserved != 0)
+ 		return -EINVAL;
  
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
- 	if (ret)
- 		goto err;
- 
-+	cmd = MI_DISPLAY_FLIP | MI_DISPLAY_FLIP_PLANE(intel_crtc->plane);
-+	base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
++	if ((page_flip->flags & DRM_MODE_PAGE_FLIP_ASYNC) && !dev->mode_config.async_page_flip)
++		return -EINVAL;
 +
-+	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-+
-+		/* XXX check limitations for async flip here */
-+
-+		if (fb->pitches[0] != I915_READ(DSPSTRIDE(intel_crtc->plane))) {
-+			WARN_ONCE(1, "mismatching stride in async plane flip (%d != %d)\n",
-+				  fb->pitches[0], I915_READ(DSPSTRIDE(intel_crtc->plane)));
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+
-+		if (obj->tiling_mode != I915_TILING_X) {
-+			WARN_ONCE(1, "async plane flip requires X tiling\n");
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+
-+		if ((I915_READ(DSPCNTR(intel_crtc->plane)) & DISPPLANE_TILED) == 0) {
-+			WARN_ONCE(1, "display not currently tiled in async plane flip\n");
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+		
-+		cmd |= MI_DISPLAY_FLIP_ASYNC_INDICATOR;
-+		base |= MI_DISPLAY_FLIP_TYPE_ASYNC;
-+	}
-+
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
- 		goto err_unpin;
- 
--	intel_ring_emit(ring, MI_DISPLAY_FLIP |
--			MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
-+	intel_ring_emit(ring, cmd);
- 	intel_ring_emit(ring, fb->pitches[0] | obj->tiling_mode);
--	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
-+	intel_ring_emit(ring, base);
- 
- 	/* Contrary to the suggestions in the documentation,
- 	 * "Enable Panel Fitter" does not seem to be required when page
-@@ -9738,7 +9769,7 @@ void intel_modeset_init(struct drm_device *dev)
- 		dev->mode_config.max_height = 8192;
+ 	obj = drm_mode_object_find(dev, page_flip->crtc_id, DRM_MODE_OBJECT_CRTC);
+ 	if (!obj)
+ 		return -EINVAL;
+diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
+index ffd7a7b..7602177 100644
+--- a/drivers/gpu/drm/drm_ioctl.c
++++ b/drivers/gpu/drm/drm_ioctl.c
+@@ -303,6 +303,9 @@ int drm_getcap(struct drm_device *dev, void *data, struct drm_file *file_priv)
+ 	case DRM_CAP_TIMESTAMP_MONOTONIC:
+ 		req->value = drm_timestamp_monotonic;
+ 		break;
++	case DRM_CAP_ASYNC_PAGE_FLIP:
++		req->value = dev->mode_config.async_page_flip;
++		break;
+ 	default:
+ 		return -EINVAL;
  	}
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 0820ab6..13d215f 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -845,6 +845,9 @@ struct drm_mode_config {
  
--	if (IS_GEN7(dev))
-+	if (IS_GEN6(dev) || IS_GEN7(dev))
- 		dev->mode_config.async_page_flip = true;
+ 	/* dumb ioctl parameters */
+ 	uint32_t preferred_depth, prefer_shadow;
++
++	/* whether async page flip is supported or not */
++	bool async_page_flip;
+ };
  
- 	dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
+ #define obj_to_crtc(x) container_of(x, struct drm_crtc, base)
+diff --git a/include/uapi/drm/drm.h b/include/uapi/drm/drm.h
+index 238a166..2adfaa5 100644
+--- a/include/uapi/drm/drm.h
++++ b/include/uapi/drm/drm.h
+@@ -780,6 +780,7 @@ struct drm_event_vblank {
+ #define DRM_CAP_DUMB_PREFER_SHADOW 0x4
+ #define DRM_CAP_PRIME 0x5
+ #define DRM_CAP_TIMESTAMP_MONOTONIC 0x6
++#define DRM_CAP_ASYNC_PAGE_FLIP 0x7
+ 
+ #define DRM_PRIME_CAP_IMPORT 0x1
+ #define DRM_PRIME_CAP_EXPORT 0x2
 -- 
 1.8.3.2
 
