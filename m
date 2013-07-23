@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034Ab3GWOHb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 10:07:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41989 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932442Ab3GWOHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 10:07:30 -0400
-Date: Tue, 23 Jul 2013 16:07:29 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Don Zickus <dzickus@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC -v3 2/2] watchdog: update watchdog_tresh properly
-Message-ID: <20130723140729.GH8677@dhcp22.suse.cz>
-References: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
- <1374503566-2521-1-git-send-email-mhocko@suse.cz>
- <20130723135334.GF126784@redhat.com>
+	id S933145Ab3GWOOF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 10:14:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56444 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933068Ab3GWOOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 10:14:02 -0400
+Date: Tue, 23 Jul 2013 10:14:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Roger Quadros <rogerq@ti.com>
+cc: gregkh@linuxfoundation.org, <balbi@ti.com>,
+        <sergei.shtylyov@cogentembedded.com>, <khilman@linaro.org>,
+        <tony@atomide.com>, <ruslan.bilovol@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] USB: ehci-omap: Implement suspend/resume
+In-Reply-To: <51EE4A7C.2020709@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1307231009120.1304-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723135334.GF126784@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 23-07-13 09:53:34, Don Zickus wrote:
-> On Mon, Jul 22, 2013 at 04:32:46PM +0200, Michal Hocko wrote:
-> > The nmi one is disabled and then reinitialized from scratch. This
-> > has an unpleasant side effect that the allocation of the new event might
-> > fail theoretically so the hard lockup detector would be disabled for
-> > such cpus. On the other hand such a memory allocation failure is very
-> > unlikely because the original event is deallocated right before.
-> > It would be much nicer if we just changed perf event period but there
-> > doesn't seem to be any API to do that right now.
-> > It is also unfortunate that perf_event_alloc uses GFP_KERNEL allocation
-> > unconditionally so we cannot use on_each_cpu() and do the same thing
-> > from the per-cpu context. The update from the current CPU should be
-> > safe because perf_event_disable removes the event atomically before
-> > it clears the per-cpu watchdog_ev so it cannot change anything under
-> > running handler feet.
+On Tue, 23 Jul 2013, Roger Quadros wrote:
+
+> >> +               pm_runtime_get_sync(dev);
+> >> +               ehci_resume(hcd, false);
+> >> +               ret = ehci_suspend(hcd, do_wakeup);
+> >> +               pm_runtime_put_sync(dev);
+> > 
+> > It would be better to call pm_runtime_resume(dev) at the start instead
+> > of pm_runtime_get_sync(), and eliminate the last two lines.  Then the
+> > ehci_suspend() below could be moved outside the "if" statement.
 > 
-> I guess I don't have a problem with this.  I was hoping to have more
-> shared code with the regular stop/start routines but with the pmu bit
-> locking (to share pmus with oprofile), you really need to unregister
-> everything to stop the lockup detector.  This makes it a little too heavy
-> for a restart routine like this.
+> Why do I find pm_runtime_* so confusing ;)
 
-I am not sure I understand the above. Regular stop/start is about all
-the machinery, I have tried to reduce the restarting to bare minimum.
-Do you find the current version heavier than the full disable_all &&
-enable_all?
+It tries to provide every service anyone might want, and ends up being 
+confusingly large.
 
-> The only odd thing is I can't figure out which version you were using to
-> apply this patch.  I can't find old_thresh (though I understand the idea
-> of it).
+In this case, though, the reasoning is simple.  We know that after the 
+system resumes, the device will be back in the active state.  Hence 
+there's no point in calling pm_runtime_put_sync here, other than to 
+balance the _get_sync above.  Since there's no danger of another thread 
+trying to do a runtime suspend at this point, you don't need to 
+increment the usage counter.  Therefore pm_runtime_resume is good 
+enough.
 
-current Linus tree (linux-next - 20130723 - has it as well AFAICS)
- 
-> Cheers,
-> Don
--- 
-Michal Hocko
-SUSE Labs
+> > Alternatively, if you are able to turn off the wakeup setting without
+> > going through an entire resume/suspend cycle, that would be preferable.
+> > 
+> 
+> As we don't rely on the EHCI controller's interrupt any more after we
+> power it down, maybe ehci_resume/suspend cycle is not required at all on OMAP,
+> even if the wakeup setting is disabled during system suspend.
+> 
+> As the wakeup is controlled entirely by pad wakeup, all we need to do is make sure
+> the IO pad wakeup is configured correctly based on do_wakeup. How this is done
+> is still in transition but it might be turn out to be as simple as irq_set_irq_wake()
+> 
+> So IMHO, for ehci-omap this should suffice
+> 
+> static int omap_ehci_suspend(struct device *dev)
+> {
+> 	struct usb_hcd *hcd = dev_get_drvdata(dev);
+> 	bool do_wakeup = device_may_wakeup(dev);
+> 	int ret = 0;
+> 
+> 	if (!pm_runtime_status_suspended(dev))
+> 		ret = ehci_suspend(hcd, do_wakeup);
+> 
+> 	/* Not tested yet */
+> 	irq_set_irq_wake(hcd->irq, do_wakeup);
+> 
+> 	return ret;
+> }
+> 
+> What do you think?
+
+Nice and simple.  It looks good.
+
+> As the OMAP IO pad wakeup management code [1] is still in transition, I'll wait till
+> that gets settled and then resend this series.
+
+Okay.
+
+Alan Stern
+
