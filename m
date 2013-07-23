@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934723Ab3GWW1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41719 "EHLO
+	id S935040Ab3GWWlF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:41:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41755 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934684Ab3GWW1f (ORCPT
+	with ESMTP id S934684Ab3GWW1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:35 -0400
+	Tue, 23 Jul 2013 18:27:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 057/103] ath9k_hw: Assign default xlna config for AR9485
-Date: Tue, 23 Jul 2013 15:26:08 -0700
-Message-Id: <20130723220424.948279874@linuxfoundation.org>
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 065/103] SCSI: mpt2sas: fix firmware failure with wrong task attribute
+Date: Tue, 23 Jul 2013 15:26:16 -0700
+Message-Id: <20130723220426.316016790@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,55 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
 
-commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 upstream.
+commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
 
-For AR9485 boards with XLNA, the default gpio config
-is not set correctly, fix this.
+When SCSI command is received with task attribute not set, set it to SIMPLE.
+Previously it is set to untagged. This causes the firmware to fail the commands.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++++--
- drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 ++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
-@@ -3563,14 +3563,18 @@ static void ar9003_hw_ant_ctrl_apply(str
- {
- 	struct ath9k_hw_capabilities *pCap = &ah->caps;
- 	int chain;
--	u32 regval;
-+	u32 regval, value;
- 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
- 			AR_PHY_SWITCH_CHAIN_0,
- 			AR_PHY_SWITCH_CHAIN_1,
- 			AR_PHY_SWITCH_CHAIN_2,
- 	};
- 
--	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
-+	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
-+		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
-+				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
-+
-+	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
- 
- 	if (AR_SREV_9462(ah) || AR_SREV_9565(ah)) {
- 		REG_RMW_FIELD(ah, AR_PHY_SWITCH_COM,
---- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
-@@ -351,6 +351,8 @@
- 
- #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
- 
-+#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
-+
- /*
-  * AGC Field Definitions
-  */
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3994,11 +3994,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
+ 			else
+ 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 		} else
+-/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
+-/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
+- */
+-			mpi_control |= (0x500);
+-
++			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	} else
+ 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	/* Make sure Device is not raid volume.
 
 
