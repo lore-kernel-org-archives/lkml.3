@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934391Ab3GWWiN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:38:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41804 "EHLO
+	id S935216Ab3GWWim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:38:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934783Ab3GWW1s (ORCPT
+	with ESMTP id S934762Ab3GWW1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:48 -0400
+	Tue, 23 Jul 2013 18:27:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jonghwan Choi <jhbird.choi@gmail.com>
-Subject: [ 077/103] of: Fix address decoding on Bimini and js2x machines
-Date: Tue, 23 Jul 2013 15:26:28 -0700
-Message-Id: <20130723220428.466056522@linuxfoundation.org>
+        ybu <ybu@qti.qualcomm.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 072/103] printk: Fix rq->lock vs logbuf_lock unlock lock inversion
+Date: Tue, 23 Jul 2013 15:26:23 -0700
+Message-Id: <20130723220427.612031552@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -29,48 +27,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: "Bu, Yitian" <ybu@qti.qualcomm.com>
 
-commit 6dd18e4684f3d188277bbbc27545248487472108 upstream.
+commit dbda92d16f8655044e082930e4e9d244b87fde77 upstream.
 
- Commit:
+commit 07354eb1a74d1 ("locking printk: Annotate logbuf_lock as raw")
+reintroduced a lock inversion problem which was fixed in commit
+0b5e1c5255 ("printk: Release console_sem after logbuf_lock"). This
+happened probably when fixing up patch rejects.
 
-  e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7
-  of/address: Handle #address-cells > 2 specially
+Restore the ordering and unlock logbuf_lock before releasing
+console_sem.
 
-broke real time clock access on Bimini, js2x, and similar powerpc
-machines using the "maple" platform. That code was indirectly relying
-on the old (broken) behaviour of the translation for the hypertransport
-to ISA bridge.
-
-This fixes it by treating hypertransport as a PCI bus
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
-Cc: Jonghwan Choi <jhbird.choi@gmail.com>
+Signed-off-by: ybu <ybu@qti.qualcomm.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/E807E903FE6CBE4D95E420FBFCC273B827413C@nasanexd01h.na.qualcomm.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/of/address.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ kernel/printk.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -106,8 +106,12 @@ static unsigned int of_bus_default_get_f
- 
- static int of_bus_pci_match(struct device_node *np)
- {
--	/* "vci" is for the /chaos bridge on 1st-gen PCI powermacs */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
-+	/*
-+	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
-+	 * "ht" is hypertransport
-+	 */
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
-+		!strcmp(np->type, "ht");
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1369,9 +1369,9 @@ static int console_trylock_for_printk(un
+ 		}
+ 	}
+ 	logbuf_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	if (wake)
+ 		up(&console_sem);
+-	raw_spin_unlock(&logbuf_lock);
+ 	return retval;
  }
  
- static void of_bus_pci_count_cells(struct device_node *np,
 
 
