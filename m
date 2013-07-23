@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934973Ab3GWW2N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:28:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41924 "EHLO
+	id S934958Ab3GWW2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:28:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934922Ab3GWW2F (ORCPT
+	with ESMTP id S934342Ab3GWW2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:05 -0400
+	Tue, 23 Jul 2013 18:28:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Lam <azl@google.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 101/103] tracing: Get trace_array ref counts when accessing trace files
-Date: Tue, 23 Jul 2013 15:26:52 -0700
-Message-Id: <20130723220433.507987675@linuxfoundation.org>
+        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Alexander Z Lam <lambchop468@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 098/103] tracing: Make trace_marker use the correct per-instance buffer
+Date: Tue, 23 Jul 2013 15:26:49 -0700
+Message-Id: <20130723220432.931683311@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,279 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Alexander Z Lam <azl@google.com>
 
-commit 7b85af63034818e43aee6c1d7bf1c7c6796a9073 upstream.
+commit 2d71619c59fac95a5415a326162fa046161b938c upstream.
 
-When a trace file is opened that may access a trace array, it must
-increment its ref count to prevent it from being deleted.
+The trace_marker file was present for each new instance created, but it
+added the trace mark to the global trace buffer instead of to
+the instance's buffer.
 
-Reported-by: Alexander Lam <azl@google.com>
+Link: http://lkml.kernel.org/r/1372717885-4543-2-git-send-email-azl@google.com
+
+Signed-off-by: Alexander Z Lam <azl@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Alexander Z Lam <lambchop468@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |  121 +++++++++++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 112 insertions(+), 9 deletions(-)
+ kernel/trace/trace.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -2902,6 +2902,43 @@ int tracing_open_generic(struct inode *i
- 	return 0;
- }
- 
-+/*
-+ * Open and update trace_array ref count.
-+ * Must have the current trace_array passed to it.
-+ */
-+int tracing_open_generic_tr(struct inode *inode, struct file *filp)
-+{
-+	struct trace_array *tr = inode->i_private;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
-+	filp->private_data = inode->i_private;
-+
-+	return 0;
-+
-+}
-+
-+int tracing_open_generic_tc(struct inode *inode, struct file *filp)
-+{
-+	struct trace_cpu *tc = inode->i_private;
-+	struct trace_array *tr = tc->tr;
-+
-+	if (tracing_disabled)
-+		return -ENODEV;
-+
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
-+	filp->private_data = inode->i_private;
-+
-+	return 0;
-+
-+}
-+
- static int tracing_release(struct inode *inode, struct file *file)
+@@ -4328,6 +4328,7 @@ tracing_mark_write(struct file *filp, co
+ 					size_t cnt, loff_t *fpos)
  {
- 	struct seq_file *m = file->private_data;
-@@ -2945,6 +2982,32 @@ static int tracing_release(struct inode
- 	return 0;
- }
+ 	unsigned long addr = (unsigned long)ubuf;
++	struct trace_array *tr = filp->private_data;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+ 	struct print_entry *entry;
+@@ -4387,7 +4388,7 @@ tracing_mark_write(struct file *filp, co
  
-+static int tracing_release_generic_tr(struct inode *inode, struct file *file)
-+{
-+	struct trace_array *tr = inode->i_private;
-+
-+	trace_array_put(tr);
-+	return 0;
-+}
-+
-+static int tracing_release_generic_tc(struct inode *inode, struct file *file)
-+{
-+	struct trace_cpu *tc = inode->i_private;
-+	struct trace_array *tr = tc->tr;
-+
-+	trace_array_put(tr);
-+	return 0;
-+}
-+
-+static int tracing_single_release_tr(struct inode *inode, struct file *file)
-+{
-+	struct trace_array *tr = inode->i_private;
-+
-+	trace_array_put(tr);
-+
-+	return single_release(inode, file);
-+}
-+
- static int tracing_open(struct inode *inode, struct file *file)
- {
- 	struct trace_cpu *tc = inode->i_private;
-@@ -3331,9 +3394,14 @@ tracing_trace_options_write(struct file
- 
- static int tracing_trace_options_open(struct inode *inode, struct file *file)
- {
-+	struct trace_array *tr = inode->i_private;
-+
- 	if (tracing_disabled)
- 		return -ENODEV;
- 
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
- 	return single_open(file, tracing_trace_options_show, inode->i_private);
- }
- 
-@@ -3341,7 +3409,7 @@ static const struct file_operations trac
- 	.open		= tracing_trace_options_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= single_release,
-+	.release	= tracing_single_release_tr,
- 	.write		= tracing_trace_options_write,
- };
- 
-@@ -3829,6 +3897,9 @@ static int tracing_open_pipe(struct inod
- 	if (tracing_disabled)
- 		return -ENODEV;
- 
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
- 	mutex_lock(&trace_types_lock);
- 
- 	/* create a buffer to store the information to pass to userspace */
-@@ -3881,6 +3952,7 @@ out:
- fail:
- 	kfree(iter->trace);
- 	kfree(iter);
-+	__trace_array_put(tr);
- 	mutex_unlock(&trace_types_lock);
- 	return ret;
- }
-@@ -3888,6 +3960,8 @@ fail:
- static int tracing_release_pipe(struct inode *inode, struct file *file)
- {
- 	struct trace_iterator *iter = file->private_data;
-+	struct trace_cpu *tc = inode->i_private;
-+	struct trace_array *tr = tc->tr;
- 
- 	mutex_lock(&trace_types_lock);
- 
-@@ -3901,6 +3975,8 @@ static int tracing_release_pipe(struct i
- 	kfree(iter->trace);
- 	kfree(iter);
- 
-+	trace_array_put(tr);
-+
- 	return 0;
- }
- 
-@@ -4358,6 +4434,8 @@ tracing_free_buffer_release(struct inode
- 	/* resize the ring buffer to 0 */
- 	tracing_resize_ring_buffer(tr, 0, RING_BUFFER_ALL_CPUS);
- 
-+	trace_array_put(tr);
-+
- 	return 0;
- }
- 
-@@ -4534,10 +4612,20 @@ static ssize_t tracing_clock_write(struc
- 
- static int tracing_clock_open(struct inode *inode, struct file *file)
- {
-+	struct trace_array *tr = inode->i_private;
-+	int ret;
-+
- 	if (tracing_disabled)
- 		return -ENODEV;
- 
--	return single_open(file, tracing_clock_show, inode->i_private);
-+	if (trace_array_get(tr))
-+		return -ENODEV;
-+
-+	ret = single_open(file, tracing_clock_show, inode->i_private);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+
-+	return ret;
- }
- 
- struct ftrace_buffer_info {
-@@ -4733,34 +4821,38 @@ static const struct file_operations trac
- };
- 
- static const struct file_operations tracing_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tc,
- 	.read		= tracing_entries_read,
- 	.write		= tracing_entries_write,
- 	.llseek		= generic_file_llseek,
-+	.release	= tracing_release_generic_tc,
- };
- 
- static const struct file_operations tracing_total_entries_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tr,
- 	.read		= tracing_total_entries_read,
- 	.llseek		= generic_file_llseek,
-+	.release	= tracing_release_generic_tr,
- };
- 
- static const struct file_operations tracing_free_buffer_fops = {
-+	.open		= tracing_open_generic_tr,
- 	.write		= tracing_free_buffer_write,
- 	.release	= tracing_free_buffer_release,
- };
- 
- static const struct file_operations tracing_mark_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tr,
- 	.write		= tracing_mark_write,
- 	.llseek		= generic_file_llseek,
-+	.release	= tracing_release_generic_tr,
- };
- 
- static const struct file_operations trace_clock_fops = {
- 	.open		= tracing_clock_open,
- 	.read		= seq_read,
- 	.llseek		= seq_lseek,
--	.release	= single_release,
-+	.release	= tracing_single_release_tr,
- 	.write		= tracing_clock_write,
- };
- 
-@@ -4788,13 +4880,19 @@ static int tracing_buffers_open(struct i
- 	struct trace_cpu *tc = inode->i_private;
- 	struct trace_array *tr = tc->tr;
- 	struct ftrace_buffer_info *info;
-+	int ret;
- 
- 	if (tracing_disabled)
- 		return -ENODEV;
- 
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
- 	info = kzalloc(sizeof(*info), GFP_KERNEL);
--	if (!info)
-+	if (!info) {
-+		trace_array_put(tr);
- 		return -ENOMEM;
-+	}
- 
- 	mutex_lock(&trace_types_lock);
- 
-@@ -4812,7 +4910,11 @@ static int tracing_buffers_open(struct i
- 
- 	mutex_unlock(&trace_types_lock);
- 
--	return nonseekable_open(inode, filp);
-+	ret = nonseekable_open(inode, filp);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+
-+	return ret;
- }
- 
- static unsigned int
-@@ -5707,9 +5809,10 @@ rb_simple_write(struct file *filp, const
- }
- 
- static const struct file_operations rb_simple_fops = {
--	.open		= tracing_open_generic,
-+	.open		= tracing_open_generic_tr,
- 	.read		= rb_simple_read,
- 	.write		= rb_simple_write,
-+	.release	= tracing_release_generic_tr,
- 	.llseek		= default_llseek,
- };
- 
+ 	local_save_flags(irq_flags);
+ 	size = sizeof(*entry) + cnt + 2; /* possible \n added */
+-	buffer = global_trace.trace_buffer.buffer;
++	buffer = tr->trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, size,
+ 					  irq_flags, preempt_count());
+ 	if (!event) {
 
 
