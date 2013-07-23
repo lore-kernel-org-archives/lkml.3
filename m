@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934787Ab3GWWqI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:46:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41649 "EHLO
+	id S934654Ab3GWWqJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:46:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934630Ab3GWW13 (ORCPT
+	with ESMTP id S934626Ab3GWW12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:29 -0400
+	Tue, 23 Jul 2013 18:27:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oskar Schirmer <oskar@scara.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 048/103] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
-Date: Tue, 23 Jul 2013 15:25:59 -0700
-Message-Id: <20130723220423.935353938@linuxfoundation.org>
+        Mark Brown <broonie@linaro.org>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 047/103] ASoC: atmel: Fix unlocked snd_pcm_stop() call
+Date: Tue, 23 Jul 2013 15:25:58 -0700
+Message-Id: <20130723220423.816958744@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -28,32 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
+commit 571185717f8d7f2a088a7ac38d94a9ad5fd9da5c upstream.
 
-SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
-register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
+snd_pcm_stop() must be called in the PCM substream lock context.
 
-Reported-by: Oskar Schirmer <oskar@scara.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/sgtl5000.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/atmel/atmel-pcm-dma.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -347,7 +347,7 @@
- #define SGTL5000_PLL_INT_DIV_MASK		0xf800
- #define SGTL5000_PLL_INT_DIV_SHIFT		11
- #define SGTL5000_PLL_INT_DIV_WIDTH		5
--#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-+#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
- #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
- #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
+--- a/sound/soc/atmel/atmel-pcm-dma.c
++++ b/sound/soc/atmel/atmel-pcm-dma.c
+@@ -81,7 +81,9 @@ static void atmel_pcm_dma_irq(u32 ssc_sr
  
+ 		/* stop RX and capture: will be enabled again at restart */
+ 		ssc_writex(prtd->ssc->regs, SSC_CR, prtd->mask->ssc_disable);
++		snd_pcm_stream_lock(substream);
+ 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
++		snd_pcm_stream_unlock(substream);
+ 
+ 		/* now drain RHR and read status to remove xrun condition */
+ 		ssc_readx(prtd->ssc->regs, SSC_RHR);
 
 
