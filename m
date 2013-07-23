@@ -1,130 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab3GWBd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 21:33:58 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:60583 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3GWBdx (ORCPT
+	id S1753949Ab3GWBfY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 21:35:24 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:48323 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab3GWBfX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 21:33:53 -0400
+	Mon, 22 Jul 2013 21:35:23 -0400
+X-Greylist: delayed 1174 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Jul 2013 21:35:22 EDT
+Date: Tue, 23 Jul 2013 11:15:46 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] input/uinput: add UI_GET_SYSPATH ioctl to
+ retrieve the sysfs path
+Message-ID: <20130723011546.GB9302@yabbi.HOME>
+References: <1373895429-8846-1-git-send-email-benjamin.tissoires@redhat.com>
+ <1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo5=-32QSZ_RtLgU_67gMF6RVcnTAG6oKJ_Uz7uf4pXRkA@mail.gmail.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372860295-8306-2-git-send-email-mika.westerberg@linux.intel.com>
- <CAErSpo7=ed3=P7ab9zYB23qnwe8Z-ghRfCEurskpcNW5m86j8g@mail.gmail.com> <CAErSpo5=-32QSZ_RtLgU_67gMF6RVcnTAG6oKJ_Uz7uf4pXRkA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 22 Jul 2013 19:33:32 -0600
-Message-ID: <CAErSpo7_baKXuc9Y1q=s7DBEGg7ovRhC9to63cahs97MjADQaQ@mail.gmail.com>
-Subject: Re: [PATCH v2 1/8] x86/PCI: prevent re-allocation of already existing
- bridge and ROM resources
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Tue, 23 Jul 2013 10:45:40 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 7:18 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Mon, Jul 22, 2013 at 6:08 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Wed, Jul 3, 2013 at 8:04 AM, Mika Westerberg
->> <mika.westerberg@linux.intel.com> wrote:
->>> In hotplug case (especially with Thunderbolt enabled systems) we might need
->>> to call pcibios_resource_survey_bus() several times for a bus. The function
->>> ends up calling pci_claim_resource() for each bridge resource that then
->>> fails claiming that the resource exists already (which it does). Once this
->>> happens the resource is invalidated thus preventing devices behind the
->>> bridge to allocate their resources.
->>>
->>> To fix this we do what has been done in pcibios_allocate_dev_resources()
->>> and check 'parent' of the given resource. If it is non-NULL it means that
->>> the resource has been allocated already and we can skip it. We do the same
->>> for ROM resources as well.
->>>
->>> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->>
->> This looks reasonable to me.
->
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
->
->> However, the use of "r->parent" to determine whether the resource is
->> already allocated is nothing specific to x86.  So I think we might be
->> missing an opportunity to make this more consistent across
->> architectures.  I looked at other callers of pci_claim_resource() for
->> bridge and ROM resources, and it looks like we might be able to make
->> similar changes in:
->>
->>   frv pcibios_allocate_bus_resources()
->>   ia64 pcibios_fixup_resources() (via pcibios_fixup_bridge_resources())
->>   mn10300 pcibios_allocate_bus_resources()
->>   mn10300 pcibios_assign_resources() (ROM)
->>   mn10300 pcibios_fixup_device_resources()
->>   parisc lba_fixup_bus()
->>
->> I really hate the idea of fixing something for x86 but not for other
->> arches, so maybe somebody could take a deeper look at this and see if
->> it would make sense to change the other arches, too.
+On Mon, Jul 15, 2013 at 03:37:09PM +0200, Benjamin Tissoires wrote:
+> Evemu [1] uses uinput to replay devices traces it has recorded. However,
+> the way evemu uses uinput is slightly different from how uinput is
+> supposed to be used.
+> Evemu creates the device node through uinput, bu inject events through
+> the input device node directly (and skipping the uinput node).
+> 
+> Currently, evemu relies on an heuristic to guess which input node was
+> created. The problem is that is heuristic is subjected to races between
+> different uinput devices or even with physical devices. Having a way
+> to retrieve the sysfs path allows us to find the event node without
+> having to rely on this heuristic.
+> 
+> [1] http://www.freedesktop.org/wiki/Evemu/
+> 
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 
-I misspoke here.  The change below helps fix an issue on x86.  It's
-only an issue on x86 because only x86 has acpiphp and
-pcibios_resource_survey_bus().  Other arches *do* call
-pci_claim_resource(), but making similar changes on other arches does
-not fix similar issues there, so it's not really a matter of "fixing
-only x86."
+Tested-by: Peter Hutterer <peter.hutterer@who-t.net>
 
-My motivation is to move toward unification of how we claim resources.
- There's nothing inherently arch-specific about calling
-pci_claim_resource(), but arches use a variety of tests involving
-"r->flags", "r->parent", and "r->start" to decide whether to do so.
-Ideally we would call pci_claim_resource() from the core, not from
-arch code, and we would use a set of tests that work for all arches
-and situations.
+I'd really appreciate a comment above the ioctl define stating what the
+ioctl actually returns. only comment regarding the code:
 
-We can always do the minimum of changing only what's absolutely
-required, but the result is divergence and increased maintenance work
-in the long term.  I'm trying to counter that a little bit by
-encouraging people to consider refactorings that fix the current issue
-while reducing maintenance effort.
+> +static int uinput_str_to_user(const char *str, unsigned int maxlen,
+> +			      void __user *p)
 
-Bjorn
+I'd do this with a signature of the type (dest, src, len).
 
->>> ---
->>>  arch/x86/pci/i386.c | 4 ++++
->>>  1 file changed, 4 insertions(+)
->>>
->>> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
->>> index 94919e3..db6b1ab 100644
->>> --- a/arch/x86/pci/i386.c
->>> +++ b/arch/x86/pci/i386.c
->>> @@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
->>>                 r = &dev->resource[idx];
->>>                 if (!r->flags)
->>>                         continue;
->>> +               if (r->parent)  /* Already allocated */
->>> +                       continue;
->>>                 if (!r->start || pci_claim_resource(dev, idx) < 0) {
->>>                         /*
->>>                          * Something is wrong with the region.
->>> @@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
->>>         r = &dev->resource[PCI_ROM_RESOURCE];
->>>         if (!r->flags || !r->start)
->>>                 return;
->>> +       if (r->parent) /* Already allocated */
->>> +               return;
->>>
->>>         if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
->>>                 r->end -= r->start;
->>> --
->>> 1.8.3.2
->>>
+Cheers,
+   Peter
+
+> ---
+>  drivers/input/misc/uinput.c | 37 ++++++++++++++++++++++++++++++++++++-
+>  include/linux/uinput.h      |  1 +
+>  include/uapi/linux/uinput.h |  3 +++
+>  3 files changed, 40 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+> index 7d518b4..49a9f7d 100644
+> --- a/drivers/input/misc/uinput.c
+> +++ b/drivers/input/misc/uinput.c
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *		- update uinput_user_dev struct to allow abs resolution
+> + *		- add UI_GET_SYSPATH ioctl
+>   *	0.3	09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
+>   *		- updated ff support for the changes in kernel interface
+>   *		- added MODULE_VERSION
+> @@ -667,6 +668,21 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
+>  	__ret;						\
+>  })
+>  
+> +static int uinput_str_to_user(const char *str, unsigned int maxlen,
+> +			      void __user *p)
+> +{
+> +	int len;
+> +
+> +	if (!str)
+> +		return -ENOENT;
+> +
+> +	len = strlen(str) + 1;
+> +	if (len > maxlen)
+> +		len = maxlen;
+> +
+> +	return copy_to_user(p, str, len) ? -EFAULT : len;
+> +}
+> +
+>  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>  				 unsigned long arg, void __user *p)
+>  {
+> @@ -676,6 +692,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>  	struct uinput_ff_erase  ff_erase;
+>  	struct uinput_request   *req;
+>  	char			*phys;
+> +	const char		*path;
+> +	unsigned int		size;
+>  
+>  	retval = mutex_lock_interruptible(&udev->mutex);
+>  	if (retval)
+> @@ -828,7 +846,24 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>  			break;
+>  
+>  		default:
+> -			retval = -EINVAL;
+> +			retval = -EAGAIN;
+> +	}
+> +
+> +	if (retval == -EAGAIN) {
+> +		size = _IOC_SIZE(cmd);
+> +
+> +		/* Now check variable-length commands */
+> +		switch (cmd & ~IOCSIZE_MASK) {
+> +			case UI_GET_SYSPATH(0):
+> +				path = kobject_get_path(&udev->dev->dev.kobj,
+> +							GFP_KERNEL);
+> +				retval = uinput_str_to_user(path, size, p);
+> +				kfree(path);
+> +				break;
+> +
+> +			default:
+> +				retval = -EINVAL;
+> +		}
+>  	}
+>  
+>   out:
+> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+> index 6291a22..64fab81 100644
+> --- a/include/linux/uinput.h
+> +++ b/include/linux/uinput.h
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *		- update uinput_user_dev struct to allow abs resolution
+> + *		- add UI_GET_SYSPATH ioctl
+>   *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>   *		- update ff support for the changes in kernel interface
+>   *		- add UINPUT_VERSION
+> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+> index f6a393b..d826409 100644
+> --- a/include/uapi/linux/uinput.h
+> +++ b/include/uapi/linux/uinput.h
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *	0.4	12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *		- update uinput_user_dev struct to allow abs resolution
+> + *		- add UI_GET_SYSPATH ioctl
+>   *	0.3	24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>   *		- update ff support for the changes in kernel interface
+>   *		- add UINPUT_VERSION
+> @@ -75,6 +76,8 @@ struct uinput_ff_erase {
+>  #define UI_BEGIN_FF_ERASE	_IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
+>  #define UI_END_FF_ERASE		_IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
+>  
+> +#define UI_GET_SYSPATH(len)	_IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
+> +
+>  /*
+>   * To write a force-feedback-capable driver, the upload_effect
+>   * and erase_effect callbacks in input_dev must be implemented.
+> -- 
+> 1.8.3.1
+> 
