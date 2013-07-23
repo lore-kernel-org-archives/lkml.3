@@ -1,95 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078Ab3GWHwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:52:39 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:42719 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754958Ab3GWHwi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:52:38 -0400
-Date: Tue, 23 Jul 2013 08:52:32 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Simon Horman <horms@verge.net.au>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com
-Subject: Re: [PATCH 19/22] ARM: shmobile: r8a7779: Remove '0x's from R8A7779
- DTS file
-Message-ID: <20130723075232.GD26801@laptop>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-19-git-send-email-lee.jones@linaro.org>
- <20130723013343.GG16481@verge.net.au>
+	id S1755356Ab3GWHww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:52:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:25077 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754320Ab3GWHwu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 03:52:50 -0400
+X-IronPort-AV: E=Sophos;i="4.89,725,1367942400"; 
+   d="scan'208";a="7989341"
+Message-ID: <51EE36F3.2010308@cn.fujitsu.com>
+Date: Tue, 23 Jul 2013 15:55:31 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130723013343.GG16481@verge.net.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ingo Molnar <mingo@kernel.org>
+CC: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] x86, acpi: Fix wrong checking condition in acpi_register_lapic().
+References: <1374543541-4451-1-git-send-email-tangchen@cn.fujitsu.com> <20130723073950.GB13710@gmail.com>
+In-Reply-To: <20130723073950.GB13710@gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 15:50:45,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 15:50:47,
+	Serialize complete at 2013/07/23 15:50:47
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013, Simon Horman wrote:
+On 07/23/2013 03:39 PM, Ingo Molnar wrote:
+>
+> * Tang Chen<tangchen@cn.fujitsu.com>  wrote:
+>
+>> We wanted to check if the acpi id is out of range. It should be:
+>> 	if (id>= (MAX_LOCAL_APIC)).
+>
+> Does this have any practical impact, or can it wait until v3.12?
 
-> On Mon, Jul 22, 2013 at 11:52:38AM +0100, Lee Jones wrote:
-> > Cc: Simon Horman <horms+renesas@verge.net.au>
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> Acked-by: Simon Horman <horms+renesas@verge.net.au>
-> 
-> Let me know if you want me to take this through the renesas tree.
+I haven't tested out any impact now, just found it when reading the code.
+We can wait until v3.12.
 
-Thanks Simon. To save on conflicts, I think that's best.
+>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> ---
+>>   arch/x86/kernel/acpi/boot.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+>> index d81a972..2a15ae7 100644
+>> --- a/arch/x86/kernel/acpi/boot.c
+>> +++ b/arch/x86/kernel/acpi/boot.c
+>> @@ -199,7 +199,7 @@ static void __cpuinit acpi_register_lapic(int id, u8 enabled)
+>>   {
+>>   	unsigned int ver = 0;
+>>
+>> -	if (id>= (MAX_LOCAL_APIC-1)) {
+>> +	if (id>= (MAX_LOCAL_APIC)) {
+>
+> The parentheses are now superfluous.
 
-I will take all orphaned patches or ones without maintainers associated
-with them through ARM SoC, but if you can take it, please do.
+Oh, yes. I'll send a new version without the parentheses.
 
-> > ---
-> >  arch/arm/boot/dts/r8a7779.dtsi | 8 ++++----
-> >  1 file changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/r8a7779.dtsi b/arch/arm/boot/dts/r8a7779.dtsi
-> > index 7f146c6..86bd487 100644
-> > --- a/arch/arm/boot/dts/r8a7779.dtsi
-> > +++ b/arch/arm/boot/dts/r8a7779.dtsi
-> > @@ -65,7 +65,7 @@
-> >  		sense-bitfield-width = <2>;
-> >  	};
-> >  
-> > -	i2c0: i2c@0xffc70000 {
-> > +	i2c0: i2c@ffc70000 {
-> >  		#address-cells = <1>;
-> >  		#size-cells = <0>;
-> >  		compatible = "renesas,rmobile-iic";
-> > @@ -74,7 +74,7 @@
-> >  		interrupts = <0 79 0x4>;
-> >  	};
-> >  
-> > -	i2c1: i2c@0xffc71000 {
-> > +	i2c1: i2c@ffc71000 {
-> >  		#address-cells = <1>;
-> >  		#size-cells = <0>;
-> >  		compatible = "renesas,rmobile-iic";
-> > @@ -83,7 +83,7 @@
-> >  		interrupts = <0 82 0x4>;
-> >  	};
-> >  
-> > -	i2c2: i2c@0xffc72000 {
-> > +	i2c2: i2c@ffc72000 {
-> >  		#address-cells = <1>;
-> >  		#size-cells = <0>;
-> >  		compatible = "renesas,rmobile-iic";
-> > @@ -92,7 +92,7 @@
-> >  		interrupts = <0 80 0x4>;
-> >  	};
-> >  
-> > -	i2c3: i2c@0xffc73000 {
-> > +	i2c3: i2c@ffc73000 {
-> >  		#address-cells = <1>;
-> >  		#size-cells = <0>;
-> >  		compatible = "renesas,rmobile-iic";
+Thanks.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
