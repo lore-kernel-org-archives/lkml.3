@@ -1,224 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933416Ab3GWPtD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:49:03 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:49310 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933078Ab3GWPsG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:48:06 -0400
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>
-Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
-        Jan Willeke <willeke@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
-Subject: [PATCH v8 1/6] vmcore: Introduce ELF header in new memory feature
-Date: Tue, 23 Jul 2013 17:47:54 +0200
-Message-Id: <1374594479-64671-2-git-send-email-holzheu@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.2.3
-In-Reply-To: <1374594479-64671-1-git-send-email-holzheu@linux.vnet.ibm.com>
-References: <1374594479-64671-1-git-send-email-holzheu@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072315-8372-0000-0000-000006A78D3C
+	id S933405Ab3GWPtd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:49:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932481Ab3GWPta (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:49:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] Fix __wait_on_atomic_t() to call the action func if the
+ counter != 0
+To: torvalds@linux-foundation.org
+From: David Howells <dhowells@redhat.com>
+Cc: linux-nfs@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        Milosz Tanski <milosz@adfin.com>,
+        Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Date: Tue, 23 Jul 2013 16:49:24 +0100
+Message-ID: <20130723154924.24306.42326.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently for s390 we create the ELF core header in the 2nd kernel
-with a small trick. We relocate the addresses in the ELF header in
-a way that for the /proc/vmcore code it seems to be in the 1st kernel
-(old) memory and the read_from_oldmem() returns the correct data.
-This allows the /proc/vmcore code to use the ELF header in the
-2nd kernel.
+Fix __wait_on_atomic_t() so that it calls the action func if the counter != 0
+rather than if the counter is 0 so as to be analogous to __wait_on_bit().
 
-This patch now exchanges the old mechanism with the new and much
-cleaner function call override feature that now offcially allows to
-create the ELF core header in the 2nd kernel.
+Thanks to Yacine who found this by visual inspection.
 
-To use the new feature the following function have to be defined
-by the architecture backend code to read from new memory:
+This will affect FS-Cache in that it will could fail to sleep correctly when
+trying to clean up after a netfs cookie is withdrawn.
 
- * elfcorehdr_alloc: Allocate ELF header
- * elfcorehdr_free: Free the memory of the ELF header
- * elfcorehdr_read: Read from ELF header
- * elfcorehdr_read_notes: Read from ELF notes
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Reported-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+cc: Milosz Tanski <milosz@adfin.com>
+cc: Jeff Layton <jlayton@redhat.com>
 ---
- fs/proc/vmcore.c           | 61 ++++++++++++++++++++++++++++++++++++++--------
- include/linux/crash_dump.h |  6 +++++
- 2 files changed, 57 insertions(+), 10 deletions(-)
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index a1a16eb..02cb3ff 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -123,6 +123,36 @@ static ssize_t read_from_oldmem(char *buf, size_t count,
- 	return read;
- }
- 
-+/*
-+ * Architectures may override this function to allocate ELF header in 2nd kernel
-+ */
-+int __weak elfcorehdr_alloc(unsigned long long *addr, unsigned long long *size)
-+{
-+	return 0;
-+}
-+
-+/*
-+ * Architectures may override this function to free header
-+ */
-+void __weak elfcorehdr_free(unsigned long long addr)
-+{}
-+
-+/*
-+ * Architectures may override this function to read from ELF header
-+ */
-+ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos)
-+{
-+	return read_from_oldmem(buf, count, ppos, 0);
-+}
-+
-+/*
-+ * Architectures may override this function to read from notes sections
-+ */
-+ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
-+{
-+	return read_from_oldmem(buf, count, ppos, 0);
-+}
-+
- /* Read from the ELF header and then the crash dump. On error, negative value is
-  * returned otherwise number of bytes read are returned.
-  */
-@@ -357,7 +387,7 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -444,7 +474,8 @@ static int __init copy_notes_elf64(const Elf64_Ehdr *ehdr_ptr, char *notes_buf)
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -536,7 +567,7 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
- 		notes_section = kmalloc(max_sz, GFP_KERNEL);
- 		if (!notes_section)
- 			return -ENOMEM;
--		rc = read_from_oldmem(notes_section, max_sz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_section, max_sz, &offset);
- 		if (rc < 0) {
- 			kfree(notes_section);
- 			return rc;
-@@ -623,7 +654,8 @@ static int __init copy_notes_elf32(const Elf32_Ehdr *ehdr_ptr, char *notes_buf)
- 		if (phdr_ptr->p_type != PT_NOTE)
- 			continue;
- 		offset = phdr_ptr->p_offset;
--		rc = read_from_oldmem(notes_buf, phdr_ptr->p_memsz, &offset, 0);
-+		rc = elfcorehdr_read_notes(notes_buf, phdr_ptr->p_memsz,
-+					   &offset);
- 		if (rc < 0)
- 			return rc;
- 		notes_buf += phdr_ptr->p_memsz;
-@@ -810,7 +842,7 @@ static int __init parse_crash_elf64_headers(void)
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf64_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf64_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -837,7 +869,7 @@ static int __init parse_crash_elf64_headers(void)
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -866,7 +898,7 @@ static int __init parse_crash_elf32_headers(void)
- 	addr = elfcorehdr_addr;
- 
- 	/* Read Elf header */
--	rc = read_from_oldmem((char*)&ehdr, sizeof(Elf32_Ehdr), &addr, 0);
-+	rc = elfcorehdr_read((char *)&ehdr, sizeof(Elf32_Ehdr), &addr);
- 	if (rc < 0)
- 		return rc;
- 
-@@ -892,7 +924,7 @@ static int __init parse_crash_elf32_headers(void)
- 	if (!elfcorebuf)
- 		return -ENOMEM;
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(elfcorebuf, elfcorebuf_sz_orig, &addr, 0);
-+	rc = elfcorehdr_read(elfcorebuf, elfcorebuf_sz_orig, &addr);
- 	if (rc < 0)
- 		goto fail;
- 
-@@ -919,7 +951,7 @@ static int __init parse_crash_elf_headers(void)
- 	int rc=0;
- 
- 	addr = elfcorehdr_addr;
--	rc = read_from_oldmem(e_ident, EI_NIDENT, &addr, 0);
-+	rc = elfcorehdr_read(e_ident, EI_NIDENT, &addr);
- 	if (rc < 0)
- 		return rc;
- 	if (memcmp(e_ident, ELFMAG, SELFMAG) != 0) {
-@@ -952,7 +984,14 @@ static int __init vmcore_init(void)
- {
- 	int rc = 0;
- 
--	/* If elfcorehdr= has been passed in cmdline, then capture the dump.*/
-+	/* Allow architectures to allocate ELF header in 2nd kernel */
-+	rc = elfcorehdr_alloc(&elfcorehdr_addr, &elfcorehdr_size);
-+	if (rc)
-+		return rc;
-+	/*
-+	 * If elfcorehdr= has been passed in cmdline or created in 2nd kernel,
-+	 * then capture the dump.
-+	 */
- 	if (!(is_vmcore_usable()))
- 		return rc;
- 	rc = parse_crash_elf_headers();
-@@ -960,6 +999,8 @@ static int __init vmcore_init(void)
- 		pr_warn("Kdump: vmcore not initialized\n");
- 		return rc;
- 	}
-+	elfcorehdr_free(elfcorehdr_addr);
-+	elfcorehdr_addr = ELFCORE_ADDR_ERR;
- 
- 	proc_vmcore = proc_create("vmcore", S_IRUSR, NULL, &proc_vmcore_operations);
- 	if (proc_vmcore)
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index 37e4f8d..6571f82 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -12,6 +12,12 @@
- extern unsigned long long elfcorehdr_addr;
- extern unsigned long long elfcorehdr_size;
- 
-+extern int __weak elfcorehdr_alloc(unsigned long long *addr,
-+				   unsigned long long *size);
-+extern void __weak elfcorehdr_free(unsigned long long addr);
-+extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
-+extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
-+
- extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
- 						unsigned long, int);
- 
--- 
-1.8.2.3
+ kernel/wait.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/wait.c b/kernel/wait.c
+index ce0daa3..dec68bd 100644
+--- a/kernel/wait.c
++++ b/kernel/wait.c
+@@ -333,7 +333,8 @@ int __wait_on_atomic_t(wait_queue_head_t *wq, struct wait_bit_queue *q,
+ 		prepare_to_wait(wq, &q->wait, mode);
+ 		val = q->key.flags;
+ 		if (atomic_read(val) == 0)
+-			ret = (*action)(val);
++			break;
++		ret = (*action)(val);
+ 	} while (!ret && atomic_read(val) != 0);
+ 	finish_wait(wq, &q->wait);
+ 	return ret;
 
