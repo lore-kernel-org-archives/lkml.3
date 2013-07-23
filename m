@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932794Ab3GWNtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:49:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36192 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757510Ab3GWNtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:49:05 -0400
-Date: Tue, 23 Jul 2013 16:48:55 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        pbonzini@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: introduce hypervisor_cpuid_base()
-Message-ID: <20130723134855.GA6029@redhat.com>
-References: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
+	id S932932Ab3GWNuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:50:19 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38265 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932744Ab3GWNuR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:50:17 -0400
+Date: Tue, 23 Jul 2013 14:50:00 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>,
+        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
+	driver for DT usage
+Message-ID: <20130723135000.GW24642@n2100.arm.linux.org.uk>
+References: <20130723104615.3696f1a9@armhf> <20130723123444.GW9858@sirena.org.uk> <51EE7E1A.3040301@gmail.com> <20130723132016.GC9858@sirena.org.uk> <51EE8591.7060005@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
+In-Reply-To: <51EE8591.7060005@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 05:41:02PM +0800, Jason Wang wrote:
-> This patch introduce hypervisor_cpuid_base() which loop test the hypervisor
-> existence function until the signature match and check the number of leaves if
-> required. This could be used by Xen/KVM guest to detect the existence of
-> hypervisor.
-> 
-Looks good to me.
+On Tue, Jul 23, 2013 at 03:30:57PM +0200, Sebastian Hesselbarth wrote:
+> On 07/23/13 15:20, Mark Brown wrote:
+>>> again, we mentioned to merge kirkwood-i2s.c and kirkwood-dma.c into
+>>> a single file, didn't we?
+>>
+>> That's been discussed several times but nobody's actually done it.
+>
+> Correct, that is why I repeated that request to Jean-Francois.
 
-Since this touches common code, kvm and xen I expect this to be taken
-via the tip tree, correct?
+On that, I have some initial patches which start doing that, but I've
+not had time to really complete the effort - the problem is working
+with one tree (mainline) while testing on Rabeeh's kernel tree to get
+a fully working Cubox platform is quite a hinderance.
 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: "Paolo Bonzini" <pbonzini@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: x86@kernel.org
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  arch/x86/include/asm/processor.h |   20 ++++++++++++++++++++
->  1 files changed, 20 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-> index 24cf5ae..a8136d0 100644
-> --- a/arch/x86/include/asm/processor.h
-> +++ b/arch/x86/include/asm/processor.h
-> @@ -971,6 +971,26 @@ unsigned long calc_aperfmperf_ratio(struct aperfmperf *old,
->  	return ratio;
->  }
->  
-> +static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
-> +{
-> +	uint32_t base, eax, ebx, ecx, edx;
-> +	char signature[13];
-> +
-> +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-> +		cpuid(base, &eax, &ebx, &ecx, &edx);
-> +		*(uint32_t *)(signature + 0) = ebx;
-> +		*(uint32_t *)(signature + 4) = ecx;
-> +		*(uint32_t *)(signature + 8) = edx;
-> +		signature[12] = 0;
-> +
-> +		if (!strcmp(sig, signature) &&
-> +		    (leaves == 0 || ((eax - base) >= leaves)))
-> +			return base;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
->  extern unsigned long arch_align_stack(unsigned long sp);
->  extern void free_init_pages(char *what, unsigned long begin, unsigned long end);
->  
-> -- 
-> 1.7.1
+Not only that, but the lack of assistance from ASoC people on the
+multiple substream stuff really doesn't help one iota when it comes to
+making forward progress with SPDIF support.  I've explained to them the
+problem (SPDIF and I2S if used together must be enabled simultaneously
+or only one is permitted at any one time); they've suggested using the
+multiple PCM substream support, and then it's a case that "oh it's
+undocumented" "oh there's no examples yet".
 
---
-			Gleb.
+And then there's the problem of understanding the ASoC DAPM stuff
+"oh it's just a graph walk, you don't need to know the internals"
+is what I get from ASoC people.  Well, yes I do need to know the
+internals, so I can find out whether it's going to startup a second
+substream while a first one is active, and end up with SPDIF enabled
+non-concurrently with I2S.
