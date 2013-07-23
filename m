@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934338Ab3GWUVe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:21:34 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:23548 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934311Ab3GWUVb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934316Ab3GWUVb (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Jul 2013 16:21:31 -0400
-Message-ID: <40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1374609948.git.cmetcalf@tilera.com>
-References: <cover.1374609948.git.cmetcalf@tilera.com>
+Received: from usmamail.tilera.com ([12.216.194.151]:23547 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933531Ab3GWUV3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:21:29 -0400
+Message-ID: <cover.1374609948.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Tue, 23 Jul 2013 16:05:48 -0400
-Subject: [PATCH 01/13] tile: handle 64-bit statistics in tilepro network driver
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: [PATCH 00/13] update tile network drivers
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilepro.c | 42 ++++++++++++++++++-------------------
- 1 file changed, 20 insertions(+), 22 deletions(-)
+This patch series contains changes made to the Tilera on-chip
+network drivers for both the 64-bit tilegx and 32-bit tilepro
+architectures.  The changes involve a number of bug fixes, support
+for the multiple mPIPEs on the new Gx72 chip, support for jumbo
+frames, TSO for IPv6, GRO, PTP support, and statistics improvements.
 
-diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
-index 3643549..0237031 100644
---- a/drivers/net/ethernet/tile/tilepro.c
-+++ b/drivers/net/ethernet/tile/tilepro.c
-@@ -156,10 +156,14 @@ struct tile_netio_queue {
-  * Statistics counters for a specific cpu and device.
-  */
- struct tile_net_stats_t {
--	u32 rx_packets;
--	u32 rx_bytes;
--	u32 tx_packets;
--	u32 tx_bytes;
-+	u64 rx_packets;		/* total packets received	*/
-+	u64 tx_packets;		/* total packets transmitted	*/
-+	u64 rx_bytes;		/* total bytes received 	*/
-+	u64 tx_bytes;		/* total bytes transmitted	*/
-+	u64 rx_errors;		/* packets truncated or marked bad by hw */
-+	u64 tx_errors;		/* (not currently used)		*/
-+	u64 rx_dropped;		/* packets not for us or intf not up */
-+	u64 tx_dropped;		/* (not currently used)		*/
- };
- 
- 
-@@ -218,8 +222,6 @@ struct tile_net_priv {
- 	int network_cpus_count;
- 	/* Credits per network cpu. */
- 	int network_cpus_credits;
--	/* Network stats. */
--	struct net_device_stats stats;
- 	/* For NetIO bringup retries. */
- 	struct delayed_work retry_work;
- 	/* Quick access to per cpu data. */
-@@ -2127,30 +2129,26 @@ static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
-  *
-  * Returns the address of the device statistics structure.
-  */
--static struct net_device_stats *tile_net_get_stats(struct net_device *dev)
-+static struct rtnl_link_stats64 *tile_net_get_stats64(struct net_device *dev,
-+		struct rtnl_link_stats64 *stats)
- {
- 	struct tile_net_priv *priv = netdev_priv(dev);
--	u32 rx_packets = 0;
--	u32 tx_packets = 0;
--	u32 rx_bytes = 0;
--	u32 tx_bytes = 0;
- 	int i;
- 
- 	for_each_online_cpu(i) {
- 		if (priv->cpu[i]) {
--			rx_packets += priv->cpu[i]->stats.rx_packets;
--			rx_bytes += priv->cpu[i]->stats.rx_bytes;
--			tx_packets += priv->cpu[i]->stats.tx_packets;
--			tx_bytes += priv->cpu[i]->stats.tx_bytes;
-+			stats->rx_packets += priv->cpu[i]->stats.rx_packets;
-+			stats->tx_packets += priv->cpu[i]->stats.tx_packets;
-+			stats->rx_bytes += priv->cpu[i]->stats.rx_bytes;
-+			stats->tx_bytes += priv->cpu[i]->stats.tx_bytes;
-+			stats->rx_errors += priv->cpu[i]->stats.rx_errors;
-+			stats->tx_errors += priv->cpu[i]->stats.tx_errors;
-+			stats->rx_dropped += priv->cpu[i]->stats.rx_dropped;
-+			stats->tx_dropped += priv->cpu[i]->stats.tx_dropped;
- 		}
- 	}
- 
--	priv->stats.rx_packets = rx_packets;
--	priv->stats.rx_bytes = rx_bytes;
--	priv->stats.tx_packets = tx_packets;
--	priv->stats.tx_bytes = tx_bytes;
--
--	return &priv->stats;
-+	return stats;
- }
- 
- 
-@@ -2287,7 +2285,7 @@ static const struct net_device_ops tile_net_ops = {
- 	.ndo_stop = tile_net_stop,
- 	.ndo_start_xmit = tile_net_tx,
- 	.ndo_do_ioctl = tile_net_ioctl,
--	.ndo_get_stats = tile_net_get_stats,
-+	.ndo_get_stats64 = tile_net_get_stats64,
- 	.ndo_change_mtu = tile_net_change_mtu,
- 	.ndo_tx_timeout = tile_net_tx_timeout,
- 	.ndo_set_mac_address = tile_net_set_mac_address,
+The series can be pulled from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git tile-net-next
+
+Chris Metcalf (13):
+  tile: handle 64-bit statistics in tilepro network driver
+  tile: support rx_dropped/rx_errors in tilepro net driver
+  tile: avoid bug in tilepro net driver built with old hypervisor
+  tile: remove dead is_dup_ack() function from tilepro net driver
+  tile: support PTP using the tilegx mPIPE (IEEE 1588)
+  tile: support jumbo frames in the tilegx network driver
+  tile: update dev->stats directly in tilegx network driver
+  tile: fix panic bug in napi support for tilegx network driver
+  tile: enable GRO in the tilegx network driver
+  tile: support multiple mPIPE shims in tilegx network driver
+  tile: support TSO for IPv6 in tilegx network driver
+  tile: make "tile_net.custom" a proper bool module parameter
+  tile: remove deprecated NETIF_F_LLTX flag from tile drivers
+
+ arch/tile/gxio/iorpc_mpipe.c              |  66 +++
+ arch/tile/gxio/iorpc_mpipe_info.c         |  18 +
+ arch/tile/gxio/mpipe.c                    |  44 +-
+ arch/tile/include/gxio/iorpc_mpipe.h      |   8 +
+ arch/tile/include/gxio/iorpc_mpipe_info.h |   4 +
+ arch/tile/include/gxio/mpipe.h            | 142 ++++-
+ arch/tile/include/hv/drv_mpipe_intf.h     |   3 +
+ drivers/net/ethernet/tile/Makefile        |   1 +
+ drivers/net/ethernet/tile/tilegx.c        | 954 ++++++++++++++++++------------
+ drivers/net/ethernet/tile/tilegx_ptp.c    | 212 +++++++
+ drivers/net/ethernet/tile/tilepro.c       | 171 ++----
+ drivers/ptp/Kconfig                       |  10 +
+ 12 files changed, 1127 insertions(+), 506 deletions(-)
+ create mode 100644 drivers/net/ethernet/tile/tilegx_ptp.c
+
 -- 
 1.8.3.1
 
