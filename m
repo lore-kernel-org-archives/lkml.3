@@ -1,51 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab3GWPBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:01:17 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:57764 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757651Ab3GWPBP (ORCPT
+	id S1757781Ab3GWPBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:01:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35089 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757714Ab3GWPBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:01:15 -0400
+	Tue, 23 Jul 2013 11:01:34 -0400
+Date: Tue, 23 Jul 2013 08:02:45 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Andre Naujoks <nautsch2@gmail.com>,
+        Dean Jenkins <Dean_Jenkins@mentor.com>
+Subject: Re: [PATCH v2 20/20] tty: Remove extra wakeup from pty write() path
+Message-ID: <20130723150245.GB12292@kroah.com>
+References: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-21-git-send-email-peter@hurleysoftware.com>
+ <51EAC23F.9050101@hurleysoftware.com>
+ <51EE7DC8.3060004@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <20130723162659.5aa59750@tux.DEF.witbe.net>
-References: <20130611123814.GA9854@lnx-rg> <20130626142241.GA13107@lnx-rg>
- <51CB0E9C.50408@lwfinger.net> <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
- <20130723142907.53103aab@tux.DEF.witbe.net> <20130723162659.5aa59750@tux.DEF.witbe.net>
-From: Richard Genoud <richard.genoud@gmail.com>
-Date: Tue, 23 Jul 2013 17:00:54 +0200
-Message-ID: <CACQ1gAiyc6e39S8FnjTE7GX7SeorHjJP6gLZGRWsgi8f1zjEaw@mail.gmail.com>
-Subject: Re: rtl8192cu: slow path warning
-To: Paul Rolland <rol@witbe.net>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51EE7DC8.3060004@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/23 Paul Rolland <rol@witbe.net>:
-> Hello Richard,
->
-> If you still have the required HW and still would like a patch to remove
-> that warning on your machine, could you please try the attached one ?
->
-> I slightly reworked the original patch by moving the function
-> rtl_lps_change_work_callback from pci.c to ps.c.
->
-> I've successfully compiled that on my machine, but I have PCI set in
-> my .config, so I'd like your feedback.
->
-> Best,
-> Paul
+On Tue, Jul 23, 2013 at 08:57:44AM -0400, Peter Hurley wrote:
+> On 07/20/2013 01:00 PM, Peter Hurley wrote:
+> >On 06/15/2013 10:21 AM, Peter Hurley wrote:
+> >>Acquiring the write_wait queue spin lock now accounts for the largest
+> >>slice of cpu time on the tty write path. Two factors contribute to
+> >>this situation; a overly-pessimistic line discipline write loop which
+> >>_always_ sets up a wait loop even if i/o will immediately succeed, and
+> >>on ptys, a wakeup storm from reads and writes.
+> >>
+> >>Writer wakeup does not need to be performed by the pty driver.
+> >>Firstly, since the actual i/o is performed within the write, the
+> >>line discipline write loop will continue while space remains in
+> >>the flip buffers. Secondly, when space becomes avail in the
+> >>line discipline receive buffer (and thus also in the flip buffers),
+> >>the pty unthrottle re-wakes the writer (non-flow-controlled line
+> >>disciplines unconditionally unthrottle the driver when data is
+> >>received). Thus, existing in-kernel i/o is guaranteed to advance.
+> >>Finally, writer wakeup occurs at the conclusion of the line discipline
+> >>write (in tty_write_unlock()). This guarantees that any user-space write
+> >>waiters are woken to continue additional i/o.
+> >
+> >Greg,
+> >
+> >I thought I should let you know I'm tracking down a bug/regression
+> >related to this patch.
+> >
+> >In certain unusual pty/ldisc configurations, i/o fails to make
+> >forward progress. I still stand by my commit message above, so I'm
+> >in the process of instrumenting the i/o path so I can uncover the
+> >cause of the failure.
+> 
+> Mystery solved.
+> 
+> [PATCH v4 23/24] n_tty: Special case pty flow control
+> from the lockless n_tty receive path series introduced a regression
+> in which i/o failed to advance.
+> 
+> This only occurred when one end of a pty pair was set to an ldisc
+> other than N_TTY. The special case optimization which that patch
+> introduces failed to address that configuration.
+> 
+> I've sent a v5 of that patch to resolve the regression.
 
-Hi Paul,
+Thanks for that, I'll work to queue all of your tty patches up today, as
+they have been sitting out of the tree for too long :)
 
-Well, I don't know why this patch didn't make it to 3.11-rc1, but it
-seems that the patch you sent is the same as Larry's second patch :
-https://lkml.org/lkml/2013/6/27/548
-
-Best regards,
-Richard.
+greg k-h
