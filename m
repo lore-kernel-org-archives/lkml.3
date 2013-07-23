@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654Ab3GWWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:46:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41645 "EHLO
+	id S934747Ab3GWWqG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:46:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934626Ab3GWW12 (ORCPT
+	with ESMTP id S934632Ab3GWW13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:28 -0400
+	Tue, 23 Jul 2013 18:27:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Brown <broonie@linaro.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 047/103] ASoC: atmel: Fix unlocked snd_pcm_stop() call
-Date: Tue, 23 Jul 2013 15:25:58 -0700
-Message-Id: <20130723220423.816958744@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>, Martin Wilck <mwilck@arcor.de>
+Subject: [ 049/103] md/raid10: fix bug which causes all RAID10 reshapes to move no data.
+Date: Tue, 23 Jul 2013 15:26:00 -0700
+Message-Id: <20130723220424.048255643@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,31 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 571185717f8d7f2a088a7ac38d94a9ad5fd9da5c upstream.
+commit 1376512065b23f39d5f9a160948f313397dde972 upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+The recent comment:
+commit 7e83ccbecd608b971f340e951c9e84cd0343002f
+    md/raid10: Allow skipping recovery when clean arrays are assembled
 
-Acked-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Causes raid10 to skip a recovery in certain cases where it is safe to
+do so.  Unfortunately it also causes a reshape to be skipped which is
+never safe.  The result is that an attempt to reshape a RAID10 will
+appear to complete instantly, but no data will have been moves so the
+array will now contain garbage.
+(If nothing is written, you can recovery by simple performing the
+reverse reshape which will also complete instantly).
+
+Bug was introduced in 3.10, so this is suitable for 3.10-stable.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Martin Wilck <mwilck@arcor.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/atmel/atmel-pcm-dma.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/md/raid10.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/sound/soc/atmel/atmel-pcm-dma.c
-+++ b/sound/soc/atmel/atmel-pcm-dma.c
-@@ -81,7 +81,9 @@ static void atmel_pcm_dma_irq(u32 ssc_sr
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -2909,14 +2909,13 @@ static sector_t sync_request(struct mdde
+ 	 */
+ 	if (mddev->bitmap == NULL &&
+ 	    mddev->recovery_cp == MaxSector &&
++	    mddev->reshape_position == MaxSector &&
++	    !test_bit(MD_RECOVERY_SYNC, &mddev->recovery) &&
+ 	    !test_bit(MD_RECOVERY_REQUESTED, &mddev->recovery) &&
++	    !test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery) &&
+ 	    conf->fullsync == 0) {
+ 		*skipped = 1;
+-		max_sector = mddev->dev_sectors;
+-		if (test_bit(MD_RECOVERY_SYNC, &mddev->recovery) ||
+-		    test_bit(MD_RECOVERY_RESHAPE, &mddev->recovery))
+-			max_sector = mddev->resync_max_sectors;
+-		return max_sector - sector_nr;
++		return mddev->dev_sectors - sector_nr;
+ 	}
  
- 		/* stop RX and capture: will be enabled again at restart */
- 		ssc_writex(prtd->ssc->regs, SSC_CR, prtd->mask->ssc_disable);
-+		snd_pcm_stream_lock(substream);
- 		snd_pcm_stop(substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock(substream);
- 
- 		/* now drain RHR and read status to remove xrun condition */
- 		ssc_readx(prtd->ssc->regs, SSC_RHR);
+  skipped:
 
 
