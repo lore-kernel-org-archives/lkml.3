@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934737Ab3GWWye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:54:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41513 "EHLO
+	id S934658Ab3GWWzN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:55:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41502 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934515Ab3GWW1K (ORCPT
+	with ESMTP id S934428Ab3GWW1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:10 -0400
+	Tue, 23 Jul 2013 18:27:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Paul Bolle <pebolle@tiscali.nl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 021/103] cpufreq: Revert commit a66b2e to fix suspend/resume regression
-Date: Tue, 23 Jul 2013 15:25:32 -0700
-Message-Id: <20130723220420.939664935@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 017/103] powerpc/perf: Rework disable logic in pmu_disable()
+Date: Tue, 23 Jul 2013 15:25:28 -0700
+Message-Id: <20130723220420.492517297@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -29,85 +27,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit aae760ed21cd690fe8a6db9f3a177ad55d7e12ab upstream.
+commit 378a6ee99e4a431ec84e4e61893445c041c93007 upstream.
 
-commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume)
-has unfortunately caused several things in the cpufreq subsystem to
-break subtly after a suspend/resume cycle.
+In pmu_disable() we disable the PMU by setting the FC (Freeze Counters)
+bit in MMCR0. In order to do this we have to read/modify/write MMCR0.
 
-The intention of that patch was to retain the file permissions of the
-cpufreq related sysfs files across suspend/resume.  To achieve that,
-the commit completely removed the calls to cpufreq_add_dev() and
-__cpufreq_remove_dev() during suspend/resume transitions.  But the
-problem is that those functions do 2 kinds of things:
-  1. Low-level initialization/tear-down that are critical to the
-     correct functioning of cpufreq-core.
-  2. Kobject and sysfs related initialization/teardown.
+It's possible that we read a value from MMCR0 which has PMAO (PMU Alert
+Occurred) set. When we write that value back it will cause an interrupt
+to occur. We will then end up in the PMU interrupt handler even though
+we are supposed to have just disabled the PMU.
 
-Ideally we should have reorganized the code to cleanly separate these
-two responsibilities, and skipped only the sysfs related parts during
-suspend/resume.  Since we skipped the entire callbacks instead (which
-also included some CPU and cpufreq-specific critical components),
-cpufreq subsystem started behaving erratically after suspend/resume.
+We can avoid this by making sure we never write PMAO back. We should not
+lose interrupts because when the PMU is re-enabled the overflowed values
+will cause another interrupt.
 
-So revert the commit to fix the regression.  We'll revisit and address
-the original goal of that commit separately, since it involves quite a
-bit of careful code reorganization and appears to be non-trivial.
+We also reorder the clearing of SAMPLE_ENABLE so that is done after the
+PMU is frozen. Otherwise there is a small window between the clearing of
+SAMPLE_ENABLE and the setting of FC where we could take an interrupt and
+incorrectly see SAMPLE_ENABLE not set. This would for example change the
+logic in perf_read_regs().
 
-(While reverting the commit, note that another commit f51e1eb
- (cpufreq: Fix cpufreq regression after suspend/resume) already
- reverted part of the original set of changes.  So revert only the
- remaining ones).
-
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Tested-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c       |    4 +++-
- drivers/cpufreq/cpufreq_stats.c |    6 ++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+ arch/powerpc/perf/core-book3s.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1837,13 +1837,15 @@ static int __cpuinit cpufreq_cpu_callbac
- 	if (dev) {
- 		switch (action) {
- 		case CPU_ONLINE:
-+		case CPU_ONLINE_FROZEN:
- 			cpufreq_add_dev(dev, NULL);
- 			break;
- 		case CPU_DOWN_PREPARE:
--		case CPU_UP_CANCELED_FROZEN:
-+		case CPU_DOWN_PREPARE_FROZEN:
- 			__cpufreq_remove_dev(dev, NULL);
- 			break;
- 		case CPU_DOWN_FAILED:
-+		case CPU_DOWN_FAILED_FROZEN:
- 			cpufreq_add_dev(dev, NULL);
- 			break;
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -75,6 +75,7 @@ static unsigned int freeze_events_kernel
+ 
+ #define MMCR0_FCHV		0
+ #define MMCR0_PMCjCE		MMCR0_PMCnCE
++#define MMCR0_PMAO		0
+ 
+ #define SPRN_MMCRA		SPRN_MMCR2
+ #define MMCRA_SAMPLE_ENABLE	0
+@@ -852,7 +853,7 @@ static void write_mmcr0(struct cpu_hw_ev
+ static void power_pmu_disable(struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw;
+-	unsigned long flags;
++	unsigned long flags, val;
+ 
+ 	if (!ppmu)
+ 		return;
+@@ -860,9 +861,6 @@ static void power_pmu_disable(struct pmu
+ 	cpuhw = &__get_cpu_var(cpu_hw_events);
+ 
+ 	if (!cpuhw->disabled) {
+-		cpuhw->disabled = 1;
+-		cpuhw->n_added = 0;
+-
+ 		/*
+ 		 * Check if we ever enabled the PMU on this cpu.
+ 		 */
+@@ -872,6 +870,21 @@ static void power_pmu_disable(struct pmu
  		}
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -353,13 +353,11 @@ static int __cpuinit cpufreq_stat_cpu_ca
- 		cpufreq_update_policy(cpu);
- 		break;
- 	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
--		cpufreq_stats_free_table(cpu);
--		break;
--	case CPU_UP_CANCELED_FROZEN:
--		cpufreq_stats_free_sysfs(cpu);
-+	case CPU_DEAD_FROZEN:
- 		cpufreq_stats_free_table(cpu);
- 		break;
+ 
+ 		/*
++		 * Set the 'freeze counters' bit, clear PMAO.
++		 */
++		val  = mfspr(SPRN_MMCR0);
++		val |= MMCR0_FC;
++		val &= ~MMCR0_PMAO;
++
++		/*
++		 * The barrier is to make sure the mtspr has been
++		 * executed and the PMU has frozen the events etc.
++		 * before we return.
++		 */
++		write_mmcr0(cpuhw, val);
++		mb();
++
++		/*
+ 		 * Disable instruction sampling if it was enabled
+ 		 */
+ 		if (cpuhw->mmcr[2] & MMCRA_SAMPLE_ENABLE) {
+@@ -880,14 +893,8 @@ static void power_pmu_disable(struct pmu
+ 			mb();
+ 		}
+ 
+-		/*
+-		 * Set the 'freeze counters' bit.
+-		 * The barrier is to make sure the mtspr has been
+-		 * executed and the PMU has frozen the events
+-		 * before we return.
+-		 */
+-		write_mmcr0(cpuhw, mfspr(SPRN_MMCR0) | MMCR0_FC);
+-		mb();
++		cpuhw->disabled = 1;
++		cpuhw->n_added = 0;
  	}
+ 	local_irq_restore(flags);
+ }
 
 
