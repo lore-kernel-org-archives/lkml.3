@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934862Ab3GWW1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41790 "EHLO
+	id S935025Ab3GWWex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:34:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41839 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934775Ab3GWW1q (ORCPT
+	with ESMTP id S934846Ab3GWW1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:46 -0400
+	Tue, 23 Jul 2013 18:27:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 064/103] SCSI: zfcp: status read buffers on first adapter open with link down
-Date: Tue, 23 Jul 2013 15:26:15 -0700
-Message-Id: <20130723220426.084647145@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+Subject: [ 084/103] drm/radeon: fix AVI infoframe generation
+Date: Tue, 23 Jul 2013 15:26:35 -0700
+Message-Id: <20130723220429.919737701@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,135 +30,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 9edf7d75ee5f21663a0183d21f702682d0ef132f upstream.
+commit f100380ecd8287b0909d3c5694784adc46e78a4a upstream.
 
-Commit 64deb6efdc5504ce97b5c1c6f281fffbc150bd93
-"[SCSI] zfcp: Use status_read_buf_num provided by FCP channel"
-started using a value returned by the channel but only evaluated the value
-if the fabric link is up.
-Commit 8d88cf3f3b9af4713642caeb221b6d6a42019001
-"[SCSI] zfcp: Update status read mempool"
-introduced mempool resizings based on the above value.
-On setting an FCP device online for the very first time since boot, a new
-zeroed adapter object is allocated. If the link is down, the number of
-status read requests remains zero. Since just the config data exchange is
-incomplete, we proceed with adapter open recovery. However, we
-unconditionally call mempool_resize with adapter->stat_read_buf_num == 0 in
-this case.
+- remove adding 2 to checksum, this is incorrect.
 
-This causes a kernel message "kernel BUG at mm/mempool.c:131!" in process
-"zfcperp<FCP-device-bus-ID>" with last function mempool_resize in Krnl PSW
-and zfcp_erp_thread in the Call Trace.
+This was incorrectly introduced in:
+92db7f6c860b8190571a9dc1fcbc16d003422fe8
+http://lists.freedesktop.org/archives/dri-devel/2011-December/017717.html
+However, the off by 2 was due to adding the version twice.
+>From the examples in the URL above:
 
-Don't evaluate channel values which are invalid on link down. The number of
-status read requests is always valid, evaluated, and set to a positive
-minimum greater than zero. The adapter open recovery can proceed and the
-channel has status read buffers to inform us on a future link up event.
-While we are not aware of any other code path that could result in mempool
-resize attempts of size zero, we still also initialize the number of status
-read buffers to be posted to a static minimum number on adapter object
-allocation.
+[Rafał Miłecki][RV620] fglrx:
+0x7454: 00 A8 5E 79     R600_HDMI_VIDEOINFOFRAME_0
+0x7458: 00 28 00 10     R600_HDMI_VIDEOINFOFRAME_1
+0x745C: 00 48 00 28     R600_HDMI_VIDEOINFOFRAME_2
+0x7460: 02 00 00 48     R600_HDMI_VIDEOINFOFRAME_3
+===================
+(0x82 + 0x2 + 0xD) + 0x1F8 = 0x289
+-0x289 = 0x77
 
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+However, the payload sum is not 0x1f8, it's 0x1f6.
+00 + A8 + 5E + 00 +
+00 + 28 + 00 + 10 +
+00 + 48 + 00 + 28 +
+00 + 48 =
+0x1f6
+
+Bits 25:24 of HDMI_VIDEOINFOFRAME_3 are the packet version, not part
+of the payload.  So the total would be:
+(0x82 + 0x2 + 0xD) + 0x1f6 = 0x287
+-0x287 = 0x79
+
+- properly emit the AVI infoframe version.  This was not being
+emitted previous which is probably what caused the issue above.
+
+This should fix blank screen when HDMI audio is enabled on
+certain monitors.
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_aux.c |    5 ++++-
- drivers/s390/scsi/zfcp_fsf.c |   23 ++++++++++++++++-------
- 2 files changed, 20 insertions(+), 8 deletions(-)
+ drivers/gpu/drm/radeon/evergreen_hdmi.c |   11 ++---------
+ drivers/gpu/drm/radeon/r600_hdmi.c      |   11 ++---------
+ 2 files changed, 4 insertions(+), 18 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_aux.c
-+++ b/drivers/s390/scsi/zfcp_aux.c
-@@ -3,7 +3,7 @@
-  *
-  * Module interface and handling of zfcp data structures.
-  *
-- * Copyright IBM Corp. 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
- 
- /*
-@@ -23,6 +23,7 @@
-  *            Christof Schmitt
-  *            Martin Petermann
-  *            Sven Schuetz
-+ *            Steffen Maier
-  */
- 
- #define KMSG_COMPONENT "zfcp"
-@@ -415,6 +416,8 @@ struct zfcp_adapter *zfcp_adapter_enqueu
- 	adapter->dma_parms.max_segment_size = ZFCP_QDIO_SBALE_LEN;
- 	adapter->ccw_device->dev.dma_parms = &adapter->dma_parms;
- 
-+	adapter->stat_read_buf_num = FSF_STATUS_READS_RECOM;
-+
- 	if (!zfcp_scsi_adapter_register(adapter))
- 		return adapter;
- 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -3,7 +3,7 @@
-  *
-  * Implementation of FSF commands.
-  *
-- * Copyright IBM Corp. 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
- 
- #define KMSG_COMPONENT "zfcp"
-@@ -483,12 +483,8 @@ static int zfcp_fsf_exchange_config_eval
- 
- 	fc_host_port_name(shost) = nsp->fl_wwpn;
- 	fc_host_node_name(shost) = nsp->fl_wwnn;
--	fc_host_port_id(shost) = ntoh24(bottom->s_id);
--	fc_host_speed(shost) =
--		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
- 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
- 
--	adapter->hydra_version = bottom->adapter_type;
- 	adapter->timer_ticks = bottom->timer_interval & ZFCP_FSF_TIMER_INT_MASK;
- 	adapter->stat_read_buf_num = max(bottom->status_read_buf_num,
- 					 (u16)FSF_STATUS_READS_RECOM);
-@@ -496,6 +492,19 @@ static int zfcp_fsf_exchange_config_eval
- 	if (fc_host_permanent_port_name(shost) == -1)
- 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
- 
-+	zfcp_scsi_set_prot(adapter);
-+
-+	/* no error return above here, otherwise must fix call chains */
-+	/* do not evaluate invalid fields */
-+	if (req->qtcb->header.fsf_status == FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE)
-+		return 0;
-+
-+	fc_host_port_id(shost) = ntoh24(bottom->s_id);
-+	fc_host_speed(shost) =
-+		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
-+
-+	adapter->hydra_version = bottom->adapter_type;
-+
- 	switch (bottom->fc_topology) {
- 	case FSF_TOPO_P2P:
- 		adapter->peer_d_id = ntoh24(bottom->peer_d_id);
-@@ -517,8 +526,6 @@ static int zfcp_fsf_exchange_config_eval
- 		return -EIO;
- 	}
- 
--	zfcp_scsi_set_prot(adapter);
+--- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
++++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
+@@ -128,14 +128,7 @@ static void evergreen_hdmi_update_avi_in
+ 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 	uint32_t offset = dig->afmt->offset;
+ 	uint8_t *frame = buffer + 3;
 -
- 	return 0;
+-	/* Our header values (type, version, length) should be alright, Intel
+-	 * is using the same. Checksum function also seems to be OK, it works
+-	 * fine for audio infoframe. However calculated value is always lower
+-	 * by 2 in comparison to fglrx. It breaks displaying anything in case
+-	 * of TVs that strictly check the checksum. Hack it manually here to
+-	 * workaround this issue. */
+-	frame[0x0] += 2;
++	uint8_t *header = buffer;
+ 
+ 	WREG32(AFMT_AVI_INFO0 + offset,
+ 		frame[0x0] | (frame[0x1] << 8) | (frame[0x2] << 16) | (frame[0x3] << 24));
+@@ -144,7 +137,7 @@ static void evergreen_hdmi_update_avi_in
+ 	WREG32(AFMT_AVI_INFO2 + offset,
+ 		frame[0x8] | (frame[0x9] << 8) | (frame[0xA] << 16) | (frame[0xB] << 24));
+ 	WREG32(AFMT_AVI_INFO3 + offset,
+-		frame[0xC] | (frame[0xD] << 8));
++		frame[0xC] | (frame[0xD] << 8) | (header[1] << 24));
  }
  
-@@ -569,6 +576,8 @@ static void zfcp_fsf_exchange_config_dat
- 				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
-+		if (zfcp_fsf_exchange_config_evaluate(req))
-+			return;
- 		break;
- 	default:
- 		zfcp_erp_adapter_shutdown(adapter, 0, "fsecdh3");
+ static void evergreen_audio_set_dto(struct drm_encoder *encoder, u32 clock)
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -133,14 +133,7 @@ static void r600_hdmi_update_avi_infofra
+ 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
+ 	uint32_t offset = dig->afmt->offset;
+ 	uint8_t *frame = buffer + 3;
+-
+-	/* Our header values (type, version, length) should be alright, Intel
+-	 * is using the same. Checksum function also seems to be OK, it works
+-	 * fine for audio infoframe. However calculated value is always lower
+-	 * by 2 in comparison to fglrx. It breaks displaying anything in case
+-	 * of TVs that strictly check the checksum. Hack it manually here to
+-	 * workaround this issue. */
+-	frame[0x0] += 2;
++	uint8_t *header = buffer;
+ 
+ 	WREG32(HDMI0_AVI_INFO0 + offset,
+ 		frame[0x0] | (frame[0x1] << 8) | (frame[0x2] << 16) | (frame[0x3] << 24));
+@@ -149,7 +142,7 @@ static void r600_hdmi_update_avi_infofra
+ 	WREG32(HDMI0_AVI_INFO2 + offset,
+ 		frame[0x8] | (frame[0x9] << 8) | (frame[0xA] << 16) | (frame[0xB] << 24));
+ 	WREG32(HDMI0_AVI_INFO3 + offset,
+-		frame[0xC] | (frame[0xD] << 8));
++		frame[0xC] | (frame[0xD] << 8) | (header[1] << 24));
+ }
+ 
+ /*
 
 
