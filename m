@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934261Ab3GWUT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:19:56 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:47815 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447Ab3GWUTv (ORCPT
+	id S934106Ab3GWUUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:20:11 -0400
+Received: from georges.telenet-ops.be ([195.130.137.68]:38007 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934219Ab3GWUUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:19:51 -0400
-Date: Tue, 23 Jul 2013 14:19:48 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, joro@8bytes.org, andihartmann@01019freenet.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/3] pci: ACS fixes & quirks
-Message-ID: <20130723201948.GA19765@google.com>
-References: <20130627222159.16564.38166.stgit@bling.home>
+	Tue, 23 Jul 2013 16:20:06 -0400
+Date: Tue, 23 Jul 2013 22:20:03 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+cc: Andrew Veliath <andrewtv@usa.net>, linux-kbuild@vger.kernel.org,
+        linux-sh@vger.kernel.org
+Subject: Re: Build regressions/improvements in v3.11-rc2
+In-Reply-To: <alpine.DEB.2.02.1307232209510.32497@ayla.of.borg>
+Message-ID: <alpine.DEB.2.02.1307232210440.32577@ayla.of.borg>
+References: <alpine.DEB.2.02.1307232209510.32497@ayla.of.borg>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130627222159.16564.38166.stgit@bling.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 27, 2013 at 04:39:41PM -0600, Alex Williamson wrote:
-> v2:
-> 
-> Revised patch 1/ to match comments from Bjorn.  PCIe event collectors
-> and PCIe-to-PCI bridges now indicate that they do not support ACS.
-> I've reached out to try to get clarification on this, but I think it's
-> reasonable to proceed with a conservative approach until then.  I also
-> added PCI-to-PCIe bridges for the sake of being complete.  Also added
-> more comments about the purpose and behavior of pci_acs_enabled().  If
-> I've overlooked anything else that needs to be addressed, please let
-> me know.
-> 
-> Patch 2/ had no comments, it's unchanged.
-> 
-> Patch 3/ is added.  This was sent as an RFC nearly a year ago and
-> Joerg confirmed for us that these devices do not support p2p on AMD
-> systems with AMD IOMMU.  We can't simply use iommu_present() to test
-> for an IOMMU because it's setup just after we need this function.  
-> Instead we test for the ACPI IVRS table that describes the IOMMU.  It
-> would probably suffice to skip an actual AMD IOMMU check, but I don't
-> want it to later come bite us if these ASICs get re-used, maybe with
-> a different IOMMU, and don't make the same guarantees.
-> 
-> Joerg, I was also curious back when we investigated this patch if the
-> same rules hold true for these other southbridge devices:
-> 
-> 1002:43a0 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 0)
-> 1002:43a1 SB700/SB800/SB900 PCI to PCI bridge (PCIE port 1)
-> 1002:43a2 SB900 PCI to PCI bridge (PCIE port 2)
-> 1002:43a3 SB900 PCI to PCI bridge (PCIE port 3)
-> 
-> If you remember or have contacts to poke, I'd be happy to follow-up
-> with another patch to add them.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (3):
->       pci: Fix flaw in pci_acs_enabled()
->       pci: Differentiate ACS controllable from enabled
->       pci: ACS quirk for AMD southbridge
+On Tue, 23 Jul 2013, Geert Uytterhoeven wrote:
+> JFYI, when comparing v3.11-rc2 to v3.11-rc1[3], the summaries are:
+>   - build errors: +9/-23
 
-Applied to pci/aw-acs-fixes-v2 for v3.12, thanks!
+Ignoring a few new R_PPC64_REL24 truncated relocations, we have:
+
+  + error: No rule to make target /etc/sound/msndinit.bin:  => N/A
+  + error: No rule to make target /etc/sound/msndperm.bin:  => N/A
+  + error: No rule to make target /etc/sound/pndsperm.bin:  => N/A
+  + error: No rule to make target /etc/sound/pndspini.bin:  => N/A
+
+i386-randconfig, due to an OSS sound issue:
+
+make[3]: *** No rule to make target `/etc/sound/msndperm.bin', needed by `sound/oss/msndperm.c'.
+make[3]: *** No rule to make target `/etc/sound/msndinit.bin', needed by `sound/oss/msndinit.c'.
+make[3]: *** No rule to make target `/etc/sound/pndsperm.bin', needed by `sound/oss/pndsperm.c'.
+make[3]: *** No rule to make target `/etc/sound/pndspini.bin', needed by `sound/oss/pndspini.c'.
+
+  + error: No rule to make target include/config/auto.conf:  => N/A
+
+powerpc-randconfig, due to a kconfig issue:
+
+Expose SCOM controllers via debugfs (SCOM_DEBUGFS) [N/y] (NEW) aborted!
+Console input/output is redirected. Run 'make oldconfig' to update configuration
+.
+make[3]: *** [silentoldconfig] Error 1
+
+  + error: sh_mobile_sdhi.c: undefined reference to `shdma_chan_filter':  => .text+0x124658)
+
+sh-randconfig
+
+> [1] http://kisskb.ellerman.id.au/kisskb/head/6461/ (all 120 configs)
+> [3] http://kisskb.ellerman.id.au/kisskb/head/6435/ (all 120 configs)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
