@@ -1,77 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab3GWAor (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:44:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19291 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752717Ab3GWAop (ORCPT
+	id S1753366Ab3GWAqc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:46:32 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:32646 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab3GWAqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:44:45 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=q-5KwEyaYmUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PzHPlaRu3OEA:10 a=mk4uuN6VODAZT9Q9WYUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374540283.3356.115.camel@gandalf.local.home>
-Subject: Re: [PATCH 1/7] tracing: Introduce trace_create_cpu_file() and
- tracing_get_cpu()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 22 Jul 2013 20:44:43 -0400
-In-Reply-To: <20130722171549.GB27080@redhat.com>
-References: <20130722134342.GA18355@redhat.com>
-	 <1374506617.3356.97.camel@gandalf.local.home>
-	 <20130722171549.GB27080@redhat.com>
+	Mon, 22 Jul 2013 20:46:31 -0400
+Message-ID: <1374540337.16322.70.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
+        kosaki.motohiro@gmail.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Date: Mon, 22 Jul 2013 18:45:37 -0600
+In-Reply-To: <51EDCD46.5040502@jp.fujitsu.com>
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+	 <51EDCD46.5040502@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 19:15 +0200, Oleg Nesterov wrote:
-
-> > Otherwise, you might want to fix them if you need
-> > to send a follow up patch set.
+On Tue, 2013-07-23 at 09:24 +0900, Yasuaki Ishimatsu wrote:
+> (2013/07/20 2:47), Toshi Kani wrote:
+> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
+> > interface, which allows a given memory address to be hot-added as
+> > follows. (See Documentation/memory-hotplug.txt for more detail.)
+> > 
+> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
+> > 
+> > This probe interface is required on powerpc. On x86, however, ACPI
+> > notifies a memory hotplug event to the kernel, which performs its
+> > hotplug operation as the result. Therefore, regular users do not need
+> > this interface on x86. This probe interface is also error-prone and
+> > misleading that the kernel blindly adds a given memory address without
+> > checking if the memory is present on the system; no probing is done
+> > despite of its name. The kernel crashes when a user requests to online
+> > a memory block that is not present on the system. This interface is
+> > currently used for testing as it can fake a hotplug event.
+> > 
+> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
+> > its Kconfig menu entry on x86, and clarifies its use in Documentation/
+> > memory-hotplug.txt.
+> > 
+> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
 > 
-> Yes, will do.
+> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+
+Great!  Thanks Yasuaki!
+-Toshi
+
+
 > 
-
-After applying your patches, my tests crashed the kernel. It's fixed
-with the following update. I guess you should merge this into your next
-version.
-
--- Steve
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5e5ff44..db561b5 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2984,7 +2984,7 @@ static int tracing_release(struct inode *inode, struct file *file)
- {
- 	struct trace_array *tr = inode->i_private;
- 	struct seq_file *m = file->private_data;
--	struct trace_iterator *iter = m->private;
-+	struct trace_iterator *iter;
- 	int cpu;
- 
- 	if (!(file->f_mode & FMODE_READ)) {
-@@ -2992,6 +2992,9 @@ static int tracing_release(struct inode *inode, struct file *file)
- 		return 0;
- 	}
- 
-+	/* Writes do not use seq_file */
-+	iter = m->private;
-+
- 	mutex_lock(&trace_types_lock);
- 
- 	for_each_tracing_cpu(cpu) {
+> Thanks,
+> Yasuaki Ishimatsu
+> 
+> > ---
+> >   Documentation/memory-hotplug.txt |   16 +++++++++-------
+> >   arch/x86/Kconfig                 |    7 ++++++-
+> >   2 files changed, 15 insertions(+), 8 deletions(-)
+> > 
+> > diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+> > index 8e5eacb..8fd254c 100644
+> > --- a/Documentation/memory-hotplug.txt
+> > +++ b/Documentation/memory-hotplug.txt
+> > @@ -210,13 +210,15 @@ If memory device is found, memory hotplug code will be called.
+> >   
+> >   4.2 Notify memory hot-add event by hand
+> >   ------------
+> > -In some environments, especially virtualized environment, firmware will not
+> > -notify memory hotplug event to the kernel. For such environment, "probe"
+> > -interface is supported. This interface depends on CONFIG_ARCH_MEMORY_PROBE.
+> > -
+> > -Now, CONFIG_ARCH_MEMORY_PROBE is supported only by powerpc but it does not
+> > -contain highly architecture codes. Please add config if you need "probe"
+> > -interface.
+> > +On powerpc, the firmware does not notify a memory hotplug event to the kernel.
+> > +Therefore, "probe" interface is supported to notify the event to the kernel.
+> > +This interface depends on CONFIG_ARCH_MEMORY_PROBE.
+> > +
+> > +CONFIG_ARCH_MEMORY_PROBE is supported on powerpc only. On x86, this config
+> > +option is disabled by default since ACPI notifies a memory hotplug event to
+> > +the kernel, which performs its hotplug operation as the result. Please
+> > +enable this option if you need the "probe" interface for testing purposes
+> > +on x86.
+> >   
+> >   Probe interface is located at
+> >   /sys/devices/system/memory/probe
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index b32ebf9..408ef68 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -1344,8 +1344,13 @@ config ARCH_SELECT_MEMORY_MODEL
+> >   	depends on ARCH_SPARSEMEM_ENABLE
+> >   
+> >   config ARCH_MEMORY_PROBE
+> > -	def_bool y
+> > +	bool "Enable sysfs memory/probe interface"
+> > +	default n
+> >   	depends on X86_64 && MEMORY_HOTPLUG
+> > +	help
+> > +	  This option enables a sysfs memory/probe interface for testing.
+> > +	  See Documentation/memory-hotplug.txt for more information.
+> > +	  If you are unsure how to answer this question, answer N.
+> >   
+> >   config ARCH_PROC_KCORE_TEXT
+> >   	def_bool y
+> > 
+> 
+> 
 
 
