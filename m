@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754641Ab3GWFBi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 01:01:38 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:10110 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab3GWFBg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 01:01:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 22 Jul 2013 22:00:30 -0700
-Message-ID: <51EE0E2C.8090103@nvidia.com>
-Date: Tue, 23 Jul 2013 14:01:32 +0900
-From: Alex Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754984Ab3GWFDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 01:03:17 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35286 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751174Ab3GWFDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 01:03:15 -0400
+Date: Tue, 23 Jul 2013 07:03:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Borislav Petkov <bp@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] RTC: Add an alarm disable quirk
+Message-ID: <20130723050311.GA8497@pd.tnic>
+References: <1374162294-29726-1-git-send-email-bp@alien8.de>
+ <51E8194E.1030704@linaro.org>
+ <20130718225349.GD15992@pd.tnic>
+ <20130719142628.GC19581@pd.tnic>
+ <20130719151321.GD19581@pd.tnic>
+ <51ED9D15.3010304@linaro.org>
+ <20130722211223.GC4613@pd.tnic>
+ <51EDA10D.6040207@linaro.org>
+ <20130722212746.GE4613@pd.tnic>
+ <51EDAF7D.3000605@linaro.org>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        "gnurou@gmail.com" <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH] decompressors: fix "no limit" output buffer length
-References: <1374476169-32194-1-git-send-email-acourbot@nvidia.com> <1374516481.14712.3.camel@linaro1.home> <51EDE724.5020507@nvidia.com> <51EDF93B.1070101@wwwdotorg.org>
-In-Reply-To: <51EDF93B.1070101@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <51EDAF7D.3000605@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 12:32 PM, Stephen Warren wrote:
-> On 07/22/2013 07:15 PM, Alex Courbot wrote:
-> ...
->> Although the patch seems ok to me in its current form, there are two
->> points for which I still have small doubts:
->>
->> 1) Whether size_t and pointers will have the same size on all platforms.
->
-> ptrsize_t?
->
+On Mon, Jul 22, 2013 at 03:17:33PM -0700, John Stultz wrote:
+> Thanks again for your interest in hunting this down.
 
-Do you mean ptrdiff_t? (I cannot find ptrsize_t anywhere in the kernel)
+Yeah, "interest" is a good euphemism for "it pisses the h*ll out of me"
+:-)
 
-Looking further about the uses of size_t and ptrdiff_t, it seems like 
-size_t is designed to store the maximum addressable member of an array, 
-whereas ptrdiff_t is used to store a substraction of two pointers. In 
-effect, they translate to the unsigned (size_t) and signed (ptrdiff_t) 
-variants of the same type.
+Btw, the failing box runs a SLED11 kernel (3.0.x + a lot of patches)
+while the good box will run latest upstream. Let's see how relevant that
+would be wrt rtc-cmos.
 
-But since here we know that the result of the substraction will always 
-be positive and potentially big (for devices with memory in the lower 
-half of the address space) using size_t sounds safer to avoid overflows 
-and sign-conversion issues (strm->avail_out, where the value of out_len 
-eventually ends, is an unsigned int).
+Let me start playing and see how far we can go...
 
-So point 1) at least seems to be handled correctly with size_t. Point 2) 
-might still be of concern, but if your uncompressed kernel image ends up 
-overflowing your addressable memory, I guess you have a bigger problem 
-to start with. :)
+-- 
+Regards/Gruss,
+    Boris.
 
-Andrew, do you think you can merge this as-is? Sorry if you are not the 
-right person to ask, but there is no clear maintainer for this part of 
-the code and you appear to have handled the latest patches that affect 
-the same file.
-
-Thanks,
-Alex.
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
