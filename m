@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933996Ab3GWVZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:25:56 -0400
-Received: from mail-ye0-f174.google.com ([209.85.213.174]:39981 "EHLO
-	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956Ab3GWVZy (ORCPT
+	id S934009Ab3GWV0s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:26:48 -0400
+Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:35560 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754991Ab3GWV0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:25:54 -0400
-Date: Tue, 23 Jul 2013 17:25:48 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in
- memblock.reserve with numa_meminfo.
-Message-ID: <20130723212548.GZ21100@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
+	Tue, 23 Jul 2013 17:26:47 -0400
+Date: Tue, 23 Jul 2013 17:27:43 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Andi Kleen <ak@linux.intel.com>
+cc: Andi Kleen <andi@firstfloor.org>, acme@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+In-Reply-To: <20130723060108.GA18396@tassilo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020207.51EEF516.001D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 03:59:31PM +0800, Tang Chen wrote:
-> Vasilis Liaskovitis found that before we parse SRAT and fulfill numa_meminfo,
-> the nids of all the regions in memblock.reserve[] are MAX_NUMNODES. That is
-> because nids have not been mapped at that time.
+
+I hate having to justify why breaking the ABI is unacceptable.
+
+
+On Mon, 22 Jul 2013, Andi Kleen wrote:
+
+> On Tue, Jul 23, 2013 at 01:40:40AM -0400, Vince Weaver wrote:
+> > On Mon, 22 Jul 2013, Andi Kleen wrote:
+> > 
+> > > From: Andi Kleen <ak@linux.intel.com>
+> > > 
+> > > Add a precise qualifier, like cpu/event=0x3c,precise=1/
+> > 
+> > So you're adding this to "events/" but not to "format/"?
 > 
-> When we arrange ZONE_MOVABLE in each node later, we need nid in memblock. So
-> after we parse SRAT and fulfill nume_meminfo, synchronize the nid info to
-> memblock.reserve[] immediately.
+> Fair point, but note that precise_ip is a bitfield. Since there is no
+> way to express that currently the parser would need to special case it anyways.
 
-Having a separate sync is rather nasty.  Why not let
-memblock_set_node() and alloc functions set nid on the reserved
-regions?
+It breaks the ABI.  The events/* sysfs files are documented as only 
+holding values for the bitfields described in format/*.
 
-Thanks.
+The perf_event ABI is there for all tools, not to just be a thin shim
+for the perf tool.
 
--- 
-tejun
+Even if the maintainers for whatever are going to just ignore the ABI, 
+then fine, but then I'd like to see a patch also updating the sysfs
+ABI documentation and a patch to the perf_event_open.2 manpage would be 
+nice as well.
+
+> > This will break various existing programs.
+> 
+> Like what?
+
+Why does it matter?  It breaks multiple programs I work on.
+
+A major one is the trinity fuzzer, which parses perf_event sysfs to 
+construct valid events.
+
+The code won't segfault because I wrote the parser to be robust, but it 
+will spit a warning when invalid junk is put in the sysfs events
+files, and I'll get e-mails about it spamming trinity runs with warning 
+messages within hours of such a commit hitting linus-git.
+
+I'm a bit grumpy about this because I just finished fixing the fallout 
+from your last time breaking the ABI a few weeks ago when your broken code 
+started dumping non-hex fields into the sysfs event strings.  I've learned 
+now that I have to go over your patches with a fine-tooth code because you 
+have no regard for the ABI.
+
+Vince
+
+
