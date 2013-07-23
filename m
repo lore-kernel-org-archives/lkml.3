@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab3GWQGt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:06:49 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:53820 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab3GWQGr (ORCPT
+	id S933530Ab3GWQIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:08:46 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44443 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932481Ab3GWQIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:06:47 -0400
+	Tue, 23 Jul 2013 12:08:44 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: Kevin Hilman <khilman@linaro.org>, Graeme Gregory <gg@slimlogic.co.uk>,
+        <linux-omap@vger.kernel.org>, Ruslan Bilovol <ruslan.bilovol@ti.com>,
+        <linux-kernel@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH 0/4] mfd: twl6030-irq: rework and add twl6032 support
+Date: Tue, 23 Jul 2013 19:07:00 +0300
+Message-ID: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
-References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 23 Jul 2013 10:06:26 -0600
-Message-ID: <CAErSpo7TexM5-7Z=8H+B5=49-GzoKd_prn=LbMFZWV9rpdn__A@mail.gmail.com>
-Subject: Re: Linux Plumbers ACPI/PM, PCI Microconference
-To: Myron Stowe <myron.stowe@gmail.com>
-Cc: linux-pci <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
-        virtualization@lists.linux-foundation.org,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 8:21 PM, Myron Stowe <myron.stowe@gmail.com> wrote:
-> Linux Plumbers has approved an ACPI/PM, PCI microconference. The
-> overview page is here:
->
-> http://wiki.linuxplumbersconf.org/2013:pci_subsystem
->
-> We would like to start receiving volunteers for presenting topics of
-> interest.  There is a lot of activity in these subsystems so please
-> respond by submitting presentation or discussion proposals that you
-> would be willing to cover for consideration.  You should also feel
-> free to submit ideas as proposals that others could cover.
+This patch series intorduces twl6030-irq module rework to use Threaded IRQ and
+linear irq_domain, and adds support for PMIC TWL6032 IRQs.
 
-Somebody else privately suggested these ARM/PCI topics:
+After this patch series TWL6030/6032 IRQs will be supported only for DT boot mode.
 
-> -> how it's been cleaned up to be more common across arm-32 machines
-> -> dependencies on dtb
-> -> future use/dependency(s) on ACPI
-> -> hotplug support issues (if any; acpi (host-bridge) vs <whatever ARM uses> ?)
+Based on v3.11-rc1
 
-and I'm interested in those as well.  There seems to be a lot of
-activity in that area.  In addition, I'm interested in ARM IOMMU
-support.  I see drivers/iommu/arm-smmu.c, but it's brand-new and I
-haven't looked at it at all.
+Tested generation of RTC_ALARM(3) and PWRON(0) IRQs on OMAP4430/TWL6030 and
+OMAP4470/TWL6032.
 
-Bjorn
+Grygorii Strashko (2):
+  mfd: twl6030-irq: add error check when IRQs are masked initially
+  mfd: twl6030-irq: convert to use linear irq_domain
+
+Naga Venkata Srikanth V (1):
+  mfd: twl6030-irq: migrate to IRQ threaded handler
+
+Oleksandr Dmytryshyn (1):
+  mfd: twl6030-irq: Add interrupt mapping table for the twl6032
+
+ drivers/mfd/twl6030-irq.c |  296 +++++++++++++++++++++++----------------------
+ 1 file changed, 154 insertions(+), 142 deletions(-)
+
+-- 
+1.7.9.5
+
