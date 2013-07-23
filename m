@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934214Ab3GWSEZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:04:25 -0400
-Received: from sauhun.de ([89.238.76.85]:51159 "EHLO pokefinder.org"
+	id S934237Ab3GWSEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:04:37 -0400
+Received: from sauhun.de ([89.238.76.85]:51174 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934142Ab3GWSEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:04:21 -0400
+	id S933840Ab3GWSEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:04:35 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
-        alsa-devel@alsa-project.org, linux-tegra@vger.kernel.org
-Subject: [PATCH 25/27] sound/soc/tegra: don't check resource with devm_ioremap_resource
-Date: Tue, 23 Jul 2013 20:01:58 +0200
-Message-Id: <1374602524-3398-26-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
+Subject: [PATCH 27/27] thermal: ti-bandgap: cleanup resource allocation
+Date: Tue, 23 Jul 2013 20:02:00 +0200
+Message-Id: <1374602524-3398-28-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
 References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
@@ -22,41 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+When cleaning up usage of devm_ioremap_resource, I found that resource
+allocation in this driver is ugly and buggy. If resource[0] is not
+found, bgp->base will end up NULL, so OOPS. All other resources get
+ioremapped, but their pointers are discarded, so why bother. So, let's
+keep things simple. Just remap resource[0] and pass the error, if any.
+Compile tested only, due to no hardware.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
 Please apply via the subsystem-tree.
 
- sound/soc/tegra/tegra20_ac97.c |    7 -------
- 1 file changed, 7 deletions(-)
+ drivers/thermal/ti-soc-thermal/ti-bandgap.c |   20 ++++----------------
+ 1 file changed, 4 insertions(+), 16 deletions(-)
 
-diff --git a/sound/soc/tegra/tegra20_ac97.c b/sound/soc/tegra/tegra20_ac97.c
-index e58233f..ef3d0e0 100644
---- a/sound/soc/tegra/tegra20_ac97.c
-+++ b/sound/soc/tegra/tegra20_ac97.c
-@@ -334,12 +334,6 @@ static int tegra20_ac97_platform_probe(struct platform_device *pdev)
+diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+index 9dfd471..416be5d 100644
+--- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
++++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
+@@ -1130,7 +1130,6 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ 	const struct of_device_id *of_id;
+ 	struct ti_bandgap *bgp;
+ 	struct resource *res;
+-	int i;
+ 
+ 	/* just for the sake */
+ 	if (!node) {
+@@ -1156,21 +1155,10 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
+ 		return ERR_PTR(-ENOMEM);
  	}
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!mem) {
--		dev_err(&pdev->dev, "No memory resource\n");
--		ret = -ENODEV;
--		goto err_clk_put;
--	}
+-	i = 0;
+-	do {
+-		void __iomem *chunk;
 -
- 	regs = devm_ioremap_resource(&pdev->dev, mem);
- 	if (IS_ERR(regs)) {
- 		ret = PTR_ERR(regs);
-@@ -432,7 +426,6 @@ static int tegra20_ac97_platform_probe(struct platform_device *pdev)
+-		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
+-		if (!res)
+-			break;
+-		chunk = devm_ioremap_resource(&pdev->dev, res);
+-		if (i == 0)
+-			bgp->base = chunk;
+-		if (IS_ERR(chunk))
+-			return ERR_CAST(chunk);
+-
+-		i++;
+-	} while (res);
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	bgp->base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(bgp->base))
++		return bgp->base;
  
- 	return 0;
- 
--err_unregister_pcm:
- 	tegra_pcm_platform_unregister(&pdev->dev);
- err_unregister_component:
- 	snd_soc_unregister_component(&pdev->dev);
+ 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
+ 		bgp->tshut_gpio = of_get_gpio(node, 0);
 -- 
 1.7.10.4
 
