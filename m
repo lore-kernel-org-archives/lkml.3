@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934958Ab3GWW2L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:28:11 -0400
+	id S934975Ab3GWW27 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:28:59 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934342Ab3GWW2E (ORCPT
+	with ESMTP id S934343Ab3GWW2H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:04 -0400
+	Tue, 23 Jul 2013 18:28:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Alexander Z Lam <azl@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>,
         Alexander Z Lam <lambchop468@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 098/103] tracing: Make trace_marker use the correct per-instance buffer
-Date: Tue, 23 Jul 2013 15:26:49 -0700
-Message-Id: <20130723220432.931683311@linuxfoundation.org>
+Subject: [ 099/103] tracing: Protect ftrace_trace_arrays list in trace_events.c
+Date: Tue, 23 Jul 2013 15:26:50 -0700
+Message-Id: <20130723220433.136055425@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -31,43 +32,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alexander Z Lam <azl@google.com>
 
-commit 2d71619c59fac95a5415a326162fa046161b938c upstream.
+commit a82274151af2b075163e3c42c828529dee311487 upstream.
 
-The trace_marker file was present for each new instance created, but it
-added the trace mark to the global trace buffer instead of to
-the instance's buffer.
+There are multiple places where the ftrace_trace_arrays list is accessed in
+trace_events.c without the trace_types_lock held.
 
-Link: http://lkml.kernel.org/r/1372717885-4543-2-git-send-email-azl@google.com
+Link: http://lkml.kernel.org/r/1372732674-22726-1-git-send-email-azl@google.com
 
 Signed-off-by: Alexander Z Lam <azl@google.com>
-Cc: David Sharp <dhsharp@google.com>
 Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: David Sharp <dhsharp@google.com>
 Cc: Alexander Z Lam <lambchop468@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/trace/trace.c        |    2 +-
+ kernel/trace/trace.h        |    2 ++
+ kernel/trace/trace_events.c |   11 ++++++++++-
+ 3 files changed, 13 insertions(+), 2 deletions(-)
 
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -4328,6 +4328,7 @@ tracing_mark_write(struct file *filp, co
- 					size_t cnt, loff_t *fpos)
- {
- 	unsigned long addr = (unsigned long)ubuf;
-+	struct trace_array *tr = filp->private_data;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
- 	struct print_entry *entry;
-@@ -4387,7 +4388,7 @@ tracing_mark_write(struct file *filp, co
+@@ -240,7 +240,7 @@ static struct tracer		*trace_types __rea
+ /*
+  * trace_types_lock is used to protect the trace_types list.
+  */
+-static DEFINE_MUTEX(trace_types_lock);
++DEFINE_MUTEX(trace_types_lock);
  
- 	local_save_flags(irq_flags);
- 	size = sizeof(*entry) + cnt + 2; /* possible \n added */
--	buffer = global_trace.trace_buffer.buffer;
-+	buffer = tr->trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer, TRACE_PRINT, size,
- 					  irq_flags, preempt_count());
- 	if (!event) {
+ /*
+  * serialize the access of the ring buffer
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -224,6 +224,8 @@ enum {
+ 
+ extern struct list_head ftrace_trace_arrays;
+ 
++extern struct mutex trace_types_lock;
++
+ /*
+  * The global tracer (top) should be the first trace array added,
+  * but we check the flag anyway.
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1011,6 +1011,7 @@ static int subsystem_open(struct inode *
+ 	int ret;
+ 
+ 	/* Make sure the system still exists */
++	mutex_lock(&trace_types_lock);
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
+ 		list_for_each_entry(dir, &tr->systems, list) {
+@@ -1026,6 +1027,7 @@ static int subsystem_open(struct inode *
+ 	}
+  exit_loop:
+ 	mutex_unlock(&event_mutex);
++	mutex_unlock(&trace_types_lock);
+ 
+ 	if (!system)
+ 		return -ENODEV;
+@@ -1620,6 +1622,7 @@ static void __add_event_to_tracers(struc
+ int trace_add_event_call(struct ftrace_event_call *call)
+ {
+ 	int ret;
++	mutex_lock(&trace_types_lock);
+ 	mutex_lock(&event_mutex);
+ 
+ 	ret = __register_event(call, NULL);
+@@ -1627,11 +1630,13 @@ int trace_add_event_call(struct ftrace_e
+ 		__add_event_to_tracers(call, NULL);
+ 
+ 	mutex_unlock(&event_mutex);
++	mutex_unlock(&trace_types_lock);
+ 	return ret;
+ }
+ 
+ /*
+- * Must be called under locking both of event_mutex and trace_event_sem.
++ * Must be called under locking of trace_types_lock, event_mutex and
++ * trace_event_sem.
+  */
+ static void __trace_remove_event_call(struct ftrace_event_call *call)
+ {
+@@ -1643,11 +1648,13 @@ static void __trace_remove_event_call(st
+ /* Remove an event_call */
+ void trace_remove_event_call(struct ftrace_event_call *call)
+ {
++	mutex_lock(&trace_types_lock);
+ 	mutex_lock(&event_mutex);
+ 	down_write(&trace_event_sem);
+ 	__trace_remove_event_call(call);
+ 	up_write(&trace_event_sem);
+ 	mutex_unlock(&event_mutex);
++	mutex_unlock(&trace_types_lock);
+ }
+ 
+ #define for_each_event(event, start, end)			\
+@@ -1791,6 +1798,7 @@ static int trace_module_notify(struct no
+ {
+ 	struct module *mod = data;
+ 
++	mutex_lock(&trace_types_lock);
+ 	mutex_lock(&event_mutex);
+ 	switch (val) {
+ 	case MODULE_STATE_COMING:
+@@ -1801,6 +1809,7 @@ static int trace_module_notify(struct no
+ 		break;
+ 	}
+ 	mutex_unlock(&event_mutex);
++	mutex_unlock(&trace_types_lock);
+ 
+ 	return 0;
+ }
 
 
