@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933642Ab3GWQUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:20:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:44193 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933104Ab3GWQUR (ORCPT
+	id S933667Ab3GWQUY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:20:24 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:63945 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933104Ab3GWQUV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:20:17 -0400
-Message-ID: <51EEAD3E.1040606@nvidia.com>
-Date: Tue, 23 Jul 2013 09:20:14 -0700
-From: Stephen Warren <swarren@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 23 Jul 2013 12:20:21 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: linus.walleij@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        rob@landley.net, devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        kishon@ti.com, j-keerthy@ti.com, gg@slimlogic.co.uk
-Subject: Re: [PATCH V4] gpio: palmas: add dt support
-References: <1374564964-1281-1-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1374564964-1281-1-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <CADZ9YHgdK86MuGk7QcsYt+pRZpJ7GYG-rUWf77p9jWZvkw+i5w@mail.gmail.com>
+References: <1374594257.5382.5.camel@localhost.localdomain>
+	<20130723154736.GB27075@twins.programming.kicks-ass.net>
+	<CADZ9YHgdK86MuGk7QcsYt+pRZpJ7GYG-rUWf77p9jWZvkw+i5w@mail.gmail.com>
+Date: Tue, 23 Jul 2013 22:20:20 +0600
+Message-ID: <CADZ9YHj9vQU7Ki2+mCH5TPGUrn_d3V5bks9dumyEGcMwX3XApA@mail.gmail.com>
+Subject: Re: [PATCH, RFC] sched: update_top_cache_domain only at the times of
+ building sched domain.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 12:36 AM, Laxman Dewangan wrote:
-> Add of_device_id table for Palma GPIO to be enable the
-> driver from DT file.
-> 
-> The driver can be registered from DT file as:
-> 	palmas: tps65913@58 {
-> 		:::::::::::
-> 		palmas_gpio: palmas_gpio {
-> 			compatible = "ti,palmas-gpio";
-> 			gpio-controller;
-> 			#gpio-cells = <2>;
-> 		};
-> 	};
+On Tue, Jul 23, 2013 at 10:09 PM, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> On Tue, Jul 23, 2013 at 9:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, Jul 23, 2013 at 09:44:17PM +0600, Rakib Mullick wrote:
+>>>  Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
+>>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
+>>> domain and update only at the times of building schedule domains.
+>>>
+>>>       partition_sched_domains()
+>>>               detach_destroy_domain()
+>>>                       cpu_attach_domain()
+>>>                               update_top_cache_domain()
+>>>               build_sched_domains()
+>>>                       cpu_attach_domain()
+>>>                               update_top_cache_domain()
+>>>
+>>
+>> Does it really matter?
+>
+> Why should we do it twice? More importantly at the time of destroying
+> even though we know it'll be built again just few moment later.
+>
+>>
+>>
+>> This just makes the code uglier for no gain afaict.
+>>
+>> If you really need to do this, key off @sd == NULL or something.
+>
+> Sorry, would you please a bit more clearer? I can't pick what you're suggesting.
 
-The binding at least,
-Acked-by: Stephen Warren <swarren@nvidia.com>
-
-> diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
-
->  #ifdef CONFIG_OF_GPIO
-> -	palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
-> +	palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
->  #endif
-
-That still scares me slightly, in case someone is already using this
-driver and this changes how it works, and it breaks something, but I
-don't think anyone is, so this should be OK too.
+You mean using sd == NULL rather than using update_cache_domain variable ?
