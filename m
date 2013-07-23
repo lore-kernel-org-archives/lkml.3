@@ -1,92 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933236Ab3GWPrq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:47:46 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:44449 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932138Ab3GWPro (ORCPT
+	id S933328Ab3GWPsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:48:10 -0400
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:40276 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927Ab3GWPsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:47:44 -0400
-Date: Tue, 23 Jul 2013 17:47:36 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rakib Mullick <rakib.mullick@gmail.com>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] sched: update_top_cache_domain only at the times of
- building sched domain.
-Message-ID: <20130723154736.GB27075@twins.programming.kicks-ass.net>
-References: <1374594257.5382.5.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374594257.5382.5.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Tue, 23 Jul 2013 11:48:05 -0400
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Vivek Goyal <vgoyal@redhat.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Willeke <willeke@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, kexec@lists.infradead.org
+Subject: [PATCH v8 3/6] vmcore: Introduce remap_oldmem_pfn_range()
+Date: Tue, 23 Jul 2013 17:47:56 +0200
+Message-Id: <1374594479-64671-4-git-send-email-holzheu@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.2.3
+In-Reply-To: <1374594479-64671-1-git-send-email-holzheu@linux.vnet.ibm.com>
+References: <1374594479-64671-1-git-send-email-holzheu@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072315-0342-0000-0000-000005A8E3E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 09:44:17PM +0600, Rakib Mullick wrote:
->  Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
-> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
-> domain and update only at the times of building schedule domains.
-> 
-> 	partition_sched_domains()
-> 		detach_destroy_domain()
-> 			cpu_attach_domain()
-> 				update_top_cache_domain()
-> 		build_sched_domains()
-> 			cpu_attach_domain()
-> 				update_top_cache_domain()
-> 		
+For zfcpdump we can't map the HSA storage because it is only available
+via a read interface. Therefore, for the new vmcore mmap feature we have
+introduce a new mechanism to create mappings on demand.
 
-Does it really matter?
+This patch introduces a new architecture function remap_oldmem_pfn_range()
+that should be used to create mappings with remap_pfn_range() for oldmem
+areas that can be directly mapped. For zfcpdump this is everything besides
+of the HSA memory. For the areas that are not mapped by remap_oldmem_pfn_range()
+a generic vmcore a new generic vmcore fault handler mmap_vmcore_fault()
+is called.
 
-> 
-> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
-> ---
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b7c32cb..8c6fee4 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5102,8 +5102,8 @@ static void update_top_cache_domain(int cpu)
->   * Attach the domain 'sd' to 'cpu' as its base domain. Callers must
->   * hold the hotplug lock.
->   */
-> -static void
-> -cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
-> +static void cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd,
-> +				int cpu, bool update_cache_domain)
->  {
->  	struct rq *rq = cpu_rq(cpu);
->  	struct sched_domain *tmp;
-> @@ -5138,7 +5138,8 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
->  	rcu_assign_pointer(rq->sd, sd);
->  	destroy_sched_domains(tmp, cpu);
->  
-> -	update_top_cache_domain(cpu);
-> +	if (update_cache_domain)
-> +		update_top_cache_domain(cpu);
->  }
->  
->  /* cpus with isolated domains */
-> @@ -6021,7 +6022,7 @@ static int build_sched_domains(const struct cpumask *cpu_map,
->  	rcu_read_lock();
->  	for_each_cpu(i, cpu_map) {
->  		sd = *per_cpu_ptr(d.sd, i);
-> -		cpu_attach_domain(sd, d.rd, i);
-> +		cpu_attach_domain(sd, d.rd, i, 1);
->  	}
->  	rcu_read_unlock();
->  
-> @@ -6109,7 +6110,7 @@ static void detach_destroy_domains(const struct cpumask *cpu_map)
->  
->  	rcu_read_lock();
->  	for_each_cpu(i, cpu_map)
-> -		cpu_attach_domain(NULL, &def_root_domain, i);
-> +		cpu_attach_domain(NULL, &def_root_domain, i, 0);
->  	rcu_read_unlock();
->  }
+This handler works as follows:
 
-This just makes the code uglier for no gain afaict.
+* Get already available or new page from page cache (find_or_create_page)
+* Check if /proc/vmcore page is filled with data (PageUptodate)
+* If yes:
+  Return that page
+* If no:
+  Fill page using __vmcore_read(), set PageUptodate, and return page
 
-If you really need to do this, key off @sd == NULL or something.
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+---
+ fs/proc/vmcore.c           | 91 ++++++++++++++++++++++++++++++++++++++++++----
+ include/linux/crash_dump.h |  3 ++
+ 2 files changed, 86 insertions(+), 8 deletions(-)
+
+diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
+index 02cb3ff..3f6cf0e 100644
+--- a/fs/proc/vmcore.c
++++ b/fs/proc/vmcore.c
+@@ -21,6 +21,7 @@
+ #include <linux/crash_dump.h>
+ #include <linux/list.h>
+ #include <linux/vmalloc.h>
++#include <linux/pagemap.h>
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+ #include "internal.h"
+@@ -153,11 +154,35 @@ ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos)
+ 	return read_from_oldmem(buf, count, ppos, 0);
+ }
+ 
++/*
++ * Architectures may override this function to map oldmem
++ */
++int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
++				  unsigned long from, unsigned long pfn,
++				  unsigned long size, pgprot_t prot)
++{
++	return remap_pfn_range(vma, from, pfn, size, prot);
++}
++
++/*
++ * Copy to either kernel or user space
++ */
++static int copy_to(void *target, void *src, size_t size, int userbuf)
++{
++	if (userbuf) {
++		if (copy_to_user(target, src, size))
++			return -EFAULT;
++	} else {
++		memcpy(target, src, size);
++	}
++	return 0;
++}
++
+ /* Read from the ELF header and then the crash dump. On error, negative value is
+  * returned otherwise number of bytes read are returned.
+  */
+-static ssize_t read_vmcore(struct file *file, char __user *buffer,
+-				size_t buflen, loff_t *fpos)
++static ssize_t __read_vmcore(char *buffer, size_t buflen, loff_t *fpos,
++			     int userbuf)
+ {
+ 	ssize_t acc = 0, tmp;
+ 	size_t tsz;
+@@ -174,7 +199,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	/* Read ELF core header */
+ 	if (*fpos < elfcorebuf_sz) {
+ 		tsz = min(elfcorebuf_sz - (size_t)*fpos, buflen);
+-		if (copy_to_user(buffer, elfcorebuf + *fpos, tsz))
++		if (copy_to(buffer, elfcorebuf + *fpos, tsz, userbuf))
+ 			return -EFAULT;
+ 		buflen -= tsz;
+ 		*fpos += tsz;
+@@ -192,7 +217,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 
+ 		tsz = min(elfcorebuf_sz + elfnotes_sz - (size_t)*fpos, buflen);
+ 		kaddr = elfnotes_buf + *fpos - elfcorebuf_sz;
+-		if (copy_to_user(buffer, kaddr, tsz))
++		if (copy_to(buffer, kaddr, tsz, userbuf))
+ 			return -EFAULT;
+ 		buflen -= tsz;
+ 		*fpos += tsz;
+@@ -208,7 +233,7 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 		if (*fpos < m->offset + m->size) {
+ 			tsz = min_t(size_t, m->offset + m->size - *fpos, buflen);
+ 			start = m->paddr + *fpos - m->offset;
+-			tmp = read_from_oldmem(buffer, tsz, &start, 1);
++			tmp = read_from_oldmem(buffer, tsz, &start, userbuf);
+ 			if (tmp < 0)
+ 				return tmp;
+ 			buflen -= tsz;
+@@ -225,6 +250,55 @@ static ssize_t read_vmcore(struct file *file, char __user *buffer,
+ 	return acc;
+ }
+ 
++static ssize_t read_vmcore(struct file *file, char __user *buffer,
++			   size_t buflen, loff_t *fpos)
++{
++	return __read_vmcore(buffer, buflen, fpos, 1);
++}
++
++/*
++ * The vmcore fault handler uses the page cache and fills data using the
++ * standard __vmcore_read() function.
++ *
++ * On s390 the fault handler is used for memory regions that can't be mapped
++ * directly with remap_pfn_range().
++ */
++static int mmap_vmcore_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++#ifdef CONFIG_S390
++	struct address_space *mapping = vma->vm_file->f_mapping;
++	pgoff_t index = vmf->pgoff;
++	struct page *page;
++	loff_t offset;
++	char *buf;
++	int rc;
++
++	page = find_or_create_page(mapping, index, GFP_KERNEL);
++	if (!page)
++		return VM_FAULT_OOM;
++	if (!PageUptodate(page)) {
++		offset = (loff_t) index << PAGE_CACHE_SHIFT;
++		buf = __va((page_to_pfn(page) << PAGE_SHIFT));
++		rc = __read_vmcore(buf, PAGE_SIZE, &offset, 0);
++		if (rc < 0) {
++			unlock_page(page);
++			page_cache_release(page);
++			return (rc == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS;
++		}
++		SetPageUptodate(page);
++	}
++	unlock_page(page);
++	vmf->page = page;
++	return 0;
++#else
++	return VM_FAULT_SIGBUS;
++#endif
++}
++
++static const struct vm_operations_struct vmcore_mmap_ops = {
++	.fault = mmap_vmcore_fault,
++};
++
+ /**
+  * alloc_elfnotes_buf - allocate buffer for ELF note segment in
+  *                      vmalloc memory
+@@ -271,6 +345,7 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 	vma->vm_flags &= ~(VM_MAYWRITE | VM_MAYEXEC);
+ 	vma->vm_flags |= VM_MIXEDMAP;
++	vma->vm_ops = &vmcore_mmap_ops;
+ 
+ 	len = 0;
+ 
+@@ -312,9 +387,9 @@ static int mmap_vmcore(struct file *file, struct vm_area_struct *vma)
+ 
+ 			tsz = min_t(size_t, m->offset + m->size - start, size);
+ 			paddr = m->paddr + start - m->offset;
+-			if (remap_pfn_range(vma, vma->vm_start + len,
+-					    paddr >> PAGE_SHIFT, tsz,
+-					    vma->vm_page_prot))
++			if (remap_oldmem_pfn_range(vma, vma->vm_start + len,
++						   paddr >> PAGE_SHIFT, tsz,
++						   vma->vm_page_prot))
+ 				goto fail;
+ 			size -= tsz;
+ 			start += tsz;
+diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
+index 6571f82..fe68a5a 100644
+--- a/include/linux/crash_dump.h
++++ b/include/linux/crash_dump.h
+@@ -17,6 +17,9 @@ extern int __weak elfcorehdr_alloc(unsigned long long *addr,
+ extern void __weak elfcorehdr_free(unsigned long long addr);
+ extern ssize_t __weak elfcorehdr_read(char *buf, size_t count, u64 *ppos);
+ extern ssize_t __weak elfcorehdr_read_notes(char *buf, size_t count, u64 *ppos);
++extern int __weak remap_oldmem_pfn_range(struct vm_area_struct *vma,
++					 unsigned long from, unsigned long pfn,
++					 unsigned long size, pgprot_t prot);
+ 
+ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
+ 						unsigned long, int);
+-- 
+1.8.2.3
+
