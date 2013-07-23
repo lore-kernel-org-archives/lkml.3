@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab3GWU7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:59:34 -0400
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:56878 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758037Ab3GWU72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S933536Ab3GWU72 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Jul 2013 16:59:28 -0400
-Date: Tue, 23 Jul 2013 22:59:23 +0200
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] x86, microcode: Don't lose error returns in
- save_microcode_in_initrd()
-Message-ID: <20130723225923.352bc442@googlemail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:63635 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756516Ab3GWU70 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:59:26 -0400
+Date: Tue, 23 Jul 2013 16:59:19 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 15/21] x86, acpi, numa: Don't reserve memory on nodes the
+ kernel resides in.
+Message-ID: <20130723205919.GT21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-16-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374220774-29974-16-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't lose the error return.
-This was lost when early amd microcode loading was added in
-757885e94a22bcc82beb9b1445c95218cb20ceab
+Hello,
 
-Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+On Fri, Jul 19, 2013 at 03:59:28PM +0800, Tang Chen wrote:
+>  /*
+> + * kernel_resides_in_range - Check if kernel resides in a memory range.
+> + * @base: The base address of the memory range.
+> + * @length: The length of the memory range.
+> + *
+> + * memblock reserves some memory for the kernel at very early time, such
+> + * as kernel code and data segments, initrd file, and so on. So this
+> + * function iterates memblock.reserved[] and check if any memory range with
+> + * flag MEMBLK_FLAGS_DEFAULT overlaps [@base, @length). If so, the kernel
+> + * resides in this memory range.
+> + *
+> + * Return true if the kernel resides in the memory range, false otherwise.
+> + */
+> +static bool __init kernel_resides_in_range(phys_addr_t base, u64 length)
+> +{
+> +	int i;
+> +	struct memblock_type *reserved = &memblock.reserved;
+> +	struct memblock_region *region;
+> +	phys_addr_t start, end;
+> +
+> +	for (i = 0; i < reserved->cnt; i++) {
+> +		region = &reserved->regions[i];
+> +
+> +		if (region->flags != MEMBLK_FLAGS_DEFAULT)
+> +			continue;
+> +
+> +		start = region->base;
+> +		end = region->base + region->size;
+> +		if (end <= base || start >= base + length)
+> +			continue;
+> +
+> +		return true;
+> +	}
+> +
+> +	return false;
+> +}
 
---- a/arch/x86/kernel/microcode_core_early.c	2013-07-23 19:44:05.509516795 +0200
-+++ b/arch/x86/kernel/microcode_core_early.c	2013-07-23 19:58:34.459509474 +0200
-@@ -127,11 +127,11 @@ int __init save_microcode_in_initrd(void
- 	switch (c->x86_vendor) {
- 	case X86_VENDOR_INTEL:
- 		if (c->x86 >= 6)
--			save_microcode_in_initrd_intel();
-+			return save_microcode_in_initrd_intel();
- 		break;
- 	case X86_VENDOR_AMD:
- 		if (c->x86 >= 0x10)
--			save_microcode_in_initrd_amd();
-+			return save_microcode_in_initrd_amd();
- 		break;
- 	default:
- 		break;
+This being in acpi/osl.c is rather weird.  Overall, the acpi and
+memblock parts don't seem very well split.  It'd best if acpi just
+indicates which regions are hotpluggable and the rest is handled by
+x86 boot or memblock code as appropriate.
+
+Thanks.
+
+-- 
+tejun
