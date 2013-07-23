@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab3GWMkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 08:40:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42794 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab3GWMks (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 08:40:48 -0400
-Date: Tue, 23 Jul 2013 13:40:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Tonello <eu@felipetonello.com>
-Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
-        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
-        linux-kernel@vger.kernel.org,
-        "Felipe F. Tonello" <ftonello@cercacor.com>
-Message-ID: <20130723124023.GX9858@sirena.org.uk>
-References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
- <20130722000157.GI9858@sirena.org.uk>
- <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OGBBnVs4XFPv5LQD"
-Content-Disposition: inline
-In-Reply-To: <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1757382Ab3GWMnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 08:43:35 -0400
+Received: from smtp.witbe.net ([81.88.96.48]:60992 "EHLO smtp.witbe.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756432Ab3GWMnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 08:43:33 -0400
+X-Greylist: delayed 698 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Jul 2013 08:43:32 EDT
+Date: Tue, 23 Jul 2013 14:29:07 +0200
+From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
+	<rol@witbe.net>
+To: Richard Genoud <richard.genoud@gmail.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rol@witbe.net
+Subject: Re: rtl8192cu: slow path warning
+Message-ID: <20130723142907.53103aab@tux.DEF.witbe.net>
+In-Reply-To: <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
+References: <20130611123814.GA9854@lnx-rg>
+	<20130626142241.GA13107@lnx-rg>
+	<51CB0E9C.50408@lwfinger.net>
+	<CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
+Organization: Witbe.net
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
+X-Ncc-RegId: fr.witbe
+X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Vmhjf/KX18mZcfFQH++q5Q+"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/Vmhjf/KX18mZcfFQH++q5Q+
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
---OGBBnVs4XFPv5LQD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hello,
 
-On Mon, Jul 22, 2013 at 02:11:44PM -0700, Felipe Tonello wrote:
+On Thu, 27 Jun 2013 09:33:20 +0200
+Richard Genoud <richard.genoud@gmail.com> wrote:
 
-> My question is: Why ALSA Jack support uses evdev input events to
-> notify user-space? Is there any user-space relying on that? If no, I
-> would like to change ALSA Jack implementation to only use KControl and
-> remove specific implementations.
+> Yes, of course, you can add my
+> Reported-by: Richard Genoud <richard.genoud@gmail.com>
+>=20
+> But the patch doesn't compile on my platform ( since I'm on ARM, I
+> haven't got a PCI bus, so rtlwifi/pci.c is not compiled ) :
+>=20
+> ERROR: "rtl_lps_change_work_callback"
+> [drivers/net/wireless/rtlwifi/rtlwifi.ko] undefined!
 
-This was the existing kernel API at the time that the code was added -
-I beleive people had been doing that for simple switches that detect the
-physical presence of a jack since it looks exactly like a button from a
-hardware point of view.  See the original commit adding the code.
+Is that the reason why this patch is not yet in 3.10.x or 3.11-rcY ?
+I'm running a 3.10.1 with USB dongle including 8192CU, and I can see this
+warning when the machine starts.
+I've check 3.10.1, 3.10.2 and 3.11-rc3 source code, but this fix is not
+there. Is there a different fix that went in in 3.10.2 or 3.11-rc?
 
---OGBBnVs4XFPv5LQD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Best,
+Paul
+
+--Sig_/Vmhjf/KX18mZcfFQH++q5Q+
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR7nm0AAoJELSic+t+oim9PRkP/22oRPWQG+XHKy0GHH7lSILu
-hTulnGK9WyS/db0Y0u+XLOycL8FtEejfy9khf5p2D5fGAHH4CbCirgQNzwR6rpS7
-wCTSyW3cGGhUVcH7ZwtBHbk6VjfNQJYWU7/ZZG13Jhv+aQwe4adnk4Tz1llnNC3e
-NbFl3kqgzkgCLsTJ1OxIu7LXoiMqOGnnonEPHA3jSZLFoDjf+VZpYqXYn1qv1T0p
-rajtUPXOE6SFt706xu0fJBGTvc2eRUWTbnrAEYKvbSj+VLRlDlIH7sNUQ8EgGcmT
-TR2hnlB31NhwuTVwH1oyaxjkdg8XMz1SwXJMS9LbJlmKVeeBAygPxXetxrVRttw4
-fl5CMJJhPHHtFgYzplRqdUlQvl1szJOjM6Ua6VAWBsmjX8XHI86REz6N6Q7eHMeJ
-XbzXkQ5rDseYElA8tcUktnfEvCfn6+vPgH/6zShJUVBSylHvB8WpzM8Bw54RdJV+
-hMSzNA/A2zRJTsqWWJ+as1r7Pk8e0vTtA0IwIiaj0xrvU+LFSg2eCIvDKS5DZyI+
-RhFm+/HuUjug7H+l99dvXgKOq4kIWliC4876ZYGEOQ8MGwlnWJlFKBVl7RsByp6W
-O6vEl/IC2wIAB39Bj6INGLlAFy+KTmOFlplrj2W6Rv8rJ0ddTtDOm40f+8bu1hIv
-BrTVxNC27QJ1AdsEs1ae
-=WAKP
+iEYEARECAAYFAlHudxMACgkQZP464AVDf+DQQwCggiZm/Z9jhld9l6twYkzKDgrf
+P7IAn3BHVpFJNQoiGoK96Rvac8xZ9ezx
+=45Kc
 -----END PGP SIGNATURE-----
 
---OGBBnVs4XFPv5LQD--
+--Sig_/Vmhjf/KX18mZcfFQH++q5Q+--
