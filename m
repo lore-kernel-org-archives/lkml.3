@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750Ab3GWBaQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 21:30:16 -0400
-Received: from mail51.corpease.net ([61.145.121.41]:64742 "EHLO
-	mail51.corpease.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750872Ab3GWBaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 21:30:14 -0400
-X-Greylist: delayed 672 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Jul 2013 21:30:13 EDT
-Date: Tue, 23 Jul 2013 09:19:45 +0800
-From: "Qwjf" <sales1@chinamiaoji.com>
-Reply-To: swt@swtindustry.com
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: A4 paper here
-Message-ID: <201307230919452650898@chinamiaoji.com>
-X-Mailer: Foxmail 6, 10, 201, 20 [cn]
+	id S1753905Ab3GWBbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 21:31:44 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:33848 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750747Ab3GWBbm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 21:31:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Colin Cross <ccross@android.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Leun <lkml20130126@newton.leun.net>,
+        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH v3 13/16] futex: use freezable blocking call)
+Date: Tue, 23 Jul 2013 03:41:42 +0200
+Message-ID: <15305281.aClQ8XUG9t@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
+References: <1367884221-20462-1-git-send-email-ccross@android.com> <CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com> <CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="GB2312"
-X-CM-TRANSID: KQGowJCr6wIC2u1RvhsBAA--.567S4
-X-Coremail-Antispam: 1UD129KBjDUn29KB7ZKAUJUUUUU529EdanIXcx71UUUUU7v73
-	VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UUUFf7k042IEc7kJM7k042IE4IxYO2xFxVAq
-	jxCEw4Av424lb7IF0VCFIxCj07C26xAqzxv262kKe7AKxwAYjxAI6xCI4x8I1I0E4c8EcI
-	0Ec7CjxVAaw2AFwI1lb7IF0VCFIxCj07C26xCIbckI1I0E14v7M7k0a2IF6F4UM7kC6x80
-	4xWl14x267AKxVWUJVW8JwAFc2x0x2IEx4CE42xK8VAvwI8IcIk0rVWrJVCq3wAFIxvE14
-	AKwVWUJVWUGwA2ocxC64kIII0Yj41l84x0c7CEw4AK67xGY2AK021l84ACjcxK6xIIjxv2
-	0xvE14v26r4j6ryUM28EF7xvwVC0I7IYx2IY6xkF7I0E14v26r4j6F4UM28EF7xvwVC2z2
-	80aVAFwI0_Gr1j6F4UJwA2z4x0Y4vEx4A2jsIEc7CjxVAFwI0_Gr1j6F4UJwAawVACjsI_
-	Ar4v6c8GOVW06r1DJrWUAwAS0I0E0xvYzxvE52x082IY62kv0487Mc804VCqF7xvr2I5Mc
-	02F40EFcxC0VAKzVAqx4xG6I80ewAv7VC0I7IYx2IY67AKxVWUAVWUtwAv7VC2z280aVAF
-	wI0_Gr1j6F4UJwAm72CE4IkC6x0Yz7v_Jr0_Gr1lF7xvr2IYc2Ij64vIr41lFcxC0VAYjx
-	AxZF0Ew4CEw7xC0wACY4xI67k04243AVC20s07MxkIecxEwVAFwVWkMxAIw28IcxkI7VAK
-	I48JMxAqzxv262kKe7AKxVW8Zr0_WryUMxAqzxv26xkF7I0En4kS14v26r43JVWrXr1l4I
-	8I3I0E4IkC6x0Yz7v_Jr0_Gr1l4IxYO2xFxVAFwI0_GFyj6rW5JwCFI7vE0wC20s026c02
-	F40E14v26r1j6r18MI8I3I0E7480Y4vE14v26r106r1rMI8E67AF67kF1VAFwI0_Jr0_Jr
-	ylIxkGc2Ij64vIr41lIxAIcVC0I7IYx2IY67AKxVWUJVWUCwCI42IY6xIIjxv20xvEc7Cj
-	xVAFwI0_Jr0_Gr1lIxAIcVCF04k26cxKx2IYs7xG6Fyj6rWUJwCI42IY6I8E87Iv67AKxV
-	W8Jr0_Cr1UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Gr1j6F4UJwCE64xvF2IEb7IF0Fy7YxBI
-	daVFxhVjvjDU0xZFpf9x07b4MKZUUUUU=
-X-CM-SenderInfo: 5vdov2ur6fxx5qdpxtxrmlhudrp/
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6N1UMRj014920
 
-Dear Purchasing manager:
-Nice time to you
+On Monday, July 22, 2013 05:42:49 PM Colin Cross wrote:
+> On Mon, Jul 22, 2013 at 5:32 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Mon, Jul 22, 2013 at 4:55 PM, Colin Cross <ccross@android.com> wrote:
+> >>
+> >> I think the right solution is to add a flag to the freezing task that
+> >> marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
+> >> normally used on kernel threads, can you see if the attached patch
+> >> helps?
+> >
+> > Hmm. That does seem to be the right thing to do, but I wonder about
+> > the *other* callers of freeze_processes() IOW, kexec and friends.
+> >
+> > So maybe we should do this in {freeze|thaw}_processes() itself, and
+> > just make the rule be that the caller of freeze_processes() itself is
+> > obviously not frozen, and has to be the same one that then thaws
+> > things?
+> >
+> > Colin? Rafael? Comments?
+> >
+> >                 Linus
+> 
+> I was worried about clearing the flag in thaw_processes().  If a
+> kernel thread with PF_NOFREEZE set ever called thaw_processes(), which
+> autosleep might do, it would clear the flag.  Or if a different thread
+> called freeze_processes() and thaw_processes().
 
-It is my big pleasure to hear you need A4 paper
-If you still need that pls tell me
+Is that legitimate?
 
-Then i can send you our best price
-Best wishes
-Ida
+> All the other callers besides the SNAPSHOT_FREEZE ioctl stay in the kernel
+> between freeze_processes() and thaw_processes(), which makes the fanout of
+> places that could call try_to_freeze() much more controllable.
+> 
+> Using a new flag that operates like PF_NOFREEZE but doesn't conflict
+> with it, or a nofreeze_depth counter, would also work.
 
-Ida Chen
+Well, that would be robust enough.  At least if the purpose of that new flag
+is clearly specified, people hopefully won't be tempted to optimize it away in
+the future.
 
-SALES MANAGER
+Thanks,
+Rafael
 
-East Siweite industry Co., Ltd
-www.dfswtpaper.com
 
-SKYPE: siweite
-
-Email:swt@swtindustry.comˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
