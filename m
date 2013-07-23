@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab3GWNhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:37:13 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38255 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754670Ab3GWNhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:37:11 -0400
-Date: Tue, 23 Jul 2013 14:36:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>,
-        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [alsa-devel] [PATCH] ARM: kirkwood: enable S/PDIF
-Message-ID: <20130723133655.GV24642@n2100.arm.linux.org.uk>
-References: <20130723102320.56bc4555@armhf> <20130723084347.GP24642@n2100.arm.linux.org.uk> <20130723130622.GB9858@sirena.org.uk> <51EE8158.4050300@gmail.com>
+	id S933030Ab3GWNhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:37:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40688 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757459Ab3GWNhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:37:42 -0400
+Message-ID: <51EE8721.10500@suse.cz>
+Date: Tue, 23 Jul 2013 15:37:37 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EE8158.4050300@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Cc: Jean Delvare <jdelvare@suse.de>, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [pull request] Pull request for branch yem-kconfig-rc-fixes
+References: <cover.1374006854.git.yann.morin.1998@free.fr> <1374055158.4495.1.camel@chaos.site>
+In-Reply-To: <1374055158.4495.1.camel@chaos.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 03:12:56PM +0200, Sebastian Hesselbarth wrote:
-> On 07/23/13 15:06, Mark Brown wrote:
->> On Tue, Jul 23, 2013 at 09:43:47AM +0100, Russell King - ARM Linux wrote:
->>> On Tue, Jul 23, 2013 at 10:23:20AM +0200, Jean-Francois Moine wrote:
->>>> This patch enables S/PDIF.
+On 17.7.2013 11:59, Jean Delvare wrote:
+> Le Tuesday 16 July 2013 à 22:39 +0200, Yann E. MORIN a écrit :
+>> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
 >>
->>>> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+>> Hello Michal,
 >>
->>> I'm not submitting my patch to do this because:
+>> Please pull these post-rc1 kconfig cleanups, all after
+>> review and comments by Jean:
+>>   - simplify and cleanup the symbol-search code
+>>   - better documentation about the symbols ordering in search results
+>>   - eye-candy in the title of the search-box in [mn]conf
 >>
->>> (a) we don't know what effect this has on other hardware.
->>
->> This patch will do absolutely nothing unless it's used in a machine
->> driver which connects a S/PDIF CODEC to it.  I see no reason not to
->> apply it, someone with hardware with more complex needs can always build
->> on it later.
->>
->
-> Mark,
->
-> the mask that is changed in the patch is what will be written
-> into i2s controller's registers. So, if there is no S/PDIF in that  
-> specific controller that bit can possibly have a different meaning.
-> Also, enabling both I2S playback and SPDIF playback can cause the
-> controller to behave differently.
+>> Regards,
+>> Yann E. MORIN.
+> 
+> It looks very good to me now, thanks Yann for the good work!
 
-Right, so the SPDIF output on Dove isn't multiplexed, so I was wrong on
-that _for_ _dove_, but that may not necessarily be the case for the
-Kirkwood SoCs - the pin may be multiplexed there.
+It does look good indeed. But I am wondering if it's necessary for 3.11.
+AFAICS the only user-visible changes are
 
-However, Dove does have two I2S/SPDIF controllers which are otherwise
-identical, apart from one having SPDIF support and the other not.
-Setting the SPDIF enable bit on the one without is unspecified what
-the behaviour would be, so it should not be set.
+  [PATCH 1/6] Documentation/kconfig: more concise and straightforward
+search explanation
+  [PATCH 3/6] kconfig/[mn]conf: shorten title in search-box
+
+and the rest are code cleanups (however worthwhile), is that correct?
+There is no change in the search behavior, is there? Then I would say
+merge this for 3.12-rc1. Maybe merge the documentation patch for 3.11.
+
+Thanks,
+Michal
