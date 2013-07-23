@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757944Ab3GWP3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:29:00 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:26692 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757918Ab3GWP26 (ORCPT
+	id S1757817Ab3GWP3z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:29:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35398 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab3GWP3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:28:58 -0400
-X-IronPort-AV: E=Sophos;i="4.89,728,1367971200"; 
-   d="scan'208";a="36869500"
-Date: Tue, 23 Jul 2013 16:28:53 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <stefano.stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
-        <ian.campbell@citrix.com>, <patches@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>
-Subject: Re: [PATCH v5] xen/arm: enable PV control for ARM
-In-Reply-To: <1374592888-5520-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1307231628330.4893@kaball.uk.xensource.com>
-References: <1374592888-5520-1-git-send-email-julien.grall@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 23 Jul 2013 11:29:53 -0400
+Date: Tue, 23 Jul 2013 08:31:04 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/irq/devres.c: move "kernel/irq/devres.c" to
+ "drivers/base/devres_irq.c"
+Message-ID: <20130723153104.GD13949@kroah.com>
+References: <51EE3264.7010801@asianux.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51EE3264.7010801@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013, Julien Grall wrote:
-> Enable lifecyle management (reboot, shutdown...) from the toolstack
-> for ARM guest.
-              ^ guests
-
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
-
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
-> ---
->     Changes in v5:
->         - Rework commit message
->     Changes in v4:
->         - Divide the patch in 2 distinct parts
->     Changes in v3:
->         - Fix condition to compile cpu_hotplug.o
->     Changes in v2:
->         - Don't compile xen/cpu_hotplug.o with ARM64
-> ---
->  drivers/xen/Makefile |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
+On Tue, Jul 23, 2013 at 03:36:04PM +0800, Chen Gang wrote:
+> "kernel/irq/devres.c" is a driver extension tool for irq (with devres)
+> which is independent on 'GENERIC_HARDIRQS', so it is not suitable to
+> still be in "kernel/irq/" which depends on 'GENERIC_HARDIRQS'.
 > 
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index a609353..f185e8d 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -1,9 +1,8 @@
->  ifeq ($(filter y, $(CONFIG_ARM) $(CONFIG_ARM64)),)
-> -obj-y	+= manage.o
->  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
->  endif
->  obj-$(CONFIG_X86)			+= fallback.o
-> -obj-y	+= grant-table.o features.o events.o balloon.o time.o
-> +obj-y	+= grant-table.o features.o events.o balloon.o time.o manage.o
->  obj-y	+= xenbus/
->  
->  nostackp := $(call cc-option, -fno-stack-protector)
-> -- 
-> 1.7.10.4
+> It is a basic tool for drivers, so can move it to "drivers/base/" to be
+> independent on 'GENERIC_HARDIRQS'.
 > 
+> It is about irq features, so if can not find other more suitable place,
+> can still let their declaration in "include/linux/interrupts.h".
+> 
+> The related error (with randconfig which disable 'GENERIC_HARDIRQS')
+> 
+>   drivers/built-in.o: In function `dw_dma_probe':
+>   (.text+0x3747a): undefined reference to `devm_request_threaded_irq'
+
+Don't fix problems when you are moving files around, that makes it
+_very_ hard to review.
+
+Remember, one thing per patch please.
+
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  drivers/base/Makefile     |    2 +-
+>  drivers/base/devres_irq.c |   94 +++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/irq/Makefile       |    2 +-
+>  kernel/irq/devres.c       |   94 ---------------------------------------------
+>  4 files changed, 96 insertions(+), 96 deletions(-)
+>  create mode 100644 drivers/base/devres_irq.c
+>  delete mode 100644 kernel/irq/devres.c
+
+Please use git when renaming files so that the move is shown in the git
+patch.  As it is, I would have to verify this by hand, and I don't want
+to ever have to do that.
+
+Also, I have no problem with the file being where it is.  This is for
+irqs, which are handled by the interrupt maintainers, no need to put it
+in the driver core, just because it happens to deal with "resources".
+We arrange things for ease of maintainability, not always logically :)
+
+thanks,
+
+greg k-h
