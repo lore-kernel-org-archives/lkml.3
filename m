@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935234Ab3GWWjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:39:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41771 "EHLO
+	id S935161Ab3GWWi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:38:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41779 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934750Ab3GWW1n (ORCPT
+	with ESMTP id S934759Ab3GWW1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:43 -0400
+	Tue, 23 Jul 2013 18:27:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Rafael Aquini <aquini@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 069/103] virtio_balloon: leak_balloon(): only tell host if we got pages deflated
-Date: Tue, 23 Jul 2013 15:26:20 -0700
-Message-Id: <20130723220427.037760581@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: [ 071/103] mac80211: close AP_VLAN interfaces before unregistering all
+Date: Tue, 23 Jul 2013 15:26:22 -0700
+Message-Id: <20130723220427.408479471@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -29,41 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luiz Capitulino <lcapitulino@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 8c6bab4f3874d31804a00782c48a8f244a0d3cc0 upstream.
+commit 4c8a9d4bfaf7dbc7d2168494904d79d22cc01db7 upstream.
 
-balloon_page_dequeue() can return NULL.  If it does for the first page
-being freed then leak_balloon() will create a scatter list with len=0.
-Which in turn seems to generate an invalid virtio request.
+Since Eric's commit efe117ab8 ("Speedup ieee80211_remove_interfaces")
+there's a bug in mac80211 when it unregisters with AP_VLAN interfaces
+up. If the AP_VLAN interface was registered after the AP it belongs
+to (which is the typical case) and then we get into this code path,
+unregister_netdevice_many() will crash because it isn't prepared to
+deal with interfaces being closed in the middle of it. Exactly this
+happens though, because we iterate the list, find the AP master this
+AP_VLAN belongs to and dev_close() the dependent VLANs. After this,
+unregister_netdevice_many() won't pick up the fact that the AP_VLAN
+is already down and will do it again, causing a crash.
 
-I didn't get this in practice, I found it by code review.  On the other
-hand, such an invalid virtio request will cause errors in QEMU and
-fill_balloon() also performs the same check implemented by this commit.
-
-This bug was introduced in e2250429.
-
-Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
-Acked-by: Rafael Aquini <aquini@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_balloon.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/mac80211/iface.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -191,7 +191,8 @@ static void leak_balloon(struct virtio_b
- 	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
- 	 * is true, we *have* to do it in this order
- 	 */
--	tell_host(vb, vb->deflate_vq);
-+	if (vb->num_pfns != 0)
-+		tell_host(vb, vb->deflate_vq);
- 	mutex_unlock(&vb->balloon_lock);
- 	release_pages_by_pfn(vb->pfns, vb->num_pfns);
- }
+--- a/net/mac80211/iface.c
++++ b/net/mac80211/iface.c
+@@ -1726,6 +1726,15 @@ void ieee80211_remove_interfaces(struct
+ 		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
+ 			dev_close(sdata->dev);
+ 
++	/*
++	 * Close all AP_VLAN interfaces first, as otherwise they
++	 * might be closed while the AP interface they belong to
++	 * is closed, causing unregister_netdevice_many() to crash.
++	 */
++	list_for_each_entry(sdata, &local->interfaces, list)
++		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++			dev_close(sdata->dev);
++
+ 	mutex_lock(&local->iflist_mtx);
+ 	list_for_each_entry_safe(sdata, tmp, &local->interfaces, list) {
+ 		list_del(&sdata->list);
 
 
