@@ -1,89 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab3GWI0m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:26:42 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:40873 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755426Ab3GWI0i (ORCPT
+	id S1755979Ab3GWIcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:32:21 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:29550 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab3GWIcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:26:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130715155202.GC29526@xanatos>
-References: <20130715155202.GC29526@xanatos>
-Date: Tue, 23 Jul 2013 16:26:37 +0800
-Message-ID: <CANszf4h8vRXHM_DxrYsAnJ73M+tkDW2iZjVstFkeEPH9C0fgxA@mail.gmail.com>
-Subject: Re: [ 00/19] 3.10.1-stable review
-From: Rogelio Serrano <rogelio.serrano@gmail.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 23 Jul 2013 04:32:16 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-40-51ee3f748eeb
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH] f2fs: fix i_name during f2fs_sync_file
+Date: Tue, 23 Jul 2013 17:31:27 +0900
+Message-id: <1374568287-26045-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.3.1.437.g0dbd812
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t8zfd0S+3eBBid/SFpc3/WXyeLSIneL
+	PXtPslhc3jWHzeL83+OsDqweuxd8ZvLo27KK0ePzJjmPTU/eMgWwRHHZpKTmZJalFunbJXBl
+	NF6Zz1qwgb3i1s0JbA2MX1i7GDk4JARMJLY9Euhi5AQyxSQu3FvP1sXIxSEksIxR4v65KywQ
+	CROJrd9WQSWmM0r0nJjCCJIQEmhjkpi9lQlkEJuAtsTm/QYgYREBZokFU88zgtQzC2xllHj+
+	fA8bSI2wgLnEzzMyIDUsAqoSq7ZdZwKxeQXcJZZ8aGeF2KUrsejEQVaQXgmB92wSTydfY4No
+	EJD4NvkQC8TRshKbDjBD1EtKHFxxg2UCo+ACRoZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmb
+	GCEhOXEH4/0D1ocYk4HGTWSWEk3OB4Z0Xkm8obGZkYWpiamxkbmlGWnCSuK86i3WgUIC6Ykl
+	qdmpqQWpRfFFpTmpxYcYmTg4pRoYgzw/XNmecPr9V+bmmSV8u7eYxbN3T3h9zDBvWt3xlofN
+	xo9sPRNN/jKqrFC/ILlQdd/TQ0Ken5fa/2fZIaWrYH90t2zadpMTIcm7fCw3fIy/OXvnL/bX
+	IvO3+F/vuHa35XiIZ5L0ZMav1/t7T/k9mOER8u3Okr6IbV2NcskMrIISnK5bLh0+rsRSnJFo
+	qMVcVJwIAG5DLxNfAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsVy+t9jQd0S+3eBBh+Pilpc3/WXyeLSIneL
+	PXtPslhc3jWHzeL83+OsDqweuxd8ZvLo27KK0ePzJjmPTU/eMgWwRDUw2mSkJqakFimk5iXn
+	p2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYA7VVSKEvMKQUKBSQWFyvp22Ga
+	EBripmsB0xih6xsSBNdjZIAGEtYxZjRemc9asIG94tbNCWwNjF9Yuxg5OSQETCS2flvFBmGL
+	SVy4tx7I5uIQEpjOKNFzYgojSEJIoI1JYvZWpi5GDg42AW2JzfsNQMIiAswSC6aeZwSpZxbY
+	yijx/PkeNpAaYQFziZ9nZEBqWARUJVZtu84EYvMKuEss+dAOtVdXYtGJg6wTGLkXMDKsYhRN
+	LUguKE5KzzXUK07MLS7NS9dLzs/dxAgO+WdSOxhXNlgcYhTgYFTi4fXwfhsoxJpYVlyZe4hR
+	goNZSYR3qdS7QCHelMTKqtSi/Pii0pzU4kOMyUDbJzJLiSbnA+MxryTe0NjEzMjSyMzCyMTc
+	nDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYVxiFG9ueYbItNhZT0ckN6H3Nbdt9oumW
+	w9E1Xjapq99P7pTzLGOLXMazUP1rcc+Mz2cXRJybwr3rfa72Ys5nF4+UOfUkBzdVSKxbcLBw
+	btvhSvc7d2d/OaLqFWD9ckIAT8K8qYuEzLLtFX9PTtGLMBK1rOux2KO7pOpFvXvyztf2ctaX
+	C7yUWIozEg21mIuKEwEQfncrvQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+As similar as the i_pino fix, i_name also should be fixed when i_nlink is 1.
 
-kinda reminds me of... baboons... its natural among mammals i guess...
+The errorneous scenario is like this.
 
-Why hierarchy creates a destructive force within the human psyche (by
-dr. Robert Sapolsky)
-http://www.youtube.com/watch?v=A4UMyTnlaMY&feature=share
+1. touch test1
+2. link test1 test2
+3. unlink test2
+4. fsync test1
 
+After this, i_name should be test1.
 
-On Mon, Jul 15, 2013 at 11:52 PM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Fri, 12 Jul 2013 18:17:08 +0200, Ingo Molnar <mingo@kernel.org> wrote:
->> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>
->> > On Fri, Jul 12, 2013 at 8:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> > >
->> > > I tend to hold things off after -rc4 because you scare me more than Greg
->> > > does ;-)
->> >
->> > Have you guys *seen* Greg? The guy is a freakish giant. He *should*
->> > scare you. He might squish you without ever even noticing.
->>
->> Greg might be a giant and he might squish people without ever even
->> noticing, but that's just a grave, deadly physical threat no real kernel
->> hacker ever feels threatened by. (Not much can hurt us deep in our dark
->> basements after all, except maybe earthquakes, gamma ray eruptions and Mom
->> trying to clean up around the computers.)
->>
->> So Greg, if you want it all to change, create some _real_ threat: be frank
->> with contributors and sometimes swear a bit. That will cut your mailqueue
->> in half, promise!
->
-> On Fri, 12 Jul 2013 08:22:27 -0700, Linus wrote:
->> Greg, the reason you get a lot of stable patches seems to be that you
->> make it easy to act as a door-mat. Clearly at least some people say "I
->> know this patch isn't important enough to send to Linus, but I know Greg
->> will silently accept it after the fact, so I'll just wait and mark it
->> for stable".
->>
->> You may need to learn to shout at people.
->
-> Seriously, guys?  Is this what we need in order to get improve -stable?
-> Linus Torvalds is advocating for physical intimidation and violence.
-> Ingo Molnar and Linus are advocating for verbal abuse.
->
-> Not *fucking* cool.  Violence, whether it be physical intimidation,
-> verbal threats or verbal abuse is not acceptable.  Keep it professional
-> on the mailing lists.
->
-> Let's discuss this at Kernel Summit where we can at least yell at each
-> other in person.  Yeah, just try yelling at me about this.  I'll roar
-> right back, louder, for all the people who lose their voice when they
-> get yelled at by top maintainers.  I won't be the nice girl anymore.
->
-> Sarah Sharp
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/file.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+index 65ca3b3..c2deb27 100644
+--- a/fs/f2fs/file.c
++++ b/fs/f2fs/file.c
+@@ -112,11 +112,13 @@ static int get_parent_ino(struct inode *inode, nid_t *pino)
+ 	if (!dentry)
+ 		return 0;
+ 
+-	inode = igrab(dentry->d_parent->d_inode);
+-	dput(dentry);
++	if (update_dent_inode(inode, &dentry->d_name)) {
++		dput(dentry);
++		return 0;
++	}
+ 
+-	*pino = inode->i_ino;
+-	iput(inode);
++	*pino = parent_ino(dentry);
++	dput(dentry);
+ 	return 1;
+ }
+ 
+-- 
+1.8.3.1.437.g0dbd812
+
