@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935094Ab3GWWb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:31:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41893 "EHLO
+	id S935076Ab3GWWb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:31:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41899 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934909Ab3GWW2B (ORCPT
+	with ESMTP id S934917Ab3GWW2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:01 -0400
+	Tue, 23 Jul 2013 18:28:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [ 095/103] perf: Fix perf_lock_task_context() vs RCU
-Date: Tue, 23 Jul 2013 15:26:46 -0700
-Message-Id: <20130723220432.275980220@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 096/103] tracing: Failed to create system directory
+Date: Tue, 23 Jul 2013 15:26:47 -0700
+Message-Id: <20130723220432.460187468@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,88 +28,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 058ebd0eba3aff16b144eabf4510ed9510e1416e upstream.
+commit 6e94a780374ed31b280f939d4757e8d7858dff16 upstream.
 
-Jiri managed to trigger this warning:
+Running the following:
 
- [] ======================================================
- [] [ INFO: possible circular locking dependency detected ]
- [] 3.10.0+ #228 Tainted: G        W
- [] -------------------------------------------------------
- [] p/6613 is trying to acquire lock:
- []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
- []
- [] but task is already holding lock:
- []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
- []
- [] which lock already depends on the new lock.
- []
- [] the existing dependency chain (in reverse order) is:
- []
- [] -> #4 (&ctx->lock){-.-...}:
- [] -> #3 (&rq->lock){-.-.-.}:
- [] -> #2 (&p->pi_lock){-.-.-.}:
- [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
- [] -> #0 (rcu_node_0){..-...}:
+ # cd /sys/kernel/debug/tracing
+ # echo p:i do_sys_open > kprobe_events
+ # echo p:j schedule >> kprobe_events
+ # cat kprobe_events
+p:kprobes/i do_sys_open
+p:kprobes/j schedule
+ # echo p:i do_sys_open >> kprobe_events
+ # cat kprobe_events
+p:kprobes/j schedule
+p:kprobes/i do_sys_open
+ # ls /sys/kernel/debug/tracing/events/kprobes/
+enable  filter  j
 
-Paul was quick to explain that due to preemptible RCU we cannot call
-rcu_read_unlock() while holding scheduler (or nested) locks when part
-of the read side critical section was preemptible.
+Notice that the 'i' is missing from the kprobes directory.
 
-Therefore solve it by making the entire RCU read side non-preemptible.
+The console produces:
 
-Also pull out the retry from under the non-preempt to play nice with RT.
+"Failed to create system directory kprobes"
 
-Reported-by: Jiri Olsa <jolsa@redhat.com>
-Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This is because kprobes passes in a allocated name for the system
+and the ftrace event subsystem saves off that name instead of creating
+a duplicate for it. But the kprobes may free the system name making
+the pointer to it invalid.
+
+This bug was introduced by 92edca073c37 "tracing: Use direct field, type
+and system names" which switched from using kstrdup() on the system name
+in favor of just keeping apointer to it, as the internal ftrace event
+system names are static and exist for the life of the computer being booted.
+
+Instead of reverting back to duplicating system names again, we can use
+core_kernel_data() to determine if the passed in name was allocated or
+static. Then use the MSB of the ref_count to be a flag to keep track if
+the name was allocated or not. Then we can still save from having to duplicate
+strings that will always exist, but still copy the ones that may be freed.
+
+Reported-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ kernel/trace/trace_events.c |   41 +++++++++++++++++++++++++++++++++++------
+ 1 file changed, 35 insertions(+), 6 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -761,8 +761,18 @@ perf_lock_task_context(struct task_struc
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -41,6 +41,23 @@ static LIST_HEAD(ftrace_common_fields);
+ static struct kmem_cache *field_cachep;
+ static struct kmem_cache *file_cachep;
+ 
++#define SYSTEM_FL_FREE_NAME		(1 << 31)
++
++static inline int system_refcount(struct event_subsystem *system)
++{
++	return system->ref_count & ~SYSTEM_FL_FREE_NAME;
++}
++
++static int system_refcount_inc(struct event_subsystem *system)
++{
++	return (system->ref_count++) & ~SYSTEM_FL_FREE_NAME;
++}
++
++static int system_refcount_dec(struct event_subsystem *system)
++{
++	return (--system->ref_count) & ~SYSTEM_FL_FREE_NAME;
++}
++
+ /* Double loops, do not use break, only goto's work */
+ #define do_for_each_event_file(tr, file)			\
+ 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {	\
+@@ -349,8 +366,8 @@ static void __put_system(struct event_su
  {
- 	struct perf_event_context *ctx;
+ 	struct event_filter *filter = system->filter;
  
--	rcu_read_lock();
- retry:
-+	/*
-+	 * One of the few rules of preemptible RCU is that one cannot do
-+	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
-+	 * part of the read side critical section was preemptible -- see
-+	 * rcu_read_unlock_special().
-+	 *
-+	 * Since ctx->lock nests under rq->lock we must ensure the entire read
-+	 * side critical section is non-preemptible.
-+	 */
-+	preempt_disable();
-+	rcu_read_lock();
- 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
- 	if (ctx) {
- 		/*
-@@ -778,6 +788,8 @@ retry:
- 		raw_spin_lock_irqsave(&ctx->lock, *flags);
- 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
- 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
-+			rcu_read_unlock();
-+			preempt_enable();
- 			goto retry;
- 		}
+-	WARN_ON_ONCE(system->ref_count == 0);
+-	if (--system->ref_count)
++	WARN_ON_ONCE(system_refcount(system) == 0);
++	if (system_refcount_dec(system))
+ 		return;
  
-@@ -787,6 +799,7 @@ retry:
- 		}
+ 	list_del(&system->list);
+@@ -359,13 +376,15 @@ static void __put_system(struct event_su
+ 		kfree(filter->filter_string);
+ 		kfree(filter);
  	}
- 	rcu_read_unlock();
-+	preempt_enable();
- 	return ctx;
++	if (system->ref_count & SYSTEM_FL_FREE_NAME)
++		kfree(system->name);
+ 	kfree(system);
  }
  
+ static void __get_system(struct event_subsystem *system)
+ {
+-	WARN_ON_ONCE(system->ref_count == 0);
+-	system->ref_count++;
++	WARN_ON_ONCE(system_refcount(system) == 0);
++	system_refcount_inc(system);
+ }
+ 
+ static void __get_system_dir(struct ftrace_subsystem_dir *dir)
+@@ -379,7 +398,7 @@ static void __put_system_dir(struct ftra
+ {
+ 	WARN_ON_ONCE(dir->ref_count == 0);
+ 	/* If the subsystem is about to be freed, the dir must be too */
+-	WARN_ON_ONCE(dir->subsystem->ref_count == 1 && dir->ref_count != 1);
++	WARN_ON_ONCE(system_refcount(dir->subsystem) == 1 && dir->ref_count != 1);
+ 
+ 	__put_system(dir->subsystem);
+ 	if (!--dir->ref_count)
+@@ -1279,7 +1298,15 @@ create_new_subsystem(const char *name)
+ 		return NULL;
+ 
+ 	system->ref_count = 1;
+-	system->name = name;
++
++	/* Only allocate if dynamic (kprobes and modules) */
++	if (!core_kernel_data((unsigned long)name)) {
++		system->ref_count |= SYSTEM_FL_FREE_NAME;
++		system->name = kstrdup(name, GFP_KERNEL);
++		if (!system->name)
++			goto out_free;
++	} else
++		system->name = name;
+ 
+ 	system->filter = NULL;
+ 
+@@ -1292,6 +1319,8 @@ create_new_subsystem(const char *name)
+ 	return system;
+ 
+  out_free:
++	if (system->ref_count & SYSTEM_FL_FREE_NAME)
++		kfree(system->name);
+ 	kfree(system);
+ 	return NULL;
+ }
 
 
