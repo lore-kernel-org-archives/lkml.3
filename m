@@ -1,124 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758190Ab3GWVEs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:04:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28724 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758152Ab3GWVEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:04:43 -0400
-Date: Tue, 23 Jul 2013 22:59:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] tracing: Change remove_event_file_dir() to clear
-	"d_subdirs"->i_private
-Message-ID: <20130723205927.GA9082@redhat.com>
+	id S1758174Ab3GWVEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:04:46 -0400
+Received: from mail-gh0-f169.google.com ([209.85.160.169]:50813 "EHLO
+	mail-gh0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968Ab3GWVEm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:04:42 -0400
+Date: Tue, 23 Jul 2013 17:04:35 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 17/21] page_alloc, mem-hotplug: Improve movablecore to
+ {en|dis}able using SRAT.
+Message-ID: <20130723210435.GV21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-18-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130723205854.GA9036@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1374220774-29974-18-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change remove_event_file_dir() ->i_private for every file we
-are going to remove.
+On Fri, Jul 19, 2013 at 03:59:30PM +0800, Tang Chen wrote:
+...
+> Users can specify "movablecore=acpi" in kernel commandline to enable this
+> functionality. For those who don't use memory hotplug or who don't want
+> to lose their NUMA performance, just don't specify anything. The kernel
+> will work as before.
 
-tracing_open_generic_file() and tracing_release_generic_file()
-can go away, ftrace_enable_fops and ftrace_event_filter_fops()
-use tracing_open_generic() but only to check tracing_disabled.
+The param name is pretty obscure and why would the user care where
+that hotplug information came from?  Shouldn't it be something handled
+by memblock proper?  ie. a knob which tells memblock to either honor
+or ignore hotpluggable area reservations.
 
-This fixes all races with event_remove() or instance_delete().
-f_op->read/write/whatever can never use the freed file/call,
-all event/* files were changed to check and use ->i_private
-under event_mutex.
+Thanks.
 
-Note: this doesn't not fix other problems, event_remove() can
-destroy the active ftrace_event_call, we need more changes but
-those changes are completely orthogonal.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace_events.c |   40 ++++++++--------------------------------
- 1 files changed, 8 insertions(+), 32 deletions(-)
-
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 3ae037c..298e4fa 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -428,42 +428,19 @@ static void *event_file_data(struct file *filp)
- 
- static void remove_event_file_dir(struct ftrace_event_file *file)
- {
-+	struct dentry *dir = file->dir;
-+	struct dentry *child;
-+	/* ->i_mutex is not needed, nodody can create/remove a file */
-+	list_for_each_entry(child, &dir->d_subdirs, d_u.d_child)
-+		child->d_inode->i_private = NULL;
-+
- 	list_del(&file->list);
--	debugfs_remove_recursive(file->dir);
-+	debugfs_remove_recursive(dir);
- 	remove_subsystem(file->system);
- 	kmem_cache_free(file_cachep, file);
- }
- 
- /*
-- * Open and update trace_array ref count.
-- * Must have the current trace_array passed to it.
-- */
--static int tracing_open_generic_file(struct inode *inode, struct file *filp)
--{
--	struct ftrace_event_file *file = inode->i_private;
--	struct trace_array *tr = file->tr;
--	int ret;
--
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
--
--	ret = tracing_open_generic(inode, filp);
--	if (ret < 0)
--		trace_array_put(tr);
--	return ret;
--}
--
--static int tracing_release_generic_file(struct inode *inode, struct file *filp)
--{
--	struct ftrace_event_file *file = inode->i_private;
--	struct trace_array *tr = file->tr;
--
--	trace_array_put(tr);
--
--	return 0;
--}
--
--/*
-  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
-  */
- static int
-@@ -1274,10 +1251,9 @@ static const struct file_operations ftrace_set_event_fops = {
- };
- 
- static const struct file_operations ftrace_enable_fops = {
--	.open = tracing_open_generic_file,
-+	.open = tracing_open_generic,
- 	.read = event_enable_read,
- 	.write = event_enable_write,
--	.release = tracing_release_generic_file,
- 	.llseek = default_llseek,
- };
- 
 -- 
-1.5.5.1
-
+tejun
