@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934237Ab3GWSEh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:04:37 -0400
-Received: from sauhun.de ([89.238.76.85]:51174 "EHLO pokefinder.org"
+	id S934069Ab3GWSDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:03:36 -0400
+Received: from sauhun.de ([89.238.76.85]:58744 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933840Ab3GWSEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:04:35 -0400
+	id S934048Ab3GWSDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:03:30 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
 Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org
-Subject: [PATCH 27/27] thermal: ti-bandgap: cleanup resource allocation
-Date: Tue, 23 Jul 2013 20:02:00 +0200
-Message-Id: <1374602524-3398-28-git-send-email-wsa@the-dreams.de>
+        Thierry Reding <thierry.reding@gmail.com>, linux-pwm@vger.kernel.org
+Subject: [PATCH 15/27] drivers/pwm: don't check resource with devm_ioremap_resource
+Date: Tue, 23 Jul 2013 20:01:48 +0200
+Message-Id: <1374602524-3398-16-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
 References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
@@ -21,58 +20,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When cleaning up usage of devm_ioremap_resource, I found that resource
-allocation in this driver is ugly and buggy. If resource[0] is not
-found, bgp->base will end up NULL, so OOPS. All other resources get
-ioremapped, but their pointers are discarded, so why bother. So, let's
-keep things simple. Just remap resource[0] and pass the error, if any.
-Compile tested only, due to no hardware.
+devm_ioremap_resource does sanity checks on the given resource. No need to
+duplicate this in the driver.
 
 Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
 Please apply via the subsystem-tree.
 
- drivers/thermal/ti-soc-thermal/ti-bandgap.c |   20 ++++----------------
- 1 file changed, 4 insertions(+), 16 deletions(-)
+ drivers/pwm/pwm-lpc32xx.c     |    3 ---
+ drivers/pwm/pwm-renesas-tpu.c |    5 -----
+ 2 files changed, 8 deletions(-)
 
-diff --git a/drivers/thermal/ti-soc-thermal/ti-bandgap.c b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-index 9dfd471..416be5d 100644
---- a/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-+++ b/drivers/thermal/ti-soc-thermal/ti-bandgap.c
-@@ -1130,7 +1130,6 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- 	const struct of_device_id *of_id;
- 	struct ti_bandgap *bgp;
- 	struct resource *res;
--	int i;
+diff --git a/drivers/pwm/pwm-lpc32xx.c b/drivers/pwm/pwm-lpc32xx.c
+index efb6c7b..efac99e0 100644
+--- a/drivers/pwm/pwm-lpc32xx.c
++++ b/drivers/pwm/pwm-lpc32xx.c
+@@ -124,9 +124,6 @@ static int lpc32xx_pwm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
  
- 	/* just for the sake */
- 	if (!node) {
-@@ -1156,21 +1155,10 @@ static struct ti_bandgap *ti_bandgap_build(struct platform_device *pdev)
- 		return ERR_PTR(-ENOMEM);
- 	}
- 
--	i = 0;
--	do {
--		void __iomem *chunk;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		return -EINVAL;
 -
--		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
--		if (!res)
--			break;
--		chunk = devm_ioremap_resource(&pdev->dev, res);
--		if (i == 0)
--			bgp->base = chunk;
--		if (IS_ERR(chunk))
--			return ERR_CAST(chunk);
--
--		i++;
--	} while (res);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	bgp->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(bgp->base))
-+		return bgp->base;
+ 	lpc32xx->base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(lpc32xx->base))
+ 		return PTR_ERR(lpc32xx->base);
+diff --git a/drivers/pwm/pwm-renesas-tpu.c b/drivers/pwm/pwm-renesas-tpu.c
+index 2600892..444d589 100644
+--- a/drivers/pwm/pwm-renesas-tpu.c
++++ b/drivers/pwm/pwm-renesas-tpu.c
+@@ -404,11 +404,6 @@ static int tpu_probe(struct platform_device *pdev)
  
- 	if (TI_BANDGAP_HAS(bgp, TSHUT)) {
- 		bgp->tshut_gpio = of_get_gpio(node, 0);
+ 	/* Map memory, get clock and pin control. */
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(&pdev->dev, "failed to get I/O memory\n");
+-		return -ENXIO;
+-	}
+-
+ 	tpu->base = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(tpu->base))
+ 		return PTR_ERR(tpu->base);
 -- 
 1.7.10.4
 
