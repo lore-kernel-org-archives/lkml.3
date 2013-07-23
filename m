@@ -1,130 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab3GWNZn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:25:43 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.17]:62300 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932336Ab3GWNZm (ORCPT
+	id S932648Ab3GWN0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:26:33 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35515 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117Ab3GWN0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:25:42 -0400
-X-Env-Sender: Hector.Palacios@digi.com
-X-Msg-Ref: server-10.tower-29.messagelabs.com!1374585937!23263424!1
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <51EE8445.6070603@digi.com>
-Date: Tue, 23 Jul 2013 15:25:25 +0200
-From: Hector Palacios <hector.palacios@digi.com>
-Organization: Digi International
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 23 Jul 2013 09:26:32 -0400
+Date: Tue, 23 Jul 2013 14:26:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Message-ID: <20130723132628.GD9858@sirena.org.uk>
+References: <20130723102320.56bc4555@armhf>
+ <20130723084347.GP24642@n2100.arm.linux.org.uk>
+ <20130723130622.GB9858@sirena.org.uk>
+ <51EE8158.4050300@gmail.com>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>
-Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <51EE4300.7070802@metafoo.de>
-In-Reply-To: <51EE4300.7070802@metafoo.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="NknGfcVoKMD30k4E"
+Content-Disposition: inline
+In-Reply-To: <51EE8158.4050300@gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH] ARM: kirkwood: enable S/PDIF
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Lars,
 
-On 07/23/2013 10:46 AM, Lars-Peter Clausen wrote:
-> On 07/22/2013 04:04 PM, Hector Palacios wrote:
-> [...]
->>
->> +static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
->> +		struct device_attribute *attr,
->> +		char *buf,
->> +		int ch)
->> +{
->> +	struct iio_dev *iio = dev_to_iio_dev(dev);
->> +	struct mxs_lradc *lradc = iio_priv(iio);
->> +	int i, len = 0;
->> +
->> +	for (i = 0; i < ARRAY_SIZE(lradc->scale_avail[ch]); i++)
->> +		len += sprintf(buf + len, "%d.%09u ",
->> +			       lradc->scale_avail[ch][i].integer,
->> +			       lradc->scale_avail[ch][i].nano);
->> +
->> +	len += sprintf(buf + len, "\n");
->> +
->> +	return len;
->> +}
->> +
->> +static ssize_t mxs_lradc_show_scale_available(struct device *dev,
->> +		struct device_attribute *attr,
->> +		char *buf)
->> +{
->> +	struct iio_dev_attr *iio_attr = to_iio_dev_attr(attr);
->> +
->> +	return mxs_lradc_show_scale_available_ch(dev, attr, buf,
->> +						 iio_attr->address);
->> +}
->> +
->> +#define SHOW_SCALE_AVAILABLE_ATTR(ch)					\
->> +static IIO_DEVICE_ATTR(in_voltage##ch##_scale_available, S_IRUGO,	\
->> +		       mxs_lradc_show_scale_available, NULL, ch)
->> +
->> +SHOW_SCALE_AVAILABLE_ATTR(0);
->> +SHOW_SCALE_AVAILABLE_ATTR(1);
->> +SHOW_SCALE_AVAILABLE_ATTR(2);
->> +SHOW_SCALE_AVAILABLE_ATTR(3);
->> +SHOW_SCALE_AVAILABLE_ATTR(4);
->> +SHOW_SCALE_AVAILABLE_ATTR(5);
->> +SHOW_SCALE_AVAILABLE_ATTR(6);
->> +SHOW_SCALE_AVAILABLE_ATTR(7);
->> +SHOW_SCALE_AVAILABLE_ATTR(8);
->> +SHOW_SCALE_AVAILABLE_ATTR(9);
->> +SHOW_SCALE_AVAILABLE_ATTR(10);
->> +SHOW_SCALE_AVAILABLE_ATTR(11);
->> +SHOW_SCALE_AVAILABLE_ATTR(12);
->> +SHOW_SCALE_AVAILABLE_ATTR(13);
->> +SHOW_SCALE_AVAILABLE_ATTR(14);
->> +SHOW_SCALE_AVAILABLE_ATTR(15);
->> +
->> +static struct attribute *mxs_lradc_attributes[] = {
->> +	&iio_dev_attr_in_voltage0_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage1_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage2_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage3_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage4_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage5_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage6_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage7_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage8_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage9_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage10_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage11_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage12_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage13_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage14_scale_available.dev_attr.attr,
->> +	&iio_dev_attr_in_voltage15_scale_available.dev_attr.attr,
->> +	NULL
->> +};
->
-> This should really be using the iio_chan_spec_ext_info infrastructure. Bonus
-> points for factoring out the common code used to calculate and display the
-> scales.
+--NknGfcVoKMD30k4E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I perfectly understand. Sadly, I don't currently have the time and expertise to try to 
-work this out the proper way. It already took much longer than expected to have this 
-driver toggle a divider flag.
+On Tue, Jul 23, 2013 at 03:12:56PM +0200, Sebastian Hesselbarth wrote:
 
-I'd appreciate if anyone wishes to complete this job.
-@Alexander, please feel free to submit your other temp patch without waiting for this one.
+> the mask that is changed in the patch is what will be written
+> into i2s controller's registers. So, if there is no S/PDIF in that
+> specific controller that bit can possibly have a different meaning.
+> Also, enabling both I2S playback and SPDIF playback can cause the
+> controller to behave differently.
 
-Best regards,
---
-Hector Palacios
+Oh, so it will - I glanced through it and misread, sorry.  If it just
+makes the enabling of S/PDIF mode conditional on DAI format that'd cover
+it.
+
+> I share Russell's concern about it and would rather like to use
+> multiple codecs per DAI (DPCM) for that. I see Daniel Mack picked
+> that up again, maybe he submits something soon.
+
+Well, that'd be ideal and is going to be needed for any hardware which
+has both wired up in parallel but a simpler either/or thing doesn't seem
+like a problem.
+
+--NknGfcVoKMD30k4E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7oSAAAoJELSic+t+oim9tckP/1Y/7eU4k2C9WrSBiS6KNzwK
+L64Zr0SEx0ADTq5huA16s/t5jXD0z1XxDf9c7iShdCBo8VA9qFZDEeYdpIj6196V
+nQaSUIHWeXnhm4yq8yv4PLlAclrIGTY95z2dizUpVKm70v/qDcjG+2yPzU2+HOye
+tvLoJPEEJigfoWrJFk7mscooEgeB0BUzY3UYPRe0pwqJygJDzeI/3H5IW57W8dr4
+bb1TdAZkWNf3xqJ4+r5WvKOmXdRQKGx0YaFDaUOEMzTHKjhQ5z+tfCnzbdnHMlq/
+zsclnqNDekVQMEwYX9HvYbzThZFqHFpiEB1QVJ6YnsW1c2KlQtUwaSb1lq9mZfsE
+jwM/UXkAwvqeDW9UT82a9ASX9Ly83TzrfL8Yfg3vT2KWmfqRo8cjMuJbx6pzict8
+nOT94l8KMGDOUkqBQfIkTSEtVJd4TVen+zxv4RcOrnipHOkgrvO63tN0QpyzFAy0
+uMDJI396tALu9XnzFUwqEqiiowRS7cwRL+9sXrQp+UZLmnQjJ/SzdRj47At4mVvI
+pWEjaClHDwVYbA/+CV268TU4oV8lmYMM0o62cmRsWyp3x8bwG8mwt/JXtpqsm00d
+HWWdUtGF1q2AvlpTopfswmxVjrjMFv/C1JiV/72xq3F4UkPF6rmNo+54C197OK/o
+jXNsrXtLuTPY6RoKt3wY
+=B2KQ
+-----END PGP SIGNATURE-----
+
+--NknGfcVoKMD30k4E--
