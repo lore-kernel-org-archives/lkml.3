@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933499Ab3GWQCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:02:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35856 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab3GWQB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:01:59 -0400
-Date: Tue, 23 Jul 2013 09:01:58 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org, olaf@aepfle.de,
-        apw@canonical.com, andi@firstfloor.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, kamezawa.hiroyuki@gmail.com, mhocko@suse.cz,
-        hannes@cmpxchg.org, yinghan@google.com, jasowang@redhat.com,
-        kay@vrfy.org
-Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Message-ID: <20130723160158.GC27054@kroah.com>
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374261785-1615-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933421Ab3GWQDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:03:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54617 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932595Ab3GWQDD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:03:03 -0400
+Date: Tue, 23 Jul 2013 12:02:58 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cachefs@redhat.com,
+        Milosz Tanski <milosz@adfin.com>,
+        Yacine Belkadi <yacine.belkadi.1@gmail.com>
+Subject: Re: [PATCH] Fix __wait_on_atomic_t() to call the action func if the
+ counter != 0
+Message-ID: <20130723120258.01024e81@tlielax.poochiereds.net>
+In-Reply-To: <20130723154924.24306.42326.stgit@warthog.procyon.org.uk>
+References: <20130723154924.24306.42326.stgit@warthog.procyon.org.uk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 12:23:05PM -0700, K. Y. Srinivasan wrote:
-> The current machinery for hot-adding memory requires having udev
-> rules to bring the memory segments online. Export the necessary functionality
-> to to bring the memory segment online without involving user space code. 
+On Tue, 23 Jul 2013 16:49:24 +0100
+David Howells <dhowells@redhat.com> wrote:
+
+> Fix __wait_on_atomic_t() so that it calls the action func if the counter != 0
+> rather than if the counter is 0 so as to be analogous to __wait_on_bit().
 > 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> Thanks to Yacine who found this by visual inspection.
+> 
+> This will affect FS-Cache in that it will could fail to sleep correctly when
+> trying to clean up after a netfs cookie is withdrawn.
+> 
+> Reported-by: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> cc: Yacine Belkadi <yacine.belkadi.1@gmail.com>
+> cc: Milosz Tanski <milosz@adfin.com>
+> cc: Jeff Layton <jlayton@redhat.com>
 > ---
->  drivers/base/memory.c  |    5 ++++-
->  include/linux/memory.h |    4 ++++
->  2 files changed, 8 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 2b7813e..a8204ac 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -328,7 +328,7 @@ static int __memory_block_change_state_uevent(struct memory_block *mem,
+>  kernel/wait.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/wait.c b/kernel/wait.c
+> index ce0daa3..dec68bd 100644
+> --- a/kernel/wait.c
+> +++ b/kernel/wait.c
+> @@ -333,7 +333,8 @@ int __wait_on_atomic_t(wait_queue_head_t *wq, struct wait_bit_queue *q,
+>  		prepare_to_wait(wq, &q->wait, mode);
+>  		val = q->key.flags;
+>  		if (atomic_read(val) == 0)
+> -			ret = (*action)(val);
+> +			break;
+> +		ret = (*action)(val);
+>  	} while (!ret && atomic_read(val) != 0);
+
+nit: can you now eliminate the check for "val" in the while condition?
+It doesn't look like it harms anything, but eliminating it would
+probably simplify the code slightly...
+
+>  	finish_wait(wq, &q->wait);
 >  	return ret;
->  }
->  
-> -static int memory_block_change_state(struct memory_block *mem,
-> +int memory_block_change_state(struct memory_block *mem,
->  		unsigned long to_state, unsigned long from_state_req,
->  		int online_type)
->  {
-> @@ -341,6 +341,8 @@ static int memory_block_change_state(struct memory_block *mem,
->  
->  	return ret;
->  }
-> +EXPORT_SYMBOL(memory_block_change_state);
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-EXPORT_SYMBOL_GPL() for all of these please.
 
-And as others have pointed out, I can't export symbols without a user of
-those symbols going into the tree at the same time.  So I'll drop this
-patch for now and wait for your consumer of these symbols to be
-submitted.
-
-thanks,
-
-greg k-h
+-- 
+Jeff Layton <jlayton@redhat.com>
