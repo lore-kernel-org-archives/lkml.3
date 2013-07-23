@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933990Ab3GWTHH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:07:07 -0400
-Received: from vps1.hno.se ([31.192.227.87]:37425 "EHLO vps1.hno.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933129Ab3GWTHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:07:05 -0400
-Message-ID: <1374606367.5864.4.camel@localhost>
-Subject: [PATCH RESEND #1] tty/8250_early: Don't truncate last character of
- options
-From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 23 Jul 2013 21:06:07 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S934014Ab3GWTHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:07:15 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:53604 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933129Ab3GWTHL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 15:07:11 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhRoAIrT7lFV5qu1PGdsb2JhbABbgwaDJSIBhQC5EwQBgRIXAwEBAQE4NYIkAQEEATocEwEPBQsIAyElDwUlChoTiAoKuFMWjkqBHQeDEm4Dl16GM44xOg
+X-IronPort-AV: E=Sophos;i="4.89,729,1367964000"; 
+   d="scan'208";a="588911477"
+From: rydberg@euromail.se
+Date: Tue, 23 Jul 2013 21:08:55 +0200
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andre Heider <a.heider@gmail.com>
+Subject: Re: Linux 3.11-rc2
+Message-ID: <20130723190855.GA509@polaris.bitmath.org>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+ <20130723010437.GA570@polaris.bitmath.org>
+ <1374542261.7972.66.camel@leira.trondhjem.org>
+ <1374604305.12943.3.camel@leira.trondhjem.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374604305.12943.3.camel@leira.trondhjem.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The earlier change to use strlcpy uncovered a bug in the options
-argument length calculation causing last character to be truncated.
-This makes the actual console to be configured with incorrect
-baudrate when specifying the console using console=uart,... syntax.
+Hi Trond,
 
-Bug symptom seen in kernel log output:
+> OK. With Andre's help, I think we've root caused the problem. Can you
+> please confirm that the attached patch also solves the issue for you?
 
-Kernel command line: console=uart,mmio,0x90000000,115200
-Early serial console at MMIO 0x90000000 (options '11520')
+Seems to work fine,
 
-which then results in a invalid baud rate 11520 instead of the
-expected 115200 when the console is switched to ttyS0 later
-in the boot process.
+   Reported-and-tested-by: Henrik Rydberg <rydberg@euromail.se>
 
-Signed-off-by: Henrik Nordstrom <henrik@henriknordstrom.net>
----
- drivers/tty/serial/8250/8250_early.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
-index 721904f..946ddd2 100644
---- a/drivers/tty/serial/8250/8250_early.c
-+++ b/drivers/tty/serial/8250/8250_early.c
-@@ -193,7 +193,8 @@ static int __init parse_options(struct early_serial8250_device *device,
- 	if (options) {
- 		options++;
- 		device->baud = simple_strtoul(options, NULL, 0);
--		length = min(strcspn(options, " "), sizeof(device->options));
-+		length = min(strcspn(options, " ") + 1,
-+			     sizeof(device->options));
- 		strlcpy(device->options, options, length);
- 	} else {
- 		device->baud = probe_baud(port);
--- 
-1.8.3.1
-
-
-
+Thanks,
+Henrik
