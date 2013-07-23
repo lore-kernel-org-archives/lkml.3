@@ -1,71 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab3GWPFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:05:30 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:56140 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754566Ab3GWPF2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:05:28 -0400
-Message-ID: <51EE9BB6.8000501@lwfinger.net>
-Date: Tue, 23 Jul 2013 10:05:26 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757768Ab3GWPI6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:08:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757580Ab3GWPI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:08:56 -0400
+Date: Tue, 23 Jul 2013 18:07:48 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130723150748.GC6029@redhat.com>
+References: <20130722061631.24737.75508.sendpatchset@codeblue>
+ <20130722062016.24737.54554.sendpatchset@codeblue>
 MIME-Version: 1.0
-To: =?UTF-8?B?IlBhdWwgUm9sbGFuZCAo44Od44O844Or44O744Ot44Op44OzKSI=?= 
-	<rol@witbe.net>
-CC: Richard Genoud <richard.genoud@gmail.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: rtl8192cu: slow path warning
-References: <20130611123814.GA9854@lnx-rg> <20130626142241.GA13107@lnx-rg> <51CB0E9C.50408@lwfinger.net> <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com> <20130723142907.53103aab@tux.DEF.witbe.net>
-In-Reply-To: <20130723142907.53103aab@tux.DEF.witbe.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130722062016.24737.54554.sendpatchset@codeblue>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 07:29 AM, Paul Rolland (ポール・ロラン) wrote:
-> Hello,
->
-> On Thu, 27 Jun 2013 09:33:20 +0200
-> Richard Genoud <richard.genoud@gmail.com> wrote:
->
->> Yes, of course, you can add my
->> Reported-by: Richard Genoud <richard.genoud@gmail.com>
->>
->> But the patch doesn't compile on my platform ( since I'm on ARM, I
->> haven't got a PCI bus, so rtlwifi/pci.c is not compiled ) :
->>
->> ERROR: "rtl_lps_change_work_callback"
->> [drivers/net/wireless/rtlwifi/rtlwifi.ko] undefined!
->
-> Is that the reason why this patch is not yet in 3.10.x or 3.11-rcY ?
-> I'm running a 3.10.1 with USB dongle including 8192CU, and I can see this
-> warning when the machine starts.
-> I've check 3.10.1, 3.10.2 and 3.11-rc3 source code, but this fix is not
-> there. Is there a different fix that went in in 3.10.2 or 3.11-rc?
+On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+> +{
+> +	struct kvm_lock_waiting *w;
+> +	int cpu;
+> +	u64 start;
+> +	unsigned long flags;
+> +
+Why don't you bailout if in nmi here like we discussed?
 
-The reason that patch is not in mainline is that it takes time. If you want to 
-have it, you can get the official patch from 
-http://marc.info/?l=linux-wireless&m=137242880222442&w=2, or you need to 
-implement kernels from the wireless-testing git tree, where it was added on June 
-28 as commit bcfb879. My original patch included the following note for John 
-Linville:
+> +	w = &__get_cpu_var(lock_waiting);
+> +	cpu = smp_processor_id();
+> +	start = spin_time_start();
+> +
+> +	/*
+> +	 * Make sure an interrupt handler can't upset things in a
+> +	 * partially setup state.
+> +	 */
+> +	local_irq_save(flags);
+> +
+> +	/*
+> +	 * The ordering protocol on this is that the "lock" pointer
+> +	 * may only be set non-NULL if the "want" ticket is correct.
+> +	 * If we're updating "want", we must first clear "lock".
+> +	 */
+> +	w->lock = NULL;
+> +	smp_wmb();
+> +	w->want = want;
+> +	smp_wmb();
+> +	w->lock = lock;
+> +
+> +	add_stats(TAKEN_SLOW, 1);
+> +
+> +	/*
+> +	 * This uses set_bit, which is atomic but we should not rely on its
+> +	 * reordering gurantees. So barrier is needed after this call.
+> +	 */
+> +	cpumask_set_cpu(cpu, &waiting_cpus);
+> +
+> +	barrier();
+> +
+> +	/*
+> +	 * Mark entry to slowpath before doing the pickup test to make
+> +	 * sure we don't deadlock with an unlocker.
+> +	 */
+> +	__ticket_enter_slowpath(lock);
+> +
+> +	/*
+> +	 * check again make sure it didn't become free while
+> +	 * we weren't looking.
+> +	 */
+> +	if (ACCESS_ONCE(lock->tickets.head) == want) {
+> +		add_stats(TAKEN_SLOW_PICKUP, 1);
+> +		goto out;
+> +	}
+> +
+> +	/*
+> +	 * halt until it's our turn and kicked. Note that we do safe halt
+> +	 * for irq enabled case to avoid hang when lock info is overwritten
+> +	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
+> +	 */
+> +	if (arch_irqs_disabled_flags(flags))
+> +		halt();
+> +	else
+> +		safe_halt();
+> +
+> +out:
+So here now interrupts can be either disabled or enabled. Previous
+version disabled interrupts here, so are we sure it is safe to have them
+enabled at this point? I do not see any problem yet, will keep thinking.
 
-"Ideally, this patch should be pushed to the 3.10 stream; however, at this late 
-time that is not possible. Please push it for 3.11 and the Cc to stable will get 
-it into 3.10.X."
+> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+> +	w->lock = NULL;
+> +	local_irq_restore(flags);
+> +	spin_time_accum_blocked(start);
+> +}
+> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+> +
+> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+> +{
+> +	int cpu;
+> +
+> +	add_stats(RELEASED_SLOW, 1);
+> +	for_each_cpu(cpu, &waiting_cpus) {
+> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+> +		if (ACCESS_ONCE(w->lock) == lock &&
+> +		    ACCESS_ONCE(w->want) == ticket) {
+> +			add_stats(RELEASED_SLOW_KICKED, 1);
+> +			kvm_kick_cpu(cpu);
+What about using NMI to wake sleepers? I think it was discussed, but
+forgot why it was dismissed.
 
-As you see, it was marked with a Cc for Stable, and it will be propagated to 
-3.10 when it gets incorporated by Linus. I think I have done all that I can do 
-for now.
+> +			break;
+> +		}
+> +	}
+> +}
+> +
+> +/*
+> + * Setup pv_lock_ops to exploit KVM_FEATURE_PV_UNHALT if present.
+> + */
+> +void __init kvm_spinlock_init(void)
+> +{
+> +	if (!kvm_para_available())
+> +		return;
+> +	/* Does host kernel support KVM_FEATURE_PV_UNHALT? */
+> +	if (!kvm_para_has_feature(KVM_FEATURE_PV_UNHALT))
+> +		return;
+> +
+> +	printk(KERN_INFO "KVM setup paravirtual spinlock\n");
+> +
+> +	static_key_slow_inc(&paravirt_ticketlocks_enabled);
+> +
+> +	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(kvm_lock_spinning);
+> +	pv_lock_ops.unlock_kick = kvm_unlock_kick;
+> +}
+> +#endif	/* CONFIG_PARAVIRT_SPINLOCKS */
 
-If you want to lobby Linus to get stuff accepted faster, that is your 
-prerogative; however, I could not recommend that action, and I certainly will 
-never do anything like that.
-
-Larry
-
+--
+			Gleb.
