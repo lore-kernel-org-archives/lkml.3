@@ -1,97 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab3GWNXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:23:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40011 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432Ab3GWNXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:23:07 -0400
-Date: Tue, 23 Jul 2013 15:23:02 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2 08/10] mm, hugetlb: add VM_NORESERVE check in
- vma_has_reserves()
-Message-ID: <20130723132302.GC8677@dhcp22.suse.cz>
-References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1374482191-3500-9-git-send-email-iamjoonsoo.kim@lge.com>
+	id S932586Ab3GWNX3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:23:29 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38246 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932442Ab3GWNX2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:23:28 -0400
+Date: Tue, 23 Jul 2013 14:23:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@vger.kernel.org
+Subject: Re: [PATCH] ARM: kirkwood: extend the kirkwood pcm/dma driver for
+	DT usage
+Message-ID: <20130723132314.GU24642@n2100.arm.linux.org.uk>
+References: <20130723104641.6ee0b9ec@armhf> <20130723125756.GZ9858@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374482191-3500-9-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130723125756.GZ9858@sirena.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-07-13 17:36:29, Joonsoo Kim wrote:
-> If we map the region with MAP_NORESERVE and MAP_SHARED,
-> we can skip to check reserve counting and eventually we cannot be ensured
-> to allocate a huge page in fault time.
-> With following example code, you can easily find this situation.
+On Tue, Jul 23, 2013 at 01:57:56PM +0100, Mark Brown wrote:
+> On Tue, Jul 23, 2013 at 10:46:41AM +0200, Jean-Francois Moine wrote:
 > 
-> Assume 2MB, nr_hugepages = 100
+> > +- compatible: "marvell,mvebu-pcm-audio"
+> > +
+> > +Example:
+> > +
+> > +pcm: pcm {
+> > +	compatible = "marvell,mvebu-pcm-audio";
+> > +};
 > 
->         fd = hugetlbfs_unlinked_fd();
->         if (fd < 0)
->                 return 1;
-> 
->         size = 200 * MB;
->         flag = MAP_SHARED;
->         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
->         if (p == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->                 return -1;
->         }
-> 
->         size = 2 * MB;
->         flag = MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB | MAP_NORESERVE;
->         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, -1, 0);
->         if (p == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->         }
->         p[0] = '0';
->         sleep(10);
-> 
-> During executing sleep(10), run 'cat /proc/meminfo' on another process.
-> You'll find a mentioned problem.
-> 
-> non reserved shared mapping should not eat into reserve space. So
-> return error when we don't find enough free space.
+> This device has no registers or other hardware - this looks like a stub
+> device which shouldn't be visible in DT but should instead be created by
+> the I2S driver - look at how most of the other DT platforms using
+> dmaengine work.
 
-I guess I undestand what you are trying to tell but the changelog is
-really hard to read. Please be explicit about what is the expected
-result of the test and what is the fix doing. The reservation code is
-quite complex already.
- 
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 8a61638..87e73bd 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -464,6 +464,8 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  /* Returns true if the VMA has associated reserve pages */
->  static int vma_has_reserves(struct vm_area_struct *vma)
->  {
-> +	if (vma->vm_flags & VM_NORESERVE)
-> +		return 0;
->  	if (vma->vm_flags & VM_MAYSHARE)
->  		return 1;
->  	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
-> -- 
-> 1.7.9.5
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+There is no separate DMA engine on this platform.  dmaengine is totally
+irrelevant to this hardware.
