@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3GWIOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:14:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:3747 "EHLO mga02.intel.com"
+	id S1755615Ab3GWIKL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:10:11 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9556 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321Ab3GWIKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:10:14 -0400
+	id S1755328Ab3GWIJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 04:09:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,725,1367996400"; 
-   d="scan'208";a="350032545"
+   d="scan'208";a="335418840"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
         Zhao Yakui <yakui.zhao@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device members
-Date: Tue, 23 Jul 2013 16:10:06 +0800
-Message-Id: <b70ad0fe8c19e25eae9cef6fba21dfce237051bb.1374566394.git.lv.zheng@intel.com>
+        <stable@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net
+Subject: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected ACPI IPMI transfers
+Date: Tue, 23 Jul 2013 16:09:15 +0800
+Message-Id: <970a8a7108e4c95ce09e34eee03eb5731645729f.1374566394.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1374566394.git.lv.zheng@intel.com>
 References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com>
@@ -25,135 +26,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a trivial patch:
-1. Deletes a member of the acpi_ipmi_device - smi_data which is not
-   actually used.
-2. Updates a member of the acpi_ipmi_device - pnp_dev which is only used
-   by dev_warn() invocations, so changes it to struct device.
+This patch fixes races caused by unprotected ACPI IPMI transfers.
+
+We can see the following crashes may occur:
+1. There is no tx_msg_lock held for iterating tx_msg_list in
+   ipmi_flush_tx_msg() while it is parellel unlinked on failure in
+   acpi_ipmi_space_handler() under protection of tx_msg_lock.
+2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
+   while it is parellel accessed in ipmi_flush_tx_msg() and
+   ipmi_msg_handler().
+
+This patch enhances tx_msg_lock to protect all tx_msg accesses to solve
+this issue.  Then tx_msg_lock is always held around complete() and tx_msg
+accesses.
+Calling smp_wmb() before setting msg_done flag so that messages completed
+due to flushing will not be handled as 'done' messages while their contents
+are not vaild.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Cc: Zhao Yakui <yakui.zhao@intel.com>
 Reviewed-by: Huang Ying <ying.huang@intel.com>
 ---
- drivers/acpi/acpi_ipmi.c |   30 ++++++++++++++----------------
- 1 file changed, 14 insertions(+), 16 deletions(-)
+ drivers/acpi/acpi_ipmi.c |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
-index 0ee1ea6..7f93ffd 100644
+index b37c189..527ee43 100644
 --- a/drivers/acpi/acpi_ipmi.c
 +++ b/drivers/acpi/acpi_ipmi.c
-@@ -63,11 +63,10 @@ struct acpi_ipmi_device {
- 	struct list_head tx_msg_list;
- 	spinlock_t	tx_msg_lock;
- 	acpi_handle handle;
--	struct pnp_dev *pnp_dev;
-+	struct device *dev;
- 	ipmi_user_t	user_interface;
- 	int ipmi_ifnum; /* IPMI interface number */
- 	long curr_msgid;
--	struct ipmi_smi_info smi_data;
- 	atomic_t refcnt;
- };
+@@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct acpi_ipmi_device *ipmi)
+ 	struct acpi_ipmi_msg *tx_msg, *temp;
+ 	int count = HZ / 10;
+ 	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
++	unsigned long flags;
  
-@@ -132,7 +131,7 @@ static struct ipmi_driver_data driver_data = {
- };
- 
- static struct acpi_ipmi_device *
--ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
-+ipmi_dev_alloc(int iface, struct device *pdev, acpi_handle handle)
- {
- 	struct acpi_ipmi_device *ipmi_device;
- 	int err;
-@@ -148,14 +147,13 @@ ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
- 	spin_lock_init(&ipmi_device->tx_msg_lock);
- 
- 	ipmi_device->handle = handle;
--	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
--	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct ipmi_smi_info));
-+	ipmi_device->dev = get_device(pdev);
- 	ipmi_device->ipmi_ifnum = iface;
- 
- 	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
- 			       ipmi_device, &user);
- 	if (err) {
--		put_device(smi_data->dev);
-+		put_device(pdev);
- 		kfree(ipmi_device);
- 		return NULL;
++	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+ 	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
+ 		/* wake up the sleep thread on the Tx msg */
+ 		complete(&tx_msg->tx_complete);
  	}
-@@ -175,7 +173,7 @@ acpi_ipmi_dev_get(struct acpi_ipmi_device *ipmi_device)
- static void ipmi_dev_release(struct acpi_ipmi_device *ipmi_device)
- {
- 	ipmi_destroy_user(ipmi_device->user_interface);
--	put_device(ipmi_device->smi_data.dev);
-+	put_device(ipmi_device->dev);
- 	kfree(ipmi_device);
- }
++	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
  
-@@ -263,7 +261,7 @@ static int acpi_format_ipmi_request(struct acpi_ipmi_msg *tx_msg,
- 	buffer = (struct acpi_ipmi_buffer *)value;
- 	/* copy the tx message data */
- 	if (buffer->length > ACPI_IPMI_MAX_MSG_LENGTH) {
--		dev_WARN_ONCE(&tx_msg->device->pnp_dev->dev, true,
-+		dev_WARN_ONCE(tx_msg->device->dev, true,
- 			      "Unexpected request (msg len %d).\n",
- 			      buffer->length);
- 		return -EINVAL;
-@@ -382,11 +380,11 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 	struct acpi_ipmi_device *ipmi_device = user_msg_data;
- 	int msg_found = 0;
- 	struct acpi_ipmi_msg *tx_msg;
--	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-+	struct device *dev = ipmi_device->dev;
- 	unsigned long flags;
- 
- 	if (msg->user != ipmi_device->user_interface) {
--		dev_warn(&pnp_dev->dev,
-+		dev_warn(dev,
- 			 "Unexpected response is returned. returned user %p, expected user %p\n",
- 			 msg->user, ipmi_device->user_interface);
- 		goto out_msg;
-@@ -404,7 +402,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 	/* wait for about 100ms to flush the tx message list */
+ 	while (count--) {
+@@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 			break;
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
  
  	if (!msg_found) {
--		dev_warn(&pnp_dev->dev,
-+		dev_warn(dev,
+ 		dev_warn(&pnp_dev->dev,
  			 "Unexpected response (msg id %ld) is returned.\n",
  			 msg->msgid);
- 		goto out_msg;
-@@ -412,7 +410,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
- 
- 	/* copy the response data to Rx_data buffer */
- 	if (msg->msg.data_len > ACPI_IPMI_MAX_MSG_LENGTH) {
--		dev_WARN_ONCE(&pnp_dev->dev, true,
-+		dev_WARN_ONCE(dev, true,
- 			      "Unexpected response (msg len %d).\n",
- 			      msg->msg.data_len);
- 		goto out_comp;
-@@ -431,7 +429,7 @@ out_msg:
- static void ipmi_register_bmc(int iface, struct device *dev)
- {
- 	struct acpi_ipmi_device *ipmi_device, *temp;
--	struct pnp_dev *pnp_dev;
-+	struct device *pdev;
- 	int err;
- 	struct ipmi_smi_info smi_data;
- 	acpi_handle handle;
-@@ -445,11 +443,11 @@ static void ipmi_register_bmc(int iface, struct device *dev)
- 	handle = smi_data.addr_info.acpi_info.acpi_handle;
- 	if (!handle)
- 		goto err_ref;
--	pnp_dev = to_pnp_dev(smi_data.dev);
-+	pdev = smi_data.dev;
- 
--	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
-+	ipmi_device = ipmi_dev_alloc(iface, pdev, handle);
- 	if (!ipmi_device) {
--		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
-+		dev_warn(pdev, "Can't create IPMI user interface\n");
- 		goto err_ref;
+-		goto out_msg;
++		goto out_lock;
  	}
  
+ 	/* copy the response data to Rx_data buffer */
+@@ -286,10 +288,14 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 	}
+ 	tx_msg->rx_len = msg->msg.data_len;
+ 	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
++	/* tx_msg content must be valid before setting msg_done flag */
++	smp_wmb();
+ 	tx_msg->msg_done = 1;
+ 
+ out_comp:
+ 	complete(&tx_msg->tx_complete);
++out_lock:
++	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ out_msg:
+ 	ipmi_free_recv_msg(msg);
+ }
 -- 
 1.7.10
 
