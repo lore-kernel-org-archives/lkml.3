@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab3GWCn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:43:28 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:43166 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab3GWCn1 (ORCPT
+	id S1755124Ab3GWCni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:43:38 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:49885 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab3GWCne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:43:27 -0400
-Message-ID: <51EDEDC6.2040007@ozlabs.ru>
-Date: Tue, 23 Jul 2013 12:43:18 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Mon, 22 Jul 2013 22:43:34 -0400
+Message-ID: <51EDEF86.9040405@linux.vnet.ibm.com>
+Date: Tue, 23 Jul 2013 08:20:46 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121029 Thunderbird/16.0.2
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] hashtable: add hash_for_each_possible_rcu_notrace()
-References: <1373084210-27767-1-git-send-email-aik@ozlabs.ru>  <51E3C92B.2070704@ozlabs.ru> <51EDEA39.3000400@ozlabs.ru> <1374547276.8308.12.camel@joe-AO722>
-In-Reply-To: <1374547276.8308.12.camel@joe-AO722>
-Content-Type: text/plain; charset=KOI8-R
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: gleb@redhat.com, mingo@redhat.com, jeremy@goop.org, x86@kernel.org,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 0/18] Paravirtualized ticket spinlocks
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722193627.GP30300@phenom.dumpdata.com>
+In-Reply-To: <20130722193627.GP30300@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072302-9574-0000-0000-000008D5C3F8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 12:41 PM, Joe Perches wrote:
-> On Tue, 2013-07-23 at 12:28 +1000, Alexey Kardashevskiy wrote:
->> Anyone, ping. Is it good, bad, ugly (ack/nack)? Thanks!
+On 07/23/2013 01:06 AM, Konrad Rzeszutek Wilk wrote:
 >>
->> Is there any "trivial patches" list? Could not find it on vger.
-> 
-> Jiri Kosina has trivial@kernel.org
-> 
-> Also, there's kernel-janitors
-> 
-> http://vger.kernel.org/vger-lists.html#kernel-janitors
-> http://kernelnewbies.org/KernelJanitors
-> 
-> MAINTAINERS has an entry:
-> 
-> TRIVIAL PATCHES
-> M:	Jiri Kosina <trivial@kernel.org>
-> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jikos/trivial.git
-> S:	Maintained
-> K:	^Subject:.*(?i)trivial
+>> github link: https://github.com/ktraghavendra/linux/tree/pvspinlock_v11
+>
+> And chance you have a backup git tree? I get:
+>
+> This repository is temporarily unavailable.
 
+I only have it on local apart from there :(.
+Hope it was a temporary github problem. working for me now.
 
-Cool, thanks! But is that patch really trivial? :)
+>
+>>
+>> Please note that we set SPIN_THRESHOLD = 32k with this series,
+>> that would eatup little bit of overcommit performance of PLE machines
+>> and overall performance of non-PLE machines.
+>>
+>> The older series[3] was tested by Attilio for Xen implementation.
+>>
+>> Note that Konrad needs to revert below two patches to enable xen on hvm
+>>    70dd4998, f10cd522c
+>
+> We could add that to the series. But let me first test it out - and that
+> gets back to the repo :-)
+>
 
+okay.
 
--- 
-Alexey
