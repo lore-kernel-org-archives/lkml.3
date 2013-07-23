@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753611Ab3GWB12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 21:27:28 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:10211 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751088Ab3GWB10 (ORCPT
+	id S1753884Ab3GWB1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 21:27:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31133 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753308Ab3GWB1p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 21:27:26 -0400
-Message-ID: <51EDDBD2.7090605@huawei.com>
-Date: Tue, 23 Jul 2013 09:26:42 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 22 Jul 2013 21:27:45 -0400
+X-IronPort-AV: E=Sophos;i="4.89,722,1367942400"; 
+   d="scan'208";a="7984804"
+Message-ID: <51EDDB36.8020904@cn.fujitsu.com>
+Date: Tue, 23 Jul 2013 09:24:06 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Ric Wheeler <ricwheeler@gmail.com>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        <ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-References: <1373944014.17876.255.camel@gandalf.local.home> <51E4BFA9.1030600@zytor.com> <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com> <1373991399.6458.6.camel@gandalf.local.home> <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com> <51E59F79.1040903@zytor.com> <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com> <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com> <20130717144043.GA16513@xanatos> <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com> <20130719120841.GH26716@gmail.com> <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com> <1374339860.16533.6.camel@deadeye.wl.decadent.org.uk> <51EBE097.1060204@gmail.com>
-In-Reply-To: <51EBE097.1060204@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+To: jaegeuk.kim@samsung.com
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] f2fs: add the missing delection of orphan inode entry
+ in write_orphan_inodes()
+References: <51E8F65F.9040007@cn.fujitsu.com> <1374497479.26443.20.camel@kjgkr>
+In-Reply-To: <1374497479.26443.20.camel@kjgkr>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:25:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:25:43
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/21 21:22, Ric Wheeler wrote:
-> On 07/20/2013 01:04 PM, Ben Hutchings wrote:
->> n Fri, 2013-07-19 at 13:42 -0500, Felipe Contreras wrote:
->>> >On Fri, Jul 19, 2013 at 7:08 AM, Ingo Molnar<mingo@kernel.org>  wrote:
->>>> > >
->>>> > >* Felipe Contreras<felipe.contreras@gmail.com>  wrote:
->>> >
->>>>> > >>As Linus already pointed out, not everybody has to work with everybody.
->>>> > >
->>>> > >That's not the point though, the point is to potentially roughly double
->>>> > >the creative brain capacity of the Linux kernel project.
->>> >
->>> >Unfortunately that's impossible; we all know there aren't as many
->>> >women programmers as there are men.
->> In some countries, though not all.
+On 07/22/2013 08:51 PM, Jaegeuk Kim wrote:
+
+> Hi,
+> 
+> 2013-07-19 (금), 16:18 +0800, Gu Zheng:
+>> After writing orphan inode entry in jornal block, we need to delete each
+>> entry from the orphan entry list, and release them.
 >>
->> But we also know (or should realise) that the gender ratio among
->> programmers in general is much less unbalanced than in some free
->> software communities including the Linux kernel developers.
 >>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  fs/f2fs/checkpoint.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> index 66a6b85..290db04 100644
+>> --- a/fs/f2fs/checkpoint.c
+>> +++ b/fs/f2fs/checkpoint.c
+>> @@ -337,6 +337,10 @@ static void write_orphan_inodes(struct f2fs_sb_info *sbi, block_t start_blk)
+>>  		memset(orphan_blk, 0, sizeof(*orphan_blk));
+>>  page_exist:
+>>  		orphan_blk->ino[nentries++] = cpu_to_le32(orphan->ino);
+>> +
+>> +		list_del(&orphan->list);
+>> +		kmem_cache_free(orphan_entry_slab, orphan);
+>> +		sbi->n_orphans--;
 > 
-> Just a couple of data points to add.
+> NAK.
+> We should not release them here.
+> Only f2fs_evict_inode can do it. 
+
+Yeah, f2fs_evict_inode can do this job safely, sorry for my mistake,
+please ignore this patch.:)
+
+Regards,
+Gu 
+
 > 
-> When I was in graduate school in Israel, we had more women doing their phd then men. Not a huge sample, but it was interesting.
-> 
-> The counter sample is the number of coding women we have at Red Hat in the kernel team. We are around zero per cent. Certainly a sign that we need to do better, regardless of the broader community challenges...
+>>  	}
+>>  	if (!page)
+>>  		goto end;
 > 
 
-IT companies in China, they try to make sure there's at least one (most the
-time the result is just one) female developer/tester in a team, and a team
-is ~10 people. Even if it's a kernel team, but it's harder to meet.
-
-Don't know if the same strategy is applied in other countries.
 
