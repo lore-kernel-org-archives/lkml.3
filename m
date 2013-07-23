@@ -1,97 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab3GWFrJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 01:47:09 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:54060 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751083Ab3GWFrI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 01:47:08 -0400
+	id S1753978Ab3GWFsz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 01:48:55 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54537 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab3GWFsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 01:48:52 -0400
+Message-ID: <51EE18FC.2070505@ti.com>
+Date: Tue, 23 Jul 2013 11:17:40 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <51EE1765.2000402@nod.at>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
-	<51E988FF.9010201@nod.at>
-	<CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
-	<CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
-	<51ED0BBF.7060502@nod.at>
-	<CALkWK0mpH9XHL2PZK47Lb9frf9hFNQ8sjF2_0p7VJnY8XWhiGw@mail.gmail.com>
-	<20130722223238.GC13191@tango.0pointer.de>
-	<51EE1765.2000402@nod.at>
-Date: Tue, 23 Jul 2013 07:47:07 +0200
-Message-ID: <CAFLxGvx0-TA7R5d6ienSiRm+rrGtCyf_LU5BNTAn1t7U9Ji8Jw@mail.gmail.com>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, <kyungmin.park@samsung.com>,
+        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
+        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
+        <arnd@arndb.de>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+References: <Pine.LNX.4.44L0.1307221028440.1495-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1307221028440.1495-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding Al again, someone dropped him from the CC list...
+Hi,
 
-On Tue, Jul 23, 2013 at 7:40 AM, Richard Weinberger <richard@nod.at> wrote:
-> Lennart,
->
-> Am 23.07.2013 00:32, schrieb Lennart Poettering:
->> On Mon, 22.07.13 16:13, Ramkumar Ramachandra (artagnon@gmail.com) wrote:
->>
+On Monday 22 July 2013 08:14 PM, Alan Stern wrote:
+> On Mon, 22 Jul 2013, Kishon Vijay Abraham I wrote:
+> 
+>>> 	The PHY and the controller it is attached to are both physical
+>>> 	devices.
 >>>
->>> [Corrected Lennart's email ID]
+>>> 	The connection between them is hardwired by the system
+>>> 	manufacturer and cannot be changed by software.
 >>>
->>> Richard Weinberger wrote:
->>>> CC'ing Lennart.
->>>>
->>>> Am 22.07.2013 11:45, schrieb Ramkumar Ramachandra:
->>>>> Ramkumar Ramachandra wrote:
->>>>>> [1]: http://lists.freedesktop.org/archives/systemd-devel/2013-July/012152.html
->>>>>
->>>>> ... and the patches were rejected.  Lennart says that UML providing
->>>>> /dev/tty* is wrong, and that UML should call them /dev/hvc* (or
->>>>> something).  Can we do something about the situation?  Can we remove
->>>>> /dev/tty*, and provide /dev/hvc*?  Will we be breaking existing users?
->>>>>
->>>>> Thanks.
->>>>>
->>>>> Lennart Poettering wrote:
->>>>>> UML shouldn't be penalized for not implementing some terminal emulation,
->>>>>> but it should be penalized for doing so under the label of "VT support",
->>>>>> which it simply is not providing.
->>>>>>
->>>>>> They can call their ttys any way they want. If the call them
->>>>>> /dev/tty[1..64] however, then they need to implement the VC
->>>>>> interfaces. All of them.
->>>>
->>>> Lennart, can you please explain us why /dev/tty[1..64] is forced to
->>>> have virtual console support?
+>>> 	PHYs are generally described by fixed system-specific board
+>>> 	files or by Device Tree information.  Are they ever discovered
+>>> 	dynamically?
 >>
->> /dev/tty[1..64] is the userspace API to the kernel VT subsystem. If you
->> support it you need to match up all /dev/tty[1..64] with a
->> /dev/vcs[1..64] + /dev/vcsa[1..64]. You need to expose a tty that
->> understands TERM=linux and the ioctls listed on console_ioctl(4). You
->> need /dev/tty0 as something that behaves like a symlink to the fg
->> VT. You should also support files like /sys/class/tty/tty0/active with
->> its POLLHUP iface.
->
-> I sightly disagree with you.
-> /dev/tty[1..64] is not directly bound to VT.
-> You can have systems with CONFIG_VT=n and still have /dev/tty[1..64].
-> Linux supports this perfectly.
-> UML does not have VT because having virtual consoles makes no sense.
-> (Same like on s390)
->
-> Thanks,
-> //richard
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> No. They are created just like any other platform devices are created.
+> 
+> Okay.  Are PHYs _always_ platform devices?
 
+Not always. It can be any other device also.
+> 
+>>> 	Is the same true for the controllers attached to the PHYs?
+>>> 	If not -- if both a PHY and a controller are discovered 
+>>> 	dynamically -- how does the kernel know whether they are 
+>>> 	connected to each other?
+>>
+>> No differences here. Both PHY and controller will have dt information or hwmod
+>> data using which platform devices will be created.
+>>>
+>>> 	The kernel needs to know which controller is attached to which
+>>> 	PHY.  Currently this information is represented by name or ID
+>>> 	strings embedded in platform data.
+>>
+>> right. It's embedded in the platform data of the controller.
+> 
+> It must also be embedded in the PHY's platform data somehow.  
+> Otherwise, how would the kernel know which PHY to use?
+> 
+>>> 	The PHY's driver (the supplier) uses the platform data to 
+>>> 	construct a platform_device structure that represents the PHY.  
+>>
+>> Currently the driver assigns static labels (corresponding to the label used in
+>> the platform data of the controller).
+>>> 	Until this is done, the controller's driver (the client) cannot 
+>>> 	use the PHY.
+>>
+>> right.
+>>>
+>>> 	Since there is no parent-child relation between the PHY and the 
+>>> 	controller, there is no guarantee that the PHY's driver will be
+>>> 	ready when the controller's driver wants to use it.  A deferred
+>>> 	probe may be needed.
+>>
+>> right.
+>>>
+>>> 	The issue (or one of the issues) in this discussion is that 
+>>> 	Greg does not like the idea of using names or IDs to associate
+>>> 	PHYs with controllers, because they are too prone to
+>>> 	duplications or other errors.  Pointers are more reliable.
+>>>
+>>> 	But pointers to what?  Since the only data known to be 
+>>> 	available to both the PHY driver and controller driver is the
+>>> 	platform data, the obvious answer is a pointer to platform data
+>>> 	(either for the PHY or for the controller, or maybe both).
+>>
+>> hmm.. it's not going to be simple though as the platform device for the PHY and
+>> controller can be created in entirely different places. e.g., in some cases the
+>> PHY device is a child of some mfd core device (the device will be created in
+>> drivers/mfd) and the controller driver (usually) is created in board file. I
+>> guess then we have to come up with something to share a pointer in two
+>> different files.
+> 
+> The ability for two different source files to share a pointer to a data 
+> item defined in a third source file has been around since long before 
+> the C language was invented.  :-)
+> 
+> In this case, it doesn't matter where the platform_device structures 
+> are created or where the driver source code is.  Let's take a simple 
+> example.  Suppose the system design includes a PHY named "foo".  Then 
+> the board file could contain:
+> 
+> struct phy_info { ... } phy_foo;
+> EXPORT_SYMBOL_GPL(phy_foo);
+> 
+> and a header file would contain:
+> 
+> extern struct phy_info phy_foo;
+> 
+> The PHY supplier could then call phy_create(&phy_foo), and the PHY 
+> client could call phy_find(&phy_foo).  Or something like that; make up 
+> your own structure tags and function names.
 
+Alright. Thanks for the hint :-)
 
---
-Thanks,
-//richard
+Thanks
+Kishon
