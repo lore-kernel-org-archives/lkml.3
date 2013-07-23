@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758042Ab3GWUxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:53:04 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:39672 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757933Ab3GWUxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:53:02 -0400
-X-IronPort-AV: E=Sophos;i="4.89,730,1367996400"; 
-   d="scan'208";a="35935249"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andre Heider <a.heider@gmail.com>
-Subject: Re: Linux 3.11-rc2
-Thread-Topic: Linux 3.11-rc2
-Thread-Index: AQHOh0Blpp07UcC9oUem7v4bwneG7Zlx67KAgAEg6oCAAApigIAAGjqAgAACwQA=
-Date: Tue, 23 Jul 2013 20:52:38 +0000
-Message-ID: <1374612758.12943.4.camel@leira.trondhjem.org>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	 <20130723010437.GA570@polaris.bitmath.org>
-	 <1374542261.7972.66.camel@leira.trondhjem.org>
-	 <1374604305.12943.3.camel@leira.trondhjem.org>
-	 <20130723190855.GA509@polaris.bitmath.org>
-	 <CA+55aFwpwJ3MgVtbNZQXjCV+06xq1xk=XO1OYwoscvO3SQth3A@mail.gmail.com>
-In-Reply-To: <CA+55aFwpwJ3MgVtbNZQXjCV+06xq1xk=XO1OYwoscvO3SQth3A@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <8A34197DBFBBB241BDB9A04E36AE7834@hq.netapp.com>
+	id S1758056Ab3GWUxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:53:49 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:49545 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933Ab3GWUxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:53:47 -0400
+Message-ID: <201307232053.r6NKrkOh032171@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 23 Jul 2013 16:50:12 -0400
+Subject: [PATCH] mvsas: fix unaligned-access kernel panic under heavy disk testing
+To: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jianpeng Ma <majianpeng@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6NKr8Tq022095
 
-On Tue, 2013-07-23 at 13:42 -0700, Linus Torvalds wrote:
-> On Tue, Jul 23, 2013 at 12:08 PM,  <rydberg@euromail.se> wrote:
-> > Hi Trond,
-> >
-> >> OK. With Andre's help, I think we've root caused the problem. Can you
-> >> please confirm that the attached patch also solves the issue for you?
-> >
-> > Seems to work fine,
-> >
-> >    Reported-and-tested-by: Henrik Rydberg <rydberg@euromail.se>
-> 
-> Trond, do you have anything else pending and are planning a git pull,
-> or should I just take this patch directly?
+The slot->response value may not be aligned, so should be read
+using the appropriate kernel "unaligned" accessor.
 
-Nothing else queued for now, so if you could take it directly, then that
-would save the trouble of setting up an extra pull.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/scsi/mvsas/mv_sas.c | 5 +++--
+ drivers/scsi/mvsas/mv_sas.h | 1 +
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-Thanks!
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index f14665a..66aaa87 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -1858,10 +1858,11 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
+ 	}
+ 
+ 	/* error info record present */
+-	if (unlikely((rx_desc & RXQ_ERR) && (*(u64 *) slot->response))) {
++	if (unlikely((rx_desc & RXQ_ERR) &&
++		     get_unaligned_le64((u64 *) slot->response))) {
+ 		mv_dprintk("port %d slot %d rx_desc %X has error info"
+ 			"%016llX.\n", slot->port->sas_port.id, slot_idx,
+-			 rx_desc, (u64)(*(u64 *)slot->response));
++			rx_desc, get_unaligned_le64((u64 *)slot->response));
+ 		tstat->stat = mvs_slot_err(mvi, task, slot_idx);
+ 		tstat->resp = SAS_TASK_COMPLETE;
+ 		goto out;
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index 60e2fb7..d6b19dc 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -39,6 +39,7 @@
+ #include <linux/irq.h>
+ #include <linux/slab.h>
+ #include <linux/vmalloc.h>
++#include <asm/unaligned.h>
+ #include <scsi/libsas.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_tcq.h>
 -- 
-Trond Myklebust
-Linux NFS client maintainer
+1.8.3.1
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
