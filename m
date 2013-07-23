@@ -1,85 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934012Ab3GWV7C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:59:02 -0400
-Received: from fn.samba.org ([216.83.154.106]:37136 "EHLO mail.samba.org"
+	id S934137Ab3GWV7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:59:46 -0400
+Received: from stator.leun.net ([85.214.203.199]:39271 "EHLO stator.leun.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756955Ab3GWV67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:58:59 -0400
-Date: Tue, 23 Jul 2013 14:58:58 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jeremy Allison <jra@samba.org>, Steve French <smfrench@gmail.com>,
-        Jeff Layton <jlayton@samba.org>, linux-cifs@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Recvfile patch used for Samba.
-Message-ID: <20130723215858.GB16356@samba2>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <20130722215738.GB20647@samba2>
- <20130723071027.GJ19986@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723071027.GJ19986@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934008Ab3GWV7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:59:43 -0400
+Date: Tue, 23 Jul 2013 23:58:27 +0200
+From: Michael Leun <lkml20130126@newton.leun.net>
+To: Colin Cross <ccross@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re:
+ [PATCH v3 13/16] futex: use freezable blocking call)
+Message-ID: <20130723235827.014f7899@xenia.leun.net>
+In-Reply-To: <CAMbhsRSRcQ-CgCTkRGJJSVSArPqmGRjgxeRBUY0zE94Osxa-nA@mail.gmail.com>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com>
+	<CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
+	<15305281.aClQ8XUG9t@vostro.rjw.lan>
+	<CAMbhsRSsq0pgS6KvCjiFGneDEJd6zSXsYB_2MCV=sh+6F2muog@mail.gmail.com>
+	<CAMbhsRSRcQ-CgCTkRGJJSVSArPqmGRjgxeRBUY0zE94Osxa-nA@mail.gmail.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 05:10:27PM +1000, Dave Chinner wrote:
-> So, we are nesting up to 32 page locks here. That's bad. And we are
-> nesting kmap() calls for all the pages individually - is that even
-> safe to do?
-> 
-> So, what happens when we've got 16 pages in, and the filesystem has
-> allocated space for those 16 blocks, and we get ENOSPC on the 17th?
-> Sure, you undo the state here, but what about the 16 blocks that the
-> filesystem has allocated to this file? There's no notification to
-> the filesystem that they need to be truncated away because the write
-> failed....
-> 
-> > +
-> > +	/* IOV is ready, receive the date from socket now */
-> > +	msg.msg_name = NULL;
-> > +	msg.msg_namelen = 0;
-> > +	msg.msg_iov = (struct iovec *)&iov[0];
-> > +	msg.msg_iovlen = cPagesAllocated ;
-> > +	msg.msg_control = NULL;
-> > +	msg.msg_controllen = 0;
-> > +	msg.msg_flags = MSG_KERNSPACE;
-> > +	rcvtimeo = sock->sk->sk_rcvtimeo;    
-> > +	sock->sk->sk_rcvtimeo = 8 * HZ;
-> 
-> We can hold the inode and the pages locked for 8 seconds?
-> 
-> I'll stop there. This is fundamentally broken. It's an attempt to do
-> a multi-page write operation without any of the supporting
-> structures needed to handle the failure cases properly.  The nested
-> page locking has "deadlock" written all over it, and the lack of
-> partial failure handling shouts "data corruption" and "stale data
-> exposure" to me. The fact it can block for up to 8 seconds waiting
-> for network shenanigans to be completed while holding lots of locks
-> is going to cause all sorts of problems under memory pressure.
-> 
-> Not to mention it means that all memory allocations in the msgrcv
-> path need to be done with GFP_NOFS, because GFP_KERNEL allocations
-> are almost guaranteed to deadlock on the locked pages this path
-> already holds....
-> 
-> Need I say more?
+On Tue, 23 Jul 2013 13:31:49 -0700
+Colin Cross <ccross@android.com> wrote:
 
-No, that's great ! :-).
+> On Mon, Jul 22, 2013 at 11:28 PM, Colin Cross <ccross@android.com>
+> wrote:
+> > On Mon, Jul 22, 2013 at 6:41 PM, Rafael J. Wysocki <rjw@sisk.pl>
+> > wrote:
+> >> On Monday, July 22, 2013 05:42:49 PM Colin Cross wrote:
+> >>> On Mon, Jul 22, 2013 at 5:32 PM, Linus Torvalds
+> >>> <torvalds@linux-foundation.org> wrote:
+> >>> > On Mon, Jul 22, 2013 at 4:55 PM, Colin Cross
+> >>> > <ccross@android.com> wrote:
+> >>> >>
+> >>> >> I think the right solution is to add a flag to the freezing
+> >>> >> task that marks it unfreezable.  I  think PF_NOFREEZE would
+> >>> >> work, although it is normally used on kernel threads, can you
+> >>> >> see if the attached patch helps?
+> >>> >
+> >>> > Hmm. That does seem to be the right thing to do, but I wonder
+> >>> > about the *other* callers of freeze_processes() IOW, kexec and
+> >>> > friends.
+> >>> >
+> >>> > So maybe we should do this in {freeze|thaw}_processes() itself,
+> >>> > and just make the rule be that the caller of freeze_processes()
+> >>> > itself is obviously not frozen, and has to be the same one that
+> >>> > then thaws things?
+> >>> >
+> >>> > Colin? Rafael? Comments?
+> >>> >
+> >>> >                 Linus
+> >>>
+> >>> I was worried about clearing the flag in thaw_processes().  If a
+> >>> kernel thread with PF_NOFREEZE set ever called thaw_processes(),
+> >>> which autosleep might do, it would clear the flag.  Or if a
+> >>> different thread called freeze_processes() and thaw_processes().
+> >>
+> >> Is that legitimate?
+> >
+> > Nothing precludes it today, but I don't see any need for it.  I'll
+> > add a comment when I add the flag.
+> >
+> >>> All the other callers besides the SNAPSHOT_FREEZE ioctl stay in
+> >>> the kernel between freeze_processes() and thaw_processes(), which
+> >>> makes the fanout of places that could call try_to_freeze() much
+> >>> more controllable.
+> >>>
+> >>> Using a new flag that operates like PF_NOFREEZE but doesn't
+> >>> conflict with it, or a nofreeze_depth counter, would also work.
+> >>
+> >> Well, that would be robust enough.  At least if the purpose of
+> >> that new flag is clearly specified, people hopefully won't be
+> >> tempted to optimize it away in the future.
+> >>
+> >> Thanks,
+> >> Rafael
+> >
+> > OK, I'll add a new flag.
+> 
+> 
+> Michael, can you see if this patch works and doesn't throw any
+> warnings during suspend or resume?
 
-Thanks for the analysis. I'd heard it wasn't
-near production quality, but not being a kernel
-engineer myself I wasn't able to make that assessment.
+Tried several times with and without threads = y in suspend.conf, tried
+also to produce high load / much processes / high memory usage.
 
-Having said that the OEMs that are using it does
-find it improves write speeds by a large amount (10%
-or more), so it's showing there is room for improvement
-here if the correct code can be created for recvfile.
+Worked every time, no WARN seen.
 
-Cheers,
+> If the extra process flag is considered too precious for this
+> (there are only 2 left after this patch) I could get the
+> same functionality by having freeze_processes() reject calls
+> from a PF_KTHREAD|PF_NOFREEZE thread, and use PF_KTHREAD to
+> determine if PF_NOFREEZE should be cleared in thaw_processes().
 
-Jeremy.
+If another solution is considered please do not hesitate to send me the
+patch for another round of check.
+
+-- 
+MfG,
+
+Michael Leun
+
