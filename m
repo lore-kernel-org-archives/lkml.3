@@ -1,46 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934126Ab3GWT3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:29:47 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:37560 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933691Ab3GWT3q (ORCPT
+	id S934160Ab3GWTaD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:30:03 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:48600 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934135Ab3GWT36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:29:46 -0400
-Date: Tue, 23 Jul 2013 23:29:49 +0400
-From: Artem Savkov <artem.savkov@gmail.com>
-To: dchinner@redhat.com, glommer@openvz.org
-Cc: daniel.vetter@ffwll.ch, airlied@linux.ie, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drm: i915_gem_inactive_scan: insufficient nr_to_scan size
-Message-ID: <20130723192949.GA3786@thinkpad.lan>
-Mail-Followup-To: dchinner@redhat.com, glommer@openvz.org,
-	daniel.vetter@ffwll.ch, airlied@linux.ie,
-	intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <1374607086-6761-1-git-send-email-artem.savkov@gmail.com>
+	Tue, 23 Jul 2013 15:29:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1374607086-6761-1-git-send-email-artem.savkov@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130723211622.50f75087@xenia.leun.net>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<1367884221-20462-14-git-send-email-ccross@android.com>
+	<20130723010250.5a3465ec@xenia.leun.net>
+	<CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
+	<20130723200854.2046296b@xenia.leun.net>
+	<CAMbhsRT6zOKLhG_uh=nA8H_3d7afhG+4jvWjvidY3fEguryP_Q@mail.gmail.com>
+	<20130723211622.50f75087@xenia.leun.net>
+Date: Tue, 23 Jul 2013 12:29:57 -0700
+X-Google-Sender-Auth: m3-SLb0s8iKhRd1xl86_L3U_3Uw
+Message-ID: <CAMbhsRQU=TswYg-2WqHmzt-_GpfMFpYHPSU4eFd5XMw7DRGXJA@mail.gmail.com>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
+ v3 13/16] futex: use freezable blocking call)
+From: Colin Cross <ccross@android.com>
+To: Michael Leun <lkml20130126@newton.leun.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:18:06PM +0400, Artem Savkov wrote:
-> nr_to_scan needs to be (unsigned) long, not int, otherwise we get negative
-> values on 32bit systems during shrink resulting in lots of messages like one
-> below.
-> 
-> [ 4078.989603] shrink_slab: i915_gem_inactive_scan+0x0/0xc0 negative objects to delete nr=-289580136
-> 
-> Introduced in "drivers: convert shrinkers to new count/scan API"
-> (383e4f4a4cdeb2dd552e90811089bcb4d41eb32e in linux-next.git)
+On Tue, Jul 23, 2013 at 12:16 PM, Michael Leun
+<lkml20130126@newton.leun.net> wrote:
+> On Tue, 23 Jul 2013 11:29:57 -0700
+> Colin Cross <ccross@android.com> wrote:
+>
+>> On Tue, Jul 23, 2013 at 11:08 AM, Michael Leun
+>> <lkml20130126@newton.leun.net> wrote:
+>> > On Mon, 22 Jul 2013 16:55:58 -0700
+>> > Colin Cross <ccross@android.com> wrote:
+>> >
+>> >> On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
+>> >> <lkml20130126@newton.leun.net> wrote:
+>> >> > On Mon,  6 May 2013 16:50:18 -0700
+>> >> > Colin Cross <ccross@android.com> wrote:
+>> >> >
+>> >> >> Avoid waking up every thread sleeping in a futex_wait call
+>> >> >> during
+>> >> > [...]
+>> >> >
+>> >> > With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
+>> >> > displaying 0% of saving image to disk.
+>> >> >
+>> >> > echo "1" >/sys/power/state still works.
+>> >> >
+>> >> > Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4,
+>> >> > reverting that from 3.11-rc2 makes s2disk working again.
+>> >> >
+>> >>
+>> >> I think the expanded use of the freezable_* helpers is exposing an
+>> >> existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
+>> >> freeze_processes(), which sets the global system_freezing_cnt and
+>> >> pm_freezing.  try_to_freeze_tasks then sends every process except
+>> >> current a signal which causes them all to end up in the
+>> >> refrigerator. The current task then returns back to userspace and
+>> >> continues its work to suspend to disk.  If that task ever hits a
+>> >> call to try_to_freeze() in the kernel, it will see
+>> >> system_freezing_cnt and pm_freezing=true and freeze, and suspend
+>> >> to disk will hang forever.  It could hit try_to_freeze() because
+>> >> of a signal delivered to the task, or from calling any syscall
+>> >> that uses a freezable_* helper like the one I added to sys_futex.
+>> >>
+>> >> I think the right solution is to add a flag to the freezing task
+>> >> that marks it unfreezable.  I  think PF_NOFREEZE would work,
+>> >> although it is normally used on kernel threads, can you see if the
+>> >> attached patch helps?
+>> >
+>> > That patch helps.
+>> >
+>> > BTW, the only machine I can reproduce this bug with is an i7-3630QM
+>> > notebook. Cannot reproduce on an Core Duo U1400 and cannot
+>> > reproduce on an i7 M 620.
+>> >
+>> > Are the sysreq backtraces still wanted? If so, any tip, how I could
+>> > get them saved?
+>
+> Darren Hart <dvhart@linux.intel.com> wrote:
+>
+>> Typically by setting up a serial console or a netconsole and saving
+> [...]
+>> Is this what you are asking?
+>
+> Yes, and it indeed works - I halfway expected the net / netconsole
+> stuff being already frozen in that situation...
+>
+> Thanks, Darren - see below for the backtraces.
+>
+>>
+>> Any chance that the failing machine has threads=y in the suspend.conf
+>> file?
+>
+> Yes, that indeed is the trigger / difference, enabling that on the
+> U4100 (its not a U1400) machine makes that fail also and disabling
+> makes it work on the i7-3630QM.
 
-Sorry, looks like my analysis was wrong, I can still see the issue with this
-patch.
-
--- 
-Regards,
-Artem
+Thanks, if you get a chance sysrq w might be interesting but I think
+we have enough info to solve the problem.
