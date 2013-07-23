@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab3GWC2S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:28:18 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:40702 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754777Ab3GWC2R (ORCPT
+	id S1754804Ab3GWCaS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:30:18 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:4443 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751515Ab3GWCaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:28:17 -0400
-Message-ID: <51EDEA39.3000400@ozlabs.ru>
-Date: Tue, 23 Jul 2013 12:28:09 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Mon, 22 Jul 2013 22:30:16 -0400
+Message-ID: <51EDEA9C.7070709@huawei.com>
+Date: Tue, 23 Jul 2013 10:29:48 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E . McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] hashtable: add hash_for_each_possible_rcu_notrace()
-References: <1373084210-27767-1-git-send-email-aik@ozlabs.ru> <51E3C92B.2070704@ozlabs.ru>
-In-Reply-To: <51E3C92B.2070704@ozlabs.ru>
-Content-Type: text/plain; charset=KOI8-R
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, Rob Landley <rob@landley.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] KS Topic request: Handling the Stable
+ kernel, let's dump the cc: stable tag
+References: <1374379903.3719.25@driftwood> <1374419389.16533.86.camel@deadeye.wl.decadent.org.uk> <CAHGf_=okjbBrFkmpXJrkQ1BZkta-7sYVEyuaDp4Mk8eQU=ijOg@mail.gmail.com>
+In-Reply-To: <CAHGf_=okjbBrFkmpXJrkQ1BZkta-7sYVEyuaDp4Mk8eQU=ijOg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone, ping. Is it good, bad, ugly (ack/nack)? Thanks!
-
-Is there any "trivial patches" list? Could not find it on vger.
-
-
-On 07/15/2013 08:04 PM, Alexey Kardashevskiy wrote:
-> Anyone, ping?
-> 
-> On 07/06/2013 02:16 PM, Alexey Kardashevskiy wrote:
->> This adds hash_for_each_possible_rcu_notrace() which is basically
->> a notrace clone of hash_for_each_possible_rcu() which cannot be
->> used in real mode due to its tracing/debugging capability.
+On 2013/7/23 5:24, KOSAKI Motohiro wrote:
+>> I review what I can, but recently have often missed the 2 day review
+>> period.
 >>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->> ---
->>  include/linux/hashtable.h | 15 +++++++++++++++
->>  1 file changed, 15 insertions(+)
->>
->> diff --git a/include/linux/hashtable.h b/include/linux/hashtable.h
->> index a9df51f..af8b169 100644
->> --- a/include/linux/hashtable.h
->> +++ b/include/linux/hashtable.h
->> @@ -174,6 +174,21 @@ static inline void hash_del_rcu(struct hlist_node *node)
->>  		member)
->>  
->>  /**
->> + * hash_for_each_possible_rcu_notrace - iterate over all possible objects hashing
->> + * to the same bucket in an rcu enabled hashtable in a rcu enabled hashtable
->> + * @name: hashtable to iterate
->> + * @obj: the type * to use as a loop cursor for each entry
->> + * @member: the name of the hlist_node within the struct
->> + * @key: the key of the objects to iterate over
->> + *
->> + * This is the same as hash_for_each_possible_rcu() except that it does
->> + * not do any RCU debugging or tracing.
->> + */
->> +#define hash_for_each_possible_rcu_notrace(name, obj, member, key)	\
->> +	hlist_for_each_entry_rcu_notrace(obj, &name[hash_min(key, HASH_BITS(name))],\
->> +		member)
->> +
->> +/**
->>   * hash_for_each_possible_safe - iterate over all possible objects hashing to the
->>   * same bucket safe against removals
->>   * @name: hashtable to iterate
->>
+>> Review from the authors and maintainers is probably more valuable than
+>> that from generalists on the stable list.
 > 
-> 
+>>From point of subsystem developers view, the problem is there are too many
+> stable branches. I can't memorize what is different each other.
+> Currently www.kernel.org
+> lists two stable and five longterm branches. Who know all of them?
+> Eventually I only
+> checked them when I have enough much spare time.
 
+I only check those maintained by Greg.
 
--- 
-Alexey
