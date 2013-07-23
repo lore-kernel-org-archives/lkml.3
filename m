@@ -1,49 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933867Ab3GWSZj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:25:39 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:56211 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204Ab3GWSZe (ORCPT
+	id S933716Ab3GWSaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:30:00 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:49799 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933513Ab3GWS36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:25:34 -0400
-Message-ID: <1374603925.20981.8.camel@desktop>
-Subject: Re: [PATCH] Staging: bcm: Qos: Fix some coding style issues
-From: Lilis Iskandar <veeableful@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Wed, 24 Jul 2013 02:25:25 +0800
-In-Reply-To: <1374597753.3387.4.camel@joe-AO722>
-References: <1374571229.15906.3.camel@desktop>
-	 <20130723095416.GM5585@mwanda> <1374574241.17286.8.camel@desktop>
-	 <20130723101838.GN5585@mwanda> <1374580262.19434.4.camel@desktop>
-	 <1374597753.3387.4.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Jul 2013 14:29:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130723200854.2046296b@xenia.leun.net>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<1367884221-20462-14-git-send-email-ccross@android.com>
+	<20130723010250.5a3465ec@xenia.leun.net>
+	<CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
+	<20130723200854.2046296b@xenia.leun.net>
+Date: Tue, 23 Jul 2013 11:29:57 -0700
+X-Google-Sender-Auth: R7lSwuxvHg1LfQET8Tbh_kFZDQI
+Message-ID: <CAMbhsRT6zOKLhG_uh=nA8H_3d7afhG+4jvWjvidY3fEguryP_Q@mail.gmail.com>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
+ v3 13/16] futex: use freezable blocking call)
+From: Colin Cross <ccross@android.com>
+To: Michael Leun <lkml20130126@newton.leun.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 09:42 -0700, Joe Perches wrote:
-> On Tue, 2013-07-23 at 19:51 +0800, Lilis Iskandar wrote:
-> > Fixed spacing/tabs issues that were found using checkpatch.
-> 
-> Hi Lilis.
-> 
-> It'd be better to change the email subject to
-> "[PATCH v2] etc..." to show that's it's a new
-> version of the patch.
-> 
-> It's also useful to add a note or two like
-> "git diff -w shows no differences" and
-> "no differences in objects" to make review
-> and acceptance a bit easier.
-> 
-> Good luck with continued cleanups of bcm.
-> There's a lot to clean in those files.
+On Tue, Jul 23, 2013 at 11:08 AM, Michael Leun
+<lkml20130126@newton.leun.net> wrote:
+> On Mon, 22 Jul 2013 16:55:58 -0700
+> Colin Cross <ccross@android.com> wrote:
+>
+>> On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
+>> <lkml20130126@newton.leun.net> wrote:
+>> > On Mon,  6 May 2013 16:50:18 -0700
+>> > Colin Cross <ccross@android.com> wrote:
+>> >
+>> >> Avoid waking up every thread sleeping in a futex_wait call during
+>> > [...]
+>> >
+>> > With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
+>> > displaying 0% of saving image to disk.
+>> >
+>> > echo "1" >/sys/power/state still works.
+>> >
+>> > Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4,
+>> > reverting that from 3.11-rc2 makes s2disk working again.
+>> >
+>>
+>> I think the expanded use of the freezable_* helpers is exposing an
+>> existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
+>> freeze_processes(), which sets the global system_freezing_cnt and
+>> pm_freezing.  try_to_freeze_tasks then sends every process except
+>> current a signal which causes them all to end up in the refrigerator.
+>> The current task then returns back to userspace and continues its work
+>> to suspend to disk.  If that task ever hits a call to try_to_freeze()
+>> in the kernel, it will see system_freezing_cnt and pm_freezing=true
+>> and freeze, and suspend to disk will hang forever.  It could hit
+>> try_to_freeze() because of a signal delivered to the task, or from
+>> calling any syscall that uses a freezable_* helper like the one I
+>> added to sys_futex.
+>>
+>> I think the right solution is to add a flag to the freezing task that
+>> marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
+>> normally used on kernel threads, can you see if the attached patch
+>> helps?
+>
+> That patch helps.
+>
+> BTW, the only machine I can reproduce this bug with is an i7-3630QM
+> notebook. Cannot reproduce on an Core Duo U1400 and cannot reproduce on
+> an i7 M 620.
+>
+> Are the sysreq backtraces still wanted? If so, any tip, how I could get
+> them saved?
+>
+>
+> --
+> MfG,
+>
+> Michael Leun
+>
 
-Thanks for the advice! I'll keep that in mind for the following patches.
+Any chance that the failing machine has threads=y in the suspend.conf file?
 
+Rafael, it appears that swsusp's suspend.c spawns new threads after
+calling the SNAPSHOT_FREEZE ioctl.  The PF_NOFREEZE (or the new flag)
+will get copied to those new threads, but nothing will clear the flag.
+ Should I just assume that the userspace suspend code will kill those
+threads before continuing with suspend?  Or maybe add a WARN_ON in the
+kernel if any threads besides current have the new flag set when the
+suspend ops that assume all of userspace is frozen are called?
