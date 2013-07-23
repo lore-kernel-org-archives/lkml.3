@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935156Ab3GWWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:33:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41855 "EHLO
+	id S935164Ab3GWWeZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:34:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41850 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934870Ab3GWW14 (ORCPT
+	with ESMTP id S934775Ab3GWW1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:56 -0400
+	Tue, 23 Jul 2013 18:27:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [ 088/103] iommu/amd: Only unmap large pages from the first pte
-Date: Tue, 23 Jul 2013 15:26:39 -0700
-Message-Id: <20130723220430.812288894@linuxfoundation.org>
+        Ben Skeggs <bskeggs@redhat.com>,
+        Emil Velikov <emil.l.velikov@gmail.com>
+Subject: [ 087/103] drm/nv50-/disp: Use output specific mask in interrupt
+Date: Tue, 23 Jul 2013 15:26:38 -0700
+Message-Id: <20130723220430.613995506@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,52 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: Emil Velikov <emil.l.velikov@gmail.com>
 
-commit 60d0ca3cfd199b6612bbbbf4999a3470dad38bb1 upstream.
+commit 378f2bcdf7c971453d11580936dc0ffe845f5880 upstream.
 
-If we use a large mapping, the expectation is that only unmaps from
-the first pte in the superpage are supported.  Unmaps from offsets
-into the superpage should fail (ie. return zero sized unmap).  In the
-current code, unmapping from an offset clears the size of the full
-mapping starting from an offset.  For instance, if we map a 16k
-physically contiguous range at IOVA 0x0 with a large page, then
-attempt to unmap 4k at offset 12k, 4 ptes are cleared (12k - 28k) and
-the unmap returns 16k unmapped.  This potentially incorrectly clears
-valid mappings and confuses drivers like VFIO that use the unmap size
-to release pinned pages.
+The commit
 
-Fix by refusing to unmap from offsets into the page.
+   commit 476e84e126171d809f9c0b5d97137f5055f95ca8
+   Author: Ben Skeggs <bskeggs@redhat.com>
+   Date:   Mon Feb 11 09:24:23 2013 +1000
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
+       drm/nv50-/disp: initial supervisor support for off-chip encoders
+
+changed the write mask in one of the interrupt functions for on-chip encoders,
+causing a regression in certain VGA dual-head setups. This commit reintroduces
+the mask thus resolving the regression
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66129
+Reported-and-Tested-by: Yves-Alexis <corsac@debian.org>
+CC: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/amd_iommu.c |    6 +++++-
+ drivers/gpu/drm/nouveau/core/engine/disp/nv50.c |    6 +++++-
  1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1484,6 +1484,10 @@ static unsigned long iommu_unmap_page(st
+--- a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
++++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
+@@ -1107,6 +1107,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
+ 	u32 pclk = nv_rd32(priv, 0x610ad0 + (head * 0x540)) & 0x3fffff;
+ 	u32 hval, hreg = 0x614200 + (head * 0x800);
+ 	u32 oval, oreg;
++	u32 mask;
+ 	u32 conf = exec_clkcmp(priv, head, 0xff, pclk, &outp);
+ 	if (conf != ~0) {
+ 		if (outp.location == 0 && outp.type == DCB_OUTPUT_DP) {
+@@ -1133,6 +1134,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
+ 			oreg = 0x614280 + (ffs(outp.or) - 1) * 0x800;
+ 			oval = 0x00000000;
+ 			hval = 0x00000000;
++			mask = 0xffffffff;
+ 		} else
+ 		if (!outp.location) {
+ 			if (outp.type == DCB_OUTPUT_DP)
+@@ -1140,14 +1142,16 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
+ 			oreg = 0x614300 + (ffs(outp.or) - 1) * 0x800;
+ 			oval = (conf & 0x0100) ? 0x00000101 : 0x00000000;
+ 			hval = 0x00000000;
++			mask = 0x00000707;
+ 		} else {
+ 			oreg = 0x614380 + (ffs(outp.or) - 1) * 0x800;
+ 			oval = 0x00000001;
+ 			hval = 0x00000001;
++			mask = 0x00000707;
+ 		}
  
- 			/* Large PTE found which maps this address */
- 			unmap_size = PTE_PAGE_SIZE(*pte);
-+
-+			/* Only unmap from the first pte in the page */
-+			if ((unmap_size - 1) & bus_addr)
-+				break;
- 			count      = PAGE_SIZE_PTE_COUNT(unmap_size);
- 			for (i = 0; i < count; i++)
- 				pte[i] = 0ULL;
-@@ -1493,7 +1497,7 @@ static unsigned long iommu_unmap_page(st
- 		unmapped += unmap_size;
+ 		nv_mask(priv, hreg, 0x0000000f, hval);
+-		nv_mask(priv, oreg, 0x00000707, oval);
++		nv_mask(priv, oreg, mask, oval);
  	}
- 
--	BUG_ON(!is_power_of_2(unmapped));
-+	BUG_ON(unmapped && !is_power_of_2(unmapped));
- 
- 	return unmapped;
  }
+ 
 
 
