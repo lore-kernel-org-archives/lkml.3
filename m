@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933806Ab3GWSAA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:00:00 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46352 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933598Ab3GWR76 (ORCPT
+	id S933850Ab3GWSAU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:00:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37381 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933793Ab3GWR77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 13:59:58 -0400
-Message-ID: <51EEC49A.4080909@wwwdotorg.org>
-Date: Tue, 23 Jul 2013 10:59:54 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 23 Jul 2013 13:59:59 -0400
+Date: Tue, 23 Jul 2013 11:01:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
+        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
+        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
+        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
+        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+Message-ID: <20130723180110.GA8688@kroah.com>
+References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
+ <51EE9EC0.6060905@ti.com>
+ <20130723161846.GD2486@kroah.com>
+ <1446965.6APW5ZgLBW@amdc1227>
+ <20130723173710.GB28284@kroah.com>
+ <20130723174456.GM9858@sirena.org.uk>
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Rob Herring <robherring2@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Olof Johansson <olof@lixom.net>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
-References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>  <1374290388-19308-3-git-send-email-grant.likely@linaro.org>  <1374511851.3609.10.camel@hornet> <51ED9018.1020003@gmail.com> <1374599667.25700.92.camel@hornet>
-In-Reply-To: <1374599667.25700.92.camel@hornet>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723174456.GM9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 10:14 AM, Pawel Moll wrote:
-> On Mon, 2013-07-22 at 21:03 +0100, Rob Herring wrote:
->> On 07/22/2013 11:50 AM, Pawel Moll wrote:
->>> On Sat, 2013-07-20 at 04:19 +0100, Grant Likely wrote:
->>>> +F:	include/dt-bindings
->>>
->>> One thing we didn't finish talking about was the question if this
->>> directory is supposed to contain *.dtsi files as well? The obvious
->>> problem I have is a vexpress motherboard being (well, actually not bein
->>> right now) shared between arch/arm/boot/dts and arch/arm64/boot/dts.
->>
->> Please no. 
+On Tue, Jul 23, 2013 at 06:44:56PM +0100, Mark Brown wrote:
+> On Tue, Jul 23, 2013 at 10:37:11AM -0700, Greg KH wrote:
+> > On Tue, Jul 23, 2013 at 06:50:29PM +0200, Tomasz Figa wrote:
 > 
-> No as in: no don't put *.dtsi files into include/dt-bindings; or: no, do
-> not duplicate the motherboard file?
-
-Don't put *.dtsi into include/dt-bindings, I believe.
-
-> It you meant the latter, this is exactly what I wanted to say: I don't
-> want to do that, but there's no way of avoiding it right now.
-
-I think the solution is to introduce some new shared/common location for
-shared/common *.dtsi files, into the kernel tree, in the interim.
-
-When *.dts move out of the kernel, this common location can simply be
-consumed as part of the DT tree re-organization.
-
-Or perhaps, we could move *.dts around in the kernel to match the
-proposed DT tree structure before that point in time?
-
->> we will still need
->> to copy dt-bindings into the kernel. Also, I think we should move all
->> dts files out of arch subdirs and arrange by vendor or soc family. I'm
->> sure there are some cases that structure doesn't fit well, but there is
->> very little in a dts tied to a cpu architecture.
+> > > I fully agree that a simple, single string will not scale even in some, not 
+> > > so uncommon cases, but there is already a lot of existing lookup solutions 
+> > > over the kernel and so there is no point in introducing another one.
 > 
-> I couldn't agree more. So:
+> > I'm trying to get _rid_ of lookup "solutions" and just use a real
+> > pointer, as you should.  I'll go tackle those other ones after this one
+> > is taken care of, to show how the others should be handled as well.
 > 
-> <root>/include/dt-bindings/vendor/*?
+> What are the problems you are seeing with doing things with lookups?
 
-> <root>/dts/vendor/*?
+You don't "know" the id of the device you are looking up, due to
+multiple devices being in the system (dynamic ids, look back earlier in
+this thread for details about that.)
 
-I would tend to prefer that option, ...
+> Having to write platform data for everything gets old fast and the code
+> duplication is pretty tedious...
 
-> <root>/of/vendor/*?
-> <root>/dt/vendor/*?
+Adding a single pointer is "tedious"?  Where is the "name" that you are
+going to lookup going to come from?  That code doesn't write itself...
 
-or perhaps that one.
+thanks,
 
-> <root>/drivers/of/vendor/*?
-
+greg k-h
