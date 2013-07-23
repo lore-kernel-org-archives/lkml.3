@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab3GWILe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:11:34 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:58744 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab3GWIKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:10:50 -0400
-Date: Tue, 23 Jul 2013 10:10:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@akamai.com>,
-        yrl.pp-manager.tt@hitachi.com, Borislav Petkov <bpetkov@suse.de>
-Subject: Re: [PATCH -tip 3/3] x86: Remove unused text_poke_smp and
- text_poke_smp_batch
-Message-ID: <20130723081046.GA16088@gmail.com>
-References: <20130718114738.26675.85914.stgit@mhiramat-M0-7522>
- <20130718114753.26675.18714.stgit@mhiramat-M0-7522>
- <20130722074339.GA25976@gmail.com>
- <20130722082104.GA26823@gmail.com>
- <51ECEF8D.60109@hitachi.com>
- <20130722100158.GB908@gmail.com>
- <51ED053C.1070105@hitachi.com>
- <20130722102148.GB1148@gmail.com>
- <alpine.LNX.2.00.1307221545080.23128@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1307221545080.23128@pobox.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755923Ab3GWIMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:12:00 -0400
+Received: from mga03.intel.com ([143.182.124.21]:28284 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755400Ab3GWIKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 04:10:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,725,1367996400"; 
+   d="scan'208";a="271952334"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        Zhao Yakui <yakui.zhao@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: [PATCH 11/13] ACPI/IPMI: Cleanup some Kconfig codes
+Date: Tue, 23 Jul 2013 16:10:30 +0800
+Message-Id: <7f0aa3cc70233fdb523fbb75dadadc03358e836f.1374566394.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
+In-Reply-To: <cover.1374566394.git.lv.zheng@intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a trivial patch:
+1. Deletes duplicate Kconfig dependency as there is "if IPMI_HANDLER"
+   around "IPMI_SI".
 
-* Jiri Kosina <jkosina@suse.cz> wrote:
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reviewed-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/Kconfig |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> On Mon, 22 Jul 2013, Ingo Molnar wrote:
-> 
-> > > >>>> Hm, it does not build with the attached config:
-> > > >>>>
-> > > >>>> arch/x86/kernel/kprobes/opt.c: In function 'setup_optimize_kprobe':
-> > > >>>> arch/x86/kernel/kprobes/opt.c:394:6: error: dereferencing pointer to incomplete type
-> > > >>>> arch/x86/kernel/kprobes/opt.c:395:6: error: dereferencing pointer to incomplete type
-> > > >>>> arch/x86/kernel/kprobes/opt.c:396:6: error: dereferencing pointer to incomplete type
-> > > >>>
-> > > >>> 32-bit appears to be the key pattern.
-> > > >>
-> > > >> Ingo, please make sure your x86/jumplabel tree picked all of my patches.
-> > > >> This 3/3 strongly depends on the previous 1/3 and 2/3.
-> > > >> Without it, kprobes/opt.c can not be build because it still uses the
-> > > >> text_poke_params data structure which 3/3 removes.
-> > > > 
-> > > > Yes I know, and it was on top of -tip which already had these included:
-> > > > 
-> > > >  51b2c07b2226 x86: Make jump_label use int3-based patching
-> > > >  fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
-> > > > 
-> > > > without these the third patch wouldn't even apply I think.
-> > > 
-> > > No, I meant below two patches:
-> > >  kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
-> > >  kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
-> > > 
-> > > Since the "setup_optimize_kprobe" in the error message is completely
-> > > *removed* by the second one, the above error should not happen.
-> > 
-> > Oh, indeed - I correctly applied them but then messed up the 
-> > cherry-picking, that's all.
-> > 
-> > So never mind, it's all fine.
-> 
-> Hi Ingo,
-> 
-> x86/jumplabel branch still seems to contain only Masami's "kprobes/x86: 
-> Remove unused text_poke_smp() and text_poke_smp_batch() functions", with 
-> the the prerequisity patches missing, which effectively means it's 
-> broken ... are you planning to fix that up, please?
+diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
+index 3278a21..d129869 100644
+--- a/drivers/acpi/Kconfig
++++ b/drivers/acpi/Kconfig
+@@ -181,9 +181,10 @@ config ACPI_PROCESSOR
+ 
+ 	  To compile this driver as a module, choose M here:
+ 	  the module will be called processor.
++
+ config ACPI_IPMI
+ 	tristate "IPMI"
+-	depends on IPMI_SI && IPMI_HANDLER
++	depends on IPMI_SI
+ 	default n
+ 	help
+ 	  This driver enables the ACPI to access the BMC controller. And it
+-- 
+1.7.10
 
-That must be a Git server push-out delay - it should contain two patches:
-
- 51b2c07b2226 x86: Make jump_label use int3-based patching
- fd4363fff3d9 x86: Introduce int3 (breakpoint)-based instruction patching
-
-The kprobes patches are in perf/core, with x86/jumplabel merged in:
-
- ea8596bb2d8d kprobes/x86: Remove unused text_poke_smp() and text_poke_smp_batch() functions
- a7b0133ea94e kprobes/x86: Use text_poke_bp() instead of text_poke_smp*()
- c7e85c42be68 kprobes/x86: Remove an incorrect comment about int3 in NMI/MCE
- 9bb15425c3bc Merge branch 'x86/jumplabel' into perf/core
-
-Thanks,
-
-	Ingo
