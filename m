@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934936Ab3GWWut (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:50:49 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:39364 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S934566Ab3GWWuo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:50:44 -0400
-Message-ID: <51EF08C3.7040609@sgi.com>
-Date: Tue, 23 Jul 2013 17:50:43 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Holger Hans Peter Freyther <holger@freyther.de>
-CC: <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] timer_list: Correct the show function for timer_list
- by using iter->now
-References: <20130720054300.GA29718@xiaoyu.lan> <1374527911-43084-1-git-send-email-nzimmer@sgi.com> <20130723071802.GA7966@xiaoyu.lan>
-In-Reply-To: <20130723071802.GA7966@xiaoyu.lan>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.140]
+	id S934762Ab3GWWvL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:51:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41557 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934560Ab3GWW1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:27:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 032/103] ALSA: seq-oss: Initialize MIDI clients asynchronously
+Date: Tue, 23 Jul 2013 15:25:43 -0700
+Message-Id: <20130723220422.131661466@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+References: <20130723220418.532514378@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 02:18 AM, Holger Hans Peter Freyther wrote:
-> On Mon, Jul 22, 2013 at 04:18:31PM -0500, Nathan Zimmer wrote:
->> This patch corrects the issue with /proc/timer_list reported by Holger.
->> When reading from the proc file with a sufficently small buffer, 2k so not
->> really that small, there was one could get hung trying to read the file a
->> chunk at a time.
-> I think it makes sense to always use iter->now but it does not solve
-> the issue with dropbear/my test case. Or is this meant to be applied
-> on top of the previous patch?
->
->
-> holger
->
-Ah sorry I networked booted the wrong kernel and got excited.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-However after hitting my head against this for the better part of the 
-day I found
-the root cause of my issue.
+From: Takashi Iwai <tiwai@suse.de>
 
-In seq_read about halfway down when we flush the buffer to userland.
-m->index is advanced without calling m->op->next().
-My iterator doesn't take notice of that and thus fails to advance.
+commit 256ca9c3ad5013ff8a8f165e5a82fab437628c8e upstream.
 
-         /* if not empty - flush it first */
-         if (m->count) {
-                 n = min(m->count, size);
-                 err = copy_to_user(buf, m->buf + m->from, n);
-                 if (err)
-                         goto Efault;
-                 m->count -= n;
-                 m->from += n;
-                 size -= n;
-                 buf += n;
-                 copied += n;
-                 if (!m->count)
-                         m->index++;
-....
+We've got bug reports that the module loading stuck on Debian system
+with 3.10 kernel.  The debugging session revealed that the initial
+registration of OSS sequencer clients stuck at module loading time,
+which involves again with request_module() at the init phase.  This is
+triggered only by special --install stuff Debian is using, but it's
+still not good to have such loops.
 
+As a workaround, call the registration part asynchronously.  This is a
+better approach irrespective of the hang fix, in anyway.
 
-I'll need to think about how to correct it.
+Reported-and-tested-by: Philipp Matthias Hahn <pmhahn@pmhahn.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-For the moment probably the right thing would be to revert b3956a896ea5
+---
+ sound/core/seq/oss/seq_oss_init.c |   16 +++++++++++++---
+ sound/core/seq/oss/seq_oss_midi.c |    2 +-
+ 2 files changed, 14 insertions(+), 4 deletions(-)
+
+--- a/sound/core/seq/oss/seq_oss_init.c
++++ b/sound/core/seq/oss/seq_oss_init.c
+@@ -31,6 +31,7 @@
+ #include <linux/export.h>
+ #include <linux/moduleparam.h>
+ #include <linux/slab.h>
++#include <linux/workqueue.h>
+ 
+ /*
+  * common variables
+@@ -60,6 +61,14 @@ static void free_devinfo(void *private);
+ #define call_ctl(type,rec) snd_seq_kernel_client_ctl(system_client, type, rec)
+ 
+ 
++/* call snd_seq_oss_midi_lookup_ports() asynchronously */
++static void async_call_lookup_ports(struct work_struct *work)
++{
++	snd_seq_oss_midi_lookup_ports(system_client);
++}
++
++static DECLARE_WORK(async_lookup_work, async_call_lookup_ports);
++
+ /*
+  * create sequencer client for OSS sequencer
+  */
+@@ -85,9 +94,6 @@ snd_seq_oss_create_client(void)
+ 	system_client = rc;
+ 	debug_printk(("new client = %d\n", rc));
+ 
+-	/* look up midi devices */
+-	snd_seq_oss_midi_lookup_ports(system_client);
+-
+ 	/* create annoucement receiver port */
+ 	memset(port, 0, sizeof(*port));
+ 	strcpy(port->name, "Receiver");
+@@ -115,6 +121,9 @@ snd_seq_oss_create_client(void)
+ 	}
+ 	rc = 0;
+ 
++	/* look up midi devices */
++	schedule_work(&async_lookup_work);
++
+  __error:
+ 	kfree(port);
+ 	return rc;
+@@ -160,6 +169,7 @@ receive_announce(struct snd_seq_event *e
+ int
+ snd_seq_oss_delete_client(void)
+ {
++	cancel_work_sync(&async_lookup_work);
+ 	if (system_client >= 0)
+ 		snd_seq_delete_kernel_client(system_client);
+ 
+--- a/sound/core/seq/oss/seq_oss_midi.c
++++ b/sound/core/seq/oss/seq_oss_midi.c
+@@ -72,7 +72,7 @@ static int send_midi_event(struct seq_os
+  * look up the existing ports
+  * this looks a very exhausting job.
+  */
+-int __init
++int
+ snd_seq_oss_midi_lookup_ports(int client)
+ {
+ 	struct snd_seq_client_info *clinfo;
+
 
