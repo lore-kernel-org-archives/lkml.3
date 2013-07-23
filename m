@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822Ab3GWSAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:00:18 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:49519 "EHLO SMTP.CITRIX.COM"
+	id S933785Ab3GWSCY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:02:24 -0400
+Received: from sauhun.de ([89.238.76.85]:58681 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933598Ab3GWSAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:00:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,729,1367971200"; 
-   d="scan'208";a="38784470"
-Message-ID: <1374602409.6623.138.camel@hastur.hellion.org.uk>
-Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out
- pages
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
-        <alex@alex.org.uk>, <dcrisan@flexiant.com>,
-        <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Jul 2013 19:00:09 +0100
-In-Reply-To: <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
-	 <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756071Ab3GWSCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:02:23 -0400
+From: Wolfram Sang <wsa@the-dreams.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <wsa@the-dreams.de>, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: [PATCH 01/27] arch/mips/lantiq/xway: don't check resource with devm_ioremap_resource
+Date: Tue, 23 Jul 2013 20:01:34 +0200
+Message-Id: <1374602524-3398-2-git-send-email-wsa@the-dreams.de>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
-> +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-> +				    unsigned long action, void *hcpu)
-> +{
-> +	int cpu = (long)hcpu;
-> +	switch (action) {
-> +	case CPU_UP_PREPARE:
-> +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
-> +			break;
+devm_ioremap_resource does sanity checks on the given resource. No need to
+duplicate this in the driver.
 
-Thinking about this a bit more -- do we know what happens to the per-cpu
-area for a CPU which is unplugged and then reintroduced? Is it preserved
-or is it reset?
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+---
+Please apply via the subsystem-tree.
 
-If it is reset then this gets more complicated :-( We might be able to
-use the core mm page reference count, so that when the last reference is
-removed the page is automatically reclaimed. We can obviously take a
-reference whenever we add a mapping of the trade page, but I'm not sure
-we are always on the path which removes such mappings... Even then you
-could waste pages for some potentially large amount of time each time
-you replug a VCPU.
+ arch/mips/lantiq/xway/dma.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-Urg, I really hope the per-cpu area is preserved!
-
-Ian.
+diff --git a/arch/mips/lantiq/xway/dma.c b/arch/mips/lantiq/xway/dma.c
+index 08f7ebd..78a91fa 100644
+--- a/arch/mips/lantiq/xway/dma.c
++++ b/arch/mips/lantiq/xway/dma.c
+@@ -220,10 +220,6 @@ ltq_dma_init(struct platform_device *pdev)
+ 	int i;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res)
+-		panic("Failed to get dma resource");
+-
+-	/* remap dma register range */
+ 	ltq_dma_membase = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(ltq_dma_membase))
+ 		panic("Failed to remap dma resource");
+-- 
+1.7.10.4
 
