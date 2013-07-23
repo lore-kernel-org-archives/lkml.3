@@ -1,123 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab3GWNcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:32:50 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53326 "EHLO mail.skyhub.de"
+	id S932968Ab3GWNhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:37:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40650 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab3GWNcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:32:48 -0400
-Date: Tue, 23 Jul 2013 15:32:43 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]Fix boot hang in 3.11-rc1/2 because of bug in AMD errata
- check
-Message-ID: <20130723133243.GE8497@pd.tnic>
-References: <20130723134829.25251b01@googlemail.com>
+	id S1754250Ab3GWNhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:37:07 -0400
+Date: Tue, 23 Jul 2013 15:37:04 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
+Subject: Re: [PATCH v2 10/10] mm, hugetlb: decrement reserve count if
+ VM_NORESERVE alloc page cache
+Message-ID: <20130723133704.GD8677@dhcp22.suse.cz>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1374482191-3500-11-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130723134829.25251b01@googlemail.com>
+In-Reply-To: <1374482191-3500-11-git-send-email-iamjoonsoo.kim@lge.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Basically this patch looks ok, just a couple of nitpicks/comments.
-
-Please change the subject to something more meaningful like
-
-"x86, AMD: Make cpu_has_amd_erratum use currect cpuinfo descriptor" or
-so.
-
-On Tue, Jul 23, 2013 at 01:48:29PM +0200, Torsten Kaiser wrote:
-> cpu_has_amd_erratum() is buggy, because it uses the per-cpu cpu_info
-> before it is filled by smp_store_boot_cpu_info() / smp_store_cpu_info().
+On Mon 22-07-13 17:36:31, Joonsoo Kim wrote:
+> If a vma with VM_NORESERVE allocate a new page for page cache, we should
+> check whether this area is reserved or not. If this address is
+> already reserved by other process(in case of chg == 0), we should
+> decrement reserve count, because this allocated page will go into page
+> cache and currently, there is no way to know that this page comes from
+> reserved pool or not when releasing inode. This may introduce
+> over-counting problem to reserved count. With following example code,
+> you can easily reproduce this situation.
 > 
-> If early microcode loading is enabled its collect_cpu_info_amd_early() will
-> fill ->x86 and so the fallback to boot_cpu_data is not used.
-> But ->x86_vendor was not filled and is still 0 == X86_VENDOR_INTEL resulting in 
-> no errata fixes getting applied and my system hangs on boot.
+>         size = 20 * MB;
+>         flag = MAP_SHARED;
+>         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (p == MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>                 return -1;
+>         }
 > 
-> Using cpu_info in cpu_has_amd_erratum() is wrong anyway: Its only caller
-> init_amd() will have a struct cpuinfo_x86 as parameter and the set_cpu_bug()
-> that is controlled by cpu_has_amd_erratum() also only uses that struct.
+>         flag = MAP_SHARED | MAP_NORESERVE;
+>         q = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (q == MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>         }
+>         q[0] = 'c';
 > 
-> So pass the struct cpuinfo_x86 from init_amd() to cpu_has_amd_erratum() and
-> the broken fallback can be dropped.
-> 
-> I also turned the vendor check into an BUG_ON() because init_amd() can only
-> be used by AMD CPUs and if the current failure hadn't been silent this bug
-> would have been much more obvious.
+> This patch solve this problem.
 
-BUG_ON is kinda heavy-handed here, a WARN_ON should be fine.
+Again, please describe _how_ it solves the problem.
 
-Other than that, I like the commit message: it explains the whole deal
-in a very detailed manner and I'd wish more commit messages on lkml
-would be like that. Good job!
-
-> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 > 
-> --- a/arch/x86/kernel/cpu/amd.c	2013-07-22 06:33:10.027931005 +0200
-> +++ b/arch/x86/kernel/cpu/amd.c	2013-07-22 06:35:15.757931265 +0200
-> @@ -512,7 +512,7 @@ static void early_init_amd(struct cpuinf
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 2ea6afd..6782b41 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -443,10 +443,23 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+>  }
 >  
->  static const int amd_erratum_383[];
->  static const int amd_erratum_400[];
-> -static bool cpu_has_amd_erratum(const int *erratum);
-> +static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum);
->  
->  static void init_amd(struct cpuinfo_x86 *c)
+>  /* Returns true if the VMA has associated reserve pages */
+> -static int vma_has_reserves(struct vm_area_struct *vma)
+> +static int vma_has_reserves(struct vm_area_struct *vma, long chg)
 >  {
-> @@ -729,11 +729,11 @@ static void init_amd(struct cpuinfo_x86
->  		value &= ~(1ULL << 24);
->  		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
+> -	if (vma->vm_flags & VM_NORESERVE)
+> -		return 0;
+> +	if (vma->vm_flags & VM_NORESERVE) {
+> +		/*
+> +		 * This address is already reserved by other process(chg == 0),
+> +		 * so, we should decreament reserved count. Without
+> +		 * decreamenting, reserve count is remained after releasing
+> +		 * inode, because this allocated page will go into page cache
+> +		 * and is regarded as coming from reserved pool in releasing
+> +		 * step. Currently, we don't have any other solution to deal
+> +		 * with this situation properly, so add work-around here.
+> +		 */
+> +		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
+> +			return 1;
+> +		else
+> +			return 0;
+> +	}
 >  
-> -		if (cpu_has_amd_erratum(amd_erratum_383))
-> +		if (cpu_has_amd_erratum(c, amd_erratum_383))
->  			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
->  	}
+>  	/* Shared mappings always use reserves */
+>  	if (vma->vm_flags & VM_MAYSHARE)
+> @@ -520,7 +533,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
 >  
-> -	if (cpu_has_amd_erratum(amd_erratum_400))
-> +	if (cpu_has_amd_erratum(c, amd_erratum_400))
->  		set_cpu_bug(c, X86_BUG_AMD_APIC_C1E);
+>  static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  				struct vm_area_struct *vma,
+> -				unsigned long address, int avoid_reserve)
+> +				unsigned long address, int avoid_reserve,
+> +				long chg)
+>  {
+>  	struct page *page = NULL;
+>  	struct mempolicy *mpol;
+> @@ -535,7 +549,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  	 * have no page reserves. This check ensures that reservations are
+>  	 * not "stolen". The child may still get SIGKILLed
+>  	 */
+> -	if (!vma_has_reserves(vma) &&
+> +	if (!vma_has_reserves(vma, chg) &&
+>  			h->free_huge_pages - h->resv_huge_pages == 0)
+>  		return NULL;
 >  
->  	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
-> @@ -878,22 +878,15 @@ static const int amd_erratum_400[] =
->  static const int amd_erratum_383[] =
->  	AMD_OSVW_ERRATUM(3, AMD_MODEL_RANGE(0x10, 0, 0, 0xff, 0xf));
->  
-> -static bool cpu_has_amd_erratum(const int *erratum)
+> @@ -553,8 +567,12 @@ retry_cpuset:
+>  		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+>  			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+>  			if (page) {
+> -				if (!avoid_reserve && vma_has_reserves(vma))
+> -					h->resv_huge_pages--;
+> +				if (avoid_reserve)
+> +					break;
+> +				if (!vma_has_reserves(vma, chg))
+> +					break;
 > +
-> +static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
->  {
-> -	struct cpuinfo_x86 *cpu = __this_cpu_ptr(&cpu_info);
->  	int osvw_id = *erratum++;
->  	u32 range;
->  	u32 ms;
->  
-> -	/*
-> -	 * If called early enough that current_cpu_data hasn't been initialized
-> -	 * yet, fall back to boot_cpu_data.
-> -	 */
-> -	if (cpu->x86 == 0)
-> -		cpu = &boot_cpu_data;
-> -
-> -	if (cpu->x86_vendor != X86_VENDOR_AMD)
-> -		return false;
-> +	/* Should never be called on non-AMD-CPUs */
-> +	BUG_ON(cpu->x86_vendor != X86_VENDOR_AMD);
->  
->  	if (osvw_id >= 0 && osvw_id < 65536 &&
->  	    cpu_has(cpu, X86_FEATURE_OSVW)) {
+> +				h->resv_huge_pages--;
+>  				break;
+>  			}
+>  		}
+> @@ -1135,7 +1153,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>  		return ERR_PTR(-ENOSPC);
+>  	}
+>  	spin_lock(&hugetlb_lock);
+> -	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
+> +	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
+>  	if (!page) {
+>  		spin_unlock(&hugetlb_lock);
+>  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+> -- 
+> 1.7.9.5
 > 
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Michal Hocko
+SUSE Labs
