@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab3GWHr1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:47:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56203 "EHLO
+	id S1755424Ab3GWHrm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:47:42 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56213 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab3GWHrX (ORCPT
+	with ESMTP id S1754320Ab3GWHri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:47:23 -0400
-Date: Tue, 23 Jul 2013 00:46:50 -0700
-From: tip-bot for David Ahern <tipbot@zytor.com>
-Message-ID: <tip-2b821cce1c950cead081d779db0dda680192c4bd@git.kernel.org>
+	Tue, 23 Jul 2013 03:47:38 -0400
+Date: Tue, 23 Jul 2013 00:47:10 -0700
+From: tip-bot for Andi Kleen <tipbot@zytor.com>
+Message-ID: <tip-0uskktybf0e7wrnoi5e9b9it@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
+        mingo@kernel.org, fweisbec@gmail.com, ak@linux.intel.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, peterz@infradead.org, jolsa@redhat.com,
-        fweisbec@gmail.com, dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1374190079-28507-1-git-send-email-dsahern@gmail.com>
-References: <1374190079-28507-1-git-send-email-dsahern@gmail.com>
+        acme@redhat.com, fweisbec@gmail.com, ak@linux.intel.com,
+        tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf evsel: Handle ENODEV on default cycles event
-Git-Commit-ID: 2b821cce1c950cead081d779db0dda680192c4bd
+Subject: [tip:perf/core] perf tools:
+  Support callchain sorting based on addresses
+Git-Commit-ID: 99571ab3d9b342a717295a9c7e2b4495ee19e32a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,54 +28,179 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 00:46:56 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 00:47:16 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2b821cce1c950cead081d779db0dda680192c4bd
-Gitweb:     http://git.kernel.org/tip/2b821cce1c950cead081d779db0dda680192c4bd
-Author:     David Ahern <dsahern@gmail.com>
-AuthorDate: Thu, 18 Jul 2013 17:27:59 -0600
+Commit-ID:  99571ab3d9b342a717295a9c7e2b4495ee19e32a
+Gitweb:     http://git.kernel.org/tip/99571ab3d9b342a717295a9c7e2b4495ee19e32a
+Author:     Andi Kleen <ak@linux.intel.com>
+AuthorDate: Thu, 18 Jul 2013 15:33:57 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 22 Jul 2013 12:03:57 -0300
+CommitDate: Mon, 22 Jul 2013 12:42:18 -0300
 
-perf evsel: Handle ENODEV on default cycles event
+perf tools: Support callchain sorting based on addresses
 
-Some systems (e.g., VMs on qemu-0.13 with the default vcpu model) report
-an unsupported CPU model:
+With programs with very large functions it can be useful to distinguish
+the callgraph nodes on more than just function names. So for example if
+you have multiple calls to the same function, it ends up being separate
+nodes in the chain.
 
-Performance Events: unsupported p6 CPU model 2 no PMU driver, software events only.
+This patch adds a new key field to the callgraph options, that allows
+comparing nodes on functions (as today, default) and addresses.
 
-Subsequent invocations of perf fail with:
+Longer term it would be nice to also handle src lines, but that would
+need more changes and address is a reasonable proxy for it today.
 
-The sys_perf_event_open() syscall returned with 19 (No such device) for event (cycles).
-/bin/dmesg may provide additional information.
-No CONFIG_PERF_EVENTS=y kernel support configured?
+I right now reference the global params, as there was no simple way to
+register a params pointer.
 
-Add ENODEV to the list of errno's to fallback to cpu-clock.
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1374190079-28507-1-git-send-email-dsahern@gmail.com
+Link: http://lkml.kernel.org/n/tip-0uskktybf0e7wrnoi5e9b9it@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/evsel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ tools/perf/Documentation/perf-report.txt |  8 ++++++--
+ tools/perf/builtin-report.c              | 19 +++++++++++++++----
+ tools/perf/util/callchain.c              |  7 +++++--
+ tools/perf/util/callchain.h              |  6 ++++++
+ tools/perf/util/hist.c                   |  3 ++-
+ 5 files changed, 34 insertions(+), 9 deletions(-)
 
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index a635461..8bed0c1 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -1482,7 +1482,7 @@ out:
- bool perf_evsel__fallback(struct perf_evsel *evsel, int err,
- 			  char *msg, size_t msgsize)
- {
--	if ((err == ENOENT || err == ENXIO) &&
-+	if ((err == ENOENT || err == ENXIO || err == ENODEV) &&
- 	    evsel->attr.type   == PERF_TYPE_HARDWARE &&
- 	    evsel->attr.config == PERF_COUNT_HW_CPU_CYCLES) {
- 		/*
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 747ff50..2b8097e 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -115,7 +115,7 @@ OPTIONS
+ --dump-raw-trace::
+         Dump raw trace in ASCII.
+ 
+--g [type,min[,limit],order]::
++-g [type,min[,limit],order[,key]]::
+ --call-graph::
+         Display call chains using type, min percent threshold, optional print
+ 	limit and order.
+@@ -129,7 +129,11 @@ OPTIONS
+ 	- callee: callee based call graph.
+ 	- caller: inverted caller based call graph.
+ 
+-	Default: fractal,0.5,callee.
++	key can be:
++	- function: compare on functions
++	- address: compare on individual code addresses
++
++	Default: fractal,0.5,callee,function.
+ 
+ -G::
+ --inverted::
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a34c587..d785d89 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -667,12 +667,23 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 	}
+ 
+ 	/* get the call chain order */
+-	if (!strcmp(tok2, "caller"))
++	if (!strncmp(tok2, "caller", strlen("caller")))
+ 		callchain_param.order = ORDER_CALLER;
+-	else if (!strcmp(tok2, "callee"))
++	else if (!strncmp(tok2, "callee", strlen("callee")))
+ 		callchain_param.order = ORDER_CALLEE;
+ 	else
+ 		return -1;
++
++	/* Get the sort key */
++	tok2 = strtok(NULL, ",");
++	if (!tok2)
++		goto setup;
++	if (!strncmp(tok2, "function", strlen("function")))
++		callchain_param.key = CCKEY_FUNCTION;
++	else if (!strncmp(tok2, "address", strlen("address")))
++		callchain_param.key = CCKEY_ADDRESS;
++	else
++		return -1;
+ setup:
+ 	if (callchain_register_param(&callchain_param) < 0) {
+ 		fprintf(stderr, "Can't register callchain params\n");
+@@ -784,8 +795,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN('x', "exclude-other", &symbol_conf.exclude_other,
+ 		    "Only display entries with parent-match"),
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+-		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit and callchain order. "
+-		     "Default: fractal,0.5,callee", &parse_callchain_opt, callchain_default_opt),
++		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
++		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
+ 	OPT_BOOLEAN('G', "inverted", &report.inverted_callchain,
+ 		    "alias for inverted call graph"),
+ 	OPT_CALLBACK(0, "ignore-callees", NULL, "regex",
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 42b6a63..4fee33b 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -15,6 +15,7 @@
+ #include <errno.h>
+ #include <math.h>
+ 
++#include "hist.h"
+ #include "util.h"
+ #include "callchain.h"
+ 
+@@ -327,7 +328,8 @@ append_chain(struct callchain_node *root,
+ 	/*
+ 	 * Lookup in the current node
+ 	 * If we have a symbol, then compare the start to match
+-	 * anywhere inside a function.
++	 * anywhere inside a function, unless function
++	 * mode is disabled.
+ 	 */
+ 	list_for_each_entry(cnode, &root->val, list) {
+ 		struct callchain_cursor_node *node;
+@@ -339,7 +341,8 @@ append_chain(struct callchain_node *root,
+ 
+ 		sym = node->sym;
+ 
+-		if (cnode->ms.sym && sym) {
++		if (cnode->ms.sym && sym &&
++		    callchain_param.key == CCKEY_FUNCTION) {
+ 			if (cnode->ms.sym->start != sym->start)
+ 				break;
+ 		} else if (cnode->ip != node->ip)
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 3ee9f67..812d5a0 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -41,12 +41,18 @@ struct callchain_param;
+ typedef void (*sort_chain_func_t)(struct rb_root *, struct callchain_root *,
+ 				 u64, struct callchain_param *);
+ 
++enum chain_key {
++	CCKEY_FUNCTION,
++	CCKEY_ADDRESS
++};
++
+ struct callchain_param {
+ 	enum chain_mode 	mode;
+ 	u32			print_limit;
+ 	double			min_percent;
+ 	sort_chain_func_t	sort;
+ 	enum chain_order	order;
++	enum chain_key		key;
+ };
+ 
+ struct callchain_list {
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index a9dd1b9..46a0d35 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -24,7 +24,8 @@ enum hist_filter {
+ struct callchain_param	callchain_param = {
+ 	.mode	= CHAIN_GRAPH_REL,
+ 	.min_percent = 0.5,
+-	.order  = ORDER_CALLEE
++	.order  = ORDER_CALLEE,
++	.key	= CCKEY_FUNCTION
+ };
+ 
+ u16 hists__col_len(struct hists *hists, enum hist_column col)
