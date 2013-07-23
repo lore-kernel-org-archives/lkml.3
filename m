@@ -1,179 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934983Ab3GWW3S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:29:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41929 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934926Ab3GWW2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:06 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Lam <azl@google.com>, Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 103/103] tracing: Add trace_array_get/put() to event handling
-Date: Tue, 23 Jul 2013 15:26:54 -0700
-Message-Id: <20130723220433.974110554@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+	id S934910Ab3GWWbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:31:00 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:11753 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934308Ab3GWWa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:30:58 -0400
+X-IronPort-AV: E=Sophos;i="4.89,731,1367996400"; 
+   d="scan'208";a="75552717"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>
+Subject: Re: [ 068/103] SUNRPC: fix races on PipeFS UMOUNT notifications
+Thread-Topic: [ 068/103] SUNRPC: fix races on PipeFS UMOUNT notifications
+Thread-Index: AQHOh/PZDBq9O3XE0Ues8feEZdTq0plzTgkA
+Date: Tue, 23 Jul 2013 22:30:57 +0000
+Message-ID: <1374618656.12943.20.camel@leira.trondhjem.org>
 References: <20130723220418.532514378@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	 <20130723220426.853989725@linuxfoundation.org>
+In-Reply-To: <20130723220426.853989725@linuxfoundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <60E4C2F0230DA441A7E12E6677C8A9C5@hq.netapp.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6NMVERm023050
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2013-07-23 at 15:26 -0700, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
+> 
 
-------------------
+Again, please drop this patch and 67/103 for now. We'll get back to
+whether or not this should be stable material later.
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-commit 8e2e2fa47129532a30cff6c25a47078dc97d9260 upstream.
-
-Commit a695cb58162 "tracing: Prevent deleting instances when they are being read"
-tried to fix a race between deleting a trace instance and reading contents
-of a trace file. But it wasn't good enough. The following could crash the kernel:
-
- # cd /sys/kernel/debug/tracing/instances
- # ( while :; do mkdir foo; rmdir foo; done ) &
- # ( while :; do echo 1 > foo/events/sched/sched_switch 2> /dev/null; done ) &
-
-Luckily this can only be done by root user, but it should be fixed regardless.
-
-The problem is that a delete of the file can happen after the write to the event
-is opened, but before the enabling happens.
-
-The solution is to make sure the trace_array is available before succeeding in
-opening for write, and incerment the ref counter while opened.
-
-Now the instance can be deleted when the events are writing to the buffer,
-but the deletion of the instance will disable all events before the instance
-is actually deleted.
-
-Reported-by: Alexander Lam <azl@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/trace.h        |    3 ++
- kernel/trace/trace_events.c |   55 ++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 54 insertions(+), 4 deletions(-)
-
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -226,6 +226,9 @@ extern struct list_head ftrace_trace_arr
- 
- extern struct mutex trace_types_lock;
- 
-+extern int trace_array_get(struct trace_array *tr);
-+extern void trace_array_put(struct trace_array *tr);
-+
- /*
-  * The global tracer (top) should be the first trace array added,
-  * but we check the flag anyway.
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -413,6 +413,35 @@ static void put_system(struct ftrace_sub
- }
- 
- /*
-+ * Open and update trace_array ref count.
-+ * Must have the current trace_array passed to it.
-+ */
-+static int tracing_open_generic_file(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_event_file *file = inode->i_private;
-+	struct trace_array *tr = file->tr;
-+	int ret;
-+
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
-+	ret = tracing_open_generic(inode, filp);
-+	if (ret < 0)
-+		trace_array_put(tr);
-+	return ret;
-+}
-+
-+static int tracing_release_generic_file(struct inode *inode, struct file *filp)
-+{
-+	struct ftrace_event_file *file = inode->i_private;
-+	struct trace_array *tr = file->tr;
-+
-+	trace_array_put(tr);
-+
-+	return 0;
-+}
-+
-+/*
-  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
-  */
- static int
-@@ -1046,9 +1075,17 @@ static int subsystem_open(struct inode *
- 	/* Some versions of gcc think dir can be uninitialized here */
- 	WARN_ON(!dir);
- 
-+	/* Still need to increment the ref count of the system */
-+	if (trace_array_get(tr) < 0) {
-+		put_system(dir);
-+		return -ENODEV;
-+	}
-+
- 	ret = tracing_open_generic(inode, filp);
--	if (ret < 0)
-+	if (ret < 0) {
-+		trace_array_put(tr);
- 		put_system(dir);
-+	}
- 
- 	return ret;
- }
-@@ -1059,16 +1096,23 @@ static int system_tr_open(struct inode *
- 	struct trace_array *tr = inode->i_private;
- 	int ret;
- 
-+	if (trace_array_get(tr) < 0)
-+		return -ENODEV;
-+
- 	/* Make a temporary dir that has no system but points to tr */
- 	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
--	if (!dir)
-+	if (!dir) {
-+		trace_array_put(tr);
- 		return -ENOMEM;
-+	}
- 
- 	dir->tr = tr;
- 
- 	ret = tracing_open_generic(inode, filp);
--	if (ret < 0)
-+	if (ret < 0) {
-+		trace_array_put(tr);
- 		kfree(dir);
-+	}
- 
- 	filp->private_data = dir;
- 
-@@ -1079,6 +1123,8 @@ static int subsystem_release(struct inod
- {
- 	struct ftrace_subsystem_dir *dir = file->private_data;
- 
-+	trace_array_put(dir->tr);
-+
- 	/*
- 	 * If dir->subsystem is NULL, then this is a temporary
- 	 * descriptor that was made for a trace_array to enable
-@@ -1206,9 +1252,10 @@ static const struct file_operations ftra
- };
- 
- static const struct file_operations ftrace_enable_fops = {
--	.open = tracing_open_generic,
-+	.open = tracing_open_generic_file,
- 	.read = event_enable_read,
- 	.write = event_enable_write,
-+	.release = tracing_release_generic_file,
- 	.llseek = default_llseek,
- };
- 
-
-
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
