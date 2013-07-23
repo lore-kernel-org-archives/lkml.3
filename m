@@ -1,323 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3GWGzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 02:55:32 -0400
-Received: from mail-oa0-f67.google.com ([209.85.219.67]:34058 "EHLO
-	mail-oa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244Ab3GWGza (ORCPT
+	id S1753320Ab3GWHAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:00:25 -0400
+Received: from mail1.bemta12.messagelabs.com ([216.82.251.17]:45972 "EHLO
+	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751837Ab3GWHAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 02:55:30 -0400
-Message-ID: <51EE28D6.7020604@gmail.com>
-Date: Tue, 23 Jul 2013 14:55:18 +0800
-From: Hush Bensen <hush.bensen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Tue, 23 Jul 2013 03:00:23 -0400
+X-Env-Sender: Hector.Palacios@digi.com
+X-Msg-Ref: server-16.tower-28.messagelabs.com!1374562820!24258914!1
+X-Originating-IP: [66.77.174.13]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <51EE29FD.5070901@digi.com>
+Date: Tue, 23 Jul 2013 09:00:13 +0200
+From: Hector Palacios <hector.palacios@digi.com>
+Organization: Digi International
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>, Eric B Munson <emunson@mgebm.net>,
-        Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH] hugepage: allow parallelization of the hugepage fault
- path
-References: <1373671681.2448.10.camel@buesod1.americas.hpqcorp.net>  <alpine.LNX.2.00.1307121729590.3899@eggly.anvils>  <1373858204.13826.9.camel@buesod1.americas.hpqcorp.net>  <20130715072432.GA28053@voom.fritz.box>  <20130715160802.9d0cdc0ee012b5e119317a98@linux-foundation.org> <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1374090625.15271.2.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Marek Vasut <marex@denx.de>
+CC: "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "lars@metafoo.de" <lars@metafoo.de>,
+        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
+        <michael.hennerich@analog.com>
+Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <201307230036.42046.marex@denx.de>
+In-Reply-To: <201307230036.42046.marex@denx.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 03:50 AM, Davidlohr Bueso wrote:
-> From: David Gibson <david@gibson.dropbear.id.au>
->
-> At present, the page fault path for hugepages is serialized by a
-> single mutex. This is used to avoid spurious out-of-memory conditions
-> when the hugepage pool is fully utilized (two processes or threads can
-> race to instantiate the same mapping with the last hugepage from the
-> pool, the race loser returning VM_FAULT_OOM).  This problem is
-> specific to hugepages, because it is normal to want to use every
-> single hugepage in the system - with normal pages we simply assume
-> there will always be a few spare pages which can be used temporarily
-> until the race is resolved.
->
-> Unfortunately this serialization also means that clearing of hugepages
-> cannot be parallelized across multiple CPUs, which can lead to very
-> long process startup times when using large numbers of hugepages.
->
-> This patch improves the situation by replacing the single mutex with a
-> table of mutexes, selected based on a hash, which allows us to know
-> which page in the file we're instantiating. For shared mappings, the
-> hash key is selected based on the address space and file offset being faulted.
-> Similarly, for private mappings, the mm and virtual address are used.
->
-> From: Anton Blanchard <anton@samba.org>
-> [https://lkml.org/lkml/2011/7/15/31]
-> Forward ported and made a few changes:
->
-> - Use the Jenkins hash to scatter the hash, better than using just the
->    low bits.
->
-> - Always round num_fault_mutexes to a power of two to avoid an
->    expensive modulus in the hash calculation.
->
-> I also tested this patch on a large POWER7 box using a simple parallel
-> fault testcase:
->
-> http://ozlabs.org/~anton/junkcode/parallel_fault.c
->
-> Command line options:
->
-> parallel_fault <nr_threads> <size in kB> <skip in kB>
+Hello Marek,
 
-Could you explain the meaning of <size in kB> <skip in kB> here?
+On 07/23/2013 12:36 AM, Marek Vasut wrote:
+> Dear Hector Palacios,
+>
+>> Adds in_voltageX_scale_available file for every channel to read
+>> the different available scales.
+>> There are two scales per channel:
+>>   [0] = divider_by_two disabled (default)
+>>   [1] = divider_by_two enabled
+>> The scale is a struct made of integer and nano parts to build
+>> a long decimal number.
+>>
+>> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+>> ---
+>
+> [...]
+>
+>> @@ -1008,6 +1098,26 @@ static int mxs_lradc_probe(struct platform_device
+>> *pdev) if (ret)
+>>   		goto err_trig;
+>>
+>> +	/* Populate available ADC input ranges */
+>> +	for (i = 0; i < LRADC_MAX_TOTAL_CHANS; i++) {
+>> +		for (s = 0; s < ARRAY_SIZE(lradc->scale_avail[i]); s++) {
+>> +			/*
+>> +			 * [s=0] = optional divider by two disabled (default)
+>> +			 * [s=1] = optional divider by two enabled
+>> +			 *
+>> +			 * The scale is calculated by doing:
+>> +			 *   Vref >> (realbits - s)
+>> +			 * which multiplies by two on the second component
+>> +			 * of the array.
+>> +			 */
+>> +			scale_uv = ((u64)lradc->vref_mv[i] * 100000000) >>
+>> +				   (iio->channels[i].scan_type.realbits - s);
+>
+> Thinking about this, this is basically
+>
+>              vref_mv[CHANNEL] * 100 000 000
+> scale_uv = --------------------------------
+>                        2^(12 - s)
+>
+> Where s can be either 0 or 1.
+>
+> Why do you multiply it by 100000000 I don't quite understand, but maybe it's
+> fully obvious. It should be documented though.
+
+I copied Michael Hennerich in CC who was the author of this math in
+  drivers/iio/adc/ad7793.c
+  drivers/staging/iio/adc/ad7192.c
+which I copied. Maybe he can explain. It looks like it is just a question of having a 
+intermediate large enough number to later do the do_div operation, rather than having 
+a meaningful figure.
+
+>> +			lradc->scale_avail[i][s].nano =
+>> +					do_div(scale_uv, 100000000) * 10;
+>
+> Are we not loosing precission here?
+
+Yes, but the do_div is modifying the scale_uv parameter with the integer part so I 
+guess it might be somewhat justified.
+As I said before, I tried to do my own math without success so I just copied what was 
+in other drivers.
 
 >
-> First the time taken to fault 128GB of 16MB hugepages:
+>> +			lradc->scale_avail[i][s].integer = scale_uv;
+>> +		}
+>> +	}
+>> +
+>>   	/* Configure the hardware. */
+>>   	mxs_lradc_hw_init(lradc);
 >
-> 40.68 seconds
+> Best regards,
+> Marek Vasut
+>
 
-I can't get any time result after running prallel_fault, how can you get 
-the number?
 
->
-> Now the same test with 64 concurrent threads:
-> 39.34 seconds
->
-> Hardly any speedup. Finally the 64 concurrent threads test with
-> this patch applied:
-> 0.85 seconds
->
-> We go from 40.68 seconds to 0.85 seconds, an improvement of 47.9x
->
-> This was tested with the libhugetlbfs test suite, and the PASS/FAIL
-> count was the same before and after this patch.
->
-> From: Davidlohr Bueso <davidlohr.bueso@hp.com>
->
-> - Cleaned up and forward ported to Linus' latest.
-> - Cache aligned mutexes.
-> - Keep non SMP systems using a single mutex.
->
-> It was found that this mutex can become quite contended
-> during the early phases of large databases which make use of huge pages - for instance
-> startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
-> reports that this mutex can be one of the top 5 most contended locks in the kernel during
-> the first few minutes:
->
->      	     hugetlb_instantiation_mutex:   10678     10678
->               ---------------------------
->               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
->               ---------------------------
->               hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
->
-> contentions:          10678
-> acquisitions:         99476
-> waittime-total: 76888911.01 us
->
-> With this patch we see a much less contention and wait time:
->
->                &htlb_fault_mutex_table[i]:   383
->                --------------------------
->                &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
->                --------------------------
->                &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
->
-> contentions:        383
-> acquisitions:    120546
-> waittime-total: 1381.72 us
->
-> Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-> Signed-off-by: Anton Blanchard <anton@samba.org>
-> Tested-by: Eric B Munson <emunson@mgebm.net>
-> Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> ---
->   mm/hugetlb.c | 87 ++++++++++++++++++++++++++++++++++++++++++++++++++----------
->   1 file changed, 73 insertions(+), 14 deletions(-)
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 83aff0a..1f6e564 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -21,6 +21,7 @@
->   #include <linux/rmap.h>
->   #include <linux/swap.h>
->   #include <linux/swapops.h>
-> +#include <linux/jhash.h>
->   
->   #include <asm/page.h>
->   #include <asm/pgtable.h>
-> @@ -52,6 +53,13 @@ static unsigned long __initdata default_hstate_size;
->    */
->   DEFINE_SPINLOCK(hugetlb_lock);
->   
-> +/*
-> + * Serializes faults on the same logical page.  This is used to
-> + * prevent spurious OOMs when the hugepage pool is fully utilized.
-> + */
-> +static int num_fault_mutexes;
-> +static struct mutex *htlb_fault_mutex_table ____cacheline_aligned_in_smp;
-> +
->   static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
->   {
->   	bool free = (spool->count == 0) && (spool->used_hpages == 0);
-> @@ -1896,13 +1904,15 @@ static void __exit hugetlb_exit(void)
->   	for_each_hstate(h) {
->   		kobject_put(hstate_kobjs[hstate_index(h)]);
->   	}
-> -
-> +	kfree(htlb_fault_mutex_table);
->   	kobject_put(hugepages_kobj);
->   }
->   module_exit(hugetlb_exit);
->   
->   static int __init hugetlb_init(void)
->   {
-> +	int i;
-> +
->   	/* Some platform decide whether they support huge pages at boot
->   	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
->   	 * there is no such support
-> @@ -1927,6 +1937,19 @@ static int __init hugetlb_init(void)
->   	hugetlb_register_all_nodes();
->   	hugetlb_cgroup_file_init();
->   
-> +#ifdef CONFIG_SMP
-> +	num_fault_mutexes = roundup_pow_of_two(2 * num_possible_cpus());
-> +#else
-> +	num_fault_mutexes = 1;
-> +#endif
-> +	htlb_fault_mutex_table =
-> +		kmalloc(sizeof(struct mutex) * num_fault_mutexes, GFP_KERNEL);
-> +	if (!htlb_fault_mutex_table)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; i < num_fault_mutexes; i++)
-> +		mutex_init(&htlb_fault_mutex_table[i]);
-> +
->   	return 0;
->   }
->   module_init(hugetlb_init);
-> @@ -2709,15 +2732,14 @@ static bool hugetlbfs_pagecache_present(struct hstate *h,
->   }
->   
->   static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
-> -			unsigned long address, pte_t *ptep, unsigned int flags)
-> +			   struct address_space *mapping, pgoff_t idx,
-> +			   unsigned long address, pte_t *ptep, unsigned int flags)
->   {
->   	struct hstate *h = hstate_vma(vma);
->   	int ret = VM_FAULT_SIGBUS;
->   	int anon_rmap = 0;
-> -	pgoff_t idx;
->   	unsigned long size;
->   	struct page *page;
-> -	struct address_space *mapping;
->   	pte_t new_pte;
->   
->   	/*
-> @@ -2731,9 +2753,6 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
->   		return ret;
->   	}
->   
-> -	mapping = vma->vm_file->f_mapping;
-> -	idx = vma_hugecache_offset(h, vma, address);
-> -
->   	/*
->   	 * Use page lock to guard against racing truncation
->   	 * before we get page_table_lock.
-> @@ -2839,15 +2858,51 @@ backout_unlocked:
->   	goto out;
->   }
->   
-> +#ifdef CONFIG_SMP
-> +static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
-> +			    struct vm_area_struct *vma,
-> +			    struct address_space *mapping,
-> +			    pgoff_t idx, unsigned long address)
-> +{
-> +	unsigned long key[2];
-> +	u32 hash;
-> +
-> +	if (vma->vm_flags & VM_SHARED) {
-> +		key[0] = (unsigned long)mapping;
-> +		key[1] = idx;
-> +	} else {
-> +		key[0] = (unsigned long)mm;
-> +		key[1] = address >> huge_page_shift(h);
-> +	}
-> +
-> +	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
-> +
-> +	return hash & (num_fault_mutexes - 1);
-> +}
-> +#else
-> +/*
-> + * For uniprocesor systems we always use a single mutex, so just
-> + * return 0 and avoid the hashing overhead.
-> + */
-> +static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
-> +			    struct vm_area_struct *vma,
-> +			    struct address_space *mapping,
-> +			    pgoff_t idx, unsigned long address)
-> +{
-> +	return 0;
-> +}
-> +#endif
-> +
->   int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   			unsigned long address, unsigned int flags)
->   {
-> -	pte_t *ptep;
-> -	pte_t entry;
-> +	pgoff_t idx;
->   	int ret;
-> +	u32 hash;
-> +	pte_t *ptep, entry;
->   	struct page *page = NULL;
-> +	struct address_space *mapping;
->   	struct page *pagecache_page = NULL;
-> -	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
->   	struct hstate *h = hstate_vma(vma);
->   
->   	address &= huge_page_mask(h);
-> @@ -2867,15 +2922,20 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->   	if (!ptep)
->   		return VM_FAULT_OOM;
->   
-> +	mapping = vma->vm_file->f_mapping;
-> +	idx = vma_hugecache_offset(h, vma, address);
-> +
->   	/*
->   	 * Serialize hugepage allocation and instantiation, so that we don't
->   	 * get spurious allocation failures if two CPUs race to instantiate
->   	 * the same page in the page cache.
->   	 */
-> -	mutex_lock(&hugetlb_instantiation_mutex);
-> +	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
-> +	mutex_lock(&htlb_fault_mutex_table[hash]);
-> +
->   	entry = huge_ptep_get(ptep);
->   	if (huge_pte_none(entry)) {
-> -		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
-> +		ret = hugetlb_no_page(mm, vma, mapping, idx, address, ptep, flags);
->   		goto out_mutex;
->   	}
->   
-> @@ -2943,8 +3003,7 @@ out_page_table_lock:
->   	put_page(page);
->   
->   out_mutex:
-> -	mutex_unlock(&hugetlb_instantiation_mutex);
-> -
-> +	mutex_unlock(&htlb_fault_mutex_table[hash]);
->   	return ret;
->   }
->   
-
+Best regards,
+--
+Hector Palacios
