@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753843Ab3GWBIl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 21:08:41 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:14023 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab3GWBIj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 21:08:39 -0400
-Message-ID: <51EDD76B.5050407@huawei.com>
-Date: Tue, 23 Jul 2013 09:07:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753915Ab3GWBJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 21:09:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61376 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab3GWBJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 21:09:41 -0400
+X-IronPort-AV: E=Sophos;i="4.89,722,1367942400"; 
+   d="scan'208";a="7984565"
+Message-ID: <51EDD6F9.7070207@cn.fujitsu.com>
+Date: Tue, 23 Jul 2013 09:06:01 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        stable <stable@vger.kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: mistakes in code vs. maintainer flow mistakes
-References: <20130715180403.GD15531@xanatos> <CA+55aFxmV83=_kjsHGbXFwQW9tXdbT6vyEGcuDTC00X0JJvB7w@mail.gmail.com> <20130715184642.GE15531@xanatos> <CA+55aFx+W9V845zcVrUWXvL=qtYYSX=Tj25d4im4gKV5pHA35Q@mail.gmail.com> <20130715195316.GF15531@xanatos> <20130715204135.GH15531@xanatos> <CA+55aFzwfAkWA6JZruXNKX2=xd-oWM=G8FKhWCVn2xkpR_1sUA@mail.gmail.com> <20130718103907.GC23558@gmail.com> <20130718160754.GC5440@xanatos> <20130719092256.GC25784@gmail.com> <20130719190127.GA12990@xanatos>
-In-Reply-To: <20130719190127.GA12990@xanatos>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Nikola Pajkovsky <npajkovs@redhat.com>
+CC: Kim <jaegeuk.kim@samsung.com>,
+        f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] f2fs: use list_for_each rather than list_for_each_safe,
+ in remove_orphan_inode()
+References: <51E8F7A6.7030708@cn.fujitsu.com> <m3d2qa7gj6.fsf@redhat.com>
+In-Reply-To: <m3d2qa7gj6.fsf@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:07:39,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:07:39,
+	Serialize complete at 2013/07/23 09:07:39
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Perhaps what might help here is a kernel organizational chart.  A graph
-> of who sends pull requests to Linus, and their subsystem maintainers.
-> For example, in the USB "branch" there would be:
+On 07/22/2013 11:36 PM, Nikola Pajkovsky wrote:
+
+> Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
 > 
-> 				Linus Torvalds
-> 			(Linux kernel release engineer)
-> 					|
-> 					|
-> 				Greg Kroah-Hartman
-> 				      (USB)
-> 					|
-> 					|
-> 			-------------------------------------------------
-> 			|		|		|		|
-> 			|		|		|		|
-> 		Sarah Sharp		|		|	   Oliver Neukum
-> 	(USB3 and USB core)		|		|	(USB NCM and auto-suspend)
-> 					|		|
-> 				Alan Stern		|
-> 			(EHCI/UHCI/OHCI and USB core)	|
-> 							|
-> 							|
-> 						Felipe Balbi
-> 					(USB3 plat and USB gadget)
+>> As we remove the target single node, so list_for_each is enought, in order to
+>> clean up, we use list_for_each_entry instead.
+>>
+>> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+>> ---
+>>  fs/f2fs/checkpoint.c |    5 ++---
+>>  1 files changed, 2 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>> index 290db04..87f7bc2 100644
+>> --- a/fs/f2fs/checkpoint.c
+>> +++ b/fs/f2fs/checkpoint.c
+>> @@ -237,13 +237,12 @@ out:
+>>  
+>>  void remove_orphan_inode(struct f2fs_sb_info *sbi, nid_t ino)
+>>  {
+>> -	struct list_head *this, *next, *head;
+>> +	struct list_head *head;
+>>  	struct orphan_inode_entry *orphan;
+>>  
+>>  	mutex_lock(&sbi->orphan_inode_mutex);
+>>  	head = &sbi->orphan_inode_list;
+>> -	list_for_each_safe(this, next, head) {
+>> -		orphan = list_entry(this, struct orphan_inode_entry, list);
+>> +	list_for_each_entry(orphan, head, list) {
+>>  		if (orphan->ino == ino) {
+>>  			list_del(&orphan->list);
+>>  			kmem_cache_free(orphan_entry_slab, orphan);
+> 
+> you have meant list_for_each_entry_safe, haven't you?
+
+No that, here list_for_each_entry is suitable, because we delete only one entry.
+
+Thanks,
+Gu  
+
 > 
 
-Nice chart, exccept that the complete chart will in no doubt break 80
-characters limit. Actually as the hierarchy is quite flat, I can't
-image how long the longest line will be.
 
