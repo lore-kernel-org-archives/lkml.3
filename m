@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934975Ab3GWW27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:28:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41917 "EHLO
+	id S935029Ab3GWW3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:29:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41904 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934343Ab3GWW2H (ORCPT
+	with ESMTP id S934920Ab3GWW2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:07 -0400
+	Tue, 23 Jul 2013 18:28:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexander Z Lam <azl@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>,
-        Alexander Z Lam <lambchop468@gmail.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 099/103] tracing: Protect ftrace_trace_arrays list in trace_events.c
-Date: Tue, 23 Jul 2013 15:26:50 -0700
-Message-Id: <20130723220433.136055425@linuxfoundation.org>
+Subject: [ 097/103] tracing: Fix irqs-off tag display in syscall tracing
+Date: Tue, 23 Jul 2013 15:26:48 -0700
+Message-Id: <20130723220432.708285019@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -30,120 +27,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Z Lam <azl@google.com>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit a82274151af2b075163e3c42c828529dee311487 upstream.
+commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream.
 
-There are multiple places where the ftrace_trace_arrays list is accessed in
-trace_events.c without the trace_types_lock held.
+All syscall tracing irqs-off tags are wrong, the syscall enter entry doesn't
+disable irqs.
 
-Link: http://lkml.kernel.org/r/1372732674-22726-1-git-send-email-azl@google.com
+ [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
+ [root@jovi tracing]# cat trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 13/13   #P:2
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+       irqbalance-513   [000] d... 56115.496766: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
+       irqbalance-513   [000] d... 56115.497008: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
+         sendmail-771   [000] d... 56115.827982: sys_open(filename: b770e6d1, flags: 0, mode: 1b6)
 
-Signed-off-by: Alexander Z Lam <azl@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: Alexander Z Lam <lambchop468@gmail.com>
+The reason is syscall tracing doesn't record irq_flags into buffer.
+The proper display is:
+
+ [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
+ [root@jovi tracing]# cat trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 14/14   #P:2
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+       irqbalance-514   [001] ....    46.213921: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
+       irqbalance-514   [001] ....    46.214160: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
+            <...>-920   [001] ....    47.307260: sys_open(filename: 4e82a0c5, flags: 80000, mode: 0)
+
+Link: http://lkml.kernel.org/r/1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace.c        |    2 +-
- kernel/trace/trace.h        |    2 ++
- kernel/trace/trace_events.c |   11 ++++++++++-
- 3 files changed, 13 insertions(+), 2 deletions(-)
+ kernel/trace/trace_syscalls.c |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -240,7 +240,7 @@ static struct tracer		*trace_types __rea
- /*
-  * trace_types_lock is used to protect the trace_types list.
-  */
--static DEFINE_MUTEX(trace_types_lock);
-+DEFINE_MUTEX(trace_types_lock);
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -306,6 +306,8 @@ static void ftrace_syscall_enter(void *d
+ 	struct syscall_metadata *sys_data;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
++	unsigned long irq_flags;
++	int pc;
+ 	int syscall_nr;
+ 	int size;
  
- /*
-  * serialize the access of the ring buffer
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -224,6 +224,8 @@ enum {
+@@ -321,9 +323,12 @@ static void ftrace_syscall_enter(void *d
  
- extern struct list_head ftrace_trace_arrays;
+ 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
  
-+extern struct mutex trace_types_lock;
++	local_save_flags(irq_flags);
++	pc = preempt_count();
 +
- /*
-  * The global tracer (top) should be the first trace array added,
-  * but we check the flag anyway.
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1011,6 +1011,7 @@ static int subsystem_open(struct inode *
- 	int ret;
+ 	buffer = tr->trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->enter_event->event.type, size, 0, 0);
++			sys_data->enter_event->event.type, size, irq_flags, pc);
+ 	if (!event)
+ 		return;
  
- 	/* Make sure the system still exists */
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
- 		list_for_each_entry(dir, &tr->systems, list) {
-@@ -1026,6 +1027,7 @@ static int subsystem_open(struct inode *
- 	}
-  exit_loop:
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
+@@ -333,7 +338,8 @@ static void ftrace_syscall_enter(void *d
  
- 	if (!system)
- 		return -ENODEV;
-@@ -1620,6 +1622,7 @@ static void __add_event_to_tracers(struc
- int trace_add_event_call(struct ftrace_event_call *call)
- {
- 	int ret;
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 
- 	ret = __register_event(call, NULL);
-@@ -1627,11 +1630,13 @@ int trace_add_event_call(struct ftrace_e
- 		__add_event_to_tracers(call, NULL);
- 
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
- 	return ret;
+ 	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+ 					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
++		trace_current_buffer_unlock_commit(buffer, event,
++						   irq_flags, pc);
  }
  
- /*
-- * Must be called under locking both of event_mutex and trace_event_sem.
-+ * Must be called under locking of trace_types_lock, event_mutex and
-+ * trace_event_sem.
-  */
- static void __trace_remove_event_call(struct ftrace_event_call *call)
- {
-@@ -1643,11 +1648,13 @@ static void __trace_remove_event_call(st
- /* Remove an event_call */
- void trace_remove_event_call(struct ftrace_event_call *call)
- {
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	down_write(&trace_event_sem);
- 	__trace_remove_event_call(call);
- 	up_write(&trace_event_sem);
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
+ static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
+@@ -343,6 +349,8 @@ static void ftrace_syscall_exit(void *da
+ 	struct syscall_metadata *sys_data;
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
++	unsigned long irq_flags;
++	int pc;
+ 	int syscall_nr;
+ 
+ 	syscall_nr = trace_get_syscall_nr(current, regs);
+@@ -355,9 +363,13 @@ static void ftrace_syscall_exit(void *da
+ 	if (!sys_data)
+ 		return;
+ 
++	local_save_flags(irq_flags);
++	pc = preempt_count();
++
+ 	buffer = tr->trace_buffer.buffer;
+ 	event = trace_buffer_lock_reserve(buffer,
+-			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
++			sys_data->exit_event->event.type, sizeof(*entry),
++			irq_flags, pc);
+ 	if (!event)
+ 		return;
+ 
+@@ -367,7 +379,8 @@ static void ftrace_syscall_exit(void *da
+ 
+ 	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+ 					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
++		trace_current_buffer_unlock_commit(buffer, event,
++						   irq_flags, pc);
  }
  
- #define for_each_event(event, start, end)			\
-@@ -1791,6 +1798,7 @@ static int trace_module_notify(struct no
- {
- 	struct module *mod = data;
- 
-+	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	switch (val) {
- 	case MODULE_STATE_COMING:
-@@ -1801,6 +1809,7 @@ static int trace_module_notify(struct no
- 		break;
- 	}
- 	mutex_unlock(&event_mutex);
-+	mutex_unlock(&trace_types_lock);
- 
- 	return 0;
- }
+ static int reg_event_syscall_enter(struct ftrace_event_file *file,
 
 
