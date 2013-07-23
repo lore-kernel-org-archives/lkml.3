@@ -1,63 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934102Ab3GWTUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:20:19 -0400
-Received: from mail-gh0-f179.google.com ([209.85.160.179]:50598 "EHLO
-	mail-gh0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933871Ab3GWTUQ (ORCPT
+	id S934065Ab3GWT0U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:26:20 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:57585 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933900Ab3GWT0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:20:16 -0400
-Date: Tue, 23 Jul 2013 15:20:09 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Joe Perches <joe@perches.com>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
-Message-ID: <20130723192009.GL21100@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
- <20130723184843.GG21100@mtj.dyndns.org>
- <1374606958.10171.2.camel@joe-AO722>
+	Tue, 23 Jul 2013 15:26:19 -0400
+Date: Tue, 23 Jul 2013 15:26:15 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+cc: Pawel Moll <pawel.moll@arm.com>, Rob Herring <robherring2@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+In-Reply-To: <51EEC49A.4080909@wwwdotorg.org>
+Message-ID: <alpine.LFD.2.03.1307231520280.15022@syhkavp.arg>
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org> <1374290388-19308-3-git-send-email-grant.likely@linaro.org> <1374511851.3609.10.camel@hornet> <51ED9018.1020003@gmail.com> <1374599667.25700.92.camel@hornet>
+ <51EEC49A.4080909@wwwdotorg.org>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374606958.10171.2.camel@joe-AO722>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 12:15:58PM -0700, Joe Perches wrote:
-> > The following would be more conventional.
+On Tue, 23 Jul 2013, Stephen Warren wrote:
+
+> Or perhaps, we could move *.dts around in the kernel to match the
+> proposed DT tree structure before that point in time?
+> 
+> >> we will still need
+> >> to copy dt-bindings into the kernel. Also, I think we should move all
+> >> dts files out of arch subdirs and arrange by vendor or soc family. I'm
+> >> sure there are some cases that structure doesn't fit well, but there is
+> >> very little in a dts tied to a cpu architecture.
 > > 
-> >   "...10Lx]%s\n", ..., hotpluggable ? " Hot Pluggable" : ""
+> > I couldn't agree more. So:
 > > 
-> > Also, isn't "Hot Pluggable" a bit too verbose?  "hotplug" should be
-> > fine, I think.
+> > <root>/include/dt-bindings/vendor/*?
 > 
-> It's also a tiny nit better to use:
+> > <root>/dts/vendor/*?
 > 
-> 	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
-> 		node, pxm,
-> 		(unsigned long long) start, (unsigned long long) end - 1,
-> 		hotpluggable ? " Hot Pluggable" : "");
-> 
-> (or " hotplug")
-> 
-> so there's no space before newline.
+> I would tend to prefer that option, ...
 
-Which was my first point which apparently wasn't clear enough. :)
+Please make a generic top-level directory for DT and move the dtc code 
+in there as well.  Something like:
 
-Thanks.
+<root>/devicetree/dtc/*
+<root>/devicetree/dts/*
 
--- 
-tejun
+
+Nicolas
