@@ -1,106 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935102Ab3GWW7F (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:59:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41459 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934430Ab3GWW07 (ORCPT
+	id S934270Ab3GWWZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:25:28 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51648 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933852Ab3GWWZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:26:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 006/103] powerpc/tm: Fix 32 bit non-rt signals
-Date: Tue, 23 Jul 2013 15:25:17 -0700
-Message-Id: <20130723220419.288598959@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
-References: <20130723220418.532514378@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 23 Jul 2013 18:25:26 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, albert.u.boot@aribaud.net,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 01/10] irqchip: GIC: Add Cortex-A7 compatible string
+Date: Wed, 24 Jul 2013 00:25:03 +0200
+Message-Id: <1374618312-19001-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+The GIC can also be found on Cortex-A7 based SoCs. Register a new
+compatible string for those cases.
 
-------------------
-
-From: Michael Neuling <mikey@neuling.org>
-
-commit fee55450710dff32a13ae30b4129ec7b5a4b44d0 upstream.
-
-Currently sys_sigreturn() is TM unaware.  Therefore, if we take a 32 bit signal
-without SIGINFO (non RT) inside a transaction, on signal return we don't
-restore the signal frame correctly.
-
-This checks if the signal frame being restoring is an active transaction, and
-if so, it copies the additional state to ptregs so it can be restored.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/powerpc/kernel/signal_32.c |   30 +++++++++++++++++++++++++-----
- 1 file changed, 25 insertions(+), 5 deletions(-)
+ drivers/irqchip/irq-gic.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -1494,16 +1494,22 @@ badframe:
- long sys_sigreturn(int r3, int r4, int r5, int r6, int r7, int r8,
- 		       struct pt_regs *regs)
- {
-+	struct sigframe __user *sf;
- 	struct sigcontext __user *sc;
- 	struct sigcontext sigctx;
- 	struct mcontext __user *sr;
- 	void __user *addr;
- 	sigset_t set;
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	struct mcontext __user *mcp, *tm_mcp;
-+	unsigned long msr_hi;
-+#endif
+diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
+index 19ceaa6..5b5fe23 100644
+--- a/drivers/irqchip/irq-gic.c
++++ b/drivers/irqchip/irq-gic.c
+@@ -854,6 +854,7 @@ int __init gic_of_init(struct device_node *node, struct device_node *parent)
+ }
+ IRQCHIP_DECLARE(cortex_a15_gic, "arm,cortex-a15-gic", gic_of_init);
+ IRQCHIP_DECLARE(cortex_a9_gic, "arm,cortex-a9-gic", gic_of_init);
++IRQCHIP_DECLARE(cortex_a7_gic, "arm,cortex-a7-gic", gic_of_init);
+ IRQCHIP_DECLARE(msm_8660_qgic, "qcom,msm-8660-qgic", gic_of_init);
+ IRQCHIP_DECLARE(msm_qgic2, "qcom,msm-qgic2", gic_of_init);
  
- 	/* Always make any pending restarted system calls return -EINTR */
- 	current_thread_info()->restart_block.fn = do_no_restart_syscall;
- 
--	sc = (struct sigcontext __user *)(regs->gpr[1] + __SIGNAL_FRAMESIZE);
-+	sf = (struct sigframe __user *)(regs->gpr[1] + __SIGNAL_FRAMESIZE);
-+	sc = &sf->sctx;
- 	addr = sc;
- 	if (copy_from_user(&sigctx, sc, sizeof(sigctx)))
- 		goto badframe;
-@@ -1520,11 +1526,25 @@ long sys_sigreturn(int r3, int r4, int r
- #endif
- 	set_current_blocked(&set);
- 
--	sr = (struct mcontext __user *)from_user_ptr(sigctx.regs);
--	addr = sr;
--	if (!access_ok(VERIFY_READ, sr, sizeof(*sr))
--	    || restore_user_regs(regs, sr, 1))
-+#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	mcp = (struct mcontext __user *)&sf->mctx;
-+	tm_mcp = (struct mcontext __user *)&sf->mctx_transact;
-+	if (__get_user(msr_hi, &tm_mcp->mc_gregs[PT_MSR]))
- 		goto badframe;
-+	if (MSR_TM_ACTIVE(msr_hi<<32)) {
-+		if (!cpu_has_feature(CPU_FTR_TM))
-+			goto badframe;
-+		if (restore_tm_user_regs(regs, mcp, tm_mcp))
-+			goto badframe;
-+	} else
-+#endif
-+	{
-+		sr = (struct mcontext __user *)from_user_ptr(sigctx.regs);
-+		addr = sr;
-+		if (!access_ok(VERIFY_READ, sr, sizeof(*sr))
-+		    || restore_user_regs(regs, sr, 1))
-+			goto badframe;
-+	}
- 
- 	set_thread_flag(TIF_RESTOREALL);
- 	return 0;
-
+-- 
+1.8.3.2
 
