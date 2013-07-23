@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935113Ab3GWWx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:53:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41522 "EHLO
+	id S935133Ab3GWWyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:54:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41505 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934516Ab3GWW1L (ORCPT
+	with ESMTP id S934506Ab3GWW1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:11 -0400
+	Tue, 23 Jul 2013 18:27:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Peter Wu <lekensteyn@gmail.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 022/103] cpufreq: Revert commit 2f7021a8 to fix CPU hotplug regression
-Date: Tue, 23 Jul 2013 15:25:33 -0700
-Message-Id: <20130723220421.046833249@linuxfoundation.org>
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 010/103] powerpc: Remove unreachable relocation on exception handlers
+Date: Tue, 23 Jul 2013 15:25:21 -0700
+Message-Id: <20130723220419.707419827@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -30,187 +27,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit e8d05276f236ee6435e78411f62be9714e0b9377 upstream.
+commit 1d567cb4bd42d560a7621cac6f6aebe87343689e upstream.
 
-commit 2f7021a8 "cpufreq: protect 'policy->cpus' from offlining
-during __gov_queue_work()" caused a regression in CPU hotplug,
-because it lead to a deadlock between cpufreq governor worker thread
-and the CPU hotplug writer task.
+We have relocation on exception handlers defined for h_data_storage and
+h_instr_storage. However we will never take relocation on exceptions for
+these because they can only come from a guest, and we never take
+relocation on exceptions when we transition from guest to host.
 
-Lockdep splat corresponding to this deadlock is shown below:
+We also have a handler for hmi_exception (Hypervisor Maintenance) which
+is defined in the architecture to never be delivered with relocation on,
+see see v2.07 Book III-S section 6.5.
 
-[   60.277396] ======================================================
-[   60.277400] [ INFO: possible circular locking dependency detected ]
-[   60.277407] 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744 Not tainted
-[   60.277411] -------------------------------------------------------
-[   60.277417] bash/2225 is trying to acquire lock:
-[   60.277422]  ((&(&j_cdbs->work)->work)){+.+...}, at: [<ffffffff810621b5>] flush_work+0x5/0x280
-[   60.277444] but task is already holding lock:
-[   60.277449]  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
-[   60.277465] which lock already depends on the new lock.
+So remove the handlers, leaving a branch to self just to be double extra
+paranoid.
 
-[   60.277472] the existing dependency chain (in reverse order) is:
-[   60.277477] -> #2 (cpu_hotplug.lock){+.+.+.}:
-[   60.277490]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277503]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
-[   60.277514]        [<ffffffff81042cbc>] get_online_cpus+0x3c/0x60
-[   60.277522]        [<ffffffff814b842a>] gov_queue_work+0x2a/0xb0
-[   60.277532]        [<ffffffff814b7891>] cs_dbs_timer+0xc1/0xe0
-[   60.277543]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
-[   60.277552]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
-[   60.277560]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
-[   60.277569]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
-[   60.277580] -> #1 (&j_cdbs->timer_mutex){+.+...}:
-[   60.277592]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277600]        [<ffffffff815b6157>] mutex_lock_nested+0x67/0x410
-[   60.277608]        [<ffffffff814b785d>] cs_dbs_timer+0x8d/0xe0
-[   60.277616]        [<ffffffff8106302d>] process_one_work+0x1cd/0x6a0
-[   60.277624]        [<ffffffff81063d31>] worker_thread+0x121/0x3a0
-[   60.277633]        [<ffffffff8106ae2b>] kthread+0xdb/0xe0
-[   60.277640]        [<ffffffff815bb96c>] ret_from_fork+0x7c/0xb0
-[   60.277649] -> #0 ((&(&j_cdbs->work)->work)){+.+...}:
-[   60.277661]        [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
-[   60.277669]        [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.277677]        [<ffffffff810621ed>] flush_work+0x3d/0x280
-[   60.277685]        [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
-[   60.277693]        [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
-[   60.277701]        [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
-[   60.277709]        [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
-[   60.277719]        [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
-[   60.277728]        [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
-[   60.277737]        [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
-[   60.277747]        [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
-[   60.277759]        [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
-[   60.277768]        [<ffffffff815a0a68>] _cpu_down+0x88/0x330
-[   60.277779]        [<ffffffff815a0d46>] cpu_down+0x36/0x50
-[   60.277788]        [<ffffffff815a2748>] store_online+0x98/0xd0
-[   60.277796]        [<ffffffff81452a28>] dev_attr_store+0x18/0x30
-[   60.277806]        [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
-[   60.277818]        [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
-[   60.277826]        [<ffffffff811686fc>] SyS_write+0x4c/0xa0
-[   60.277834]        [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
-[   60.277842] other info that might help us debug this:
-
-[   60.277848] Chain exists of:
-  (&(&j_cdbs->work)->work) --> &j_cdbs->timer_mutex --> cpu_hotplug.lock
-
-[   60.277864]  Possible unsafe locking scenario:
-
-[   60.277869]        CPU0                    CPU1
-[   60.277873]        ----                    ----
-[   60.277877]   lock(cpu_hotplug.lock);
-[   60.277885]                                lock(&j_cdbs->timer_mutex);
-[   60.277892]                                lock(cpu_hotplug.lock);
-[   60.277900]   lock((&(&j_cdbs->work)->work));
-[   60.277907]  *** DEADLOCK ***
-
-[   60.277915] 6 locks held by bash/2225:
-[   60.277919]  #0:  (sb_writers#6){.+.+.+}, at: [<ffffffff81168173>] vfs_write+0x1c3/0x1f0
-[   60.277937]  #1:  (&buffer->mutex){+.+.+.}, at: [<ffffffff811d9e3c>] sysfs_write_file+0x3c/0x150
-[   60.277954]  #2:  (s_active#61){.+.+.+}, at: [<ffffffff811d9ec3>] sysfs_write_file+0xc3/0x150
-[   60.277972]  #3:  (x86_cpu_hotplug_driver_mutex){+.+...}, at: [<ffffffff81024cf7>] cpu_hotplug_driver_lock+0x17/0x20
-[   60.277990]  #4:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff815a0d32>] cpu_down+0x22/0x50
-[   60.278007]  #5:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff81042d8b>] cpu_hotplug_begin+0x2b/0x60
-[   60.278023] stack backtrace:
-[   60.278031] CPU: 3 PID: 2225 Comm: bash Not tainted 3.10.0-rc7-dbg-01385-g241fd04-dirty #1744
-[   60.278037] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-[   60.278042]  ffffffff8204e110 ffff88014df6b9f8 ffffffff815b3d90 ffff88014df6ba38
-[   60.278055]  ffffffff815b0a8d ffff880150ed3f60 ffff880150ed4770 3871c4002c8980b2
-[   60.278068]  ffff880150ed4748 ffff880150ed4770 ffff880150ed3f60 ffff88014df6bb00
-[   60.278081] Call Trace:
-[   60.278091]  [<ffffffff815b3d90>] dump_stack+0x19/0x1b
-[   60.278101]  [<ffffffff815b0a8d>] print_circular_bug+0x2b6/0x2c5
-[   60.278111]  [<ffffffff810ab826>] __lock_acquire+0x1766/0x1d30
-[   60.278123]  [<ffffffff81067e08>] ? __kernel_text_address+0x58/0x80
-[   60.278134]  [<ffffffff810ac6d4>] lock_acquire+0xa4/0x200
-[   60.278142]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
-[   60.278151]  [<ffffffff810621ed>] flush_work+0x3d/0x280
-[   60.278159]  [<ffffffff810621b5>] ? flush_work+0x5/0x280
-[   60.278169]  [<ffffffff810a9b14>] ? mark_held_locks+0x94/0x140
-[   60.278178]  [<ffffffff81062d77>] ? __cancel_work_timer+0x77/0x120
-[   60.278188]  [<ffffffff810a9cbd>] ? trace_hardirqs_on_caller+0xfd/0x1c0
-[   60.278196]  [<ffffffff81062d8a>] __cancel_work_timer+0x8a/0x120
-[   60.278206]  [<ffffffff81062e53>] cancel_delayed_work_sync+0x13/0x20
-[   60.278214]  [<ffffffff814b89d9>] cpufreq_governor_dbs+0x529/0x6f0
-[   60.278225]  [<ffffffff814b76a7>] cs_cpufreq_governor_dbs+0x17/0x20
-[   60.278234]  [<ffffffff814b5df8>] __cpufreq_governor+0x48/0x100
-[   60.278244]  [<ffffffff814b6b80>] __cpufreq_remove_dev.isra.14+0x80/0x3c0
-[   60.278255]  [<ffffffff815adc0d>] cpufreq_cpu_callback+0x38/0x4c
-[   60.278265]  [<ffffffff81071a4d>] notifier_call_chain+0x5d/0x110
-[   60.278275]  [<ffffffff81071b0e>] __raw_notifier_call_chain+0xe/0x10
-[   60.278284]  [<ffffffff815a0a68>] _cpu_down+0x88/0x330
-[   60.278292]  [<ffffffff81024cf7>] ? cpu_hotplug_driver_lock+0x17/0x20
-[   60.278302]  [<ffffffff815a0d46>] cpu_down+0x36/0x50
-[   60.278311]  [<ffffffff815a2748>] store_online+0x98/0xd0
-[   60.278320]  [<ffffffff81452a28>] dev_attr_store+0x18/0x30
-[   60.278329]  [<ffffffff811d9edb>] sysfs_write_file+0xdb/0x150
-[   60.278337]  [<ffffffff8116806d>] vfs_write+0xbd/0x1f0
-[   60.278347]  [<ffffffff81185950>] ? fget_light+0x320/0x4b0
-[   60.278355]  [<ffffffff811686fc>] SyS_write+0x4c/0xa0
-[   60.278364]  [<ffffffff815bbbbe>] tracesys+0xd0/0xd5
-[   60.280582] smpboot: CPU 1 is now offline
-
-The intention of that commit was to avoid warnings during CPU
-hotplug, which indicated that offline CPUs were getting IPIs from the
-cpufreq governor's work items.  But the real root-cause of that
-problem was commit a66b2e5 (cpufreq: Preserve sysfs files across
-suspend/resume) because it totally skipped all the cpufreq callbacks
-during CPU hotplug in the suspend/resume path, and hence it never
-actually shut down the cpufreq governor's worker threads during CPU
-offline in the suspend/resume path.
-
-Reflecting back, the reason why we never suspected that commit as the
-root-cause earlier, was that the original issue was reported with
-just the halt command and nobody had brought in suspend/resume to the
-equation.
-
-The reason for _that_ in turn, as it turns out, is that earlier
-halt/shutdown was being done by disabling non-boot CPUs while tasks
-were frozen, just like suspend/resume....  but commit cf7df378a
-(reboot: migrate shutdown/reboot to boot cpu) which came somewhere
-along that very same time changed that logic: shutdown/halt no longer
-takes CPUs offline.  Thus, the test-cases for reproducing the bug
-were vastly different and thus we went totally off the trail.
-
-Overall, it was one hell of a confusion with so many commits
-affecting each other and also affecting the symptoms of the problems
-in subtle ways.  Finally, now since the original problematic commit
-(a66b2e5) has been completely reverted, revert this intermediate fix
-too (2f7021a8), to fix the CPU hotplug deadlock.  Phew!
-
-Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Reported-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Tested-by: Peter Wu <lekensteyn@gmail.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq_governor.c |    3 ---
- 1 file changed, 3 deletions(-)
+ arch/powerpc/kernel/exceptions-64s.S |   18 +++---------------
+ 1 file changed, 3 insertions(+), 15 deletions(-)
 
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -26,7 +26,6 @@
- #include <linux/tick.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
--#include <linux/cpu.h>
+--- a/arch/powerpc/kernel/exceptions-64s.S
++++ b/arch/powerpc/kernel/exceptions-64s.S
+@@ -793,14 +793,10 @@ system_call_relon_pSeries:
+ 	STD_RELON_EXCEPTION_PSERIES(0x4d00, 0xd00, single_step)
  
- #include "cpufreq_governor.h"
+ 	. = 0x4e00
+-	SET_SCRATCH0(r13)
+-	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	h_data_storage_relon_hv
++	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
  
-@@ -181,10 +180,8 @@ void gov_queue_work(struct dbs_data *dbs
- 	if (!all_cpus) {
- 		__gov_queue_work(smp_processor_id(), dbs_data, delay);
- 	} else {
--		get_online_cpus();
- 		for_each_cpu(i, policy->cpus)
- 			__gov_queue_work(i, dbs_data, delay);
--		put_online_cpus();
- 	}
- }
- EXPORT_SYMBOL_GPL(gov_queue_work);
+ 	. = 0x4e20
+-	SET_SCRATCH0(r13)
+-	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	h_instr_storage_relon_hv
++	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
+ 
+ 	. = 0x4e40
+ 	SET_SCRATCH0(r13)
+@@ -808,9 +804,7 @@ system_call_relon_pSeries:
+ 	b	emulation_assist_relon_hv
+ 
+ 	. = 0x4e60
+-	SET_SCRATCH0(r13)
+-	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	hmi_exception_relon_hv
++	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
+ 
+ 	. = 0x4e80
+ 	SET_SCRATCH0(r13)
+@@ -1180,14 +1174,8 @@ tm_unavailable_common:
+ __end_handlers:
+ 
+ 	/* Equivalents to the above handlers for relocation-on interrupt vectors */
+-	STD_RELON_EXCEPTION_HV_OOL(0xe00, h_data_storage)
+-	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe00)
+-	STD_RELON_EXCEPTION_HV_OOL(0xe20, h_instr_storage)
+-	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe20)
+ 	STD_RELON_EXCEPTION_HV_OOL(0xe40, emulation_assist)
+ 	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe40)
+-	STD_RELON_EXCEPTION_HV_OOL(0xe60, hmi_exception)
+-	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe60)
+ 	MASKABLE_RELON_EXCEPTION_HV_OOL(0xe80, h_doorbell)
+ 	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe80)
+ 
 
 
