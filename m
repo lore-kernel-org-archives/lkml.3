@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab3GWKvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 06:51:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53812 "EHLO
+	id S1757092Ab3GWKu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 06:50:58 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61607 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3GWKuU (ORCPT
+	with ESMTP id S1756634Ab3GWKuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 06:50:20 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
@@ -14,226 +14,178 @@ Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
         Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v4 15/15] ARM: shmobile: r8a7740: add support for 2 RTDMACs
-Date: Tue, 23 Jul 2013 12:50:09 +0200
-Message-Id: <1374576609-27748-16-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v4 03/15] DMA: shdma: add r8a73a4 DMAC data to the device ID table
+Date: Tue, 23 Jul 2013 12:49:57 +0200
+Message-Id: <1374576609-27748-4-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:Ealqi6RsZtcNWH4Vfflak1vS8fAh0g6//qFnMkBLOkc
- Q+C/bAhOKTjl4uhBAW/cqkqNEgI1exE869DKo3RXe720MYfpmG
- 6f2x1J/ghsVigLhEDED2oKyMz2KAJQopjtJ6lqJWsicl+tuTXY
- vAlgv1xohzJQXwRYdYr0YrgWAZzSGQV02vy4wy17KhEmeRGYIM
- QW7bZT05YujyBVn1cMhdeXTU7K073i95SN+XIQoKmSl1p67llu
- xIwnH7w2gAWoJ2fMTcOhBbc+jcAa0HUNixfXgUGC5UN5cXyq+v
- ECRqYLpbrxEoI4HlnaSRsWyh2A5eQ1Vg4kgDLt0l/cPbELcyp8
- 19Nlflka19R50Fztr6Qu1FjAheOLe7BScjIlaNxf4oJMEjcdHv
- zGNH02sNutngLx2vY4iywCV2nuF+Q9+xAA=
+X-Provags-ID: V02:K0:KLTqQcqOPZTkrg5tPspunC8IJeBsy6js/rblAzmPXpA
+ Bvf5rqVebZLx2j7AXqm7IePEXcrSWGktTNrT0zaKp4oEgQzsqh
+ ovhPqoJOBBakbxaSVFh+75yinvvETJDyeAk9w49CLRGE73qhWs
+ 5Rg19kt5UXdBxkgUW18MElpcgWBoZZUCBh/G7Ufxt5t9RnguYG
+ 2Yw1NPTOchUp5ZliVW2hz+wDE/ZgTQANnm44JAmmZQ6V2e2iZZ
+ sFCii/ND736i6AeJkVbm88E20U41A+jm5A9Rep92HgTCWQbgVW
+ N0DBHkWXBCZTTwuBaxsMVz33KuLXflMTtlnPp+CmWMtr+PDFlw
+ +YzePAu0TwhXqsneYMSgS6LZ3p4ZN4kX1aFCetEduG0SKEwX+m
+ r45K4XtrHmkYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to 3 SYS-DMACs, r817740 SoCs also have 2 RT-DMACs. This patch
-adds support for them in both DT- amd non-DT-modes.
+This configuration data will be re-used, when DMAC DT support is added to
+r8a73a4.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
 
-v4: update documentation
+v4: make struct sh_dmae_pdata r8a73a4_dma_pdata "const"
 
- Documentation/devicetree/bindings/dma/shdma.txt |    2 +-
- arch/arm/boot/dts/r8a7740.dtsi                  |   34 +++++++++++
- arch/arm/mach-shmobile/clock-r8a7740.c          |    8 +++
- arch/arm/mach-shmobile/setup-r8a7740.c          |   72 +++++++++++++++++++++++
- 4 files changed, 115 insertions(+), 1 deletions(-)
+ drivers/dma/sh/Kconfig         |    4 ++
+ drivers/dma/sh/Makefile        |    1 +
+ drivers/dma/sh/shdma-r8a73a4.c |   75 ++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/sh/shdma.h         |    7 ++++
+ drivers/dma/sh/shdmac.c        |    1 +
+ 5 files changed, 88 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/sh/shdma-r8a73a4.c
 
-diff --git a/Documentation/devicetree/bindings/dma/shdma.txt b/Documentation/devicetree/bindings/dma/shdma.txt
-index aeed9b8..5ff154d 100644
---- a/Documentation/devicetree/bindings/dma/shdma.txt
-+++ b/Documentation/devicetree/bindings/dma/shdma.txt
-@@ -24,7 +24,7 @@ Optional properties (currently unused):
- Required properties:
- - compatible:	should be one of
- 		"renesas,shdma-r8a73a4" for the system DMAC on r8a73a4 SoC
--		"renesas,shdma-r8a7740" for the DMACs (not RTDMAC) on r8a7740
-+		"renesas,shdma-r8a7740" for the DMACs and RTDMACs on r8a7740
- 		"renesas,shdma-sh73a0" for the DMACs on sh73a0
+diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
+index 0ac3e94..6921ba2 100644
+--- a/drivers/dma/sh/Kconfig
++++ b/drivers/dma/sh/Kconfig
+@@ -23,6 +23,10 @@ config SUDMAC
+ 	help
+ 	  Enable support for the Renesas SUDMAC controllers.
  
- Optional properties:
-diff --git a/arch/arm/boot/dts/r8a7740.dtsi b/arch/arm/boot/dts/r8a7740.dtsi
-index 4797f1e..638ada2 100644
---- a/arch/arm/boot/dts/r8a7740.dtsi
-+++ b/arch/arm/boot/dts/r8a7740.dtsi
-@@ -175,6 +175,40 @@
- 					"ch0", "ch1", "ch2", "ch3",
- 					"ch4", "ch5";
- 		};
++config SHDMA_R8A73A4
++	def_bool y
++	depends on ARCH_R8A73A4 && SH_DMAE != n
 +
-+		dma3: dma-controller@ffc18020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xffc18020 0x270>,
-+				<0xffc19000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 196 4
-+					0 190 4
-+					0 191 4
-+					0 192 4
-+					0 193 4
-+					0 194 4
-+					0 195 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
+ config SHDMA_R8A7740
+ 	def_bool y
+ 	depends on ARCH_R8A7740 && SH_DMAE != n
+diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
+index acdd3cb..8352bfb 100644
+--- a/drivers/dma/sh/Makefile
++++ b/drivers/dma/sh/Makefile
+@@ -1,6 +1,7 @@
+ obj-$(CONFIG_SH_DMAE_BASE) += shdma-base.o shdma-of.o
+ obj-$(CONFIG_SH_DMAE) += shdma.o
+ shdma-y := shdmac.o
++shdma-$(CONFIG_SHDMA_R8A73A4) += shdma-r8a73a4.o
+ shdma-$(CONFIG_SHDMA_R8A7740) += shdma-r8a7740.o
+ shdma-objs := $(shdma-y)
+ obj-$(CONFIG_SUDMAC) += sudmac.o
+diff --git a/drivers/dma/sh/shdma-r8a73a4.c b/drivers/dma/sh/shdma-r8a73a4.c
+new file mode 100644
+index 0000000..9db9b4d
+--- /dev/null
++++ b/drivers/dma/sh/shdma-r8a73a4.c
+@@ -0,0 +1,75 @@
++#include <linux/sh_dma.h>
 +
-+		dma4: dma-controller@ffc28020 {
-+			compatible = "renesas,shdma-r8a7740";
-+			reg = <0xffc28020 0x270>,
-+				<0xffc29000 0xc>;
-+			interrupt-parent = <&gic>;
-+			interrupts = <0 158 4
-+					0 152 4
-+					0 153 4
-+					0 154 4
-+					0 155 4
-+					0 156 4
-+					0 157 4>;
-+			interrupt-names = "error",
-+					"ch0", "ch1", "ch2", "ch3",
-+					"ch4", "ch5";
-+		};
- 	};
- 
- 	i2c0: i2c@fff20000 {
-diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
-index b355018..c4a8309 100644
---- a/arch/arm/mach-shmobile/clock-r8a7740.c
-+++ b/arch/arm/mach-shmobile/clock-r8a7740.c
-@@ -451,6 +451,8 @@ static struct clk fsidivs[] = {
- 
- /* MSTP */
- enum {
-+	MSTP023, MSTP021,
++#include <mach/dma-register.h>
++#include <mach/r8a73a4.h>
 +
- 	MSTP128, MSTP127, MSTP125,
- 	MSTP116, MSTP111, MSTP100, MSTP117,
- 
-@@ -469,6 +471,8 @@ enum {
- };
- 
- static struct clk mstp_clks[MSTP_NR] = {
-+	[MSTP021] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 21, 0), /* RT-DMAC1 */
-+	[MSTP023] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR0, 23, 0), /* RT-DMAC2 */
- 	[MSTP128] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 28, 0), /* CEU21 */
- 	[MSTP127] = SH_CLK_MSTP32(&div4_clks[DIV4_S],	SMSTPCR1, 27, 0), /* CEU20 */
- 	[MSTP125] = SH_CLK_MSTP32(&div6_clks[DIV6_SUB],	SMSTPCR1, 25, 0), /* TMU0 */
-@@ -547,6 +551,10 @@ static struct clk_lookup lookups[] = {
- 	CLKDEV_CON_ID("sub_clk",		&div6_clks[DIV6_SUB]),
- 
- 	/* MSTP32 clocks */
-+	CLKDEV_DEV_ID("shdma-r8a7740.4",	&mstp_clks[MSTP021]),
-+	CLKDEV_DEV_ID("ffc18020.dma-controller",&mstp_clks[MSTP021]),
-+	CLKDEV_DEV_ID("shdma-r8a7740.5",	&mstp_clks[MSTP023]),
-+	CLKDEV_DEV_ID("ffc28020.dma-controller",&mstp_clks[MSTP023]),
- 	CLKDEV_DEV_ID("sh_mobile_lcdc_fb.0",	&mstp_clks[MSTP100]),
- 	CLKDEV_DEV_ID("sh_tmu.3",		&mstp_clks[MSTP111]),
- 	CLKDEV_DEV_ID("sh_tmu.4",		&mstp_clks[MSTP111]),
-diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
-index 01dcb3b..2dc2d652 100644
---- a/arch/arm/mach-shmobile/setup-r8a7740.c
-+++ b/arch/arm/mach-shmobile/setup-r8a7740.c
-@@ -626,6 +626,62 @@ static struct resource r8a7740_dmae2_resources[] = {
- 	},
- };
- 
-+/* Resource order important! */
-+static struct resource r8a7740_rtdma0_resources[] = {
++static const struct sh_dmae_slave_config dma_slaves[] = {
 +	{
-+		/* Channel registers and DMAOR */
-+		.start	= 0xffc18020,
-+		.end	= 0xffc1828f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		/* DMARSx */
-+		.start	= 0xffc19000,
-+		.end	= 0xffc1900b,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.name	= "error_irq",
-+		.start	= gic_spi(196),
-+		.end	= gic_spi(196),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		/* IRQ for channels 0-5 */
-+		.start	= gic_spi(190),
-+		.end	= gic_spi(195),
-+		.flags	= IORESOURCE_IRQ,
++		.slave_id	= SHDMA_SLAVE_MMCIF0_TX,
++		.addr		= 0xee200034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF0_RX,
++		.addr		= 0xee200034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd2,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_TX,
++		.addr		= 0xee220034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xe1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF1_RX,
++		.addr		= 0xee220034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xe2,
 +	},
 +};
 +
-+/* Resource order important! */
-+static struct resource r8a7740_rtdma1_resources[] = {
-+	{
-+		/* Channel registers and DMAOR */
-+		.start	= 0xffc28020,
-+		.end	= 0xffc2828f,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		/* DMARSx */
-+		.start	= 0xffc29000,
-+		.end	= 0xffc2900b,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
-+		.name	= "error_irq",
-+		.start	= gic_spi(158),
-+		.end	= gic_spi(158),
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+	{
-+		/* IRQ for channels 0-5 */
-+		.start	= gic_spi(152),
-+		.end	= gic_spi(157),
-+		.flags	= IORESOURCE_IRQ,
-+	},
++#define DMAE_CHANNEL(a, b)				\
++	{						\
++		.offset         = (a) - 0x20,		\
++		.dmars          = (a) - 0x20 + 0x40,	\
++		.chclr_bit	= (b),			\
++		.chclr_offset	= 0x80 - 0x20,		\
++	}
++
++static const struct sh_dmae_channel dma_channels[] = {
++	DMAE_CHANNEL(0x8000, 0),
++	DMAE_CHANNEL(0x8080, 1),
++	DMAE_CHANNEL(0x8100, 2),
++	DMAE_CHANNEL(0x8180, 3),
++	DMAE_CHANNEL(0x8200, 4),
++	DMAE_CHANNEL(0x8280, 5),
++	DMAE_CHANNEL(0x8300, 6),
++	DMAE_CHANNEL(0x8380, 7),
++	DMAE_CHANNEL(0x8400, 8),
++	DMAE_CHANNEL(0x8480, 9),
++	DMAE_CHANNEL(0x8500, 10),
++	DMAE_CHANNEL(0x8580, 11),
++	DMAE_CHANNEL(0x8600, 12),
++	DMAE_CHANNEL(0x8680, 13),
++	DMAE_CHANNEL(0x8700, 14),
++	DMAE_CHANNEL(0x8780, 15),
++	DMAE_CHANNEL(0x8800, 16),
++	DMAE_CHANNEL(0x8880, 17),
++	DMAE_CHANNEL(0x8900, 18),
++	DMAE_CHANNEL(0x8980, 19),
 +};
 +
- static struct platform_device dma0_device = {
- 	.name		= "shdma-r8a7740",
- 	.id		= 0,
-@@ -647,6 +703,20 @@ static struct platform_device dma2_device = {
- 	.num_resources	= ARRAY_SIZE(r8a7740_dmae2_resources),
- };
++const struct sh_dmae_pdata r8a73a4_dma_pdata = {
++	.slave		= dma_slaves,
++	.slave_num	= ARRAY_SIZE(dma_slaves),
++	.channel	= dma_channels,
++	.channel_num	= ARRAY_SIZE(dma_channels),
++	.ts_low_shift	= TS_LOW_SHIFT,
++	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
++	.ts_high_shift	= TS_HI_SHIFT,
++	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
++	.ts_shift	= dma_ts_shift,
++	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
++	.dmaor_init     = DMAOR_DME,
++	.chclr_present	= 1,
++	.chclr_bitwise	= 1,
++};
+diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
+index b5fe545..82a83f8 100644
+--- a/drivers/dma/sh/shdma.h
++++ b/drivers/dma/sh/shdma.h
+@@ -61,6 +61,13 @@ struct sh_dmae_desc {
+ #define to_sh_dev(chan) container_of(chan->shdma_chan.dma_chan.device,\
+ 				     struct sh_dmae_device, shdma_dev.dma_dev)
  
-+static struct platform_device rtdma0_device = {
-+	.name		= "shdma-r8a7740",
-+	.id		= 4,
-+	.resource	= r8a7740_rtdma0_resources,
-+	.num_resources	= ARRAY_SIZE(r8a7740_rtdma0_resources),
-+};
++#ifdef CONFIG_SHDMA_R8A73A4
++extern const struct sh_dmae_pdata r8a73a4_dma_pdata;
++#define r8a73a4_shdma_devid &r8a73a4_dma_pdata
++#else
++#define r8a73a4_shdma_devid NULL
++#endif
 +
-+static struct platform_device rtdma1_device = {
-+	.name		= "shdma-r8a7740",
-+	.id		= 5,
-+	.resource	= r8a7740_rtdma1_resources,
-+	.num_resources	= ARRAY_SIZE(r8a7740_rtdma1_resources),
-+};
-+
- /* USB-DMAC */
- static const struct sh_dmae_channel r8a7740_usb_dma_channels[] = {
- 	{
-@@ -781,6 +851,8 @@ static struct platform_device *r8a7740_late_devices[] __initdata = {
- 	&dma0_device,
- 	&dma1_device,
- 	&dma2_device,
-+	&rtdma0_device,
-+	&rtdma1_device,
- 	&usb_dma_device,
- 	&pmu_device,
+ #ifdef CONFIG_SHDMA_R8A7740
+ extern const struct sh_dmae_pdata r8a7740_dma_pdata;
+ #define r8a7740_shdma_devid &r8a7740_dma_pdata
+diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
+index fe54cda..6546bf9 100644
+--- a/drivers/dma/sh/shdmac.c
++++ b/drivers/dma/sh/shdmac.c
+@@ -907,6 +907,7 @@ MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
+ 
+ const struct platform_device_id sh_dmae_id_table[] = {
+ 	{.name = SH_DMAE_DRV_NAME,},
++	{.name = "shdma-r8a73a4", .driver_data = (kernel_ulong_t)r8a73a4_shdma_devid,},
+ 	{.name = "shdma-r8a7740", .driver_data = (kernel_ulong_t)r8a7740_shdma_devid,},
+ 	{}
  };
 -- 
 1.7.2.5
