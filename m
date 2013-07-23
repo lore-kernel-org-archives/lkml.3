@@ -1,44 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab3GWGER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 02:04:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43009 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab3GWGEP (ORCPT
+	id S1752803Ab3GWGKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 02:10:33 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:43906 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751021Ab3GWGKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 02:04:15 -0400
-Message-ID: <51EE1CD2.6080406@ti.com>
-Date: Tue, 23 Jul 2013 11:34:02 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to am33xx_driver_data
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
-In-Reply-To: <1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Tue, 23 Jul 2013 02:10:31 -0400
+Message-ID: <1374559827.4990.143.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ben Hutchings <bhutchings@solarflare.com>,
+        Oliver Neukum <oliver@neukum.org>
+Cc: Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
+	<louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>
+Date: Mon, 22 Jul 2013 23:10:27 -0700
+In-Reply-To: <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+	 <1374512879.4990.19.camel@edumazet-glaptop>
+	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
+	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
+	 <1374518841.4990.26.camel@edumazet-glaptop>
+	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
+On Mon, 2013-07-22 at 20:47 +0100, Ben Hutchings wrote:
+> On Mon, 2013-07-22 at 11:47 -0700, Eric Dumazet wrote:
+> > On Mon, 2013-07-22 at 19:38 +0100, Ben Hutchings wrote:
+> > > On Mon, 2013-07-22 at 11:29 -0700, Grant Grundler wrote:
+> > > > On Mon, Jul 22, 2013 at 10:07 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > > ...
+> > > > > I guess that if a driver does not advertise NETIF_F_SG, this
+> > > > > skb_linearize() call is not needed : All frames reaching your xmit
+> > > > > function should already be linear
+> > > > 
+> > > > As Ben Hutchings pointed out, hw_features is still setting this...but
+> > > > I'm not sure how that matters.
+> > > > 
+> > > > ax88179_set_features() doesn't allow setting SG or TSO features.  But
+> > > > I expect it would be "not too difficult" to add such that ethtool
+> > > > could set those features after boot.
+> > > [...]
+> > > 
+> > > It already can.  That's what putting feature flags in hw_features does.
+> > 
+> > My original concern, that inspired this patch, was to remove SG support,
+> > as this driver does not have SG support at all.
+> > 
+> > Linearize a full TSO packet needs order-5 allocations, thats likely to
+> > fail and lead to very slow TCP performance, because it will only rely on
+> > retransmits.
+> 
+> The driver could set gso_max_size to reduce that problem.  But I rather
+> doubt that TSO followed by skb_linearize() significantly improves
+> throughput or CPU-efficiency.  (If the device has a 1G link but is
+> connected to the host through a USB 2.0 port, then USB is the bottleneck
+> and TSO could improve throughput a few percent.  But that's a silly
+> configuration.)
+> 
+> The real solution would be for someone to add SG support to the usbnet
+> core.  Trying to support 1GbE with only linear skbs is not a great
+> idea... and it can only be a matter of time before there is USB ultra
+> speed (or whatever comes after 'super') with 10GbE devices...
+> 
 
-  
-On 7/22/2013 11:39 PM, Sebastian Andrzej Siewior wrote:
+This sounds a good idea.
 
-> This patch renames the type struct from ti81xx_driver_data to
-> am33xx_driver_data since it is not used for ti81xx anymore. The EOI
-> member is also removed since the am33xx SoC does not have such register.
-> The interrupt is acknowledged by writting into the stat register.
->
+Is anybody working on adding SG to usbnet ?
 
-AM335X TRM Section 16.6.5 and 16.7.5 describes about EOI registers.
-Its at offset 0x24. Or is it that the interrupts are acknowledged even
-without writing to eoi register?
 
--- 
--George
 
