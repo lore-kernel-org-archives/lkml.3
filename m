@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935197Ab3GWWgi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:36:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41827 "EHLO
+	id S935211Ab3GWWhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:37:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41814 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934821Ab3GWW1v (ORCPT
+	with ESMTP id S934808Ab3GWW1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:51 -0400
+	Tue, 23 Jul 2013 18:27:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        YoungJun Cho <yj44.cho@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 081/103] drm/gem: fix not to assign error value to gem name
-Date: Tue, 23 Jul 2013 15:26:32 -0700
-Message-Id: <20130723220429.411000534@linuxfoundation.org>
+        "Azad, Vinit" <vinit.azad@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ben Widawsky <ben@bwidawsk.net>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 079/103] drm/i915: Fix context sizes on HSW
+Date: Tue, 23 Jul 2013 15:26:30 -0700
+Message-Id: <20130723220428.950960942@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -30,66 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: YoungJun Cho <yj44.cho@samsung.com>
+From: Ben Widawsky <ben@bwidawsk.net>
 
-commit 2e07fb229396f99fc173d8612f0f83ea9de0341b upstream.
+commit a0de80a0e07032a111230ec92eca563f9d93648d upstream.
 
-If idr_alloc() is failed, obj->name can be error value. Also
-it cleans up duplicated flink processing code.
+With updates to the spec, we can actually see the context layout, and
+how many dwords are allocated. That table suggests we need 70720 bytes
+per HW context. Rounded up, this is 18 pages. Looking at what lives
+after the current 4 pages we use, I can't see too much important (mostly
+it's d3d related), but there are a couple of things which look scary. I
+am hopeful this can explain some of our odd HSW failures.
 
-This regression has been introduced in
+v2: Make the context only 17 pages. The power context space isn't used
+ever, and execlists aren't used in our driver, making the actual total
+66944 bytes.
 
-commit 2e928815c1886fe628ed54623aa98d0889cf5509
-Author: Tejun Heo <tj@kernel.org>
-Date:   Wed Feb 27 17:04:08 2013 -0800
+v3: Add a comment to the code. (Jesse & Paulo)
 
-    drm: convert to idr_alloc()
-
-Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
-Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Reported-by: "Azad, Vinit" <vinit.azad@intel.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/drm_gem.c |   18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/i915/i915_gem_context.c |    2 +-
+ drivers/gpu/drm/i915/i915_reg.h         |   15 +++++++--------
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 
---- a/drivers/gpu/drm/drm_gem.c
-+++ b/drivers/gpu/drm/drm_gem.c
-@@ -453,25 +453,21 @@ drm_gem_flink_ioctl(struct drm_device *d
- 	spin_lock(&dev->object_name_lock);
- 	if (!obj->name) {
- 		ret = idr_alloc(&dev->object_name_idr, obj, 1, 0, GFP_NOWAIT);
--		obj->name = ret;
--		args->name = (uint64_t) obj->name;
--		spin_unlock(&dev->object_name_lock);
--		idr_preload_end();
+--- a/drivers/gpu/drm/i915/i915_gem_context.c
++++ b/drivers/gpu/drm/i915/i915_gem_context.c
+@@ -113,7 +113,7 @@ static int get_context_size(struct drm_d
+ 	case 7:
+ 		reg = I915_READ(GEN7_CXT_SIZE);
+ 		if (IS_HASWELL(dev))
+-			ret = HSW_CXT_TOTAL_SIZE(reg) * 64;
++			ret = HSW_CXT_TOTAL_SIZE;
+ 		else
+ 			ret = GEN7_CXT_TOTAL_SIZE(reg) * 64;
+ 		break;
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1535,14 +1535,13 @@
+ 					 GEN7_CXT_EXTENDED_SIZE(ctx_reg) + \
+ 					 GEN7_CXT_GT1_SIZE(ctx_reg) + \
+ 					 GEN7_CXT_VFSTATE_SIZE(ctx_reg))
+-#define HSW_CXT_POWER_SIZE(ctx_reg)	((ctx_reg >> 26) & 0x3f)
+-#define HSW_CXT_RING_SIZE(ctx_reg)	((ctx_reg >> 23) & 0x7)
+-#define HSW_CXT_RENDER_SIZE(ctx_reg)	((ctx_reg >> 15) & 0xff)
+-#define HSW_CXT_TOTAL_SIZE(ctx_reg)	(HSW_CXT_POWER_SIZE(ctx_reg) + \
+-					 HSW_CXT_RING_SIZE(ctx_reg) + \
+-					 HSW_CXT_RENDER_SIZE(ctx_reg) + \
+-					 GEN7_CXT_VFSTATE_SIZE(ctx_reg))
 -
- 		if (ret < 0)
- 			goto err;
--		ret = 0;
-+
-+		obj->name = ret;
++/* Haswell does have the CXT_SIZE register however it does not appear to be
++ * valid. Now, docs explain in dwords what is in the context object. The full
++ * size is 70720 bytes, however, the power context and execlist context will
++ * never be saved (power context is stored elsewhere, and execlists don't work
++ * on HSW) - so the final size is 66944 bytes, which rounds to 17 pages.
++ */
++#define HSW_CXT_TOTAL_SIZE		(17 * PAGE_SIZE)
  
- 		/* Allocate a reference for the name table.  */
- 		drm_gem_object_reference(obj);
--	} else {
--		args->name = (uint64_t) obj->name;
--		spin_unlock(&dev->object_name_lock);
--		idr_preload_end();
--		ret = 0;
- 	}
- 
-+	args->name = (uint64_t) obj->name;
-+	ret = 0;
-+
- err:
-+	spin_unlock(&dev->object_name_lock);
-+	idr_preload_end();
- 	drm_gem_object_unreference_unlocked(obj);
- 	return ret;
- }
+ /*
+  * Overlay regs
 
 
