@@ -1,162 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933782Ab3GWR6O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 13:58:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56376 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933657Ab3GWR6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 13:58:12 -0400
-Message-ID: <1374602291.3387.17.camel@joe-AO722>
-Subject: [RFC PATCH - diffstat only] include/net: Remove extern from
- function prototypes
-From: Joe Perches <joe@perches.com>
-To: netdev <netdev@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Date: Tue, 23 Jul 2013 10:58:11 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S933806Ab3GWSAA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:00:00 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:46352 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933598Ab3GWR76 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 13:59:58 -0400
+Message-ID: <51EEC49A.4080909@wwwdotorg.org>
+Date: Tue, 23 Jul 2013 10:59:54 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Pawel Moll <pawel.moll@arm.com>
+CC: Rob Herring <robherring2@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Olof Johansson <olof@lixom.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>  <1374290388-19308-3-git-send-email-grant.likely@linaro.org>  <1374511851.3609.10.camel@hornet> <51ED9018.1020003@gmail.com> <1374599667.25700.92.camel@hornet>
+In-Reply-To: <1374599667.25700.92.camel@hornet>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function prototypes don't need to be declared
-extern in .h files.  It's assumed by the compiler
-and is as unnecessary as using auto is when
-declaring automatic/local variables in a block.
+On 07/23/2013 10:14 AM, Pawel Moll wrote:
+> On Mon, 2013-07-22 at 21:03 +0100, Rob Herring wrote:
+>> On 07/22/2013 11:50 AM, Pawel Moll wrote:
+>>> On Sat, 2013-07-20 at 04:19 +0100, Grant Likely wrote:
+>>>> +F:	include/dt-bindings
+>>>
+>>> One thing we didn't finish talking about was the question if this
+>>> directory is supposed to contain *.dtsi files as well? The obvious
+>>> problem I have is a vexpress motherboard being (well, actually not bein
+>>> right now) shared between arch/arm/boot/dts and arch/arm64/boot/dts.
+>>
+>> Please no. 
+> 
+> No as in: no don't put *.dtsi files into include/dt-bindings; or: no, do
+> not duplicate the motherboard file?
 
-I ran a script to remove these unnecessary extern
-uses from function prototypes in include/net/ as
-well as reflow the function arguments to 80 cols.
+Don't put *.dtsi into include/dt-bindings, I believe.
 
-It's 370KB, far too large to submit at once.
+> It you meant the latter, this is exactly what I wanted to say: I don't
+> want to do that, but there's no way of avoiding it right now.
 
-Of course it could be broken into multiple patches
-for the various directories/subsystems.
+I think the solution is to introduce some new shared/common location for
+shared/common *.dtsi files, into the kernel tree, in the interim.
 
-I believe it makes grepping for extern useful as
-all the matches are actual variables and structs.
+When *.dts move out of the kernel, this common location can simply be
+consumed as part of the DT tree re-organization.
 
-Thoughts?
+Or perhaps, we could move *.dts around in the kernel to match the
+proposed DT tree structure before that point in time?
 
----
+>> we will still need
+>> to copy dt-bindings into the kernel. Also, I think we should move all
+>> dts files out of arch subdirs and arrange by vendor or soc family. I'm
+>> sure there are some cases that structure doesn't fit well, but there is
+>> very little in a dts tied to a cpu architecture.
+> 
+> I couldn't agree more. So:
+> 
+> <root>/include/dt-bindings/vendor/*?
 
- include/net/act_api.h                          |  60 ++--
- include/net/addrconf.h                         | 151 +++++-----
- include/net/af_rxrpc.h                         |  35 ++-
- include/net/af_unix.h                          |  16 +-
- include/net/arp.h                              |  30 +-
- include/net/ax25.h                             | 215 +++++++-------
- include/net/bluetooth/bluetooth.h              |  16 +-
- include/net/bluetooth/hci_core.h               |  20 +-
- include/net/bluetooth/rfcomm.h                 |   4 +-
- include/net/caif/caif_hsi.h                    |   2 +-
- include/net/cfg80211.h                         |  34 +--
- include/net/checksum.h                         |  10 +-
- include/net/cls_cgroup.h                       |   2 +-
- include/net/compat.h                           |  48 ++--
- include/net/dcbevent.h                         |   6 +-
- include/net/dn.h                               |  20 +-
- include/net/dn_dev.h                           |  30 +-
- include/net/dn_fib.h                           |  46 ++-
- include/net/dn_neigh.h                         |  12 +-
- include/net/dn_nsp.h                           |  49 ++--
- include/net/dn_route.h                         |  13 +-
- include/net/dst.h                              |  22 +-
- include/net/esp.h                              |   2 +-
- include/net/fib_rules.h                        |  19 +-
- include/net/flow.h                             |  10 +-
- include/net/flow_keys.h                        |   2 +-
- include/net/garp.h                             |  28 +-
- include/net/gen_stats.h                        |  52 ++--
- include/net/genetlink.h                        |  20 +-
- include/net/icmp.h                             |  10 +-
- include/net/inet6_connection_sock.h            |  33 ++-
- include/net/inet6_hashtables.h                 |  40 +--
- include/net/inet_common.h                      |  38 +--
- include/net/inet_connection_sock.h             |  80 +++---
- include/net/inet_hashtables.h                  |  70 ++---
- include/net/inet_sock.h                        |   4 +-
- include/net/inet_timewait_sock.h               |  38 +--
- include/net/inetpeer.h                         |  10 +-
- include/net/ip.h                               | 141 ++++-----
- include/net/ip6_fib.h                          |  50 ++--
- include/net/ip6_route.h                        |  93 +++---
- include/net/ip_fib.h                           |  58 ++--
- include/net/ip_vs.h                            | 212 +++++++-------
- include/net/ipv6.h                             | 277 +++++++++---------
- include/net/ipx.h                              |  12 +-
- include/net/irda/ircomm_tty.h                  |  14 +-
- include/net/irda/irda.h                        |  22 +-
- include/net/irda/irlap_event.h                 |   2 +-
- include/net/irda/irlap_frame.h                 |   4 +-
- include/net/iw_handler.h                       |  38 +--
- include/net/lapb.h                             |  52 ++--
- include/net/llc.h                              |  50 ++--
- include/net/llc_c_ac.h                         | 190 ++++++-------
- include/net/llc_c_ev.h                         | 240 ++++++++--------
- include/net/llc_conn.h                         |  38 +--
- include/net/llc_if.h                           |   8 +-
- include/net/llc_pdu.h                          |  30 +-
- include/net/llc_s_ac.h                         |  20 +-
- include/net/llc_s_ev.h                         |  20 +-
- include/net/llc_sap.h                          |  26 +-
- include/net/mac80211.h                         |  10 +-
- include/net/mrp.h                              |  28 +-
- include/net/ndisc.h                            |  56 ++--
- include/net/neighbour.h                        |  98 ++++---
- include/net/net_namespace.h                    |  26 +-
- include/net/netevent.h                         |   6 +-
- include/net/netfilter/ipv4/nf_conntrack_ipv4.h |   6 +-
- include/net/netfilter/ipv4/nf_defrag_ipv4.h    |   2 +-
- include/net/netfilter/ipv6/nf_defrag_ipv6.h    |  10 +-
- include/net/netfilter/nf_conntrack.h           |  56 ++--
- include/net/netfilter/nf_conntrack_acct.h      |   8 +-
- include/net/netfilter/nf_conntrack_core.h      |  32 +--
- include/net/netfilter/nf_conntrack_ecache.h    |  25 +-
- include/net/netfilter/nf_conntrack_extend.h    |   2 +-
- include/net/netfilter/nf_conntrack_helper.h    |  32 ++-
- include/net/netfilter/nf_conntrack_l3proto.h   |  16 +-
- include/net/netfilter/nf_conntrack_l4proto.h   |  24 +-
- include/net/netfilter/nf_conntrack_timeout.h   |   8 +-
- include/net/netfilter/nf_conntrack_timestamp.h |   8 +-
- include/net/netfilter/nf_nat.h                 |  10 +-
- include/net/netfilter/nf_nat_core.h            |  10 +-
- include/net/netfilter/nf_nat_helper.h          |  62 ++--
- include/net/netfilter/nf_nat_l3proto.h         |  26 +-
- include/net/netfilter/nf_nat_l4proto.h         |  31 +-
- include/net/netfilter/nf_queue.h               |   2 +-
- include/net/netfilter/xt_rateest.h             |   4 +-
- include/net/netlink.h                          |  64 ++---
- include/net/netprio_cgroup.h                   |   2 +-
- include/net/netrom.h                           |  90 +++---
- include/net/p8022.h                            |   6 +-
- include/net/ping.h                             |   9 -
- include/net/pkt_cls.h                          |  36 +--
- include/net/pkt_sched.h                        |  40 +--
- include/net/protocol.h                         |  24 +-
- include/net/psnap.h                            |   2 +-
- include/net/raw.h                              |   6 +-
- include/net/rawv6.h                            |   4 +-
- include/net/request_sock.h                     |  12 +-
- include/net/rose.h                             | 113 ++++----
- include/net/route.h                            |  46 +--
- include/net/rtnetlink.h                        |  40 +--
- include/net/sch_generic.h                      |  51 ++--
- include/net/scm.h                              |  10 +-
- include/net/sctp/sctp.h                        |  14 +-
- include/net/secure_seq.h                       |  26 +-
- include/net/snmp.h                             |   2 +-
- include/net/sock.h                             | 240 ++++++++--------
- include/net/stp.h                              |   4 +-
- include/net/tcp.h                              | 380 ++++++++++++-------------
- include/net/udp.h                              |  88 +++---
- include/net/udplite.h                          |   4 +-
- include/net/wext.h                             |  16 +-
- include/net/wimax.h                            |  32 +--
- include/net/x25.h                              | 141 ++++-----
- include/net/xfrm.h                             | 334 +++++++++++-----------
- 115 files changed, 2636 insertions(+), 2692 deletions(-)
+> <root>/dts/vendor/*?
 
+I would tend to prefer that option, ...
+
+> <root>/of/vendor/*?
+> <root>/dt/vendor/*?
+
+or perhaps that one.
+
+> <root>/drivers/of/vendor/*?
 
