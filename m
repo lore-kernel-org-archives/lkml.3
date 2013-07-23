@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934805Ab3GWW1u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41797 "EHLO
+	id S935131Ab3GWWhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:37:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934780Ab3GWW1r (ORCPT
+	with ESMTP id S934793Ab3GWW1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:47 -0400
+	Tue, 23 Jul 2013 18:27:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 075/103] svcrpc: fix handling of too-short rpcs
-Date: Tue, 23 Jul 2013 15:26:26 -0700
-Message-Id: <20130723220428.123692856@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Arthur Ranyan <arthur.j.runyan@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 078/103] drm/i915: Fix up sdvo hpd pins for i965g/gm
+Date: Tue, 23 Jul 2013 15:26:29 -0700
+Message-Id: <20130723220428.680004935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,50 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit cf3aa02cb4a0c5af5557dd47f15a08a7df33182a upstream.
+commit 4f7fd7095d85cd31c86cb9ba87bc301319630ccc upstream.
 
-If we detect that an rpc is too short, we abort and close the
-connection.  Except, there's a bug here: we're leaving sk_datalen
-nonzero without leaving any pages in the sk_pages array.  The most
-likely result of the inconsistency is a subsequent crash in
-svc_tcp_clear_pages.
+Bspec seems to be full of lies, at least it disagress with reality:
+Two systems corrobated that SDVO hpd bits are the same as on gen3.
 
-Also demote the BUG_ON in svc_tcp_clear_pages to a WARN.
+v2: Update comment a bit.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Tested-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Arthur Ranyan <arthur.j.runyan@intel.com>
+Reported-and-tested-by: Alex Fiestas <afiestas@kde.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=58405
+Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcsock.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_irq.c |   13 ++-----------
+ drivers/gpu/drm/i915/i915_reg.h |   13 ++++++-------
+ 2 files changed, 8 insertions(+), 18 deletions(-)
 
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -917,7 +917,10 @@ static void svc_tcp_clear_pages(struct s
- 	len = svsk->sk_datalen;
- 	npages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
- 	for (i = 0; i < npages; i++) {
--		BUG_ON(svsk->sk_pages[i] == NULL);
-+		if (svsk->sk_pages[i] == NULL) {
-+			WARN_ON_ONCE(1);
-+			continue;
-+		}
- 		put_page(svsk->sk_pages[i]);
- 		svsk->sk_pages[i] = NULL;
- 	}
-@@ -1092,8 +1095,10 @@ static int svc_tcp_recvfrom(struct svc_r
- 		goto err_noclose;
- 	}
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -70,15 +70,6 @@ static const u32 hpd_status_gen4[] = {
+ 	[HPD_PORT_D] = PORTD_HOTPLUG_INT_STATUS
+ };
  
--	if (svc_sock_reclen(svsk) < 8)
-+	if (svc_sock_reclen(svsk) < 8) {
-+		svsk->sk_datalen = 0;
- 		goto err_delete; /* client is nuts. */
-+	}
+-static const u32 hpd_status_i965[] = {
+-	 [HPD_CRT] = CRT_HOTPLUG_INT_STATUS,
+-	 [HPD_SDVO_B] = SDVOB_HOTPLUG_INT_STATUS_I965,
+-	 [HPD_SDVO_C] = SDVOC_HOTPLUG_INT_STATUS_I965,
+-	 [HPD_PORT_B] = PORTB_HOTPLUG_INT_STATUS,
+-	 [HPD_PORT_C] = PORTC_HOTPLUG_INT_STATUS,
+-	 [HPD_PORT_D] = PORTD_HOTPLUG_INT_STATUS
+-};
+-
+ static const u32 hpd_status_i915[] = { /* i915 and valleyview are the same */
+ 	[HPD_CRT] = CRT_HOTPLUG_INT_STATUS,
+ 	[HPD_SDVO_B] = SDVOB_HOTPLUG_INT_STATUS_I915,
+@@ -2952,13 +2943,13 @@ static irqreturn_t i965_irq_handler(int
+ 			u32 hotplug_status = I915_READ(PORT_HOTPLUG_STAT);
+ 			u32 hotplug_trigger = hotplug_status & (IS_G4X(dev) ?
+ 								  HOTPLUG_INT_STATUS_G4X :
+-								  HOTPLUG_INT_STATUS_I965);
++								  HOTPLUG_INT_STATUS_I915);
  
- 	rqstp->rq_arg.len = svsk->sk_datalen;
- 	rqstp->rq_arg.page_base = 0;
+ 			DRM_DEBUG_DRIVER("hotplug event received, stat 0x%08x\n",
+ 				  hotplug_status);
+ 			if (hotplug_trigger) {
+ 				if (hotplug_irq_storm_detect(dev, hotplug_trigger,
+-							    IS_G4X(dev) ? hpd_status_gen4 : hpd_status_i965))
++							    IS_G4X(dev) ? hpd_status_gen4 : hpd_status_i915))
+ 					i915_hpd_irq_setup(dev);
+ 				queue_work(dev_priv->wq,
+ 					   &dev_priv->hotplug_work);
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -1691,6 +1691,12 @@
+ /* SDVO is different across gen3/4 */
+ #define   SDVOC_HOTPLUG_INT_STATUS_G4X		(1 << 3)
+ #define   SDVOB_HOTPLUG_INT_STATUS_G4X		(1 << 2)
++/*
++ * Bspec seems to be seriously misleaded about the SDVO hpd bits on i965g/gm,
++ * since reality corrobates that they're the same as on gen3. But keep these
++ * bits here (and the comment!) to help any other lost wanderers back onto the
++ * right tracks.
++ */
+ #define   SDVOC_HOTPLUG_INT_STATUS_I965		(3 << 4)
+ #define   SDVOB_HOTPLUG_INT_STATUS_I965		(3 << 2)
+ #define   SDVOC_HOTPLUG_INT_STATUS_I915		(1 << 7)
+@@ -1701,13 +1707,6 @@
+ 						 PORTB_HOTPLUG_INT_STATUS | \
+ 						 PORTC_HOTPLUG_INT_STATUS | \
+ 						 PORTD_HOTPLUG_INT_STATUS)
+-
+-#define HOTPLUG_INT_STATUS_I965			(CRT_HOTPLUG_INT_STATUS | \
+-						 SDVOB_HOTPLUG_INT_STATUS_I965 | \
+-						 SDVOC_HOTPLUG_INT_STATUS_I965 | \
+-						 PORTB_HOTPLUG_INT_STATUS | \
+-						 PORTC_HOTPLUG_INT_STATUS | \
+-						 PORTD_HOTPLUG_INT_STATUS)
+ 
+ #define HOTPLUG_INT_STATUS_I915			(CRT_HOTPLUG_INT_STATUS | \
+ 						 SDVOB_HOTPLUG_INT_STATUS_I915 | \
 
 
