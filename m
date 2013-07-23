@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab3GWAbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:31:53 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:60875 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753557Ab3GWAbW (ORCPT
+	id S1753990Ab3GWAc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:32:28 -0400
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:53553 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab3GWAbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:31:22 -0400
+	Mon, 22 Jul 2013 20:31:18 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 7/8] perf: Finer grained full dynticks kick
-Date: Tue, 23 Jul 2013 02:31:05 +0200
-Message-Id: <1374539466-4799-8-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/8] perf: Split per cpu event accounting code
+Date: Tue, 23 Jul 2013 02:31:02 +0200
+Message-Id: <1374539466-4799-5-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
 References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
@@ -24,21 +24,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the full dynticks subsystem keep the
-tick alive as long as there are perf events running.
+Split the per-cpu accounting part of the event
+accounting code.
 
-This prevents the tick from being stopped as long as features
-such that the lockup detectors are running. As a temporary fix,
-the lockup detector is disabled by default when full dynticks
-is built but this is not a long term viable solution.
-
-To fix this, only keep the tick alive when an event configured
-with a frequency rather than a period is running on the CPU,
-or when an event throttles on the CPU.
-
-These are the only purposes of the perf tick, especially now that
-the rotation of flexible events is handled from a seperate hrtimer.
-The tick can be shutdown the rest of the time.
+This way we can use the per-cpu handling seperately.
+This is going to be used by to fix the event migration
+code accounting.
 
 Original-patch-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
@@ -49,60 +40,132 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- kernel/events/core.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ kernel/events/core.c |   87 +++++++++++++++++++++++++++++++------------------
+ 1 files changed, 55 insertions(+), 32 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index f9bd39b..61d70b7 100644
+index 3bb73af..fd820a4 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -870,12 +870,8 @@ static void perf_pmu_rotate_start(struct pmu *pmu)
+@@ -3128,6 +3128,40 @@ static void free_event_rcu(struct rcu_head *head)
+ static void ring_buffer_put(struct ring_buffer *rb);
+ static void ring_buffer_detach(struct perf_event *event, struct ring_buffer *rb);
  
- 	WARN_ON(!irqs_disabled());
- 
--	if (list_empty(&cpuctx->rotation_list)) {
--		int was_empty = list_empty(head);
-+	if (list_empty(&cpuctx->rotation_list))
- 		list_add(&cpuctx->rotation_list, head);
--		if (was_empty)
--			tick_nohz_full_kick();
--	}
- }
- 
- static void get_ctx(struct perf_event_context *ctx)
-@@ -1875,6 +1871,9 @@ static int  __perf_install_in_context(void *info)
- 	perf_pmu_enable(cpuctx->ctx.pmu);
- 	perf_ctx_unlock(cpuctx, task_ctx);
- 
-+	if (atomic_read(&__get_cpu_var(perf_freq_events)))
-+		tick_nohz_full_kick();
++static void unaccount_event_cpu(struct perf_event *event, int cpu)
++{
++	if (event->parent)
++		return;
 +
- 	return 0;
- }
- 
-@@ -2812,10 +2811,11 @@ done:
- #ifdef CONFIG_NO_HZ_FULL
- bool perf_event_can_stop_tick(void)
++	if (has_branch_stack(event)) {
++		if (!(event->attach_state & PERF_ATTACH_TASK))
++			atomic_dec(&per_cpu(perf_branch_stack_events, cpu));
++	}
++	if (is_cgroup_event(event))
++		atomic_dec(&per_cpu(perf_cgroup_events, cpu));
++}
++
++static void unaccount_event(struct perf_event *event)
++{
++	if (event->parent)
++		return;
++
++	if (event->attach_state & PERF_ATTACH_TASK)
++		static_key_slow_dec_deferred(&perf_sched_events);
++	if (event->attr.mmap || event->attr.mmap_data)
++		atomic_dec(&nr_mmap_events);
++	if (event->attr.comm)
++		atomic_dec(&nr_comm_events);
++	if (event->attr.task)
++		atomic_dec(&nr_task_events);
++	if (is_cgroup_event(event))
++		static_key_slow_dec_deferred(&perf_sched_events);
++	if (has_branch_stack(event))
++		static_key_slow_dec_deferred(&perf_sched_events);
++
++	unaccount_event_cpu(event, event->cpu);
++}
++
+ static void __free_event(struct perf_event *event)
  {
--	if (list_empty(&__get_cpu_var(rotation_list)))
--		return true;
--	else
-+	if (atomic_read(&__get_cpu_var(perf_freq_events)) ||
-+	    __this_cpu_read(perf_throttled_count))
- 		return false;
-+	else
-+		return true;
- }
- #endif
+ 	if (!event->parent) {
+@@ -3147,29 +3181,7 @@ static void free_event(struct perf_event *event)
+ {
+ 	irq_work_sync(&event->pending);
  
-@@ -5201,6 +5201,7 @@ static int __perf_event_overflow(struct perf_event *event,
- 			__this_cpu_inc(perf_throttled_count);
- 			hwc->interrupts = MAX_INTERRUPTS;
- 			perf_log_throttle(event, 0);
-+			tick_nohz_full_kick();
- 			ret = 1;
- 		}
- 	}
+-	if (!event->parent) {
+-		if (event->attach_state & PERF_ATTACH_TASK)
+-			static_key_slow_dec_deferred(&perf_sched_events);
+-		if (event->attr.mmap || event->attr.mmap_data)
+-			atomic_dec(&nr_mmap_events);
+-		if (event->attr.comm)
+-			atomic_dec(&nr_comm_events);
+-		if (event->attr.task)
+-			atomic_dec(&nr_task_events);
+-		if (is_cgroup_event(event)) {
+-			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
+-			static_key_slow_dec_deferred(&perf_sched_events);
+-		}
+-
+-		if (has_branch_stack(event)) {
+-			static_key_slow_dec_deferred(&perf_sched_events);
+-			/* is system-wide event */
+-			if (!(event->attach_state & PERF_ATTACH_TASK)) {
+-				atomic_dec(&per_cpu(perf_branch_stack_events,
+-						    event->cpu));
+-			}
+-		}
+-	}
++	unaccount_event(event);
+ 
+ 	if (event->rb) {
+ 		struct ring_buffer *rb;
+@@ -6450,8 +6462,24 @@ unlock:
+ 	return pmu;
+ }
+ 
++static void account_event_cpu(struct perf_event *event, int cpu)
++{
++	if (event->parent)
++		return;
++
++	if (has_branch_stack(event)) {
++		if (!(event->attach_state & PERF_ATTACH_TASK))
++			atomic_inc(&per_cpu(perf_branch_stack_events, cpu));
++	}
++	if (is_cgroup_event(event))
++		atomic_inc(&per_cpu(perf_cgroup_events, cpu));
++}
++
+ static void account_event(struct perf_event *event)
+ {
++	if (event->parent)
++		return;
++
+ 	if (event->attach_state & PERF_ATTACH_TASK)
+ 		static_key_slow_inc(&perf_sched_events.key);
+ 	if (event->attr.mmap || event->attr.mmap_data)
+@@ -6460,17 +6488,12 @@ static void account_event(struct perf_event *event)
+ 		atomic_inc(&nr_comm_events);
+ 	if (event->attr.task)
+ 		atomic_inc(&nr_task_events);
+-	if (has_branch_stack(event)) {
++	if (has_branch_stack(event))
+ 		static_key_slow_inc(&perf_sched_events.key);
+-		if (!(event->attach_state & PERF_ATTACH_TASK))
+-			atomic_inc(&per_cpu(perf_branch_stack_events,
+-					    event->cpu));
+-	}
+-
+-	if (is_cgroup_event(event)) {
+-		atomic_inc(&per_cpu(perf_cgroup_events, event->cpu));
++	if (is_cgroup_event(event))
+ 		static_key_slow_inc(&perf_sched_events.key);
+-	}
++
++	account_event_cpu(event, event->cpu);
+ }
+ 
+ /*
 -- 
 1.7.5.4
 
