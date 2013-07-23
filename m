@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab3GWA0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:26:32 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46414 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab3GWA0a (ORCPT
+	id S1753285Ab3GWA1r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:27:47 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:53339 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab3GWA1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:26:30 -0400
-Date: Tue, 23 Jul 2013 02:26:28 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs@vger.kernel.org,
-        linux-pm@vger.kernel.org, netdev@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re:
- [PATCH v3 13/16] futex: use freezable blocking call)
-Message-ID: <20130723002627.GA11751@amd.pavel.ucw.cz>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
- <1367884221-20462-14-git-send-email-ccross@android.com>
- <20130723010250.5a3465ec@xenia.leun.net>
+	Mon, 22 Jul 2013 20:27:45 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723010250.5a3465ec@xenia.leun.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1373436657.7970.1.camel@dabdike>
+References: <20130709203927.31676.35169.stgit@amt.stowe>
+	<1373404695.18560.17.camel@dabdike>
+	<CAHtARFHbEz8UQUjh5cPSFYDxqW93EmFz7aiQ=91hfkDj0fCWdQ@mail.gmail.com>
+	<1373436657.7970.1.camel@dabdike>
+Date: Mon, 22 Jul 2013 17:27:44 -0700
+Message-ID: <CAHtARFFWaMGfutTS4h3hrV8KDOf=gtk3Z3uOUQzoOAERoG1TPg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev) pdev's
+From: adam radford <aradford@gmail.com>
+To: James Bottomley <James.Bottomley@hansenpartnership.com>
+Cc: Myron Stowe <myron.stowe@redhat.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2013-07-23 01:02:50, Michael Leun wrote:
-> On Mon,  6 May 2013 16:50:18 -0700
-> Colin Cross <ccross@android.com> wrote:
-> 
-> > Avoid waking up every thread sleeping in a futex_wait call during
-> [...]
-> 
-> With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
-> displaying 0% of saving image to disk.
-> 
-> echo "1" >/sys/power/state still works.
-> 
-> Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4, reverting
-> that from 3.11-rc2 makes s2disk working again.
+On Tue, Jul 9, 2013 at 11:10 PM, James Bottomley
+<James.Bottomley@hansenpartnership.com> wrote:
+> On Tue, 2013-07-09 at 15:12 -0700, adam radford wrote:
+>> On Tue, Jul 9, 2013 at 2:18 PM, James Bottomley
+>> > Adam, you do drive by coding on this for LSI ... ack or reject, please.
+>
+>> I have just now located my box of MegaRAID Parallel SCSI controllers.
+>> I will review and test the patch series from Myron and respond by next Monday.
+>
+> Thanks,
+>
+> James
+>
+>
 
-Would id be possible to get all the backtraces using magic sysrq?
+Unfortunately my box of MegaRAID Parallel SCSI controllers only
+contains only cards intended for megaraid_mbox.c (I tested all 20 of
+them),
 
-...actually...
+and does not contain any of the following really old Symbios based
+megaraid cards:
 
-I see what could happen. Before, system hibernated in state where all
-the futexes were unlocked. Now, it can happen that we attempt s2disk
-with futex held. s2disk should not depend on other parts of userspace,
-and should not take futexes, but maybe it does...?
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+static struct pci_device_id megaraid_pci_tbl[] = {
+        {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID,
+                PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+        {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID2,
+                PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+        {PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_AMI_MEGARAID3,
+                PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+        {0,}
+};
+
+which I had located previously before the company headquarters moved.
+ I cannot currently locate any of the above 3 controllers anywhere at
+LSI headquarters after an exhaustive search, so I cannot test the
+patches to megaraid.c from Myron @ RedHat.
+
+Myron, do you actually have the hardware and have you tested the
+patches yourself ?
+
+-Adam
