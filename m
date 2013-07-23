@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935133Ab3GWWyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:54:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41505 "EHLO
+	id S934737Ab3GWWye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:54:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41513 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934506Ab3GWW1I (ORCPT
+	with ESMTP id S934515Ab3GWW1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:08 -0400
+	Tue, 23 Jul 2013 18:27:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 010/103] powerpc: Remove unreachable relocation on exception handlers
-Date: Tue, 23 Jul 2013 15:25:21 -0700
-Message-Id: <20130723220419.707419827@linuxfoundation.org>
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Paul Bolle <pebolle@tiscali.nl>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 021/103] cpufreq: Revert commit a66b2e to fix suspend/resume regression
+Date: Tue, 23 Jul 2013 15:25:32 -0700
+Message-Id: <20130723220420.939664935@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,74 +29,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit 1d567cb4bd42d560a7621cac6f6aebe87343689e upstream.
+commit aae760ed21cd690fe8a6db9f3a177ad55d7e12ab upstream.
 
-We have relocation on exception handlers defined for h_data_storage and
-h_instr_storage. However we will never take relocation on exceptions for
-these because they can only come from a guest, and we never take
-relocation on exceptions when we transition from guest to host.
+commit a66b2e (cpufreq: Preserve sysfs files across suspend/resume)
+has unfortunately caused several things in the cpufreq subsystem to
+break subtly after a suspend/resume cycle.
 
-We also have a handler for hmi_exception (Hypervisor Maintenance) which
-is defined in the architecture to never be delivered with relocation on,
-see see v2.07 Book III-S section 6.5.
+The intention of that patch was to retain the file permissions of the
+cpufreq related sysfs files across suspend/resume.  To achieve that,
+the commit completely removed the calls to cpufreq_add_dev() and
+__cpufreq_remove_dev() during suspend/resume transitions.  But the
+problem is that those functions do 2 kinds of things:
+  1. Low-level initialization/tear-down that are critical to the
+     correct functioning of cpufreq-core.
+  2. Kobject and sysfs related initialization/teardown.
 
-So remove the handlers, leaving a branch to self just to be double extra
-paranoid.
+Ideally we should have reorganized the code to cleanly separate these
+two responsibilities, and skipped only the sysfs related parts during
+suspend/resume.  Since we skipped the entire callbacks instead (which
+also included some CPU and cpufreq-specific critical components),
+cpufreq subsystem started behaving erratically after suspend/resume.
 
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+So revert the commit to fix the regression.  We'll revisit and address
+the original goal of that commit separately, since it involves quite a
+bit of careful code reorganization and appears to be non-trivial.
+
+(While reverting the commit, note that another commit f51e1eb
+ (cpufreq: Fix cpufreq regression after suspend/resume) already
+ reverted part of the original set of changes.  So revert only the
+ remaining ones).
+
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Tested-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |   18 +++---------------
- 1 file changed, 3 insertions(+), 15 deletions(-)
+ drivers/cpufreq/cpufreq.c       |    4 +++-
+ drivers/cpufreq/cpufreq_stats.c |    6 ++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -793,14 +793,10 @@ system_call_relon_pSeries:
- 	STD_RELON_EXCEPTION_PSERIES(0x4d00, 0xd00, single_step)
- 
- 	. = 0x4e00
--	SET_SCRATCH0(r13)
--	EXCEPTION_PROLOG_0(PACA_EXGEN)
--	b	h_data_storage_relon_hv
-+	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
- 
- 	. = 0x4e20
--	SET_SCRATCH0(r13)
--	EXCEPTION_PROLOG_0(PACA_EXGEN)
--	b	h_instr_storage_relon_hv
-+	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
- 
- 	. = 0x4e40
- 	SET_SCRATCH0(r13)
-@@ -808,9 +804,7 @@ system_call_relon_pSeries:
- 	b	emulation_assist_relon_hv
- 
- 	. = 0x4e60
--	SET_SCRATCH0(r13)
--	EXCEPTION_PROLOG_0(PACA_EXGEN)
--	b	hmi_exception_relon_hv
-+	b	.	/* Can't happen, see v2.07 Book III-S section 6.5 */
- 
- 	. = 0x4e80
- 	SET_SCRATCH0(r13)
-@@ -1180,14 +1174,8 @@ tm_unavailable_common:
- __end_handlers:
- 
- 	/* Equivalents to the above handlers for relocation-on interrupt vectors */
--	STD_RELON_EXCEPTION_HV_OOL(0xe00, h_data_storage)
--	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe00)
--	STD_RELON_EXCEPTION_HV_OOL(0xe20, h_instr_storage)
--	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe20)
- 	STD_RELON_EXCEPTION_HV_OOL(0xe40, emulation_assist)
- 	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe40)
--	STD_RELON_EXCEPTION_HV_OOL(0xe60, hmi_exception)
--	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe60)
- 	MASKABLE_RELON_EXCEPTION_HV_OOL(0xe80, h_doorbell)
- 	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xe80)
- 
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1837,13 +1837,15 @@ static int __cpuinit cpufreq_cpu_callbac
+ 	if (dev) {
+ 		switch (action) {
+ 		case CPU_ONLINE:
++		case CPU_ONLINE_FROZEN:
+ 			cpufreq_add_dev(dev, NULL);
+ 			break;
+ 		case CPU_DOWN_PREPARE:
+-		case CPU_UP_CANCELED_FROZEN:
++		case CPU_DOWN_PREPARE_FROZEN:
+ 			__cpufreq_remove_dev(dev, NULL);
+ 			break;
+ 		case CPU_DOWN_FAILED:
++		case CPU_DOWN_FAILED_FROZEN:
+ 			cpufreq_add_dev(dev, NULL);
+ 			break;
+ 		}
+--- a/drivers/cpufreq/cpufreq_stats.c
++++ b/drivers/cpufreq/cpufreq_stats.c
+@@ -353,13 +353,11 @@ static int __cpuinit cpufreq_stat_cpu_ca
+ 		cpufreq_update_policy(cpu);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
++	case CPU_DOWN_PREPARE_FROZEN:
+ 		cpufreq_stats_free_sysfs(cpu);
+ 		break;
+ 	case CPU_DEAD:
+-		cpufreq_stats_free_table(cpu);
+-		break;
+-	case CPU_UP_CANCELED_FROZEN:
+-		cpufreq_stats_free_sysfs(cpu);
++	case CPU_DEAD_FROZEN:
+ 		cpufreq_stats_free_table(cpu);
+ 		break;
+ 	}
 
 
