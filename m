@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934152Ab3GWUIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:08:21 -0400
-Received: from www.sr71.net ([198.145.64.142]:45209 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757881Ab3GWUIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:08:18 -0400
-Message-ID: <51EEE2A6.60109@sr71.net>
-Date: Tue, 23 Jul 2013 13:08:06 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S934206Ab3GWUJj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:09:39 -0400
+Received: from mail-ye0-f173.google.com ([209.85.213.173]:45200 "EHLO
+	mail-ye0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757655Ab3GWUJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:09:35 -0400
+Date: Tue, 23 Jul 2013 16:09:24 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 11/21] x86: get pg_data_t's memory from other node
+Message-ID: <20130723200924.GP21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-12-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Bob Liu <bob.liu@oracle.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Bob Liu <lliubbo@gmail.com>, Minchan Kim <minchan@kernel.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: zswap: add runtime enable/disable
-References: <1374521642-25478-1-git-send-email-sjenning@linux.vnet.ibm.com> <51EE49D7.4060501@oracle.com> <20130723173223.GB5820@medulla.variantweb.net>
-In-Reply-To: <20130723173223.GB5820@medulla.variantweb.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374220774-29974-12-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 10:32 AM, Seth Jennings wrote:
-> On Tue, Jul 23, 2013 at 05:16:07PM +0800, Bob Liu wrote:
->> On 07/23/2013 03:34 AM, Seth Jennings wrote:
->>> -To enabled zswap, the "enabled" attribute must be set to 1 at boot time.  e.g.
->>> -zswap.enabled=1
->>> +Zswap is disabled by default but can be enabled at boot time by setting
->>> +the "enabled" attribute to 1 at boot time. e.g. zswap.enabled=1.  Zswap
->>> +can also be enabled and disabled at runtime using the sysfs interface.
->>> +An exmaple command to enable zswap at runtime, assuming sysfs is mounted
->>> +at /sys, is:
->>> +
->>> +echo 1 > /sys/modules/zswap/parameters/enabled
->>> +
->>> +When zswap is disabled at runtime, it will stop storing pages that are
->>> +being swapped out.  However, it will _not_ immediately write out or
->>> +fault back into memory all of the pages stored in the compressed pool.
->>
->> I don't know what's you use case of adding this feature.
+On Fri, Jul 19, 2013 at 03:59:24PM +0800, Tang Chen wrote:
+> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 > 
-> Dave expressed interest in having it, useful for testing, and I can see
-> people that just wanting to try it out enabling it manually at runtime.
-
-The distributions are going to have to make a decision about whether or
-not they turn this on.  If it is 100% selected at compile-time and has
-all of the potential performance implications (zswap *can* hurt with
-certain workloads), I would not expect a distribution to enable it at all.
-
-The only sane thing to do here is to compile it in, runtime-default it
-to off, and let folks enable it who want to use it on their workload.
-
->> In my opinion I'd perfer to flush all the pages stored in zswap when
->> disabled it, so that I can run testing without rebooting the machine.
+> If system can create movable node which all memory of the
+> node is allocated as ZONE_MOVABLE, setup_node_data() cannot
+> allocate memory for the node's pg_data_t.
+> So, use memblock_alloc_try_nid() instead of memblock_alloc_nid()
+> to retry when the first allocation fails. Otherwise, the system
+> could failed to boot.
 > 
-> Why would you have to reboot your machine?  If you want to force all
-> the pages out of the compressed pool, a swapoff should do it as now
-> noted in the Documentation file (below).
+> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+>  arch/x86/mm/numa.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+> index a71c4e2..5013583 100644
+> --- a/arch/x86/mm/numa.c
+> +++ b/arch/x86/mm/numa.c
+> @@ -209,10 +209,9 @@ static void __init setup_node_data(int nid, u64 start, u64 end)
+>  	 * Allocate node data.  Try node-local memory and then any node.
+>  	 * Never allocate in DMA zone.
+>  	 */
+> -	nd_pa = memblock_alloc_nid(nd_size, SMP_CACHE_BYTES, nid);
+> +	nd_pa = memblock_alloc_try_nid(nd_size, SMP_CACHE_BYTES, nid);
+>  	if (!nd_pa) {
+> -		pr_err("Cannot find %zu bytes in node %d\n",
+> -		       nd_size, nid);
+> +		pr_err("Cannot find %zu bytes in any node\n", nd_size);
 
-It is kinda crummy that it won't be flushed, but considering the size
-and simplicity of the patch as it stands, I'm not going to whinge about
-it too much.
+Hmm... we want the node data to be colocated on the same node and I
+don't think being hotpluggable necessarily requires the node data to
+be allocated on a different node.  Does node data of a hotpluggable
+node need to stay around after hotunplug?
 
-Seth, it'd be nice to have you at least see if it is worth flushing all
-the pages when zswap is disabled, or whether it's too much code to go to
-the trouble.
+I don't think it's a huge issue but it'd be great if we can clarify
+where the restriction is coming from.
+
+Thanks.
+
+-- 
+tejun
