@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756546Ab3GWJw1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:52:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12614 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756482Ab3GWJwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:52:23 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        gleb@redhat.com, pbonzini@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH 2/4] xen: switch to use hypervisor_cpuid_base()
-Date: Tue, 23 Jul 2013 17:41:03 +0800
-Message-Id: <1374572465-15278-2-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
-References: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
+	id S1756581Ab3GWJxP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:53:15 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:60863 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756054Ab3GWJxL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 05:53:11 -0400
+Date: Tue, 23 Jul 2013 11:53:06 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130723095306.GA26174@gmail.com>
+References: <1372366385.22432.185.camel@schen9-DESK>
+ <1372375873.22432.200.camel@schen9-DESK>
+ <20130628093809.GB29205@gmail.com>
+ <1372453461.22432.216.camel@schen9-DESK>
+ <20130629071245.GA5084@gmail.com>
+ <1372710497.22432.224.camel@schen9-DESK>
+ <20130702064538.GB3143@gmail.com>
+ <1373997195.22432.297.camel@schen9-DESK>
+ <20130723094513.GA24522@gmail.com>
+ <20130723095124.GW27075@twins.programming.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723095124.GW27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch to use hypervisor_cpuid_base() to detect Xen.
 
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Paolo Bonzini <pbonzini@redhat.com>
-Cc: xen-devel@lists.xensource.com
-Cc: virtualization@lists.linux-foundation.org
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- arch/x86/include/asm/xen/hypervisor.h |   16 +---------------
- 1 files changed, 1 insertions(+), 15 deletions(-)
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-diff --git a/arch/x86/include/asm/xen/hypervisor.h b/arch/x86/include/asm/xen/hypervisor.h
-index 125f344..d866959 100644
---- a/arch/x86/include/asm/xen/hypervisor.h
-+++ b/arch/x86/include/asm/xen/hypervisor.h
-@@ -40,21 +40,7 @@ extern struct start_info *xen_start_info;
- 
- static inline uint32_t xen_cpuid_base(void)
- {
--	uint32_t base, eax, ebx, ecx, edx;
--	char signature[13];
--
--	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
--		cpuid(base, &eax, &ebx, &ecx, &edx);
--		*(uint32_t *)(signature + 0) = ebx;
--		*(uint32_t *)(signature + 4) = ecx;
--		*(uint32_t *)(signature + 8) = edx;
--		signature[12] = 0;
--
--		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
--			return base;
--	}
--
--	return 0;
-+	return hypervisor_cpuid_base("XenVMMXenVMM", 2);
- }
- 
- #ifdef CONFIG_XEN
--- 
-1.7.1
+> On Tue, Jul 23, 2013 at 11:45:13AM +0200, Ingo Molnar wrote:
+>
+> > Why not just try the delayed addition approach first? The spinning is 
+> > time limited AFAICS, so we don't _have to_ recognize those as writers 
+> > per se, only if the spinning fails and it wants to go on the waitlist. 
+> > Am I missing something?
+> > 
+> > It will change patterns, it might even change the fairness balance - 
+> > but is a legit change otherwise, especially if it helps performance.
+> 
+> Be very careful here. Some people (XFS) have very specific needs. Walken 
+> and dchinner had a longish discussion on this a while back.
 
+Agreed - yet it's worth at least trying it out the quick way, to see the 
+main effect and to see whether that explains the performance assymetry and 
+invest more effort into it.
+
+Thanks,
+
+	Ingo
