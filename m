@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975Ab3GWPeL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:34:11 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8889 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757798Ab3GWPeJ (ORCPT
+	id S932774Ab3GWPer (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:34:47 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:49456 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757721Ab3GWPeq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:34:09 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=UUjx1oEZs6kA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=3Wd1iErDF5kA:10 a=CfR3sKC0JOukDLrJHCUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374593646.3356.126.camel@gandalf.local.home>
-Subject: Re: [PATCH v2 0/7] tracing: Kill the buggy trace_cpu
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 23 Jul 2013 11:34:06 -0400
-In-Reply-To: <20130723152531.GA23688@redhat.com>
-References: <20130723152531.GA23688@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Tue, 23 Jul 2013 11:34:46 -0400
+Date: Tue, 23 Jul 2013 17:34:50 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
+ driver for DT usage
+Message-ID: <20130723173450.0d67036b@armhf>
+In-Reply-To: <51EE8591.7060005@gmail.com>
+References: <20130723104615.3696f1a9@armhf>
+	<20130723123444.GW9858@sirena.org.uk>
+	<51EE7E1A.3040301@gmail.com>
+	<20130723132016.GC9858@sirena.org.uk>
+	<51EE8591.7060005@gmail.com>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 17:25 +0200, Oleg Nesterov wrote:
+On Tue, 23 Jul 2013 15:30:57 +0200
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
-> 	5/7: No changes. checkpatch.pl complains, but that
-> 	     "line over 80 characters" in tracing_entries_read()
-> 	     was not added by this patch and I do not know how
-> 	     can I make checkpatch.pl happy without adding a
-> 	     helper for per_cpu_ptr(tr->trace_buffer.data).
+> >> again, we mentioned to merge kirkwood-i2s.c and kirkwood-dma.c into
+> >> a single file, didn't we?  
+> >
+> > That's been discussed several times but nobody's actually done it.  
+> 
+> Correct, that is why I repeated that request to Jean-Francois.
 
-I take those as guidelines not rules. Especially if the fix to 80
-characters is uglier than the original.
+Thanks for all your remarks.
 
--- Steve
+I am testing a new version, with mainly:
+- "internal" and "external" clocks
+- kirkwood-i2s and kirkwood-dma in one module
+- no S/PDIF (I have not yet tried i2s with the tda998x)
 
-
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
