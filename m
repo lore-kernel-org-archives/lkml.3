@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab3GWKFX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 06:05:23 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:60371 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756462Ab3GWKFU (ORCPT
+	id S1756363Ab3GWKKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 06:10:48 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:33643 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756075Ab3GWKKr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 06:05:20 -0400
-Message-ID: <1374573914.30532.68.camel@marge.simpson.net>
-Subject: ptrace(PTRACE_ATTACH)  [no intervering wait] ptrace(PTRACE_DETACH)
- may leave tracee stuck
-From: Mike Galbraith <bitbucket@online.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Date: Tue, 23 Jul 2013 12:05:14 +0200
+	Tue, 23 Jul 2013 06:10:47 -0400
+Message-ID: <1374574241.17286.8.camel@desktop>
+Subject: Re: [PATCH] Staging: bcm: Qos: Fix some coding style issues
+From: Lilis Iskandar <veeableful@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 23 Jul 2013 18:10:41 +0800
+In-Reply-To: <20130723095416.GM5585@mwanda>
+References: <1374571229.15906.3.camel@desktop>
+	 <20130723095416.GM5585@mwanda>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 3.8.3 
 Mime-Version: 1.0
-X-Provags-ID: V02:K0:xFFuf5VYso3KJenf3lcmJni9Cs9P2H4lZX81utOgdgr
- m+3l6mMQEy3VFVob7SUHJpfB3xc/xXFLB34C57RkYJ/RhnTKuj
- eSdhLvu0EErrTnK5q78/zrx96HPSFSQYi24fpkHOPyEroVunzM
- zB1I2a+W3Smbi1z1InWOaNg9+3ONyY1AzZ+0s/WJis8Vv0Yh68
- GwQEkIuSTaPN3akxNF5Gh3JzdS+bUtJkPfkIZ5oPJFsVrCe/ym
- EXWOp7SiBnxs9tlDWN51bv9W5ULPYJW9u6MnnRO9YC4Ip8bYZ+
- Uc2oz3+U0YvDY5Y5YMDNb7X+rHJ+2a5bKshtUa4b3zPIDdkVmj
- T2hgpHXtWSoYoYq5mJGtQ+WjCzwljFKxmTTLI8zmO
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I received a report that glibc:elf/pldd hangs occasionally, and indeed..
+Hi Dan,
 
-  for i in `seq 1 1000`; do taskset -c 3 pldd $$ > /dev/null 2>&1; done
+I have already accepted my fate when I submitted the patch. Though it's
+really great that I receive a response so fast :)
 
-..will do so.  Rummage.....
+Regarding the braces, I thought it would be more readable that way
+because of the long code wrapping inside the "if" parameter. I'll fix it
+and send the patches again in pieces. Should I send a new mail or reply
+to this thread?
 
-ptrace(PTRACE_DETACH) returns -ESRCH when the trap hasn't happened yet,
-which happens because pldd doesn't wait() before ptrace(PTRACE_DETACH).
+Lilis
 
-pldd source:
+On Tue, 2013-07-23 at 12:54 +0300, Dan Carpenter wrote:
+> Hi hi,
+> 
+> Welcome first time submitter newbie.  :)  The tradition is to reject
+> first time code submissions in the meanest and grumpiest way
+> possible.
+> 
+> On Tue, Jul 23, 2013 at 05:20:29PM +0800, Lilis Iskandar wrote:
+> > >From a2f8b299baee0e075d548d2bbf77619373035446 Mon Sep 17 00:00:00 2001
+> > From: Lilis Iskandar <veeableful@gmail.com>
+> > Date: Tue, 23 Jul 2013 17:08:37 +0800
+> > Subject: [PATCH] Staging: bcm: Qos: Fix some coding style issues
+> 
+> This header stuff is not needed.  See if you can figure out how to
+> get rid of it.
+> 
+> You are fixing too many kinds of problems at once so the patch is
+> impossible to review.  Please break it up into one kind of issue
+> per patch.
+> 
+> > -		if(FALSE == (bClassificationSucceed =
+> > +		if (FALSE == (bClassificationSucceed =
+> >  			MatchSrcPort(pstClassifierRule,
+> > -				ntohs((iphd->protocol == UDP)?
+> > -				xprt_hdr->uhdr.source:xprt_hdr->thdr.source))))
+> > +			ntohs((iphd->protocol == UDP)?
+> > +			xprt_hdr->uhdr.source : xprt_hdr->thdr.source))))
+> > +		{
+> >  			break;
+> > +		}
+> 
+> I don't know why you are adding curly braces here but they don't
+> belong.  Braces are explained in CodingStyle.
+> 
+> regards,
+> dan carpenter
+> 
 
-      if (ptrace (PTRACE_ATTACH, tid, NULL, NULL) != 0)
-        {
-          /* There might be a race between reading the directory and
-             threads terminating.  Ignore errors attaching to unknown
-             threads unless this is the main thread.  */
-          if (errno == ESRCH && tid != pid)
-            continue;
-
-          error (EXIT_FAILURE, errno, gettext ("cannot attach to process %lu"),
-                 tid);
-        } 
-
-      struct thread_list *newp = alloca (sizeof (*newp));
-      newp->tid = tid;
-      newp->next = thread_list;
-      thread_list = newp;
-    }
-
-  closedir (dir);
-
-  int status = get_process_info (dfd, pid);
-
-  assert (thread_list != NULL);
-  do
-    {
-      ptrace (PTRACE_DETACH, thread_list->tid, NULL, NULL);
-      thread_list = thread_list->next;
-    }
-  while (thread_list != NULL);
-
-Seems this usually works only because cycles expended between attach and
-detach is usually enough to let trap happen so tracee can set its state
-to TASK_TRACED as PTRACE_DETACH expects it to be.
-
-Is this expected behavior?  It looks a bit like "Doctor Doctor..".
-
--Mike
 
