@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934353Ab3GWVXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:23:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40496 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932567Ab3GWVXf (ORCPT
+	id S933996Ab3GWVZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:25:56 -0400
+Received: from mail-ye0-f174.google.com ([209.85.213.174]:39981 "EHLO
+	mail-ye0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932956Ab3GWVZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:23:35 -0400
-Date: Tue, 23 Jul 2013 14:23:34 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Tomasz Figa <t.figa@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Message-ID: <20130723212334.GA21945@kroah.com>
-References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
- <1731726.KENstTPhkb@flatron>
- <20130723205007.GA27166@kroah.com>
- <1769609.rbAYfG9ir3@flatron>
+	Tue, 23 Jul 2013 17:25:54 -0400
+Date: Tue, 23 Jul 2013 17:25:48 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in
+ memblock.reserve with numa_meminfo.
+Message-ID: <20130723212548.GZ21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1769609.rbAYfG9ir3@flatron>
+In-Reply-To: <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:05:48PM +0200, Tomasz Figa wrote:
-> > That's not so bad, as long as you let the phy core use whatever name it
-> > wants for the device when it registers it with sysfs.
+On Fri, Jul 19, 2013 at 03:59:31PM +0800, Tang Chen wrote:
+> Vasilis Liaskovitis found that before we parse SRAT and fulfill numa_meminfo,
+> the nids of all the regions in memblock.reserve[] are MAX_NUMNODES. That is
+> because nids have not been mapped at that time.
 > 
-> Yes, in regulator core consumer names are completely separated from this. 
-> Regulator core simply assigns a sequential integer ID to each regulator 
-> and registers /sys/class/regulator/regulator.ID for each regulator.
+> When we arrange ZONE_MOVABLE in each node later, we need nid in memblock. So
+> after we parse SRAT and fulfill nume_meminfo, synchronize the nid info to
+> memblock.reserve[] immediately.
 
-Yes, that's fine.
+Having a separate sync is rather nasty.  Why not let
+memblock_set_node() and alloc functions set nid on the reserved
+regions?
 
-> > Use the name you
-> > are requesting as a "tag" or some such "hint" as to what the phy can be
-> > looked up by.
-> > 
-> > Good luck handling duplicate "tags" :)
-> 
-> The tag alone is not a key. Lookup key consists of two components, 
-> consumer device name and consumer tag. What kind of duplicate tags can be 
-> a problem here?
+Thanks.
 
-Ok, I didn't realize it looked at both parts, that makes sense, thanks.
-
-greg k-h
+-- 
+tejun
