@@ -1,154 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935029Ab3GWW3W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:29:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41904 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934920Ab3GWW2C (ORCPT
+	id S935060Ab3GWW3b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:29:31 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51820 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934308Ab3GWW3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:02 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 097/103] tracing: Fix irqs-off tag display in syscall tracing
-Date: Tue, 23 Jul 2013 15:26:48 -0700
-Message-Id: <20130723220432.708285019@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
-References: <20130723220418.532514378@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 23 Jul 2013 18:29:25 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/2] clk: sunxi: Add A10s gates
+Date: Wed, 24 Jul 2013 00:28:23 +0200
+Message-Id: <1374618504-19391-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1374618504-19391-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+The Allwinner A10s has a slightly different gates set than the A10 and
+A13, so add these gates to the clk driver.
 
-------------------
-
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-
-commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream.
-
-All syscall tracing irqs-off tags are wrong, the syscall enter entry doesn't
-disable irqs.
-
- [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
- [root@jovi tracing]# cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 13/13   #P:2
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-       irqbalance-513   [000] d... 56115.496766: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
-       irqbalance-513   [000] d... 56115.497008: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
-         sendmail-771   [000] d... 56115.827982: sys_open(filename: b770e6d1, flags: 0, mode: 1b6)
-
-The reason is syscall tracing doesn't record irq_flags into buffer.
-The proper display is:
-
- [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
- [root@jovi tracing]# cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 14/14   #P:2
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-       irqbalance-514   [001] ....    46.213921: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
-       irqbalance-514   [001] ....    46.214160: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
-            <...>-920   [001] ....    47.307260: sys_open(filename: 4e82a0c5, flags: 80000, mode: 0)
-
-Link: http://lkml.kernel.org/r/1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- kernel/trace/trace_syscalls.c |   21 +++++++++++++++++----
- 1 file changed, 17 insertions(+), 4 deletions(-)
+ drivers/clk/sunxi/clk-sunxi.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -306,6 +306,8 @@ static void ftrace_syscall_enter(void *d
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
-+	unsigned long irq_flags;
-+	int pc;
- 	int syscall_nr;
- 	int size;
+diff --git a/drivers/clk/sunxi/clk-sunxi.c b/drivers/clk/sunxi/clk-sunxi.c
+index 412912b..db1c45b 100644
+--- a/drivers/clk/sunxi/clk-sunxi.c
++++ b/drivers/clk/sunxi/clk-sunxi.c
+@@ -341,6 +341,10 @@ static const __initconst struct gates_data sun4i_ahb_gates_data = {
+ 	.mask = {0x7F77FFF, 0x14FB3F},
+ };
  
-@@ -321,9 +323,12 @@ static void ftrace_syscall_enter(void *d
- 
- 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
- 
-+	local_save_flags(irq_flags);
-+	pc = preempt_count();
++static const __initconst struct gates_data sun5i_a10s_ahb_gates_data = {
++	.mask = {0x147667e7, 0x185915},
++};
 +
- 	buffer = tr->trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer,
--			sys_data->enter_event->event.type, size, 0, 0);
-+			sys_data->enter_event->event.type, size, irq_flags, pc);
- 	if (!event)
- 		return;
+ static const __initconst struct gates_data sun5i_a13_ahb_gates_data = {
+ 	.mask = {0x107067e7, 0x185111},
+ };
+@@ -349,6 +353,10 @@ static const __initconst struct gates_data sun4i_apb0_gates_data = {
+ 	.mask = {0x4EF},
+ };
  
-@@ -333,7 +338,8 @@ static void ftrace_syscall_enter(void *d
- 
- 	if (!filter_current_check_discard(buffer, sys_data->enter_event,
- 					  entry, event))
--		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-+		trace_current_buffer_unlock_commit(buffer, event,
-+						   irq_flags, pc);
- }
- 
- static void ftrace_syscall_exit(void *data, struct pt_regs *regs, long ret)
-@@ -343,6 +349,8 @@ static void ftrace_syscall_exit(void *da
- 	struct syscall_metadata *sys_data;
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
-+	unsigned long irq_flags;
-+	int pc;
- 	int syscall_nr;
- 
- 	syscall_nr = trace_get_syscall_nr(current, regs);
-@@ -355,9 +363,13 @@ static void ftrace_syscall_exit(void *da
- 	if (!sys_data)
- 		return;
- 
-+	local_save_flags(irq_flags);
-+	pc = preempt_count();
++static const __initconst struct gates_data sun5i_a10s_apb0_gates_data = {
++	.mask = {0x469},
++};
 +
- 	buffer = tr->trace_buffer.buffer;
- 	event = trace_buffer_lock_reserve(buffer,
--			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
-+			sys_data->exit_event->event.type, sizeof(*entry),
-+			irq_flags, pc);
- 	if (!event)
- 		return;
+ static const __initconst struct gates_data sun5i_a13_apb0_gates_data = {
+ 	.mask = {0x61},
+ };
+@@ -357,6 +365,10 @@ static const __initconst struct gates_data sun4i_apb1_gates_data = {
+ 	.mask = {0xFF00F7},
+ };
  
-@@ -367,7 +379,8 @@ static void ftrace_syscall_exit(void *da
- 
- 	if (!filter_current_check_discard(buffer, sys_data->exit_event,
- 					  entry, event))
--		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-+		trace_current_buffer_unlock_commit(buffer, event,
-+						   irq_flags, pc);
- }
- 
- static int reg_event_syscall_enter(struct ftrace_event_file *file,
-
++static const __initconst struct gates_data sun5i_a10s_apb1_gates_data = {
++	.mask = {0xf0007},
++};
++
+ static const __initconst struct gates_data sun5i_a13_apb1_gates_data = {
+ 	.mask = {0xa0007},
+ };
+@@ -442,10 +454,13 @@ static const __initconst struct of_device_id clk_mux_match[] = {
+ static const __initconst struct of_device_id clk_gates_match[] = {
+ 	{.compatible = "allwinner,sun4i-axi-gates-clk", .data = &sun4i_axi_gates_data,},
+ 	{.compatible = "allwinner,sun4i-ahb-gates-clk", .data = &sun4i_ahb_gates_data,},
++	{.compatible = "allwinner,sun5i-a10s-ahb-gates-clk", .data = &sun5i_a10s_ahb_gates_data,},
+ 	{.compatible = "allwinner,sun5i-a13-ahb-gates-clk", .data = &sun5i_a13_ahb_gates_data,},
+ 	{.compatible = "allwinner,sun4i-apb0-gates-clk", .data = &sun4i_apb0_gates_data,},
++	{.compatible = "allwinner,sun5i-a10s-apb0-gates-clk", .data = &sun5i_a10s_apb0_gates_data,},
+ 	{.compatible = "allwinner,sun5i-a13-apb0-gates-clk", .data = &sun5i_a13_apb0_gates_data,},
+ 	{.compatible = "allwinner,sun4i-apb1-gates-clk", .data = &sun4i_apb1_gates_data,},
++	{.compatible = "allwinner,sun5i-a10s-apb1-gates-clk", .data = &sun5i_a10s_apb1_gates_data,},
+ 	{.compatible = "allwinner,sun5i-a13-apb1-gates-clk", .data = &sun5i_a13_apb1_gates_data,},
+ 	{}
+ };
+-- 
+1.8.3.2
 
