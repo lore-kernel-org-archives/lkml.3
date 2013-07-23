@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933030Ab3GWNhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:37:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40688 "EHLO mx2.suse.de"
+	id S1757475Ab3GWNiy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:38:54 -0400
+Received: from ozlabs.org ([203.10.76.45]:37158 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757459Ab3GWNhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:37:42 -0400
-Message-ID: <51EE8721.10500@suse.cz>
-Date: Tue, 23 Jul 2013 15:37:37 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Cc: Jean Delvare <jdelvare@suse.de>, linux-kbuild@vger.kernel.org,
+	id S1754566Ab3GWNix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:38:53 -0400
+Date: Tue, 23 Jul 2013 23:38:51 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [pull request] Pull request for branch yem-kconfig-rc-fixes
-References: <cover.1374006854.git.yann.morin.1998@free.fr> <1374055158.4495.1.camel@chaos.site>
-In-Reply-To: <1374055158.4495.1.camel@chaos.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] powerpc/8xx: Remove last traces of 8XX_MINIMAL_FPEMU
+Message-ID: <20130723133851.GD31944@concordia>
+References: <1373964998.2591.57.camel@x61.thuisdomein>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373964998.2591.57.camel@x61.thuisdomein>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.7.2013 11:59, Jean Delvare wrote:
-> Le Tuesday 16 July 2013 à 22:39 +0200, Yann E. MORIN a écrit :
->> From: "Yann E. MORIN" <yann.morin.1998@free.fr>
->>
->> Hello Michal,
->>
->> Please pull these post-rc1 kconfig cleanups, all after
->> review and comments by Jean:
->>   - simplify and cleanup the symbol-search code
->>   - better documentation about the symbols ordering in search results
->>   - eye-candy in the title of the search-box in [mn]conf
->>
->> Regards,
->> Yann E. MORIN.
+On Tue, Jul 16, 2013 at 10:56:38AM +0200, Paul Bolle wrote:
+> The Kconfig symbol 8XX_MINIMAL_FPEMU was removed in commit 968219fa33
+> ("powerpc/8xx: Remove 8xx specific "minimal FPU emulation""). But that
+> commit didn't remove all code depending on that symbol. Do so now.
 > 
-> It looks very good to me now, thanks Yann for the good work!
+> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+> ---
+> Not even compile tested!
 
-It does look good indeed. But I am wondering if it's necessary for 3.11.
-AFAICS the only user-visible changes are
+Help yourself to a cross compiler :)
 
-  [PATCH 1/6] Documentation/kconfig: more concise and straightforward
-search explanation
-  [PATCH 3/6] kconfig/[mn]conf: shorten title in search-box
+https://www.kernel.org/pub/tools/crosstool/
 
-and the rest are code cleanups (however worthwhile), is that correct?
-There is no change in the search behavior, is there? Then I would say
-merge this for 3.12-rc1. Maybe merge the documentation patch for 3.11.
 
-Thanks,
-Michal
+cheers
