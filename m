@@ -1,176 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab3GWJ0M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:26:12 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:52579 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3GWJ0K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:26:10 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6N9Q4HQ029880, This message is accepted by code: ctaloc0852
-From: hayeswang <hayeswang@realtek.com>
-To: <gregkh@linuxfoundation.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-References: 
-Subject: [PATCH 3/3] net/usb/r8152: adjust relative ocp function
-Date: Tue, 23 Jul 2013 17:26:04 +0800
-Message-ID: <2E4B2D93A0D24ED29C08265FF193753E@realtek.com.tw>
+	id S1756309Ab3GWJ05 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:26:57 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:37534 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756217Ab3GWJ0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 05:26:54 -0400
+Date: Tue, 23 Jul 2013 11:25:16 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH v3 12/16] cpufreq: kirkwood-cpufreq: remove device tree
+ parsing for cpu nodes
+Message-ID: <20130723092516.GC6846@lunn.ch>
+References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+ <1374492747-13879-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-Thread-Index: Ac6HhMdOg1BBwFkoQluPEEf34daUngAADlnA
-In-Reply-To: 
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374492747-13879-13-git-send-email-Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - fix the conversion between cpu and __le32
- - replace some pla_ocp and usb_ocp functions with generic_ocp function
+On Mon, Jul 22, 2013 at 12:32:23PM +0100, Sudeep KarkadaNagesha wrote:
+> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> 
+> Now that the cpu device registration initialises the of_node(if available)
+> appropriately for all the cpus, parsing here is redundant.
+> 
+> This patch removes all DT parsing and uses cpu->of_node instead.
+> 
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+> ---
+>  drivers/cpufreq/kirkwood-cpufreq.c | 8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/kirkwood-cpufreq.c b/drivers/cpufreq/kirkwood-cpufreq.c
+> index c233ea6..25ac2cb 100644
+> --- a/drivers/cpufreq/kirkwood-cpufreq.c
+> +++ b/drivers/cpufreq/kirkwood-cpufreq.c
+> @@ -14,7 +14,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/clk-provider.h>
+>  #include <linux/cpufreq.h>
+> -#include <linux/of.h>
+> +#include <linux/of_device.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <asm/proc-fns.h>
+> @@ -175,9 +175,11 @@ static int kirkwood_cpufreq_probe(struct platform_device *pdev)
+>  	if (IS_ERR(priv.base))
+>  		return PTR_ERR(priv.base);
+>  
+> -	np = of_find_node_by_path("/cpus/cpu@0");
+> -	if (!np)
+> +	np = of_cpu_device_node_get(0);
+> +	if (!np) {
+> +		dev_err(&pdev->dev, "failed to get cpu device node\n");
+>  		return -ENODEV;
+> +	}
+>  
+>  	priv.cpu_clk = of_clk_get_by_name(np, "cpu_clk");
+>  	if (IS_ERR(priv.cpu_clk)) {
+> -- 
+> 1.8.1.2
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 66 +++++++++++++++++--------------------------------
- 1 file changed, 23 insertions(+), 43 deletions(-)
+Hi Sudeep
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index ef033ab..11c51f2 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -514,37 +514,31 @@ int usb_ocp_write(struct r8152 *tp, u16 index, u16 byteen, u16 size, void *data)
- 
- static u32 ocp_read_dword(struct r8152 *tp, u16 type, u16 index)
- {
--	u32 data;
-+	__le32 data;
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_read(tp, index, sizeof(data), &data);
--	else
--		usb_ocp_read(tp, index, sizeof(data), &data);
-+	generic_ocp_read(tp, index, sizeof(data), &data, type);
- 
- 	return __le32_to_cpu(data);
- }
- 
- static void ocp_write_dword(struct r8152 *tp, u16 type, u16 index, u32 data)
- {
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_write(tp, index, BYTE_EN_DWORD, sizeof(data), &data);
--	else
--		usb_ocp_write(tp, index, BYTE_EN_DWORD, sizeof(data), &data);
-+	__le32 tmp = __cpu_to_le32(data);
-+
-+	generic_ocp_write(tp, index, BYTE_EN_DWORD, sizeof(tmp), &tmp, type);
- }
- 
- static u16 ocp_read_word(struct r8152 *tp, u16 type, u16 index)
- {
- 	u32 data;
-+	__le32 tmp;
- 	u8 shift = index & 2;
- 
- 	index &= ~3;
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_read(tp, index, sizeof(data), &data);
--	else
--		usb_ocp_read(tp, index, sizeof(data), &data);
-+	generic_ocp_read(tp, index, sizeof(tmp), &tmp, type);
- 
--	data = __le32_to_cpu(data);
-+	data = __le32_to_cpu(tmp);
- 	data >>= (shift * 8);
- 	data &= 0xffff;
- 
-@@ -553,7 +547,8 @@ static u16 ocp_read_word(struct r8152 *tp, u16 type, u16 index)
- 
- static void ocp_write_word(struct r8152 *tp, u16 type, u16 index, u32 data)
- {
--	u32 tmp, mask = 0xffff;
-+	u32 mask = 0xffff;
-+	__le32 tmp;
- 	u16 byen = BYTE_EN_WORD;
- 	u8 shift = index & 2;
- 
-@@ -566,34 +561,25 @@ static void ocp_write_word(struct r8152 *tp, u16 type, u16 index, u32 data)
- 		index &= ~3;
- 	}
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_read(tp, index, sizeof(tmp), &tmp);
--	else
--		usb_ocp_read(tp, index, sizeof(tmp), &tmp);
-+	generic_ocp_read(tp, index, sizeof(tmp), &tmp, type);
- 
--	tmp = __le32_to_cpu(tmp) & ~mask;
--	tmp |= data;
--	tmp = __cpu_to_le32(tmp);
-+	data |= __le32_to_cpu(tmp) & ~mask;
-+	tmp = __cpu_to_le32(data);
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_write(tp, index, byen, sizeof(tmp), &tmp);
--	else
--		usb_ocp_write(tp, index, byen, sizeof(tmp), &tmp);
-+	generic_ocp_write(tp, index, byen, sizeof(tmp), &tmp, type);
- }
- 
- static u8 ocp_read_byte(struct r8152 *tp, u16 type, u16 index)
- {
- 	u32 data;
-+	__le32 tmp;
- 	u8 shift = index & 3;
- 
- 	index &= ~3;
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_read(tp, index, sizeof(data), &data);
--	else
--		usb_ocp_read(tp, index, sizeof(data), &data);
-+	generic_ocp_read(tp, index, sizeof(tmp), &tmp, type);
- 
--	data = __le32_to_cpu(data);
-+	data = __le32_to_cpu(tmp);
- 	data >>= (shift * 8);
- 	data &= 0xff;
- 
-@@ -602,7 +588,8 @@ static u8 ocp_read_byte(struct r8152 *tp, u16 type, u16 index)
- 
- static void ocp_write_byte(struct r8152 *tp, u16 type, u16 index, u32 data)
- {
--	u32 tmp, mask = 0xff;
-+	u32 mask = 0xff;
-+	__le32 tmp;
- 	u16 byen = BYTE_EN_BYTE;
- 	u8 shift = index & 3;
- 
-@@ -615,19 +602,12 @@ static void ocp_write_byte(struct r8152 *tp, u16 type, u16 index, u32 data)
- 		index &= ~3;
- 	}
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_read(tp, index, sizeof(tmp), &tmp);
--	else
--		usb_ocp_read(tp, index, sizeof(tmp), &tmp);
-+	generic_ocp_read(tp, index, sizeof(tmp), &tmp, type);
- 
--	tmp = __le32_to_cpu(tmp) & ~mask;
--	tmp |= data;
--	tmp = __cpu_to_le32(tmp);
-+	data |= __le32_to_cpu(tmp) & ~mask;
-+	tmp = __cpu_to_le32(data);
- 
--	if (type == MCU_TYPE_PLA)
--		pla_ocp_write(tp, index, byen, sizeof(tmp), &tmp);
--	else
--		usb_ocp_write(tp, index, byen, sizeof(tmp), &tmp);
-+	generic_ocp_write(tp, index, byen, sizeof(tmp), &tmp, type);
- }
- 
- static void r8152_mdio_write(struct r8152 *tp, u32 reg_addr, u32 value)
--- 
-1.8.3.1
+I've not had chance to test it, but it looks O.K.
+
+Acked-by: Andrew Lunn <andrew@lunn.ch>
+
+	  Andrew
 
