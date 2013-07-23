@@ -1,147 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab3GWNhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:37:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40650 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250Ab3GWNhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:37:07 -0400
-Date: Tue, 23 Jul 2013 15:37:04 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>
-Subject: Re: [PATCH v2 10/10] mm, hugetlb: decrement reserve count if
- VM_NORESERVE alloc page cache
-Message-ID: <20130723133704.GD8677@dhcp22.suse.cz>
-References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1374482191-3500-11-git-send-email-iamjoonsoo.kim@lge.com>
+	id S1757427Ab3GWNhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:37:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38255 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670Ab3GWNhL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:37:11 -0400
+Date: Tue, 23 Jul 2013 14:36:55 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Jean-Francois Moine <moinejf@free.fr>,
+        alsa-devel@alsa-project.org, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [alsa-devel] [PATCH] ARM: kirkwood: enable S/PDIF
+Message-ID: <20130723133655.GV24642@n2100.arm.linux.org.uk>
+References: <20130723102320.56bc4555@armhf> <20130723084347.GP24642@n2100.arm.linux.org.uk> <20130723130622.GB9858@sirena.org.uk> <51EE8158.4050300@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374482191-3500-11-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51EE8158.4050300@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 22-07-13 17:36:31, Joonsoo Kim wrote:
-> If a vma with VM_NORESERVE allocate a new page for page cache, we should
-> check whether this area is reserved or not. If this address is
-> already reserved by other process(in case of chg == 0), we should
-> decrement reserve count, because this allocated page will go into page
-> cache and currently, there is no way to know that this page comes from
-> reserved pool or not when releasing inode. This may introduce
-> over-counting problem to reserved count. With following example code,
-> you can easily reproduce this situation.
-> 
->         size = 20 * MB;
->         flag = MAP_SHARED;
->         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
->         if (p == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->                 return -1;
->         }
-> 
->         flag = MAP_SHARED | MAP_NORESERVE;
->         q = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
->         if (q == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->         }
->         q[0] = 'c';
-> 
-> This patch solve this problem.
+On Tue, Jul 23, 2013 at 03:12:56PM +0200, Sebastian Hesselbarth wrote:
+> On 07/23/13 15:06, Mark Brown wrote:
+>> On Tue, Jul 23, 2013 at 09:43:47AM +0100, Russell King - ARM Linux wrote:
+>>> On Tue, Jul 23, 2013 at 10:23:20AM +0200, Jean-Francois Moine wrote:
+>>>> This patch enables S/PDIF.
+>>
+>>>> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+>>
+>>> I'm not submitting my patch to do this because:
+>>
+>>> (a) we don't know what effect this has on other hardware.
+>>
+>> This patch will do absolutely nothing unless it's used in a machine
+>> driver which connects a S/PDIF CODEC to it.  I see no reason not to
+>> apply it, someone with hardware with more complex needs can always build
+>> on it later.
+>>
+>
+> Mark,
+>
+> the mask that is changed in the patch is what will be written
+> into i2s controller's registers. So, if there is no S/PDIF in that  
+> specific controller that bit can possibly have a different meaning.
+> Also, enabling both I2S playback and SPDIF playback can cause the
+> controller to behave differently.
 
-Again, please describe _how_ it solves the problem.
+Right, so the SPDIF output on Dove isn't multiplexed, so I was wrong on
+that _for_ _dove_, but that may not necessarily be the case for the
+Kirkwood SoCs - the pin may be multiplexed there.
 
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 2ea6afd..6782b41 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -443,10 +443,23 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  }
->  
->  /* Returns true if the VMA has associated reserve pages */
-> -static int vma_has_reserves(struct vm_area_struct *vma)
-> +static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  {
-> -	if (vma->vm_flags & VM_NORESERVE)
-> -		return 0;
-> +	if (vma->vm_flags & VM_NORESERVE) {
-> +		/*
-> +		 * This address is already reserved by other process(chg == 0),
-> +		 * so, we should decreament reserved count. Without
-> +		 * decreamenting, reserve count is remained after releasing
-> +		 * inode, because this allocated page will go into page cache
-> +		 * and is regarded as coming from reserved pool in releasing
-> +		 * step. Currently, we don't have any other solution to deal
-> +		 * with this situation properly, so add work-around here.
-> +		 */
-> +		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
-> +			return 1;
-> +		else
-> +			return 0;
-> +	}
->  
->  	/* Shared mappings always use reserves */
->  	if (vma->vm_flags & VM_MAYSHARE)
-> @@ -520,7 +533,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
->  
->  static struct page *dequeue_huge_page_vma(struct hstate *h,
->  				struct vm_area_struct *vma,
-> -				unsigned long address, int avoid_reserve)
-> +				unsigned long address, int avoid_reserve,
-> +				long chg)
->  {
->  	struct page *page = NULL;
->  	struct mempolicy *mpol;
-> @@ -535,7 +549,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  	 * have no page reserves. This check ensures that reservations are
->  	 * not "stolen". The child may still get SIGKILLed
->  	 */
-> -	if (!vma_has_reserves(vma) &&
-> +	if (!vma_has_reserves(vma, chg) &&
->  			h->free_huge_pages - h->resv_huge_pages == 0)
->  		return NULL;
->  
-> @@ -553,8 +567,12 @@ retry_cpuset:
->  		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
->  			page = dequeue_huge_page_node(h, zone_to_nid(zone));
->  			if (page) {
-> -				if (!avoid_reserve && vma_has_reserves(vma))
-> -					h->resv_huge_pages--;
-> +				if (avoid_reserve)
-> +					break;
-> +				if (!vma_has_reserves(vma, chg))
-> +					break;
-> +
-> +				h->resv_huge_pages--;
->  				break;
->  			}
->  		}
-> @@ -1135,7 +1153,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  		return ERR_PTR(-ENOSPC);
->  	}
->  	spin_lock(&hugetlb_lock);
-> -	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
-> +	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
->  	if (!page) {
->  		spin_unlock(&hugetlb_lock);
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> -- 
-> 1.7.9.5
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+However, Dove does have two I2S/SPDIF controllers which are otherwise
+identical, apart from one having SPDIF support and the other not.
+Setting the SPDIF enable bit on the one without is unspecified what
+the behaviour would be, so it should not be set.
