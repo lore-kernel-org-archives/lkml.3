@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933626Ab3GWQLI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:11:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:54071 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933586Ab3GWQKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:10:04 -0400
-From: Illia Smyrnov <illia.smyrnov@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <balbi@ti.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 1/3] Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
-Date: Tue, 23 Jul 2013 19:09:56 +0300
-Message-ID: <1374595798-15492-2-git-send-email-illia.smyrnov@ti.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1374595798-15492-1-git-send-email-illia.smyrnov@ti.com>
-References: <1374595798-15492-1-git-send-email-illia.smyrnov@ti.com>
+	id S933653Ab3GWQNh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:13:37 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:51121 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933293Ab3GWQNg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:13:36 -0400
+Date: Tue, 23 Jul 2013 18:13:34 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        eranian@google.com
+Subject: Re: [PATCH] perf, x86: Enable PEBS mode automatically for
+ mem-{loads,stores} v3
+Message-ID: <20130723161334.GQ6123@two.firstfloor.org>
+References: <1374188619-19220-1-git-send-email-andi@firstfloor.org>
+ <20130723083834.GS27075@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723083834.GS27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use bitfiled instead of hardcoded values to set KBD_CTRL, use BIT macro,
-remove unused defines.
+On Tue, Jul 23, 2013 at 10:38:34AM +0200, Peter Zijlstra wrote:
+> On Thu, Jul 18, 2013 at 04:03:39PM -0700, Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > [The patch to enable this in the user tools has been sent separately]
+> > 
+> > With the earlier patches to automatically try cpu// and add
+> > a precise sys attribute, we can now enable PEBS for the mem-loads,
+> > mem-stores events everywhere.
+> > 
+> > This allows to use
+> > 
+> > perf record -e mem-loads ...
+> > 
+> > instead of
+> > 
+> > perf record -e cpu/mem-loads/p ...
+> > 
+> > Always use precise=2 even though it is costly pre-Haswell
+> 
+> This Changelog fails to give a reason _why_ we'd want to do this.
 
-Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
----
- drivers/input/keyboard/omap4-keypad.c |   25 +++++++++++--------------
- 1 files changed, 11 insertions(+), 14 deletions(-)
+The first is much nicer to type and understand? Just in the spirit of
+making perf easier to use.
 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index f4aa53a..c727548 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -53,21 +53,17 @@
- #define OMAP4_KBD_FULLCODE63_32		0x48
- 
- /* OMAP4 bit definitions */
--#define OMAP4_DEF_IRQENABLE_EVENTEN	(1 << 0)
--#define OMAP4_DEF_IRQENABLE_LONGKEY	(1 << 1)
--#define OMAP4_DEF_IRQENABLE_TIMEOUTEN	(1 << 2)
--#define OMAP4_DEF_WUP_EVENT_ENA		(1 << 0)
--#define OMAP4_DEF_WUP_LONG_KEY_ENA	(1 << 1)
--#define OMAP4_DEF_CTRL_NOSOFTMODE	(1 << 1)
--#define OMAP4_DEF_CTRLPTVVALUE		(1 << 2)
--#define OMAP4_DEF_CTRLPTV		(1 << 1)
-+#define OMAP4_DEF_IRQENABLE_EVENTEN	BIT(0)
-+#define OMAP4_DEF_IRQENABLE_LONGKEY	BIT(1)
-+#define OMAP4_DEF_WUP_EVENT_ENA		BIT(0)
-+#define OMAP4_DEF_WUP_LONG_KEY_ENA	BIT(1)
-+#define OMAP4_DEF_CTRL_NOSOFTMODE	BIT(1)
-+#define OMAP4_DEF_CTRL_PTV_SHIFT	2
- 
- /* OMAP4 values */
--#define OMAP4_VAL_IRQDISABLE		0x00
--#define OMAP4_VAL_DEBOUNCINGTIME	0x07
--#define OMAP4_VAL_FUNCTIONALCFG		0x1E
--
--#define OMAP4_MASK_IRQSTATUSDISABLE	0xFFFF
-+#define OMAP4_VAL_IRQDISABLE		0x0
-+#define OMAP4_VAL_DEBOUNCINGTIME	0x7
-+#define OMAP4_VAL_PVT			0x7
- 
- enum {
- 	KBD_REVISION_OMAP4 = 0,
-@@ -175,7 +171,8 @@ static int omap4_keypad_open(struct input_dev *input)
- 	disable_irq(keypad_data->irq);
- 
- 	kbd_writel(keypad_data, OMAP4_KBD_CTRL,
--			OMAP4_VAL_FUNCTIONALCFG);
-+			OMAP4_DEF_CTRL_NOSOFTMODE |
-+			(OMAP4_VAL_PVT << OMAP4_DEF_CTRL_PTV_SHIFT));
- 	kbd_writel(keypad_data, OMAP4_KBD_DEBOUNCINGTIME,
- 			OMAP4_VAL_DEBOUNCINGTIME);
- 	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS,
+-andi
 -- 
-1.7.0.4
-
+ak@linux.intel.com -- Speaking for myself only.
