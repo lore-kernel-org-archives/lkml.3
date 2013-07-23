@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935010Ab3GWWxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:53:04 -0400
+	id S935026Ab3GWWxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:53:39 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:41528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934290Ab3GWW1O (ORCPT
+	with ESMTP id S934526Ab3GWW1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:14 -0400
+	Tue, 23 Jul 2013 18:27:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 027/103] ALSA: hda - Fix return value of snd_hda_check_power_state()
-Date: Tue, 23 Jul 2013 15:25:38 -0700
-Message-Id: <20130723220421.620981187@linuxfoundation.org>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Subject: [ 024/103] iio: Fix iio_channel_has_info
+Date: Tue, 23 Jul 2013 15:25:35 -0700
+Message-Id: <20130723220421.265515348@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,36 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-commit 06ec56d3c60238f27bfa50d245592fccc1b4ef0f upstream.
+commit 1c297a66654a3295ae87e2b7f3724d214eb2b5ec upstream.
 
-The refactoring by commit 9040d102 introduced the new function
-snd_hda_check_power_state().  This function is supposed to return true
-if the state already reached to the target state, but it actually
-returns false for that.  An utterly stupid typo while copy & paste.
+Since the info_mask split, iio_channel_has_info() is not working correctly.
+info_mask_separate and info_mask_shared_by_type, it is not possible to compare
+them directly with the iio_chan_info_enum enum. Correct that bit using the BIT()
+macro.
 
-Fortunately this didn't influence on much behavior because powering up
-AFG usually powers up the child widgets, too.  But the finer power
-control must have been broken by this bug.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/hda_local.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/iio/iio.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/hda_local.h
-+++ b/sound/pci/hda/hda_local.h
-@@ -667,7 +667,7 @@ snd_hda_check_power_state(struct hda_cod
- 	if (state & AC_PWRST_ERROR)
- 		return true;
- 	state = (state >> 4) & 0x0f;
--	return (state != target_state);
-+	return (state == target_state);
+--- a/include/linux/iio/iio.h
++++ b/include/linux/iio/iio.h
+@@ -211,8 +211,8 @@ struct iio_chan_spec {
+ static inline bool iio_channel_has_info(const struct iio_chan_spec *chan,
+ 	enum iio_chan_info_enum type)
+ {
+-	return (chan->info_mask_separate & type) |
+-	       (chan->info_mask_shared_by_type & type);
++	return (chan->info_mask_separate & BIT(type)) |
++	       (chan->info_mask_shared_by_type & BIT(type));
  }
  
- unsigned int snd_hda_codec_eapd_power_filter(struct hda_codec *codec,
+ #define IIO_ST(si, rb, sb, sh)						\
 
 
