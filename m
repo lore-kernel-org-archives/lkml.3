@@ -1,77 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758112Ab3GWVAK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:00:10 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:33728 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758080Ab3GWVAI (ORCPT
+	id S1758075Ab3GWVAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:00:33 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:64638 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940Ab3GWVAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:00:08 -0400
-Message-ID: <1374613204.2290.49.camel@dabdike>
-Subject: Re: [PATCH] mvsas: fix unaligned-access kernel panic under heavy
- disk testing
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Jianpeng Ma <majianpeng@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 23 Jul 2013 14:00:04 -0700
-In-Reply-To: <201307232053.r6NKrkOh032171@farm-0012.internal.tilera.com>
-References: <201307232053.r6NKrkOh032171@farm-0012.internal.tilera.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
+	Tue, 23 Jul 2013 17:00:31 -0400
+Date: Tue, 23 Jul 2013 23:00:26 +0200
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/5] x86, AMD: cleanup: merge common code in early microcode
+ loading
+Message-ID: <20130723230026.394a5ee1@googlemail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 16:50 -0400, Chris Metcalf wrote:
-> The slot->response value may not be aligned, so should be read
-> using the appropriate kernel "unaligned" accessor.
+Extract common checks and initialisations from load_ucode_ap() and
+save_microcode_in_initrd_amd() to load_microcode_amd_early().
+load_ucode_ap() gets a quick exit for !cpu, because for the BSP there is
+already a different function dealing with its update.
 
-Hm, institutional memory re-presenting the wrong patch?  However, I am
-reminded to push the right one in spite of no ack from marvell.
+The original code already didn't anything, because without load_microcode_amd()
+getting called apply_microcode_amd() could not do anything.
 
-James
+Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
-> ---
->  drivers/scsi/mvsas/mv_sas.c | 5 +++--
->  drivers/scsi/mvsas/mv_sas.h | 1 +
->  2 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-> index f14665a..66aaa87 100644
-> --- a/drivers/scsi/mvsas/mv_sas.c
-> +++ b/drivers/scsi/mvsas/mv_sas.c
-> @@ -1858,10 +1858,11 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
->  	}
->  
->  	/* error info record present */
-> -	if (unlikely((rx_desc & RXQ_ERR) && (*(u64 *) slot->response))) {
-> +	if (unlikely((rx_desc & RXQ_ERR) &&
-> +		     get_unaligned_le64((u64 *) slot->response))) {
->  		mv_dprintk("port %d slot %d rx_desc %X has error info"
->  			"%016llX.\n", slot->port->sas_port.id, slot_idx,
-> -			 rx_desc, (u64)(*(u64 *)slot->response));
-> +			rx_desc, get_unaligned_le64((u64 *)slot->response));
->  		tstat->stat = mvs_slot_err(mvi, task, slot_idx);
->  		tstat->resp = SAS_TASK_COMPLETE;
->  		goto out;
-> diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-> index 60e2fb7..d6b19dc 100644
-> --- a/drivers/scsi/mvsas/mv_sas.h
-> +++ b/drivers/scsi/mvsas/mv_sas.h
-> @@ -39,6 +39,7 @@
->  #include <linux/irq.h>
->  #include <linux/slab.h>
->  #include <linux/vmalloc.h>
-> +#include <asm/unaligned.h>
->  #include <scsi/libsas.h>
->  #include <scsi/scsi.h>
->  #include <scsi/scsi_tcq.h>
-
-
-
+--- a/arch/x86/kernel/microcode_amd_early.c	2013-07-22 06:22:32.000000000 +0200
++++ b/arch/x86/kernel/microcode_amd_early.c	2013-07-23 20:00:04.889508712 +0200
+@@ -196,6 +196,23 @@ void __init load_ucode_amd_bsp(void)
+ 	apply_ucode_in_initrd(cd.data, cd.size);
+ }
+ 
++static int load_microcode_amd_early(void)
++{
++	enum ucode_state ret;
++	void *ucode;
++
++	if (ucode_loaded || !ucode_size || !initrd_start)
++		return 0;
++
++	ucode = (void *)(initrd_start + ucode_offset);
++	ret = load_microcode_amd(0, ucode, ucode_size);
++	if (ret != UCODE_OK)
++		return -EINVAL;
++
++	ucode_loaded = true;
++	return 0;
++}
++
+ #ifdef CONFIG_X86_32
+ u8 amd_bsp_mpb[MPB_MAX_SIZE];
+ 
+@@ -258,17 +275,13 @@ void load_ucode_amd_ap(void)
+ 
+ 	collect_cpu_info_amd_early(&cpu_data(cpu), ucode_cpu_info + cpu);
+ 
+-	if (cpu && !ucode_loaded) {
+-		void *ucode;
+-
+-		if (!ucode_size || !initrd_start)
+-			return;
++	/* BSP via load_ucode_amd_bsp() */
++	if (!cpu)
++		return;
+ 
+-		ucode = (void *)(initrd_start + ucode_offset);
+-		if (load_microcode_amd(0, ucode, ucode_size) != UCODE_OK)
+-			return;
+-		ucode_loaded = true;
+-	}
++	load_microcode_amd_early();
++	if (!ucode_loaded)
++		return;
+ 
+ 	apply_microcode_amd(cpu);
+ }
+@@ -276,8 +289,6 @@ void load_ucode_amd_ap(void)
+ 
+ int __init save_microcode_in_initrd_amd(void)
+ {
+-	enum ucode_state ret;
+-	void *ucode;
+ #ifdef CONFIG_X86_32
+ 	unsigned int bsp = boot_cpu_data.cpu_index;
+ 	struct ucode_cpu_info *uci = ucode_cpu_info + bsp;
+@@ -289,14 +300,5 @@ int __init save_microcode_in_initrd_amd(
+ 		pr_info("microcode: updated early to new patch_level=0x%08x\n",
+ 			ucode_new_rev);
+ 
+-	if (ucode_loaded || !ucode_size || !initrd_start)
+-		return 0;
+-
+-	ucode = (void *)(initrd_start + ucode_offset);
+-	ret = load_microcode_amd(0, ucode, ucode_size);
+-	if (ret != UCODE_OK)
+-		return -EINVAL;
+-
+-	ucode_loaded = true;
+-	return 0;
++	return load_microcode_amd_early();
+ }
