@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934075Ab3GWTQE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:16:04 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56846 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933819Ab3GWTQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:16:00 -0400
-Message-ID: <1374606958.10171.2.camel@joe-AO722>
-Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
-From: Joe Perches <joe@perches.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Tue, 23 Jul 2013 12:15:58 -0700
-In-Reply-To: <20130723184843.GG21100@mtj.dyndns.org>
+	id S934095Ab3GWTQZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:16:25 -0400
+Received: from mail-gh0-f176.google.com ([209.85.160.176]:59972 "EHLO
+	mail-gh0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934044Ab3GWTQC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 15:16:02 -0400
+Date: Tue, 23 Jul 2013 15:15:55 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 04/21] acpi: Remove "continue" in macro INVALID_TABLE().
+Message-ID: <20130723191555.GJ21100@mtj.dyndns.org>
 References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130723184843.GG21100@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+ <1374220774-29974-5-git-send-email-tangchen@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374220774-29974-5-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 14:48 -0400, Tejun Heo wrote:
-> On Fri, Jul 19, 2013 at 03:59:14PM +0800, Tang Chen wrote:
-> > The Hot-Pluggable field in SRAT suggests if the memory could be
-> > hotplugged while the system is running. Print it as well when
-> > parsing SRAT will help users to know which memory is hotpluggable.
-[]
-> a nit below
+On Fri, Jul 19, 2013 at 03:59:17PM +0800, Tang Chen wrote:
+> The macro INVALID_TABLE() is defined like this:
 > 
-> > +	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
-> > +		node, pxm,
-> > +		(unsigned long long) start, (unsigned long long) end - 1,
-> > +		hotpluggable ? "Hot Pluggable" : "");
+>  #define INVALID_TABLE(x, path, name)                                    \
+>          { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); continue; }
 > 
-> The following would be more conventional.
+> And it is used like this:
 > 
->   "...10Lx]%s\n", ..., hotpluggable ? " Hot Pluggable" : ""
+> 	for (...) {
+> 		...
+> 		if (...)
+> 			INVALID_TABLE()
+> 		...
+> 	}
 > 
-> Also, isn't "Hot Pluggable" a bit too verbose?  "hotplug" should be
-> fine, I think.
+> The "continue" in the macro makes the code hard to understand.
+> Change it to the style like other macros:
+> 
+>  #define INVALID_TABLE(x, path, name)                                    \
+>          do { pr_err("ACPI OVERRIDE: " x " [%s%s]\n", path, name); } while (0)
+> 
+> So after this patch, this macro should be used like this:
+> 
+> 	for (...) {
+> 		...
+> 		if (...) {
+> 			INVALID_TABLE()
+> 			continue;
+> 		}
+> 		...
+> 	}
+> 
+> Add the "continue" wherever the macro is called.
+> (For now, it is only called in acpi_initrd_override().)
+> 
+> The idea is from Yinghai Lu <yinghai@kernel.org>.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
-It's also a tiny nit better to use:
+Acked-by: Tejun Heo <tj@kernel.org>
 
-	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
-		node, pxm,
-		(unsigned long long) start, (unsigned long long) end - 1,
-		hotpluggable ? " Hot Pluggable" : "");
+Thanks.
 
-(or " hotplug")
-
-so there's no space before newline.
-
+-- 
+tejun
