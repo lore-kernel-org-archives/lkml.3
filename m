@@ -1,157 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754466Ab3GWH3n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:29:43 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:54248 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048Ab3GWH3k (ORCPT
+	id S1754111Ab3GWHbR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:31:17 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:57377 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab3GWHbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:29:40 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kishon Vijay Abraham I <kishon@ti.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Date: Tue, 23 Jul 2013 09:29:32 +0200
-Message-ID: <1714400.neMPBWOlzi@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1307221028440.1495-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1307221028440.1495-100000@iolanthe.rowland.org>
+	Tue, 23 Jul 2013 03:31:15 -0400
+X-AuditID: 9c93017e-b7b62ae000000eeb-38-51ee3141f952
+Date: Tue, 23 Jul 2013 16:31:17 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix
+Message-ID: <20130723073117.GC2266@lge.com>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <87txjmmw39.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87txjmmw39.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
-
-On Monday 22 of July 2013 10:44:39 Alan Stern wrote:
-> On Mon, 22 Jul 2013, Kishon Vijay Abraham I wrote:
-> > > 	The PHY and the controller it is attached to are both physical
-> > > 	devices.
-> > > 	
-> > > 	The connection between them is hardwired by the system
-> > > 	manufacturer and cannot be changed by software.
-> > > 	
-> > > 	PHYs are generally described by fixed system-specific board
-> > > 	files or by Device Tree information.  Are they ever discovered
-> > > 	dynamically?
-> > 
-> > No. They are created just like any other platform devices are created.
+On Mon, Jul 22, 2013 at 09:21:38PM +0530, Aneesh Kumar K.V wrote:
+> Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
 > 
-> Okay.  Are PHYs _always_ platform devices?
-
-They can be i2c, spi or any other device types as well.
-
-> > > 	Is the same true for the controllers attached to the PHYs?
-> > > 	If not -- if both a PHY and a controller are discovered
-> > > 	dynamically -- how does the kernel know whether they are
-> > > 	connected to each other?
-> > 
-> > No differences here. Both PHY and controller will have dt information
-> > or hwmod data using which platform devices will be created.
-> > 
-> > > 	The kernel needs to know which controller is attached to which
-> > > 	PHY.  Currently this information is represented by name or ID
-> > > 	strings embedded in platform data.
-> > 
-> > right. It's embedded in the platform data of the controller.
+> > First 6 patches are almost trivial clean-up patches.
+> >
+> > The others are for fixing three bugs.
+> > Perhaps, these problems are minor, because this codes are used
+> > for a long time, and there is no bug reporting for these problems.
+> >
+> > These patches are based on v3.10.0 and
+> > passed the libhugetlbfs test suite.
 > 
-> It must also be embedded in the PHY's platform data somehow.
-> Otherwise, how would the kernel know which PHY to use?
+> Please also add the new tests you have as part of this patch series to
+> the test suite.
 
-By using a PHY lookup as Stephen and I suggested in our previous replies. 
-Without any extra data in platform data. (I have even posted a code 
-example.)
+Okay.
 
-> > > 	The PHY's driver (the supplier) uses the platform data to
-> > > 	construct a platform_device structure that represents the PHY.
-> > 
-> > Currently the driver assigns static labels (corresponding to the label
-> > used in the platform data of the controller).
-> > 
-> > > 	Until this is done, the controller's driver (the client) cannot
-> > > 	use the PHY.
-> > 
-> > right.
-> > 
-> > > 	Since there is no parent-child relation between the PHY and the
-> > > 	controller, there is no guarantee that the PHY's driver will be
-> > > 	ready when the controller's driver wants to use it.  A deferred
-> > > 	probe may be needed.
-> > 
-> > right.
-> > 
-> > > 	The issue (or one of the issues) in this discussion is that
-> > > 	Greg does not like the idea of using names or IDs to associate
-> > > 	PHYs with controllers, because they are too prone to
-> > > 	duplications or other errors.  Pointers are more reliable.
-> > > 	
-> > > 	But pointers to what?  Since the only data known to be
-> > > 	available to both the PHY driver and controller driver is the
-> > > 	platform data, the obvious answer is a pointer to platform data
-> > > 	(either for the PHY or for the controller, or maybe both).
-> > 
-> > hmm.. it's not going to be simple though as the platform device for
-> > the PHY and controller can be created in entirely different places.
-> > e.g., in some cases the PHY device is a child of some mfd core device
-> > (the device will be created in drivers/mfd) and the controller driver
-> > (usually) is created in board file. I guess then we have to come up
-> > with something to share a pointer in two different files.
-> 
-> The ability for two different source files to share a pointer to a data
-> item defined in a third source file has been around since long before
-> the C language was invented.  :-)
-> 
-> In this case, it doesn't matter where the platform_device structures
-> are created or where the driver source code is.  Let's take a simple
-> example.  Suppose the system design includes a PHY named "foo".  Then
-> the board file could contain:
-> 
-> struct phy_info { ... } phy_foo;
-> EXPORT_SYMBOL_GPL(phy_foo);
-> 
-> and a header file would contain:
-> 
-> extern struct phy_info phy_foo;
-> 
-> The PHY supplier could then call phy_create(&phy_foo), and the PHY
-> client could call phy_find(&phy_foo).  Or something like that; make up
-> your own structure tags and function names.
-> 
-> It's still possible to have conflicts, but now two PHYs with the same
-> name (or a misspelled name somewhere) will cause an error at link time.
+Thanks for reviewing this patchset.
 
-This is incorrect, sorry. First of all it's a layering violation - you 
-export random driver-specific symbols from one driver to another. Then 
-imagine 4 SoCs - A, B, C, D. There are two PHY types PHY1 and PHY2 and 
-there are two types of consumer drivers (e.g. USB host controllers). Now 
-consider following mapping:
-
-SoC	PHY	consumer
-A	PHY1	HOST1
-B	PHY1	HOST2
-C	PHY2	HOST1
-D	PHY2	HOST2
-
-So we have to be able to use any of the PHYs with any of the host drivers. 
-This means you would have to export symbol with the same name from both 
-PHY drivers, which obviously would not work in this case, because having 
-both drivers enabled (in a multiplatform aware configuration) would lead 
-to linking conflict.
-
-Best regards,
-Tomasz
-
+> 
+> -aneesh
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
