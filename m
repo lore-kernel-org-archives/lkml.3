@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933707Ab3GWQ57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:57:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46358 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933272Ab3GWQ55 (ORCPT
+	id S933735Ab3GWQ6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:58:22 -0400
+Received: from smtp1.uu.se ([130.238.7.54]:48501 "EHLO smtp1.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932705Ab3GWQ6V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:57:57 -0400
-Date: Tue, 23 Jul 2013 18:57:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, eranian@google.com
-Subject: Re: [PATCH] perf, x86: Enable PEBS mode automatically for
- mem-{loads,stores} v3
-Message-ID: <20130723165739.GD27075@twins.programming.kicks-ass.net>
-References: <1374188619-19220-1-git-send-email-andi@firstfloor.org>
- <20130723083834.GS27075@twins.programming.kicks-ass.net>
- <20130723161334.GQ6123@two.firstfloor.org>
+	Tue, 23 Jul 2013 12:58:21 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -3.835
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723161334.GQ6123@two.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <20974.46422.436937.172719@pilspetsen.it.uu.se>
+Date: Tue, 23 Jul 2013 18:54:46 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+Cc: Mikael Pettersson <mikpe@it.uu.se>, linux-kernel@vger.kernel.org
+Subject: Re: CONFIG_X86_PKG_TEMP_THERMAL causes #GP fault on Core i7-740QM
+ breaking boot
+In-Reply-To: <51EEA665.2050209@odi.ch>
+References: <51EEA665.2050209@odi.ch>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:13:34PM +0200, Andi Kleen wrote:
-> On Tue, Jul 23, 2013 at 10:38:34AM +0200, Peter Zijlstra wrote:
-> > On Thu, Jul 18, 2013 at 04:03:39PM -0700, Andi Kleen wrote:
-> > > From: Andi Kleen <ak@linux.intel.com>
-> > > 
-> > > [The patch to enable this in the user tools has been sent separately]
-> > > 
-> > > With the earlier patches to automatically try cpu// and add
-> > > a precise sys attribute, we can now enable PEBS for the mem-loads,
-> > > mem-stores events everywhere.
-> > > 
-> > > This allows to use
-> > > 
-> > > perf record -e mem-loads ...
-> > > 
-> > > instead of
-> > > 
-> > > perf record -e cpu/mem-loads/p ...
-> > > 
-> > > Always use precise=2 even though it is costly pre-Haswell
-> > 
-> > This Changelog fails to give a reason _why_ we'd want to do this.
-> 
-> The first is much nicer to type and understand? Just in the spirit of
-> making perf easier to use.
+Ortwin Glück writes:
+ > Hi,
+ > 
+ > I think the bug is already fixed in this commit:
+ > 
+ > f3ed0a17f0292300b3caca32d823ecd32554a667
+ > 
+ > Thermal: x86 package temp thermal crash
 
-And here I was thinking that maybe these events don't make sense without
-pebs or so. But no, rather than giving an actual useful reason you'd
-have me look things up myself. *sigh*
+Thanks.  Although I can see that patch in git, it's NOT present in either
+the linux-3.11-rc2.tar.xz or the patch-3.11-rc2.xz files.  Which is strange
+since the patch was committed 8 days ago, and -rc2 was released 2 days ago.
+
+I'm assuming there was a mistake when preparing this -rc2 snapshot, but if
+the -rc3 snapshot also differs from git I'll alert Linus.
+
+/Mikael
