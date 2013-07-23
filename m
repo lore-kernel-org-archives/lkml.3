@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933961Ab3GWTFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:05:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:50127 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933129Ab3GWTFx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:05:53 -0400
-Date: Tue, 23 Jul 2013 15:05:21 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com, alex@alex.org.uk, dcrisan@flexiant.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out pages
-Message-ID: <20130723190521.GA7073@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
- <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1374602409.6623.138.camel@hastur.hellion.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374602409.6623.138.camel@hastur.hellion.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S933990Ab3GWTHH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:07:07 -0400
+Received: from vps1.hno.se ([31.192.227.87]:37425 "EHLO vps1.hno.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933129Ab3GWTHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 15:07:05 -0400
+Message-ID: <1374606367.5864.4.camel@localhost>
+Subject: [PATCH RESEND #1] tty/8250_early: Don't truncate last character of
+ options
+From: Henrik =?ISO-8859-1?Q?Nordstr=F6m?= <henrik@henriknordstrom.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 23 Jul 2013 21:06:07 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.3 (3.8.3-2.fc19) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
-> On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
-> > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-> > +				    unsigned long action, void *hcpu)
-> > +{
-> > +	int cpu = (long)hcpu;
-> > +	switch (action) {
-> > +	case CPU_UP_PREPARE:
-> > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
-> > +			break;
-> 
-> Thinking about this a bit more -- do we know what happens to the per-cpu
-> area for a CPU which is unplugged and then reintroduced? Is it preserved
-> or is it reset?
-> 
-> If it is reset then this gets more complicated :-( We might be able to
-> use the core mm page reference count, so that when the last reference is
-> removed the page is automatically reclaimed. We can obviously take a
-> reference whenever we add a mapping of the trade page, but I'm not sure
-> we are always on the path which removes such mappings... Even then you
-> could waste pages for some potentially large amount of time each time
-> you replug a VCPU.
-> 
-> Urg, I really hope the per-cpu area is preserved!
+The earlier change to use strlcpy uncovered a bug in the options
+argument length calculation causing last character to be truncated.
+This makes the actual console to be configured with incorrect
+baudrate when specifying the console using console=uart,... syntax.
 
-It is. During bootup time you see this:
+Bug symptom seen in kernel log output:
 
-[    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
-[    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
+Kernel command line: console=uart,mmio,0x90000000,115200
+Early serial console at MMIO 0x90000000 (options '11520')
 
-which means that all of the per_CPU are shrunk down to 128 (from 
-CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
+which then results in a invalid baud rate 11520 instead of the
+expected 115200 when the console is switched to ttyS0 later
+in the boot process.
 
-You might have to clear it when the vCPU comes back up though - otherwise you
-will have garbage.
+Signed-off-by: Henrik Nordstrom <henrik@henriknordstrom.net>
+---
+ drivers/tty/serial/8250/8250_early.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Or you can use the zalloc_cpumask_var_node which will allocate a dynamic
-version of this. (based on the possible_cpus - so in this case 128).
-> 
-> Ian.
-> 
+diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
+index 721904f..946ddd2 100644
+--- a/drivers/tty/serial/8250/8250_early.c
++++ b/drivers/tty/serial/8250/8250_early.c
+@@ -193,7 +193,8 @@ static int __init parse_options(struct early_serial8250_device *device,
+ 	if (options) {
+ 		options++;
+ 		device->baud = simple_strtoul(options, NULL, 0);
+-		length = min(strcspn(options, " "), sizeof(device->options));
++		length = min(strcspn(options, " ") + 1,
++			     sizeof(device->options));
+ 		strlcpy(device->options, options, length);
+ 	} else {
+ 		device->baud = probe_baud(port);
+-- 
+1.8.3.1
+
+
+
