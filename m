@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934383Ab3GWUZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:25:46 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:23549 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934319Ab3GWUVd (ORCPT
+	id S934247Ab3GWUTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:19:54 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:51185 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933706Ab3GWUTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:21:33 -0400
-Message-ID: <a72e8cd3d32bbee420585ca2c23d0b1397165e36.1374609948.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1374609948.git.cmetcalf@tilera.com>
-References: <cover.1374609948.git.cmetcalf@tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Tue, 23 Jul 2013 16:05:48 -0400
-Subject: [PATCH 02/13] tile: support rx_dropped/rx_errors in tilepro net driver
-To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+	Tue, 23 Jul 2013 16:19:51 -0400
+Date: Tue, 23 Jul 2013 17:19:42 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Tushar Behera <tushar.behera@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thierry Reding <thierry.reding@gmail.com>, patches@linaro.org,
+        sachin.kamat@linaro.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: Re: [PATCH V2 6/6] pci: mvebu: Convert to use devm_ioremap_resource
+Message-ID: <20130723201941.GB11373@localhost>
+References: <1370864113-17895-14-git-send-email-tushar.behera@linaro.org>
+ <1371460573-30004-1-git-send-email-tushar.behera@linaro.org>
+ <CAErSpo7hHSmO6euUtJABLB-xeK9u+J2h6z905e5DrcZv5gZoEA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAErSpo7hHSmO6euUtJABLB-xeK9u+J2h6z905e5DrcZv5gZoEA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- drivers/net/ethernet/tile/tilepro.c | 41 ++++++++++++++-----------------------
- 1 file changed, 15 insertions(+), 26 deletions(-)
+On Tue, Jul 23, 2013 at 12:38:28PM -0600, Bjorn Helgaas wrote:
+> [+cc Thomas]
+> 
+> On Mon, Jun 17, 2013 at 3:16 AM, Tushar Behera <tushar.behera@linaro.org> wrote:
+> > Commit 75096579c3ac ("lib: devres: Introduce devm_ioremap_resource()")
+> > introduced devm_ioremap_resource() and deprecated the use of
+> > devm_request_and_ioremap().
+> >
+> > While at it, modify mvebu_pcie_map_registers() to propagate error code.
+> >
+> > Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> > CC: linux-pci@vger.kernel.org
+> > CC: Bjorn Helgaas <bhelgaas@google.com>
+> 
+> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+> 
 
-diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
-index 0237031..84a179e 100644
---- a/drivers/net/ethernet/tile/tilepro.c
-+++ b/drivers/net/ethernet/tile/tilepro.c
-@@ -776,6 +776,7 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
- 	netio_pkt_t *pkt = (netio_pkt_t *)((unsigned long) &qsp[1] + index);
- 
- 	netio_pkt_metadata_t *metadata = NETIO_PKT_METADATA(pkt);
-+	netio_pkt_status_t pkt_status = NETIO_PKT_STATUS_M(metadata, pkt);
- 
- 	/* Extract the packet size.  FIXME: Shouldn't the second line */
- 	/* get subtracted?  Mostly moot, since it should be "zero". */
-@@ -808,40 +809,25 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
- #endif /* TILE_NET_DUMP_PACKETS */
- 
- #ifdef TILE_NET_VERIFY_INGRESS
--	if (!NETIO_PKT_L4_CSUM_CORRECT_M(metadata, pkt) &&
--	    NETIO_PKT_L4_CSUM_CALCULATED_M(metadata, pkt)) {
--		/* Bug 6624: Includes UDP packets with a "zero" checksum. */
--		pr_warning("Bad L4 checksum on %d byte packet.\n", len);
--	}
--	if (!NETIO_PKT_L3_CSUM_CORRECT_M(metadata, pkt) &&
--	    NETIO_PKT_L3_CSUM_CALCULATED_M(metadata, pkt)) {
-+	if (pkt_status == NETIO_PKT_STATUS_OVERSIZE && len >= 64) {
- 		dump_packet(buf, len, "rx");
--		panic("Bad L3 checksum.");
--	}
--	switch (NETIO_PKT_STATUS_M(metadata, pkt)) {
--	case NETIO_PKT_STATUS_OVERSIZE:
--		if (len >= 64) {
--			dump_packet(buf, len, "rx");
--			panic("Unexpected OVERSIZE.");
--		}
--		break;
--	case NETIO_PKT_STATUS_BAD:
--		pr_warning("Unexpected BAD %ld byte packet.\n", len);
-+		panic("Unexpected OVERSIZE.");
- 	}
- #endif
- 
- 	filter = 0;
- 
--	/* ISSUE: Filter TCP packets with "bad" checksums? */
--
--	if (!(dev->flags & IFF_UP)) {
-+	if (pkt_status == NETIO_PKT_STATUS_BAD) {
-+		/* Handle CRC error and hardware truncation. */
-+		filter = 2;
-+	} else if (!(dev->flags & IFF_UP)) {
- 		/* Filter packets received before we're up. */
- 		filter = 1;
--	} else if (NETIO_PKT_STATUS_M(metadata, pkt) == NETIO_PKT_STATUS_BAD) {
-+	} else if (NETIO_PKT_ETHERTYPE_RECOGNIZED_M(metadata, pkt) &&
-+		   pkt_status == NETIO_PKT_STATUS_UNDERSIZE) {
- 		/* Filter "truncated" packets. */
--		filter = 1;
-+		filter = 2;
- 	} else if (!(dev->flags & IFF_PROMISC)) {
--		/* FIXME: Implement HW multicast filter. */
- 		if (!is_multicast_ether_addr(buf)) {
- 			/* Filter packets not for our address. */
- 			const u8 *mine = dev->dev_addr;
-@@ -849,9 +835,12 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
- 		}
- 	}
- 
--	if (filter) {
-+	if (filter != 0) {
- 
--		/* ISSUE: Update "drop" statistics? */
-+		if (filter == 1)
-+			stats->rx_dropped++;
-+		else
-+			stats->rx_errors++;
- 
- 		tile_net_provide_linux_buffer(info, va, small);
- 
+Acked-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>A
+
+> Thomas has a bunch of mvebu patches in the pipeline, so I assume he
+> will incorporate this if appropriate.  I don't want to put it in my
+> tree and cause conflicts with his changes.  Let me know if I should do
+> something else here.
+> 
+
+We have the MBus DT patches, to say the least.
+Not sure if it conflicts with this and how we should handle it in that
+case.
+
+Jason, any ideas?
 -- 
-1.8.3.1
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
