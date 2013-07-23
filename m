@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471Ab3GWDyX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 23:54:23 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:42438 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752803Ab3GWDyU (ORCPT
+	id S1754008Ab3GWEGi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 00:06:38 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:34961 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab3GWEGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 23:54:20 -0400
-From: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Alexander Gordeev <agordeev@redhat.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] AHCI: fix Null pointer dereference in achi_host_active()
-Date: Tue, 23 Jul 2013 11:54:10 +0800
-Message-Id: <1374551650-56759-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.9.6 (Apple Git-31.1)
-In-Reply-To: <20130722212822.GB16776@mtj.dyndns.org>
-References: <20130722212822.GB16776@mtj.dyndns.org>
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 23 Jul 2013 00:06:36 -0400
+Date: Tue, 23 Jul 2013 14:06:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound-asoc
+ tree related)
+Message-Id: <20130723140625.ae4caa1afaf7d3402baa8252@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__23_Jul_2013_14_06_25_+1000_R/BLTdjFldyDDhTA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit b29900e6 (AHCI: Make distinct names for ports in /proc/interrupts)
-introuded a regression, which resulted Null pointer dereference for achi
-host with dummy ports. For ahci ports, when the port is dummy port, its
-private_data will be NULL, as ata_dummy_port_ops doesn't support ->port_start.
+--Signature=_Tue__23_Jul_2013_14_06_25_+1000_R/BLTdjFldyDDhTA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-changes in v2: use pp to check dummy ports, update comments
+Hi all,
 
-Reported-and-tested-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Xiaotian Feng <xtfeng@gmail.com>
-Cc: Alexander Gordeev <agordeev@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
----
- drivers/ata/ahci.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 5064f3e..db4380d 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -1146,11 +1146,18 @@ int ahci_host_activate(struct ata_host *host, int irq, unsigned int n_msis)
- 		return rc;
- 
- 	for (i = 0; i < host->n_ports; i++) {
-+		const char* desc;
- 		struct ahci_port_priv *pp = host->ports[i]->private_data;
- 
-+		/* pp is NULL for dummy ports */
-+		if (pp)
-+			desc = pp->irq_desc;
-+		else
-+			desc = dev_driver_string(host->dev);
-+
- 		rc = devm_request_threaded_irq(host->dev,
- 			irq + i, ahci_hw_interrupt, ahci_thread_fn, IRQF_SHARED,
--			pp->irq_desc, host->ports[i]);
-+			desc, host->ports[i]);
- 		if (rc)
- 			goto out_free_irqs;
- 	}
--- 
-1.7.9.6 (Apple Git-31.1)
+sound/soc/mxs/mxs-saif.c: In function 'mxs_saif_mclk_init':
+sound/soc/mxs/mxs-saif.c:668:2: error: implicit declaration of function 'cl=
+k_register_divider' [-Werror=3Dimplicit-function-declaration]
+  clk =3D clk_register_divider(&pdev->dev, "mxs_saif_mclk",
+  ^
+sound/soc/mxs/mxs-saif.c:669:8: error: implicit declaration of function '__=
+clk_get_name' [-Werror=3Dimplicit-function-declaration]
+        __clk_get_name(saif->clk), 0,
+        ^
+sound/soc/mxs/mxs-saif.c:668:6: warning: assignment makes pointer from inte=
+ger without a cast [enabled by default]
+  clk =3D clk_register_divider(&pdev->dev, "mxs_saif_mclk",
+      ^
+sound/soc/mxs/mxs-saif.c:681:2: error: implicit declaration of function 'of=
+_clk_add_provider' [-Werror=3Dimplicit-function-declaration]
+  ret =3D of_clk_add_provider(np, of_clk_src_simple_get, clk);
+  ^
+sound/soc/mxs/mxs-saif.c:681:32: error: 'of_clk_src_simple_get' undeclared =
+(first use in this function)
+  ret =3D of_clk_add_provider(np, of_clk_src_simple_get, clk);
+                                ^
+sound/soc/mxs/mxs-saif.c:681:32: note: each undeclared identifier is report=
+ed only once for each function it appears in
 
+Probably caused (or at least exposed) by commit 8ccbc3ebe9a7 ("ASoC: mxs:
+Enable COMPILE_TEST builds").
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__23_Jul_2013_14_06_25_+1000_R/BLTdjFldyDDhTA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR7gFGAAoJEECxmPOUX5FESYIP/idykaYh9d+ky0mFjPQemwfl
+GEJ/Kt5+nr2cryqaLaCAwgv4sMVe4F/3jRDjuhqoqH/ESB9FBASbO6+LJ1lcGJhR
+xcFIEeQxH+gawJyvPj2mnnVa8LKdV0b30sD19GB8hKK0bY0uUurvtlwUaaA9h6g5
+DfUgYbAUnZir1puvPWHnFai/gH58VwlFbpX4RlNlyNV0CXjizopL1lfBrAijeBZM
+IXaOUv+7HLoCBrMDPoNIuGE/nSKAbUILk93M1Crr7JoMGeh/LzdcMcCY02OqQtgX
+aHwe+VRzkS9evmbBcAbBAb2TlbDUZCwVDjMJR9qzruBRKzGL7RTI9TMGEWm+GwAd
+2Uh7gq2e2HSeR7NpyfqQmp2sxKfr1FvYqXz1mDLR9YkXSoM+fa8shDw9tnstTxIY
+PwnCCq8W2+7Jal7dyiYioULbaWWdz2fXH7NAzPH8GiHmg3OhFQBa5aht3S71EBoW
+sko1dVMrkb0k7ja7p3lxp8VUIgmZn97h3+fdquGd04WjSYrQu21g377n3D9XwXpJ
+5DhQgdix2X8O7+wf12nKT+vlPJeHbMoWKZ+9Gqdpp0dXmGg/YJmZIgzQDW9bx/rC
+65pbzHp1qbl8jo76vOOREqMgcHUNmmv8fdVMBOqAqfpo1iAZNy9hERM9AxmmQm+L
+g01MdhRx7OwmEJlRBXlE
+=Q2Xu
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__23_Jul_2013_14_06_25_+1000_R/BLTdjFldyDDhTA--
