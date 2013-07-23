@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab3GWKuv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 06:50:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:51783 "EHLO
+	id S1756771Ab3GWKus (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 06:50:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:49228 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753489Ab3GWKuO (ORCPT
+	with ESMTP id S1753059Ab3GWKuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 06:50:14 -0400
 From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
@@ -14,75 +14,193 @@ Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
         Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
         Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Subject: [PATCH v4 08/15] DMA: shdma: move two macros to a header
-Date: Tue, 23 Jul 2013 12:50:02 +0200
-Message-Id: <1374576609-27748-9-git-send-email-g.liakhovetski@gmx.de>
+Subject: [PATCH v4 02/15] DMA: shdma: add r8a7740 DMAC data to the device ID table
+Date: Tue, 23 Jul 2013 12:49:56 +0200
+Message-Id: <1374576609-27748-3-git-send-email-g.liakhovetski@gmx.de>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
 References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
-X-Provags-ID: V02:K0:YTuxAUMxv5sNisQ/hZp7UjAtJmGUSwaNHWmQEFv0vhB
- Pa+JNt8rXjOO2frjbUTZEBx63/A2gRxAPak3gNf2xO8vtmKP02
- mPIvOGDHWaG/gqyBDsp4VldY3ktykfk+T1OHf40CXG2ui7PXlD
- 3bvziaAmnttBWhbCagCMF2T6RIUH1yjwzVUdeIn/Os24TPNyd3
- 327XEp2x9Oi9X4NwKewZQWSCq/RZndP4LkQ76DXDYZeNW//1ni
- YBiV/gjAqJEj7C996gXqcAfCa1Xc9XaQLqAlhMhztx4qs20A/W
- b/M7hNNhi6UaByB6NqBm64qWRJoT9FXgOqis5er1ADgU0NBYUu
- MOcdHV8/Da41dzstSgZ7220CzBJ+FMyoZwb9id2xoPYXtqtl+g
- UOxvfjPu1NwLQ==
+X-Provags-ID: V02:K0:UHfzl2VtPOZ8vKrLDqUFL6p+0jFOdDqKsJzFUIbigK9
+ SGB1EhoPTQh6KFdN67ew97gRnqrwItSDPIeS+kxs+l0K6Uy4E8
+ +X4yMIF5w97mMes9pqiZItoqpjJvXY5j46tbKVc48ZCGKpOxkL
+ Llzk8QflfE/M096lIopqHZ7BGoV21p0sFIl6/1Y2tfsJa4bHLc
+ 2R3RotHiRjsFJlPk8h+cR0kGxLaIQXnyAb3nF/sglqqSaDFwRG
+ VkiwjLhWwibEQP6knnKiDqCYlKnaTtClUykcwqOE/4g9eAkRUS
+ 8IxUE5+n9bheMBRO2j9RXnLEwNBP78rUj4Qc5Wbg6AgxxbMiWe
+ 7ZFzv4QiSik8m+zfGKF1gMIZf6EiKqTi4G7quWNj3UQmeACj0+
+ 25Wio3oUMo79g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move two generic pointer-conversion macros to a header for common shdma use.
+This configuration data will be re-used, when DMAC DT support is added to
+r8a7740, DMAC platform data in setup-r8a7740.c will be removed.
 
 Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- drivers/dma/sh/shdma-base.c |    3 ---
- drivers/dma/sh/shdma-of.c   |    2 --
- include/linux/shdma-base.h  |    3 +++
- 3 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/dma/sh/shdma-base.c b/drivers/dma/sh/shdma-base.c
-index c5ea256..5b92e72 100644
---- a/drivers/dma/sh/shdma-base.c
-+++ b/drivers/dma/sh/shdma-base.c
-@@ -36,9 +36,6 @@ enum shdma_desc_status {
- 
- #define NR_DESCS_PER_CHANNEL 32
- 
--#define to_shdma_chan(c) container_of(c, struct shdma_chan, dma_chan)
--#define to_shdma_dev(d) container_of(d, struct shdma_dev, dma_dev)
--
- /*
-  * For slave DMA we assume, that there is a finite number of DMA slaves in the
-  * system, and that each such slave can only use a finite number of channels.
-diff --git a/drivers/dma/sh/shdma-of.c b/drivers/dma/sh/shdma-of.c
-index 2acf7b6..80d07b5 100644
---- a/drivers/dma/sh/shdma-of.c
-+++ b/drivers/dma/sh/shdma-of.c
-@@ -17,8 +17,6 @@
- #include <linux/platform_device.h>
- #include <linux/shdma-base.h>
- 
--#define to_shdma_chan(c) container_of(c, struct shdma_chan, dma_chan)
--
- static struct dma_chan *shdma_of_xlate(struct of_phandle_args *dma_spec,
- 				       struct of_dma *ofdma)
- {
-diff --git a/include/linux/shdma-base.h b/include/linux/shdma-base.h
-index 31cf89f..45191d7 100644
---- a/include/linux/shdma-base.h
-+++ b/include/linux/shdma-base.h
-@@ -114,6 +114,9 @@ struct shdma_dev {
- #define shdma_for_each_chan(c, d, i) for (i = 0, c = (d)->schan[0]; \
- 				i < (d)->dma_dev.chancnt; c = (d)->schan[++i])
- 
-+#define to_shdma_chan(c) container_of(c, struct shdma_chan, dma_chan)
-+#define to_shdma_dev(d) container_of(d, struct shdma_dev, dma_dev)
+v4: make struct sh_dmae_pdata r8a7740_dma_pdata "const"
+
+ drivers/dma/sh/Kconfig         |    4 ++
+ drivers/dma/sh/Makefile        |    1 +
+ drivers/dma/sh/shdma-r8a7740.c |   95 ++++++++++++++++++++++++++++++++++++++++
+ drivers/dma/sh/shdma.h         |    7 +++
+ drivers/dma/sh/shdmac.c        |    1 +
+ 5 files changed, 108 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/dma/sh/shdma-r8a7740.c
+
+diff --git a/drivers/dma/sh/Kconfig b/drivers/dma/sh/Kconfig
+index 5c1dee2..0ac3e94 100644
+--- a/drivers/dma/sh/Kconfig
++++ b/drivers/dma/sh/Kconfig
+@@ -22,3 +22,7 @@ config SUDMAC
+ 	depends on SH_DMAE_BASE
+ 	help
+ 	  Enable support for the Renesas SUDMAC controllers.
 +
- int shdma_request_irq(struct shdma_chan *, int,
- 			   unsigned long, const char *);
- bool shdma_reset(struct shdma_dev *sdev);
++config SHDMA_R8A7740
++	def_bool y
++	depends on ARCH_R8A7740 && SH_DMAE != n
+diff --git a/drivers/dma/sh/Makefile b/drivers/dma/sh/Makefile
+index 893ee09..acdd3cb 100644
+--- a/drivers/dma/sh/Makefile
++++ b/drivers/dma/sh/Makefile
+@@ -1,5 +1,6 @@
+ obj-$(CONFIG_SH_DMAE_BASE) += shdma-base.o shdma-of.o
+ obj-$(CONFIG_SH_DMAE) += shdma.o
+ shdma-y := shdmac.o
++shdma-$(CONFIG_SHDMA_R8A7740) += shdma-r8a7740.o
+ shdma-objs := $(shdma-y)
+ obj-$(CONFIG_SUDMAC) += sudmac.o
+diff --git a/drivers/dma/sh/shdma-r8a7740.c b/drivers/dma/sh/shdma-r8a7740.c
+new file mode 100644
+index 0000000..b7ae8ef
+--- /dev/null
++++ b/drivers/dma/sh/shdma-r8a7740.c
+@@ -0,0 +1,95 @@
++#include <linux/sh_dma.h>
++
++#include <mach/dma-register.h>
++#include <mach/r8a7740.h>
++
++static const struct sh_dmae_slave_config r8a7740_dmae_slaves[] = {
++	{
++		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
++		.addr		= 0xe6850030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
++		.addr		= 0xe6850030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc2,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
++		.addr		= 0xe6860030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xc9,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
++		.addr		= 0xe6860030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xca,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
++		.addr		= 0xe6870030,
++		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xcd,
++	}, {
++		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
++		.addr		= 0xe6870030,
++		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
++		.mid_rid	= 0xce,
++	}, {
++		.slave_id	= SHDMA_SLAVE_FSIA_TX,
++		.addr		= 0xfe1f0024,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xb1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_FSIA_RX,
++		.addr		= 0xfe1f0020,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xb2,
++	}, {
++		.slave_id	= SHDMA_SLAVE_FSIB_TX,
++		.addr		= 0xfe1f0064,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xb5,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
++		.addr		= 0xe6bd0034,
++		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd1,
++	}, {
++		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
++		.addr		= 0xe6bd0034,
++		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
++		.mid_rid	= 0xd2,
++	},
++};
++
++#define DMA_CHANNEL(a, b, c)			\
++{						\
++	.offset		= a,			\
++	.dmars		= b,			\
++	.dmars_bit	= c,			\
++	.chclr_offset	= (0x220 - 0x20) + a	\
++}
++
++static const struct sh_dmae_channel r8a7740_dmae_channels[] = {
++	DMA_CHANNEL(0x00, 0, 0),
++	DMA_CHANNEL(0x10, 0, 8),
++	DMA_CHANNEL(0x20, 4, 0),
++	DMA_CHANNEL(0x30, 4, 8),
++	DMA_CHANNEL(0x50, 8, 0),
++	DMA_CHANNEL(0x60, 8, 8),
++};
++
++const struct sh_dmae_pdata r8a7740_dma_pdata = {
++	.slave		= r8a7740_dmae_slaves,
++	.slave_num	= ARRAY_SIZE(r8a7740_dmae_slaves),
++	.channel	= r8a7740_dmae_channels,
++	.channel_num	= ARRAY_SIZE(r8a7740_dmae_channels),
++	.ts_low_shift	= TS_LOW_SHIFT,
++	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
++	.ts_high_shift	= TS_HI_SHIFT,
++	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
++	.ts_shift	= dma_ts_shift,
++	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
++	.dmaor_init	= DMAOR_DME,
++	.chclr_present	= 1,
++};
+diff --git a/drivers/dma/sh/shdma.h b/drivers/dma/sh/shdma.h
+index 06aae6e..b5fe545 100644
+--- a/drivers/dma/sh/shdma.h
++++ b/drivers/dma/sh/shdma.h
+@@ -61,4 +61,11 @@ struct sh_dmae_desc {
+ #define to_sh_dev(chan) container_of(chan->shdma_chan.dma_chan.device,\
+ 				     struct sh_dmae_device, shdma_dev.dma_dev)
+ 
++#ifdef CONFIG_SHDMA_R8A7740
++extern const struct sh_dmae_pdata r8a7740_dma_pdata;
++#define r8a7740_shdma_devid &r8a7740_dma_pdata
++#else
++#define r8a7740_shdma_devid NULL
++#endif
++
+ #endif	/* __DMA_SHDMA_H */
+diff --git a/drivers/dma/sh/shdmac.c b/drivers/dma/sh/shdmac.c
+index 751a4e3..fe54cda 100644
+--- a/drivers/dma/sh/shdmac.c
++++ b/drivers/dma/sh/shdmac.c
+@@ -907,6 +907,7 @@ MODULE_DEVICE_TABLE(of, sh_dmae_of_match);
+ 
+ const struct platform_device_id sh_dmae_id_table[] = {
+ 	{.name = SH_DMAE_DRV_NAME,},
++	{.name = "shdma-r8a7740", .driver_data = (kernel_ulong_t)r8a7740_shdma_devid,},
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(platform, sh_dmae_id_table);
 -- 
 1.7.2.5
 
