@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934426Ab3GWXo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 19:44:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42655 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933968Ab3GWXox (ORCPT
+	id S934406Ab3GWXq6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 19:46:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50945 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933940Ab3GWXq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 19:44:53 -0400
-Date: Tue, 23 Jul 2013 16:44:52 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v4 00/24] lockless n_tty receive path
-Message-ID: <20130723234452.GB27433@kroah.com>
-References: <1366039168-8510-1-git-send-email-peter@hurleysoftware.com>
- <1371302076-4688-1-git-send-email-peter@hurleysoftware.com>
- <20130617200138.GA8199@kroah.com>
- <51BF724A.505@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51BF724A.505@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Jul 2013 19:46:57 -0400
+Date: Tue, 23 Jul 2013 16:46:56 -0700 (PDT)
+Message-Id: <20130723.164656.1794159338719943519.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: bhutchings@solarflare.com, oliver@neukum.org, grundler@google.com,
+        freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1374559827.4990.143.camel@edumazet-glaptop>
+References: <1374518841.4990.26.camel@edumazet-glaptop>
+	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	<1374559827.4990.143.camel@edumazet-glaptop>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 23 Jul 2013 16:46:57 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 17, 2013 at 04:32:10PM -0400, Peter Hurley wrote:
-> On 06/17/2013 04:01 PM, Greg Kroah-Hartman wrote:
-> >On Sat, Jun 15, 2013 at 09:14:12AM -0400, Peter Hurley wrote:
-> >>Greg,
-> >>
-> >>As before, this patchset is dependent on the 'ldsem patchset'.
-> >>The reason is that this series abandons tty->receive_room as
-> >>a flow control mechanism (because that requires locking),
-> >>and the TIOCSETD ioctl _without ldsem_ uses tty->receive_room
-> >>to shutoff i/o.
-> >>
-> >>It is also dependent on 'n_tty fixes' which I recently resent
-> >>to you.
-> >
-> >Thanks for rebasing all of this, and resending it.  It's late in the
-> >3.11 development cycle, so I'm going to wait unto 3.11-rc1 is out to
-> >queue it up for 3.12, to get it lots of testing in linux-next.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Mon, 22 Jul 2013 23:10:27 -0700
+
+> On Mon, 2013-07-22 at 20:47 +0100, Ben Hutchings wrote:
+>> The real solution would be for someone to add SG support to the usbnet
+>> core.  Trying to support 1GbE with only linear skbs is not a great
+>> idea... and it can only be a matter of time before there is USB ultra
+>> speed (or whatever comes after 'super') with 10GbE devices...
+>> 
 > 
-> Thanks Greg. I actually meant to suggest these be held until after
-> the merge window but I got distracted by the VT1 deallocation bug
-> report.
+> This sounds a good idea.
+> 
+> Is anybody working on adding SG to usbnet ?
 
-Now applied, thanks.
+This is a good long-term plan, but right now we have to do something
+reasonable.
 
-greg k-h
+A quick scan shows that smsc75xx, smsc95xx, and ax88179_178a all have
+this problem.
+
+Instead of the patch starting this thread, I'd like to see one that
+hits all three drivers and removes all SG and TSO features bits from
+both the ->features _and_ ->hw_features settings.
+
+Could someone toss that together quickly?
+
+Thanks.
