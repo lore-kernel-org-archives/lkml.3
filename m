@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934837Ab3GWWsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:48:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42064 "EHLO
+	id S934767Ab3GWWtE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:49:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934593Ab3GWWsk (ORCPT
+	with ESMTP id S934584Ab3GWW1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:48:40 -0400
-Date: Tue, 23 Jul 2013 15:48:38 -0700
+	Tue, 23 Jul 2013 18:27:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, USB list <linux-usb@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Moiz Sonasath <m-sonasath@ti.com>
-Subject: Re: [PATCH] usb: fix build warning in pci-quirks.h when CONFIG_PCI
- is not enabled
-Message-ID: <20130723224838.GA4456@kroah.com>
-References: <51EF0243.1000007@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EF0243.1000007@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 036/103] ALSA: atiixp: Fix unlocked snd_pcm_stop() call
+Date: Tue, 23 Jul 2013 15:25:47 -0700
+Message-Id: <20130723220422.608646116@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+References: <20130723220418.532514378@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 03:22:59PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <rdunlap@infradead.org>
-> 
-> Fix warning when CONFIG_PCI is not enabled
-> (from commit 296365781903226a3fb8758901eaeec09d2798e4).
-> 
-> drivers/usb/host/pci-quirks.h: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
-> 
-> Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
-> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: Moiz Sonasath <m-sonasath@ti.com>
-> ---
->  drivers/usb/host/pci-quirks.h |    1 +
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-$ ./scripts/get_maintainer.pl --file drivers/usb/host/pci-quirks.h
-Sarah Sharp <sarah.a.sharp@linux.intel.com> (supporter:USB XHCI DRIVER)
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:USB SUBSYSTEM)
-linux-usb@vger.kernel.org (open list:USB XHCI DRIVER)
-linux-kernel@vger.kernel.org (open list)
+------------------
 
-Sarah should get this patch, thanks.
+From: Takashi Iwai <tiwai@suse.de>
 
-greg k-h
+commit cc7282b8d5abbd48c81d1465925d464d9e3eaa8f upstream.
+
+snd_pcm_stop() must be called in the PCM substream lock context.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/atiixp.c       |    2 ++
+ sound/pci/atiixp_modem.c |    2 ++
+ 2 files changed, 4 insertions(+)
+
+--- a/sound/pci/atiixp.c
++++ b/sound/pci/atiixp.c
+@@ -689,7 +689,9 @@ static void snd_atiixp_xrun_dma(struct a
+ 	if (! dma->substream || ! dma->running)
+ 		return;
+ 	snd_printdd("atiixp: XRUN detected (DMA %d)\n", dma->ops->type);
++	snd_pcm_stream_lock(dma->substream);
+ 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
++	snd_pcm_stream_unlock(dma->substream);
+ }
+ 
+ /*
+--- a/sound/pci/atiixp_modem.c
++++ b/sound/pci/atiixp_modem.c
+@@ -638,7 +638,9 @@ static void snd_atiixp_xrun_dma(struct a
+ 	if (! dma->substream || ! dma->running)
+ 		return;
+ 	snd_printdd("atiixp-modem: XRUN detected (DMA %d)\n", dma->ops->type);
++	snd_pcm_stream_lock(dma->substream);
+ 	snd_pcm_stop(dma->substream, SNDRV_PCM_STATE_XRUN);
++	snd_pcm_stream_unlock(dma->substream);
+ }
+ 
+ /*
+
+
