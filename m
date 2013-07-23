@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934317Ab3GWVRT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:17:19 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:54797 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933256Ab3GWVRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:17:18 -0400
-Message-ID: <51EEF2DA.3070903@tilera.com>
-Date: Tue, 23 Jul 2013 17:17:14 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S934334Ab3GWVSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:18:05 -0400
+Received: from dupo.coraid.com ([208.71.232.133]:44407 "EHLO coraid.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932567Ab3GWVSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:18:04 -0400
+Message-Id: <ce717669a5696b944d0d4b7c8955801c50550939.1374610591.git.ecashin@coraid.com>
+In-Reply-To: <cover.1374610591.git.ecashin@coraid.com>
+References: <cover.1374610591.git.ecashin@coraid.com>
+Subject: [PATCH 5/6] aoe: update copyright date
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, ecashin@coraid.com
+From: Ed Cashin <ecashin@coraid.com>
+X-Mailer: nedmail
+Date: Tue, 23 Jul 2013 17:17:44 -0400
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-CC: Jianpeng Ma <majianpeng@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mvsas: fix unaligned-access kernel panic under heavy
- disk testing
-References: <201307232053.r6NKrkOh032171@farm-0012.internal.tilera.com> <1374613204.2290.49.camel@dabdike>
-In-Reply-To: <1374613204.2290.49.camel@dabdike>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-15"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/23/2013 5:00 PM, James Bottomley wrote:
-> On Tue, 2013-07-23 at 16:50 -0400, Chris Metcalf wrote:
->> > The slot->response value may not be aligned, so should be read
->> > using the appropriate kernel "unaligned" accessor.
-> Hm, institutional memory re-presenting the wrong patch?  However, I am
-> reminded to push the right one in spite of no ack from marvell.
+Signed-off-by: Ed Cashin <ecashin@coraid.com>
+---
+ drivers/block/aoe/aoeblk.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-You may be right; the original author of that patch is not me, but someone else here at Tilera.
-
-That said, the version I pushed is effectively the version we have in the tip of our tree, so if we've ended up carrying the wrong patch, that's bad!  Let me know what the right patch is that you have - thanks.
-
+diff --git a/drivers/block/aoe/aoeblk.c b/drivers/block/aoe/aoeblk.c
+index b58cbeb..d63dcf0 100644
+--- a/drivers/block/aoe/aoeblk.c
++++ b/drivers/block/aoe/aoeblk.c
+@@ -1,4 +1,4 @@
+-/* Copyright (c) 2012 Coraid, Inc.  See COPYING for GPL terms. */
++/* Copyright (c) 2013 Coraid, Inc.  See COPYING for GPL terms. */
+ /*
+  * aoeblk.c
+  * block device routines
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.1
 
