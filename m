@@ -1,157 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757955Ab3GWPbJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:31:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4686 "EHLO mx1.redhat.com"
+	id S1757964Ab3GWPdO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:33:14 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50793 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757467Ab3GWPbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:31:06 -0400
-Date: Tue, 23 Jul 2013 17:25:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/7] tracing: Introduce trace_create_cpu_file() and
-	tracing_get_cpu()
-Message-ID: <20130723152554.GA23710@redhat.com>
+	id S1757798Ab3GWPdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:33:12 -0400
+Date: Tue, 23 Jul 2013 11:32:57 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Sam Ben <sam.bennn@gmail.com>
+Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@kernel.org>, Nate Zimmer <nzimmer@sgi.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 2/4] Have __free_pages_memory() free in larger chunks.
+Message-ID: <20130723153257.GK715@cmpxchg.org>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <1373594635-131067-3-git-send-email-holt@sgi.com>
+ <51E5447D.70901@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130723152531.GA23688@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <51E5447D.70901@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Every "file_operations" used by tracing_init_debugfs_percpu is buggy.
-f_op->open/etc does:
+On Tue, Jul 16, 2013 at 09:02:53PM +0800, Sam Ben wrote:
+> Hi Robin,
+> On 07/12/2013 10:03 AM, Robin Holt wrote:
+> >Currently, when free_all_bootmem() calls __free_pages_memory(), the
+> >number of contiguous pages that __free_pages_memory() passes to the
+> >buddy allocator is limited to BITS_PER_LONG.  In order to be able to
+> 
+> I fail to understand this. Why the original page number is BITS_PER_LONG?
 
-	1. struct trace_cpu *tc = inode->i_private;
-	   struct trace_array *tr = tc->tr;
+The mm/bootmem.c implementation uses a bitmap to keep track of
+free/reserved pages.  It walks that bitmap in BITS_PER_LONG steps
+because it is the biggest chunk that is still trivial and cheap to
+check if all pages are free in it (chunk == ~0UL).
 
-	2. trace_array_get(tr) or fail;
-
-	3. do_something(tc);
-
-But tc (and tr) can be already freed before trace_array_get() is called.
-And it doesn't matter whether this file is per-cpu or it was created by
-init_tracer_debugfs(), free_percpu() or kfree() are equally bad.
-
-Note that even 1. is not safe, the freed memory can be unmapped. But even
-if it was safe trace_array_get() can wrongly succeed if we also race with
-the next new_instance_create() which can re-allocate the same tr, or tc
-was overwritten and ->tr points to the valid tr. In this case 3. uses the
-freed/reused memory.
-
-Add the new trivial helper, trace_create_cpu_file() which simply calls
-trace_create_file() and encodes "cpu" in "struct inode". Another helper,
-tracing_get_cpu() will be used to read cpu_nr-or-RING_BUFFER_ALL_CPUS.
-
-The patch abuses ->i_cdev to encode the number, it is never used unless
-the file is S_ISCHR(). But we could use something else, say, i_bytes or
-even ->d_fsdata. In any case this hack is hidden inside these 2 helpers,
-it would be trivial to change them if needed.
-
-This patch only changes tracing_init_debugfs_percpu() to use the new
-trace_create_cpu_file(), the next patches will change file_operations.
-
-Note: tracing_get_cpu(inode) is always safe but you can't trust the
-result unless trace_array_get() was called, without trace_types_lock
-which acts as a barrier it can wrongly return RING_BUFFER_ALL_CPUS.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace.c |   50 ++++++++++++++++++++++++++++++++++++--------------
- 1 files changed, 36 insertions(+), 14 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 3f24777..cfff63c 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2843,6 +2843,17 @@ static int s_show(struct seq_file *m, void *v)
- 	return 0;
- }
- 
-+/*
-+ * Should be used after trace_array_get(), trace_types_lock
-+ * ensures that i_cdev was already initialized.
-+ */
-+static inline int tracing_get_cpu(struct inode *inode)
-+{
-+	if (inode->i_cdev) /* See trace_create_cpu_file() */
-+		return (long)inode->i_cdev - 1;
-+	return RING_BUFFER_ALL_CPUS;
-+}
-+
- static const struct seq_operations tracer_seq_ops = {
- 	.start		= s_start,
- 	.next		= s_next,
-@@ -5529,6 +5540,17 @@ static struct dentry *tracing_dentry_percpu(struct trace_array *tr, int cpu)
- 	return tr->percpu_dir;
- }
- 
-+static struct dentry *
-+trace_create_cpu_file(const char *name, umode_t mode, struct dentry *parent,
-+		      void *data, long cpu, const struct file_operations *fops)
-+{
-+	struct dentry *ret = trace_create_file(name, mode, parent, data, fops);
-+
-+	if (ret) /* See tracing_get_cpu() */
-+		ret->d_inode->i_cdev = (void *)(cpu + 1);
-+	return ret;
-+}
-+
- static void
- tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- {
-@@ -5548,28 +5570,28 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- 	}
- 
- 	/* per cpu trace_pipe */
--	trace_create_file("trace_pipe", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_pipe_fops);
-+	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_pipe_fops);
- 
- 	/* per cpu trace */
--	trace_create_file("trace", 0644, d_cpu,
--			(void *)&data->trace_cpu, &tracing_fops);
-+	trace_create_cpu_file("trace", 0644, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_fops);
- 
--	trace_create_file("trace_pipe_raw", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_buffers_fops);
-+	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_buffers_fops);
- 
--	trace_create_file("stats", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_stats_fops);
-+	trace_create_cpu_file("stats", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_stats_fops);
- 
--	trace_create_file("buffer_size_kb", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_entries_fops);
-+	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_entries_fops);
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
--	trace_create_file("snapshot", 0644, d_cpu,
--			  (void *)&data->trace_cpu, &snapshot_fops);
-+	trace_create_cpu_file("snapshot", 0644, d_cpu,
-+				&data->trace_cpu, cpu, &snapshot_fops);
- 
--	trace_create_file("snapshot_raw", 0444, d_cpu,
--			(void *)&data->trace_cpu, &snapshot_raw_fops);
-+	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &snapshot_raw_fops);
- #endif
- }
- 
--- 
-1.5.5.1
-
+nobootmem.c was written based on the bootmem.c interface, so it was
+probably adapted to keep things similar between the two, short of a
+pressing reason not to.
