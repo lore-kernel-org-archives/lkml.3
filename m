@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935194Ab3GWWgQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:36:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41829 "EHLO
+	id S934825Ab3GWW1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:27:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934717Ab3GWW1w (ORCPT
+	with ESMTP id S934717Ab3GWW1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:52 -0400
+	Tue, 23 Jul 2013 18:27:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, srikar@linux.vnet.ibm.com,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 073/103] uprobes: Fix return value in error handling path
-Date: Tue, 23 Jul 2013 15:26:24 -0700
-Message-Id: <20130723220427.764210050@linuxfoundation.org>
+        Sven Geggus <lists@fuchsschwanzdomain.de>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 074/103] svcrpc: fix failures to handle -1 uids
+Date: Tue, 23 Jul 2013 15:26:25 -0700
+Message-Id: <20130723220427.948126757@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -28,46 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit fa44063f9ef163c3a4c8d8c0465bb8a056b42035 upstream.
+commit 0979292bfa301cb87d936b69af428090d2feea1b upstream.
 
-When wrong argument is passed into uprobe_events it does not return
-an error:
+As of f025adf191924e3a75ce80e130afcd2485b53bb8 "sunrpc: Properly decode
+kuids and kgids in RPC_AUTH_UNIX credentials" any rpc containing a -1
+(0xffff) uid or gid would fail with a badcred error.
 
-[root@jovi tracing]# echo 'p:myprobe /bin/bash' > uprobe_events
-[root@jovi tracing]#
+Commit afe3c3fd5392b2f0066930abc5dbd3f4b14a0f13 "svcrpc: fix failures to
+handle -1 uid's and gid's" fixed part of the problem, but overlooked the
+gid upcall--the kernel can request supplementary gid's for the -1 uid,
+but mountd's attempt write a response will get -EINVAL.
 
-The proper response is:
+Symptoms were nfsd failing to reply to the first attempt to use a newly
+negotiated krb5 context.
 
-[root@jovi tracing]# echo 'p:myprobe /bin/bash' > uprobe_events
--bash: echo: write error: Invalid argument
-
-Link: http://lkml.kernel.org/r/51B964FF.5000106@huawei.com
-
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: <srikar@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_uprobe.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/sunrpc/svcauth_unix.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -283,8 +283,10 @@ static int create_trace_uprobe(int argc,
+--- a/net/sunrpc/svcauth_unix.c
++++ b/net/sunrpc/svcauth_unix.c
+@@ -493,8 +493,6 @@ static int unix_gid_parse(struct cache_d
+ 	if (rv)
  		return -EINVAL;
- 	}
- 	arg = strchr(argv[1], ':');
--	if (!arg)
-+	if (!arg) {
-+		ret = -EINVAL;
- 		goto fail_address_parse;
-+	}
+ 	uid = make_kuid(&init_user_ns, id);
+-	if (!uid_valid(uid))
+-		return -EINVAL;
+ 	ug.uid = uid;
  
- 	*arg++ = '\0';
- 	filename = argv[1];
+ 	expiry = get_expiry(&mesg);
 
 
