@@ -1,124 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934137Ab3GWV7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:59:46 -0400
-Received: from stator.leun.net ([85.214.203.199]:39271 "EHLO stator.leun.net"
+	id S933894Ab3GWWEe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:04:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59329 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934008Ab3GWV7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:59:43 -0400
-Date: Tue, 23 Jul 2013 23:58:27 +0200
-From: Michael Leun <lkml20130126@newton.leun.net>
-To: Colin Cross <ccross@android.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re:
- [PATCH v3 13/16] futex: use freezable blocking call)
-Message-ID: <20130723235827.014f7899@xenia.leun.net>
-In-Reply-To: <CAMbhsRSRcQ-CgCTkRGJJSVSArPqmGRjgxeRBUY0zE94Osxa-nA@mail.gmail.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
-	<CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com>
-	<CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
-	<15305281.aClQ8XUG9t@vostro.rjw.lan>
-	<CAMbhsRSsq0pgS6KvCjiFGneDEJd6zSXsYB_2MCV=sh+6F2muog@mail.gmail.com>
-	<CAMbhsRSRcQ-CgCTkRGJJSVSArPqmGRjgxeRBUY0zE94Osxa-nA@mail.gmail.com>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756989Ab3GWWEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:04:33 -0400
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Jens Axboe <jaxboe@fusionio.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH v2] lib: Make radix_tree_node_alloc() work correctly within interrupt
+Date: Wed, 24 Jul 2013 00:04:20 +0200
+Message-Id: <1374617060-25805-1-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013 13:31:49 -0700
-Colin Cross <ccross@android.com> wrote:
+With users of radix_tree_preload() run from interrupt (block/blk-ioc.c
+is one such possible user), the following race can happen:
 
-> On Mon, Jul 22, 2013 at 11:28 PM, Colin Cross <ccross@android.com>
-> wrote:
-> > On Mon, Jul 22, 2013 at 6:41 PM, Rafael J. Wysocki <rjw@sisk.pl>
-> > wrote:
-> >> On Monday, July 22, 2013 05:42:49 PM Colin Cross wrote:
-> >>> On Mon, Jul 22, 2013 at 5:32 PM, Linus Torvalds
-> >>> <torvalds@linux-foundation.org> wrote:
-> >>> > On Mon, Jul 22, 2013 at 4:55 PM, Colin Cross
-> >>> > <ccross@android.com> wrote:
-> >>> >>
-> >>> >> I think the right solution is to add a flag to the freezing
-> >>> >> task that marks it unfreezable.  I  think PF_NOFREEZE would
-> >>> >> work, although it is normally used on kernel threads, can you
-> >>> >> see if the attached patch helps?
-> >>> >
-> >>> > Hmm. That does seem to be the right thing to do, but I wonder
-> >>> > about the *other* callers of freeze_processes() IOW, kexec and
-> >>> > friends.
-> >>> >
-> >>> > So maybe we should do this in {freeze|thaw}_processes() itself,
-> >>> > and just make the rule be that the caller of freeze_processes()
-> >>> > itself is obviously not frozen, and has to be the same one that
-> >>> > then thaws things?
-> >>> >
-> >>> > Colin? Rafael? Comments?
-> >>> >
-> >>> >                 Linus
-> >>>
-> >>> I was worried about clearing the flag in thaw_processes().  If a
-> >>> kernel thread with PF_NOFREEZE set ever called thaw_processes(),
-> >>> which autosleep might do, it would clear the flag.  Or if a
-> >>> different thread called freeze_processes() and thaw_processes().
-> >>
-> >> Is that legitimate?
-> >
-> > Nothing precludes it today, but I don't see any need for it.  I'll
-> > add a comment when I add the flag.
-> >
-> >>> All the other callers besides the SNAPSHOT_FREEZE ioctl stay in
-> >>> the kernel between freeze_processes() and thaw_processes(), which
-> >>> makes the fanout of places that could call try_to_freeze() much
-> >>> more controllable.
-> >>>
-> >>> Using a new flag that operates like PF_NOFREEZE but doesn't
-> >>> conflict with it, or a nofreeze_depth counter, would also work.
-> >>
-> >> Well, that would be robust enough.  At least if the purpose of
-> >> that new flag is clearly specified, people hopefully won't be
-> >> tempted to optimize it away in the future.
-> >>
-> >> Thanks,
-> >> Rafael
-> >
-> > OK, I'll add a new flag.
-> 
-> 
-> Michael, can you see if this patch works and doesn't throw any
-> warnings during suspend or resume?
+radix_tree_preload()
+...
+radix_tree_insert()
+  radix_tree_node_alloc()
+    if (rtp->nr) {
+      ret = rtp->nodes[rtp->nr - 1];
+<interrupt>
+...
+radix_tree_preload()
+...
+radix_tree_insert()
+  radix_tree_node_alloc()
+    if (rtp->nr) {
+      ret = rtp->nodes[rtp->nr - 1];
 
-Tried several times with and without threads = y in suspend.conf, tried
-also to produce high load / much processes / high memory usage.
+And we give out one radix tree node twice. That clearly results in radix
+tree corruption with different results (usually OOPS) depending on which
+two users of radix tree race.
 
-Worked every time, no WARN seen.
+We fix the problem by making radix_tree_node_alloc() always allocate
+fresh radix tree nodes when in interrupt. Using preloading when in
+interrupt doesn't make sence since all the allocations have to be atomic
+anyway and we cannot steal nodes from process-context users because some
+users rely on radix_tree_insert() succeeding after radix_tree_preload().
+in_interrupt() check is somewhat ugly but we cannot simply key off
+passed gfp_mask as that is acquired from root_gfp_mask() and thus
+the same for all preload users.
 
-> If the extra process flag is considered too precious for this
-> (there are only 2 left after this patch) I could get the
-> same functionality by having freeze_processes() reject calls
-> from a PF_KTHREAD|PF_NOFREEZE thread, and use PF_KTHREAD to
-> determine if PF_NOFREEZE should be cleared in thaw_processes().
+Another part of the fix is to avoid node preallocation in
+radix_tree_preload() when passed gfp_mask doesn't allow waiting. Again,
+preallocation in such case doesn't make sence and when preallocation
+would happen in interrupt we could possibly leak some allocated nodes.
+However, some users of radix_tree_preload() require following
+radix_tree_insert() to succeed. To avoid unexpected effects for these
+users, radix_tree_preload() only warns if passed gfp mask doesn't allow
+waiting and we provide a new function radix_tree_maybe_preload() for
+those users which get different gfp mask from different call sites and
+which are prepared to handle radix_tree_insert() failure.
 
-If another solution is considered please do not hesitate to send me the
-patch for another round of check.
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ block/blk-ioc.c            |  2 +-
+ fs/fscache/page.c          |  2 +-
+ include/linux/radix-tree.h |  1 +
+ lib/radix-tree.c           | 41 +++++++++++++++++++++++++++++++++++++++--
+ mm/filemap.c               |  2 +-
+ mm/shmem.c                 |  2 +-
+ mm/swap_state.c            |  4 ++--
+ 7 files changed, 46 insertions(+), 8 deletions(-)
 
+So after some discussions over the first version here comes v2 which should
+handle issues we found.
+
+diff --git a/block/blk-ioc.c b/block/blk-ioc.c
+index 4464c82..46cd7bd 100644
+--- a/block/blk-ioc.c
++++ b/block/blk-ioc.c
+@@ -367,7 +367,7 @@ struct io_cq *ioc_create_icq(struct io_context *ioc, struct request_queue *q,
+ 	if (!icq)
+ 		return NULL;
+ 
+-	if (radix_tree_preload(gfp_mask) < 0) {
++	if (radix_tree_maybe_preload(gfp_mask) < 0) {
+ 		kmem_cache_free(et->icq_cache, icq);
+ 		return NULL;
+ 	}
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index d479ab3..24350b8 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -890,7 +890,7 @@ int __fscache_write_page(struct fscache_cookie *cookie,
+ 		(1 << FSCACHE_OP_WAITING) |
+ 		(1 << FSCACHE_OP_UNUSE_COOKIE);
+ 
+-	ret = radix_tree_preload(gfp & ~__GFP_HIGHMEM);
++	ret = radix_tree_maybe_preload(gfp & ~__GFP_HIGHMEM);
+ 	if (ret < 0)
+ 		goto nomem_free;
+ 
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index ffc444c..4039407 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -231,6 +231,7 @@ unsigned long radix_tree_next_hole(struct radix_tree_root *root,
+ unsigned long radix_tree_prev_hole(struct radix_tree_root *root,
+ 				unsigned long index, unsigned long max_scan);
+ int radix_tree_preload(gfp_t gfp_mask);
++int radix_tree_maybe_preload(gfp_t gfp_mask);
+ void radix_tree_init(void);
+ void *radix_tree_tag_set(struct radix_tree_root *root,
+ 			unsigned long index, unsigned int tag);
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index e796429..7811ed3 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -32,6 +32,7 @@
+ #include <linux/string.h>
+ #include <linux/bitops.h>
+ #include <linux/rcupdate.h>
++#include <linux/hardirq.h>		/* in_interrupt() */
+ 
+ 
+ #ifdef __KERNEL__
+@@ -207,7 +208,12 @@ radix_tree_node_alloc(struct radix_tree_root *root)
+ 	struct radix_tree_node *ret = NULL;
+ 	gfp_t gfp_mask = root_gfp_mask(root);
+ 
+-	if (!(gfp_mask & __GFP_WAIT)) {
++	/*
++	 * Preload code isn't irq safe and it doesn't make sence to use
++	 * preloading in the interrupt anyway as all the allocations have to
++	 * be atomic. So just do normal allocation when in interrupt.
++	 */
++	if (!(gfp_mask & __GFP_WAIT) && !in_interrupt()) {
+ 		struct radix_tree_preload *rtp;
+ 
+ 		/*
+@@ -264,7 +270,7 @@ radix_tree_node_free(struct radix_tree_node *node)
+  * To make use of this facility, the radix tree must be initialised without
+  * __GFP_WAIT being passed to INIT_RADIX_TREE().
+  */
+-int radix_tree_preload(gfp_t gfp_mask)
++static int __radix_tree_preload(gfp_t gfp_mask)
+ {
+ 	struct radix_tree_preload *rtp;
+ 	struct radix_tree_node *node;
+@@ -288,9 +294,40 @@ int radix_tree_preload(gfp_t gfp_mask)
+ out:
+ 	return ret;
+ }
++
++/*
++ * Load up this CPU's radix_tree_node buffer with sufficient objects to
++ * ensure that the addition of a single element in the tree cannot fail.  On
++ * success, return zero, with preemption disabled.  On error, return -ENOMEM
++ * with preemption not disabled.
++ *
++ * To make use of this facility, the radix tree must be initialised without
++ * __GFP_WAIT being passed to INIT_RADIX_TREE().
++ */
++int radix_tree_preload(gfp_t gfp_mask)
++{
++	/* Warn on non-sensical use... */
++	WARN_ON_ONCE(!(gfp_mask & __GFP_WAIT));
++	return __radix_tree_preload(gfp_mask);
++}
+ EXPORT_SYMBOL(radix_tree_preload);
+ 
+ /*
++ * The same as above function, except we don't guarantee preloading happens.
++ * We do it, if we decide it helps. On success, return zero with preemption
++ * disabled. On error, return -ENOMEM with preemption not disabled.
++ */
++int radix_tree_maybe_preload(gfp_t gfp_mask)
++{
++	if (gfp_mask & __GFP_WAIT)
++		return __radix_tree_preload(gfp_mask);
++	/* Preloading doesn't help anything with this gfp mask, skip it */
++	preempt_disable();
++	return 0;
++}
++EXPORT_SYMBOL(radix_tree_maybe_preload);
++
++/*
+  *	Return the maximum key which can be store into a
+  *	radix tree with height HEIGHT.
+  */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 4b51ac1..12b1634 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -469,7 +469,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
+ 	if (error)
+ 		goto out;
+ 
+-	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
++	error = radix_tree_maybe_preload(gfp_mask & ~__GFP_HIGHMEM);
+ 	if (error == 0) {
+ 		page_cache_get(page);
+ 		page->mapping = mapping;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index a87990c..762a032 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1205,7 +1205,7 @@ repeat:
+ 						gfp & GFP_RECLAIM_MASK);
+ 		if (error)
+ 			goto decused;
+-		error = radix_tree_preload(gfp & GFP_RECLAIM_MASK);
++		error = radix_tree_maybe_preload(gfp & GFP_RECLAIM_MASK);
+ 		if (!error) {
+ 			error = shmem_add_to_page_cache(page, mapping, index,
+ 							gfp, NULL);
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index f24ab0d..e6f15f8 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -122,7 +122,7 @@ int add_to_swap_cache(struct page *page, swp_entry_t entry, gfp_t gfp_mask)
+ {
+ 	int error;
+ 
+-	error = radix_tree_preload(gfp_mask);
++	error = radix_tree_maybe_preload(gfp_mask);
+ 	if (!error) {
+ 		error = __add_to_swap_cache(page, entry);
+ 		radix_tree_preload_end();
+@@ -328,7 +328,7 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+ 		/*
+ 		 * call radix_tree_preload() while we can wait.
+ 		 */
+-		err = radix_tree_preload(gfp_mask & GFP_KERNEL);
++		err = radix_tree_maybe_preload(gfp_mask & GFP_KERNEL);
+ 		if (err)
+ 			break;
+ 
 -- 
-MfG,
-
-Michael Leun
+1.8.1.4
 
