@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934496Ab3GWW1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41457 "EHLO
+	id S934922Ab3GWWzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:55:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41499 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934428Ab3GWW06 (ORCPT
+	with ESMTP id S934490Ab3GWW1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:26:58 -0400
+	Tue, 23 Jul 2013 18:27:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 005/103] powerpc/tm: Fix writing top half of MSR on 32 bit signals
-Date: Tue, 23 Jul 2013 15:25:16 -0700
-Message-Id: <20130723220419.172177103@linuxfoundation.org>
+Subject: [ 016/103] powerpc/perf: Check that events only include valid bits on Power8
+Date: Tue, 23 Jul 2013 15:25:27 -0700
+Message-Id: <20130723220420.394277885@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,129 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Neuling <mikey@neuling.org>
+From: Michael Ellerman <michael@ellerman.id.au>
 
-commit 1d25f11fdbcc5390d68efd98c28900bfd29b264c upstream.
+commit d8bec4c9cd58f6d3679e09b7293851fb92ad7557 upstream.
 
-The MSR TM controls are in the top 32 bits of the MSR hence on 32 bit signals,
-we stick the top half of the MSR in the checkpointed signal context so that the
-user can access it.
+A mistake we have made in the past is that we pull out the fields we
+need from the event code, but don't check that there are no unknown bits
+set. This means that we can't ever assign meaning to those unknown bits
+in future.
 
-Unfortunately, we don't currently write anything to the checkpointed signal
-context when coming in a from a non transactional process and hence the top MSR
-bits can contain junk.
+Although we have once again failed to do this at release, it is still
+early days for Power8 so I think we can still slip this in and get away
+with it.
 
-This updates the 32 bit signal handling code to always write something to the
-top MSR bits so that users know if the process is transactional or not and the
-kernel can use it on signal return.
-
-Signed-off-by: Michael Neuling <mikey@neuling.org>
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/signal_32.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ arch/powerpc/perf/power8-pmu.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/powerpc/kernel/signal_32.c
-+++ b/arch/powerpc/kernel/signal_32.c
-@@ -407,7 +407,8 @@ inline unsigned long copy_transact_fpr_f
-  * altivec/spe instructions at some point.
-  */
- static int save_user_regs(struct pt_regs *regs, struct mcontext __user *frame,
--		int sigret, int ctx_has_vsx_region)
-+			  struct mcontext __user *tm_frame, int sigret,
-+			  int ctx_has_vsx_region)
- {
- 	unsigned long msr = regs->msr;
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -109,6 +109,16 @@
+ #define EVENT_IS_MARKED		(EVENT_MARKED_MASK << EVENT_MARKED_SHIFT)
+ #define EVENT_PSEL_MASK		0xff	/* PMCxSEL value */
  
-@@ -475,6 +476,12 @@ static int save_user_regs(struct pt_regs
- 
- 	if (__put_user(msr, &frame->mc_gregs[PT_MSR]))
- 		return 1;
-+	/* We need to write 0 the MSR top 32 bits in the tm frame so that we
-+	 * can check it on the restore to see if TM is active
-+	 */
-+	if (tm_frame && __put_user(0, &tm_frame->mc_gregs[PT_MSR]))
-+		return 1;
++#define EVENT_VALID_MASK	\
++	((EVENT_THRESH_MASK    << EVENT_THRESH_SHIFT)		|	\
++	 (EVENT_SAMPLE_MASK    << EVENT_SAMPLE_SHIFT)		|	\
++	 (EVENT_CACHE_SEL_MASK << EVENT_CACHE_SEL_SHIFT)	|	\
++	 (EVENT_PMC_MASK       << EVENT_PMC_SHIFT)		|	\
++	 (EVENT_UNIT_MASK      << EVENT_UNIT_SHIFT)		|	\
++	 (EVENT_COMBINE_MASK   << EVENT_COMBINE_SHIFT)		|	\
++	 (EVENT_MARKED_MASK    << EVENT_MARKED_SHIFT)		|	\
++	  EVENT_PSEL_MASK)
 +
- 	if (sigret) {
- 		/* Set up the sigreturn trampoline: li r0,sigret; sc */
- 		if (__put_user(0x38000000UL + sigret, &frame->tramp[0])
-@@ -952,6 +959,7 @@ int handle_rt_signal32(unsigned long sig
- {
- 	struct rt_sigframe __user *rt_sf;
- 	struct mcontext __user *frame;
-+	struct mcontext __user *tm_frame = NULL;
- 	void __user *addr;
- 	unsigned long newsp = 0;
- 	int sigret;
-@@ -985,23 +993,24 @@ int handle_rt_signal32(unsigned long sig
- 	}
+ /* MMCRA IFM bits - POWER8 */
+ #define	POWER8_MMCRA_IFM1		0x0000000040000000UL
+ #define	POWER8_MMCRA_IFM2		0x0000000080000000UL
+@@ -212,6 +222,9 @@ static int power8_get_constraint(u64 eve
  
- #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	tm_frame = &rt_sf->uc_transact.uc_mcontext;
- 	if (MSR_TM_ACTIVE(regs->msr)) {
--		if (save_tm_user_regs(regs, &rt_sf->uc.uc_mcontext,
--				      &rt_sf->uc_transact.uc_mcontext, sigret))
-+		if (save_tm_user_regs(regs, frame, tm_frame, sigret))
- 			goto badframe;
- 	}
- 	else
- #endif
--		if (save_user_regs(regs, frame, sigret, 1))
-+	{
-+		if (save_user_regs(regs, frame, tm_frame, sigret, 1))
- 			goto badframe;
-+	}
- 	regs->link = tramp;
+ 	mask = value = 0;
  
- #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
- 	if (MSR_TM_ACTIVE(regs->msr)) {
- 		if (__put_user((unsigned long)&rt_sf->uc_transact,
- 			       &rt_sf->uc.uc_link)
--		    || __put_user(to_user_ptr(&rt_sf->uc_transact.uc_mcontext),
--				  &rt_sf->uc_transact.uc_regs))
-+		    || __put_user((unsigned long)tm_frame, &rt_sf->uc_transact.uc_regs))
- 			goto badframe;
- 	}
- 	else
-@@ -1170,7 +1179,7 @@ long sys_swapcontext(struct ucontext __u
- 		mctx = (struct mcontext __user *)
- 			((unsigned long) &old_ctx->uc_mcontext & ~0xfUL);
- 		if (!access_ok(VERIFY_WRITE, old_ctx, ctx_size)
--		    || save_user_regs(regs, mctx, 0, ctx_has_vsx_region)
-+		    || save_user_regs(regs, mctx, NULL, 0, ctx_has_vsx_region)
- 		    || put_sigset_t(&old_ctx->uc_sigmask, &current->blocked)
- 		    || __put_user(to_user_ptr(mctx), &old_ctx->uc_regs))
- 			return -EFAULT;
-@@ -1392,6 +1401,7 @@ int handle_signal32(unsigned long sig, s
- {
- 	struct sigcontext __user *sc;
- 	struct sigframe __user *frame;
-+	struct mcontext __user *tm_mctx = NULL;
- 	unsigned long newsp = 0;
- 	int sigret;
- 	unsigned long tramp;
-@@ -1425,6 +1435,7 @@ int handle_signal32(unsigned long sig, s
- 	}
- 
- #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-+	tm_mctx = &frame->mctx_transact;
- 	if (MSR_TM_ACTIVE(regs->msr)) {
- 		if (save_tm_user_regs(regs, &frame->mctx, &frame->mctx_transact,
- 				      sigret))
-@@ -1432,8 +1443,10 @@ int handle_signal32(unsigned long sig, s
- 	}
- 	else
- #endif
--		if (save_user_regs(regs, &frame->mctx, sigret, 1))
-+	{
-+		if (save_user_regs(regs, &frame->mctx, tm_mctx, sigret, 1))
- 			goto badframe;
-+	}
- 
- 	regs->link = tramp;
- 
++	if (event & ~EVENT_VALID_MASK)
++		return -1;
++
+ 	pmc   = (event >> EVENT_PMC_SHIFT)       & EVENT_PMC_MASK;
+ 	unit  = (event >> EVENT_UNIT_SHIFT)      & EVENT_UNIT_MASK;
+ 	cache = (event >> EVENT_CACHE_SEL_SHIFT) & EVENT_CACHE_SEL_MASK;
 
 
