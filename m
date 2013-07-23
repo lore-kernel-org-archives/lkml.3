@@ -1,92 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab3GWPvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:51:40 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:44784 "EHLO smtp.witbe.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932138Ab3GWPvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:51:39 -0400
-Date: Tue, 23 Jul 2013 17:49:04 +0200
-From: Paul Rolland (=?UTF-8?B?44Od44O844Or44O744Ot44Op44Oz?=) 
-	<rol@witbe.net>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Richard Genoud <richard.genoud@gmail.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rol@witbe.net
-Subject: Re: rtl8192cu: slow path warning
-Message-ID: <20130723174904.00d6fab4@tux.DEF.witbe.net>
-In-Reply-To: <51EE9BB6.8000501@lwfinger.net>
-References: <20130611123814.GA9854@lnx-rg>
-	<20130626142241.GA13107@lnx-rg>
-	<51CB0E9C.50408@lwfinger.net>
-	<CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com>
-	<20130723142907.53103aab@tux.DEF.witbe.net>
-	<51EE9BB6.8000501@lwfinger.net>
-Organization: Witbe.net
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.7; x86_64-unknown-linux-gnu)
-X-Ncc-RegId: fr.witbe
-X-Face: +^rP^g;Vjb!M*"%3$mF6xWU{DwwAx)W=b_<WXQMv}Rk8,fQ)?Wnk0NK/+m,;eWci?+;=I}d^:]I+)D+|r'vxjYjp.?o-8Va|&sD*-GVKn>}?Y)|*X<5cv@M`1P{\:)p9_:$=)(NY2`%AcypV*]z>YIyy5yY"9PUoV5@)*(W:S5e-48Ct7Wu6CkkO[=KB"ox,_2B/FwY&hr/E1H&<9IbOCx6NrBa"}FLA)UIvHg`9%NC\LfYB3ia]
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/AagHTG=sZ422WoRYeybo2nQ"; protocol="application/pgp-signature"
+	id S933270Ab3GWPwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:52:45 -0400
+Received: from mail-db8lp0184.outbound.messaging.microsoft.com ([213.199.154.184]:14692
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932138Ab3GWPwn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:52:43 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I936eI542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(13464003)(377424004)(377454003)(24454002)(189002)(199002)(51704005)(74706001)(47736001)(47976001)(49866001)(74316001)(83322001)(74662001)(19580405001)(63696002)(74502001)(31966008)(66066001)(65816001)(50986001)(79102001)(51856001)(76482001)(77982001)(59766001)(4396001)(54356001)(77096001)(56776001)(81542001)(33646001)(69226001)(74876001)(46102001)(16406001)(80022001)(83072001)(47446002)(74366001)(19580395003)(81342001)(54316002)(76786001)(76796001)(56816003)(53806001)(76576001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB061;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;MX:1;A:1;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Michal Hocko <mhocko@suse.cz>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>
+Subject: RE: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+Thread-Topic: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+Thread-Index: AQHOhLBUexA6H+ozR02R0nup8ZuRHJlwpwQAgAGspICAABA7gIAACQlg
+Date: Tue, 23 Jul 2013 15:50:52 +0000
+Message-ID: <1b32d8e17e2546908d42e6d702b13cfd@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
+ <20130722123716.GB24400@dhcp22.suse.cz>
+ <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
+ <20130723150931.GM8677@dhcp22.suse.cz>
+In-Reply-To: <20130723150931.GM8677@dhcp22.suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.119.57]
+x-forefront-prvs: 0916FC3A18
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB061.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VRFY.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/AagHTG=sZ422WoRYeybo2nQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hello Larry,
-
-On Tue, 23 Jul 2013 10:05:26 -0500
-Larry Finger <Larry.Finger@lwfinger.net> wrote:
-
-> The reason that patch is not in mainline is that it takes time. If you
-> want to have it, you can get the official patch from=20
-> http://marc.info/?l=3Dlinux-wireless&m=3D137242880222442&w=3D2, or you ne=
-ed to=20
-> implement kernels from the wireless-testing git tree, where it was added
-> on June 28 as commit bcfb879. My original patch included the following
-> note for John Linville:
->=20
-> "Ideally, this patch should be pushed to the 3.10 stream; however, at
-> this late time that is not possible. Please push it for 3.11 and the Cc
-> to stable will get it into 3.10.X."
->=20
-> As you see, it was marked with a Cc for Stable, and it will be propagated
-> to 3.10 when it gets incorporated by Linus. I think I have done all that
-> I can do for now.
->=20
-> If you want to lobby Linus to get stuff accepted faster, that is your=20
-> prerogative; however, I could not recommend that action, and I certainly
-> will never do anything like that.
-
-Neither will I... I was just wondering and asking, nothing else, as I'm
-also facing this warning.=20
-
-I'm glad to see the link you sent is presenting a patch that is the same as
-the one I prepared. I'm going to use that while waiting for the patch to
-hit mainline !
-
-Thanks for replying,=20
-Best,
-Paul
 
 
---Sig_/AagHTG=sZ422WoRYeybo2nQ
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> -----Original Message-----
+> From: Michal Hocko [mailto:mhocko@suse.cz]
+> Sent: Tuesday, July 23, 2013 11:10 AM
+> To: KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com;
+> jasowang@redhat.com; kay@vrfy.org
+> Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+> memory blocks
+> 
+> On Tue 23-07-13 14:52:36, KY Srinivasan wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: Michal Hocko [mailto:mhocko@suse.cz]
+> > > Sent: Monday, July 22, 2013 8:37 AM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> > > andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
+> > > kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org;
+> yinghan@google.com;
+> > > jasowang@redhat.com; kay@vrfy.org
+> > > Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+> > > memory blocks
+> > >
+> > > On Fri 19-07-13 12:23:05, K. Y. Srinivasan wrote:
+> > > > The current machinery for hot-adding memory requires having udev
+> > > > rules to bring the memory segments online. Export the necessary
+> functionality
+> > > > to to bring the memory segment online without involving user space code.
+> > >
+> > > Why? Who is going to use it and for what purpose?
+> > > If you need to do it from the kernel cannot you use usermod helper
+> > > thread?
+> > >
+> > > Besides that this is far from being complete. memory_block_change_state
+> > > seems to depend on device_hotplug_lock and find_memory_block is
+> > > currently called with mem_sysfs_mutex held. None of them is exported
+> > > AFAICS.
+> >
+> > You are right; not all of the required symbols are exported (yet). Let
+> > me answer your other questions first:
+> >
+> > The Hyper-V balloon driver can use this functionality. I have
+> > prototyped the in-kernel "onlining" of hot added memory without
+> > requiring any help from user level code that performs significantly
+> > better than having user level code involved in the hot add process.
+> 
+> What does significantly better mean here?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Less failures than before.
+> 
+> > With this change, I am able to successfully hot-add and online the
+> > hot-added memory even under extreme memory pressure which is what you
+> > would want given that we are hot-adding memory to alleviate memory
+> > pressure. The current scheme of involving user level code to close
+> > this loop obviously does not perform well under high memory pressure.
+> 
+> Hmm, this is really unexpected. Why the high memory pressure matters
+> here? Userspace only need to access sysfs file and echo a simple string
+> into a file. The reset is same regardless you do it from the userspace.
 
-iEUEARECAAYFAlHupfEACgkQZP464AVDf+CdpACWIJ2aZ7LfcAW9oFqtoH9Tv3y0
-GACgmrpBsLaQR+9fyV+gnu6ujzjtHDY=
-=4B0j
------END PGP SIGNATURE-----
+Could it be that we could fail to launch the user-space thread. The host  presents
+a large chunk of memory for "hot adding". Within the guest, I break this up and hot-add
+128MB chunks; as I loop through this process, I wait for the onlining to occur before proceeding
+with the next hotadd operation. With user space code involved in the onlining process, I would 
+frequently timeout waiting for onlining to complete (under high memory load).
+After I switched over to not involving the user space code, this problem does not exist since
+onlining is done "in context".
+  
+> 
+> > I can, if you prefer export all of the necessary functionality in one
+> > patch.
+> 
+> If this turns out really a valid use case then I would prefer exporting
+> a high level function which would hide all the locking and direct
+> manipulation with mem blocks.
 
---Sig_/AagHTG=sZ422WoRYeybo2nQ--
+I will take a crack at defining wrappers to hide some of the details. I will also
+post the Hyper-V balloon driver patch that uses this functionality.
+
+Regards,
+
+K. Y 
+
+
+
