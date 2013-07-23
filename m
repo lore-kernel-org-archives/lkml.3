@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab3GWTyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:54:13 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:48818 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933618Ab3GWTyL (ORCPT
+	id S934179Ab3GWT4O (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:56:14 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:55610 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933353Ab3GWT4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:54:11 -0400
+	Tue, 23 Jul 2013 15:56:11 -0400
+Date: Tue, 23 Jul 2013 15:56:04 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 09/21] x86: Make get_ramdisk_{image|size}() global.
+Message-ID: <20130723195604.GN21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-10-git-send-email-tangchen@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1374576609-27748-3-git-send-email-g.liakhovetski@gmx.de>
-References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
-	<1374576609-27748-3-git-send-email-g.liakhovetski@gmx.de>
-Date: Wed, 24 Jul 2013 04:54:09 +0900
-Message-ID: <CANqRtoRnMkUjYKp3j2agoN7ufh9DGGbha6xQS8ugibLvK3hGfA@mail.gmail.com>
-Subject: Re: [PATCH v4 02/15] DMA: shdma: add r8a7740 DMAC data to the device
- ID table
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Vinod Koul <vinod.koul@intel.com>, SH-Linux <linux-sh@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374220774-29974-10-git-send-email-tangchen@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
-
-Thanks for your efforts on this.
-
-On Tue, Jul 23, 2013 at 7:49 PM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> This configuration data will be re-used, when DMAC DT support is added to
-> r8a7740, DMAC platform data in setup-r8a7740.c will be removed.
->
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+On Fri, Jul 19, 2013 at 03:59:22PM +0800, Tang Chen wrote:
+> In the following patches, we need to call get_ramdisk_{image|size}()
+> to get initrd file's address and size. So make these two functions
+> global.
+> 
+> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 > ---
->
-> v4: make struct sh_dmae_pdata r8a7740_dma_pdata "const"
->
+>  arch/x86/include/asm/setup.h |    3 +++
+>  arch/x86/kernel/setup.c      |    4 ++--
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
+> index b7bf350..69de7a1 100644
+> --- a/arch/x86/include/asm/setup.h
+> +++ b/arch/x86/include/asm/setup.h
+> @@ -106,6 +106,9 @@ void *extend_brk(size_t size, size_t align);
+>  	RESERVE_BRK(name, sizeof(type) * entries)
+>  
+>  extern void probe_roms(void);
+> +u64 get_ramdisk_image(void);
+> +u64 get_ramdisk_size(void);
 
-[snip]
+Might as well make these accessors inline functions.
 
-> --- /dev/null
-> +++ b/drivers/dma/sh/shdma-r8a7740.c
-> @@ -0,0 +1,95 @@
-> +#include <linux/sh_dma.h>
-> +
-> +#include <mach/dma-register.h>
-> +#include <mach/r8a7740.h>
+Thanks.
 
-Including stuff from <mach/..> isn't really compatible with
-MULTIPLATFORM, so please don't write new code like this. Actually we
-don't want any code under drivers/ to include stuff from the mach
-directory.
-
-I suggest that you arrange your code in a way so the C version of DMAC
-support has tables with slave ids as usual under
-arch/arm/mach-shmobile/, but the DT bits that operate independently of
-C stay in drivers/... Over time we will get rid of the C version, and
-until that happens the DT and C version can coexist in parallel.
-
-Cheers,
-
-/ magnus
+-- 
+tejun
