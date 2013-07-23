@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab3GWNbF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:31:05 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:38141 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932239Ab3GWNbE (ORCPT
+	id S932907Ab3GWNb0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:31:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:43830 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932548Ab3GWNbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:31:04 -0400
-Message-ID: <51EE8591.7060005@gmail.com>
-Date: Tue, 23 Jul 2013 15:30:57 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 23 Jul 2013 09:31:24 -0400
+Date: Tue, 23 Jul 2013 14:31:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Message-ID: <20130723133119.GG9858@sirena.org.uk>
+References: <20130723102320.56bc4555@armhf>
+ <20130723084347.GP24642@n2100.arm.linux.org.uk>
+ <20130723130622.GB9858@sirena.org.uk>
+ <20130723132104.GT24642@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
- driver for DT usage
-References: <20130723104615.3696f1a9@armhf> <20130723123444.GW9858@sirena.org.uk> <51EE7E1A.3040301@gmail.com> <20130723132016.GC9858@sirena.org.uk>
-In-Reply-To: <20130723132016.GC9858@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vZRzFRtr9HMcP32e"
+Content-Disposition: inline
+In-Reply-To: <20130723132104.GT24642@n2100.arm.linux.org.uk>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ARM: kirkwood: enable S/PDIF
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/13 15:20, Mark Brown wrote:
-> On Tue, Jul 23, 2013 at 02:59:06PM +0200, Sebastian Hesselbarth wrote:
->> On 07/23/13 14:34, Mark Brown wrote:
->
->>> As others have pointed out if you need to change the clock get code
->>> there's something wrong here, DT should be handled transparently by the
->>> clock API.
->
->> IMHO the reason why of_clk_get() was/is mis-used in that way is mostly
->> compatibility with legacy platform_data based setup.
->
-> I'm sorry, but this doesn't make a great deal of sense to me.  Can you
-> be more specific?
- >
->> As Sascha Hauer pointed out, clocks should be distinguished by names
->> (clock-names property) instead of position and then use
->> devm_clk_get(&pdev->dev, "internal") and
->> devm_clk_get(&pdev->dev, "external") respectively.
->
->> This will possibly also require to update platform_data and legacy
->> users of kirkwood-i2s or have different setup functions for non-DT
->> and DT.
->
-> Why would this be required?  The driver is already asking for multiple
-> clocks...
 
-The driver is asking for multiple *DT based* clocks. Legacy
-platform_data has never been updated to reflect that. Mainly because
-multiple clocks are only supported on Dove, which has no active non-DT
-board in mainline.
+--vZRzFRtr9HMcP32e
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> Also, while ASoC API separates the audio-controller into cpu-side
->> and codec-side parts, the DT should not. IIRC and as Russell repeated
->
-> You mean DAI and DMA here?  I already commented on that in my review of
-> the DMA binding.
+On Tue, Jul 23, 2013 at 02:21:04PM +0100, Russell King - ARM Linux wrote:
+> On Tue, Jul 23, 2013 at 02:06:22PM +0100, Mark Brown wrote:
 
-Yes.
+> > This patch will do absolutely nothing unless it's used in a machine
+> > driver which connects a S/PDIF CODEC to it.  I see no reason not to
+> > apply it, someone with hardware with more complex needs can always build
+> > on it later.
 
->> again, we mentioned to merge kirkwood-i2s.c and kirkwood-dma.c into
->> a single file, didn't we?
->
-> That's been discussed several times but nobody's actually done it.
+> So... what if setting this bit causes the SoC to start wiggling a pin
+> with the SPDIF signal which has been used for a different purpose?
 
-Correct, that is why I repeated that request to Jean-Francois.
+Right, yup - didn't read it fully.  Like I say doing it conditional on
+the DAI format should be fine though.
 
-Sebastian
+--vZRzFRtr9HMcP32e
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7oWkAAoJELSic+t+oim9EIMP/0M2rod+o4SXCcLwDdQii7et
+V2aahoI7DMNl7adfP6Ctbkhluq4Znf/WoDmff9H5azDrQ4ObndXY0Xlah4uYnRyi
+5mONoLO54O+flc+Xb2yzsQr7hUm8D7qliFEefxSaxttNDHo/UctHi23IwiU9ekiR
+MGBL05DX/JlR8Ft7GEuqoAyROiUo4Av3qXjrk1/C4Zr2wafnX+Gmi/hoBxEcYuID
+at0ojCIdDWIc848Je3dclf8Z1pAFPqWyRm4hcqqijpIOq1GQNsJkLhHa18oU7+PE
+PIehljhQnHzzKOEAKMh6OYn6Wlf/dwuoPfw4TUw81jbxzYdpmNDtF2eXqYN0bE68
+6sz+287VQELUrH3+3aN/9kneibjbWxqUP5q90LwekHuC78o1PrFyN/xZ+zkTX28q
+1dNXGnR/P0kfdp5wWfh3BrG9mrLw4wsz3laC98fi7i3OJiBETxDAGsPhrZoa23lf
+RRwDK6XN15t8h1f9htrIx6tIBPTDDPBS4U7hWDRMuYCqM2QN9IJzkhdBMwZzwJcn
+Zn9uKbrKkiO7/ydFwiUzQtrS9Zh6/kvigM3+aBAd17pCmaJoygkrIoD5jAtGyfSA
+O5sqerQF3PtjRkMz8787WbE+SOvWz13h9qwew/u1BKrhRnLUp4fCNXMtcfZ0iT5q
+3ZX0WVydScoHhx9/viQH
+=iQoc
+-----END PGP SIGNATURE-----
+
+--vZRzFRtr9HMcP32e--
