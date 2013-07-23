@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934952Ab3GWWvS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:51:18 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:57189 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934560Ab3GWWvP (ORCPT
+	id S934557Ab3GWW1Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:27:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41508 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934426Ab3GWW1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:51:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <0104420@agluck-desk.sc.intel.com>
-References: <0104420@agluck-desk.sc.intel.com>
-Date: Tue, 23 Jul 2013 15:51:14 -0700
-Message-ID: <CA+8MBbLkWZKwG40XMXCV75Vr=6pKq9rijRamt7=qALhc72SCTQ@mail.gmail.com>
-Subject: Re: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-From: Tony Luck <tony.luck@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Jul 2013 18:27:08 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 019/103] powerpc/perf: Use existing out label in power_pmu_enable()
+Date: Tue, 23 Jul 2013 15:25:30 -0700
+Message-Id: <20130723220420.695626908@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+References: <20130723220418.532514378@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gah ... there is another bug in that unaffected thread entry.  The check for
-MCG_STATUS should be for RIPV=1 *and* EIPV=0
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-gmail will mess this patch up ... but should still be readable.
+------------------
 
--Tony
+From: Michael Ellerman <michael@ellerman.id.au>
+
+commit 0a48843d6c5114cfa4a9540ee4d6af87628cec01 upstream.
+
+In power_pmu_enable() we can use the existing out label to reduce the
+number of return paths.
+
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
+ arch/powerpc/perf/core-book3s.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-b/arch/x86/kernel/cpu/mcheck/mce-severity
-index 7f6ab4e..48f0fd2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -112,7 +112,7 @@ static struct severity {
-        MCESEV(
-                KEEP, "Action required but unaffected thread is continuable",
-                SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR,
-MCI_UC_SAR|MCI_ADDR),
--               MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
-+               MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, MCG_STATUS_RIPV)
-                ),
-        MCESEV(
-                AR, "Action required: data load error in a user process",
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -919,12 +919,13 @@ static void power_pmu_enable(struct pmu
+ 
+ 	if (!ppmu)
+ 		return;
++
+ 	local_irq_save(flags);
++
+ 	cpuhw = &__get_cpu_var(cpu_hw_events);
+-	if (!cpuhw->disabled) {
+-		local_irq_restore(flags);
+-		return;
+-	}
++	if (!cpuhw->disabled)
++		goto out;
++
+ 	cpuhw->disabled = 0;
+ 
+ 	/*
+
+
