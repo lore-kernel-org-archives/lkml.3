@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935211Ab3GWWhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:37:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41814 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934808Ab3GWW1u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934805Ab3GWW1u (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Jul 2013 18:27:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41797 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934780Ab3GWW1r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:27:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Azad, Vinit" <vinit.azad@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ben Widawsky <ben@bwidawsk.net>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 079/103] drm/i915: Fix context sizes on HSW
-Date: Tue, 23 Jul 2013 15:26:30 -0700
-Message-Id: <20130723220428.950960942@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 075/103] svcrpc: fix handling of too-short rpcs
+Date: Tue, 23 Jul 2013 15:26:26 -0700
+Message-Id: <20130723220428.123692856@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -29,68 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <ben@bwidawsk.net>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit a0de80a0e07032a111230ec92eca563f9d93648d upstream.
+commit cf3aa02cb4a0c5af5557dd47f15a08a7df33182a upstream.
 
-With updates to the spec, we can actually see the context layout, and
-how many dwords are allocated. That table suggests we need 70720 bytes
-per HW context. Rounded up, this is 18 pages. Looking at what lives
-after the current 4 pages we use, I can't see too much important (mostly
-it's d3d related), but there are a couple of things which look scary. I
-am hopeful this can explain some of our odd HSW failures.
+If we detect that an rpc is too short, we abort and close the
+connection.  Except, there's a bug here: we're leaving sk_datalen
+nonzero without leaving any pages in the sk_pages array.  The most
+likely result of the inconsistency is a subsequent crash in
+svc_tcp_clear_pages.
 
-v2: Make the context only 17 pages. The power context space isn't used
-ever, and execlists aren't used in our driver, making the actual total
-66944 bytes.
+Also demote the BUG_ON in svc_tcp_clear_pages to a WARN.
 
-v3: Add a comment to the code. (Jesse & Paulo)
-
-Reported-by: "Azad, Vinit" <vinit.azad@intel.com>
-Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_context.c |    2 +-
- drivers/gpu/drm/i915/i915_reg.h         |   15 +++++++--------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ net/sunrpc/svcsock.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_context.c
-+++ b/drivers/gpu/drm/i915/i915_gem_context.c
-@@ -113,7 +113,7 @@ static int get_context_size(struct drm_d
- 	case 7:
- 		reg = I915_READ(GEN7_CXT_SIZE);
- 		if (IS_HASWELL(dev))
--			ret = HSW_CXT_TOTAL_SIZE(reg) * 64;
-+			ret = HSW_CXT_TOTAL_SIZE;
- 		else
- 			ret = GEN7_CXT_TOTAL_SIZE(reg) * 64;
- 		break;
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -1535,14 +1535,13 @@
- 					 GEN7_CXT_EXTENDED_SIZE(ctx_reg) + \
- 					 GEN7_CXT_GT1_SIZE(ctx_reg) + \
- 					 GEN7_CXT_VFSTATE_SIZE(ctx_reg))
--#define HSW_CXT_POWER_SIZE(ctx_reg)	((ctx_reg >> 26) & 0x3f)
--#define HSW_CXT_RING_SIZE(ctx_reg)	((ctx_reg >> 23) & 0x7)
--#define HSW_CXT_RENDER_SIZE(ctx_reg)	((ctx_reg >> 15) & 0xff)
--#define HSW_CXT_TOTAL_SIZE(ctx_reg)	(HSW_CXT_POWER_SIZE(ctx_reg) + \
--					 HSW_CXT_RING_SIZE(ctx_reg) + \
--					 HSW_CXT_RENDER_SIZE(ctx_reg) + \
--					 GEN7_CXT_VFSTATE_SIZE(ctx_reg))
--
-+/* Haswell does have the CXT_SIZE register however it does not appear to be
-+ * valid. Now, docs explain in dwords what is in the context object. The full
-+ * size is 70720 bytes, however, the power context and execlist context will
-+ * never be saved (power context is stored elsewhere, and execlists don't work
-+ * on HSW) - so the final size is 66944 bytes, which rounds to 17 pages.
-+ */
-+#define HSW_CXT_TOTAL_SIZE		(17 * PAGE_SIZE)
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -917,7 +917,10 @@ static void svc_tcp_clear_pages(struct s
+ 	len = svsk->sk_datalen;
+ 	npages = (len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	for (i = 0; i < npages; i++) {
+-		BUG_ON(svsk->sk_pages[i] == NULL);
++		if (svsk->sk_pages[i] == NULL) {
++			WARN_ON_ONCE(1);
++			continue;
++		}
+ 		put_page(svsk->sk_pages[i]);
+ 		svsk->sk_pages[i] = NULL;
+ 	}
+@@ -1092,8 +1095,10 @@ static int svc_tcp_recvfrom(struct svc_r
+ 		goto err_noclose;
+ 	}
  
- /*
-  * Overlay regs
+-	if (svc_sock_reclen(svsk) < 8)
++	if (svc_sock_reclen(svsk) < 8) {
++		svsk->sk_datalen = 0;
+ 		goto err_delete; /* client is nuts. */
++	}
+ 
+ 	rqstp->rq_arg.len = svsk->sk_datalen;
+ 	rqstp->rq_arg.page_base = 0;
 
 
