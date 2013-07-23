@@ -1,234 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab3GWWog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:44:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41659 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934651Ab3GWW1b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:31 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 052/103] tick: Sanitize broadcast control logic
-Date: Tue, 23 Jul 2013 15:26:03 -0700
-Message-Id: <20130723220424.369992823@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
-References: <20130723220418.532514378@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S934793Ab3GWWou (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:44:50 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:21149
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934651Ab3GWWor convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:44:47 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC107.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371Ic89bh542I1432I1447Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2fh2a8h683h839h947hd24hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(377454003)(479174003)(199002)(189002)(51704005)(24454002)(51914003)(13464003)(74876001)(46102001)(69226001)(54356001)(16406001)(76786001)(76796001)(33646001)(81542001)(56776001)(54316002)(81342001)(56816003)(53806001)(76576001)(47446002)(83072001)(19580395003)(80022001)(74366001)(63696002)(83322001)(19580405001)(74662001)(74316001)(66066001)(31966008)(74502001)(65816001)(50986001)(47736001)(74706001)(49866001)(47976001)(77096001)(4396001)(76482001)(77982001)(59766001)(51856001)(79102001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jason Wang <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@redhat.com" <gleb@redhat.com>,
+        "pbonzini@redhat.com" <pbonzini@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+Thread-Topic: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+Thread-Index: AQHOh4p69lea0RwjhkGxDF3F2cFBJJlySJ9AgAAPr4CAACulsIAAFq2AgAA6QWA=
+Date: Tue, 23 Jul 2013 22:42:18 +0000
+Message-ID: <c7e8bcb7eb25448497107b1a94463f27@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
+ <1374572465-15278-4-git-send-email-jasowang@redhat.com>
+ <bd93bc49300a4d99996cc4f57c19a008@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EE97BD.4050402@zytor.com>
+ <e31a95e22bbc4c8dbbf76f88b8c90581@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EECF5F.8000901@zytor.com>
+In-Reply-To: <51EECF5F.8000901@zytor.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.119.57]
+x-forefront-prvs: 0916FC3A18
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC107.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC107.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+> -----Original Message-----
+> From: H. Peter Anvin [mailto:hpa@zytor.com]
+> Sent: Tuesday, July 23, 2013 2:46 PM
+> To: KY Srinivasan
+> Cc: Jason Wang; tglx@linutronix.de; mingo@redhat.com; x86@kernel.org;
+> gleb@redhat.com; pbonzini@redhat.com; kvm@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+> 
+> On 07/23/2013 10:45 AM, KY Srinivasan wrote:
+> >>
+> >> One strategy would be to pick the *last* one in the CPUID list, since
+> >> the ones before it are logically the one(s) being emulated...
+> >
+> > Is it always possible to guarantee this ordering. As a hypothetical, what if
+> hypervisor A
+> > emulates Hypervisor B and Hypervisor B emulates Hypervisor A. In this case we
+> cannot
+> > have any "order" based detection that can yield "correct" detection. I define
+> "correctness"
+> > as follows:
+> >
+> > If a guest can run on both the hypervisors, the guest should detect the true
+> native
+> > Hypervisor.at	 
+> >
+> 
+> My point was that most hypervisors tend to put the native signature at
+> the end of the list starting at 0x40000000, just to deal with naïve
+> guests which only look at 0x40000000 and not beyond.  So a natural
+> convention would be to "use the last entry in the list you know how to
+> handle."
 
-commit 07bd1172902e782f288e4d44b1fde7dec0f08b6f upstream.
+Ok; thanks for the clarification.
 
-The recent implementation of a generic dummy timer resulted in a
-different registration order of per cpu local timers which made the
-broadcast control logic go belly up.
+Regards,
 
-If the dummy timer is the first clock event device which is registered
-for a CPU, then it is installed, the broadcast timer is initialized
-and the CPU is marked as broadcast target.
-
-If a real clock event device is installed after that, we can fail to
-take the CPU out of the broadcast mask. In the worst case we end up
-with two periodic timer events firing for the same CPU. One from the
-per cpu hardware device and one from the broadcast.
-
-Now the problem is that we have no way to distinguish whether the
-system is in a state which makes broadcasting necessary or the
-broadcast bit was set due to the nonfunctional dummy timer
-installment.
-
-To solve this we need to keep track of the system state seperately and
-provide a more detailed decision logic whether we keep the CPU in
-broadcast mode or not.
-
-The old decision logic only clears the broadcast mode, if the newly
-installed clock event device is not affected by power states.
-
-The new logic clears the broadcast mode if one of the following is
-true:
-
-  - The new device is not affected by power states.
-
-  - The system is not in a power state affected mode
-
-  - The system has switched to oneshot mode. The oneshot broadcast is
-    controlled from the deep idle state. The CPU is not in idle at
-    this point, so it's safe to remove it from the mask.
-
-If we clear the broadcast bit for the CPU when a new device is
-installed, we also shutdown the broadcast device when this was the
-last CPU in the broadcast mask.
-
-If the broadcast bit is kept, then we leave the new device in shutdown
-state and rely on the broadcast to deliver the timer interrupts via
-the broadcast ipis.
-
-Reported-and-tested-by: Stehle Vincent-B46079 <B46079@freescale.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-Cc: Mark Rutland <mark.rutland@arm.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/time/tick-broadcast.c |   70 ++++++++++++++++++++++++++++++++++++-------
- kernel/time/tick-common.c    |    3 +
- 2 files changed, 61 insertions(+), 12 deletions(-)
-
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -29,6 +29,7 @@
- 
- static struct tick_device tick_broadcast_device;
- static cpumask_var_t tick_broadcast_mask;
-+static cpumask_var_t tick_broadcast_on;
- static cpumask_var_t tmpmask;
- static DEFINE_RAW_SPINLOCK(tick_broadcast_lock);
- static int tick_broadcast_force;
-@@ -123,8 +124,9 @@ static void tick_device_setup_broadcast_
-  */
- int tick_device_uses_broadcast(struct clock_event_device *dev, int cpu)
- {
-+	struct clock_event_device *bc = tick_broadcast_device.evtdev;
- 	unsigned long flags;
--	int ret = 0;
-+	int ret;
- 
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 
-@@ -138,20 +140,59 @@ int tick_device_uses_broadcast(struct cl
- 		dev->event_handler = tick_handle_periodic;
- 		tick_device_setup_broadcast_func(dev);
- 		cpumask_set_cpu(cpu, tick_broadcast_mask);
--		tick_broadcast_start_periodic(tick_broadcast_device.evtdev);
-+		tick_broadcast_start_periodic(bc);
- 		ret = 1;
- 	} else {
- 		/*
--		 * When the new device is not affected by the stop
--		 * feature and the cpu is marked in the broadcast mask
--		 * then clear the broadcast bit.
-+		 * Clear the broadcast bit for this cpu if the
-+		 * device is not power state affected.
- 		 */
--		if (!(dev->features & CLOCK_EVT_FEAT_C3STOP)) {
--			int cpu = smp_processor_id();
-+		if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
- 			cpumask_clear_cpu(cpu, tick_broadcast_mask);
--			tick_broadcast_clear_oneshot(cpu);
--		} else {
-+		else
- 			tick_device_setup_broadcast_func(dev);
-+
-+		/*
-+		 * Clear the broadcast bit if the CPU is not in
-+		 * periodic broadcast on state.
-+		 */
-+		if (!cpumask_test_cpu(cpu, tick_broadcast_on))
-+			cpumask_clear_cpu(cpu, tick_broadcast_mask);
-+
-+		switch (tick_broadcast_device.mode) {
-+		case TICKDEV_MODE_ONESHOT:
-+			/*
-+			 * If the system is in oneshot mode we can
-+			 * unconditionally clear the oneshot mask bit,
-+			 * because the CPU is running and therefore
-+			 * not in an idle state which causes the power
-+			 * state affected device to stop. Let the
-+			 * caller initialize the device.
-+			 */
-+			tick_broadcast_clear_oneshot(cpu);
-+			ret = 0;
-+			break;
-+
-+		case TICKDEV_MODE_PERIODIC:
-+			/*
-+			 * If the system is in periodic mode, check
-+			 * whether the broadcast device can be
-+			 * switched off now.
-+			 */
-+			if (cpumask_empty(tick_broadcast_mask) && bc)
-+				clockevents_shutdown(bc);
-+			/*
-+			 * If we kept the cpu in the broadcast mask,
-+			 * tell the caller to leave the per cpu device
-+			 * in shutdown state. The periodic interrupt
-+			 * is delivered by the broadcast device.
-+			 */
-+			ret = cpumask_test_cpu(cpu, tick_broadcast_mask);
-+			break;
-+		default:
-+			/* Nothing to do */
-+			ret = 0;
-+			break;
- 		}
- 	}
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
-@@ -281,6 +322,7 @@ static void tick_do_broadcast_on_off(uns
- 	switch (*reason) {
- 	case CLOCK_EVT_NOTIFY_BROADCAST_ON:
- 	case CLOCK_EVT_NOTIFY_BROADCAST_FORCE:
-+		cpumask_set_cpu(cpu, tick_broadcast_on);
- 		if (!cpumask_test_and_set_cpu(cpu, tick_broadcast_mask)) {
- 			if (tick_broadcast_device.mode ==
- 			    TICKDEV_MODE_PERIODIC)
-@@ -290,8 +332,12 @@ static void tick_do_broadcast_on_off(uns
- 			tick_broadcast_force = 1;
- 		break;
- 	case CLOCK_EVT_NOTIFY_BROADCAST_OFF:
--		if (!tick_broadcast_force &&
--		    cpumask_test_and_clear_cpu(cpu, tick_broadcast_mask)) {
-+		if (tick_broadcast_force)
-+			break;
-+		cpumask_clear_cpu(cpu, tick_broadcast_on);
-+		if (!tick_device_is_functional(dev))
-+			break;
-+		if (cpumask_test_and_clear_cpu(cpu, tick_broadcast_mask)) {
- 			if (tick_broadcast_device.mode ==
- 			    TICKDEV_MODE_PERIODIC)
- 				tick_setup_periodic(dev, 0);
-@@ -349,6 +395,7 @@ void tick_shutdown_broadcast(unsigned in
- 
- 	bc = tick_broadcast_device.evtdev;
- 	cpumask_clear_cpu(cpu, tick_broadcast_mask);
-+	cpumask_clear_cpu(cpu, tick_broadcast_on);
- 
- 	if (tick_broadcast_device.mode == TICKDEV_MODE_PERIODIC) {
- 		if (bc && cpumask_empty(tick_broadcast_mask))
-@@ -792,6 +839,7 @@ bool tick_broadcast_oneshot_available(vo
- void __init tick_broadcast_init(void)
- {
- 	zalloc_cpumask_var(&tick_broadcast_mask, GFP_NOWAIT);
-+	zalloc_cpumask_var(&tick_broadcast_on, GFP_NOWAIT);
- 	zalloc_cpumask_var(&tmpmask, GFP_NOWAIT);
- #ifdef CONFIG_TICK_ONESHOT
- 	zalloc_cpumask_var(&tick_broadcast_oneshot_mask, GFP_NOWAIT);
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -194,7 +194,8 @@ static void tick_setup_device(struct tic
- 	 * When global broadcasting is active, check if the current
- 	 * device is registered as a placeholder for broadcast mode.
- 	 * This allows us to handle this x86 misfeature in a generic
--	 * way.
-+	 * way. This function also returns !=0 when we keep the
-+	 * current active broadcast state for this CPU.
- 	 */
- 	if (tick_device_uses_broadcast(newdev, cpu))
- 		return;
+K. Y
 
 
