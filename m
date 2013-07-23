@@ -1,119 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab3GWAqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:46:32 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:32646 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab3GWAqb (ORCPT
+	id S1753667Ab3GWAsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:48:50 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:43222 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab3GWAss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:46:31 -0400
-Message-ID: <1374540337.16322.70.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
-        kosaki.motohiro@gmail.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Mon, 22 Jul 2013 18:45:37 -0600
-In-Reply-To: <51EDCD46.5040502@jp.fujitsu.com>
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
-	 <51EDCD46.5040502@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 22 Jul 2013 20:48:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAELBVzCK3Dm-HtAn3iy0Nz-MeOJVvRO20KqE0WojWF1nFv_-1Q@mail.gmail.com>
+References: <CAELBVzCK3Dm-HtAn3iy0Nz-MeOJVvRO20KqE0WojWF1nFv_-1Q@mail.gmail.com>
+Date: Mon, 22 Jul 2013 21:48:47 -0300
+Message-ID: <CAELBVzCUrJXWB1dO2mOwoX97x+RO2AeCNEazXzG4DrHXSk9JmQ@mail.gmail.com>
+Subject: Re: [Panic - Bisected] f1a18a10566081abfce1649c2f3884b28fff7372 cases
+ panic on boot
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Srinivas Pandruvada <srinivas.pandruvada@linux.intel.com>,
+        Zhang Rui <rui.zhang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-pm@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 09:24 +0900, Yasuaki Ishimatsu wrote:
-> (2013/07/20 2:47), Toshi Kani wrote:
-> > CONFIG_ARCH_MEMORY_PROBE enables /sys/devices/system/memory/probe
-> > interface, which allows a given memory address to be hot-added as
-> > follows. (See Documentation/memory-hotplug.txt for more detail.)
-> > 
-> > # echo start_address_of_new_memory > /sys/devices/system/memory/probe
-> > 
-> > This probe interface is required on powerpc. On x86, however, ACPI
-> > notifies a memory hotplug event to the kernel, which performs its
-> > hotplug operation as the result. Therefore, regular users do not need
-> > this interface on x86. This probe interface is also error-prone and
-> > misleading that the kernel blindly adds a given memory address without
-> > checking if the memory is present on the system; no probing is done
-> > despite of its name. The kernel crashes when a user requests to online
-> > a memory block that is not present on the system. This interface is
-> > currently used for testing as it can fake a hotplug event.
-> > 
-> > This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86, adds
-> > its Kconfig menu entry on x86, and clarifies its use in Documentation/
-> > memory-hotplug.txt.
-> > 
-> > Signed-off-by: Toshi Kani <toshi.kani@hp.com>
-> 
-> Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Sorry, forgot to change gmail to plain text mode, so the mailing lists
+rejected this.
 
-Great!  Thanks Yasuaki!
--Toshi
-
-
-> 
+On 22 July 2013 21:45, Kevin Winchester <kjwinchester@gmail.com> wrote:
+> I have found that the new CPU Package temperature thermal driver introduced
+> in this merge window causes my HP laptop to panic on boot.
+>
+> An image of the panic information can be found here:
+>
+> https://lh6.googleusercontent.com/-lA_vInpGkIs/Ue3FySjGOoI/AAAAAAAAAG0/fRmh0Qjcs9o/w1135-h851-no/Linux+Screenshots+-+1
+>
+> I bisected to find the offending commit, since the error was quite
+> reproducible.
+>
+> # first bad commit: [f1a18a10566081abfce1649c2f3884b28fff7372] Thermal: CPU
+> Package temperature thermal
+>
+> I'll next try:
+>
+> - disabling the driver in my config (I enabled it when asked since thermal
+> control seems like a good thing)
+> - Reverting the patch on top of v3.11-rc2
+>
+>
+> What other info can I provide or steps can I take to help with this?
+>
+>
 > Thanks,
-> Yasuaki Ishimatsu
-> 
-> > ---
-> >   Documentation/memory-hotplug.txt |   16 +++++++++-------
-> >   arch/x86/Kconfig                 |    7 ++++++-
-> >   2 files changed, 15 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
-> > index 8e5eacb..8fd254c 100644
-> > --- a/Documentation/memory-hotplug.txt
-> > +++ b/Documentation/memory-hotplug.txt
-> > @@ -210,13 +210,15 @@ If memory device is found, memory hotplug code will be called.
-> >   
-> >   4.2 Notify memory hot-add event by hand
-> >   ------------
-> > -In some environments, especially virtualized environment, firmware will not
-> > -notify memory hotplug event to the kernel. For such environment, "probe"
-> > -interface is supported. This interface depends on CONFIG_ARCH_MEMORY_PROBE.
-> > -
-> > -Now, CONFIG_ARCH_MEMORY_PROBE is supported only by powerpc but it does not
-> > -contain highly architecture codes. Please add config if you need "probe"
-> > -interface.
-> > +On powerpc, the firmware does not notify a memory hotplug event to the kernel.
-> > +Therefore, "probe" interface is supported to notify the event to the kernel.
-> > +This interface depends on CONFIG_ARCH_MEMORY_PROBE.
-> > +
-> > +CONFIG_ARCH_MEMORY_PROBE is supported on powerpc only. On x86, this config
-> > +option is disabled by default since ACPI notifies a memory hotplug event to
-> > +the kernel, which performs its hotplug operation as the result. Please
-> > +enable this option if you need the "probe" interface for testing purposes
-> > +on x86.
-> >   
-> >   Probe interface is located at
-> >   /sys/devices/system/memory/probe
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index b32ebf9..408ef68 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -1344,8 +1344,13 @@ config ARCH_SELECT_MEMORY_MODEL
-> >   	depends on ARCH_SPARSEMEM_ENABLE
-> >   
-> >   config ARCH_MEMORY_PROBE
-> > -	def_bool y
-> > +	bool "Enable sysfs memory/probe interface"
-> > +	default n
-> >   	depends on X86_64 && MEMORY_HOTPLUG
-> > +	help
-> > +	  This option enables a sysfs memory/probe interface for testing.
-> > +	  See Documentation/memory-hotplug.txt for more information.
-> > +	  If you are unsure how to answer this question, answer N.
-> >   
-> >   config ARCH_PROC_KCORE_TEXT
-> >   	def_bool y
-> > 
-> 
-> 
-
-
+> Kevin
+>
