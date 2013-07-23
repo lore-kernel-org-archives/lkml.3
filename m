@@ -1,75 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756808Ab3GWK70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 06:59:26 -0400
-Received: from hel.is.scarlet.be ([193.74.71.26]:38455 "EHLO hel.is.scarlet.be"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753649Ab3GWK7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 06:59:25 -0400
-X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Jul 2013 06:59:25 EDT
-X-Scarlet: d=1374576558 c=62.235.205.3
-From: Treeve Jelbert <treeve@scarlet.be>
-To: linux-kernel@vger.kernel.org
-Subject: [NETWORKING DRIVERS RT2X00] please add support for Asus PCE-N53  (0x1814, 0x5592)
-Date: Tue, 23 Jul 2013 12:49:17 +0200
-Message-ID: <2108818.T0lx4Vi2Ui@horos>
-User-Agent: KMail/4.11 rc1 (Linux/3.10.2; KDE/4.10.95; x86_64; git-152db2f; 2013-07-18)
+	id S1756864Ab3GWLAb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 07:00:31 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:34007 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753059Ab3GWLAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 07:00:30 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
-X-DCC-scarlet.be-Metrics: hel 20002; Body=1 Fuz1=1 Fuz2=1
+X-Originating-IP: [2a01:e35:2434:4600:6116:785e:d2c6:30a]
+In-Reply-To: <00d701ce878f$da099fe0$8e1cdfa0$%dae@samsung.com>
+References: <1374573694-30595-1-git-send-email-a.motakis@virtualopensystems.com>
+	<00d701ce878f$da099fe0$8e1cdfa0$%dae@samsung.com>
+Date: Tue, 23 Jul 2013 13:00:29 +0200
+Message-ID: <CAG8rG2wNG9wVjKxtaDzLRybvh3wPVR08j9G9OPcK=a2Gwbtg-g@mail.gmail.com>
+Subject: Re: [PATCH] iommu/exynos: add devices attached to the System MMU to
+ an IOMMU group
+From: Antonios Motakis <a.motakis@virtualopensystems.com>
+To: Inki Dae <inki.dae@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        kvm-arm <kvmarm@lists.cs.columbia.edu>,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
+        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux-3.10.0 does not support device  (0x1814, 0x5592) Asus PCE-N53 which I 
-would like to use on with 5GHz network.
+On Tue, Jul 23, 2013 at 12:31 PM, Inki Dae <inki.dae@samsung.com> wrote:
+>
+>
+>
+> > -----Original Message-----
+> > From: linux-samsung-soc-owner@vger.kernel.org [mailto:linux-samsung-soc-
+> > owner@vger.kernel.org] On Behalf Of Antonios Motakis
+> > Sent: Tuesday, July 23, 2013 7:02 PM
+> > To: linux-arm-kernel@lists.infradead.org;
+> iommu@lists.linux-foundation.org;
+> > linux-samsung-soc@vger.kernel.org
+> > Cc: kvmarm@lists.cs.columbia.edu; Antonios Motakis; Cho KyongHo; Joerg
+> > Roedel; Sachin Kamat; Jiri Kosina; Wei Yongjun; open list
+> > Subject: [PATCH] iommu/exynos: add devices attached to the System MMU to
+> > an IOMMU group
+> >
+> > IOMMU groups are expected by certain users of the IOMMU API,
+> > e.g. VFIO. Since each device is behind its own System MMU, we
+> > can allocate a new IOMMU group for each device.
+> >
+> > This patch depends on Cho KyongHo's patch series titled "[PATCH v7 00/12]
+> > iommu/exynos: Fixes and Enhancements of System MMU driver with DT",
+> > applied on a Linux 3.10.1 kernel. It has been tested on the Arndale board.
+> >
+> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> > ---
+> >  drivers/iommu/exynos-iommu.c | 24 ++++++++++++++++++++++++
+> >  1 file changed, 24 insertions(+)
+> >
+> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> > index 51d43bb..9f39eaa 100644
+> > --- a/drivers/iommu/exynos-iommu.c
+> > +++ b/drivers/iommu/exynos-iommu.c
+> > @@ -1134,6 +1134,28 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct
+> > iommu_domain *domain,
+> >       return phys;
+> >  }
+> >
+> > +static int exynos_iommu_add_device(struct device *dev)
+> > +{
+> > +     struct iommu_group *group;
+> > +     int ret;
+> > +
+> > +     group = iommu_group_alloc();
+>
+> Is that correct? I don't see why you allocate a group object every time
+> add_device callback is called. That doesn't have any meaning we have to use
+> iommu group feature. I think the implementation should be one more devices
+> per a group. So I guess a given device object should be wrapped by higher
+> device object than the given device object. For a good example, you can
+> refer to intel-iommu.c file.
 
-#lspci
-02:00.0 Network controller: Ralink corp. Device 5592
-        Subsystem: ASUSTeK Computer Inc. Device 851a
+With an Intel IOMMU it can be the case that 2 devices have to share
+the same IOMMU mappings (i.e. you can't program them separately). With
+the Exynos System MMU, there is always one System MMU per device, so
+there is nothing stopping you from programming any 2 devices' mappings
+differently. So yes, the right thing to do here is to have a one to
+one relationship between devices and IOMMU groups.
 
-# lspci -d :5592 -nn
-02:00.0 Network controller [0280]: Ralink corp. Device [1814:5592]
+(resending because of html mail)
 
-#modprobe rt2x00pci
-[ 2724.173984] cfg80211: Calling CRDA to update world regulatory domain
+Cheers,
+Antonios
 
-
-device id (0x1814, 0x5592) 'Asus PCE-N53' not present in rt2800pci.c
-
-
-
-
-After adding this device id , it get the following messages
-
-[    8.993741] ieee80211 phy0: rt2x00lib_request_firmware: Info - Loading 
-firmware file 'rt2860.bin'
-[    8.994857] ieee80211 phy0: rt2x00lib_request_firmware: Info - Firmware 
-detected - version: 0.34
-[    9.073053] NET: Registered protocol family 17
-[   10.438586] ieee80211 phy0: rt2x00lib_rxdone_read_signal: Warning - Frame 
-received with unrecognized signal, mode=0x0000, signal=0x0000, type=4
-[   69.171225] ieee80211 phy0: rt2x00lib_rxdone: Error - Wrong frame size 0
-max 3840
-
-
-#lsmod
-rt2800pci               9514  0 
-eeprom_93cx6            1913  1 rt2800pci
-rt2x00pci               2368  1 rt2800pci
-rt2800lib              52747  1 rt2800pci
-crc_ccitt               1235  1 rt2800lib
-rt2x00mmio              2425  1 rt2800pci
-rt2x00lib              30593  4 rt2x00pci,rt2800lib,rt2800pci,rt2x00mmio
-led_class               2531  1 rt2x00lib
-mac80211              209216  3 rt2x00lib,rt2x00pci,rt2800lib
-
-#ifconfig
-wlan0     Link encap:Ethernet  HWaddr 30:85:A9:F4:B6:61  
-          UP BROADCAST MULTICAST  MTU:1500  Metric:1
-          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
-          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
-          RX bytes:0 (0.0 b)  TX bytes:0 (0.0 b)
-
+>
+>
+> Thanks,
+> Inki Dae
+>
+> > +     if (IS_ERR(group)) {
+> > +             dev_err(dev, "Failed to allocate IOMMU group\n");
+> > +             return PTR_ERR(group);
+> > +     }
+> > +
+> > +     ret = iommu_group_add_device(group, dev);
+> > +     iommu_group_put(group);
+> > +
+> > +     return ret;
+> > +}
+> > +
+> > +static void exynos_iommu_remove_device(struct device *dev)
+> > +{
+> > +     iommu_group_remove_device(dev);
+> > +}
+> > +
+> >  static struct iommu_ops exynos_iommu_ops = {
+> >       .domain_init = &exynos_iommu_domain_init,
+> >       .domain_destroy = &exynos_iommu_domain_destroy,
+> > @@ -1142,6 +1164,8 @@ static struct iommu_ops exynos_iommu_ops = {
+> >       .map = &exynos_iommu_map,
+> >       .unmap = &exynos_iommu_unmap,
+> >       .iova_to_phys = &exynos_iommu_iova_to_phys,
+> > +     .add_device     = exynos_iommu_add_device,
+> > +     .remove_device  = exynos_iommu_remove_device,
+> >       .pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
+> >  };
+> >
+> > --
+> > 1.8.1.2
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-
+> > soc" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
