@@ -1,57 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab3GWMoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 08:44:09 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:39836 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757225Ab3GWMoH (ORCPT
+	id S1757421Ab3GWMpX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 08:45:23 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:39444 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756432Ab3GWMpV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 08:44:07 -0400
-Date: Tue, 23 Jul 2013 14:44:02 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 8/8] watchdog: Remove hack to make full dynticks working
-Message-ID: <20130723124400.GA10278@somewhere>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <1374539466-4799-9-git-send-email-fweisbec@gmail.com>
- <20130723123331.GE126784@redhat.com>
+	Tue, 23 Jul 2013 08:45:21 -0400
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <joe@perches.com>, <devel@linuxdriverproject.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>
+Subject: [PATCH v3 0/5] staging: ozwpan: Replace debug macro
+Date: Tue, 23 Jul 2013 13:44:58 +0100
+Message-ID: <1374583503-5642-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20130722175535.GA3682@kroah.com>
+References: <20130722175535.GA3682@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723123331.GE126784@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 08:33:31AM -0400, Don Zickus wrote:
-> On Tue, Jul 23, 2013 at 02:31:06AM +0200, Frederic Weisbecker wrote:
-> > A perf event can be used without forcing the tick to
-> > stay alive if it doesn't use a frequency but a sample
-> > period and if it doesn't throttle (raise storm of events).
-> > 
-> > Since the lockup detector neither use a perf event frequency
-> > nor should ever throttle due to its high period, it can now
-> > run concurrently with the full dynticks feature.
-> 
-> Thanks.  Dumb question, I keep wondering if the lockup detector would be
-> better or worse off if it used the perf event frequency as opposed to
-> using a sample period?  The idea is it could follow the varying cpu
-> frequencies better (and probably simplify some of the code too).
-> 
-> Acked-by: Don Zickus <dzickus@redhat.com>
+This is v3 of this original patch series here:-
+http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2013-June/039280.html
 
-Thanks!
+v3 adds commit log for each patch as suggested by Joe here:-
+http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2013-July/039361.html
 
-IIRC we tried that and I believe the issue was that perf did not
-support frequency below 1. So probably the limitation was that it had to
-fire at least once per sec.
+Joe Perches (5):
+  staging: ozwpan: Remove extra debug logs.
+  staging: ozwpan: Replace oz_trace with oz_dbg
+  staging: ozwpan: Remove old debug macro.
+  staging: ozwpan: Convert macro to function.
+  staging: ozwpan: Rename Kbuild to Makefile
 
-Also if you do that, we fall into the full dynticks problem again.
+ drivers/staging/ozwpan/Kbuild          |   18 --
+ drivers/staging/ozwpan/Makefile        |   16 ++
+ drivers/staging/ozwpan/ozcdev.c        |   52 +++---
+ drivers/staging/ozwpan/ozconfig.h      |   26 ---
+ drivers/staging/ozwpan/ozdbg.h         |   54 ++++++
+ drivers/staging/ozwpan/ozeltbuf.c      |   32 ++--
+ drivers/staging/ozwpan/ozhcd.c         |  296 +++++++++++++++-----------------
+ drivers/staging/ozwpan/ozmain.c        |    7 +-
+ drivers/staging/ozwpan/ozpd.c          |   67 ++++----
+ drivers/staging/ozwpan/ozproto.c       |   60 +++----
+ drivers/staging/ozwpan/ozproto.h       |    2 +-
+ drivers/staging/ozwpan/oztrace.c       |   36 ----
+ drivers/staging/ozwpan/oztrace.h       |   35 ----
+ drivers/staging/ozwpan/ozurbparanoia.c |   14 +-
+ drivers/staging/ozwpan/ozurbparanoia.h |    4 +-
+ drivers/staging/ozwpan/ozusbsvc.c      |   25 +--
+ drivers/staging/ozwpan/ozusbsvc1.c     |   19 +-
+ 17 files changed, 348 insertions(+), 415 deletions(-)
+ delete mode 100644 drivers/staging/ozwpan/Kbuild
+ create mode 100644 drivers/staging/ozwpan/Makefile
+ delete mode 100644 drivers/staging/ozwpan/ozconfig.h
+ create mode 100644 drivers/staging/ozwpan/ozdbg.h
+ delete mode 100644 drivers/staging/ozwpan/oztrace.c
+ delete mode 100644 drivers/staging/ozwpan/oztrace.h
+
+-- 
+1.7.9.5
+
