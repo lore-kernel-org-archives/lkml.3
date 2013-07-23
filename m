@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab3GWAbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:31:23 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:43414 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab3GWAbT (ORCPT
+	id S1753933Ab3GWAbx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:31:53 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:60875 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753557Ab3GWAbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:31:19 -0400
+	Mon, 22 Jul 2013 20:31:22 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,9 +14,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 5/8] perf: Migrate per cpu event accounting
-Date: Tue, 23 Jul 2013 02:31:03 +0200
-Message-Id: <1374539466-4799-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 7/8] perf: Finer grained full dynticks kick
+Date: Tue, 23 Jul 2013 02:31:05 +0200
+Message-Id: <1374539466-4799-8-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
 References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
@@ -24,9 +24,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an event is migrated, move the event per-cpu
-accounting accordingly so that branch stack and cgroup
-events work correctly on the new CPU.
+Currently the full dynticks subsystem keep the
+tick alive as long as there are perf events running.
+
+This prevents the tick from being stopped as long as features
+such that the lockup detectors are running. As a temporary fix,
+the lockup detector is disabled by default when full dynticks
+is built but this is not a long term viable solution.
+
+To fix this, only keep the tick alive when an event configured
+with a frequency rather than a period is running on the CPU,
+or when an event throttles on the CPU.
+
+These are the only purposes of the perf tick, especially now that
+the rotation of flexible events is handled from a seperate hrtimer.
+The tick can be shutdown the rest of the time.
 
 Original-patch-by: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
@@ -37,28 +49,59 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- kernel/events/core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ kernel/events/core.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fd820a4..b40c3db 100644
+index f9bd39b..61d70b7 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -7144,6 +7144,7 @@ void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
- 	list_for_each_entry_safe(event, tmp, &src_ctx->event_list,
- 				 event_entry) {
- 		perf_remove_from_context(event);
-+		unaccount_event_cpu(event, src_cpu);
- 		put_ctx(src_ctx);
- 		list_add(&event->event_entry, &events);
- 	}
-@@ -7156,6 +7157,7 @@ void perf_pmu_migrate_context(struct pmu *pmu, int src_cpu, int dst_cpu)
- 		list_del(&event->event_entry);
- 		if (event->state >= PERF_EVENT_STATE_OFF)
- 			event->state = PERF_EVENT_STATE_INACTIVE;
-+		account_event_cpu(event, dst_cpu);
- 		perf_install_in_context(dst_ctx, event, dst_cpu);
- 		get_ctx(dst_ctx);
+@@ -870,12 +870,8 @@ static void perf_pmu_rotate_start(struct pmu *pmu)
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
+-	if (list_empty(&cpuctx->rotation_list)) {
+-		int was_empty = list_empty(head);
++	if (list_empty(&cpuctx->rotation_list))
+ 		list_add(&cpuctx->rotation_list, head);
+-		if (was_empty)
+-			tick_nohz_full_kick();
+-	}
+ }
+ 
+ static void get_ctx(struct perf_event_context *ctx)
+@@ -1875,6 +1871,9 @@ static int  __perf_install_in_context(void *info)
+ 	perf_pmu_enable(cpuctx->ctx.pmu);
+ 	perf_ctx_unlock(cpuctx, task_ctx);
+ 
++	if (atomic_read(&__get_cpu_var(perf_freq_events)))
++		tick_nohz_full_kick();
++
+ 	return 0;
+ }
+ 
+@@ -2812,10 +2811,11 @@ done:
+ #ifdef CONFIG_NO_HZ_FULL
+ bool perf_event_can_stop_tick(void)
+ {
+-	if (list_empty(&__get_cpu_var(rotation_list)))
+-		return true;
+-	else
++	if (atomic_read(&__get_cpu_var(perf_freq_events)) ||
++	    __this_cpu_read(perf_throttled_count))
+ 		return false;
++	else
++		return true;
+ }
+ #endif
+ 
+@@ -5201,6 +5201,7 @@ static int __perf_event_overflow(struct perf_event *event,
+ 			__this_cpu_inc(perf_throttled_count);
+ 			hwc->interrupts = MAX_INTERRUPTS;
+ 			perf_log_throttle(event, 0);
++			tick_nohz_full_kick();
+ 			ret = 1;
+ 		}
  	}
 -- 
 1.7.5.4
