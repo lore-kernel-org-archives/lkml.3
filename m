@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933580Ab3GWQmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:42:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:56034 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932705Ab3GWQmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:42:35 -0400
-Message-ID: <1374597753.3387.4.camel@joe-AO722>
-Subject: Re: [PATCH] Staging: bcm: Qos: Fix some coding style issues
-From: Joe Perches <joe@perches.com>
-To: Lilis Iskandar <veeableful@gmail.com>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Date: Tue, 23 Jul 2013 09:42:33 -0700
-In-Reply-To: <1374580262.19434.4.camel@desktop>
-References: <1374571229.15906.3.camel@desktop>
-	 <20130723095416.GM5585@mwanda> <1374574241.17286.8.camel@desktop>
-	 <20130723101838.GN5585@mwanda> <1374580262.19434.4.camel@desktop>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933662Ab3GWQnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:43:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932705Ab3GWQnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:43:11 -0400
+Date: Tue, 23 Jul 2013 18:38:06 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ptrace(PTRACE_ATTACH)  [no intervering wait]
+	ptrace(PTRACE_DETACH) may leave tracee stuck
+Message-ID: <20130723163806.GA27905@redhat.com>
+References: <1374573914.30532.68.camel@marge.simpson.net> <20130723155854.GA26211@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723155854.GA26211@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 19:51 +0800, Lilis Iskandar wrote:
-> Fixed spacing/tabs issues that were found using checkpatch.
+On 07/23, Oleg Nesterov wrote:
+>
+> On 07/23, Mike Galbraith wrote:
+> >
+> > I received a report that glibc:elf/pldd hangs occasionally, and indeed..
+> >
+> >   for i in `seq 1 1000`; do taskset -c 3 pldd $$ > /dev/null 2>&1; done
+> >
+> > ..will do so.  Rummage.....
+> >
+> > ptrace(PTRACE_DETACH) returns -ESRCH when the trap hasn't happened yet,
+> > which happens because pldd doesn't wait() before ptrace(PTRACE_DETACH).
+> >
+> > pldd source:
+> >
+> [...snip...]
+> >
+> > Seems this usually works only because cycles expended between attach and
+> > detach is usually enough to let trap happen so tracee can set its state
+> > to TASK_TRACED as PTRACE_DETACH expects it to be.
+> >
+> > Is this expected behavior?
+>
+> Yes. PTRACE_ATTACH + PTRACE_DETACH is not correct without wait() in
+> between, this is expected.
+>
+> PTRACE_DETACH like (almost) any other ptrace request needs the stopped
+> tracee. Otherwise, say, ptrace_disable() or flush_ptrace_hw_breakpoint()
+> are not safe.
 
-Hi Lilis.
+I have found the source of pldd.c. It seems that it has another reason
+for waitpid().
 
-It'd be better to change the email subject to
-"[PATCH v2] etc..." to show that's it's a new
-version of the patch.
+	/* Stop all threads since otherwise the list of loaded modules might
+	   change while we are reading it. */
 
-It's also useful to add a note or two like
-"git diff -w shows no differences" and
-"no differences in objects" to make review
-and acceptance a bit easier.
+Yes, but without waitpid() we can't know if it was actually stopped.
 
-Good luck with continued cleanups of bcm.
-There's a lot to clean in those files.
+OTOH, in this particular case pldd.c doesn't really need PTRACE_DETACH,
+it can simply exit.
+
+Oleg.
 
