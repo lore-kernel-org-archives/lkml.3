@@ -1,77 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664Ab3GWOoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 10:44:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36128 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757466Ab3GWOoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 10:44:21 -0400
-Date: Tue, 23 Jul 2013 10:44:08 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [RFC -v3 2/2] watchdog: update watchdog_tresh properly
-Message-ID: <20130723144408.GH126784@redhat.com>
-References: <1374493502-31907-1-git-send-email-mhocko@suse.cz>
- <1374503566-2521-1-git-send-email-mhocko@suse.cz>
- <20130723135334.GF126784@redhat.com>
- <20130723140729.GH8677@dhcp22.suse.cz>
+	id S1757681Ab3GWOsA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 10:48:00 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:35438 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757539Ab3GWOr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 10:47:58 -0400
+Message-ID: <51EE976A.5060109@windriver.com>
+Date: Tue, 23 Jul 2013 10:47:06 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723140729.GH8677@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Landley <rob@landley.net>
+CC: <trivial@kernel.org>, <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: update git pull info in SubmittingPatches
+References: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com> <1374338111.3719.21@driftwood>
+In-Reply-To: <1374338111.3719.21@driftwood>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 04:07:29PM +0200, Michal Hocko wrote:
-> On Tue 23-07-13 09:53:34, Don Zickus wrote:
-> > On Mon, Jul 22, 2013 at 04:32:46PM +0200, Michal Hocko wrote:
-> > > The nmi one is disabled and then reinitialized from scratch. This
-> > > has an unpleasant side effect that the allocation of the new event might
-> > > fail theoretically so the hard lockup detector would be disabled for
-> > > such cpus. On the other hand such a memory allocation failure is very
-> > > unlikely because the original event is deallocated right before.
-> > > It would be much nicer if we just changed perf event period but there
-> > > doesn't seem to be any API to do that right now.
-> > > It is also unfortunate that perf_event_alloc uses GFP_KERNEL allocation
-> > > unconditionally so we cannot use on_each_cpu() and do the same thing
-> > > from the per-cpu context. The update from the current CPU should be
-> > > safe because perf_event_disable removes the event atomically before
-> > > it clears the per-cpu watchdog_ev so it cannot change anything under
-> > > running handler feet.
-> > 
-> > I guess I don't have a problem with this.  I was hoping to have more
-> > shared code with the regular stop/start routines but with the pmu bit
-> > locking (to share pmus with oprofile), you really need to unregister
-> > everything to stop the lockup detector.  This makes it a little too heavy
-> > for a restart routine like this.
+On 13-07-20 12:35 PM, Rob Landley wrote:
+> On 07/15/2013 04:18:16 PM, Paul Gortmaker wrote:
+>> The info in this section was overdue for an update; it had manual
+>> individual steps listed for collecting the information that a
+>> pull request should contain, and no mention of having a proper
+>> overall summary in the pull request that could be used for a
+>> merge commit.
+>>
+>> There are other chunks of this file that need updates to match
+>> current git workflows, but giant wholesale updates are more likely
+>> to get caught up in bike shedding discussions over small details,
+>> so lets start somewhere and attack the problem piece-wise.
+>>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 > 
-> I am not sure I understand the above. Regular stop/start is about all
-> the machinery, I have tried to reduce the restarting to bare minimum.
-> Do you find the current version heavier than the full disable_all &&
-> enable_all?
+> Acked-by: Rob Landley <rob@landley.net>
 
-No, I find your restart mechanism lighter than full disable_all.  I would
-love to have the lockup detector just disable itself on stop and re-enable
-on start.  But because of oprofile, the lockup has to free up its event
-on stop and recreate it on start, which kinda sucks.
+Hi Rob,
 
-Anyway it was just an aside.
+I see you added trivial to the CC but (inadvertently?) dropped the
+linux-doc (and lkml) from the CC.
+
+Were you wanting this patch to go via the trivial tree?  Perhaps that
+would be OK if there was just a one-off single doc patch, but even in
+this case, it isn't really what I'd call trivial.  There is a genuine
+change here -- we describe a new way of how to do pull requests, and
+if someone doesn't like that change, they would be fair in complaining
+about it "sneaking in" via the trivial tree.
+
+I guess my point is that there are more doc patches coming; I've got
+the one Jon acked, the Changes removal, and more in the works, so I'd
+rather see these stacked in a real doc branch somewhere.  I don't think
+it makes sense to vector all doc patches via trivial tree.
+
+Didn't you recently get your kernel.org details sorted out for that, or
+am I thinking of someone else?  In any case, if you aren't able to collect
+them on a branch for one reason or another, I'll simply collect the acks
+etc. myself and stack them up on a public branch on kernel.org.
+
+Thanks,
+Paul.
+--
 
 > 
-> > The only odd thing is I can't figure out which version you were using to
-> > apply this patch.  I can't find old_thresh (though I understand the idea
-> > of it).
+>> diff --git a/Documentation/SubmittingPatches  
+>> b/Documentation/SubmittingPatches
+>> index 6e97e73..6102da9 100644
+>> --- a/Documentation/SubmittingPatches
+>> +++ b/Documentation/SubmittingPatches
+>> @@ -590,33 +590,32 @@ See more details on the proper patch format in  
+>> the following
+>>  references.
+>>
+>>
+>> -16) Sending "git pull" requests  (from Linus emails)
+>> -
+>> -Please write the git repo address and branch name alone on the same  
+>> line
+>> -so that I can't even by mistake pull from the wrong branch, and so
+>> -that a triple-click just selects the whole thing.
+>> -
+>> -So the proper format is something along the lines of:
+>> -
+>> -	"Please pull from
+>> -
+>> -		git://jdelvare.pck.nerim.net/jdelvare-2.6 i2c-for-linus
+>> -
+>> -	 to get these changes:"
+>> -
+>> -so that I don't have to hunt-and-peck for the address and inevitably
+>> -get it wrong (actually, I've only gotten it wrong a few times, and
+>> -checking against the diffstat tells me when I get it wrong, but I'm
+>> -just a lot more comfortable when I don't have to "look for" the right
+>> -thing to pull, and double-check that I have the right branch-name).
+>> -
+>> -
+>> -Please use "git diff -M --stat --summary" to generate the diffstat:
+>> -the -M enables rename detection, and the summary enables a summary of
+>> -new/deleted or renamed files.
+>> -
+>> -With rename detection, the statistics are rather different [...]
+>> -because git will notice that a fair number of the changes are  
+>> renames.
+>> +16) Sending "git pull" requests
+>> +
+>> +For a long time now, the "git request-pull" command has existed,
+>> +and gives a uniform pre-canned text with all the expected information
+>> +within it.  Use this as the basis of your pull request e-mail, and
+>> +prefix it with a sensible description of what the overall series
+>> +of commits achieves.  Assume that this text will be used by the
+>> +maintainer in their merge commit of your changes, and hence be part
+>> +of the git history, just like the changelog of each commit.  Use
+>> +the triple dash described above to separate the merge commit text
+>> +in the top of your mail from the output from "git request-pull".
+>> +
+>> +You are strongly discouraged against manually creating your own
+>> +pull request text.  Doing so just increases the odds of having
+>> +a typo in the repo location, the branch name, or other missing
+>> +information.  In addition to creating all the required text output,
+>> +the command also validates that your commits are actually reachable
+>> +at the specified location, ensuring you don't waste the maintainer's
+>> +time with having to hunt around trying find the location that you
+>> +really meant.
+>> +
+>> +Your mail subject should be prefixed with "[GIT PULL]" and also
+>> +mention the subsystem it is for, and if possible a very brief
+>> +theme of what the changes achieve, e.g.
+>> +
+>> +   "[GIT PULL] x86: Remove uniprocessor support"
+>>
+>>  -----------------------------------
+>>  SECTION 2 - HINTS, TIPS, AND TRICKS
+>> --
+>> 1.8.1.2
+>>
+>>
 > 
-> current Linus tree (linux-next - 20130723 - has it as well AFAICS)
-
-Ok. Thanks.  Ah, I see.  I forgot Frederic modified pieces there.  The
-threading keeps changing.  I see why you took your approach.
-
-Should be fine.
-
-Acked-by: Don Zickus <dzickus@redhat.com>
