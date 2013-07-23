@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab3GWUwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:52:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756398Ab3GWUwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:52:30 -0400
-Date: Tue, 23 Jul 2013 13:52:29 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Peng Tao <bergwolf@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peng Tao <tao.peng@emc.com>
-Subject: Re: [PATCH 02/48] staging/lustre/obdclass: restore lu_ref
-Message-ID: <20130723205229.GA11261@kroah.com>
-References: <20130723193712.GA9385@kroah.com>
- <CE1443D8.57081%andreas.dilger@intel.com>
+	id S1758042Ab3GWUxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:53:04 -0400
+Received: from mx11.netapp.com ([216.240.18.76]:39672 "EHLO mx11.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757933Ab3GWUxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:53:02 -0400
+X-IronPort-AV: E=Sophos;i="4.89,730,1367996400"; 
+   d="scan'208";a="35935249"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Henrik Rydberg <rydberg@euromail.se>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andre Heider <a.heider@gmail.com>
+Subject: Re: Linux 3.11-rc2
+Thread-Topic: Linux 3.11-rc2
+Thread-Index: AQHOh0Blpp07UcC9oUem7v4bwneG7Zlx67KAgAEg6oCAAApigIAAGjqAgAACwQA=
+Date: Tue, 23 Jul 2013 20:52:38 +0000
+Message-ID: <1374612758.12943.4.camel@leira.trondhjem.org>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	 <20130723010437.GA570@polaris.bitmath.org>
+	 <1374542261.7972.66.camel@leira.trondhjem.org>
+	 <1374604305.12943.3.camel@leira.trondhjem.org>
+	 <20130723190855.GA509@polaris.bitmath.org>
+	 <CA+55aFwpwJ3MgVtbNZQXjCV+06xq1xk=XO1OYwoscvO3SQth3A@mail.gmail.com>
+In-Reply-To: <CA+55aFwpwJ3MgVtbNZQXjCV+06xq1xk=XO1OYwoscvO3SQth3A@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <8A34197DBFBBB241BDB9A04E36AE7834@hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CE1443D8.57081%andreas.dilger@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6NKr8Tq022095
 
-On Tue, Jul 23, 2013 at 08:31:15PM +0000, Dilger, Andreas wrote:
-> On 2013/07/23 1:37 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-> wrote:
-> 
-> >On Tue, Jul 23, 2013 at 12:06:23AM +0800, Peng Tao wrote:
-> >> lu_ref.[ch] were mistakenly removed by coan2. Add them back and guard
-> >> with CONFIG_LUSTRE_DEBUG_LU_REF_CHECK.
+On Tue, 2013-07-23 at 13:42 -0700, Linus Torvalds wrote:
+> On Tue, Jul 23, 2013 at 12:08 PM,  <rydberg@euromail.se> wrote:
+> > Hi Trond,
 > >
-> >Ick, why?  Why not use the in-kernel infrastructure for this type of
-> >thig, _iff_ you really need it.
+> >> OK. With Andre's help, I think we've root caused the problem. Can you
+> >> please confirm that the attached patch also solves the issue for you?
 > >
-> >Why do you need this at all, isn't the reference code fully debugged by
-> >now, given that this has been running for years?  I would only expect to
-> >see something like this in new code that is still being developed.
+> > Seems to work fine,
+> >
+> >    Reported-and-tested-by: Henrik Rydberg <rydberg@euromail.se>
 > 
-> Lustre is still being developed, so it is useful to be able to enable this
-> debugging to catch any new problems that are introduced.
+> Trond, do you have anything else pending and are planning a git pull,
+> or should I just take this patch directly?
 
-Ok, then use the in-kernel infrastructure for this type of thing, don't
-roll your own and add custom stuff that will later just have to be
-ripped out and converted to use the in-kernel stuff.
+Nothing else queued for now, so if you could take it directly, then that
+would save the trouble of setting up an extra pull.
 
-thanks,
+Thanks!
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-greg k-h
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
