@@ -1,97 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758096Ab3GWVC1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:02:27 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:37071 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756941Ab3GWVCZ (ORCPT
+	id S933876Ab3GWVDJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:03:09 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:55874 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758036Ab3GWVDF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:02:25 -0400
-Date: Tue, 23 Jul 2013 23:02:21 +0200
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] x86, AMD: saved applied, not loaded microcode for
- reloading on resume
-Message-ID: <20130723230221.34d29488@googlemail.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Jul 2013 17:03:05 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tomasz Figa <t.figa@samsung.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
+        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
+        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
+        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
+        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+Date: Tue, 23 Jul 2013 23:02:57 +0200
+Message-ID: <1388978.Qc6sFy33oS@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <Pine.LNX.4.44L0.1307231632580.1304-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1307231632580.1304-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Save the amd_bsp_mpb on apply, not on load. Otherwise someone could
-  later load an older microcode file via load_microcode_amd() that
-  would overwrite amd_bsp_mpb, but would not be applied to the CPUs
-(apply_microcode_amd() checks the current patchlevel, but the copy code
-in load_microcode_adm() did not. If somehow cleanup() gets called and
-  clears pcache find_patch() could return return older patches then the
-  currently installed microcode)
-* Save the amd_bsp_mpb on every update. Otherwise, if someone would
-  update the microcode after offlining the BSP, these updates would not
-  get saved and would be lost on resume.
-* apply_ucode_in_initrd() now also needs to save amd_bsp_mbp, because
-load_microcode_amd() its no longer doing this and its not using
-apply_microcode_amd().
+On Tuesday 23 of July 2013 16:53:55 Alan Stern wrote:
+> On Tue, 23 Jul 2013, Tomasz Figa wrote:
+> > > That's what I was going to suggest too.  The struct phy is defined
+> > > in
+> > > the board file, which already knows about all the PHYs that exist in
+> > > the system.  (Or perhaps it is allocated dynamically, so that when
+> > > many
+> > > board files are present in the same kernel, only the entries listed
+> > > in
+> > > the board file for the current system get created.)
+> > 
+> > Well, such dynamic allocation is a must. We don't accept
+> > non-multiplatform aware code anymore, not even saying about
+> > multiboard.
+> > 
+> > > Then the
+> > > structure's address is stored in the platform data and made
+> > > available
+> > > to both the provider and the consumer.
+> > 
+> > Yes, technically this can work. You would still have to perform some
+> > kind of synchronization to make sure that the PHY bound to this
+> > structure is actually present. This is again technically doable (e.g.
+> > a list of registered struct phys inside PHY core).
+> 
+> The synchronization takes place inside phy_get.  If phy_create hasn't
+> been called for this structure by the time phy_get runs, phy_get will
+> return an error.
 
-Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+Yes, this is the solution that I had in mind when saying that this is 
+doable.
 
----
+> > > Even though the struct phy is defined (or allocated) in the board
+> > > file,
+> > > its contents don't get filled in until the PHY driver provides the
+> > > details.
+> > 
+> > You can't assure this. Board file is free to do whatever it wants with
+> > this struct. A clean solution would prevent this.
+> 
+> I'm not sure what you mean here.  Of course I can't prevent a board
+> file from messing up a data structure.  I can't prevent it from causing
+> memory access violations either; in fact, I can't prevent any bugs in
+> other people's code.
+> 
+> Besides, why do you say the board file is free to do whatever it wants
+> with the struct phy?  Currently the struct phy is created by the PHY
+> provider and the PHY core, right?  It's not even mentioned in the board
+> file.
 
-Removing this hunk from load_microcode_amd() also allows me to kill the
-cpu parameter for that function in the next patch...
+I mean, if you have a struct type of which full declaration is available 
+for some code, this code can access any memeber of it without any hacks, 
+which is not something that we want to have in board files. The phy struct 
+should be opaque for them.
 
---- a/arch/x86/kernel/microcode_amd.c	2013-07-23 19:43:30.359517091 +0200
-+++ b/arch/x86/kernel/microcode_amd.c	2013-07-23 20:05:04.469506188 +0200
-@@ -228,6 +228,12 @@ int apply_microcode_amd(int cpu)
- 	pr_info("CPU%d: new patch_level=0x%08x\n", cpu,
- 		mc_amd->hdr.patch_id);
- 
-+#if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
-+	/* save applied patch for early load */
-+	memset(amd_bsp_mpb, 0, MPB_MAX_SIZE);
-+	memcpy(amd_bsp_mpb, p->data, min_t(u32, ksize(p->data), MPB_MAX_SIZE));
-+#endif
-+
- 	uci->cpu_sig.rev = mc_amd->hdr.patch_id;
- 	c->microcode = mc_amd->hdr.patch_id;
- 
-@@ -385,17 +391,6 @@ enum ucode_state load_microcode_amd(int
- 	if (ret != UCODE_OK)
- 		cleanup();
- 
--#if defined(CONFIG_MICROCODE_AMD_EARLY) && defined(CONFIG_X86_32)
--	/* save BSP's matching patch for early load */
--	if (cpu_data(cpu).cpu_index == boot_cpu_data.cpu_index) {
--		struct ucode_patch *p = find_patch(cpu);
--		if (p) {
--			memset(amd_bsp_mpb, 0, MPB_MAX_SIZE);
--			memcpy(amd_bsp_mpb, p->data, min_t(u32, ksize(p->data),
--							   MPB_MAX_SIZE));
--		}
--	}
--#endif
- 	return ret;
- }
- 
---- a/arch/x86/kernel/microcode_amd_early.c	2013-07-23 20:00:04.889508712 +0200
-+++ b/arch/x86/kernel/microcode_amd_early.c	2013-07-23 20:05:14.969506099 +0200
-@@ -170,6 +170,13 @@ static void apply_ucode_in_initrd(void *
- 		mc = (struct microcode_amd *)(data + SECTION_HDR_SIZE);
- 		if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
- 			if (__apply_microcode_amd(mc) == 0) {
-+#ifdef CONFIG_X86_32
-+				/* save applied patch for early load */
-+				memset((void *)__pa(amd_bsp_mpb), 0,
-+					MPB_MAX_SIZE);
-+				memcpy((void *)__pa(amd_bsp_mpb), mc,
-+					min_t(u32, header[1], MPB_MAX_SIZE));
-+#endif
- 				rev = mc->hdr.patch_id;
- 				*new_rev = rev;
- 			}
+> > > > It's technically correct, but quality of this solution isn't
+> > > > really
+> > > > nice, because it's a layering violation (at least if I understood
+> > > > what you mean). This is because you need to have full definition
+> > > > of
+> > > > struct phy in board file and a structure that is used as private
+> > > > data
+> > > > in PHY core comes from platform code.
+> > > 
+> > > You don't have to have a full definition in the board file.  Just a
+> > > partial definition -- most of the contents can be filled in later,
+> > > when
+> > > the PHY driver is ready to store the private data.
+> > > 
+> > > It's not a layering violation for one region of the kernel to store
+> > > private data in a structure defined by another part of the kernel.
+> > > This happens all the time (e.g., dev_set_drvdata).
+> > 
+> > Not really. The phy struct is something that _is_ private data of PHY
+> > subsystem, not something that can store private data of PHY subsystem
+> > (sure it can store private data of particular PHY driver, but that's
+> > another story) and only PHY subsystem should have access to its
+> > contents.
+> If you want to keep the phy struct completely separate from the board
+> file, there's an easy way to do it.  Let's say the board file knows
+> about N different PHYs in the system.  Then you define an array of N
+> pointers to phys:
+> 
+> struct phy *(phy_address[N]);
+> 
+> In the platform data for both PHY j and its controller, store
+> &phy_address[j].  The PHY provider passes this cookie to phy_create:
+> 
+> 	cookie = pdev->dev.platform_data;
+> 	ret = phy_create(phy, cookie);
+> 
+> and phy_create simply stores: *cookie = phy.  The PHY consumer does
+> much the same the same thing:
+> 
+> 	cookie = pdev->dev.platform_data;
+> 	phy = phy_get(cookie);
+> 
+> phy_get returns *cookie if it isn't NULL, or an ERR_PTR otherwise.
+
+OK, this can work. Again, just technically, because it's rather ugly.
+
+> > By the way, we need to consider other cases here as well, for example
+> > it would be nice to have a single phy_get() function that works for
+> > both non- DT and DT cases to make the consumer driver not have to
+> > worry whether it's being probed from DT or not.
+> 
+> You ought to be able to adapt this scheme to work with DT.  Maybe by
+> having multiple "phy_address" arrays.
+
+Where would you want to have those phy_address arrays stored? There are no 
+board files when booting with DT. Not even saying that you don't need to 
+use any hacky schemes like this when you have DT that nicely specifies 
+relations between devices.
+
+Anyway, board file should not be considered as a method to exchange data 
+between drivers. It should be used only to pass data from it to drivers, 
+not the other way. Ideally all data in a board file should be marked as 
+const and __init and dropped after system initialization.
+
+Best regards,
+Tomasz
+
