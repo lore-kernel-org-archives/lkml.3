@@ -1,126 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab3GWCBV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:01:21 -0400
-Received: from nm12-vm0.bullet.mail.bf1.yahoo.com ([98.139.213.140]:45227 "EHLO
-	nm12-vm0.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752037Ab3GWCBU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:01:20 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 151799.55452.bm@omp1003.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=LpaAKZFQ+132YbFnBSjUz96O7z+g5O7A+Chy7QitunjxTXTS4bU31DFZK5E7CuB1HZ+pID6frmdSqN51KYfGhYkatKuY5POjUGY+dAmDGin6dW9i6+sC8sH/AYLRGZYCq4porD66f0/ryhzm0jLPywQyYCvpr8ieveZJ3TRKPT4=;
-X-YMail-OSG: BaGpeRIVM1m4xgVNv4oMjnDdEuwQdklDn2m685TuGV6c2qk
- m0mafdfSE2vREbPHaaxB0
-X-Rocket-MIMEInfo: 002.001,CgpIaSBKb2hhbm5lcywKClRoYW5rIHlvdSBmb3IgeW91ciByZXBseS4gCgoKVGhpcyBpcyBteSBmaXJzdCBrZXJuZWwgcGF0Y2gsIHNvcnJ5IGZvciB0aGUgc21hbGwgbWlzdGFrZXMuClBsZWFzZSBmaW5kIG15IGNvbW1lbnRzIGlubGluZS4KCj5fX19fX19fX19fX19fX19fX19fX19fX19fX19fX19fXwo.IEZyb206IEpvaGFubmVzIFdlaW5lciA8aGFubmVzQGNtcHhjaGcub3JnPgo.VG86IFBpbnR1IEt1bWFyIDxwaW50dS5rQHNhbXN1bmcuY29tPiAKPkNjOiBha3BtQGxpbnV4LWZvdW5kYXRpb24ub3JnOyABMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.150.561
-References: <1374492762-17735-1-git-send-email-pintu.k@samsung.com> <20130722163836.GD715@cmpxchg.org>
-Message-ID: <1374544878.92541.YahooMailNeo@web160102.mail.bf1.yahoo.com>
-Date: Mon, 22 Jul 2013 19:01:18 -0700 (PDT)
-From: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Reply-To: PINTU KUMAR <pintu_agarwal@yahoo.com>
-Subject: Re: [PATCH 2/2] mm: page_alloc: avoid slowpath for more than MAX_ORDER allocation.
-To: Johannes Weiner <hannes@cmpxchg.org>, Pintu Kumar <pintu.k@samsung.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "cody@linux.vnet.ibm.com" <cody@linux.vnet.ibm.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpgs@samsung.com" <cpgs@samsung.com>
-In-Reply-To: <20130722163836.GD715@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754403Ab3GWCCX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:02:23 -0400
+Received: from home.keithp.com ([63.227.221.253]:43592 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752559Ab3GWCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 22:02:19 -0400
+From: Keith Packard <keithp@keithp.com>
+To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
+Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 5/5] drm/i915: Add async page flip support for SNB
+Date: Mon, 22 Jul 2013 18:50:02 -0700
+Message-Id: <1374544202-15496-6-git-send-email-keithp@keithp.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374544202-15496-1-git-send-email-keithp@keithp.com>
+References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Just copies the IVB code
 
+Signed-off-by: Keith Packard <keithp@keithp.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 39 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 35 insertions(+), 4 deletions(-)
 
-Hi Johannes,
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 1bcc6b4..9d7919b 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7463,20 +7463,51 @@ static int intel_gen6_queue_flip(struct drm_device *dev,
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
+ 	uint32_t pf, pipesrc;
++	uint32_t cmd;
++	uint32_t base;
+ 	int ret;
+ 
+ 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
+ 	if (ret)
+ 		goto err;
+ 
++	cmd = MI_DISPLAY_FLIP | MI_DISPLAY_FLIP_PLANE(intel_crtc->plane);
++	base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
++
++	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
++
++		/* XXX check limitations for async flip here */
++
++		if (fb->pitches[0] != I915_READ(DSPSTRIDE(intel_crtc->plane))) {
++			WARN_ONCE(1, "mismatching stride in async plane flip (%d != %d)\n",
++				  fb->pitches[0], I915_READ(DSPSTRIDE(intel_crtc->plane)));
++			ret = -EINVAL;
++			goto err_unpin;
++		}
++
++		if (obj->tiling_mode != I915_TILING_X) {
++			WARN_ONCE(1, "async plane flip requires X tiling\n");
++			ret = -EINVAL;
++			goto err_unpin;
++		}
++
++		if ((I915_READ(DSPCNTR(intel_crtc->plane)) & DISPPLANE_TILED) == 0) {
++			WARN_ONCE(1, "display not currently tiled in async plane flip\n");
++			ret = -EINVAL;
++			goto err_unpin;
++		}
++		
++		cmd |= MI_DISPLAY_FLIP_ASYNC_INDICATOR;
++		base |= MI_DISPLAY_FLIP_TYPE_ASYNC;
++	}
++
+ 	ret = intel_ring_begin(ring, 4);
+ 	if (ret)
+ 		goto err_unpin;
+ 
+-	intel_ring_emit(ring, MI_DISPLAY_FLIP |
+-			MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
++	intel_ring_emit(ring, cmd);
+ 	intel_ring_emit(ring, fb->pitches[0] | obj->tiling_mode);
+-	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
++	intel_ring_emit(ring, base);
+ 
+ 	/* Contrary to the suggestions in the documentation,
+ 	 * "Enable Panel Fitter" does not seem to be required when page
+@@ -9738,7 +9769,7 @@ void intel_modeset_init(struct drm_device *dev)
+ 		dev->mode_config.max_height = 8192;
+ 	}
+ 
+-	if (IS_GEN7(dev))
++	if (IS_GEN6(dev) || IS_GEN7(dev))
+ 		dev->mode_config.async_page_flip = true;
+ 
+ 	dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
+-- 
+1.8.3.2
 
-Thank you for your reply. 
-
-
-This is my first kernel patch, sorry for the small mistakes.
-Please find my comments inline.
-
->________________________________
-> From: Johannes Weiner <hannes@cmpxchg.org>
->To: Pintu Kumar <pintu.k@samsung.com> 
->Cc: akpm@linux-foundation.org; mgorman@suse.de; jiang.liu@huawei.com; minchan@kernel.org; cody@linux.vnet.ibm.com; linux-mm@kvack.org; linux-kernel@vger.kernel.org; cpgs@samsung.com; pintu_agarwal@yahoo.com 
->Sent: Monday, 22 July 2013 10:08 PM
->Subject: Re: [PATCH 2/2] mm: page_alloc: avoid slowpath for more than MAX_ORDER allocation.
-> 
->
->Hi Pintu,
->
->On Mon, Jul 22, 2013 at 05:02:42PM +0530, Pintu Kumar wrote:
->> It was observed that if order is passed as more than MAX_ORDER
->> allocation in __alloc_pages_nodemask, it will unnecessarily go to
->> slowpath and then return failure.
->> Since we know that more than MAX_ORDER will anyways fail, we can
->> avoid slowpath by returning failure in nodemask itself.
->> 
->> Signed-off-by: Pintu Kumar <pintu.k@samsung.com>
->> ---
->>  mm/page_alloc.c |    4 ++++
->>  1 file changed, 4 insertions(+)
->> 
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index 202ab58..6d38e75 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -1564,6 +1564,10 @@ __setup("fail_page_alloc=", setup_fail_page_alloc);
->>  
->>  static bool should_fail_alloc_page(gfp_t gfp_mask, unsigned int order)
->>  {
->> +    if (order >= MAX_ORDER) {
->> +        WARN_ON(!(gfp_mask & __GFP_NOWARN));
->> +        return false;
->> +    }
->
->I don't see how this solves what you describe (should return true?)
->
-
-Ok, sorry, I will correct this.
-
-
->It would also not be a good place to put performance optimization,
->because this function is only called as part of a debugging mechanism
->that is usually disabled.
->
-
-Ok, so you mean, we should add this check directly at the top of __alloc_pages_nodemask() ??
-
-
-
->Lastly, order >= MAX_ORDER is not supported by the page allocator, and
->we do not want to punish 99.999% of all legitimate page allocations in
->the fast path in order to catch an unlikely situation like this.
-
-So, is it fine if we add an unlikely condition like below:
-if (unlikely(order >= MAX_ORDER))
-
->Having the check only in the slowpath is a good thing.
->
-Sorry, I could not understand, why adding this check in slowpath is only good.
-We could have returned failure much before that.
-Without this check, we are actually allowing failure of "first allocation attempt" and then returning the cause of failure in slowpath.
-I thought it will be better to track the unlikely failure in the system as early as possible, at least from the embedded system prospective.
-Let me know your opinion.
-
-
->--
->To unsubscribe, send a message with 'unsubscribe linux-mm' in
->the body to majordomo@kvack.org.  For more info on Linux MM,
->see: http://www.linux-mm.org/ .
->Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
->
->
