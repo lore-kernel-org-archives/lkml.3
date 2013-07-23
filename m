@@ -1,139 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab3GWLAb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 07:00:31 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:34007 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab3GWLAa (ORCPT
+	id S1756904Ab3GWLEL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 07:04:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38038 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753489Ab3GWLEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 07:00:30 -0400
+	Tue, 23 Jul 2013 07:04:10 -0400
+Date: Tue, 23 Jul 2013 13:03:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jason Low <jason.low2@hp.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
+Message-ID: <20130723110345.GX27075@twins.programming.kicks-ass.net>
+References: <1374220211.5447.9.camel@j-VirtualBox>
+ <20130722070144.GC5138@linux.vnet.ibm.com>
+ <1374519467.7608.87.camel@j-VirtualBox>
 MIME-Version: 1.0
-X-Originating-IP: [2a01:e35:2434:4600:6116:785e:d2c6:30a]
-In-Reply-To: <00d701ce878f$da099fe0$8e1cdfa0$%dae@samsung.com>
-References: <1374573694-30595-1-git-send-email-a.motakis@virtualopensystems.com>
-	<00d701ce878f$da099fe0$8e1cdfa0$%dae@samsung.com>
-Date: Tue, 23 Jul 2013 13:00:29 +0200
-Message-ID: <CAG8rG2wNG9wVjKxtaDzLRybvh3wPVR08j9G9OPcK=a2Gwbtg-g@mail.gmail.com>
-Subject: Re: [PATCH] iommu/exynos: add devices attached to the System MMU to
- an IOMMU group
-From: Antonios Motakis <a.motakis@virtualopensystems.com>
-To: Inki Dae <inki.dae@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        kvm-arm <kvmarm@lists.cs.columbia.edu>,
-        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Jiri Kosina <jkosina@suse.cz>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374519467.7608.87.camel@j-VirtualBox>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 12:31 PM, Inki Dae <inki.dae@samsung.com> wrote:
->
->
->
-> > -----Original Message-----
-> > From: linux-samsung-soc-owner@vger.kernel.org [mailto:linux-samsung-soc-
-> > owner@vger.kernel.org] On Behalf Of Antonios Motakis
-> > Sent: Tuesday, July 23, 2013 7:02 PM
-> > To: linux-arm-kernel@lists.infradead.org;
-> iommu@lists.linux-foundation.org;
-> > linux-samsung-soc@vger.kernel.org
-> > Cc: kvmarm@lists.cs.columbia.edu; Antonios Motakis; Cho KyongHo; Joerg
-> > Roedel; Sachin Kamat; Jiri Kosina; Wei Yongjun; open list
-> > Subject: [PATCH] iommu/exynos: add devices attached to the System MMU to
-> > an IOMMU group
-> >
-> > IOMMU groups are expected by certain users of the IOMMU API,
-> > e.g. VFIO. Since each device is behind its own System MMU, we
-> > can allocate a new IOMMU group for each device.
-> >
-> > This patch depends on Cho KyongHo's patch series titled "[PATCH v7 00/12]
-> > iommu/exynos: Fixes and Enhancements of System MMU driver with DT",
-> > applied on a Linux 3.10.1 kernel. It has been tested on the Arndale board.
-> >
-> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> > ---
-> >  drivers/iommu/exynos-iommu.c | 24 ++++++++++++++++++++++++
-> >  1 file changed, 24 insertions(+)
-> >
-> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> > index 51d43bb..9f39eaa 100644
-> > --- a/drivers/iommu/exynos-iommu.c
-> > +++ b/drivers/iommu/exynos-iommu.c
-> > @@ -1134,6 +1134,28 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct
-> > iommu_domain *domain,
-> >       return phys;
-> >  }
-> >
-> > +static int exynos_iommu_add_device(struct device *dev)
-> > +{
-> > +     struct iommu_group *group;
-> > +     int ret;
-> > +
-> > +     group = iommu_group_alloc();
->
-> Is that correct? I don't see why you allocate a group object every time
-> add_device callback is called. That doesn't have any meaning we have to use
-> iommu group feature. I think the implementation should be one more devices
-> per a group. So I guess a given device object should be wrapped by higher
-> device object than the given device object. For a good example, you can
-> refer to intel-iommu.c file.
+On Mon, Jul 22, 2013 at 11:57:47AM -0700, Jason Low wrote:
+> On Mon, 2013-07-22 at 12:31 +0530, Srikar Dronamraju wrote:
+> > > 
+> > > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> > > index e8b3350..da2cb3e 100644
+> > > --- a/kernel/sched/core.c
+> > > +++ b/kernel/sched/core.c
+> > > @@ -1348,6 +1348,8 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+> > >  		else
+> > >  			update_avg(&rq->avg_idle, delta);
+> > >  		rq->idle_stamp = 0;
+> > > +
+> > > +		rq->idle_duration = (rq->idle_duration + delta) / 2;
+> > 
+> > Cant we just use avg_idle instead of introducing idle_duration?
+> 
+> A potential issue I have found with avg_idle is that it may sometimes be
+> not quite as accurate for the purposes of this patch, because it is
+> always given a max value (default is 1000000 ns). For example, a CPU
+> could have remained idle for 1 second and avg_idle would be set to 1
+> millisecond. Another question I have is whether we can update avg_idle
+> at all times without putting a maximum value on avg_idle, or increase
+> the maximum value of avg_idle by a lot.
 
-With an Intel IOMMU it can be the case that 2 devices have to share
-the same IOMMU mappings (i.e. you can't program them separately). With
-the Exynos System MMU, there is always one System MMU per device, so
-there is nothing stopping you from programming any 2 devices' mappings
-differently. So yes, the right thing to do here is to have a one to
-one relationship between devices and IOMMU groups.
+The only user of avg_idle is idle_balance(); since you're building a new
+limiter we can completely scrap/rework avg_idle to do as you want it to.
+No point in having two of them.
 
-(resending because of html mail)
+Also, we now have rq->cfs.{blocked,runnable}_load_avg that might help with
+estimating if you're so inclined :-)
 
-Cheers,
-Antonios
+> > Should we take the consideration of whether a idle_balance was
+> > successful or not?
+> 
+> I recently ran fserver on the 8 socket machine with HT-enabled and found
+> that load balance was succeeding at a higher than average rate, but idle
+> balance was still lowering performance of that workload by a lot.
+> However, it makes sense to allow idle balance to run longer/more often
+> when it has a higher success rate.
+> 
+> > I am not sure whats a reasonable value for n can be, but may be we could
+> > try with n=3.
+> 
+> Based on some of the data I collected, n = 10 to 20 provides much better
+> performance increases.
 
->
->
-> Thanks,
-> Inki Dae
->
-> > +     if (IS_ERR(group)) {
-> > +             dev_err(dev, "Failed to allocate IOMMU group\n");
-> > +             return PTR_ERR(group);
-> > +     }
-> > +
-> > +     ret = iommu_group_add_device(group, dev);
-> > +     iommu_group_put(group);
-> > +
-> > +     return ret;
-> > +}
-> > +
-> > +static void exynos_iommu_remove_device(struct device *dev)
-> > +{
-> > +     iommu_group_remove_device(dev);
-> > +}
-> > +
-> >  static struct iommu_ops exynos_iommu_ops = {
-> >       .domain_init = &exynos_iommu_domain_init,
-> >       .domain_destroy = &exynos_iommu_domain_destroy,
-> > @@ -1142,6 +1164,8 @@ static struct iommu_ops exynos_iommu_ops = {
-> >       .map = &exynos_iommu_map,
-> >       .unmap = &exynos_iommu_unmap,
-> >       .iova_to_phys = &exynos_iommu_iova_to_phys,
-> > +     .add_device     = exynos_iommu_add_device,
-> > +     .remove_device  = exynos_iommu_remove_device,
-> >       .pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
-> >  };
-> >
-> > --
-> > 1.8.1.2
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-samsung-
-> > soc" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Right, so I'm still a bit puzzled by why this is so; maybe we're
+over-estimating the idle duration due to significant variance in the
+idle time?
+
+Maybe we should try with something like the below to test this?
+
+
+/*
+ * http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+ */
+struct stats {
+	long mean;
+	long M2;
+	unsigned int n;
+};
+
+static void stats_update(struct stats *stats, long x)
+{
+	long delta;
+
+	stats->n++;
+	delta = x - stats->mean;
+	stats->mean += delta / stats->n;
+	stats->M2 += delta * (x - stats->mean);
+}
+
+static long stats_var(struct stats *stats)
+{
+	long variance;
+
+	if (!stats->n)
+		return 0;
+
+	variance = stats->M2 / (stats->n - 1);
+
+	return int_sqrt(variance);
+}
+
+static long stats_mean(struct stats *stats)
+{
+	return stats->mean;
+}
+
+> Yes, I have done quite a bit of testing with sched_migration_cost and
+> adjusting it does help performance when idle balance overhead is high.
+> But I have found that a higher value may decrease the performance during
+> situations where the cost of idle_balance is not high. Additionally,
+> when to modify this tunable and by how much to modify it by can
+> sometimes be unpredictable. 
+
+So the history if sched_migration_cost is that it used to be a per sd
+value; see also:
+
+  https://lkml.org/lkml/2008/9/4/215
+
+Ingo wrote it initially for the O(1) scheduler and ripped it out when he
+did CFS. He now doesn't like it because it introduces boot-to-boot
+scheduling differences -- you never measure the exact numbers again.
+
+That said, there is a case for restoring it since the one measure really
+doesn't do justice to larger systems.
