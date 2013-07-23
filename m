@@ -1,153 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934300Ab3GWUVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:21:06 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:64654 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932447Ab3GWUVB (ORCPT
+	id S934338Ab3GWUVe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:21:34 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:23548 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934311Ab3GWUVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:21:01 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Tomasz Figa <t.figa@samsung.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Date: Tue, 23 Jul 2013 22:20:53 +0200
-Message-ID: <1387574.Tkg16KearS@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <Pine.LNX.4.44L0.1307231518310.1304-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1307231518310.1304-100000@iolanthe.rowland.org>
+	Tue, 23 Jul 2013 16:21:31 -0400
+Message-ID: <40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com>
+In-Reply-To: <cover.1374609948.git.cmetcalf@tilera.com>
+References: <cover.1374609948.git.cmetcalf@tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 23 Jul 2013 16:05:48 -0400
+Subject: [PATCH 01/13] tile: handle 64-bit statistics in tilepro network driver
+To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 of July 2013 15:36:00 Alan Stern wrote:
-> On Tue, 23 Jul 2013, Tomasz Figa wrote:
-> > IMHO it would be better if you provided some code example, but let's
-> > try to check if I understood you correctly.
-> > 
-> > 8><-------------------------------------------------------------------
-> > -----
-> > 
-> > [Board file]
-> > 
-> > static struct phy my_phy;
-> > 
-> > static struct platform_device phy_pdev = {
-> > 
-> > 	/* ... */
-> > 	.platform_data = &my_phy;
-> > 	/* ... */
-> > 
-> > };
-> > 
-> > static struct platform_device phy_pdev = {
-> 
-> This should be controller_pdev, not phy_pdev, yes?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ drivers/net/ethernet/tile/tilepro.c | 42 ++++++++++++++++++-------------------
+ 1 file changed, 20 insertions(+), 22 deletions(-)
 
-Right. A copy-pasto.
-
-> 
-> > 	/* ... */
-> > 	.platform_data = &my_phy;
-> > 	/* ... */
-> > 
-> > };
-> > 
-> > [Provider driver]
-> > 
-> > struct phy *phy = pdev->dev.platform_data;
-> > 
-> > ret = phy_create(phy);
-> > 
-> > [Consumer driver]
-> > 
-> > struct phy *phy = pdev->dev.platform_data;
-> > 
-> > ret = phy_get(&pdev->dev, phy);
-> 
-> Or even just phy_get(&pdev->dev), because phy_get() could be smart
-> enough to to set phy = dev->platform_data.
-
-Unless you need more than one PHY in this driver...
-
-> 
-> > ----------------------------------------------------------------------
-> > --><8
-> > 
-> > Is this what you mean?
-> 
-> That's what I was going to suggest too.  The struct phy is defined in
-> the board file, which already knows about all the PHYs that exist in
-> the system.  (Or perhaps it is allocated dynamically, so that when many
-> board files are present in the same kernel, only the entries listed in
-> the board file for the current system get created.) 
-
-Well, such dynamic allocation is a must. We don't accept non-multiplatform 
-aware code anymore, not even saying about multiboard.
-
-> Then the
-> structure's address is stored in the platform data and made available
-> to both the provider and the consumer.
-
-Yes, technically this can work. You would still have to perform some kind 
-of synchronization to make sure that the PHY bound to this structure is 
-actually present. This is again technically doable (e.g. a list of 
-registered struct phys inside PHY core).
-
-> Even though the struct phy is defined (or allocated) in the board file,
-> its contents don't get filled in until the PHY driver provides the
-> details.
-
-You can't assure this. Board file is free to do whatever it wants with 
-this struct. A clean solution would prevent this.
-
-> > It's technically correct, but quality of this solution isn't really
-> > nice, because it's a layering violation (at least if I understood
-> > what you mean). This is because you need to have full definition of
-> > struct phy in board file and a structure that is used as private data
-> > in PHY core comes from platform code.
-> 
-> You don't have to have a full definition in the board file.  Just a
-> partial definition -- most of the contents can be filled in later, when
-> the PHY driver is ready to store the private data.
-> 
-> It's not a layering violation for one region of the kernel to store
-> private data in a structure defined by another part of the kernel.
-> This happens all the time (e.g., dev_set_drvdata).
-
-Not really. The phy struct is something that _is_ private data of PHY 
-subsystem, not something that can store private data of PHY subsystem 
-(sure it can store private data of particular PHY driver, but that's 
-another story) and only PHY subsystem should have access to its contents.
-
-By the way, we need to consider other cases here as well, for example it 
-would be nice to have a single phy_get() function that works for both non-
-DT and DT cases to make the consumer driver not have to worry whether it's 
-being probed from DT or not.
-
-I'd suggest simply reusing the lookup method of regulator framework, just 
-as I suggested here:
-
-http://thread.gmane.org/gmane.linux.ports.arm.kernel/252813/focus=101661
-
-Best regards,
-Tomasz
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index 3643549..0237031 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -156,10 +156,14 @@ struct tile_netio_queue {
+  * Statistics counters for a specific cpu and device.
+  */
+ struct tile_net_stats_t {
+-	u32 rx_packets;
+-	u32 rx_bytes;
+-	u32 tx_packets;
+-	u32 tx_bytes;
++	u64 rx_packets;		/* total packets received	*/
++	u64 tx_packets;		/* total packets transmitted	*/
++	u64 rx_bytes;		/* total bytes received 	*/
++	u64 tx_bytes;		/* total bytes transmitted	*/
++	u64 rx_errors;		/* packets truncated or marked bad by hw */
++	u64 tx_errors;		/* (not currently used)		*/
++	u64 rx_dropped;		/* packets not for us or intf not up */
++	u64 tx_dropped;		/* (not currently used)		*/
+ };
+ 
+ 
+@@ -218,8 +222,6 @@ struct tile_net_priv {
+ 	int network_cpus_count;
+ 	/* Credits per network cpu. */
+ 	int network_cpus_credits;
+-	/* Network stats. */
+-	struct net_device_stats stats;
+ 	/* For NetIO bringup retries. */
+ 	struct delayed_work retry_work;
+ 	/* Quick access to per cpu data. */
+@@ -2127,30 +2129,26 @@ static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+  *
+  * Returns the address of the device statistics structure.
+  */
+-static struct net_device_stats *tile_net_get_stats(struct net_device *dev)
++static struct rtnl_link_stats64 *tile_net_get_stats64(struct net_device *dev,
++		struct rtnl_link_stats64 *stats)
+ {
+ 	struct tile_net_priv *priv = netdev_priv(dev);
+-	u32 rx_packets = 0;
+-	u32 tx_packets = 0;
+-	u32 rx_bytes = 0;
+-	u32 tx_bytes = 0;
+ 	int i;
+ 
+ 	for_each_online_cpu(i) {
+ 		if (priv->cpu[i]) {
+-			rx_packets += priv->cpu[i]->stats.rx_packets;
+-			rx_bytes += priv->cpu[i]->stats.rx_bytes;
+-			tx_packets += priv->cpu[i]->stats.tx_packets;
+-			tx_bytes += priv->cpu[i]->stats.tx_bytes;
++			stats->rx_packets += priv->cpu[i]->stats.rx_packets;
++			stats->tx_packets += priv->cpu[i]->stats.tx_packets;
++			stats->rx_bytes += priv->cpu[i]->stats.rx_bytes;
++			stats->tx_bytes += priv->cpu[i]->stats.tx_bytes;
++			stats->rx_errors += priv->cpu[i]->stats.rx_errors;
++			stats->tx_errors += priv->cpu[i]->stats.tx_errors;
++			stats->rx_dropped += priv->cpu[i]->stats.rx_dropped;
++			stats->tx_dropped += priv->cpu[i]->stats.tx_dropped;
+ 		}
+ 	}
+ 
+-	priv->stats.rx_packets = rx_packets;
+-	priv->stats.rx_bytes = rx_bytes;
+-	priv->stats.tx_packets = tx_packets;
+-	priv->stats.tx_bytes = tx_bytes;
+-
+-	return &priv->stats;
++	return stats;
+ }
+ 
+ 
+@@ -2287,7 +2285,7 @@ static const struct net_device_ops tile_net_ops = {
+ 	.ndo_stop = tile_net_stop,
+ 	.ndo_start_xmit = tile_net_tx,
+ 	.ndo_do_ioctl = tile_net_ioctl,
+-	.ndo_get_stats = tile_net_get_stats,
++	.ndo_get_stats64 = tile_net_get_stats64,
+ 	.ndo_change_mtu = tile_net_change_mtu,
+ 	.ndo_tx_timeout = tile_net_tx_timeout,
+ 	.ndo_set_mac_address = tile_net_set_mac_address,
+-- 
+1.8.3.1
 
