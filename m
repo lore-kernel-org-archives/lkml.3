@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935164Ab3GWWeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:34:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41850 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934775Ab3GWW1z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934862Ab3GWW1z (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 23 Jul 2013 18:27:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41790 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934775Ab3GWW1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 18:27:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Skeggs <bskeggs@redhat.com>,
-        Emil Velikov <emil.l.velikov@gmail.com>
-Subject: [ 087/103] drm/nv50-/disp: Use output specific mask in interrupt
-Date: Tue, 23 Jul 2013 15:26:38 -0700
-Message-Id: <20130723220430.613995506@linuxfoundation.org>
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 064/103] SCSI: zfcp: status read buffers on first adapter open with link down
+Date: Tue, 23 Jul 2013 15:26:15 -0700
+Message-Id: <20130723220426.084647145@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,68 +27,135 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emil Velikov <emil.l.velikov@gmail.com>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 378f2bcdf7c971453d11580936dc0ffe845f5880 upstream.
+commit 9edf7d75ee5f21663a0183d21f702682d0ef132f upstream.
 
-The commit
+Commit 64deb6efdc5504ce97b5c1c6f281fffbc150bd93
+"[SCSI] zfcp: Use status_read_buf_num provided by FCP channel"
+started using a value returned by the channel but only evaluated the value
+if the fabric link is up.
+Commit 8d88cf3f3b9af4713642caeb221b6d6a42019001
+"[SCSI] zfcp: Update status read mempool"
+introduced mempool resizings based on the above value.
+On setting an FCP device online for the very first time since boot, a new
+zeroed adapter object is allocated. If the link is down, the number of
+status read requests remains zero. Since just the config data exchange is
+incomplete, we proceed with adapter open recovery. However, we
+unconditionally call mempool_resize with adapter->stat_read_buf_num == 0 in
+this case.
 
-   commit 476e84e126171d809f9c0b5d97137f5055f95ca8
-   Author: Ben Skeggs <bskeggs@redhat.com>
-   Date:   Mon Feb 11 09:24:23 2013 +1000
+This causes a kernel message "kernel BUG at mm/mempool.c:131!" in process
+"zfcperp<FCP-device-bus-ID>" with last function mempool_resize in Krnl PSW
+and zfcp_erp_thread in the Call Trace.
 
-       drm/nv50-/disp: initial supervisor support for off-chip encoders
+Don't evaluate channel values which are invalid on link down. The number of
+status read requests is always valid, evaluated, and set to a positive
+minimum greater than zero. The adapter open recovery can proceed and the
+channel has status read buffers to inform us on a future link up event.
+While we are not aware of any other code path that could result in mempool
+resize attempts of size zero, we still also initialize the number of status
+read buffers to be posted to a static minimum number on adapter object
+allocation.
 
-changed the write mask in one of the interrupt functions for on-chip encoders,
-causing a regression in certain VGA dual-head setups. This commit reintroduces
-the mask thus resolving the regression
-
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66129
-Reported-and-Tested-by: Yves-Alexis <corsac@debian.org>
-CC: Ben Skeggs <bskeggs@redhat.com>
-Signed-off-by: Emil Velikov <emil.l.velikov@gmail.com>
-Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/core/engine/disp/nv50.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/s390/scsi/zfcp_aux.c |    5 ++++-
+ drivers/s390/scsi/zfcp_fsf.c |   23 ++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
---- a/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/disp/nv50.c
-@@ -1107,6 +1107,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
- 	u32 pclk = nv_rd32(priv, 0x610ad0 + (head * 0x540)) & 0x3fffff;
- 	u32 hval, hreg = 0x614200 + (head * 0x800);
- 	u32 oval, oreg;
-+	u32 mask;
- 	u32 conf = exec_clkcmp(priv, head, 0xff, pclk, &outp);
- 	if (conf != ~0) {
- 		if (outp.location == 0 && outp.type == DCB_OUTPUT_DP) {
-@@ -1133,6 +1134,7 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
- 			oreg = 0x614280 + (ffs(outp.or) - 1) * 0x800;
- 			oval = 0x00000000;
- 			hval = 0x00000000;
-+			mask = 0xffffffff;
- 		} else
- 		if (!outp.location) {
- 			if (outp.type == DCB_OUTPUT_DP)
-@@ -1140,14 +1142,16 @@ nv50_disp_intr_unk20_2(struct nv50_disp_
- 			oreg = 0x614300 + (ffs(outp.or) - 1) * 0x800;
- 			oval = (conf & 0x0100) ? 0x00000101 : 0x00000000;
- 			hval = 0x00000000;
-+			mask = 0x00000707;
- 		} else {
- 			oreg = 0x614380 + (ffs(outp.or) - 1) * 0x800;
- 			oval = 0x00000001;
- 			hval = 0x00000001;
-+			mask = 0x00000707;
- 		}
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -3,7 +3,7 @@
+  *
+  * Module interface and handling of zfcp data structures.
+  *
+- * Copyright IBM Corp. 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
  
- 		nv_mask(priv, hreg, 0x0000000f, hval);
--		nv_mask(priv, oreg, 0x00000707, oval);
-+		nv_mask(priv, oreg, mask, oval);
+ /*
+@@ -23,6 +23,7 @@
+  *            Christof Schmitt
+  *            Martin Petermann
+  *            Sven Schuetz
++ *            Steffen Maier
+  */
+ 
+ #define KMSG_COMPONENT "zfcp"
+@@ -415,6 +416,8 @@ struct zfcp_adapter *zfcp_adapter_enqueu
+ 	adapter->dma_parms.max_segment_size = ZFCP_QDIO_SBALE_LEN;
+ 	adapter->ccw_device->dev.dma_parms = &adapter->dma_parms;
+ 
++	adapter->stat_read_buf_num = FSF_STATUS_READS_RECOM;
++
+ 	if (!zfcp_scsi_adapter_register(adapter))
+ 		return adapter;
+ 
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -3,7 +3,7 @@
+  *
+  * Implementation of FSF commands.
+  *
+- * Copyright IBM Corp. 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
+ 
+ #define KMSG_COMPONENT "zfcp"
+@@ -483,12 +483,8 @@ static int zfcp_fsf_exchange_config_eval
+ 
+ 	fc_host_port_name(shost) = nsp->fl_wwpn;
+ 	fc_host_node_name(shost) = nsp->fl_wwnn;
+-	fc_host_port_id(shost) = ntoh24(bottom->s_id);
+-	fc_host_speed(shost) =
+-		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
+ 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
+ 
+-	adapter->hydra_version = bottom->adapter_type;
+ 	adapter->timer_ticks = bottom->timer_interval & ZFCP_FSF_TIMER_INT_MASK;
+ 	adapter->stat_read_buf_num = max(bottom->status_read_buf_num,
+ 					 (u16)FSF_STATUS_READS_RECOM);
+@@ -496,6 +492,19 @@ static int zfcp_fsf_exchange_config_eval
+ 	if (fc_host_permanent_port_name(shost) == -1)
+ 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
+ 
++	zfcp_scsi_set_prot(adapter);
++
++	/* no error return above here, otherwise must fix call chains */
++	/* do not evaluate invalid fields */
++	if (req->qtcb->header.fsf_status == FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE)
++		return 0;
++
++	fc_host_port_id(shost) = ntoh24(bottom->s_id);
++	fc_host_speed(shost) =
++		zfcp_fsf_convert_portspeed(bottom->fc_link_speed);
++
++	adapter->hydra_version = bottom->adapter_type;
++
+ 	switch (bottom->fc_topology) {
+ 	case FSF_TOPO_P2P:
+ 		adapter->peer_d_id = ntoh24(bottom->peer_d_id);
+@@ -517,8 +526,6 @@ static int zfcp_fsf_exchange_config_eval
+ 		return -EIO;
  	}
+ 
+-	zfcp_scsi_set_prot(adapter);
+-
+ 	return 0;
  }
  
+@@ -569,6 +576,8 @@ static void zfcp_fsf_exchange_config_dat
+ 				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
++		if (zfcp_fsf_exchange_config_evaluate(req))
++			return;
+ 		break;
+ 	default:
+ 		zfcp_erp_adapter_shutdown(adapter, 0, "fsecdh3");
 
 
