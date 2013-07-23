@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934238Ab3GWU15 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:27:57 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:64067 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933584Ab3GWU1y (ORCPT
+	id S934225Ab3GWUbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:31:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30881 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932447Ab3GWUbS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:27:54 -0400
-X-Greylist: delayed 4313 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Jul 2013 16:27:54 EDT
-Date: Tue, 23 Jul 2013 16:27:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 12/21] x86, acpi: Try to find if SRAT is overrided
- earlier.
-Message-ID: <20130723202746.GQ21100@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-13-git-send-email-tangchen@cn.fujitsu.com>
+	Tue, 23 Jul 2013 16:31:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,730,1367996400"; 
+   d="scan'208";a="375282918"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peng Tao <bergwolf@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peng Tao <tao.peng@emc.com>
+Subject: Re: [PATCH 02/48] staging/lustre/obdclass: restore lu_ref
+Thread-Topic: [PATCH 02/48] staging/lustre/obdclass: restore lu_ref
+Thread-Index: AQHOhvX22ZueCadhDkqfyap0NL7laJlzH3oA//+qhAA=
+Date: Tue, 23 Jul 2013 20:31:15 +0000
+Message-ID: <CE1443D8.57081%andreas.dilger@intel.com>
+In-Reply-To: <20130723193712.GA9385@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.141.148]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2ACF3A707CBD484787E01D8497C011EF@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374220774-29974-13-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 03:59:25PM +0800, Tang Chen wrote:
-> As we mentioned in previous patches, to prevent the kernel
+On 2013/07/23 1:37 PM, "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+wrote:
 
-Prolly best to briefly describe what the overall goal is about.
+>On Tue, Jul 23, 2013 at 12:06:23AM +0800, Peng Tao wrote:
+>> lu_ref.[ch] were mistakenly removed by coan2. Add them back and guard
+>> with CONFIG_LUSTRE_DEBUG_LU_REF_CHECK.
+>
+>Ick, why?  Why not use the in-kernel infrastructure for this type of
+>thig, _iff_ you really need it.
+>
+>Why do you need this at all, isn't the reference code fully debugged by
+>now, given that this has been running for years?  I would only expect to
+>see something like this in new code that is still being developed.
 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index 28d2e60..9717760 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -1078,6 +1078,15 @@ void __init setup_arch(char **cmdline_p)
->  	/* Initialize ACPI root table */
->  	acpi_root_table_init();
->  
-> +#ifdef CONFIG_ACPI_NUMA
-> +	/*
-> +	 * Linux kernel cannot migrate kernel pages, as a result, memory used
-> +	 * by the kernel cannot be hot-removed. Reserve hotpluggable memory to
-> +	 * prevent memblock from allocating hotpluggable memory for the kernel.
-> +	 */
-> +	reserve_hotpluggable_memory();
-> +#endif
+Lustre is still being developed, so it is useful to be able to enable this
+debugging to catch any new problems that are introduced.
 
-Hmmm, so you're gonna reserve all hotpluggable memory areas until
-everything is up and running, which probably is why allocating
-node_data on hotpluggable node doesn't work, right?
-
-> +#ifdef CONFIG_ACPI_NUMA
-> +/*
-
-/**
-
-> + * early_acpi_override_srat - Try to get the phys addr of SRAT in initrd.
-> + *
-> + * The ACPI_INITRD_TABLE_OVERRIDE procedure is able to use tables in initrd
-> + * file to override the ones provided by firmware. This function checks if
-> + * there is a SRAT in initrd at early time. If so, return the phys addr of
-> + * the SRAT.
-> + *
-> + * Return the phys addr of SRAT in initrd, 0 if there is no SRAT.
-> + */
-> +phys_addr_t __init early_acpi_override_srat(void)
-> +{
-> +	int i;
-> +	u32 length;
-> +	long offset;
-> +	void *ramdisk_vaddr;
-> +	struct acpi_table_header *table;
-> +	unsigned long map_step = NR_FIX_BTMAPS << PAGE_SHIFT;
-> +	phys_addr_t ramdisk_image = get_ramdisk_image();
-> +	char cpio_path[32] = "kernel/firmware/acpi/";
-> +	struct cpio_data file;
-
-Don't we usually put variable declarations with initializers before
-others?  For some reason, the above block is painful to look at.
-
-> +	/* Try to find if SRAT is overrided */
-                                  ^
-                                  overridden?
-
-...
-> +#ifdef CONFIG_ACPI_NUMA
-> +/*
-
-/**
-
-> + * reserve_hotpluggable_memory - Reserve hotpluggable memory in memblock.
-> + *
-> + * This function did the following:
-> + * 1. Try to find if there is a SRAT in initrd file used to override the one
-> + *    provided by firmware. If so, get its phys addr.
-> + * 2. If there is no override SRAT, get the phys addr of the SRAT in firmware.
-> + * 3. Parse SRAT, find out which memory is hotpluggable, and reserve it in
-> + *    memblock.
-> + */
-> +void __init reserve_hotpluggable_memory(void)
-
+Cheers, Andreas
 -- 
-tejun
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
+
