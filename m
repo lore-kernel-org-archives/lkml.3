@@ -1,82 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab3GWJHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:07:54 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:35422 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab3GWJHu (ORCPT
+	id S1756106Ab3GWJIU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:08:20 -0400
+Received: from intranet.asianux.com ([58.214.24.6]:34391 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753329Ab3GWJIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:07:50 -0400
-Message-ID: <51EE47DE.5020002@ozlabs.ru>
-Date: Tue, 23 Jul 2013 19:07:42 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
+	Tue, 23 Jul 2013 05:08:18 -0400
+X-Spam-Score: -100.8
+Message-ID: <51EE47C6.4040601@asianux.com>
+Date: Tue, 23 Jul 2013 17:07:18 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Alex Williamson <alex.williamson@redhat.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm-ppc@vger.kernel.org
-Subject: Re: [PATCH 03/10] vfio: add external user support
-References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>  <1373936045-22653-4-git-send-email-aik@ozlabs.ru> <1374546224.15429.8.camel@ul30vt.home>
-In-Reply-To: <1374546224.15429.8.camel@ul30vt.home>
-Content-Type: text/plain; charset=KOI8-R
+To: Thomas Gleixner <tglx@linutronix.de>, Greg KH <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kernel/irq/devres.c: move "kernel/irq/devres.c" to "drivers/base/devres_irq.c"
+References: <51EE3264.7010801@asianux.com>
+In-Reply-To: <51EE3264.7010801@asianux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 12:23 PM, Alex Williamson wrote:
-> On Tue, 2013-07-16 at 10:53 +1000, Alexey Kardashevskiy wrote:
->> VFIO is designed to be used via ioctls on file descriptors
->> returned by VFIO.
->>
->> However in some situations support for an external user is required.
->> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
->> use the existing VFIO groups for exclusive access in real/virtual mode
->> on a host to avoid passing map/unmap requests to the user space which
->> would made things pretty slow.
->>
->> The protocol includes:
->>
->> 1. do normal VFIO init operation:
->> 	- opening a new container;
->> 	- attaching group(s) to it;
->> 	- setting an IOMMU driver for a container.
->> When IOMMU is set for a container, all groups in it are
->> considered ready to use by an external user.
->>
->> 2. User space passes a group fd to an external user.
->> The external user calls vfio_group_get_external_user()
->> to verify that:
->> 	- the group is initialized;
->> 	- IOMMU is set for it.
->> If both checks passed, vfio_group_get_external_user()
->> increments the container user counter to prevent
->> the VFIO group from disposal before KVM exits.
->>
->> 3. The external user calls vfio_external_user_iommu_id()
->> to know an IOMMU ID. PPC64 KVM uses it to link logical bus
->> number (LIOBN) with IOMMU ID.
->>
->> 4. When the external KVM finishes, it calls
->> vfio_group_put_external_user() to release the VFIO group.
->> This call decrements the container user counter.
->> Everything gets released.
->>
->> The "vfio: Limit group opens" patch is also required for the consistency.
->>
->> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+
+Currently, devm* are implemented in various places.
+
+IO region: in kernel/resources.c  (it may be related with resource)
+IOMAP:     in lib/devres.c        (it seem not be related with general lib)
+Gen pool:  in lib/genalloc.c      (it maybe be related with lib)
+IRQ:       in kernel/irq/devres.c (it doesn't belong to generic hard irq)
+Others:    in drivers/*
+
+For my opinion:
+  move them all to "drivers/base/".
+  or move some basic devm* to "lib/", and still let another devm* which related with the specific features no touch (excluding IRQ, it need still move to "kernel/").
+
+
+Welcome any other members suggestions or completions.
+
+Thanks.
+
+
+On 07/23/2013 03:36 PM, Chen Gang wrote:
+> "kernel/irq/devres.c" is a driver extension tool for irq (with devres)
+> which is independent on 'GENERIC_HARDIRQS', so it is not suitable to
+> still be in "kernel/irq/" which depends on 'GENERIC_HARDIRQS'.
 > 
-> This looks fine to me.  Is the plan to add this through the ppc tree
-> again?  Thanks,
-
-
-Nope, better to add this through your tree. And faster for sure :) Thanks!
-
+> It is a basic tool for drivers, so can move it to "drivers/base/" to be
+> independent on 'GENERIC_HARDIRQS'.
+> 
+> It is about irq features, so if can not find other more suitable place,
+> can still let their declaration in "include/linux/interrupts.h".
+> 
+> The related error (with randconfig which disable 'GENERIC_HARDIRQS')
+> 
+>   drivers/built-in.o: In function `dw_dma_probe':
+>   (.text+0x3747a): undefined reference to `devm_request_threaded_irq'
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  drivers/base/Makefile     |    2 +-
+>  drivers/base/devres_irq.c |   94 +++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/irq/Makefile       |    2 +-
+>  kernel/irq/devres.c       |   94 ---------------------------------------------
+>  4 files changed, 96 insertions(+), 96 deletions(-)
+>  create mode 100644 drivers/base/devres_irq.c
+>  delete mode 100644 kernel/irq/devres.c
+> 
+> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> index 94e8a80..cb706f9 100644
+> --- a/drivers/base/Makefile
+> +++ b/drivers/base/Makefile
+> @@ -2,7 +2,7 @@
+>  
+>  obj-y			:= core.o bus.o dd.o syscore.o \
+>  			   driver.o class.o platform.o \
+> -			   cpu.o firmware.o init.o map.o devres.o \
+> +			   cpu.o firmware.o init.o map.o devres.o devres_irq.o \
+>  			   attribute_container.o transport_class.o \
+>  			   topology.o
+>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+> diff --git a/drivers/base/devres_irq.c b/drivers/base/devres_irq.c
+> new file mode 100644
+> index 0000000..bd8e788
+> --- /dev/null
+> +++ b/drivers/base/devres_irq.c
+> @@ -0,0 +1,94 @@
+> +#include <linux/module.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/device.h>
+> +#include <linux/gfp.h>
+> +
+> +/*
+> + * Device resource management aware IRQ request/free implementation.
+> + */
+> +struct irq_devres {
+> +	unsigned int irq;
+> +	void *dev_id;
+> +};
+> +
+> +static void devm_irq_release(struct device *dev, void *res)
+> +{
+> +	struct irq_devres *this = res;
+> +
+> +	free_irq(this->irq, this->dev_id);
+> +}
+> +
+> +static int devm_irq_match(struct device *dev, void *res, void *data)
+> +{
+> +	struct irq_devres *this = res, *match = data;
+> +
+> +	return this->irq == match->irq && this->dev_id == match->dev_id;
+> +}
+> +
+> +/**
+> + *	devm_request_threaded_irq - allocate an interrupt line for a managed device
+> + *	@dev: device to request interrupt for
+> + *	@irq: Interrupt line to allocate
+> + *	@handler: Function to be called when the IRQ occurs
+> + *	@thread_fn: function to be called in a threaded interrupt context. NULL
+> + *		    for devices which handle everything in @handler
+> + *	@irqflags: Interrupt type flags
+> + *	@devname: An ascii name for the claiming device
+> + *	@dev_id: A cookie passed back to the handler function
+> + *
+> + *	Except for the extra @dev argument, this function takes the
+> + *	same arguments and performs the same function as
+> + *	request_irq().  IRQs requested with this function will be
+> + *	automatically freed on driver detach.
+> + *
+> + *	If an IRQ allocated with this function needs to be freed
+> + *	separately, devm_free_irq() must be used.
+> + */
+> +int devm_request_threaded_irq(struct device *dev, unsigned int irq,
+> +			      irq_handler_t handler, irq_handler_t thread_fn,
+> +			      unsigned long irqflags, const char *devname,
+> +			      void *dev_id)
+> +{
+> +	struct irq_devres *dr;
+> +	int rc;
+> +
+> +	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
+> +			  GFP_KERNEL);
+> +	if (!dr)
+> +		return -ENOMEM;
+> +
+> +	rc = request_threaded_irq(irq, handler, thread_fn, irqflags, devname,
+> +				  dev_id);
+> +	if (rc) {
+> +		devres_free(dr);
+> +		return rc;
+> +	}
+> +
+> +	dr->irq = irq;
+> +	dr->dev_id = dev_id;
+> +	devres_add(dev, dr);
+> +
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(devm_request_threaded_irq);
+> +
+> +/**
+> + *	devm_free_irq - free an interrupt
+> + *	@dev: device to free interrupt for
+> + *	@irq: Interrupt line to free
+> + *	@dev_id: Device identity to free
+> + *
+> + *	Except for the extra @dev argument, this function takes the
+> + *	same arguments and performs the same function as free_irq().
+> + *	This function instead of free_irq() should be used to manually
+> + *	free IRQs allocated with devm_request_irq().
+> + */
+> +void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
+> +{
+> +	struct irq_devres match_data = { irq, dev_id };
+> +
+> +	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
+> +			       &match_data));
+> +	free_irq(irq, dev_id);
+> +}
+> +EXPORT_SYMBOL(devm_free_irq);
+> diff --git a/kernel/irq/Makefile b/kernel/irq/Makefile
+> index fff1738..d98eec9 100644
+> --- a/kernel/irq/Makefile
+> +++ b/kernel/irq/Makefile
+> @@ -1,5 +1,5 @@
+>  
+> -obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o devres.o
+> +obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o
+>  obj-$(CONFIG_GENERIC_IRQ_CHIP) += generic-chip.o
+>  obj-$(CONFIG_GENERIC_IRQ_PROBE) += autoprobe.o
+>  obj-$(CONFIG_IRQ_DOMAIN) += irqdomain.o
+> diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
+> deleted file mode 100644
+> index bd8e788..0000000
+> --- a/kernel/irq/devres.c
+> +++ /dev/null
+> @@ -1,94 +0,0 @@
+> -#include <linux/module.h>
+> -#include <linux/interrupt.h>
+> -#include <linux/device.h>
+> -#include <linux/gfp.h>
+> -
+> -/*
+> - * Device resource management aware IRQ request/free implementation.
+> - */
+> -struct irq_devres {
+> -	unsigned int irq;
+> -	void *dev_id;
+> -};
+> -
+> -static void devm_irq_release(struct device *dev, void *res)
+> -{
+> -	struct irq_devres *this = res;
+> -
+> -	free_irq(this->irq, this->dev_id);
+> -}
+> -
+> -static int devm_irq_match(struct device *dev, void *res, void *data)
+> -{
+> -	struct irq_devres *this = res, *match = data;
+> -
+> -	return this->irq == match->irq && this->dev_id == match->dev_id;
+> -}
+> -
+> -/**
+> - *	devm_request_threaded_irq - allocate an interrupt line for a managed device
+> - *	@dev: device to request interrupt for
+> - *	@irq: Interrupt line to allocate
+> - *	@handler: Function to be called when the IRQ occurs
+> - *	@thread_fn: function to be called in a threaded interrupt context. NULL
+> - *		    for devices which handle everything in @handler
+> - *	@irqflags: Interrupt type flags
+> - *	@devname: An ascii name for the claiming device
+> - *	@dev_id: A cookie passed back to the handler function
+> - *
+> - *	Except for the extra @dev argument, this function takes the
+> - *	same arguments and performs the same function as
+> - *	request_irq().  IRQs requested with this function will be
+> - *	automatically freed on driver detach.
+> - *
+> - *	If an IRQ allocated with this function needs to be freed
+> - *	separately, devm_free_irq() must be used.
+> - */
+> -int devm_request_threaded_irq(struct device *dev, unsigned int irq,
+> -			      irq_handler_t handler, irq_handler_t thread_fn,
+> -			      unsigned long irqflags, const char *devname,
+> -			      void *dev_id)
+> -{
+> -	struct irq_devres *dr;
+> -	int rc;
+> -
+> -	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
+> -			  GFP_KERNEL);
+> -	if (!dr)
+> -		return -ENOMEM;
+> -
+> -	rc = request_threaded_irq(irq, handler, thread_fn, irqflags, devname,
+> -				  dev_id);
+> -	if (rc) {
+> -		devres_free(dr);
+> -		return rc;
+> -	}
+> -
+> -	dr->irq = irq;
+> -	dr->dev_id = dev_id;
+> -	devres_add(dev, dr);
+> -
+> -	return 0;
+> -}
+> -EXPORT_SYMBOL(devm_request_threaded_irq);
+> -
+> -/**
+> - *	devm_free_irq - free an interrupt
+> - *	@dev: device to free interrupt for
+> - *	@irq: Interrupt line to free
+> - *	@dev_id: Device identity to free
+> - *
+> - *	Except for the extra @dev argument, this function takes the
+> - *	same arguments and performs the same function as free_irq().
+> - *	This function instead of free_irq() should be used to manually
+> - *	free IRQs allocated with devm_request_irq().
+> - */
+> -void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
+> -{
+> -	struct irq_devres match_data = { irq, dev_id };
+> -
+> -	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
+> -			       &match_data));
+> -	free_irq(irq, dev_id);
+> -}
+> -EXPORT_SYMBOL(devm_free_irq);
+> 
 
 
 -- 
-Alexey
+Chen Gang
