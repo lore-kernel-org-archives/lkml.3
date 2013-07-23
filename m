@@ -1,109 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933490Ab3GWPza (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:55:30 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:3567 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933398Ab3GWPzX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:55:23 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC106.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275dhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT002.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(377454003)(24454002)(13464003)(199002)(189002)(51704005)(479174003)(74316001)(74706001)(51856001)(19580395003)(83322001)(66066001)(16406001)(19580405001)(49866001)(69226001)(76786001)(81342001)(76796001)(77982001)(63696002)(46102001)(76576001)(47736001)(59766001)(74876001)(47976001)(74366001)(77096001)(54316002)(47446002)(56816003)(81542001)(80022001)(53806001)(74502001)(65816001)(74662001)(4396001)(83072001)(79102001)(33646001)(50986001)(31966008)(54356001)(76482001)(56776001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Dave Hansen <dave.hansen@intel.com>
-CC: Michal Hocko <mhocko@suse.cz>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "kay@vrfy.org" <kay@vrfy.org>
-Subject: RE: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Thread-Topic: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Thread-Index: AQHOhLBUexA6H+ozR02R0nup8ZuRHJlwpwQAgAGspICAABWHgIAABmSQ
-Date: Tue, 23 Jul 2013 15:54:10 +0000
-Message-ID: <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
- <20130722123716.GB24400@dhcp22.suse.cz>
- <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
- <51EEA11D.4030007@intel.com>
-In-Reply-To: <51EEA11D.4030007@intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0916FC3A18
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933510Ab3GWPzt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:55:49 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:26834 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933070Ab3GWPzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:55:47 -0400
+Date: Tue, 23 Jul 2013 11:55:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        gleb@redhat.com, pbonzini@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 2/4] xen: switch to use hypervisor_cpuid_base()
+Message-ID: <20130723155504.GA5328@phenom.dumpdata.com>
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com>
+ <1374572465-15278-2-git-send-email-jasowang@redhat.com>
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VRFY.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%INTEL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14HUBC106.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374572465-15278-2-git-send-email-jasowang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Dave Hansen [mailto:dave.hansen@intel.com]
-> Sent: Tuesday, July 23, 2013 11:28 AM
-> To: KY Srinivasan
-> Cc: Michal Hocko; gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
-> kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org; yinghan@google.com;
-> jasowang@redhat.com; kay@vrfy.org
-> Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
-> memory blocks
+On Tue, Jul 23, 2013 at 05:41:03PM +0800, Jason Wang wrote:
+> Switch to use hypervisor_cpuid_base() to detect Xen.
 > 
-> On 07/23/2013 07:52 AM, KY Srinivasan wrote:
-> >  The current scheme of involving user
-> > level code to close this loop obviously does not perform well under high
-> memory pressure.
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: x86@kernel.org
+> Cc: Paolo Bonzini <pbonzini@redhat.com>
+> Cc: xen-devel@lists.xensource.com
+> Cc: virtualization@lists.linux-foundation.org
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  arch/x86/include/asm/xen/hypervisor.h |   16 +---------------
+>  1 files changed, 1 insertions(+), 15 deletions(-)
 > 
-> Adding memory usually requires allocating some large, contiguous areas
-> of memory for use as mem_map[] and other VM structures.  That's really
-> hard to do under heavy memory pressure.  How are you accomplishing this?
-
-I cannot avoid failures because of lack of memory. In this case I notify the host of
-the failure and also tag the failure as transient. Host retries the operation after some
-delay. There is no guarantee it will succeed though.
-
-K. Y
+> diff --git a/arch/x86/include/asm/xen/hypervisor.h b/arch/x86/include/asm/xen/hypervisor.h
+> index 125f344..d866959 100644
+> --- a/arch/x86/include/asm/xen/hypervisor.h
+> +++ b/arch/x86/include/asm/xen/hypervisor.h
+> @@ -40,21 +40,7 @@ extern struct start_info *xen_start_info;
+>  
+>  static inline uint32_t xen_cpuid_base(void)
+>  {
+> -	uint32_t base, eax, ebx, ecx, edx;
+> -	char signature[13];
+> -
+> -	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> -		cpuid(base, &eax, &ebx, &ecx, &edx);
+> -		*(uint32_t *)(signature + 0) = ebx;
+> -		*(uint32_t *)(signature + 4) = ecx;
+> -		*(uint32_t *)(signature + 8) = edx;
+> -		signature[12] = 0;
+> -
+> -		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+> -			return base;
+> -	}
+> -
+> -	return 0;
+> +	return hypervisor_cpuid_base("XenVMMXenVMM", 2);
+>  }
+>  
+>  #ifdef CONFIG_XEN
+> -- 
+> 1.7.1
 > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> 
-
-
-
