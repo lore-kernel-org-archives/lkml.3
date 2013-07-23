@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab3GWHYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:24:41 -0400
-Received: from server19320154104.serverpool.info ([193.201.54.104]:37689 "EHLO
-	hauke-m.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753730Ab3GWHYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:24:39 -0400
-Message-ID: <51EE2FA4.3020302@hauke-m.de>
-Date: Tue, 23 Jul 2013 09:24:20 +0200
-From: Hauke Mehrtens <hauke@hauke-m.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755014Ab3GWHZT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:25:19 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:14890 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab3GWHZQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 03:25:16 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 23 Jul 2013 00:25:14 -0700
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <kishon@ti.com>, <j-keerthy@ti.com>, <gg@slimlogic.co.uk>,
+        <swarren@nvidia.com>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V4] gpio: palmas: add dt support
+Date: Tue, 23 Jul 2013 13:06:04 +0530
+Message-ID: <1374564964-1281-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the wireless-next tree
-References: <20130723113245.a71f780b34193953a4a5cb45@canb.auug.org.au>
-In-Reply-To: <20130723113245.a71f780b34193953a4a5cb45@canb.auug.org.au>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Add of_device_id table for Palma GPIO to be enable the
+driver from DT file.
 
-On 07/23/2013 03:32 AM, Stephen Rothwell wrote:
-> Hi John,
-> 
-> After merging the wireless-next tree, today's linux-next build
-> (x86_64 allmodconfig) failed like this:
-> 
-> drivers/net/ethernet/broadcom/bgmac.c:19:27: fatal error:
-> bcm47xx_nvram.h: No such file or directory #include
-> <bcm47xx_nvram.h> ^
-> 
-> That file only exists for the MIPS architecture ...
-> 
-> Caused by commit 6ffdead8027c ("bcma: make it possible to select
-> SoC support without mips").
-> 
-> I have used the version of the wireless-next tree from
-> next-20130722 for today.
+The driver can be registered from DT file as:
+	palmas: tps65913@58 {
+		:::::::::::
+		palmas_gpio: palmas_gpio {
+			compatible = "ti,palmas-gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
+	};
 
-Thanks for spotting this. CONFIG_BGMAC should depend on
-CONFIG_BCM47XX, I will send a patch for this to David Miller in the
-evening.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+Long back, I sent the similar patch but it was paused due to the DT binding.
+http://lkml.indiana.edu/hypermail/linux/kernel/1304.2/00261.html
 
-Hauke
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with undefined - http://www.enigmail.net/
+Now, PMIC DT binding is already finalised and as per mfd binding, we can
+go ahead with similar approach for gpios. pmic and other palams sub devices
+are already following the same approach.
 
-iQIcBAEBAgAGBQJR7i+eAAoJEIZ0px9YPRMyxdMP/ixL8Dff/vZSXrncnWXGeBea
-NgllYlmgPq44CyvPSYMi1WpsKBTOW2L3Yt8v7t/OJH4vDTQHrTxSbdtQFuFW9ZqN
-+TTbmRkK4EgYyvnJ87RFAA0o6VWkho+oMMdQD88Nj9uBl38wSH2BoX9Dfe/4UPCt
-xLS1TtrkNJOtwnu1crgh30aGUtX6Xw9AP201ySS6NElLuhulfHhx3pu3Y4ZiBPpW
-sIKUYkpUvrqghKBvFdjy81iJxtdQ99ZYBHVrrTvAWfiV7WMCV8siGj6UDOi+ujgF
-qzjMCy0Q4Bs4kL22XNDPTz+vFXRx45NoH7RJdPyV5Z6ylBVfAJZMSMMI5zqv08VG
-ihnnyDDUlOGKcgBCoe2HpYDDIwV34WXKTNFNbzmQ2tgE9JntkfDxq6xr4cIS9FTL
-iogNUJV32ColuansjkmAeeED6oy6QT7DcZYOMBXNcMHkRQGgt5/XfwYhVYTPWdsG
-LuKxnw4RCnzWwL5hsghrtP2s9EPXsmWHf8BWtT+Ob8KmAx/rcnLZL2YDHd8uro0+
-ZGZyqExkg9MFC3d+6goJd3E7BXEz/oytTUOBA7RuBsN7OlCVP2ixs1O4HtVwEi+/
-o+5CXFKYAlY1+sOVy2lW/RRfZ8XrhUW3rP477HNnrri9bZKb5jvlw9Bb0C2ANDSL
-JtW7+ofqPY7+m2xHNX76
-=cySC
------END PGP SIGNATURE-----
+Sending 3rd version of the change which is same as per code is related but
+adding devicetree binding document for gpio also at this time.
+
+Changes from V3:
+- Added description in DT binding document for second arg of gpio cells.
+
+ .../devicetree/bindings/gpio/gpio-palmas.txt       |   27 ++++++++++++++++++++
+ drivers/gpio/gpio-palmas.c                         |   12 ++++++++-
+ 2 files changed, 38 insertions(+), 1 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-palmas.txt b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+new file mode 100644
+index 0000000..08b5b52
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-palmas.txt
+@@ -0,0 +1,27 @@
++Palmas GPIO controller bindings
++
++Required properties:
++- compatible:
++  - "ti,palams-gpio" for palma series of the GPIO controller
++  - "ti,tps80036-gpio" for Palma series device TPS80036.
++  - "ti,tps65913-gpio" for palma series device TPS65913.
++  - "ti,tps65914-gpio" for palma series device TPS65914.
++- #gpio-cells : Should be two.
++  - first cell is the gpio pin number
++  - second cell is used to specify the gpio polarity:
++      0 = active high
++      1 = active low
++- gpio-controller : Marks the device node as a GPIO controller.
++
++Note: This gpio node will be sub node of palmas node.
++
++Example:
++	palmas: tps65913@58 {
++		:::::::::::
++		palmas_gpio: palmas_gpio {
++			compatible = "ti,palmas-gpio";
++			gpio-controller;
++			#gpio-cells = <2>;
++		};
++		:::::::::::
++	};
+diff --git a/drivers/gpio/gpio-palmas.c b/drivers/gpio/gpio-palmas.c
+index e3a4e56..09360c4 100644
+--- a/drivers/gpio/gpio-palmas.c
++++ b/drivers/gpio/gpio-palmas.c
+@@ -134,7 +134,7 @@ static int palmas_gpio_probe(struct platform_device *pdev)
+ 	palmas_gpio->gpio_chip.get	= palmas_gpio_get;
+ 	palmas_gpio->gpio_chip.dev = &pdev->dev;
+ #ifdef CONFIG_OF_GPIO
+-	palmas_gpio->gpio_chip.of_node = palmas->dev->of_node;
++	palmas_gpio->gpio_chip.of_node = pdev->dev.of_node;
+ #endif
+ 	palmas_pdata = dev_get_platdata(palmas->dev);
+ 	if (palmas_pdata && palmas_pdata->gpio_base)
+@@ -159,9 +159,19 @@ static int palmas_gpio_remove(struct platform_device *pdev)
+ 	return gpiochip_remove(&palmas_gpio->gpio_chip);
+ }
+ 
++static struct of_device_id of_palmas_gpio_match[] = {
++	{ .compatible = "ti,palmas-gpio"},
++	{ .compatible = "ti,tps65913-gpio"},
++	{ .compatible = "ti,tps65914-gpio"},
++	{ .compatible = "ti,tps80036-gpio"},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, of_palmas_gpio_match);
++
+ static struct platform_driver palmas_gpio_driver = {
+ 	.driver.name	= "palmas-gpio",
+ 	.driver.owner	= THIS_MODULE,
++	.driver.of_match_table = of_palmas_gpio_match,
+ 	.probe		= palmas_gpio_probe,
+ 	.remove		= palmas_gpio_remove,
+ };
+-- 
+1.7.1.1
+
