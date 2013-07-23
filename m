@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753083Ab3GWBTC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 21:19:02 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:54205 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751296Ab3GWBS7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 21:18:59 -0400
+	id S1753448Ab3GWBTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 21:19:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:27138 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507Ab3GWBTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 21:19:33 -0400
+X-IronPort-AV: E=Sophos;i="4.89,722,1367942400"; 
+   d="scan'208";a="7984713"
+Message-ID: <51EDDB02.20502@cn.fujitsu.com>
+Date: Tue, 23 Jul 2013 09:23:14 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <CAErSpo7=ed3=P7ab9zYB23qnwe8Z-ghRfCEurskpcNW5m86j8g@mail.gmail.com>
-References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com>
- <1372860295-8306-2-git-send-email-mika.westerberg@linux.intel.com> <CAErSpo7=ed3=P7ab9zYB23qnwe8Z-ghRfCEurskpcNW5m86j8g@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 22 Jul 2013 19:18:38 -0600
-Message-ID: <CAErSpo5=-32QSZ_RtLgU_67gMF6RVcnTAG6oKJ_Uz7uf4pXRkA@mail.gmail.com>
-Subject: Re: [PATCH v2 1/8] x86/PCI: prevent re-allocation of already existing
- bridge and ROM resources
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Penner, Miles J" <miles.j.penner@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+To: Tejun Heo <tj@kernel.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com,
+        Yinghai Lu <yinghai@kernel.org>,
+        Alex Duyck <alexander.h.duyck@intel.com>
+Subject: Re: workqueue, pci: INFO: possible recursive locking detected
+References: <51E55B7D.2040209@linux.vnet.ibm.com> <51E66CCC.9010600@cn.fujitsu.com> <51E84EDC.5090502@linux.vnet.ibm.com> <51E89ABB.20808@cn.fujitsu.com> <51E8FF76.5030706@linux.vnet.ibm.com> <51ED1D02.80205@cn.fujitsu.com> <20130722213231.GC16776@mtj.dyndns.org>
+In-Reply-To: <20130722213231.GC16776@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:17:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/23 09:17:32,
+	Serialize complete at 2013/07/23 09:17:32
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 6:08 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Wed, Jul 3, 2013 at 8:04 AM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
->> In hotplug case (especially with Thunderbolt enabled systems) we might need
->> to call pcibios_resource_survey_bus() several times for a bus. The function
->> ends up calling pci_claim_resource() for each bridge resource that then
->> fails claiming that the resource exists already (which it does). Once this
->> happens the resource is invalidated thus preventing devices behind the
->> bridge to allocate their resources.
->>
->> To fix this we do what has been done in pcibios_allocate_dev_resources()
->> and check 'parent' of the given resource. If it is non-NULL it means that
->> the resource has been allocated already and we can skip it. We do the same
->> for ROM resources as well.
->>
->> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->
-> This looks reasonable to me.
+On 07/23/2013 05:32 AM, Tejun Heo wrote:
+> On Mon, Jul 22, 2013 at 07:52:34PM +0800, Lai Jiangshan wrote:
+>> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+>> index f02c4a4..b021a45 100644
+>> --- a/kernel/workqueue.c
+>> +++ b/kernel/workqueue.c
+>> @@ -4731,6 +4731,7 @@ struct work_for_cpu {
+>>  	long (*fn)(void *);
+>>  	void *arg;
+>>  	long ret;
+>> +	struct completion done;
+>>  };
+>>  
+>>  static void work_for_cpu_fn(struct work_struct *work)
+>> @@ -4738,6 +4739,7 @@ static void work_for_cpu_fn(struct work_struct *work)
+>>  	struct work_for_cpu *wfc = container_of(work, struct work_for_cpu, work);
+>>  
+>>  	wfc->ret = wfc->fn(wfc->arg);
+>> +	complete(&wfc->done);
+>>  }
+>>  
+>>  /**
+>> @@ -4755,8 +4757,9 @@ long work_on_cpu(int cpu, long (*fn)(void *), void *arg)
+>>  	struct work_for_cpu wfc = { .fn = fn, .arg = arg };
+>>  
+>>  	INIT_WORK_ONSTACK(&wfc.work, work_for_cpu_fn);
+>> +	init_completion(&wfc.done);
+>>  	schedule_work_on(cpu, &wfc.work);
+>> -	flush_work(&wfc.work);
+>> +	wait_for_completion(&wfc.done);
+> 
+> Hmmm... it's kinda nasty.  Given how infrequently work_on_cpu() users
+> nest, I think it'd be cleaner to have work_on_cpu_nested() which takes
+> @subclass.  It requires extra work on the caller's part but I think
+> that actually is useful as nested work_on_cpu()s are pretty weird
+> things.
+> 
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+The problem is that the userS may not know their work_on_cpu() nested,
+especially when work_on_cpu()s are on different subsystems and the call depth
+is deep enough but the nested work_on_cpu() depends on some conditions.
 
-> However, the use of "r->parent" to determine whether the resource is
-> already allocated is nothing specific to x86.  So I think we might be
-> missing an opportunity to make this more consistent across
-> architectures.  I looked at other callers of pci_claim_resource() for
-> bridge and ROM resources, and it looks like we might be able to make
-> similar changes in:
->
->   frv pcibios_allocate_bus_resources()
->   ia64 pcibios_fixup_resources() (via pcibios_fixup_bridge_resources())
->   mn10300 pcibios_allocate_bus_resources()
->   mn10300 pcibios_assign_resources() (ROM)
->   mn10300 pcibios_fixup_device_resources()
->   parisc lba_fixup_bus()
->
-> I really hate the idea of fixing something for x86 but not for other
-> arches, so maybe somebody could take a deeper look at this and see if
-> it would make sense to change the other arches, too.
->
-> Bjorn
->
->> ---
->>  arch/x86/pci/i386.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
->> index 94919e3..db6b1ab 100644
->> --- a/arch/x86/pci/i386.c
->> +++ b/arch/x86/pci/i386.c
->> @@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
->>                 r = &dev->resource[idx];
->>                 if (!r->flags)
->>                         continue;
->> +               if (r->parent)  /* Already allocated */
->> +                       continue;
->>                 if (!r->start || pci_claim_resource(dev, idx) < 0) {
->>                         /*
->>                          * Something is wrong with the region.
->> @@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
->>         r = &dev->resource[PCI_ROM_RESOURCE];
->>         if (!r->flags || !r->start)
->>                 return;
->> +       if (r->parent) /* Already allocated */
->> +               return;
->>
->>         if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
->>                 r->end -= r->start;
->> --
->> 1.8.3.2
->>
+I prefer to change the user instead of introducing work_on_cpu_nested(), and
+I accept to change the user only instead of change work_on_cpu() since there is only
+one nested-calls case found.
+
+But I'm thinking, since nested work_on_cpu() don't have any problem,
+Why workqueue.c don't offer a more friendly API/behavior?
+
+Thanks,
+Lai
