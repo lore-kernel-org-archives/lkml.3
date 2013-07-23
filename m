@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934057Ab3GWVdW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:33:22 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36440 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab3GWVdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:33:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Colin Cross <ccross@android.com>
-Cc: Michael Leun <lkml20130126@newton.leun.net>,
-        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH v3 13/16] futex: use freezable blocking call)
-Date: Tue, 23 Jul 2013 23:43:21 +0200
-Message-ID: <1374626689.YM8vFTr171@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAMbhsRT6zOKLhG_uh=nA8H_3d7afhG+4jvWjvidY3fEguryP_Q@mail.gmail.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com> <20130723200854.2046296b@xenia.leun.net> <CAMbhsRT6zOKLhG_uh=nA8H_3d7afhG+4jvWjvidY3fEguryP_Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1758040Ab3GWVfm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:35:42 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:16827 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab3GWVfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:35:41 -0400
+Message-ID: <1374615285.16322.164.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Tue, 23 Jul 2013 15:34:45 -0600
+In-Reply-To: <51EEEE9F.2060600@sr71.net>
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+	  <20130722083721.GC25976@gmail.com>
+	  <1374513120.16322.21.camel@misato.fc.hp.com>
+	  <20130723080101.GB15255@gmail.com>
+	 <1374612301.16322.136.camel@misato.fc.hp.com> <51EEEE9F.2060600@sr71.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 23, 2013 11:29:57 AM Colin Cross wrote:
-> On Tue, Jul 23, 2013 at 11:08 AM, Michael Leun
-> <lkml20130126@newton.leun.net> wrote:
-> > On Mon, 22 Jul 2013 16:55:58 -0700
-> > Colin Cross <ccross@android.com> wrote:
-> >
-> >> On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
-> >> <lkml20130126@newton.leun.net> wrote:
-> >> > On Mon,  6 May 2013 16:50:18 -0700
-> >> > Colin Cross <ccross@android.com> wrote:
-> >> >
-> >> >> Avoid waking up every thread sleeping in a futex_wait call during
-> >> > [...]
-> >> >
-> >> > With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
-> >> > displaying 0% of saving image to disk.
-> >> >
-> >> > echo "1" >/sys/power/state still works.
-> >> >
-> >> > Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4,
-> >> > reverting that from 3.11-rc2 makes s2disk working again.
-> >> >
-> >>
-> >> I think the expanded use of the freezable_* helpers is exposing an
-> >> existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
-> >> freeze_processes(), which sets the global system_freezing_cnt and
-> >> pm_freezing.  try_to_freeze_tasks then sends every process except
-> >> current a signal which causes them all to end up in the refrigerator.
-> >> The current task then returns back to userspace and continues its work
-> >> to suspend to disk.  If that task ever hits a call to try_to_freeze()
-> >> in the kernel, it will see system_freezing_cnt and pm_freezing=true
-> >> and freeze, and suspend to disk will hang forever.  It could hit
-> >> try_to_freeze() because of a signal delivered to the task, or from
-> >> calling any syscall that uses a freezable_* helper like the one I
-> >> added to sys_futex.
-> >>
-> >> I think the right solution is to add a flag to the freezing task that
-> >> marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
-> >> normally used on kernel threads, can you see if the attached patch
-> >> helps?
-> >
-> > That patch helps.
-> >
-> > BTW, the only machine I can reproduce this bug with is an i7-3630QM
-> > notebook. Cannot reproduce on an Core Duo U1400 and cannot reproduce on
-> > an i7 M 620.
-> >
-> > Are the sysreq backtraces still wanted? If so, any tip, how I could get
-> > them saved?
-> >
-> >
-> > --
-> > MfG,
-> >
-> > Michael Leun
-> >
+On Tue, 2013-07-23 at 13:59 -0700, Dave Hansen wrote:
+> On 07/23/2013 01:45 PM, Toshi Kani wrote:
+> > Dave, is this how you are testing?  Do you always specify a valid memory
+> > address for your testing?
 > 
-> Any chance that the failing machine has threads=y in the suspend.conf file?
+> For the moment, yes.
 > 
-> Rafael, it appears that swsusp's suspend.c spawns new threads after
-> calling the SNAPSHOT_FREEZE ioctl.  The PF_NOFREEZE (or the new flag)
-> will get copied to those new threads, but nothing will clear the flag.
->  Should I just assume that the userspace suspend code will kill those
-> threads before continuing with suspend?  Or maybe add a WARN_ON in the
-> kernel if any threads besides current have the new flag set when the
-> suspend ops that assume all of userspace is frozen are called?
+> I'm actually working on some other patches that add the kernel metadata
+> for memory ranges even if they're not backed by physical memory.  But
+> _that_ is just for testing and I'll just have to modify whatever you do
+> here in those patches anyway.
+> 
+> It sounds like you're pretty confident that it has no users, so why
+> don't you just go ahead and axe it on x86 and config it out completely?
+>  Folks that need it can just hack it back in.
 
-Those threads should be killed by user space.  They are only spawned for
-image saving/compression/encryption and should be waited for after that.
+Well, I am only confident that this interface is not necessary for ACPI
+hotplug.  As we found you as a user of this interface for testing on a
+system without hotplug support, it is prudent to assume that there may
+be other users as well.  So, I am willing to keep the interface
+configurable (with default disabled) for now.
+
+The question is what to do in the next step.  There are two options:
+
+1) Make the interface safe to use
+2) Remove the config option from x86 Kconfig
+
+Both options will achieve the same goal -- prevent the crash.  Once this
+first patch gets in, we will see if there are more users on the
+interface.  Then, we can decide if we go with 1) for keeping it in the
+long term, or deprecate with 2).
 
 Thanks,
-Rafael
+-Toshi
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
