@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab3GWSok (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:44:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7609 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933754Ab3GWSoj (ORCPT
+	id S933952Ab3GWSor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:44:47 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60475 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933754Ab3GWSoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:44:39 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=XTo4PusNXBwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=wMU4Dyf1DsIA:10 a=pavbcaaB_vBMbL1aejYA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374605077.3356.128.camel@gandalf.local.home>
-Subject: Re: regression 3.11-rc1: rmmod hangs after tracing module
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 23 Jul 2013 14:44:37 -0400
-In-Reply-To: <51EEC646.7070306@broadcom.com>
-References: <51EEC646.7070306@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Tue, 23 Jul 2013 14:44:44 -0400
+Message-ID: <51EECF1A.40404@gmail.com>
+Date: Tue, 23 Jul 2013 13:44:42 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Ian Campbell <ian.campbell@citrix.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Pawel Moll <pawel.moll@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mark Rutland <Mark.Rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] MAINTAINERS: Refactor device tree maintainership
+References: <1374290388-19308-1-git-send-email-grant.likely@linaro.org>   <1374290388-19308-3-git-send-email-grant.likely@linaro.org>   <1374511851.3609.10.camel@hornet> <51ED9018.1020003@gmail.com>  <1374599667.25700.92.camel@hornet> <51EEC49A.4080909@wwwdotorg.org> <1374602957.6623.142.camel@hastur.hellion.org.uk>
+In-Reply-To: <1374602957.6623.142.camel@hastur.hellion.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 20:07 +0200, Arend van Spriel wrote:
-> Hi Steven,
+On 07/23/2013 01:09 PM, Ian Campbell wrote:
+> On Tue, 2013-07-23 at 10:59 -0700, Stephen Warren wrote:
 > 
-> During testing of our brcmfmac wireless driver I had a trace-cmd running 
-> along (trace-cmd record -e brcmfmac:*). After the test I stopped the 
-> trace, unplugged my usb device and did a rmmod resulting in the attached 
-> lockdep splat. Hope you have an idea what is going wrong here.
+>> I think the solution is to introduce some new shared/common location for
+>> shared/common *.dtsi files, into the kernel tree, in the interim.
+>>
+>> When *.dts move out of the kernel, this common location can simply be
+>> consumed as part of the DT tree re-organization.
+>>
+>> Or perhaps, we could move *.dts around in the kernel to match the
+>> proposed DT tree structure before that point in time?
+> 
+> FWIW I can easily handle any transformation as part of the automated
+> extraction into the device-tree.git. If it can expressed as a sed script
+> then so much the better, e.g. the current rules are
+> http://xenbits.xen.org/gitweb/?p=people/ianc/device-tree-rebasing.git;a=blob;f=scripts/rewrite-paths.sed;h=f7a157d1b486bac058f50e42cf7bedc8630e54ff;hb=HEAD.
+> If it gets too complicated for sed I can always switch to something
+> else.
+> 
+> I'm already pending a complete rebuild of the export to add in the
+> Documentation/devicetree/bindings sub tree but since it takes an age to
+> run I was waiting for the output of this conversation before kicking
+> that off.
 
-Thanks for the report!
+I'd doubt we could completely script this with a generic rule without a
+bunch of manual transformations. So I think either restructuring in the
+kernel or when we move them out of the kernel makes more sense. We know
+the problem is coming, but it is not yet a major, pressing issue.
 
-Does this fix you bug?
+OTOH, you could see how far you get by putting dts files in directories
+by their board level compatible string vendor and put any include files
+where ever they are included from. Of course, that is just my proposed
+layout. I haven't heard any opinions on that layout.
 
--- Steve
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 69cba47..882ec1d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1224,18 +1224,17 @@ void tracing_reset_current(int cpu)
- 	tracing_reset(&global_trace.trace_buffer, cpu);
- }
- 
-+/* Must have trace_types_lock held */
- void tracing_reset_all_online_cpus(void)
- {
- 	struct trace_array *tr;
- 
--	mutex_lock(&trace_types_lock);
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
- 		tracing_reset_online_cpus(&tr->trace_buffer);
- #ifdef CONFIG_TRACER_MAX_TRACE
- 		tracing_reset_online_cpus(&tr->max_buffer);
- #endif
- 	}
--	mutex_unlock(&trace_types_lock);
- }
- 
- #define SAVED_CMDLINES 128
-
+Rob
 
