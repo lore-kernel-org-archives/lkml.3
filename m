@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757814Ab3GWPRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:17:33 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:51164 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757620Ab3GWPRb (ORCPT
+	id S1757867Ab3GWPSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:18:15 -0400
+Received: from rrcs-98-103-208-26.central.biz.rr.com ([98.103.208.26]:60936
+	"HELO wolff.to" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1757616Ab3GWPSO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:17:31 -0400
-Date: Tue, 23 Jul 2013 08:17:27 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Jason Wang <jasowang@redhat.com>
-Cc: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Basil Gor <basil.gor@gmail.com>
-Subject: Re: [PATCH net-next] tuntap: hardware vlan tx support
-Message-ID: <20130723081727.69766d27@nehalam.linuxnetplumber.net>
-In-Reply-To: <1374563748-38821-1-git-send-email-jasowang@redhat.com>
-References: <1374563748-38821-1-git-send-email-jasowang@redhat.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Jul 2013 11:18:14 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Jul 2013 11:18:14 EDT
+Date: Tue, 23 Jul 2013 10:10:09 -0500
+From: Bruno Wolff III <bruno@wolff.to>
+To: Phillip Lougher <phillip@squashfs.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] Squashfs: add LZ4 compression
+Message-ID: <20130723151009.GA5971@wolff.to>
+References: <1374459663-15363-1-git-send-email-phillip@squashfs.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1374459663-15363-1-git-send-email-phillip@squashfs.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013 15:15:48 +0800
-Jason Wang <jasowang@redhat.com> wrote:
+On Mon, Jul 22, 2013 at 03:21:01 +0100,
+   Phillip Lougher <phillip@squashfs.org.uk> wrote:
+>Hi
+>
+>Now that LZ4 compression support is in 3.11-rc1, I have written the
+>following two patches for Squashfs to use it.
 
-> Inspired by commit f09e2249c4f5c7c13261ec73f5a7807076af0c8e (macvtap: restore
-> vlan header on user read). This patch adds hardware vlan tx support for
-> tuntap. This is done by copying vlan header directly into userspace in
-> tun_put_user() instead of doing it through __vlan_put_tag() in
-> dev_hard_start_xmit(). This eliminates one unnecessary memove in
-> vlan_insert_tag() for 802.1ad and 802.1q traffic.
-> 
-> pktgen test shows about 20% improvement for 802.1q traffic:
-> 
-> Before:
->   662149pps 317Mb/sec (317831520bps) errors: 0
-> After:
->   801033pps 384Mb/sec (384495840bps) errors: 0
-> 
-> Cc: Basil Gor <basil.gor@gmail.com>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-
-
-You need to make this configurable by some mechanism, since otherwise
-it will break applications that expect current VLAN behavior
+If this gets accepted are you going to move the LZ4 changes to squashfs-tools  
+into the stable branch? I'd like to make LZ4 work in mksquashfs in at least 
+rawhide once LZ4 is usable for squashfs file systems in the kernel. So I 
+was wondering whether to expect this to appear in stable shortly or to expect 
+to start doing builds using the master branch.
