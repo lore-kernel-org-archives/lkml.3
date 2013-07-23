@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934844Ab3GWW1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41801 "EHLO
+	id S935063Ab3GWWfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:35:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41836 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934781Ab3GWW1s (ORCPT
+	with ESMTP id S934837Ab3GWW1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:48 -0400
+	Tue, 23 Jul 2013 18:27:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 076/103] svcrpc: dont error out on small tcp fragment
-Date: Tue, 23 Jul 2013 15:26:27 -0700
-Message-Id: <20130723220428.308894054@linuxfoundation.org>
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Ben Skeggs <bskeggs@redhat.com>
+Subject: [ 083/103] drm/nouveau: use vmalloc for pgt allocation
+Date: Tue, 23 Jul 2013 15:26:34 -0700
+Message-Id: <20130723220429.742078997@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,35 +27,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit 1f691b07c5dc51b2055834f58c0f351defd97f27 upstream.
+commit d005f51eb93d71cd40ebd11dd377453fa8c8a42a upstream.
 
-Though clients we care about mostly don't do this, it is possible for
-rpc requests to be sent in multiple fragments.  Here we have a sanity
-check to ensure that the final received rpc isn't too small--except that
-the number we're actually checking is the length of just the final
-fragment, not of the whole rpc.  So a perfectly legal rpc that's
-unluckily fragmented could cause the server to close the connection
-here.
+Page tables on nv50 take 48kB, which can be hard to allocate in one piece.
+Let's use vmalloc.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Signed-off-by: Ben Skeggs <bskeggs@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcsock.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/nouveau/core/subdev/vm/base.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1095,7 +1095,7 @@ static int svc_tcp_recvfrom(struct svc_r
- 		goto err_noclose;
+--- a/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/vm/base.c
+@@ -362,7 +362,7 @@ nouveau_vm_create(struct nouveau_vmmgr *
+ 	vm->fpde = offset >> (vmm->pgt_bits + 12);
+ 	vm->lpde = (offset + length - 1) >> (vmm->pgt_bits + 12);
+ 
+-	vm->pgt  = kcalloc(vm->lpde - vm->fpde + 1, sizeof(*vm->pgt), GFP_KERNEL);
++	vm->pgt  = vzalloc((vm->lpde - vm->fpde + 1) * sizeof(*vm->pgt));
+ 	if (!vm->pgt) {
+ 		kfree(vm);
+ 		return -ENOMEM;
+@@ -371,7 +371,7 @@ nouveau_vm_create(struct nouveau_vmmgr *
+ 	ret = nouveau_mm_init(&vm->mm, mm_offset >> 12, mm_length >> 12,
+ 			      block >> 12);
+ 	if (ret) {
+-		kfree(vm->pgt);
++		vfree(vm->pgt);
+ 		kfree(vm);
+ 		return ret;
+ 	}
+@@ -446,7 +446,7 @@ nouveau_vm_del(struct nouveau_vm *vm)
  	}
  
--	if (svc_sock_reclen(svsk) < 8) {
-+	if (svsk->sk_datalen < 8) {
- 		svsk->sk_datalen = 0;
- 		goto err_delete; /* client is nuts. */
- 	}
+ 	nouveau_mm_fini(&vm->mm);
+-	kfree(vm->pgt);
++	vfree(vm->pgt);
+ 	kfree(vm);
+ }
+ 
 
 
