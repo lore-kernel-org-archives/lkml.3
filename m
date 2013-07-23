@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab3GWNND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:13:03 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61907 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3GWNNB (ORCPT
+	id S932404Ab3GWNPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:15:38 -0400
+Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:47701 "EHLO
+	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932148Ab3GWNPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:13:01 -0400
-Message-ID: <51EE8158.4050300@gmail.com>
-Date: Tue, 23 Jul 2013 15:12:56 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [alsa-devel] [PATCH] ARM: kirkwood: enable S/PDIF
-References: <20130723102320.56bc4555@armhf> <20130723084347.GP24642@n2100.arm.linux.org.uk> <20130723130622.GB9858@sirena.org.uk>
-In-Reply-To: <20130723130622.GB9858@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Jul 2013 09:15:36 -0400
+X-Greylist: delayed 1660 seconds by postgrey-1.27 at vger.kernel.org; Tue, 23 Jul 2013 09:15:36 EDT
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
+Subject: [PATCH v5 23/24] n_tty: Special case pty flow control
+Date: Tue, 23 Jul 2013 08:47:30 -0400
+Message-Id: <1374583650-3853-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1371302076-4688-24-git-send-email-peter@hurleysoftware.com>
+References: <1371302076-4688-24-git-send-email-peter@hurleysoftware.com>
+X-Authenticated-User: 125194 peter@hurleysoftware.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/13 15:06, Mark Brown wrote:
-> On Tue, Jul 23, 2013 at 09:43:47AM +0100, Russell King - ARM Linux wrote:
->> On Tue, Jul 23, 2013 at 10:23:20AM +0200, Jean-Francois Moine wrote:
->>> This patch enables S/PDIF.
->
->>> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
->
->> I'm not submitting my patch to do this because:
->
->> (a) we don't know what effect this has on other hardware.
->
-> This patch will do absolutely nothing unless it's used in a machine
-> driver which connects a S/PDIF CODEC to it.  I see no reason not to
-> apply it, someone with hardware with more complex needs can always build
-> on it later.
->
+The pty driver forces ldisc flow control on, regardless of available
+receive buffer space, so the writer can be woken whenever unthrottle
+is called. However, this 'forced throttle' has performance
+consequences, as multiple atomic operations are necessary to
+unthrottle and perform the write wakeup for every input line (in
+canonical mode).
 
-Mark,
+Instead, short-circuit the unthrottle if the tty is a pty and perform
+the write wakeup directly.
 
-the mask that is changed in the patch is what will be written
-into i2s controller's registers. So, if there is no S/PDIF in that 
-specific controller that bit can possibly have a different meaning.
-Also, enabling both I2S playback and SPDIF playback can cause the
-controller to behave differently.
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
 
-I share Russell's concern about it and would rather like to use
-multiple codecs per DAI (DPCM) for that. I see Daniel Mack picked
-that up again, maybe he submits something soon.
+v5: fix regression in unusual pty/ldisc configurations where
+    i/o fails to make forward progress
 
-Sebastian
+ drivers/tty/n_tty.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index 0e3efc1..59eb444 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -231,6 +231,8 @@ static void n_tty_write_wakeup(struct tty_struct *tty)
+ 
+ static inline void n_tty_check_throttle(struct tty_struct *tty)
+ {
++	if (tty->driver->type == TTY_DRIVER_TYPE_PTY)
++		return;
+ 	/*
+ 	 * Check the remaining room for the input canonicalization
+ 	 * mode.  We don't want to throttle the driver if we're in
+@@ -250,6 +252,18 @@ static inline void n_tty_check_throttle(struct tty_struct *tty)
+ 
+ static inline void n_tty_check_unthrottle(struct tty_struct *tty)
+ {
++	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
++	    tty->link->ldisc->ops->write_wakeup == n_tty_write_wakeup) {
++		if (chars_in_buffer(tty) > TTY_THRESHOLD_UNTHROTTLE)
++			return;
++		if (!tty->count)
++			return;
++		n_tty_set_room(tty);
++		n_tty_write_wakeup(tty->link);
++		wake_up_interruptible_poll(&tty->link->write_wait, POLLOUT);
++		return;
++	}
++
+ 	/* If there is enough space in the read buffer now, let the
+ 	 * low-level driver know. We use chars_in_buffer() to
+ 	 * check the buffer, as it now knows about canonical mode.
+-- 
+1.8.1.2
+
