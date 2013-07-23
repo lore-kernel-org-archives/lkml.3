@@ -1,77 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934058Ab3GWWKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:10:21 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:56126 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932657Ab3GWWKT (ORCPT
+	id S934087Ab3GWWM6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:12:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52333 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678Ab3GWWM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:10:19 -0400
+	Tue, 23 Jul 2013 18:12:57 -0400
+Message-ID: <51EEFFAD.701@infradead.org>
+Date: Tue, 23 Jul 2013 15:11:57 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130625200211.GA11625@codeaurora.org>
-References: <20130625200211.GA11625@codeaurora.org>
-Date: Tue, 23 Jul 2013 15:10:17 -0700
-Message-ID: <CAOesGMj5AZcB7-kcS8_JqfKAg_RUKqTdDZf7bdwkebn3pwADAw@mail.gmail.com>
-Subject: Re: [GIT PULL] Remove ARM local timer API
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, Barry Song <baohua.song@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Jan Kara <jack@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH v2] lib: Make radix_tree_node_alloc() work correctly within
+ interrupt
+References: <1374617060-25805-1-git-send-email-jack@suse.cz>
+In-Reply-To: <1374617060-25805-1-git-send-email-jack@suse.cz>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 25, 2013 at 1:02 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> Olof/Arnd,
->
-> These patches remove the ARM local timer API. The ARM architected
-> timers have already moved away from this API so this series
-> migrates the rest of the users allowing us to remove the API
-> entirely. Thomas has been kind enough to take the first two
-> patches into timers/core in the tip tree (thanks Thomas!) so I've
-> merged that into v3.10-rc1 and then applied the rest of the
-> patches on top. Let me know if this is acceptable.
->
-> These patches have been through multiple rounds and tested by
-> multiple people since before the 3.10 merge window closed. Only
-> Barry's ack is missing (Cced).
->
-> Since I don't have a tree on kernel.org, David Brown has been
-> kind enough to push my tag out to his repo. Please pull.
->
-> The following changes since commit 42cba6e27c4cddc4df701c597dbfa666e1c013c8:
->
->   Merge branch 'timers/core' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip into remove-local-timers (2013-06-24 17:45:02 -0700)
->
-> are available in the git repository at:
->
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/remove-local-timers
->
-> for you to fetch changes up to 060fd3043e5e3488504b9e70182e188dd9113aea:
->
->   ARM: smp: Remove local timer API (2013-06-24 17:47:34 -0700)
->
-> ----------------------------------------------------------------
-> Now that we have a generic arch hook for broadcast we can remove the local
-> timer API entirely. Doing so will reduce code in ARM core, reduce the
-> architecture dependencies of our timer drivers, and simplify the code because
-> we no longer go through an architecture layer that is essentially a hotplug
-> notifier.
+On 07/23/13 15:04, Jan Kara wrote:
 
 Hi,
 
-Merged in as localtimer/removal into next/cleanup.
-
-I had quite a few merge conflicts due to the __cpuinit removal, so
-please double-check my resolutions.
+s/sence/sense/ please.
 
 
--Olof
+> 
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index e796429..7811ed3 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/string.h>
+>  #include <linux/bitops.h>
+>  #include <linux/rcupdate.h>
+> +#include <linux/hardirq.h>		/* in_interrupt() */
+>  
+>  
+>  #ifdef __KERNEL__
+> @@ -207,7 +208,12 @@ radix_tree_node_alloc(struct radix_tree_root *root)
+>  	struct radix_tree_node *ret = NULL;
+>  	gfp_t gfp_mask = root_gfp_mask(root);
+>  
+> -	if (!(gfp_mask & __GFP_WAIT)) {
+> +	/*
+> +	 * Preload code isn't irq safe and it doesn't make sence to use
+
+	                                                   sense
+
+> +	 * preloading in the interrupt anyway as all the allocations have to
+> +	 * be atomic. So just do normal allocation when in interrupt.
+> +	 */
+> +	if (!(gfp_mask & __GFP_WAIT) && !in_interrupt()) {
+>  		struct radix_tree_preload *rtp;
+>  
+>  		/*
+> @@ -264,7 +270,7 @@ radix_tree_node_free(struct radix_tree_node *node)
+>   * To make use of this facility, the radix tree must be initialised without
+>   * __GFP_WAIT being passed to INIT_RADIX_TREE().
+>   */
+> -int radix_tree_preload(gfp_t gfp_mask)
+> +static int __radix_tree_preload(gfp_t gfp_mask)
+>  {
+>  	struct radix_tree_preload *rtp;
+>  	struct radix_tree_node *node;
+> @@ -288,9 +294,40 @@ int radix_tree_preload(gfp_t gfp_mask)
+>  out:
+>  	return ret;
+>  }
+> +
+> +/*
+> + * Load up this CPU's radix_tree_node buffer with sufficient objects to
+> + * ensure that the addition of a single element in the tree cannot fail.  On
+> + * success, return zero, with preemption disabled.  On error, return -ENOMEM
+> + * with preemption not disabled.
+> + *
+> + * To make use of this facility, the radix tree must be initialised without
+> + * __GFP_WAIT being passed to INIT_RADIX_TREE().
+> + */
+> +int radix_tree_preload(gfp_t gfp_mask)
+> +{
+> +	/* Warn on non-sensical use... */
+> +	WARN_ON_ONCE(!(gfp_mask & __GFP_WAIT));
+> +	return __radix_tree_preload(gfp_mask);
+> +}
+>  EXPORT_SYMBOL(radix_tree_preload);
+>  
+>  /*
+> + * The same as above function, except we don't guarantee preloading happens.
+> + * We do it, if we decide it helps. On success, return zero with preemption
+> + * disabled. On error, return -ENOMEM with preemption not disabled.
+> + */
+> +int radix_tree_maybe_preload(gfp_t gfp_mask)
+> +{
+> +	if (gfp_mask & __GFP_WAIT)
+> +		return __radix_tree_preload(gfp_mask);
+> +	/* Preloading doesn't help anything with this gfp mask, skip it */
+> +	preempt_disable();
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(radix_tree_maybe_preload);
+> +
+> +/*
+>   *	Return the maximum key which can be store into a
+
+	                                    stored
+
+>   *	radix tree with height HEIGHT.
+>   */
+
+-- 
+~Randy
