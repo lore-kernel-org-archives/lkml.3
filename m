@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934641Ab3GWW1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41585 "EHLO
+	id S934787Ab3GWWqI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:46:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41649 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934553Ab3GWW1W (ORCPT
+	with ESMTP id S934630Ab3GWW13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:22 -0400
+	Tue, 23 Jul 2013 18:27:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 039/103] hwmon: (nct6775) Fix temperature alarm attributes
-Date: Tue, 23 Jul 2013 15:25:50 -0700
-Message-Id: <20130723220422.952448951@linuxfoundation.org>
+        Oskar Schirmer <oskar@scara.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 048/103] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
+Date: Tue, 23 Jul 2013 15:25:59 -0700
+Message-Id: <20130723220423.935353938@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -26,174 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit b1d2bff6a61140454b9d203519cc686a2e9ef32f upstream.
+commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
 
-Driver displays wrong alarms for temperature attributes.
+SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
+register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
 
-Turns out that temperature alarm bits are not fixed, but determined
-by temperature source mapping. To fix the problem, walk through
-the temperature sources to determine the correct alarm bit associated
-with a given attribute.
-
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hwmon/nct6775.c |   80 ++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 57 insertions(+), 23 deletions(-)
+ sound/soc/codecs/sgtl5000.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hwmon/nct6775.c
-+++ b/drivers/hwmon/nct6775.c
-@@ -625,6 +625,7 @@ struct nct6775_data {
- 	u8 has_fan_min;		/* some fans don't have min register */
- 	bool has_fan_div;
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -347,7 +347,7 @@
+ #define SGTL5000_PLL_INT_DIV_MASK		0xf800
+ #define SGTL5000_PLL_INT_DIV_SHIFT		11
+ #define SGTL5000_PLL_INT_DIV_WIDTH		5
+-#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
++#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
+ #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
+ #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
  
-+	u8 num_temp_alarms;	/* 2 or 3 */
- 	u8 temp_fixed_num;	/* 3 or 6 */
- 	u8 temp_type[NUM_TEMP_FIXED];
- 	s8 temp_offset[NUM_TEMP_FIXED];
-@@ -1193,6 +1194,42 @@ show_alarm(struct device *dev, struct de
- 		       (unsigned int)((data->alarms >> nr) & 0x01));
- }
- 
-+static int find_temp_source(struct nct6775_data *data, int index, int count)
-+{
-+	int source = data->temp_src[index];
-+	int nr;
-+
-+	for (nr = 0; nr < count; nr++) {
-+		int src;
-+
-+		src = nct6775_read_value(data,
-+					 data->REG_TEMP_SOURCE[nr]) & 0x1f;
-+		if (src == source)
-+			return nr;
-+	}
-+	return -1;
-+}
-+
-+static ssize_t
-+show_temp_alarm(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct sensor_device_attribute *sattr = to_sensor_dev_attr(attr);
-+	struct nct6775_data *data = nct6775_update_device(dev);
-+	unsigned int alarm = 0;
-+	int nr;
-+
-+	/*
-+	 * For temperatures, there is no fixed mapping from registers to alarm
-+	 * bits. Alarm bits are determined by the temperature source mapping.
-+	 */
-+	nr = find_temp_source(data, sattr->index, data->num_temp_alarms);
-+	if (nr >= 0) {
-+		int bit = data->ALARM_BITS[nr + TEMP_ALARM_BASE];
-+		alarm = (data->alarms >> bit) & 0x01;
-+	}
-+	return sprintf(buf, "%u\n", alarm);
-+}
-+
- static SENSOR_DEVICE_ATTR_2(in0_input, S_IRUGO, show_in_reg, NULL, 0, 0);
- static SENSOR_DEVICE_ATTR_2(in1_input, S_IRUGO, show_in_reg, NULL, 1, 0);
- static SENSOR_DEVICE_ATTR_2(in2_input, S_IRUGO, show_in_reg, NULL, 2, 0);
-@@ -1874,22 +1911,18 @@ static struct sensor_device_attribute sd
- };
- 
- static struct sensor_device_attribute sda_temp_alarm[] = {
--	SENSOR_ATTR(temp1_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE),
--	SENSOR_ATTR(temp2_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE + 1),
--	SENSOR_ATTR(temp3_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE + 2),
--	SENSOR_ATTR(temp4_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE + 3),
--	SENSOR_ATTR(temp5_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE + 4),
--	SENSOR_ATTR(temp6_alarm, S_IRUGO, show_alarm, NULL,
--		    TEMP_ALARM_BASE + 5),
-+	SENSOR_ATTR(temp1_alarm, S_IRUGO, show_temp_alarm, NULL, 0),
-+	SENSOR_ATTR(temp2_alarm, S_IRUGO, show_temp_alarm, NULL, 1),
-+	SENSOR_ATTR(temp3_alarm, S_IRUGO, show_temp_alarm, NULL, 2),
-+	SENSOR_ATTR(temp4_alarm, S_IRUGO, show_temp_alarm, NULL, 3),
-+	SENSOR_ATTR(temp5_alarm, S_IRUGO, show_temp_alarm, NULL, 4),
-+	SENSOR_ATTR(temp6_alarm, S_IRUGO, show_temp_alarm, NULL, 5),
-+	SENSOR_ATTR(temp7_alarm, S_IRUGO, show_temp_alarm, NULL, 6),
-+	SENSOR_ATTR(temp8_alarm, S_IRUGO, show_temp_alarm, NULL, 7),
-+	SENSOR_ATTR(temp9_alarm, S_IRUGO, show_temp_alarm, NULL, 8),
-+	SENSOR_ATTR(temp10_alarm, S_IRUGO, show_temp_alarm, NULL, 9),
- };
- 
--#define NUM_TEMP_ALARM	ARRAY_SIZE(sda_temp_alarm)
--
- static ssize_t
- show_pwm_mode(struct device *dev, struct device_attribute *attr, char *buf)
- {
-@@ -3215,13 +3248,11 @@ static void nct6775_device_remove_files(
- 		device_remove_file(dev, &sda_temp_max[i].dev_attr);
- 		device_remove_file(dev, &sda_temp_max_hyst[i].dev_attr);
- 		device_remove_file(dev, &sda_temp_crit[i].dev_attr);
-+		device_remove_file(dev, &sda_temp_alarm[i].dev_attr);
- 		if (!(data->have_temp_fixed & (1 << i)))
- 			continue;
- 		device_remove_file(dev, &sda_temp_type[i].dev_attr);
- 		device_remove_file(dev, &sda_temp_offset[i].dev_attr);
--		if (i >= NUM_TEMP_ALARM)
--			continue;
--		device_remove_file(dev, &sda_temp_alarm[i].dev_attr);
- 	}
- 
- 	device_remove_file(dev, &sda_caseopen[0].dev_attr);
-@@ -3419,6 +3450,7 @@ static int nct6775_probe(struct platform
- 		data->auto_pwm_num = 6;
- 		data->has_fan_div = true;
- 		data->temp_fixed_num = 3;
-+		data->num_temp_alarms = 3;
- 
- 		data->ALARM_BITS = NCT6775_ALARM_BITS;
- 
-@@ -3483,6 +3515,7 @@ static int nct6775_probe(struct platform
- 		data->auto_pwm_num = 4;
- 		data->has_fan_div = false;
- 		data->temp_fixed_num = 3;
-+		data->num_temp_alarms = 3;
- 
- 		data->ALARM_BITS = NCT6776_ALARM_BITS;
- 
-@@ -3547,6 +3580,7 @@ static int nct6775_probe(struct platform
- 		data->auto_pwm_num = 4;
- 		data->has_fan_div = false;
- 		data->temp_fixed_num = 6;
-+		data->num_temp_alarms = 2;
- 
- 		data->ALARM_BITS = NCT6779_ALARM_BITS;
- 
-@@ -3897,6 +3931,12 @@ static int nct6775_probe(struct platform
- 			if (err)
- 				goto exit_remove;
- 		}
-+		if (find_temp_source(data, i, data->num_temp_alarms) >= 0) {
-+			err = device_create_file(dev,
-+						 &sda_temp_alarm[i].dev_attr);
-+			if (err)
-+				goto exit_remove;
-+		}
- 		if (!(data->have_temp_fixed & (1 << i)))
- 			continue;
- 		err = device_create_file(dev, &sda_temp_type[i].dev_attr);
-@@ -3905,12 +3945,6 @@ static int nct6775_probe(struct platform
- 		err = device_create_file(dev, &sda_temp_offset[i].dev_attr);
- 		if (err)
- 			goto exit_remove;
--		if (i >= NUM_TEMP_ALARM ||
--		    data->ALARM_BITS[TEMP_ALARM_BASE + i] < 0)
--			continue;
--		err = device_create_file(dev, &sda_temp_alarm[i].dev_attr);
--		if (err)
--			goto exit_remove;
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(sda_caseopen); i++) {
 
 
