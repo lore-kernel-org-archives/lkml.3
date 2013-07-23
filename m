@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933662Ab3GWQnM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:43:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14451 "EHLO mx1.redhat.com"
+	id S933602Ab3GWQoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:44:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34532 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932705Ab3GWQnL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:43:11 -0400
-Date: Tue, 23 Jul 2013 18:38:06 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mike Galbraith <bitbucket@online.de>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ptrace(PTRACE_ATTACH)  [no intervering wait]
-	ptrace(PTRACE_DETACH) may leave tracee stuck
-Message-ID: <20130723163806.GA27905@redhat.com>
-References: <1374573914.30532.68.camel@marge.simpson.net> <20130723155854.GA26211@redhat.com>
+	id S932705Ab3GWQoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:44:13 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>
+CC: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
+        Balaji TK <balajitk@ti.com>, Matt Porter <matt@ohporter.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH] dma: edma: add device_slave_caps() support
+Date: Tue, 23 Jul 2013 11:43:24 -0500
+Message-ID: <1374597804-3961-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723155854.GA26211@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23, Oleg Nesterov wrote:
->
-> On 07/23, Mike Galbraith wrote:
-> >
-> > I received a report that glibc:elf/pldd hangs occasionally, and indeed..
-> >
-> >   for i in `seq 1 1000`; do taskset -c 3 pldd $$ > /dev/null 2>&1; done
-> >
-> > ..will do so.  Rummage.....
-> >
-> > ptrace(PTRACE_DETACH) returns -ESRCH when the trap hasn't happened yet,
-> > which happens because pldd doesn't wait() before ptrace(PTRACE_DETACH).
-> >
-> > pldd source:
-> >
-> [...snip...]
-> >
-> > Seems this usually works only because cycles expended between attach and
-> > detach is usually enough to let trap happen so tracee can set its state
-> > to TASK_TRACED as PTRACE_DETACH expects it to be.
-> >
-> > Is this expected behavior?
->
-> Yes. PTRACE_ATTACH + PTRACE_DETACH is not correct without wait() in
-> between, this is expected.
->
-> PTRACE_DETACH like (almost) any other ptrace request needs the stopped
-> tracee. Otherwise, say, ptrace_disable() or flush_ptrace_hw_breakpoint()
-> are not safe.
+Implement device_slave_caps(). EDMA has a limited number of slots.
+Slave drivers such as omap_hsmmc will query the driver to make
+sure they don't pass in more than these many scatter segments.
 
-I have found the source of pldd.c. It seems that it has another reason
-for waitpid().
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+Vinod, or Dan- If this patch looks ok, can you please merge in for
+-rc cycle? This patch is required to fix MMC support on AM33xx. This
+patch is blocking 3 other patches which fix various MMC things. Thanks!
 
-	/* Stop all threads since otherwise the list of loaded modules might
-	   change while we are reading it. */
+Notes:
+(1) this approach is temporary and only for -rc cycle to fix MMC on
+AM335x. It will be replace by the RFC series in future kernels:
+http://www.spinics.net/lists/arm-kernel/msg260094.html
 
-Yes, but without waitpid() we can't know if it was actually stopped.
+(2) Patch depends Vinod's patch at:
+http://permalink.gmane.org/gmane.linux.kernel/1525112
 
-OTOH, in this particular case pldd.c doesn't really need PTRACE_DETACH,
-it can simply exit.
+ drivers/dma/edma.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-Oleg.
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index 7222cbe..81d5429 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -517,6 +517,14 @@ static void edma_issue_pending(struct dma_chan *chan)
+ 	spin_unlock_irqrestore(&echan->vchan.lock, flags);
+ }
+ 
++static inline int edma_slave_caps(struct dma_chan *chan,
++	struct dma_slave_caps *caps)
++{
++	caps->max_sg_nr = MAX_NR_SG;
++
++	return 0;
++}
++
+ static size_t edma_desc_size(struct edma_desc *edesc)
+ {
+ 	int i;
+@@ -594,6 +602,7 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
+ 	dma->device_issue_pending = edma_issue_pending;
+ 	dma->device_tx_status = edma_tx_status;
+ 	dma->device_control = edma_control;
++	dma->device_slave_caps = edma_slave_caps;
+ 	dma->dev = dev;
+ 
+ 	INIT_LIST_HEAD(&dma->channels);
+-- 
+1.7.9.5
 
