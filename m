@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3GWUQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:16:05 -0400
-Received: from mail-ea0-f175.google.com ([209.85.215.175]:38039 "EHLO
-	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757801Ab3GWUQD (ORCPT
+	id S1758014Ab3GWUQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:16:24 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:33632 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757801Ab3GWUQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:16:03 -0400
-Date: Tue, 23 Jul 2013 22:15:59 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: drm: Asynchronouse page flipping interface and Intel
- implementation
-Message-ID: <20130723201559.GO5939@phenom.ffwll.local>
-Mail-Followup-To: Keith Packard <keithp@keithp.com>,
-	linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-	dri-devel@lists.freedesktop.org
-References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
+	Tue, 23 Jul 2013 16:16:22 -0400
+Date: Tue, 23 Jul 2013 15:16:15 -0500
+From: "Philip J. Kelleher" <pjk1939@linux.vnet.ibm.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] rsxx: RSXX driver Bug fixes.
+Message-ID: <20130723201615.GA12914@oc6784271780.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374544202-15496-1-git-send-email-keithp@keithp.com>
-X-Operating-System: Linux phenom 3.11.0-rc2+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072320-3620-0000-0000-000003A78F5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 06:49:57PM -0700, Keith Packard wrote:
-> Here's a sequence of five patches that exposes an interface to request
-> of the driver that the page flipping request be executed without
-> waiting for vblank. It's optional, and drivers can expose whether it
-> is supported through the existing GETCAP ioctl.
-> 
-> This supports only Ivybridge and Sandybridge Intel graphics chips as
-> that's what I've got to test on; of course all of the other drivers
-> have been modified so that they still compile cleanly.
+Jens,
 
-Quick comments on the i915 kernel part:
-- Iirc the w/a database has a bunch of entries about async flips. Those
-  need to be addressed and annoted with the new w/a tag comment format
-  Damien recently created.
+The incoming patch series contains 4 patches for the
+rsxx driver (drivers/block/rsxx). They are all bug
+fixes.
 
-- We should exercise userspace abi cornercases and check that we get an
-  -EINVAL everywhere we expect one. Since the current vblank-synced
-  pageflips seem to also get this wrong it'd be good to exercise both
-  modes.
+Patch1:
+	Our adapter is going through a name change.
 
-- kms_flip needs to be extended to beat on async flips. Obviously the
-  timing checks don't apply but otherwise I think it won't hurt to enable
-  all the existing interaction tests with async flips, too. On top of that
-  I think we should test interactions between async flips and vblank
-  synced flips. Without the timing checks the other tests will run as fast
-  as possible, so that should gives us good coverage of the
-  non-ratelimited nature of async flips - even with vblank flips we've hit
-  ugly issues by e.g. starving the unpin workers.
+Patch2:
+	The driver isn't removing the IDA entry during
+	driver unload. This becomes a problem during
+	DLPAR remove.
 
-Oh and my little comment about moving all checks into core code is a bit
-wrong, we'd still need to check for X-tiling with async flips ofc.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Patch3:
+	These are changes mentioned by other members
+	of the Linux Community. Basically, returning 
+	the wrong statuses on a couple of failure
+	cases in the driver.
+
+Patch 4:
+	The driver wasn't handling the return value
+	of pci_map_page correctly for the PowerPC
+	architecture. This also uncovered a double
+	free scenario that is fixed here.
+	
+
