@@ -1,101 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824Ab3GWSbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:31:49 -0400
-Received: from mx1.netapp.com ([216.240.18.38]:23164 "EHLO mx1.netapp.com"
+	id S933859Ab3GWSib (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:38:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22774 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933577Ab3GWSbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:31:48 -0400
-X-IronPort-AV: E=Sophos;i="4.89,729,1367996400"; 
-   d="scan'208,223";a="269733848"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "rydberg@euromail.se" <rydberg@euromail.se>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andre Heider <a.heider@gmail.com>
-Subject: Re: Linux 3.11-rc2
-Thread-Topic: Linux 3.11-rc2
-Thread-Index: AQHOh0Blpp07UcC9oUem7v4bwneG7Zlx67KAgAEg6oA=
-Date: Tue, 23 Jul 2013 18:31:46 +0000
-Message-ID: <1374604305.12943.3.camel@leira.trondhjem.org>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	 <20130723010437.GA570@polaris.bitmath.org>
-	 <1374542261.7972.66.camel@leira.trondhjem.org>
-In-Reply-To: <1374542261.7972.66.camel@leira.trondhjem.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: multipart/mixed;
-	boundary="_002_1374604305129433camelleiratrondhjemorg_"
+	id S933537Ab3GWSi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:38:29 -0400
+Message-ID: <51EECDA3.8020905@redhat.com>
+Date: Tue, 23 Jul 2013 14:38:27 -0400
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
 MIME-Version: 1.0
+To: Alex Williamson <alex.williamson@redhat.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH] pci: Enable overrides for missing ACS capabilities
+References: <20130530183955.14686.89444.stgit@bling.home>  <20130618172819.GA16134@google.com>  <1371579648.22681.209.camel@ul30vt.home>  <CAErSpo5mRKhBYun_i=iFppmQ5+7ODCY7q=sehHjBXWqPRH=ZZw@mail.gmail.com>  <1371594159.22659.34.camel@ul30vt.home> <51C0E73F.1060708@redhat.com>  <CAErSpo7ambrpYm6Lw5bfb5k83ZpHgMvcZxtohVJvo2iTLOF1EQ@mail.gmail.com>  <51C1A78A.3090904@redhat.com>  <CAErSpo7iY6qEh7v8D3R8F-sYedO6eJ-MDnzBABBQhMAsxo6DVw@mail.gmail.com> <1372273397.30572.569.camel@ul30vt.home>
+In-Reply-To: <1372273397.30572.569.camel@ul30vt.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_1374604305129433camelleiratrondhjemorg_
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <E56FAB8144AD7C49B2F5B12265EF6952@hq.netapp.com>
-Content-Transfer-Encoding: base64
+On 06/26/2013 03:03 PM, Alex Williamson wrote:
+> On Mon, 2013-06-24 at 11:43 -0600, Bjorn Helgaas wrote:
+>> On Wed, Jun 19, 2013 at 6:43 AM, Don Dutile<ddutile@redhat.com>  wrote:
+>>> On 06/18/2013 10:52 PM, Bjorn Helgaas wrote:
+>>>>
+>>>> On Tue, Jun 18, 2013 at 5:03 PM, Don Dutile<ddutile@redhat.com>   wrote:
+>>>>>
+>>>>> On 06/18/2013 06:22 PM, Alex Williamson wrote:
+>>>>>>
+>>>>>>
+>>>>>> On Tue, 2013-06-18 at 15:31 -0600, Bjorn Helgaas wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> On Tue, Jun 18, 2013 at 12:20 PM, Alex Williamson
+>>>>>>> <alex.williamson@redhat.com>    wrote:
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On Tue, 2013-06-18 at 11:28 -0600, Bjorn Helgaas wrote:
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> On Thu, May 30, 2013 at 12:40:19PM -0600, Alex Williamson wrote:
+>>>>>
+>>>>> ...
+>>>>>>>>>
+>>>>>>>>> Who do you expect to decide whether to use this option?  I think it
+>>>>>>>>> requires intimate knowledge of how the device works.
+>>>>>>>>>
+>>>>>>>>> I think the benefit of using the option is that it makes assignment
+>>>>>>>>> of
+>>>>>>>>> devices to guests more flexible, which will make it attractive to
+>>>>>>>>> users.
+>>>>>>>>> But most users have no way of knowing whether it's actually *safe* to
+>>>>>>>>> use this.  So I worry that you're adding an easy way to pretend
+>>>>>>>>> isolation
+>>>>>>>>> exists when there's no good way of being confident that it actually
+>>>>>>>>> does.
+>>>>
+>>>>
+>>>>> ...
+>>>>
+>>>>
+>>>>>>> I wonder if we should taint the kernel if this option is used (but not
+>>>>>>> for specific devices added to pci_dev_acs_enabled[]).  It would also
+>>>>>>> be nice if pci_dev_specific_acs_enabled() gave some indication in
+>>>>>>> dmesg for the specific devices you're hoping to add to
+>>>>>>> pci_dev_acs_enabled[].  It's not an enumeration-time quirk right now,
+>>>>>>> so I'm not sure how we'd limit it to one message per device.
+>>>>>>
+>>>>>>
+>>>>>> Right, setup vs use and getting single prints is a lot of extra code.
+>>>>>> Tainting is troublesome for support, Don had some objections when I
+>>>>>> suggested the same to him.
+>>>>>>
+>>>>> For RH GSS (Global Support Services), a 'taint' in the kernel printk
+>>>>> means
+>>>>> RH doesn't support that system.  The 'non-support' due to 'taint' being
+>>>>> printed
+>>>>> out in this case may be incorrect -- RH may support that use, at least
+>>>>> until
+>>>>> a more sufficient patched kernel is provided.
+>>>>> Thus my dissension that 'taint' be output.  WARN is ok. 'driver beware',
+>>>>> 'unleashed dog afoot'.... sure...
+>>>>
+>>>>
+>>>> So ...  that's really a RH-specific support issue, and easily worked
+>>>> around by RH adding a patch that turns off tainting.
+>>>>
+>>> sure. what's another patch to the thousands... :-/
+>>>
+>>>> It still sounds like a good idea to me for upstream, where use of this
+>>>> option can very possibly lead to corruption or information leakage
+>>>> between devices the user claimed were isolated, but in fact were not.
+>>>
+>>> Did I miss something?  This patch provides a user-level/chosen override;
+>>> like all other overrides, (pci=realloc, etc.), it can lead to a failing
+>>> system.
+>>> IMO, this patch is no different.  If you want to tag this patch with taint,
+>>> then let's audit all the (PCI) overrides and taint them appropriately.
+>>> Taint should be reserved to changes to the kernel that were done outside
+>>> the development of the kernel, or with the explicit intent to circumvent
+>>> the normal operation of the kernel.  This patch provides a way to enable
+>>> ACS checking to succeed when the devices have not provided sufficiently
+>>> complete
+>>> ACS information.  i.e., it's a growth path for PCIe-ACS and its need for
+>>> proper support.
+>>
+>> We're telling the kernel to assume something (the hardware provides
+>> protection) that may not be true.  If that assumption turns out to be
+>> false, the result is that a VM can be crashed or comprised by another
+>> VM.
+>>
+>> One difference I see is that this override can lead to a crash that
+>> looks like random memory corruption and has no apparent connection to
+>> the actual cause.  Most other overrides won't cause run-time crashes
+>> (I think they're more likely to cause boot or device configuration
+>> failures), and the dmesg log will probably have good clues as to the
+>> reason.
+>>
+>> But the possibility of compromise is probably even more serious,
+>> because there would be no crash at all, and we'd have no indication
+>> that VM A read or corrupted data in VM B.  I'm very concerned about
+>> that, enough so that it's not clear to me that an override belongs in
+>> the upstream kernel at all.
+>>
+>> Yes, that would mean some hardware is not suitable for device
+>> assignment.  That just sounds like "if hardware manufacturers do their
+>> homework and support ACS properly, their hardware is more useful for
+>> virtualization than other hardware."  I don't see the problem with
+>> that.
+>
+> That's easy to say for someone that doesn't get caught trying to explain
+> this to users over and over.  In many cases devices don't do
+> peer-to-peer and missing ACS is an oversight.  I imagine that quite a
+> few vendors also see the ACS capability as a means to allow control of
+> ACS and therefore see it as a much larger investment that just providing
+> an empty ACS structure in config space to indicate the lack of
+> peer-to-peer.
+>
++1 -- A good explanation why the workaround is needed.
+In fact, until recently, we didn't understand that an empty ACS meant
+'no p2p' and not just an empty ACS with no control to disable p2p. :-/
 
-T24gTW9uLCAyMDEzLTA3LTIyIGF0IDIxOjE3IC0wNDAwLCBUcm9uZCBNeWtsZWJ1c3Qgd3JvdGU6
-DQo+IE9uIFR1ZSwgMjAxMy0wNy0yMyBhdCAwMzowNCArMDIwMCwgcnlkYmVyZ0BldXJvbWFpbC5z
-ZSB3cm90ZToNCj4gPiBIaSBUcm9uZCwgTGludXMsDQo+ID4gDQo+ID4gT24gU3VuLCBKdWwgMjEs
-IDIwMTMgYXQgMTI6NTM6MTBQTSAtMDcwMCwgTGludXMgVG9ydmFsZHMgd3JvdGU6DQo+ID4gPiBT
-byBpdCdzIGJlZW4gYW5vdGhlciB3ZWVrLCBhbmQgLXJjMiBpcyBvdXQgdGhlcmUuDQo+ID4gDQo+
-ID4gVGhpcyBvbmUgaGFwcGVucyB0byBicmVhayBuZnMgaW4gYSByYXRoZXIgYmx1bnQtaW5zdHJ1
-bWVudCBmYXNoaW9uIC0NCj4gPiBjcmVhdGluZyBmaWxlcyBvbiBhIG5mczQgcGFydGl0aW9uIFsx
-XSBubyBsb25nZXIgd29ya3MuIEJpc2VjdGlvbg0KPiA+IHlpZWxkcyB0aGlzIGNvbW1pdCBhcyB0
-aGUgY3VscHJpdDoNCj4gPiANCj4gPiBjb21taXQgYjRhMmNmNzZhYjdjMDg2MjhjNjJiMjA2MmRh
-Y2VmYTQ5NmI1OWRmZA0KPiA+IEF1dGhvcjogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1
-c3RAbmV0YXBwLmNvbT4NCj4gPiBEYXRlOiAgIFdlZCBKdWwgMTcgMTY6NDM6MTYgMjAxMyAtMDQw
-MA0KPiA+IA0KPiA+ICAgICBORlN2NDogRml4IGEgcmVncmVzc2lvbiBhZ2FpbnN0IHRoZSBGcmVl
-QlNEIHNlcnZlcg0KPiA+ICAgICANCj4gPiAgICAgVGVjaG5pY2FsbHksIHRoZSBMaW51eCBjbGll
-bnQgaXMgYWxsb3dlZCBieSB0aGUgTkZTdjQgc3BlYyB0byBzZW5kDQo+ID4gICAgIDMgd29yZCBi
-aXRtYXBzIGFzIHBhcnQgb2YgYW4gT1BFTiByZXF1ZXN0LiBIb3dldmVyLCB0aGlzIGNhdXNlcyB0
-aGUNCj4gPiAgICAgY3VycmVudCBGcmVlQlNEIHNlcnZlciB0byByZXR1cm4gTkZTNEVSUl9BVFRS
-Tk9UU1VQUCBlcnJvcnMuDQo+ID4gICAgIA0KPiA+ICAgICBGaXggdGhlIHJlZ3Jlc3Npb24gYnkg
-bWFraW5nIHRoZSBMaW51eCBjbGllbnQgdXNlIGEgMiB3b3JkIGJpdG1hcCB1bmxlc3MNCj4gPiAg
-ICAgZG9pbmcgTkZTdjQuMiB3aXRoIGxhYmVsZWQgTkZTLg0KPiA+ICAgICANCj4gPiAgICAgU2ln
-bmVkLW9mZi1ieTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4N
-Cj4gPiANCj4gPiBSZXZlcnRpbmcgdGhlIHBhdGNoIHJldHVybnMgdGhpbmdzIHRvIG5vcm1hbC4N
-Cj4gDQo+IC0gQ2FuIHlvdSBwbGVhc2UgcHJvdmlkZSBtZSB3aXRoIGEgYmluYXJ5IHRjcGR1bXAg
-b3Igd2lyZXNoYXJrIGR1bXAgdGhhdA0KPiBkZW1vbnN0cmF0ZXMgdGhlIHByb2JsZW0/DQo+IA0K
-PiAtIFdoYXQgc2VydmVyIGlzIHRoaXM/DQoNCk9LLiBXaXRoIEFuZHJlJ3MgaGVscCwgSSB0aGlu
-ayB3ZSd2ZSByb290IGNhdXNlZCB0aGUgcHJvYmxlbS4gQ2FuIHlvdQ0KcGxlYXNlIGNvbmZpcm0g
-dGhhdCB0aGUgYXR0YWNoZWQgcGF0Y2ggYWxzbyBzb2x2ZXMgdGhlIGlzc3VlIGZvciB5b3U/DQoN
-Ci0tIA0KVHJvbmQgTXlrbGVidXN0DQpMaW51eCBORlMgY2xpZW50IG1haW50YWluZXINCg0KTmV0
-QXBwDQpUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbQ0Kd3d3Lm5ldGFwcC5jb20NCg==
+> Even if we taint the kernel when this is enabled and add extremely
+> verbose warnings in kernel-parameters.txt, I think there's value to
+> providing an on-the-spot workaround to users.  In many cases we're not
+> going to get a response from vendors.  Removing the
+> downstream/multifunction catch-alls might be another way to raise the
+> bar for this kind of override.  Thanks,
+I'll re-state what I said previously (maybe privately): there are numerous
+ways to crash a system with kernel params.  Agreed, that in most instances,
+the params cause the system not to boot at all if they don't work/help, but
+arguing to taint the kernel in this case is like asking rm to detect 'rm -rf /'
+and flag the user you're trashing your system .... and not temporarily, or in
+a recoverable way.
 
---_002_1374604305129433camelleiratrondhjemorg_
-Content-Type: text/x-patch;
-	name="0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch"
-Content-Description: 0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch
-Content-Disposition: attachment;
-	filename="0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch";
-	size=1009; creation-date="Tue, 23 Jul 2013 18:31:46 GMT";
-	modification-date="Tue, 23 Jul 2013 18:31:46 GMT"
-Content-ID: <3DC4E422CC246847AEA3E8BB42C595BB@hq.netapp.com>
-Content-Transfer-Encoding: base64
+>
+> Alex
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-RnJvbSAxZjg0ZTRmOWVmOWZjNGZmNTAyYzExMmRmMDQ5ZGZhNmY2NTZmNGUwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
-YXBwLmNvbT4NCkRhdGU6IFR1ZSwgMjMgSnVsIDIwMTMgMTI6NTM6MzkgLTA0MDANClN1YmplY3Q6
-IFtQQVRDSF0gTkZTdjQ6IEZpeCBicmFpbmZhcnQgaW4gYXR0cmlidXRlIGxlbmd0aCBjYWxjdWxh
-dGlvbg0KDQpUaGUgY2FsY3VsYXRpb24gb2YgdGhlIGF0dHJpYnV0ZSBsZW5ndGggd2FzIDQgYnl0
-ZXMgb2ZmLg0KDQpTaWduZWQtb2ZmLWJ5OiBUcm9uZCBNeWtsZWJ1c3QgPFRyb25kLk15a2xlYnVz
-dEBuZXRhcHAuY29tPg0KVGVzdGVkLWJ5OiBBbmRyZSBIZWlkZXIgPGEuaGVpZGVyQGdtYWlsLmNv
-bT4NCi0tLQ0KIGZzL25mcy9uZnM0eGRyLmMgfCAyICstDQogMSBmaWxlIGNoYW5nZWQsIDEgaW5z
-ZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pDQoNCmRpZmYgLS1naXQgYS9mcy9uZnMvbmZzNHhkci5j
-IGIvZnMvbmZzL25mczR4ZHIuYw0KaW5kZXggYzc0ZDYxNi4uMzg1MGIwMSAxMDA2NDQNCi0tLSBh
-L2ZzL25mcy9uZnM0eGRyLmMNCisrKyBiL2ZzL25mcy9uZnM0eGRyLmMNCkBAIC0xMTE4LDExICsx
-MTE4LDExIEBAIHN0YXRpYyB2b2lkIGVuY29kZV9hdHRycyhzdHJ1Y3QgeGRyX3N0cmVhbSAqeGRy
-LCBjb25zdCBzdHJ1Y3QgaWF0dHIgKmlhcCwNCiAJCQkJbGVuLCAoKGNoYXIgKilwIC0gKGNoYXIg
-KilxKSArIDQpOw0KIAkJQlVHKCk7DQogCX0NCi0JbGVuID0gKGNoYXIgKilwIC0gKGNoYXIgKilx
-IC0gKGJtdmFsX2xlbiA8PCAyKTsNCiAJKnErKyA9IGh0b25sKGJtdmFsMCk7DQogCSpxKysgPSBo
-dG9ubChibXZhbDEpOw0KIAlpZiAoYm12YWxfbGVuID09IDMpDQogCQkqcSsrID0gaHRvbmwoYm12
-YWwyKTsNCisJbGVuID0gKGNoYXIgKilwIC0gKGNoYXIgKikocSArIDEpOw0KIAkqcSA9IGh0b25s
-KGxlbik7DQogDQogLyogb3V0OiAqLw0KLS0gDQoxLjguMy4xDQoNCg==
-
---_002_1374604305129433camelleiratrondhjemorg_--
