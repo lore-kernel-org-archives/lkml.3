@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab3GWSNH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:13:07 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:57369 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204Ab3GWSNE (ORCPT
+	id S933636Ab3GWSQO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:16:14 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55594 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933204Ab3GWSQN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:13:04 -0400
+	Tue, 23 Jul 2013 14:16:13 -0400
+Date: Tue, 23 Jul 2013 13:16:06 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: ebiederm@xmission.com
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org
+Subject: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
+Message-ID: <20130723181606.GA6342@sergelap>
 MIME-Version: 1.0
-In-Reply-To: <1374602524-3398-14-git-send-email-wsa@the-dreams.de>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de> <1374602524-3398-14-git-send-email-wsa@the-dreams.de>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Tue, 23 Jul 2013 12:12:42 -0600
-Message-ID: <CAErSpo4jazaN8YahJGs+KD1-j6o8QHe2LmiQwBY9+UweBVkHxQ@mail.gmail.com>
-Subject: Re: [PATCH 13/27] drivers/pci/host: don't check resource with devm_ioremap_resource
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Jingoo]
+We allow a task to change its own devices cgroup, or to change other tasks'
+cgroups if it has CAP_SYS_ADMIN.
 
-On Tue, Jul 23, 2013 at 12:01 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
->
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Also allow task A to change task B's cgroup if task A has CAP_SYS_ADMIN
+with respect to task B - meaning A is root in the same userns, or A
+created B's userns.
 
-Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Serge Hallyn <serge.hallyn@canonical.com>
+---
+ security/device_cgroup.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Jingoo, I can apply this, or if you have other pcie-designware.c
-updates this cycle, you can fold it into those.  Just let me know what
-you'd prefer.
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 9760ecb6..8f5386ea 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -74,11 +74,14 @@ struct cgroup_subsys devices_subsys;
+ static int devcgroup_can_attach(struct cgroup *new_cgrp,
+ 				struct cgroup_taskset *set)
+ {
+-	struct task_struct *task = cgroup_taskset_first(set);
++	struct task_struct *t = cgroup_taskset_first(set);
++	int ret = 0;
+ 
+-	if (current != task && !capable(CAP_SYS_ADMIN))
+-		return -EPERM;
+-	return 0;
++	rcu_read_lock();
++	if (current != t && !ns_capable(__task_cred(t)->user_ns, CAP_SYS_ADMIN))
++		ret = -EPERM;
++	rcu_read_unlock();
++	return ret;
+ }
+ 
+ /*
+-- 
+1.7.9.5
 
-Bjorn
-
-
->  drivers/pci/host/pcie-designware.c |   12 ------------
->  1 file changed, 12 deletions(-)
->
-> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-> index 26bdbda..f0ba6ef 100644
-> --- a/drivers/pci/host/pcie-designware.c
-> +++ b/drivers/pci/host/pcie-designware.c
-> @@ -817,28 +817,16 @@ static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
->         int ret;
->
->         elbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -       if (!elbi_base) {
-> -               dev_err(&pdev->dev, "couldn't get elbi base resource\n");
-> -               return -EINVAL;
-> -       }
->         pp->elbi_base = devm_ioremap_resource(&pdev->dev, elbi_base);
->         if (IS_ERR(pp->elbi_base))
->                 return PTR_ERR(pp->elbi_base);
->
->         phy_base = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> -       if (!phy_base) {
-> -               dev_err(&pdev->dev, "couldn't get phy base resource\n");
-> -               return -EINVAL;
-> -       }
->         pp->phy_base = devm_ioremap_resource(&pdev->dev, phy_base);
->         if (IS_ERR(pp->phy_base))
->                 return PTR_ERR(pp->phy_base);
->
->         purple_base = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-> -       if (!purple_base) {
-> -               dev_err(&pdev->dev, "couldn't get purple base resource\n");
-> -               return -EINVAL;
-> -       }
->         pp->purple_base = devm_ioremap_resource(&pdev->dev, purple_base);
->         if (IS_ERR(pp->purple_base))
->                 return PTR_ERR(pp->purple_base);
-> --
-> 1.7.10.4
->
