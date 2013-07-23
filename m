@@ -1,210 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab3GWKx7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 06:53:59 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:48506 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757141Ab3GWKx4 (ORCPT
+	id S1756977Ab3GWKuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 06:50:54 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58823 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756357Ab3GWKuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 06:53:56 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: Nicolas Pitre <nicolas.pitre@linaro.org>
-Cc: Sudeep.KarkadaNagesha@arm.com, Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
-Subject: [PATCH v3 01/16] of: add support for retrieving cpu node for a given logical cpu index
-Date: Tue, 23 Jul 2013 11:54:10 +0100
-Message-Id: <1374576850-9667-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <51ED4A99.3030403@arm.com>
-References: <51ED4A99.3030403@arm.com>
-X-OriginalArrivalTime: 23 Jul 2013 10:53:50.0646 (UTC) FILETIME=[EA50C560:01CE8792]
-X-MC-Unique: 113072311535303001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 23 Jul 2013 06:50:18 -0400
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Vinod Koul <vinod.koul@intel.com>, linux-sh@vger.kernel.org,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+Subject: [PATCH v4 11/15] ARM: shmobile: r8a7740: switch DMAC controllers to using device ID data
+Date: Tue, 23 Jul 2013 12:50:05 +0200
+Message-Id: <1374576609-27748-12-git-send-email-g.liakhovetski@gmx.de>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
+References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
+X-Provags-ID: V02:K0:20iwP2eJDaFxj8Re74/q6tL+FCgjx/+x/smVVrWsBYs
+ puYnCcRIqT1ubKVAugRl3o8i4e6qDLqEqIEh88D4Cy2c1IKn4x
+ eClM86U0rg4zOFoY9SrP3g2/8Ba1NHY9TiQgox3+FC0I/mqwtx
+ OwBm/1O51jQnxVKg2iFh/fv0NrbDTGfi5A+V8ETaM41STmemn6
+ q8G9XNhm63Lgqclr5HfHOLyaGBwuIBJoSfKak8sUxsVxst8ttS
+ jltwJfxiEt+h0a7tqUHhIRQKJGhal8ZJrJJ0hAEPQbhLhnRIpg
+ CYU/TUGWJkMMABB6WBIlIcNfxsF91F/QAl54+k69A1NAAZ9Uhf
+ KGuZKXLs5kp0BKFt/MmYgL4in4Dbib3jRKI6mqdIT8KxFDubot
+ 3V8PzISQ327+kKrJof4sK3dMGQ+M60nH04=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6NAsJ24018042
 
-From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+This patch removes DMAC platform data on r8a7740 and switches to using
+device ID data.
 
-Currently different drivers requiring to access cpu device node are
-parsing the device tree themselves. Since the ordering in the DT need
-not match the logical cpu ordering, the parsing logic needs to consider
-that. However, this has resulted in lots of code duplication and in some
-cases even incorrect logic.
-
-It's better to consolidate them by adding support for getting cpu
-device node for a given logical cpu index in DT core library. However
-logical to physical index mapping can be architecture specific.
-
-This patch adds of_get_cpu_node to retrieve a cpu device node for a
-given logical cpu index. The default matching of the physical id to the
-logical cpu index can be overridden by architecture specific code.
-
-It is recommended to use these helper function only in pre-SMP/early
-initialisation stages to retrieve CPU device node pointers in logical
-ordering. Once the cpu devices are registered, it can be retrieved easily
-from cpu device of_node which avoids unnecessary parsing and matching.
-
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 ---
- drivers/of/base.c   | 73 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/cpu.h |  1 +
- include/linux/of.h  |  6 +++++
- 3 files changed, 80 insertions(+)
+ arch/arm/mach-shmobile/clock-r8a7740.c |    6 +-
+ arch/arm/mach-shmobile/setup-r8a7740.c |  106 +-------------------------------
+ 2 files changed, 6 insertions(+), 106 deletions(-)
 
------------------>8--------------------------
-Hi Nico,
-
-I found include/linux/cpu.h is more appropriate for this.
-Is that fine ?
-
-Regards,
-Sudeep
-
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 5c54279..052b4b2 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -18,6 +18,7 @@
-  *      2 of the License, or (at your option) any later version.
-  */
- #include <linux/ctype.h>
-+#include <linux/cpu.h>
- #include <linux/module.h>
- #include <linux/of.h>
- #include <linux/spinlock.h>
-@@ -230,6 +231,78 @@ const void *of_get_property(const struct device_node *np, const char *name,
- }
- EXPORT_SYMBOL(of_get_property);
+diff --git a/arch/arm/mach-shmobile/clock-r8a7740.c b/arch/arm/mach-shmobile/clock-r8a7740.c
+index f4265e5..f32a22d 100644
+--- a/arch/arm/mach-shmobile/clock-r8a7740.c
++++ b/arch/arm/mach-shmobile/clock-r8a7740.c
+@@ -575,9 +575,9 @@ static struct clk_lookup lookups[] = {
+ 	CLKDEV_DEV_ID("sh-sci.5",		&mstp_clks[MSTP207]),
+ 	CLKDEV_DEV_ID("e6cb0000.sci",		&mstp_clks[MSTP207]),
+ 	CLKDEV_DEV_ID("sh-dma-engine.3",	&mstp_clks[MSTP214]),
+-	CLKDEV_DEV_ID("sh-dma-engine.2",	&mstp_clks[MSTP216]),
+-	CLKDEV_DEV_ID("sh-dma-engine.1",	&mstp_clks[MSTP217]),
+-	CLKDEV_DEV_ID("sh-dma-engine.0",	&mstp_clks[MSTP218]),
++	CLKDEV_DEV_ID("shdma-r8a7740.2",	&mstp_clks[MSTP216]),
++	CLKDEV_DEV_ID("shdma-r8a7740.1",	&mstp_clks[MSTP217]),
++	CLKDEV_DEV_ID("shdma-r8a7740.0",	&mstp_clks[MSTP218]),
+ 	CLKDEV_DEV_ID("sh-sci.7",		&mstp_clks[MSTP222]),
+ 	CLKDEV_DEV_ID("e6cd0000.sci",		&mstp_clks[MSTP222]),
+ 	CLKDEV_DEV_ID("sh-sci.6",		&mstp_clks[MSTP230]),
+diff --git a/arch/arm/mach-shmobile/setup-r8a7740.c b/arch/arm/mach-shmobile/setup-r8a7740.c
+index 84c5bb6..01dcb3b 100644
+--- a/arch/arm/mach-shmobile/setup-r8a7740.c
++++ b/arch/arm/mach-shmobile/setup-r8a7740.c
+@@ -542,97 +542,6 @@ static struct platform_device *r8a7740_early_devices[] __initdata = {
+ };
  
-+/*
-+ * arch_match_cpu_phys_id - Match the given logical CPU and physical id
-+ *
-+ * @cpu: logical index of a cpu
-+ * @phys_id: physical identifier of a cpu
-+ *
-+ * CPU logical to physical index mapping is architecture specific.
-+ * However this __weak function provides a default match of physical
-+ * id to logical cpu index.
-+ *
-+ * Returns true if the physical identifier and the logical index correspond
-+ * to the same cpu, false otherwise.
-+ */
-+bool __weak arch_match_cpu_phys_id(int cpu, u64 phys_id)
-+{
-+	return (u32)phys_id == cpu;
-+}
-+
-+/**
-+ * of_get_cpu_node - Get device node associated with the given logical CPU
-+ *
-+ * @cpu: CPU number(logical index) for which device node is required
-+ *
-+ * The main purpose of this function is to retrieve the device node for the
-+ * given logical CPU index. It should be used to initialize the of_node in
-+ * cpu device. Once of_node in cpu device is populated, all the further
-+ * references can use that instead.
-+ *
-+ * CPU logical to physical index mapping is architecture specific and is built
-+ * before booting secondary cores. This function uses arch_match_cpu_phys_id
-+ * which can be overridden by architecture specific implementation.
-+ *
-+ * Returns a node pointer for the logical cpu if found, else NULL.
-+ */
-+struct device_node *of_get_cpu_node(int cpu)
-+{
-+	struct device_node *cpun, *cpus;
-+	const __be32 *cell;
-+	u64 hwid;
-+	int ac, prop_len;
-+
-+	cpus = of_find_node_by_path("/cpus");
-+	if (!cpus) {
-+		pr_warn("Missing cpus node, bailing out\n");
-+		return NULL;
-+	}
-+
-+	if (of_property_read_u32(cpus, "#address-cells", &ac)) {
-+		pr_warn("%s: missing #address-cells\n", cpus->full_name);
-+		ac = of_n_addr_cells(cpus);
-+	}
-+
-+	for_each_child_of_node(cpus, cpun) {
-+		if (of_node_cmp(cpun->type, "cpu"))
-+			continue;
-+		cell = of_get_property(cpun, "reg", &prop_len);
-+		if (!cell) {
-+			pr_warn("%s: missing reg property\n", cpun->full_name);
-+			continue;
-+		}
-+		prop_len /= sizeof(*cell);
-+		while (prop_len) {
-+			hwid = of_read_number(cell, ac);
-+			prop_len -= ac;
-+			if (arch_match_cpu_phys_id(cpu, hwid))
-+				return cpun;
-+		}
-+	}
-+
-+	return NULL;
-+}
-+
- /** Checks if the given "compat" string matches one of the strings in
-  * the device's "compatible" property
-  */
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index ab0eade..d0c8204 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -34,6 +34,7 @@ extern void cpu_remove_dev_attr(struct device_attribute *attr);
+ /* DMA */
+-static const struct sh_dmae_slave_config r8a7740_dmae_slaves[] = {
+-	{
+-		.slave_id	= SHDMA_SLAVE_SDHI0_TX,
+-		.addr		= 0xe6850030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI0_RX,
+-		.addr		= 0xe6850030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc2,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI1_TX,
+-		.addr		= 0xe6860030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xc9,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI1_RX,
+-		.addr		= 0xe6860030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xca,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI2_TX,
+-		.addr		= 0xe6870030,
+-		.chcr		= CHCR_TX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xcd,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_SDHI2_RX,
+-		.addr		= 0xe6870030,
+-		.chcr		= CHCR_RX(XMIT_SZ_16BIT),
+-		.mid_rid	= 0xce,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIA_TX,
+-		.addr		= 0xfe1f0024,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIA_RX,
+-		.addr		= 0xfe1f0020,
+-		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb2,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_FSIB_TX,
+-		.addr		= 0xfe1f0064,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xb5,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_MMCIF_TX,
+-		.addr		= 0xe6bd0034,
+-		.chcr		= CHCR_TX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xd1,
+-	}, {
+-		.slave_id	= SHDMA_SLAVE_MMCIF_RX,
+-		.addr		= 0xe6bd0034,
+-		.chcr		= CHCR_RX(XMIT_SZ_32BIT),
+-		.mid_rid	= 0xd2,
+-	},
+-};
+-
+-#define DMA_CHANNEL(a, b, c)			\
+-{						\
+-	.offset		= a,			\
+-	.dmars		= b,			\
+-	.dmars_bit	= c,			\
+-	.chclr_offset	= (0x220 - 0x20) + a	\
+-}
+-
+-static const struct sh_dmae_channel r8a7740_dmae_channels[] = {
+-	DMA_CHANNEL(0x00, 0, 0),
+-	DMA_CHANNEL(0x10, 0, 8),
+-	DMA_CHANNEL(0x20, 4, 0),
+-	DMA_CHANNEL(0x30, 4, 8),
+-	DMA_CHANNEL(0x50, 8, 0),
+-	DMA_CHANNEL(0x60, 8, 8),
+-};
+-
+-static struct sh_dmae_pdata dma_platform_data = {
+-	.slave		= r8a7740_dmae_slaves,
+-	.slave_num	= ARRAY_SIZE(r8a7740_dmae_slaves),
+-	.channel	= r8a7740_dmae_channels,
+-	.channel_num	= ARRAY_SIZE(r8a7740_dmae_channels),
+-	.ts_low_shift	= TS_LOW_SHIFT,
+-	.ts_low_mask	= TS_LOW_BIT << TS_LOW_SHIFT,
+-	.ts_high_shift	= TS_HI_SHIFT,
+-	.ts_high_mask	= TS_HI_BIT << TS_HI_SHIFT,
+-	.ts_shift	= dma_ts_shift,
+-	.ts_shift_num	= ARRAY_SIZE(dma_ts_shift),
+-	.dmaor_init	= DMAOR_DME,
+-	.chclr_present	= 1,
+-};
+-
+ /* Resource order important! */
+ static struct resource r8a7740_dmae0_resources[] = {
+ 	{
+@@ -718,33 +627,24 @@ static struct resource r8a7740_dmae2_resources[] = {
+ };
  
- extern int cpu_add_dev_attr_group(struct attribute_group *attrs);
- extern void cpu_remove_dev_attr_group(struct attribute_group *attrs);
-+extern bool arch_match_cpu_phys_id(int cpu, u64 phys_id);
+ static struct platform_device dma0_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 0,
+ 	.resource	= r8a7740_dmae0_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae0_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
  
- #ifdef CONFIG_HOTPLUG_CPU
- extern void unregister_cpu(struct cpu *cpu);
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 1fd08ca..9e82812 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -266,6 +266,7 @@ extern int of_device_is_available(const struct device_node *device);
- extern const void *of_get_property(const struct device_node *node,
- 				const char *name,
- 				int *lenp);
-+extern struct device_node *of_get_cpu_node(int cpu);
- #define for_each_property_of_node(dn, pp) \
- 	for (pp = dn->properties; pp != NULL; pp = pp->next)
+ static struct platform_device dma1_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 1,
+ 	.resource	= r8a7740_dmae1_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae1_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
  
-@@ -459,6 +460,11 @@ static inline const void *of_get_property(const struct device_node *node,
- 	return NULL;
- }
+ static struct platform_device dma2_device = {
+-	.name		= "sh-dma-engine",
++	.name		= "shdma-r8a7740",
+ 	.id		= 2,
+ 	.resource	= r8a7740_dmae2_resources,
+ 	.num_resources	= ARRAY_SIZE(r8a7740_dmae2_resources),
+-	.dev		= {
+-		.platform_data	= &dma_platform_data,
+-	},
+ };
  
-+static inline struct device_node *of_get_cpu_node(int cpu)
-+{
-+	return NULL;
-+}
-+
- static inline int of_property_read_u64(const struct device_node *np,
- 				       const char *propname, u64 *out_value)
- {
+ /* USB-DMAC */
 -- 
-1.8.1.2
-
+1.7.2.5
 
