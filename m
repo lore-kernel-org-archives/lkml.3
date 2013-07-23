@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753072Ab3GWAmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 20:42:53 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:60227 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab3GWAmu (ORCPT
+	id S1753571Ab3GWAor (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:44:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19291 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752717Ab3GWAop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 20:42:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
-	<1367884221-20462-14-git-send-email-ccross@android.com>
-	<20130723010250.5a3465ec@xenia.leun.net>
-	<CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
-	<CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com>
-Date: Mon, 22 Jul 2013 17:42:49 -0700
-X-Google-Sender-Auth: s8SCauyLOJMPE0UIhjxogzveGRM
-Message-ID: <CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
- v3 13/16] futex: use freezable blocking call)
-From: Colin Cross <ccross@android.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michael Leun <lkml20130126@newton.leun.net>,
-        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Jul 2013 20:44:45 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=q-5KwEyaYmUA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=PzHPlaRu3OEA:10 a=mk4uuN6VODAZT9Q9WYUA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374540283.3356.115.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/7] tracing: Introduce trace_create_cpu_file() and
+ tracing_get_cpu()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 22 Jul 2013 20:44:43 -0400
+In-Reply-To: <20130722171549.GB27080@redhat.com>
+References: <20130722134342.GA18355@redhat.com>
+	 <1374506617.3356.97.camel@gandalf.local.home>
+	 <20130722171549.GB27080@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 5:32 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jul 22, 2013 at 4:55 PM, Colin Cross <ccross@android.com> wrote:
->>
->> I think the right solution is to add a flag to the freezing task that
->> marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
->> normally used on kernel threads, can you see if the attached patch
->> helps?
->
-> Hmm. That does seem to be the right thing to do, but I wonder about
-> the *other* callers of freeze_processes() IOW, kexec and friends.
->
-> So maybe we should do this in {freeze|thaw}_processes() itself, and
-> just make the rule be that the caller of freeze_processes() itself is
-> obviously not frozen, and has to be the same one that then thaws
-> things?
->
-> Colin? Rafael? Comments?
->
->                 Linus
+On Mon, 2013-07-22 at 19:15 +0200, Oleg Nesterov wrote:
 
-I was worried about clearing the flag in thaw_processes().  If a
-kernel thread with PF_NOFREEZE set ever called thaw_processes(), which
-autosleep might do, it would clear the flag.  Or if a different thread
-called freeze_processes() and thaw_processes().  All the other callers
-besides the SNAPSHOT_FREEZE ioctl stay in the kernel between
-freeze_processes() and thaw_processes(), which makes the fanout of
-places that could call try_to_freeze() much more controllable.
+> > Otherwise, you might want to fix them if you need
+> > to send a follow up patch set.
+> 
+> Yes, will do.
+> 
 
-Using a new flag that operates like PF_NOFREEZE but doesn't conflict
-with it, or a nofreeze_depth counter, would also work.
+After applying your patches, my tests crashed the kernel. It's fixed
+with the following update. I guess you should merge this into your next
+version.
+
+-- Steve
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5e5ff44..db561b5 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2984,7 +2984,7 @@ static int tracing_release(struct inode *inode, struct file *file)
+ {
+ 	struct trace_array *tr = inode->i_private;
+ 	struct seq_file *m = file->private_data;
+-	struct trace_iterator *iter = m->private;
++	struct trace_iterator *iter;
+ 	int cpu;
+ 
+ 	if (!(file->f_mode & FMODE_READ)) {
+@@ -2992,6 +2992,9 @@ static int tracing_release(struct inode *inode, struct file *file)
+ 		return 0;
+ 	}
+ 
++	/* Writes do not use seq_file */
++	iter = m->private;
++
+ 	mutex_lock(&trace_types_lock);
+ 
+ 	for_each_tracing_cpu(cpu) {
+
+
