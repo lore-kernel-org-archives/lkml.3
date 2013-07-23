@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934778Ab3GWW1q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41775 "EHLO
+	id S934391Ab3GWWiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:38:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934717Ab3GWW1n (ORCPT
+	with ESMTP id S934783Ab3GWW1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:43 -0400
+	Tue, 23 Jul 2013 18:27:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 070/103] b43: ensue that BCMA is "y" when B43 is "y"
-Date: Tue, 23 Jul 2013 15:26:21 -0700
-Message-Id: <20130723220427.227961426@linuxfoundation.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jonghwan Choi <jhbird.choi@gmail.com>
+Subject: [ 077/103] of: Fix address decoding on Bimini and js2x machines
+Date: Tue, 23 Jul 2013 15:26:28 -0700
+Message-Id: <20130723220428.466056522@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -28,46 +29,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 693026ef2e751fd94d2e6c71028e68343cc875d5 upstream.
+commit 6dd18e4684f3d188277bbbc27545248487472108 upstream.
 
-When b43 gets build into the kernel and it should use bcma we have to
-ensure that bcma was also build into the kernel and not as a module.
-In this patch this is also done for SSB, although you can not
-build b43 without ssb support for now.
+ Commit:
 
-This fixes a build problem reported by Randy Dunlap in
-5187EB95.2060605@infradead.org
+  e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7
+  of/address: Handle #address-cells > 2 specially
 
-Reported-By: Randy Dunlap <rdunlap@infradead.org>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+broke real time clock access on Bimini, js2x, and similar powerpc
+machines using the "maple" platform. That code was indirectly relying
+on the old (broken) behaviour of the translation for the hypertransport
+to ISA bridge.
+
+This fixes it by treating hypertransport as a PCI bus
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+Cc: Jonghwan Choi <jhbird.choi@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/of/address.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/b43/Kconfig
-+++ b/drivers/net/wireless/b43/Kconfig
-@@ -28,7 +28,7 @@ config B43
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -106,8 +106,12 @@ static unsigned int of_bus_default_get_f
  
- config B43_BCMA
- 	bool "Support for BCMA bus"
--	depends on B43 && BCMA
-+	depends on B43 && (BCMA = y || BCMA = B43)
- 	default y
+ static int of_bus_pci_match(struct device_node *np)
+ {
+-	/* "vci" is for the /chaos bridge on 1st-gen PCI powermacs */
+-	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
++	/*
++	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
++	 * "ht" is hypertransport
++	 */
++	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
++		!strcmp(np->type, "ht");
+ }
  
- config B43_BCMA_EXTRA
-@@ -39,7 +39,7 @@ config B43_BCMA_EXTRA
- 
- config B43_SSB
- 	bool
--	depends on B43 && SSB
-+	depends on B43 && (SSB = y || SSB = B43)
- 	default y
- 
- # Auto-select SSB PCI-HOST support, if possible
+ static void of_bus_pci_count_cells(struct device_node *np,
 
 
