@@ -1,276 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754633Ab3GWHhH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:37:07 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:25430 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab3GWHhF (ORCPT
+	id S1754651Ab3GWHin (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:38:43 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:50732 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab3GWHil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:37:05 -0400
-X-Spam-Score: -100.8
-Message-ID: <51EE3264.7010801@asianux.com>
-Date: Tue, 23 Jul 2013 15:36:04 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 23 Jul 2013 03:38:41 -0400
+Date: Tue, 23 Jul 2013 09:38:36 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, Borislav Petkov <bp@alien8.de>,
+        Clark Williams <williams@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>, Feng Tang <feng.tang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Hitoshi Mitake <h.mitake@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [GIT PULL 00/11] perf/core improvements and fixes
+Message-ID: <20130723073836.GA13710@gmail.com>
+References: <1374524559-9839-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kernel/irq/devres.c: move "kernel/irq/devres.c" to "drivers/base/devres_irq.c"
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374524559-9839-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"kernel/irq/devres.c" is a driver extension tool for irq (with devres)
-which is independent on 'GENERIC_HARDIRQS', so it is not suitable to
-still be in "kernel/irq/" which depends on 'GENERIC_HARDIRQS'.
 
-It is a basic tool for drivers, so can move it to "drivers/base/" to be
-independent on 'GENERIC_HARDIRQS'.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-It is about irq features, so if can not find other more suitable place,
-can still let their declaration in "include/linux/interrupts.h".
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+> 	Please consider pulling.
+> 
+> 	Tomorrow I'll try to process Jiri's group leader patches and David's 'kvm live'
+> kits and continue looking for patches not processed during my vacations.
+> 
+> Thanks,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 5a9821321e0a61674fd5c4b5a9e95007d0e7e052:
+> 
+>   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2013-07-19 09:35:30 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux tags/perf-core-for-mingo
+> 
+> for you to fetch changes up to f9ea55d0ddf66ed030b2a478625cd5792d30df16:
+> 
+>   perf tools: Move weight back to common sort keys (2013-07-22 16:58:28 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/core improvements and fixes.
+> 
+> . Fix memcpy benchmark for large sizes, from Andi Kleen.
+> 
+> . Support callchain sorting based on addresses, from Andi Kleen
+> 
+> . Move weight back to common sort keys, From Andi Kleen.
+> 
+> . Fix named threads support in 'perf script', from David Ahern.
+> 
+> . Handle ENODEV on default cycles event, fix from David Ahern.
+> 
+> . More install tests, from Jiri Olsa.
+> 
+> . Fix build with perl 5.18, from Kirill A. Shutemov.
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Andi Kleen (3):
+>       perf bench: Fix memcpy benchmark for large sizes
+>       perf tools: Support callchain sorting based on addresses
+>       perf tools: Move weight back to common sort keys
+> 
+> David Ahern (2):
+>       perf script: Fix named threads support
+>       perf evsel: Handle ENODEV on default cycles event
+> 
+> Jiri Olsa (5):
+>       perf tests: Run ctags/cscope make tests only with needed binaries
+>       perf tests: Rename TMP to TMP_O tests/make variable
+>       perf tests: Add DESTDIR=TMP_DEST tests/make variable
+>       perf tests: Add 'make install/install-bin' tests into tests/make
+>       perf tests: Add broken install-* tests into tests/make
+> 
+> Kirill A. Shutemov (1):
+>       perf tools: Fix build with perl 5.18
+> 
+>  tools/perf/Documentation/perf-report.txt           |  8 ++-
+>  tools/perf/Makefile                                |  4 +-
+>  tools/perf/bench/mem-memcpy.c                      |  2 +
+>  tools/perf/builtin-report.c                        | 19 ++++--
+>  tools/perf/builtin-script.c                        |  6 +-
+>  tools/perf/tests/make                              | 67 +++++++++++++++++++---
+>  tools/perf/util/callchain.c                        |  7 ++-
+>  tools/perf/util/callchain.h                        |  6 ++
+>  tools/perf/util/evsel.c                            |  2 +-
+>  tools/perf/util/hist.c                             |  3 +-
+>  .../perf/util/scripting-engines/trace-event-perl.c | 14 +++--
+>  .../util/scripting-engines/trace-event-python.c    |  9 +--
+>  tools/perf/util/sort.c                             |  4 +-
+>  tools/perf/util/sort.h                             |  6 +-
+>  tools/perf/util/trace-event-scripting.c            |  3 +-
+>  tools/perf/util/trace-event.h                      |  4 +-
+>  16 files changed, 124 insertions(+), 40 deletions(-)
 
-The related error (with randconfig which disable 'GENERIC_HARDIRQS')
+Pulled, thanks a lot Arnaldo!
 
-  drivers/built-in.o: In function `dw_dma_probe':
-  (.text+0x3747a): undefined reference to `devm_request_threaded_irq'
-
-
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/base/Makefile     |    2 +-
- drivers/base/devres_irq.c |   94 +++++++++++++++++++++++++++++++++++++++++++++
- kernel/irq/Makefile       |    2 +-
- kernel/irq/devres.c       |   94 ---------------------------------------------
- 4 files changed, 96 insertions(+), 96 deletions(-)
- create mode 100644 drivers/base/devres_irq.c
- delete mode 100644 kernel/irq/devres.c
-
-diff --git a/drivers/base/Makefile b/drivers/base/Makefile
-index 94e8a80..cb706f9 100644
---- a/drivers/base/Makefile
-+++ b/drivers/base/Makefile
-@@ -2,7 +2,7 @@
- 
- obj-y			:= core.o bus.o dd.o syscore.o \
- 			   driver.o class.o platform.o \
--			   cpu.o firmware.o init.o map.o devres.o \
-+			   cpu.o firmware.o init.o map.o devres.o devres_irq.o \
- 			   attribute_container.o transport_class.o \
- 			   topology.o
- obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
-diff --git a/drivers/base/devres_irq.c b/drivers/base/devres_irq.c
-new file mode 100644
-index 0000000..bd8e788
---- /dev/null
-+++ b/drivers/base/devres_irq.c
-@@ -0,0 +1,94 @@
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/device.h>
-+#include <linux/gfp.h>
-+
-+/*
-+ * Device resource management aware IRQ request/free implementation.
-+ */
-+struct irq_devres {
-+	unsigned int irq;
-+	void *dev_id;
-+};
-+
-+static void devm_irq_release(struct device *dev, void *res)
-+{
-+	struct irq_devres *this = res;
-+
-+	free_irq(this->irq, this->dev_id);
-+}
-+
-+static int devm_irq_match(struct device *dev, void *res, void *data)
-+{
-+	struct irq_devres *this = res, *match = data;
-+
-+	return this->irq == match->irq && this->dev_id == match->dev_id;
-+}
-+
-+/**
-+ *	devm_request_threaded_irq - allocate an interrupt line for a managed device
-+ *	@dev: device to request interrupt for
-+ *	@irq: Interrupt line to allocate
-+ *	@handler: Function to be called when the IRQ occurs
-+ *	@thread_fn: function to be called in a threaded interrupt context. NULL
-+ *		    for devices which handle everything in @handler
-+ *	@irqflags: Interrupt type flags
-+ *	@devname: An ascii name for the claiming device
-+ *	@dev_id: A cookie passed back to the handler function
-+ *
-+ *	Except for the extra @dev argument, this function takes the
-+ *	same arguments and performs the same function as
-+ *	request_irq().  IRQs requested with this function will be
-+ *	automatically freed on driver detach.
-+ *
-+ *	If an IRQ allocated with this function needs to be freed
-+ *	separately, devm_free_irq() must be used.
-+ */
-+int devm_request_threaded_irq(struct device *dev, unsigned int irq,
-+			      irq_handler_t handler, irq_handler_t thread_fn,
-+			      unsigned long irqflags, const char *devname,
-+			      void *dev_id)
-+{
-+	struct irq_devres *dr;
-+	int rc;
-+
-+	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
-+			  GFP_KERNEL);
-+	if (!dr)
-+		return -ENOMEM;
-+
-+	rc = request_threaded_irq(irq, handler, thread_fn, irqflags, devname,
-+				  dev_id);
-+	if (rc) {
-+		devres_free(dr);
-+		return rc;
-+	}
-+
-+	dr->irq = irq;
-+	dr->dev_id = dev_id;
-+	devres_add(dev, dr);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(devm_request_threaded_irq);
-+
-+/**
-+ *	devm_free_irq - free an interrupt
-+ *	@dev: device to free interrupt for
-+ *	@irq: Interrupt line to free
-+ *	@dev_id: Device identity to free
-+ *
-+ *	Except for the extra @dev argument, this function takes the
-+ *	same arguments and performs the same function as free_irq().
-+ *	This function instead of free_irq() should be used to manually
-+ *	free IRQs allocated with devm_request_irq().
-+ */
-+void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
-+{
-+	struct irq_devres match_data = { irq, dev_id };
-+
-+	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
-+			       &match_data));
-+	free_irq(irq, dev_id);
-+}
-+EXPORT_SYMBOL(devm_free_irq);
-diff --git a/kernel/irq/Makefile b/kernel/irq/Makefile
-index fff1738..d98eec9 100644
---- a/kernel/irq/Makefile
-+++ b/kernel/irq/Makefile
-@@ -1,5 +1,5 @@
- 
--obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o devres.o
-+obj-y := irqdesc.o handle.o manage.o spurious.o resend.o chip.o dummychip.o
- obj-$(CONFIG_GENERIC_IRQ_CHIP) += generic-chip.o
- obj-$(CONFIG_GENERIC_IRQ_PROBE) += autoprobe.o
- obj-$(CONFIG_IRQ_DOMAIN) += irqdomain.o
-diff --git a/kernel/irq/devres.c b/kernel/irq/devres.c
-deleted file mode 100644
-index bd8e788..0000000
---- a/kernel/irq/devres.c
-+++ /dev/null
-@@ -1,94 +0,0 @@
--#include <linux/module.h>
--#include <linux/interrupt.h>
--#include <linux/device.h>
--#include <linux/gfp.h>
--
--/*
-- * Device resource management aware IRQ request/free implementation.
-- */
--struct irq_devres {
--	unsigned int irq;
--	void *dev_id;
--};
--
--static void devm_irq_release(struct device *dev, void *res)
--{
--	struct irq_devres *this = res;
--
--	free_irq(this->irq, this->dev_id);
--}
--
--static int devm_irq_match(struct device *dev, void *res, void *data)
--{
--	struct irq_devres *this = res, *match = data;
--
--	return this->irq == match->irq && this->dev_id == match->dev_id;
--}
--
--/**
-- *	devm_request_threaded_irq - allocate an interrupt line for a managed device
-- *	@dev: device to request interrupt for
-- *	@irq: Interrupt line to allocate
-- *	@handler: Function to be called when the IRQ occurs
-- *	@thread_fn: function to be called in a threaded interrupt context. NULL
-- *		    for devices which handle everything in @handler
-- *	@irqflags: Interrupt type flags
-- *	@devname: An ascii name for the claiming device
-- *	@dev_id: A cookie passed back to the handler function
-- *
-- *	Except for the extra @dev argument, this function takes the
-- *	same arguments and performs the same function as
-- *	request_irq().  IRQs requested with this function will be
-- *	automatically freed on driver detach.
-- *
-- *	If an IRQ allocated with this function needs to be freed
-- *	separately, devm_free_irq() must be used.
-- */
--int devm_request_threaded_irq(struct device *dev, unsigned int irq,
--			      irq_handler_t handler, irq_handler_t thread_fn,
--			      unsigned long irqflags, const char *devname,
--			      void *dev_id)
--{
--	struct irq_devres *dr;
--	int rc;
--
--	dr = devres_alloc(devm_irq_release, sizeof(struct irq_devres),
--			  GFP_KERNEL);
--	if (!dr)
--		return -ENOMEM;
--
--	rc = request_threaded_irq(irq, handler, thread_fn, irqflags, devname,
--				  dev_id);
--	if (rc) {
--		devres_free(dr);
--		return rc;
--	}
--
--	dr->irq = irq;
--	dr->dev_id = dev_id;
--	devres_add(dev, dr);
--
--	return 0;
--}
--EXPORT_SYMBOL(devm_request_threaded_irq);
--
--/**
-- *	devm_free_irq - free an interrupt
-- *	@dev: device to free interrupt for
-- *	@irq: Interrupt line to free
-- *	@dev_id: Device identity to free
-- *
-- *	Except for the extra @dev argument, this function takes the
-- *	same arguments and performs the same function as free_irq().
-- *	This function instead of free_irq() should be used to manually
-- *	free IRQs allocated with devm_request_irq().
-- */
--void devm_free_irq(struct device *dev, unsigned int irq, void *dev_id)
--{
--	struct irq_devres match_data = { irq, dev_id };
--
--	WARN_ON(devres_destroy(dev, devm_irq_release, devm_irq_match,
--			       &match_data));
--	free_irq(irq, dev_id);
--}
--EXPORT_SYMBOL(devm_free_irq);
--- 
-1.7.7.6
+	Ingo
