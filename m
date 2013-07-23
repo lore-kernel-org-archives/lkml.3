@@ -1,119 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160Ab3GWTaD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:30:03 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:48600 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934135Ab3GWT36 (ORCPT
+	id S934090Ab3GWTcK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:32:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49766 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933599Ab3GWTcI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:29:58 -0400
+	Tue, 23 Jul 2013 15:32:08 -0400
+Date: Tue, 23 Jul 2013 20:31:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Kishon Vijay Abraham I <kishon@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
+        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
+        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
+        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
+        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Message-ID: <20130723193105.GP9858@sirena.org.uk>
+References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
+ <51EE9EC0.6060905@ti.com>
+ <20130723161846.GD2486@kroah.com>
+ <1446965.6APW5ZgLBW@amdc1227>
+ <20130723173710.GB28284@kroah.com>
+ <20130723174456.GM9858@sirena.org.uk>
+ <20130723180110.GA8688@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130723211622.50f75087@xenia.leun.net>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
-	<1367884221-20462-14-git-send-email-ccross@android.com>
-	<20130723010250.5a3465ec@xenia.leun.net>
-	<CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
-	<20130723200854.2046296b@xenia.leun.net>
-	<CAMbhsRT6zOKLhG_uh=nA8H_3d7afhG+4jvWjvidY3fEguryP_Q@mail.gmail.com>
-	<20130723211622.50f75087@xenia.leun.net>
-Date: Tue, 23 Jul 2013 12:29:57 -0700
-X-Google-Sender-Auth: m3-SLb0s8iKhRd1xl86_L3U_3Uw
-Message-ID: <CAMbhsRQU=TswYg-2WqHmzt-_GpfMFpYHPSU4eFd5XMw7DRGXJA@mail.gmail.com>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
- v3 13/16] futex: use freezable blocking call)
-From: Colin Cross <ccross@android.com>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="8lT/blNmSiRvUClR"
+Content-Disposition: inline
+In-Reply-To: <20130723180110.GA8688@kroah.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 12:16 PM, Michael Leun
-<lkml20130126@newton.leun.net> wrote:
-> On Tue, 23 Jul 2013 11:29:57 -0700
-> Colin Cross <ccross@android.com> wrote:
->
->> On Tue, Jul 23, 2013 at 11:08 AM, Michael Leun
->> <lkml20130126@newton.leun.net> wrote:
->> > On Mon, 22 Jul 2013 16:55:58 -0700
->> > Colin Cross <ccross@android.com> wrote:
->> >
->> >> On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
->> >> <lkml20130126@newton.leun.net> wrote:
->> >> > On Mon,  6 May 2013 16:50:18 -0700
->> >> > Colin Cross <ccross@android.com> wrote:
->> >> >
->> >> >> Avoid waking up every thread sleeping in a futex_wait call
->> >> >> during
->> >> > [...]
->> >> >
->> >> > With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
->> >> > displaying 0% of saving image to disk.
->> >> >
->> >> > echo "1" >/sys/power/state still works.
->> >> >
->> >> > Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4,
->> >> > reverting that from 3.11-rc2 makes s2disk working again.
->> >> >
->> >>
->> >> I think the expanded use of the freezable_* helpers is exposing an
->> >> existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
->> >> freeze_processes(), which sets the global system_freezing_cnt and
->> >> pm_freezing.  try_to_freeze_tasks then sends every process except
->> >> current a signal which causes them all to end up in the
->> >> refrigerator. The current task then returns back to userspace and
->> >> continues its work to suspend to disk.  If that task ever hits a
->> >> call to try_to_freeze() in the kernel, it will see
->> >> system_freezing_cnt and pm_freezing=true and freeze, and suspend
->> >> to disk will hang forever.  It could hit try_to_freeze() because
->> >> of a signal delivered to the task, or from calling any syscall
->> >> that uses a freezable_* helper like the one I added to sys_futex.
->> >>
->> >> I think the right solution is to add a flag to the freezing task
->> >> that marks it unfreezable.  I  think PF_NOFREEZE would work,
->> >> although it is normally used on kernel threads, can you see if the
->> >> attached patch helps?
->> >
->> > That patch helps.
->> >
->> > BTW, the only machine I can reproduce this bug with is an i7-3630QM
->> > notebook. Cannot reproduce on an Core Duo U1400 and cannot
->> > reproduce on an i7 M 620.
->> >
->> > Are the sysreq backtraces still wanted? If so, any tip, how I could
->> > get them saved?
->
-> Darren Hart <dvhart@linux.intel.com> wrote:
->
->> Typically by setting up a serial console or a netconsole and saving
-> [...]
->> Is this what you are asking?
->
-> Yes, and it indeed works - I halfway expected the net / netconsole
-> stuff being already frozen in that situation...
->
-> Thanks, Darren - see below for the backtraces.
->
->>
->> Any chance that the failing machine has threads=y in the suspend.conf
->> file?
->
-> Yes, that indeed is the trigger / difference, enabling that on the
-> U4100 (its not a U1400) machine makes that fail also and disabling
-> makes it work on the i7-3630QM.
 
-Thanks, if you get a chance sysrq w might be interesting but I think
-we have enough info to solve the problem.
+--8lT/blNmSiRvUClR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Tue, Jul 23, 2013 at 11:01:10AM -0700, Greg KH wrote:
+> On Tue, Jul 23, 2013 at 06:44:56PM +0100, Mark Brown wrote:
+
+> > What are the problems you are seeing with doing things with lookups?
+
+> You don't "know" the id of the device you are looking up, due to
+> multiple devices being in the system (dynamic ids, look back earlier in
+> this thread for details about that.)
+
+I got copied in very late so don't have most of the thread I'm afraid,=20
+I did try looking at web archives but didn't see a clear problem
+statement.  In any case this is why the APIs doing lookups do the
+lookups in the context of the requesting device - devices ask for
+whatever name they use locally.
+
+> > Having to write platform data for everything gets old fast and the code
+> > duplication is pretty tedious...
+
+> Adding a single pointer is "tedious"?  Where is the "name" that you are
+> going to lookup going to come from?  That code doesn't write itself...
+
+It's adding platform data in the first place that gets tedious - and of
+course there's also DT and ACPI to worry about, it's not just a case of
+platform data and then you're done.  Pushing the lookup into library
+code means that drivers don't have to worry about any of this stuff.
+
+For most of the APIs doing this there is a clear and unambiguous name in
+the hardware that can be used (and for hardware process reasons is
+unlikely to get changed).  The major exception to this is the clock API
+since it is relatively rare to have clear, segregated IP level
+information for IPs baked into larger chips.  The other APIs tend to be
+establishing chip to chip links.
+
+--8lT/blNmSiRvUClR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7tn2AAoJELSic+t+oim9Lt8P/0Dr/y8rOX+c7njkBOSuJ7B1
+6yi2fPPSUkKrUhOfZa5A0uxUEt8uwmS1UC2Pr8uQTkB2fUPYQlX5RKk0pIhA67cE
+KskF4dEVJNR7Nbgxon+pgL4foEUG8wXM4AF+aeo4ySUyBmOxfqpZoK1qjTP1/6CF
+wR9cdaQAFLVNbNcHFEhSJFST1WjoSe+irYwHVtgYWkIBz+qxkEm/LHPgBibexzOu
+EhCb5gFEu0mDL4kb4UI2fVv/+3yEaa8uztspHRrsfTmQUbdW4o0D4ABTowt6XqAT
+Sk9fsjG0Cch71XKNi5SlJB3JAAvgyQo7lT5pWZGRh/VCDzjnHtsl/eG2Gw7SvlPm
+BttItQrUDBtYi9zkv1helwmpkEYDo+VB8zNJi1YylVTawUGUrWNcT7K9PopPi9U6
+9ARkE+CdqZ+KQp2y9l7sEEuT9U6dHFP8PtQhpCyOmzW8CNSPsGuUGsIdVuXzBlnU
+70AQsNLDeiER4avfEWBseWI76w70LHZr0HnwJm4CgVtlcNcLJ0bXI5bVr+TPZS2u
+YaXVg8pAcaClc7USC+pJVDkQEubM7u/PwZw/AOiyx9WIWVhtmnheNM+SBs3KjVOR
+YXN6/jf8T+tOa3TvP7MYenPxf6APJxtiuAenpTWffBJ7HBPhTbQb0ubHuE6fjJ4x
+NxsYGz7vNFP7+uV99BsF
+=Tgf5
+-----END PGP SIGNATURE-----
+
+--8lT/blNmSiRvUClR--
