@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935206Ab3GWWgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:36:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41819 "EHLO
+	id S935197Ab3GWWgi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:36:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934811Ab3GWW1u (ORCPT
+	with ESMTP id S934821Ab3GWW1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:50 -0400
+	Tue, 23 Jul 2013 18:27:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        YoungJun Cho <yj44.cho@samsung.com>,
+        Seung-Woo Kim <sw0312.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
         Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 080/103] drm/i915: Only clear write-domains after a successful wait-seqno
-Date: Tue, 23 Jul 2013 15:26:31 -0700
-Message-Id: <20130723220429.196416052@linuxfoundation.org>
+        Dave Airlie <airlied@redhat.com>
+Subject: [ 081/103] drm/gem: fix not to assign error value to gem name
+Date: Tue, 23 Jul 2013 15:26:32 -0700
+Message-Id: <20130723220429.411000534@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,43 +30,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: YoungJun Cho <yj44.cho@samsung.com>
 
-commit daa13e1ca587bc773c1aae415ed1af6554117bd4 upstream.
+commit 2e07fb229396f99fc173d8612f0f83ea9de0341b upstream.
 
-In the introduction of the non-blocking wait, I cut'n'pasted the wait
-completion code from normal locked path. Unfortunately, this neglected
-that the normal path returned early if the wait returned early. The
-result is that read-only waits may return whilst the GPU is still
-writing to the bo.
+If idr_alloc() is failed, obj->name can be error value. Also
+it cleans up duplicated flink processing code.
 
-Fixes regression from
-commit 3236f57a0162391f84b93f39fc1882c49a8998c7 [v3.7]
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Fri Aug 24 09:35:09 2012 +0100
+This regression has been introduced in
 
-    drm/i915: Use a non-blocking wait for set-to-domain ioctl
+commit 2e928815c1886fe628ed54623aa98d0889cf5509
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Feb 27 17:04:08 2013 -0800
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66163
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm: convert to idr_alloc()
+
+Signed-off-by: YoungJun Cho <yj44.cho@samsung.com>
+Signed-off-by: Seung-Woo Kim <sw0312.kim@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_gem.c |   18 +++++++-----------
+ 1 file changed, 7 insertions(+), 11 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1160,7 +1160,8 @@ i915_gem_object_wait_rendering__nonblock
- 	/* Manually manage the write flush as we may have not yet
- 	 * retired the buffer.
- 	 */
--	if (obj->last_write_seqno &&
-+	if (ret == 0 &&
-+	    obj->last_write_seqno &&
- 	    i915_seqno_passed(seqno, obj->last_write_seqno)) {
- 		obj->last_write_seqno = 0;
- 		obj->base.write_domain &= ~I915_GEM_GPU_DOMAINS;
+--- a/drivers/gpu/drm/drm_gem.c
++++ b/drivers/gpu/drm/drm_gem.c
+@@ -453,25 +453,21 @@ drm_gem_flink_ioctl(struct drm_device *d
+ 	spin_lock(&dev->object_name_lock);
+ 	if (!obj->name) {
+ 		ret = idr_alloc(&dev->object_name_idr, obj, 1, 0, GFP_NOWAIT);
+-		obj->name = ret;
+-		args->name = (uint64_t) obj->name;
+-		spin_unlock(&dev->object_name_lock);
+-		idr_preload_end();
+-
+ 		if (ret < 0)
+ 			goto err;
+-		ret = 0;
++
++		obj->name = ret;
+ 
+ 		/* Allocate a reference for the name table.  */
+ 		drm_gem_object_reference(obj);
+-	} else {
+-		args->name = (uint64_t) obj->name;
+-		spin_unlock(&dev->object_name_lock);
+-		idr_preload_end();
+-		ret = 0;
+ 	}
+ 
++	args->name = (uint64_t) obj->name;
++	ret = 0;
++
+ err:
++	spin_unlock(&dev->object_name_lock);
++	idr_preload_end();
+ 	drm_gem_object_unreference_unlocked(obj);
+ 	return ret;
+ }
 
 
