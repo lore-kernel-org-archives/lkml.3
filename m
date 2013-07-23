@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933544Ab3GWQrF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:47:05 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:14252 "EHLO SMTP.CITRIX.COM"
+	id S933635Ab3GWQsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:48:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16332 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933115Ab3GWQrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:47:04 -0400
-X-IronPort-AV: E=Sophos;i="4.89,729,1367971200"; 
-   d="scan'208";a="38764151"
-Date: Tue, 23 Jul 2013 17:46:58 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: <xen-devel@lists.xensource.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH] do not allow XEN_TMEM on ARM64
-Message-ID: <alpine.DEB.2.02.1307231745520.4893@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S932764Ab3GWQsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:48:09 -0400
+Date: Tue, 23 Jul 2013 18:43:05 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ptrace(PTRACE_ATTACH)  [no intervering wait]
+	ptrace(PTRACE_DETACH) may leave tracee stuck
+Message-ID: <20130723164305.GA28460@redhat.com>
+References: <1374573914.30532.68.camel@marge.simpson.net> <20130723155854.GA26211@redhat.com> <20130723163806.GA27905@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723163806.GA27905@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tmem is not supported on arm or arm64 yet.
+Damn. Sorry for noise Mike,
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On 07/23, Oleg Nesterov wrote:
+>
+> OTOH, in this particular case pldd.c doesn't really need PTRACE_DETACH,
+> it can simply exit.
 
-diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index 9e02d60..a18f350 100644
---- a/drivers/xen/Kconfig
-+++ b/drivers/xen/Kconfig
-@@ -145,7 +146,7 @@ config SWIOTLB_XEN
- 
- config XEN_TMEM
- 	tristate
--	depends on !ARM
-+	depends on !ARM && !ARM64
- 	default m if (CLEANCACHE || FRONTSWAP)
- 	help
- 	  Shim to interface in-kernel Transcendent Memory hooks
+No it can't, I forgot that exit_ptrace() doesn't (and can't) clear
+->exit_code. And this is another reason why PTRACE_DETACH needs the
+stopped tracee.
+
+Oleg.
+
