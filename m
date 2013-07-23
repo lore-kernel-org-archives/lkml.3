@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934396Ab3GWWZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:25:59 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51733 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934310Ab3GWWZb (ORCPT
+	id S934422Ab3GWW0Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:26:25 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:53600 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933350Ab3GWW0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:25:31 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, albert.u.boot@aribaud.net,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 09/10] ARM: sun6i: Add UART0 muxing options
-Date: Wed, 24 Jul 2013 00:25:11 +0200
-Message-Id: <1374618312-19001-10-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 23 Jul 2013 18:26:22 -0400
+Message-ID: <51EF030B.70209@tilera.com>
+Date: Tue, 23 Jul 2013 18:26:19 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH 09/13] tile: enable GRO in the tilegx network driver
+References: <cover.1374609948.git.cmetcalf@tilera.com>  <1188c5613d72850983d54f3b6d0276f3a5aa98f0.1374609949.git.cmetcalf@tilera.com> <1374614351.3449.51.camel@edumazet-glaptop>
+In-Reply-To: <1374614351.3449.51.camel@edumazet-glaptop>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sun6i-a31.dtsi | 7 +++++++
- 1 file changed, 7 insertions(+)
+On 7/23/2013 5:19 PM, Eric Dumazet wrote:
+> On Tue, 2013-07-23 at 16:05 -0400, Chris Metcalf wrote:
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>>  drivers/net/ethernet/tile/tilegx.c | 3 ++-
+>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+>> index b34fd2c..9c128ff 100644
+>> --- a/drivers/net/ethernet/tile/tilegx.c
+>> +++ b/drivers/net/ethernet/tile/tilegx.c
+>> @@ -458,7 +458,7 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
+>>  	/* Get RX timestamp from idesc. */
+>>  	tile_rx_timestamp(skb, idesc);
+>>  
+>> -	netif_receive_skb(skb);
+>> +	napi_gro_receive(&info->napi, skb);
+>>  
+>>  	/* Update stats. */
+>>  	tile_net_stats_add(1, &dev->stats.rx_packets);
+>> @@ -1880,6 +1880,7 @@ static void tile_net_setup(struct net_device *dev)
+>>  	dev->features |= NETIF_F_HW_CSUM;
+>>  	dev->features |= NETIF_F_SG;
+>>  	dev->features |= NETIF_F_TSO;
+>> +	dev->features |= NETIF_F_GRO;
+> This line should not be needed
+>
+> register_netdevice() does it for all devices :
+>
+> dev->hw_features |= NETIF_F_SOFT_FEATURES;
+> dev->features |= NETIF_F_SOFT_FEATURES;
 
-diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
-index 0443628..40a7ea6 100644
---- a/arch/arm/boot/dts/sun6i-a31.dtsi
-+++ b/arch/arm/boot/dts/sun6i-a31.dtsi
-@@ -77,6 +77,13 @@
- 			#address-cells = <1>;
- 			#size-cells = <0>;
- 			#gpio-cells = <3>;
-+
-+			uart0_pins_a: uart0@0 {
-+				allwinner,pins = "PH20", "PH21";
-+				allwinner,function = "uart0";
-+				allwinner,drive = <0>;
-+				allwinner,pull = <0>;
-+			};
- 		};
- 
- 		timer@01c20c00 {
+Thanks; I removed the line from my tile-net-next tree so it will get pulled without it.
+
 -- 
-1.8.3.2
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
