@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935161Ab3GWWi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:38:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41779 "EHLO
+	id S935236Ab3GWWjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:39:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41764 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934759Ab3GWW1o (ORCPT
+	with ESMTP id S934741Ab3GWW1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:44 -0400
+	Tue, 23 Jul 2013 18:27:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: [ 071/103] mac80211: close AP_VLAN interfaces before unregistering all
-Date: Tue, 23 Jul 2013 15:26:22 -0700
-Message-Id: <20130723220427.408479471@linuxfoundation.org>
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 067/103] SUNRPC: fix races on PipeFS MOUNT notifications
+Date: Tue, 23 Jul 2013 15:26:18 -0700
+Message-Id: <20130723220426.701839275@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,46 +27,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 4c8a9d4bfaf7dbc7d2168494904d79d22cc01db7 upstream.
+commit 384816051ca9125cd54750e59c780c2a2655fa4f upstream.
 
-Since Eric's commit efe117ab8 ("Speedup ieee80211_remove_interfaces")
-there's a bug in mac80211 when it unregisters with AP_VLAN interfaces
-up. If the AP_VLAN interface was registered after the AP it belongs
-to (which is the typical case) and then we get into this code path,
-unregister_netdevice_many() will crash because it isn't prepared to
-deal with interfaces being closed in the middle of it. Exactly this
-happens though, because we iterate the list, find the AP master this
-AP_VLAN belongs to and dev_close() the dependent VLANs. After this,
-unregister_netdevice_many() won't pick up the fact that the AP_VLAN
-is already down and will do it again, causing a crash.
+Below are races, when RPC client can be created without PiepFS dentries
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+CPU#0					CPU#1
+-----------------------------		-----------------------------
+rpc_new_client				rpc_fill_super
+rpc_setup_pipedir
+mutex_lock(&sn->pipefs_sb_lock)
+rpc_get_sb_net == NULL
+(no per-net PipeFS superblock)
+					sn->pipefs_sb = sb;
+					notifier_call_chain(MOUNT)
+					(client is not in the list)
+rpc_register_client
+(client without pipes dentries)
+
+To fix this patch:
+1) makes PipeFS mount notification call with pipefs_sb_lock being held.
+2) releases pipefs_sb_lock on new SUNRPC client creation only after
+registration.
+
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/iface.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ net/sunrpc/clnt.c     |   26 +++++++++++++++-----------
+ net/sunrpc/rpc_pipe.c |    3 +++
+ 2 files changed, 18 insertions(+), 11 deletions(-)
 
---- a/net/mac80211/iface.c
-+++ b/net/mac80211/iface.c
-@@ -1726,6 +1726,15 @@ void ieee80211_remove_interfaces(struct
- 		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
- 			dev_close(sdata->dev);
+--- a/net/sunrpc/clnt.c
++++ b/net/sunrpc/clnt.c
+@@ -157,20 +157,15 @@ static struct dentry *rpc_setup_pipedir_
+ }
  
-+	/*
-+	 * Close all AP_VLAN interfaces first, as otherwise they
-+	 * might be closed while the AP interface they belong to
-+	 * is closed, causing unregister_netdevice_many() to crash.
-+	 */
-+	list_for_each_entry(sdata, &local->interfaces, list)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+			dev_close(sdata->dev);
-+
- 	mutex_lock(&local->iflist_mtx);
- 	list_for_each_entry_safe(sdata, tmp, &local->interfaces, list) {
- 		list_del(&sdata->list);
+ static int
+-rpc_setup_pipedir(struct rpc_clnt *clnt, const char *dir_name)
++rpc_setup_pipedir(struct rpc_clnt *clnt, const char *dir_name,
++		  struct super_block *pipefs_sb)
+ {
+-	struct net *net = rpc_net_ns(clnt);
+-	struct super_block *pipefs_sb;
+ 	struct dentry *dentry;
+ 
+ 	clnt->cl_dentry = NULL;
+ 	if (dir_name == NULL)
+ 		return 0;
+-	pipefs_sb = rpc_get_sb_net(net);
+-	if (!pipefs_sb)
+-		return 0;
+ 	dentry = rpc_setup_pipedir_sb(pipefs_sb, clnt, dir_name);
+-	rpc_put_sb_net(net);
+ 	if (IS_ERR(dentry))
+ 		return PTR_ERR(dentry);
+ 	clnt->cl_dentry = dentry;
+@@ -296,6 +291,7 @@ static struct rpc_clnt * rpc_new_client(
+ 	struct rpc_clnt		*clnt = NULL;
+ 	struct rpc_auth		*auth;
+ 	int err;
++	struct super_block *pipefs_sb;
+ 
+ 	/* sanity check the name before trying to print it */
+ 	dprintk("RPC:       creating %s client for %s (xprt %p)\n",
+@@ -354,9 +350,12 @@ static struct rpc_clnt * rpc_new_client(
+ 
+ 	atomic_set(&clnt->cl_count, 1);
+ 
+-	err = rpc_setup_pipedir(clnt, program->pipe_dir_name);
+-	if (err < 0)
+-		goto out_no_path;
++	pipefs_sb = rpc_get_sb_net(rpc_net_ns(clnt));
++	if (pipefs_sb) {
++		err = rpc_setup_pipedir(clnt, program->pipe_dir_name, pipefs_sb);
++		if (err)
++			goto out_no_path;
++	}
+ 
+ 	auth = rpcauth_create(args->authflavor, clnt);
+ 	if (IS_ERR(auth)) {
+@@ -369,11 +368,16 @@ static struct rpc_clnt * rpc_new_client(
+ 	/* save the nodename */
+ 	rpc_clnt_set_nodename(clnt, utsname()->nodename);
+ 	rpc_register_client(clnt);
++	if (pipefs_sb)
++		rpc_put_sb_net(rpc_net_ns(clnt));
+ 	return clnt;
+ 
+ out_no_auth:
+-	rpc_clnt_remove_pipedir(clnt);
++	if (pipefs_sb)
++		__rpc_clnt_remove_pipedir(clnt);
+ out_no_path:
++	if (pipefs_sb)
++		rpc_put_sb_net(rpc_net_ns(clnt));
+ 	kfree(clnt->cl_principal);
+ out_no_principal:
+ 	rpc_free_iostats(clnt->cl_metrics);
+--- a/net/sunrpc/rpc_pipe.c
++++ b/net/sunrpc/rpc_pipe.c
+@@ -1126,6 +1126,7 @@ rpc_fill_super(struct super_block *sb, v
+ 		return -ENOMEM;
+ 	dprintk("RPC:       sending pipefs MOUNT notification for net %p%s\n",
+ 		net, NET_NAME(net));
++	mutex_lock(&sn->pipefs_sb_lock);
+ 	sn->pipefs_sb = sb;
+ 	err = blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_MOUNT,
+@@ -1133,6 +1134,7 @@ rpc_fill_super(struct super_block *sb, v
+ 	if (err)
+ 		goto err_depopulate;
+ 	sb->s_fs_info = get_net(net);
++	mutex_unlock(&sn->pipefs_sb_lock);
+ 	return 0;
+ 
+ err_depopulate:
+@@ -1141,6 +1143,7 @@ err_depopulate:
+ 					   sb);
+ 	sn->pipefs_sb = NULL;
+ 	__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
++	mutex_unlock(&sn->pipefs_sb_lock);
+ 	return err;
+ }
+ 
 
 
