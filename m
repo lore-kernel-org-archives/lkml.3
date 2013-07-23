@@ -1,52 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757915Ab3GWRSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 13:18:03 -0400
-Received: from co1ehsobe005.messaging.microsoft.com ([216.32.180.188]:53893
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757667Ab3GWRSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 13:18:01 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kernel@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] imx-drm: TODO: Remove LVDS support from missing features list.
-Date: Tue, 23 Jul 2013 14:15:32 -0300
-Message-ID: <1374599732-24255-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1757965Ab3GWRSm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 13:18:42 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57392 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757630Ab3GWRSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 13:18:40 -0400
+Date: Tue, 23 Jul 2013 20:18:38 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Illia Smyrnov <illia.smyrnov@ti.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, <balbi@ti.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2 3/3] Input: omap-keypad: Clear pending interrupts on
+ open
+Message-ID: <20130723171838.GA9166@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374595798-15492-1-git-send-email-illia.smyrnov@ti.com>
+ <1374595798-15492-4-git-send-email-illia.smyrnov@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BXVAT5kNtrzKuDFl"
+Content-Disposition: inline
+In-Reply-To: <1374595798-15492-4-git-send-email-illia.smyrnov@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-LVDS Display Bridge is currently supported, so remove it from the missing
-features list.
+--BXVAT5kNtrzKuDFl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/staging/imx-drm/TODO | 1 -
- 1 file changed, 1 deletion(-)
+Hi,
 
-diff --git a/drivers/staging/imx-drm/TODO b/drivers/staging/imx-drm/TODO
-index f806415..9cfa2a7 100644
---- a/drivers/staging/imx-drm/TODO
-+++ b/drivers/staging/imx-drm/TODO
-@@ -10,7 +10,6 @@ TODO:
- Missing features (not necessarily for moving out of staging):
- 
- - Add KMS plane support for CRTC driver
--- Add LDB (LVDS Display Bridge) support
- - Add i.MX6 HDMI support
- - Add support for IC (Image converter)
- - Add support for CSI (CMOS Sensor interface)
--- 
-1.8.1.2
+On Tue, Jul 23, 2013 at 07:09:58PM +0300, Illia Smyrnov wrote:
+> Clear pending interrupts when open keypad.
 
+where are these interrupts coming from ?
 
+> Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+> ---
+>  drivers/input/keyboard/omap4-keypad.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboa=
+rd/omap4-keypad.c
+> index b876a0d..62abc3e 100644
+> --- a/drivers/input/keyboard/omap4-keypad.c
+> +++ b/drivers/input/keyboard/omap4-keypad.c
+> @@ -185,13 +185,14 @@ static int omap4_keypad_open(struct input_dev *inpu=
+t)
+>  			(OMAP4_VAL_PVT << OMAP4_DEF_CTRL_PTV_SHIFT));
+>  	kbd_writel(keypad_data, OMAP4_KBD_DEBOUNCINGTIME,
+>  			OMAP4_VAL_DEBOUNCINGTIME);
+> -	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS,
+> -			OMAP4_VAL_IRQDISABLE);
+>  	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQENABLE,
+>  			OMAP4_DEF_IRQENABLE_EVENTEN |
+>  				OMAP4_DEF_IRQENABLE_LONGKEY);
+>  	kbd_writel(keypad_data, OMAP4_KBD_WAKEUPENABLE,
+>  			OMAP4_DEF_WUP_EVENT_ENA | OMAP4_DEF_WUP_LONG_KEY_ENA);
+> +	/* clear pending interrupts */
+> +	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS,
+> +			 kbd_read_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS));
+
+you might want to clear these interrupts before unmasking them :-)
+
+--=20
+balbi
+
+--BXVAT5kNtrzKuDFl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7rruAAoJEIaOsuA1yqREfYcP/iDwq1NDC6D7pH3Xh6Aamnqu
+Dxpb/1i8/IaHPfPNnGQAICSPgZ9sjTTc9tWvfodPQQaN0j+vCyBehE/PCFSXS7Ug
+V2X8yh5Jk2mWOK93QlgMumhjbhk46UYnPUjrym4HDS3vHA+cUpE0aFPms9FeSHvU
+USqsmS7vP/Ul/+vZWXMLILAjEAGO/nd/S07QkK/DG17kSfvIl+L3RJKJ3CR1Tpa7
+wLTAuRB5sOVBwTrDrVQshGna0WE6DC3X9OGpDVjQDdc6YhYJFXFPdwB2Bhq05Xwi
++YYThVW/PjZcCWi1Jw9gmxCWWrqb7E62NqDrEGjG2P5k6rzz+AHMG4MkeIwLq9P8
+5DFVWnQ6uZwlrj/DE+6UDBN63E4vaS+T8hnwjP3dxLB6TkNvmsTL5lFIoXj9OzmD
+RgeIGwxSlU0RHhCnwRbvpemAL/+CVgSLjpky193hHjGShxnyf6HAhzh4e6gFLUXh
+0xal/gqfPoY5iokahdYMj2k26EeRNn1gpdgNXkvwzA2urllhyGu/6Rmqgv8vjqTY
+zvXfBxMl1khBFaWQgUuFjXi7/z8Xw1xRlpu+/m0n8pwzZXePn4H/YXJz1EAeXRRv
+ZpU8I8CZYQnp73vDb3yHpQTVtX20DUZxY5baIPgmJhfK+lVC99Ab4QxN8YiLZGPS
+rWhK5fnwjZ0A/w7/2rM+
+=u7k9
+-----END PGP SIGNATURE-----
+
+--BXVAT5kNtrzKuDFl--
