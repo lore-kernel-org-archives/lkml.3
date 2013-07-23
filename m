@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab3GWPbi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:31:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45472 "EHLO mx1.redhat.com"
+	id S1758028Ab3GWPcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34203 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757798Ab3GWPbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:31:24 -0400
-Date: Tue, 23 Jul 2013 17:26:13 +0200
+	id S1757975Ab3GWPbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 11:31:15 -0400
+Date: Tue, 23 Jul 2013 17:26:03 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Al Viro <viro@zeniv.linux.org.uk>, Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -16,8 +16,9 @@ Cc: Alexander Z Lam <azl@google.com>, David Sharp <dhsharp@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 7/7] tracing: Kill trace_cpu struct/members
-Message-ID: <20130723152613.GA23741@redhat.com>
+Subject: [PATCH v2 4/7] tracing: Change tracing_stats_fops to rely on
+	tracing_get_cpu()
+Message-ID: <20130723152603.GA23727@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -27,104 +28,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous changes trace_array_cpu->trace_cpu and
-trace_array->trace_cpu becomes write-only. Remove these members
-and kill "struct trace_cpu" as well.
+tracing_open_generic_tc() is racy, the memory inode->i_private
+points to can be already freed.
 
-As a side effect this also removes memset(per_cpu_memory, 0).
-It was not needed, alloc_percpu() returns zero-filled memory.
+1. Change one of its users, tracing_stats_fops, to use
+   tracing_*_generic_tr() instead.
+
+2. Change trace_create_cpu_file("stats", data) to pass "data = tr".
+
+3. Change tracing_stats_read() to use tracing_get_cpu().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace.c |   21 ---------------------
- kernel/trace/trace.h |    8 --------
- 2 files changed, 0 insertions(+), 29 deletions(-)
+ kernel/trace/trace.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index dd7780d..69cba47 100644
+index 30c058a..e29dc8f 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -5865,17 +5865,6 @@ struct dentry *trace_instance_dir;
- static void
- init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer);
+@@ -2982,7 +2982,6 @@ static int tracing_open_generic_tr(struct inode *inode, struct file *filp)
+ 	filp->private_data = inode->i_private;
  
--static void init_trace_buffers(struct trace_array *tr, struct trace_buffer *buf)
--{
--	int cpu;
--
--	for_each_tracing_cpu(cpu) {
--		memset(per_cpu_ptr(buf->data, cpu), 0, sizeof(struct trace_array_cpu));
--		per_cpu_ptr(buf->data, cpu)->trace_cpu.cpu = cpu;
--		per_cpu_ptr(buf->data, cpu)->trace_cpu.tr = tr;
--	}
--}
--
- static int
- allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size)
+ 	return 0;
+-	
+ }
+ 
+ static int tracing_open_generic_tc(struct inode *inode, struct file *filp)
+@@ -5285,14 +5284,14 @@ static ssize_t
+ tracing_stats_read(struct file *filp, char __user *ubuf,
+ 		   size_t count, loff_t *ppos)
  {
-@@ -5893,8 +5882,6 @@ allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size
- 		return -ENOMEM;
- 	}
+-	struct trace_cpu *tc = filp->private_data;
+-	struct trace_array *tr = tc->tr;
++	struct inode *inode = file_inode(filp);
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_buffer *trace_buf = &tr->trace_buffer;
++	int cpu = tracing_get_cpu(inode);
+ 	struct trace_seq *s;
+ 	unsigned long cnt;
+ 	unsigned long long t;
+ 	unsigned long usec_rem;
+-	int cpu = tc->cpu;
  
--	init_trace_buffers(tr, buf);
--
- 	/* Allocate the first page for all buffers */
- 	set_buffer_entries(&tr->trace_buffer,
- 			   ring_buffer_size(tr->trace_buffer.buffer, 0));
-@@ -5961,10 +5948,6 @@ static int new_instance_create(const char *name)
- 	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
- 		goto out_free_tr;
+ 	s = kmalloc(sizeof(*s), GFP_KERNEL);
+ 	if (!s)
+@@ -5345,10 +5344,10 @@ tracing_stats_read(struct file *filp, char __user *ubuf,
+ }
  
--	/* Holder for file callbacks */
--	tr->trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
--	tr->trace_cpu.tr = tr;
--
- 	tr->dir = debugfs_create_dir(name, trace_instance_dir);
- 	if (!tr->dir)
- 		goto out_free_tr;
-@@ -6438,10 +6421,6 @@ __init static int tracer_alloc_buffers(void)
+ static const struct file_operations tracing_stats_fops = {
+-	.open		= tracing_open_generic_tc,
++	.open		= tracing_open_generic_tr,
+ 	.read		= tracing_stats_read,
+ 	.llseek		= generic_file_llseek,
+-	.release	= tracing_release_generic_tc,
++	.release	= tracing_release_generic_tr,
+ };
  
- 	global_trace.flags = TRACE_ARRAY_FL_GLOBAL;
+ #ifdef CONFIG_DYNAMIC_FTRACE
+@@ -5578,7 +5577,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 				tr, cpu, &tracing_buffers_fops);
  
--	/* Holder for file callbacks */
--	global_trace.trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
--	global_trace.trace_cpu.tr = &global_trace;
--
- 	INIT_LIST_HEAD(&global_trace.systems);
- 	INIT_LIST_HEAD(&global_trace.events);
- 	list_add(&global_trace.list, &ftrace_trace_arrays);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index e7d643b..afaae41 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -130,19 +130,12 @@ enum trace_flag_type {
+ 	trace_create_cpu_file("stats", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_stats_fops);
++				tr, cpu, &tracing_stats_fops);
  
- struct trace_array;
- 
--struct trace_cpu {
--	struct trace_array	*tr;
--	struct dentry		*dir;
--	int			cpu;
--};
--
- /*
-  * The CPU trace array - it consists of thousands of trace entries
-  * plus some other descriptor data: (for example which task started
-  * the trace, etc.)
-  */
- struct trace_array_cpu {
--	struct trace_cpu	trace_cpu;
- 	atomic_t		disabled;
- 	void			*buffer_page;	/* ring buffer spare */
- 
-@@ -196,7 +189,6 @@ struct trace_array {
- 	bool			allocated_snapshot;
- #endif
- 	int			buffer_disabled;
--	struct trace_cpu	trace_cpu;	/* place holder */
- #ifdef CONFIG_FTRACE_SYSCALLS
- 	int			sys_refcount_enter;
- 	int			sys_refcount_exit;
+ 	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
+ 				&data->trace_cpu, cpu, &tracing_entries_fops);
 -- 
 1.5.5.1
 
