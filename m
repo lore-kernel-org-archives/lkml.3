@@ -1,139 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712Ab3GWQ4B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:56:01 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:48065
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932705Ab3GWQz7 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:55:59 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(377454003)(24454002)(13464003)(199002)(189002)(164054003)(51704005)(74316001)(51856001)(19580395003)(74706001)(83322001)(66066001)(16406001)(19580405001)(81342001)(69226001)(76796001)(76786001)(77982001)(63696002)(46102001)(76576001)(47736001)(59766001)(74876001)(47976001)(74366001)(77096001)(54316002)(47446002)(56816003)(81542001)(80022001)(53806001)(74502001)(65816001)(74662001)(49866001)(4396001)(83072001)(79102001)(31966008)(33646001)(50986001)(54356001)(76482001)(56776001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "kay@vrfy.org" <kay@vrfy.org>
-Subject: RE: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Thread-Topic: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Thread-Index: AQHOhLBUexA6H+ozR02R0nup8ZuRHJlycooAgAAOoHA=
-Date: Tue, 23 Jul 2013 16:54:50 +0000
-Message-ID: <84917bea4f304a649eaf640f8926f09b@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
- <20130723160158.GC27054@kroah.com>
-In-Reply-To: <20130723160158.GC27054@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0916FC3A18
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933732Ab3GWQ5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:57:15 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52768 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933677Ab3GWQ5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 12:57:13 -0400
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VRFY.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130723151552.GF8497@pd.tnic>
+References: <20130723135853.579c3cd5@googlemail.com>
+	<20130723151552.GF8497@pd.tnic>
+Date: Tue, 23 Jul 2013 18:57:12 +0200
+Message-ID: <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
+Subject: Re: [PATCH]Fix early microcode loading on AMD
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 23, 2013 at 5:15 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Jul 23, 2013 at 01:58:53PM +0200, Torsten Kaiser wrote:
+>> Fixup the early AMD microcode loading.
+>>
+>> * load_microcode_amd() (and the helper its using) should not have an
+>> cpu parameter.
+>
+> Hmm, I don't think so - we get the cpu handed down from microcode_core
+> and besides the early load on 32bit needs to do find_patch(cpu).
 
+Thats why I moved that part into apply_microcode_amd(). See later on
+more, why I think that move is the right thing.
+And without that the current cpu parameter will only be used to get
+the (in the early load case not even correctly set up!) per-cpu data.
+But the only member of cpuinfo_x86 that gets uses is ->x86, the family.
+Line 159: switch(c->x86) and Line 301: if (proc_fam!)c->x86)
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Tuesday, July 23, 2013 12:02 PM
-> To: KY Srinivasan
-> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
-> apw@canonical.com; andi@firstfloor.org; akpm@linux-foundation.org; linux-
-> mm@kvack.org; kamezawa.hiroyuki@gmail.com; mhocko@suse.cz;
-> hannes@cmpxchg.org; yinghan@google.com; jasowang@redhat.com;
-> kay@vrfy.org
-> Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
-> memory blocks
-> 
-> On Fri, Jul 19, 2013 at 12:23:05PM -0700, K. Y. Srinivasan wrote:
-> > The current machinery for hot-adding memory requires having udev
-> > rules to bring the memory segments online. Export the necessary functionality
-> > to to bring the memory segment online without involving user space code.
-> >
-> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> > ---
-> >  drivers/base/memory.c  |    5 ++++-
-> >  include/linux/memory.h |    4 ++++
-> >  2 files changed, 8 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> > index 2b7813e..a8204ac 100644
-> > --- a/drivers/base/memory.c
-> > +++ b/drivers/base/memory.c
-> > @@ -328,7 +328,7 @@ static int
-> __memory_block_change_state_uevent(struct memory_block *mem,
-> >  	return ret;
-> >  }
-> >
-> > -static int memory_block_change_state(struct memory_block *mem,
-> > +int memory_block_change_state(struct memory_block *mem,
-> >  		unsigned long to_state, unsigned long from_state_req,
-> >  		int online_type)
-> >  {
-> > @@ -341,6 +341,8 @@ static int memory_block_change_state(struct
-> memory_block *mem,
-> >
-> >  	return ret;
-> >  }
-> > +EXPORT_SYMBOL(memory_block_change_state);
-> 
-> EXPORT_SYMBOL_GPL() for all of these please.
+I really wanted to make that switch from cpu to x86family a separate
+patch, that it would be more obvious correct, but because of that
+amd_bsp_mpb hunk I can't find a good cut and thats why this patch is
+larger that I would have preferred.
 
-Will do.
-> 
-> And as others have pointed out, I can't export symbols without a user of
-> those symbols going into the tree at the same time.  So I'll drop this
-> patch for now and wait for your consumer of these symbols to be
-> submitted.
+>> The microcode loading is not depending on the CPU it is
+>
+> Mostly. There are mixed-stepping boxes which need to differentiate
+> between which cpu we're applying the patch for.
 
-I will submit the consumer as well.
+Nothing looks at ->x86_model or ->x86_mask during load.
+It will always load all patches from the current family.
+If loading would really depend on the current cpu in a mixed system
+that would be horrible: Depending on which CPU gets execute
+load_microcode_amd() it there would be different patches loaded into
+RAM?
 
-Thanks,
+> Btw, your config boots on my F14h box with "nomodeset" on the command
+> line because it is missing radeon firmware for my gpu.
 
-K. Y
- 
-> greg k-h
-> 
-> 
+I suspect a F14h box will never see that hang. It trips over the the
+C1E erratum and amd_erratum_400[] looks like it only affects 0xfh and
+0x10h (like my Phenom II X6).
 
+>> executed and all the loaded patches will end up in a global list for all
+>> CPUs anyway.
+>> * Return -1 (like Intels apply_microcode) when the loading fails,
+>> also do not set the active microcode level on failure.
+>
+> Yep, this part I want. Please send it as a separate patch.
 
+OK, will send that together with the resend for cpu_has_amd_erratum().
 
+>> * Save the amd_bsp_mpb on apply, not on load. Otherwise someone could
+>> later load an older microcode file that would overwrite amd_bsp_mpb,
+>> but would not be applied to the CPUs
+>
+> See the patch id check in apply_ucode_in_initrd()?
+>
+>         if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
+
+I meant with "load" load_microcode_amd() not the loading of the
+microcode into the CPU.
+
+1.: load microcode rev X into CPU (early or normal is not important)
+2.: get older microcode file that only contains rev Y with Y<X
+3.: trigger load_microcode_amd() with a corrupt file: This will call
+cleanup() and empty pcache.
+4.: trigger load_microcode_amd() with the older file:
+ * this will now load rev Y into pcache
+ * rev Y will be returned by find_patch and copied into amd_bsp_mpb
+ * any try to apply rev Y will be skipped in apply_microcode_amd()
+
+So now the CPU still correctly has rev X, but amd_bsp_mpb will contain
+the wrong rev Y.
+
+That copying already in load_microcode also is suspicious if someone
+would only load the microcode but not apply it. But I did not find a
+codepath in arch/x86/kernel/microcode_core.c to load it without a
+followup apply.
+
+>> * Save the amd_bsp_mpb on every update. Otherwise someone could offline
+>> the BSP, update the microcode and this would be lost on resume
+>
+> Huh, is amd_bsp_mpb going to disappear all of a sudden?
+>
+> And that doesn't matter because when we online the BSP later, it goes
+> through the CPU hotplug notifier mc_cpu_callback. Or am I missing
+> something?
+
+Yeah, me correctly describing what I was meaning. ;-)
+
+1.: boot system, BIOS give microcode rev. X
+2.: offline the BSP
+3.: update microcode to rev. Y with Y > X
+Because the BSP is not online rev. Y will not be copied into amd_bsp_mpb
+4.: supend
+5.: resume, BIOS gives rev. X again
+6.: amd_bsp_mpb is empty -> rev. Y will not be reapplied.
+
+>> * apply_ucode_in_initrd() now also needs to save amd_bsp_mbp, because
+>> load_microcode_amd() its no longer doing this and its not using
+>> apply_microcode_amd().
+>> * extract common checks and initialisations from load_ucode_ap() and
+>> load_microcode_amd() to load_microcode_amd_early(). The change from
+>> cpu to x86family in load_microcode_amd() allows to drop the code messing
+>> with cpu_data(cpu), with is wrong anyway because at that point the
+>> per-cpu cpu_info is not yet setup. And these values would later be
+>> overwritten by smp_store_boot_cpu_info() / smp_store_cpu_info().
+>
+> Right, so I was thinking about this. And the code is pretty nasty: we do a
+> load_ucode_amd_ap() but we do add the ucode for the BSP:
+>
+>         if (load_microcode_amd(0, ucode, ucode_size) != UCODE_OK)
+
+No, that code will not be reached for the BSP, because it is behind:
+if (cpu && !ucode_loaded) {
+The BSP has cpu == 0. Thats why I adding the following in my patch:
++       /* BSP via load_ucode_amd_bsp() */
++       if (!cpu)
++               return;
+
+I don't understand if that is really correct, but that was the
+original behavior, and I didn't feel competent enough to decree that
+calling load_microcode_amd() for the BSP would be save.
+(The code there is strange: There is a load_ucode_amd_bsp() but
+load_ucode_amd_ap() will also be called for the BSP.
+And it seems the call to load_ucode_ap() for the BSP will come from a
+very different place (via trap_init()) that the other CPUs.
+And I did not even try to understand what X86_32 is doing...)
+
+> so the actual problem is apply_microcode_amd() using as an arg cpu != 0.
+> And we can take care of that by using, say __apply_microcode_amd() and
+> hand it the BSP's patch.
+
+That one I don't understand.
+cpu!=0 is nessasary to patch all the other CPUs.
+
+> The other problem I see is not updating c->microcode since it is going
+> to be overwritten by smp_store_cpu_info, which is unfortunate.
+>
+> And I don't see where Intel are updating that cpuinfo_x86.microcode
+> field on early load too.
+>
+> So, AFAICT, c->microcode would remain unset when we only do early
+> microcode load. But that is something we should fix as a later patch.
+
+I don't see a problem with that staying unset.
+apply_microcode_amd() directly reads the rev from
+MSR_AMD64_PATCH_LEVEL so it does not depend on that being correct.
+And smp_store_(boot)_cpu_info will also read the current rev directly
+from the CPU to fill ->microcode.
+
+> So I think you should switch load_ucode_amd_ap to __apply_microcode_amd:
+>
+>         p = find_patch()
+>
+>         __apply_microcode_amd(p->mc_data);
+>
+> which should take care of the issue you're seeing, IMHO.
+
+The issue I'm seeing is that collect_cpu_info_amd_early() fills c->x86
+but not c->x86_vendor.
+Which breaks cpu_has_amd_erratum() and then Erratum 400 breaks the boot.
+
+I did not really want to switch from apply_microcode_amd() to
+__apply_microcode_amd() because then I would lose the check if the new
+microcode is really an upgrade.
+
+I would like to get rid of the messing with uci->cpu_sig, but that is
+needed in find_patch() so can't be removed even when using
+__appy_microcode_amd().
+
+>> * fold collect_cpu_info_amd_early() into load_ucode_amd_ap(), because its
+>> only used at one place.
+>
+> Yes, that should be done especially since we are not going to touch
+> cpuinfo_x86 fields anymore.
+>
+>> * load_ucode_ap(): Quick exit for !cpu, because without load_microcode_amd()
+>> getting called apply_microcode_amd() can't do anything. Exit, if no microcode
+>> could be loaded.
+>
+> This could probably be a WARN_ON(!cpu) to catch errors...
+
+No, load_ucode_ap() will be called for cpu == 0.
+init/main.c: start_kernel() calls trap_init()
+trap_init() calls cpu_init()
+cpu_init() calls load_ucode_ap()
+load_ucode_ap() then calls load_ucode_amd_ap()
+
+I think that silent exit at that place is correct.
+If load_microcode_amd() could do anything there needs to be correct
+microcode data at initrd_start + ucode_offset.
+But if there is valid microcode then load_ucode_amd_bsp() should also
+have found it an applied it to the BSP already.
+So skipping applay_microcode_amd() for cpu==0 is OK.
+
+> And so on.
+>
+> So I see a couple of issues in this patch and they should be separated
+> into single patches - one patch taking care of one issue and explaining
+> what the problem is in the commit message (I know you can do that good
+> :)).
+
+I know, I know.
+I really wanted "just" a small patch that only killed the accesses to cpu_data.
+Which seemed like it only needed the API change from cpu to x86family
+in microcode_amd.c.
+But then the amd_bsp_mbp made this much more complicated.
+
+OK, I will try to splitt this, at least seperating the correct error
+exit for when __apply_microcode_amd() fails will get an separat patch.
+
+Maybe I will get the rest split up as well. :-)
+
+Torsten
+
+> Thanks.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
