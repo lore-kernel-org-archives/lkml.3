@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934239Ab3GWVQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 17:16:53 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:36370 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929Ab3GWVQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 17:16:52 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 03/27] drivers/cpuidle: don't check resource with devm_ioremap_resource
-Date: Tue, 23 Jul 2013 23:26:55 +0200
-Message-ID: <6230864.6pouOSuFTj@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1374602524-3398-4-git-send-email-wsa@the-dreams.de>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de> <1374602524-3398-4-git-send-email-wsa@the-dreams.de>
+	id S934317Ab3GWVRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 17:17:19 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:54797 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933256Ab3GWVRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 17:17:18 -0400
+Message-ID: <51EEF2DA.3070903@tilera.com>
+Date: Tue, 23 Jul 2013 17:17:14 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: Jianpeng Ma <majianpeng@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mvsas: fix unaligned-access kernel panic under heavy
+ disk testing
+References: <201307232053.r6NKrkOh032171@farm-0012.internal.tilera.com> <1374613204.2290.49.camel@dabdike>
+In-Reply-To: <1374613204.2290.49.camel@dabdike>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-15"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 23, 2013 08:01:36 PM Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
-> 
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+On 7/23/2013 5:00 PM, James Bottomley wrote:
+> On Tue, 2013-07-23 at 16:50 -0400, Chris Metcalf wrote:
+>> > The slot->response value may not be aligned, so should be read
+>> > using the appropriate kernel "unaligned" accessor.
+> Hm, institutional memory re-presenting the wrong patch?  However, I am
+> reminded to push the right one in spite of no ack from marvell.
 
-Daniel, I'm leaving this one to you.
+You may be right; the original author of that patch is not me, but someone else here at Tilera.
 
-Thanks,
-Rafael
+That said, the version I pushed is effectively the version we have in the tip of our tree, so if we've ended up carrying the wrong patch, that's bad!  Let me know what the right patch is that you have - thanks.
 
-
-> ---
-> Please apply via the subsystem-tree.
-> 
->  drivers/cpuidle/cpuidle-kirkwood.c |    3 ---
->  1 file changed, 3 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-> index 521b0a7..2237135 100644
-> --- a/drivers/cpuidle/cpuidle-kirkwood.c
-> +++ b/drivers/cpuidle/cpuidle-kirkwood.c
-> @@ -60,9 +60,6 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
->  	struct resource *res;
->  
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	if (res == NULL)
-> -		return -EINVAL;
-> -
->  	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
->  	if (IS_ERR(ddr_operation_base))
->  		return PTR_ERR(ddr_operation_base);
-> 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
