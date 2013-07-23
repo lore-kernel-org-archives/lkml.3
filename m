@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935003Ab3GWWkl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:40:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41759 "EHLO
+	id S934723Ab3GWW1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:27:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41719 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934735Ab3GWW1l (ORCPT
+	with ESMTP id S934684Ab3GWW1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:41 -0400
+	Tue, 23 Jul 2013 18:27:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 066/103] SCSI: mpt2sas: Fix for issue Missing delay not getting set during system bootup
-Date: Tue, 23 Jul 2013 15:26:17 -0700
-Message-Id: <20130723220426.536882491@linuxfoundation.org>
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 057/103] ath9k_hw: Assign default xlna config for AR9485
+Date: Tue, 23 Jul 2013 15:26:08 -0700
+Message-Id: <20130723220424.948279874@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,102 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit b0df96a0068daee4f9c2189c29b9053eb6e46b17 upstream.
+commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 upstream.
 
-Missing delay is not getting set properly. The reason is that it is not
-defined in the same file from where it is being invoked.  The fix is to move
-the missing delay module parameter from mpt2sas_base.c to mpt2sas_scsh.c.
+For AR9485 boards with XLNA, the default gpio config
+is not set correctly, fix this.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c  |   13 +++----------
- drivers/scsi/mpt2sas/mpt2sas_base.h  |    3 +++
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    8 +++++++-
- 3 files changed, 13 insertions(+), 11 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++++++--
+ drivers/net/wireless/ath/ath9k/ar9003_phy.h    |    2 ++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -80,10 +80,6 @@ static int msix_disable = -1;
- module_param(msix_disable, int, 0);
- MODULE_PARM_DESC(msix_disable, " disable msix routed interrupts (default=0)");
- 
--static int missing_delay[2] = {-1, -1};
--module_param_array(missing_delay, int, NULL, 0);
--MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
--
- static int mpt2sas_fwfault_debug;
- MODULE_PARM_DESC(mpt2sas_fwfault_debug, " enable detection of firmware fault "
- 	"and halt firmware - (default=0)");
-@@ -2199,7 +2195,7 @@ _base_display_ioc_capabilities(struct MP
- }
- 
- /**
-- * _base_update_missing_delay - change the missing delay timers
-+ * mpt2sas_base_update_missing_delay - change the missing delay timers
-  * @ioc: per adapter object
-  * @device_missing_delay: amount of time till device is reported missing
-  * @io_missing_delay: interval IO is returned when there is a missing device
-@@ -2210,8 +2206,8 @@ _base_display_ioc_capabilities(struct MP
-  * delay, as well as the io missing delay. This should be called at driver
-  * load time.
-  */
--static void
--_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
-+void
-+mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
- 	u16 device_missing_delay, u8 io_missing_delay)
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3563,14 +3563,18 @@ static void ar9003_hw_ant_ctrl_apply(str
  {
- 	u16 dmd, dmd_new, dmd_orignal;
-@@ -4407,9 +4403,6 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPT
- 	if (r)
- 		goto out_free_resources;
+ 	struct ath9k_hw_capabilities *pCap = &ah->caps;
+ 	int chain;
+-	u32 regval;
++	u32 regval, value;
+ 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
+ 			AR_PHY_SWITCH_CHAIN_0,
+ 			AR_PHY_SWITCH_CHAIN_1,
+ 			AR_PHY_SWITCH_CHAIN_2,
+ 	};
  
--	if (missing_delay[0] != -1 && missing_delay[1] != -1)
--		_base_update_missing_delay(ioc, missing_delay[0],
--		    missing_delay[1]);
- 	ioc->non_operational_loop = 0;
- 
- 	return 0;
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -1055,6 +1055,9 @@ void mpt2sas_base_validate_event_type(st
- 
- void mpt2sas_halt_firmware(struct MPT2SAS_ADAPTER *ioc);
- 
-+void mpt2sas_base_update_missing_delay(struct MPT2SAS_ADAPTER *ioc,
-+	u16 device_missing_delay, u8 io_missing_delay);
+-	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
++	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
++		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
++				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
 +
- int mpt2sas_port_enable(struct MPT2SAS_ADAPTER *ioc);
++	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
  
- /* scsih shared API */
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -101,6 +101,10 @@ static ushort max_sectors = 0xFFFF;
- module_param(max_sectors, ushort, 0);
- MODULE_PARM_DESC(max_sectors, "max sectors, range 64 to 32767  default=32767");
+ 	if (AR_SREV_9462(ah) || AR_SREV_9565(ah)) {
+ 		REG_RMW_FIELD(ah, AR_PHY_SWITCH_COM,
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
+@@ -351,6 +351,8 @@
  
-+static int missing_delay[2] = {-1, -1};
-+module_param_array(missing_delay, int, NULL, 0);
-+MODULE_PARM_DESC(missing_delay, " device missing delay , io missing delay");
+ #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
+ 
++#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
 +
- /* scsi-mid layer global parmeter is max_report_luns, which is 511 */
- #define MPT2SAS_MAX_LUN (16895)
- static int max_lun = MPT2SAS_MAX_LUN;
-@@ -7299,7 +7303,9 @@ _firmware_event_work(struct work_struct
- 	case MPT2SAS_PORT_ENABLE_COMPLETE:
- 		ioc->start_scan = 0;
- 
--
-+		if (missing_delay[0] != -1 && missing_delay[1] != -1)
-+			mpt2sas_base_update_missing_delay(ioc, missing_delay[0],
-+				missing_delay[1]);
- 
- 		dewtprintk(ioc, printk(MPT2SAS_INFO_FMT "port enable: complete "
- 		    "from worker thread\n", ioc->name));
+ /*
+  * AGC Field Definitions
+  */
 
 
