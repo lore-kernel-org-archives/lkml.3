@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933954Ab3GWS5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:57:53 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:59664 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933733Ab3GWS5w (ORCPT
+	id S933911Ab3GWTEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:04:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56428 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756943Ab3GWTEf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:57:52 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>
-Subject: [PATCH] usb: xhci: Mark two functions __maybe_unused
-Date: Tue, 23 Jul 2013 11:58:20 -0700
-Message-Id: <1374605900-29700-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	Tue, 23 Jul 2013 15:04:35 -0400
+Date: Tue, 23 Jul 2013 14:04:26 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
+Message-ID: <20130723190426.GA9577@tp>
+References: <20130723181606.GA6342@sergelap>
+ <20130723183018.GF21100@mtj.dyndns.org>
+ <20130723183841.GA9021@tp>
+ <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resolves the following build warnings:
-drivers/usb/host/xhci.c:332:13: warning: 'xhci_msix_sync_irqs' defined but not used [-Wunused-function]
-drivers/usb/host/xhci.c:3901:12: warning: 'xhci_change_max_exit_latency' defined but not used [-Wunused-function]
+Quoting Tejun Heo (tj@kernel.org):
+> On Tue, Jul 23, 2013 at 2:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> > This doesn't delegate it into the container.  It allows me, on the host,
+> > to set the cgroup for a container.
+> 
+> Hmmm? I'm a bit confused. Isn't the description saying that the patch
+> allows pseudo-root in userns to change cgroup membership even if it
+> isn't actually root?
 
-These functions are not always used, and since they're marked static
-they will produce build warnings:
-- xhci_msix_sync_irqs is only used with CONFIG_PCI.
-- xhci_change_max_exit_latency is a little more complicated with
-  dependencies on CONFIG_PM and CONFIG_PM_RUNTIME.
+If task A is uid 1000 on the host, and creates task B as uid X in a new
+user namespace, then task A, still being uid 1000 on the host, is
+privileged with respect to B and his namespace - i.e.
+ns_capable(B->userns, CAP_SYS_ADMIN) is true.
 
-Instead of building a bigger maze of ifdefs in this code, I've just
-marked both with __maybe_unused.
+> Besides, I find the whole check rather bogus and would actually much
+> prefer just nuking the check and just follow the standard permission
+> checks.
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
+I'd be ok with that - but there's one case I'm not sure about:  If PAM
+sets me up with /sys/fs/cgroup/devices/serge owned by me, then if I'm
+thinking right, removing can_attach would mean I could move init into
+/sys/fs/cgroup/devices/serge...
 
-Sarah,
+Is there something else stopping that from happening?
 
-I guess taste might differ on ifdef vs __maybe_unused, let me know this
-is not to your liking.
-
-Thanks,
-
--Olof
-
- drivers/usb/host/xhci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2c49f00..87ae8cd 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -329,7 +329,7 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
- 	return;
- }
- 
--static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-+static void __maybe_unused xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- {
- 	int i;
- 
-@@ -3898,7 +3898,7 @@ int xhci_find_raw_port_number(struct usb_hcd *hcd, int port1)
-  * Issue an Evaluate Context command to change the Maximum Exit Latency in the
-  * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
-  */
--static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
-+static int __maybe_unused xhci_change_max_exit_latency(struct xhci_hcd *xhci,
- 			struct usb_device *udev, u16 max_exit_latency)
- {
- 	struct xhci_virt_device *virt_dev;
--- 
-1.7.10.4
-
+-serge
