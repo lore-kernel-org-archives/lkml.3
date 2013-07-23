@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab3GWQIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:08:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44443 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932481Ab3GWQIo (ORCPT
+	id S933591Ab3GWQJG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:09:06 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:47084 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933551Ab3GWQJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:08:44 -0400
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Kevin Hilman <khilman@linaro.org>, Graeme Gregory <gg@slimlogic.co.uk>,
-        <linux-omap@vger.kernel.org>, Ruslan Bilovol <ruslan.bilovol@ti.com>,
-        <linux-kernel@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH 0/4] mfd: twl6030-irq: rework and add twl6032 support
-Date: Tue, 23 Jul 2013 19:07:00 +0300
-Message-ID: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 23 Jul 2013 12:09:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20130723154736.GB27075@twins.programming.kicks-ass.net>
+References: <1374594257.5382.5.camel@localhost.localdomain>
+	<20130723154736.GB27075@twins.programming.kicks-ass.net>
+Date: Tue, 23 Jul 2013 22:09:00 +0600
+Message-ID: <CADZ9YHgdK86MuGk7QcsYt+pRZpJ7GYG-rUWf77p9jWZvkw+i5w@mail.gmail.com>
+Subject: Re: [PATCH, RFC] sched: update_top_cache_domain only at the times of
+ building sched domain.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series intorduces twl6030-irq module rework to use Threaded IRQ and
-linear irq_domain, and adds support for PMIC TWL6032 IRQs.
+On Tue, Jul 23, 2013 at 9:47 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jul 23, 2013 at 09:44:17PM +0600, Rakib Mullick wrote:
+>>  Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
+>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
+>> domain and update only at the times of building schedule domains.
+>>
+>>       partition_sched_domains()
+>>               detach_destroy_domain()
+>>                       cpu_attach_domain()
+>>                               update_top_cache_domain()
+>>               build_sched_domains()
+>>                       cpu_attach_domain()
+>>                               update_top_cache_domain()
+>>
+>
+> Does it really matter?
 
-After this patch series TWL6030/6032 IRQs will be supported only for DT boot mode.
+Why should we do it twice? More importantly at the time of destroying
+even though we know it'll be built again just few moment later.
 
-Based on v3.11-rc1
+>
+>
+> This just makes the code uglier for no gain afaict.
+>
+> If you really need to do this, key off @sd == NULL or something.
 
-Tested generation of RTC_ALARM(3) and PWRON(0) IRQs on OMAP4430/TWL6030 and
-OMAP4470/TWL6032.
-
-Grygorii Strashko (2):
-  mfd: twl6030-irq: add error check when IRQs are masked initially
-  mfd: twl6030-irq: convert to use linear irq_domain
-
-Naga Venkata Srikanth V (1):
-  mfd: twl6030-irq: migrate to IRQ threaded handler
-
-Oleksandr Dmytryshyn (1):
-  mfd: twl6030-irq: Add interrupt mapping table for the twl6032
-
- drivers/mfd/twl6030-irq.c |  296 +++++++++++++++++++++++----------------------
- 1 file changed, 154 insertions(+), 142 deletions(-)
-
--- 
-1.7.9.5
-
+Sorry, would you please a bit more clearer? I can't pick what you're suggesting.
