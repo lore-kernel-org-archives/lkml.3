@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab3GWJge (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:36:34 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:58270 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab3GWJgc (ORCPT
+	id S1756219Ab3GWJkJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:40:09 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38202 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab3GWJkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:36:32 -0400
-Date: Tue, 23 Jul 2013 11:36:28 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Chen Gang <gang.chen@asianux.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH, re-send] Always trap on BUG()
-Message-ID: <20130723093628.GC19786@gmail.com>
-References: <201307051738.35930.arnd@arndb.de>
- <20130715151612.9499c2b2ad40e88d183a4600@linux-foundation.org>
- <20130715222755.GY24642@n2100.arm.linux.org.uk>
- <51E47924.9030005@zytor.com>
+	Tue, 23 Jul 2013 05:40:06 -0400
+Date: Tue, 23 Jul 2013 10:39:50 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@vger.kernel.org, Mark Brown <broonie@kernel.org>
+Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
+	driver for DT usage
+Message-ID: <20130723093950.GR24642@n2100.arm.linux.org.uk>
+References: <20130723104615.3696f1a9@armhf> <20130723085346.GQ24642@n2100.arm.linux.org.uk> <20130723090820.GN9434@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51E47924.9030005@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130723090820.GN9434@pengutronix.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* H. Peter Anvin <hpa@zytor.com> wrote:
-
-> On 07/15/2013 03:27 PM, Russell King - ARM Linux wrote:
-> > On Mon, Jul 15, 2013 at 03:16:12PM -0700, Andrew Morton wrote:
-> >> I've been thinking for a while that CONFIG_BUG=n is a pretty dumb thing
-> >> to do, and that maintaining it (and trying to fix the warnings it
-> >> produces) aren't worth the effort and that we should remove the whole
-> >> thing.  Perhaps your patch changes that calculus, dunno.  Please discuss.
+On Tue, Jul 23, 2013 at 11:08:20AM +0200, Sascha Hauer wrote:
+> On Tue, Jul 23, 2013 at 09:53:46AM +0100, Russell King - ARM Linux wrote:
+> > On Tue, Jul 23, 2013 at 10:46:15AM +0200, Jean-Francois Moine wrote:
+> > > The kirkwood i2s driver is used without DT in the Kirkwood machine.
+> > > This patch adds a DT compatible definition for use in other Marvell
+> > > machines as the Armada 88AP510 (Dove).
 > > 
-> > This isn't about introducing "CONFIG_BUG=n" - this is about making a
-> > kernel with CONFIG_BUG=n build without producing tonnes and tonnes of
-> > warnings, as it does today.  It makes building randconfig pretty
-> > useless to find what could be more important warnings.
+> > Yet again, this illustrates why converting to DT causes backwards
+> > steps in drivers: the conversion of devm_clk_get() to of_clk_get()
+> > necessitates a clk_put().
 > > 
+> > Can someone please provide a devm_of_clk_get() function before we
+> > accept any more patches doing this kind of thing?
 > 
-> Well, there are three alternatives here, right:
+> The question is why isn't regular [devm_]clk_get used here? I don't know
+> what the Marvell stuff is doing here, but if the clk stuff is
+> implemented correctly then
 > 
-> 1. We can use unreachable(), which means that the compiler can assume it
-> never happens.
+> 	np = pdev->dev.of_node;
+> 	priv->clk = of_clk_get(np, 0);
+> 
+> and
+> 
+> 	devm_clk_get(&pdev->dev, "label");
+> 
+> should both work
 
-AFAICS this is dangerous as it loses warnings and moves execution into 
-la-la-land without any obvious sign at the C level.
-
-> 2. We can trap without metadata.
-
-This is what the patch does.
-
-> 3. We can trap with metadata (current CONFIG_BUG=y).
-
-That is still kept with the patch.
-
-> I am *guessing* this does 2, but it isn't clear.
-
-Yes, that's what it does - and I think it's the best of all worlds:
-
-Acked-by: Ingo Molnar <mingo@kernel.org>
-
-(the crazies can keep a separate patch to remove even more of BUG() to win 
-a K or two.)
-
-Thanks,
-
-	Ingo
+You tell me - I keep seeing patches on this list converting drivers from
+using devm_clk_get() to using of_clk_get().  Maybe of_clk_get() should be
+marked deprecated to stop people using it?
