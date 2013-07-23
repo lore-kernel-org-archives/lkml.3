@@ -1,459 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab3GWIKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:10:24 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12670 "EHLO mga14.intel.com"
+	id S1755788Ab3GWIKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:10:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57086 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755363Ab3GWIJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755362Ab3GWIJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 04:09:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,725,1367996400"; 
-   d="scan'208";a="271952007"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
-        Zhao Yakui <yakui.zhao@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 04/13] ACPI/IPMI: Fix race caused by the unprotected ACPI IPMI user
-Date: Tue, 23 Jul 2013 16:09:26 +0800
-Message-Id: <c892cf17953e500992137d90dd6fc5884024fe2a.1374566394.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1374566394.git.lv.zheng@intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com>
+Date: Tue, 23 Jul 2013 10:09:28 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Steven Rostedt <rostedt@goodmis.org>, x86@kernel.org
+Subject: Re: Re: [PATCH -tip/x86/jumplabel] x86: call out into int3 handler
+ directly instead of using notifier
+In-Reply-To: <20130723074505.GA15255@gmail.com>
+Message-ID: <alpine.LNX.2.00.1307231007490.14024@pobox.suse.cz>
+References: <20130720131226.GA13893@localhost> <alpine.LNX.2.00.1307221307280.23128@pobox.suse.cz> <51ED9BC0.6020206@linux.intel.com> <alpine.LNX.2.00.1307222256120.14024@pobox.suse.cz> <51EDDB4B.6030609@hitachi.com> <20130723074505.GA15255@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses reference counting to fix the race caused by the
-unprotected ACPI IPMI user.
+On Tue, 23 Jul 2013, Ingo Molnar wrote:
 
-As the acpi_ipmi_device->user_interface check in acpi_ipmi_space_handler()
-can happen before setting user_interface to NULL and codes after the check
-in acpi_ipmi_space_handler() can happen after user_interface becoming NULL,
-then the on-going acpi_ipmi_space_handler() still can pass an invalid
-acpi_ipmi_device->user_interface to ipmi_request_settime().  Such race
-condition is not allowed by the IPMI layer's API design as crash will
-happen in ipmi_request_settime().
-In IPMI layer, smi_gone()/new_smi() callbacks are protected by
-smi_watchers_mutex, thus their invocations are serialized.  But as a new
-smi can re-use the freed intf_num, it requires that the callback
-implementation must not use intf_num as an identification mean or it must
-ensure all references to the previous smi are all dropped before exiting
-smi_gone() callback.  In case of acpi_ipmi module, this means
-ipmi_flush_tx_msg() must ensure all on-going IPMI transfers are completed
-before exiting ipmi_flush_tx_msg().
+> > > it's x86/jumplabel branch, as a followup to commit 
+> > > fd4363fff3d96 ("x86: Introduce int3 (breakpoint)-based instruction 
+> > > patching") sitting there.
+> > 
+> > AFAICS, tip/master already merged Jiri's works on tip/x86/jumplabel.
+> > Thus both branches need this. (especially, since this is actual
+> > bugfix, it should go into tip/master.)
+> 
+> I resolved it yesterday by keeping the kprobes patches in perf/core - just 
+> forgot to push it all out.
+> 
+> I've pushed it out now, so perf/core should be a baseline: it merges in 
+> x86/jumplabel and then applies the kprobes patches (historically in 
+> perf/core).
 
-This patch follows ipmi_devintf.c design:
-1. Invoking ipmi_destroy_user() after the reference count of
-   acpi_ipmi_device dropping to 0, this matches IPMI layer's API calling
-   rule on ipmi_destroy_user() and ipmi_request_settime().
-2. References of acpi_ipmi_device dropping to 1 means tx_msg related to
-   this acpi_ipmi_device are all freed, this can be used to implement the
-   new flushing mechanism.  Note complete() must be retried so that the
-   on-going tx_msg won't block flushing at the point to add tx_msg into
-   tx_msg_list where reference of acpi_ipmi_device is held.  This matches
-   the IPMI layer's callback rule on smi_gone()/new_smi() serialization.
-3. ipmi_flush_tx_msg() is performed after deleting acpi_ipmi_device from
-   the list so that no new tx_msg can be created after entering flushing
-   process.
-4. The flushing of tx_msg is also moved out of ipmi_lock in this patch.
+Ok, thanks Ingo. Rebased fix below.
 
-The forthcoming IPMI operation region handler installation changes also
-requires acpi_ipmi_device be handled in the reference counting style.
 
-Authorship is also updated due to this design change.
 
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Cc: Zhao Yakui <yakui.zhao@intel.com>
-Reviewed-by: Huang Ying <ying.huang@intel.com>
+
+From: Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH] x86: call out into int3 handler directly instead of using notifier
+
+In fd4363fff3d96 ("x86: Introduce int3 (breakpoint)-based instruction
+patching"), the mechanism that was introduced for notifying alternatives
+code from int3 exception handler that and exception occured was
+die_notifier.
+
+This is however problematic, as early code might be using jump labels even
+before the notifier registration has been performed, which will then lead
+to an oops due to unhandled exception. One of such occurences has been
+encountered by Fengguang:
+
+ int3: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+ Modules linked in:
+ CPU: 1 PID: 0 Comm: swapper/1 Not tainted 3.11.0-rc1-01429-g04bf576 #8
+ task: ffff88000da1b040 ti: ffff88000da1c000 task.ti: ffff88000da1c000
+ RIP: 0010:[<ffffffff811098cc>]  [<ffffffff811098cc>] ttwu_do_wakeup+0x28/0x225
+ RSP: 0000:ffff88000dd03f10  EFLAGS: 00000006
+ RAX: 0000000000000000 RBX: ffff88000dd12940 RCX: ffffffff81769c40
+ RDX: 0000000000000002 RSI: 0000000000000000 RDI: 0000000000000001
+ RBP: ffff88000dd03f28 R08: ffffffff8176a8c0 R09: 0000000000000002
+ R10: ffffffff810ff484 R11: ffff88000dd129e8 R12: ffff88000dbc90c0
+ R13: ffff88000dbc90c0 R14: ffff88000da1dfd8 R15: ffff88000da1dfd8
+ FS:  0000000000000000(0000) GS:ffff88000dd00000(0000) knlGS:0000000000000000
+ CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+ CR2: 00000000ffffffff CR3: 0000000001c88000 CR4: 00000000000006e0
+ Stack:
+  ffff88000dd12940 ffff88000dbc90c0 ffff88000da1dfd8 ffff88000dd03f48
+  ffffffff81109e2b ffff88000dd12940 0000000000000000 ffff88000dd03f68
+  ffffffff81109e9e 0000000000000000 0000000000012940 ffff88000dd03f98
+ Call Trace:
+  <IRQ>
+  [<ffffffff81109e2b>] ttwu_do_activate.constprop.56+0x6d/0x79
+  [<ffffffff81109e9e>] sched_ttwu_pending+0x67/0x84
+  [<ffffffff8110c845>] scheduler_ipi+0x15a/0x2b0
+  [<ffffffff8104dfb4>] smp_reschedule_interrupt+0x38/0x41
+  [<ffffffff8173bf5d>] reschedule_interrupt+0x6d/0x80
+  <EOI>
+  [<ffffffff810ff484>] ? __atomic_notifier_call_chain+0x5/0xc1
+  [<ffffffff8105cc30>] ? native_safe_halt+0xd/0x16
+  [<ffffffff81015f10>] default_idle+0x147/0x282
+  [<ffffffff81017026>] arch_cpu_idle+0x3d/0x5d
+  [<ffffffff81127d6a>] cpu_idle_loop+0x46d/0x5db
+  [<ffffffff81127f5c>] cpu_startup_entry+0x84/0x84
+  [<ffffffff8104f4f8>] start_secondary+0x3c8/0x3d5
+ Code: 5c 5d c3 e8 d7 0f 63 00 55 48 ff 05 1f 5d 1e 01 48 89 e5 41 55 49 89 f5 41 54 53 48 89 fb e8 8d fe ff ff 48
+ 01 cc <1f> 44 00 00 31 c0 eb 0c 48 ff 05 05 5d 1e 01 b8 01 00 00 00 48
+ RIP  [<ffffffff811098cc>] ttwu_do_wakeup+0x28/0x225
+  RSP <ffff88000dd03f10>
+ ---[ end trace 0d3288a047152a17 ]---
+
+Fix this by directly calling poke_int3_handler() from the int3 exception
+handler (analogically to what ftrace has been doing already), instead of
+relying on notifier, registration of which might not have yet been
+finalized by the time of the first trap.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/acpi/acpi_ipmi.c |  249 +++++++++++++++++++++++++++-------------------
- 1 file changed, 149 insertions(+), 100 deletions(-)
+ arch/x86/include/asm/alternative.h |    2 ++
+ arch/x86/kernel/alternative.c      |   31 ++++++++-----------------------
+ arch/x86/kernel/traps.c            |    4 ++++
+ kernel/kprobes.c                   |    2 +-
+ 4 files changed, 15 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
-index 527ee43..cbf25e0 100644
---- a/drivers/acpi/acpi_ipmi.c
-+++ b/drivers/acpi/acpi_ipmi.c
-@@ -1,8 +1,9 @@
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 4daf8c5..0a3f9c9 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -5,6 +5,7 @@
+ #include <linux/stddef.h>
+ #include <linux/stringify.h>
+ #include <asm/asm.h>
++#include <asm/ptrace.h>
+ 
  /*
-  *  acpi_ipmi.c - ACPI IPMI opregion
-  *
-- *  Copyright (C) 2010 Intel Corporation
-- *  Copyright (C) 2010 Zhao Yakui <yakui.zhao@intel.com>
-+ *  Copyright (C) 2010, 2013 Intel Corporation
-+ *    Author: Zhao Yakui <yakui.zhao@intel.com>
-+ *            Lv Zheng <lv.zheng@intel.com>
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  *
-@@ -67,6 +68,7 @@ struct acpi_ipmi_device {
- 	long curr_msgid;
- 	unsigned long flags;
- 	struct ipmi_smi_info smi_data;
-+	atomic_t refcnt;
- };
+  * Alternative inline assembly for SMP.
+@@ -224,6 +225,7 @@ extern void *text_poke_early(void *addr, const void *opcode, size_t len);
+  * inconsistent instruction while you patch.
+  */
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
++extern int poke_int3_handler(struct pt_regs *regs);
+ extern void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler);
  
- struct ipmi_driver_data {
-@@ -107,8 +109,8 @@ struct acpi_ipmi_buffer {
- static void ipmi_register_bmc(int iface, struct device *dev);
- static void ipmi_bmc_gone(int iface);
- static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data);
--static void acpi_add_ipmi_device(struct acpi_ipmi_device *ipmi_device);
--static void acpi_remove_ipmi_device(struct acpi_ipmi_device *ipmi_device);
-+static int ipmi_install_space_handler(struct acpi_ipmi_device *ipmi);
-+static void ipmi_remove_space_handler(struct acpi_ipmi_device *ipmi);
+ #endif /* _ASM_X86_ALTERNATIVE_H */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 5d8782e..15e8563 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -605,26 +605,24 @@ static void do_sync_core(void *info)
+ static bool bp_patching_in_progress;
+ static void *bp_int3_handler, *bp_int3_addr;
  
- static struct ipmi_driver_data driver_data = {
- 	.ipmi_devices = LIST_HEAD_INIT(driver_data.ipmi_devices),
-@@ -122,6 +124,80 @@ static struct ipmi_driver_data driver_data = {
- 	},
- };
- 
-+static struct acpi_ipmi_device *
-+ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
-+{
-+	struct acpi_ipmi_device *ipmi_device;
-+	int err;
-+	ipmi_user_t user;
-+
-+	ipmi_device = kzalloc(sizeof(*ipmi_device), GFP_KERNEL);
-+	if (!ipmi_device)
-+		return NULL;
-+
-+	atomic_set(&ipmi_device->refcnt, 1);
-+	INIT_LIST_HEAD(&ipmi_device->head);
-+	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
-+	spin_lock_init(&ipmi_device->tx_msg_lock);
-+
-+	ipmi_device->handle = handle;
-+	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
-+	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct ipmi_smi_info));
-+	ipmi_device->ipmi_ifnum = iface;
-+
-+	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
-+			       ipmi_device, &user);
-+	if (err) {
-+		put_device(smi_data->dev);
-+		kfree(ipmi_device);
-+		return NULL;
-+	}
-+	ipmi_device->user_interface = user;
-+	ipmi_install_space_handler(ipmi_device);
-+
-+	return ipmi_device;
-+}
-+
-+static struct acpi_ipmi_device *
-+acpi_ipmi_dev_get(struct acpi_ipmi_device *ipmi_device)
-+{
-+	if (ipmi_device)
-+		atomic_inc(&ipmi_device->refcnt);
-+	return ipmi_device;
-+}
-+
-+static void ipmi_dev_release(struct acpi_ipmi_device *ipmi_device)
-+{
-+	ipmi_remove_space_handler(ipmi_device);
-+	ipmi_destroy_user(ipmi_device->user_interface);
-+	put_device(ipmi_device->smi_data.dev);
-+	kfree(ipmi_device);
-+}
-+
-+static void acpi_ipmi_dev_put(struct acpi_ipmi_device *ipmi_device)
-+{
-+	if (ipmi_device && atomic_dec_and_test(&ipmi_device->refcnt))
-+		ipmi_dev_release(ipmi_device);
-+}
-+
-+static struct acpi_ipmi_device *acpi_ipmi_get_targeted_smi(int iface)
-+{
-+	int dev_found = 0;
-+	struct acpi_ipmi_device *ipmi_device;
-+
-+	mutex_lock(&driver_data.ipmi_lock);
-+	list_for_each_entry(ipmi_device, &driver_data.ipmi_devices, head) {
-+		if (ipmi_device->ipmi_ifnum == iface) {
-+			dev_found = 1;
-+			acpi_ipmi_dev_get(ipmi_device);
-+			break;
-+		}
-+	}
-+	mutex_unlock(&driver_data.ipmi_lock);
-+
-+	return dev_found ? ipmi_device : NULL;
-+}
-+
- static struct acpi_ipmi_msg *acpi_alloc_ipmi_msg(struct acpi_ipmi_device *ipmi)
+-static int int3_notify(struct notifier_block *self, unsigned long val, void *data)
++int poke_int3_handler(struct pt_regs *regs)
  {
- 	struct acpi_ipmi_msg *ipmi_msg;
-@@ -228,25 +304,24 @@ static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
- static void ipmi_flush_tx_msg(struct acpi_ipmi_device *ipmi)
- {
- 	struct acpi_ipmi_msg *tx_msg, *temp;
--	int count = HZ / 10;
--	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
- 	unsigned long flags;
- 
--	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
--	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
--		/* wake up the sleep thread on the Tx msg */
--		complete(&tx_msg->tx_complete);
--	}
--	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+-	struct die_args *args = data;
 -
--	/* wait for about 100ms to flush the tx message list */
--	while (count--) {
--		if (list_empty(&ipmi->tx_msg_list))
--			break;
--		schedule_timeout(1);
-+	/*
-+	 * NOTE: Synchronous Flushing
-+	 * Wait until refnct dropping to 1 - no other users unless this
-+	 * context.  This function should always be called before
-+	 * acpi_ipmi_device destruction.
-+	 */
-+	while (atomic_read(&ipmi->refcnt) > 1) {
-+		spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
-+		list_for_each_entry_safe(tx_msg, temp,
-+					 &ipmi->tx_msg_list, head) {
-+			/* wake up the sleep thread on the Tx msg */
-+			complete(&tx_msg->tx_complete);
-+		}
-+		spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
-+		schedule_timeout_uninterruptible(msecs_to_jiffies(1));
- 	}
--	if (!list_empty(&ipmi->tx_msg_list))
--		dev_warn(&pnp_dev->dev, "tx msg list is not NULL\n");
+ 	/* bp_patching_in_progress */
+ 	smp_rmb();
+ 
+ 	if (likely(!bp_patching_in_progress))
+-		return NOTIFY_DONE;
++		return 0;
+ 
+-	/* we are not interested in non-int3 faults and ring > 0 faults */
+-	if (val != DIE_INT3 || !args->regs || user_mode_vm(args->regs)
+-			    || args->regs->ip != (unsigned long)bp_int3_addr)
+-		return NOTIFY_DONE;
++	if (user_mode_vm(regs) || regs->ip != (unsigned long)bp_int3_addr)
++		return 0;
+ 
+ 	/* set up the specified breakpoint handler */
+-	args->regs->ip = (unsigned long) bp_int3_handler;
++	regs->ip = (unsigned long) bp_int3_handler;
++
++	return 1;
+ 
+-	return NOTIFY_STOP;
+ }
++
+ /**
+  * text_poke_bp() -- update instructions on live kernel on SMP
+  * @addr:	address to patch
+@@ -689,16 +687,3 @@ void *text_poke_bp(void *addr, const void *opcode, size_t len, void *handler)
+ 	return addr;
  }
  
- static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
-@@ -304,22 +379,26 @@ static void ipmi_register_bmc(int iface, struct device *dev)
- {
- 	struct acpi_ipmi_device *ipmi_device, *temp;
- 	struct pnp_dev *pnp_dev;
--	ipmi_user_t		user;
- 	int err;
- 	struct ipmi_smi_info smi_data;
- 	acpi_handle handle;
- 
- 	err = ipmi_get_smi_info(iface, &smi_data);
+-/* this one needs to run before anything else handles it as a
+- * regular exception */
+-static struct notifier_block int3_nb = {
+-	.priority = 0x7fffffff,
+-	.notifier_call = int3_notify
+-};
 -
- 	if (err)
- 		return;
- 
--	if (smi_data.addr_src != SI_ACPI) {
--		put_device(smi_data.dev);
--		return;
--	}
--
-+	if (smi_data.addr_src != SI_ACPI)
-+		goto err_ref;
- 	handle = smi_data.addr_info.acpi_info.acpi_handle;
-+	if (!handle)
-+		goto err_ref;
-+	pnp_dev = to_pnp_dev(smi_data.dev);
-+
-+	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
-+	if (!ipmi_device) {
-+		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
-+		goto err_ref;
-+	}
- 
- 	mutex_lock(&driver_data.ipmi_lock);
- 	list_for_each_entry(temp, &driver_data.ipmi_devices, head) {
-@@ -328,54 +407,42 @@ static void ipmi_register_bmc(int iface, struct device *dev)
- 		 * to the device list, don't add it again.
- 		 */
- 		if (temp->handle == handle)
--			goto out;
-+			goto err_lock;
- 	}
- 
--	ipmi_device = kzalloc(sizeof(*ipmi_device), GFP_KERNEL);
--
--	if (!ipmi_device)
--		goto out;
--
--	pnp_dev = to_pnp_dev(smi_data.dev);
--	ipmi_device->handle = handle;
--	ipmi_device->pnp_dev = pnp_dev;
--
--	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
--					ipmi_device, &user);
--	if (err) {
--		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
--		kfree(ipmi_device);
--		goto out;
--	}
--	acpi_add_ipmi_device(ipmi_device);
--	ipmi_device->user_interface = user;
--	ipmi_device->ipmi_ifnum = iface;
-+	list_add_tail(&ipmi_device->head, &driver_data.ipmi_devices);
- 	mutex_unlock(&driver_data.ipmi_lock);
--	memcpy(&ipmi_device->smi_data, &smi_data, sizeof(struct ipmi_smi_info));
-+	put_device(smi_data.dev);
- 	return;
- 
--out:
-+err_lock:
- 	mutex_unlock(&driver_data.ipmi_lock);
-+	ipmi_dev_release(ipmi_device);
-+err_ref:
- 	put_device(smi_data.dev);
- 	return;
- }
- 
- static void ipmi_bmc_gone(int iface)
- {
--	struct acpi_ipmi_device *ipmi_device, *temp;
-+	int dev_found = 0;
-+	struct acpi_ipmi_device *ipmi_device;
- 
- 	mutex_lock(&driver_data.ipmi_lock);
--	list_for_each_entry_safe(ipmi_device, temp,
--				&driver_data.ipmi_devices, head) {
--		if (ipmi_device->ipmi_ifnum != iface)
--			continue;
--
--		acpi_remove_ipmi_device(ipmi_device);
--		put_device(ipmi_device->smi_data.dev);
--		kfree(ipmi_device);
--		break;
-+	list_for_each_entry(ipmi_device, &driver_data.ipmi_devices, head) {
-+		if (ipmi_device->ipmi_ifnum == iface) {
-+			dev_found = 1;
-+			break;
-+		}
- 	}
-+	if (dev_found)
-+		list_del(&ipmi_device->head);
- 	mutex_unlock(&driver_data.ipmi_lock);
-+
-+	if (dev_found) {
-+		ipmi_flush_tx_msg(ipmi_device);
-+		acpi_ipmi_dev_put(ipmi_device);
-+	}
- }
- 
- /* --------------------------------------------------------------------------
-@@ -400,7 +467,8 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
- 			void *handler_context, void *region_context)
- {
- 	struct acpi_ipmi_msg *tx_msg;
--	struct acpi_ipmi_device *ipmi_device = handler_context;
-+	int iface = (long)handler_context;
-+	struct acpi_ipmi_device *ipmi_device;
- 	int err, rem_time;
- 	acpi_status status;
- 	unsigned long flags;
-@@ -414,12 +482,15 @@ acpi_ipmi_space_handler(u32 function, acpi_physical_address address,
- 	if ((function & ACPI_IO_MASK) == ACPI_READ)
- 		return AE_TYPE;
- 
--	if (!ipmi_device->user_interface)
-+	ipmi_device = acpi_ipmi_get_targeted_smi(iface);
-+	if (!ipmi_device)
- 		return AE_NOT_EXIST;
- 
- 	tx_msg = acpi_alloc_ipmi_msg(ipmi_device);
--	if (!tx_msg)
--		return AE_NO_MEMORY;
-+	if (!tx_msg) {
-+		status = AE_NO_MEMORY;
-+		goto out_ref;
-+	}
- 
- 	if (acpi_format_ipmi_request(tx_msg, address, value) != 0) {
- 		status = AE_TYPE;
-@@ -449,6 +520,8 @@ out_list:
- 	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
- out_msg:
- 	kfree(tx_msg);
-+out_ref:
-+	acpi_ipmi_dev_put(ipmi_device);
- 	return status;
- }
- 
-@@ -473,7 +546,7 @@ static int ipmi_install_space_handler(struct acpi_ipmi_device *ipmi)
- 	status = acpi_install_address_space_handler(ipmi->handle,
- 						    ACPI_ADR_SPACE_IPMI,
- 						    &acpi_ipmi_space_handler,
--						    NULL, ipmi);
-+						    NULL, (void *)((long)ipmi->ipmi_ifnum));
- 	if (ACPI_FAILURE(status)) {
- 		struct pnp_dev *pnp_dev = ipmi->pnp_dev;
- 		dev_warn(&pnp_dev->dev, "Can't register IPMI opregion space "
-@@ -484,36 +557,6 @@ static int ipmi_install_space_handler(struct acpi_ipmi_device *ipmi)
- 	return 0;
- }
- 
--static void acpi_add_ipmi_device(struct acpi_ipmi_device *ipmi_device)
+-static int __init int3_init(void)
 -{
--
--	INIT_LIST_HEAD(&ipmi_device->head);
--
--	spin_lock_init(&ipmi_device->tx_msg_lock);
--	INIT_LIST_HEAD(&ipmi_device->tx_msg_list);
--	ipmi_install_space_handler(ipmi_device);
--
--	list_add_tail(&ipmi_device->head, &driver_data.ipmi_devices);
+-	return register_die_notifier(&int3_nb);
 -}
 -
--static void acpi_remove_ipmi_device(struct acpi_ipmi_device *ipmi_device)
--{
--	/*
--	 * If the IPMI user interface is created, it should be
--	 * destroyed.
--	 */
--	if (ipmi_device->user_interface) {
--		ipmi_destroy_user(ipmi_device->user_interface);
--		ipmi_device->user_interface = NULL;
--	}
--	/* flush the Tx_msg list */
--	if (!list_empty(&ipmi_device->tx_msg_list))
--		ipmi_flush_tx_msg(ipmi_device);
--
--	list_del(&ipmi_device->head);
--	ipmi_remove_space_handler(ipmi_device);
--}
--
- static int __init acpi_ipmi_init(void)
- {
- 	int result = 0;
-@@ -530,7 +573,7 @@ static int __init acpi_ipmi_init(void)
+-arch_initcall(int3_init);
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 1b23a1c..8c8093b 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -58,6 +58,7 @@
+ #include <asm/mce.h>
+ #include <asm/fixmap.h>
+ #include <asm/mach_traps.h>
++#include <asm/alternative.h>
  
- static void __exit acpi_ipmi_exit(void)
- {
--	struct acpi_ipmi_device *ipmi_device, *temp;
-+	struct acpi_ipmi_device *ipmi_device;
- 
- 	if (acpi_disabled)
+ #ifdef CONFIG_X86_64
+ #include <asm/x86_init.h>
+@@ -327,6 +328,9 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
+ 	    ftrace_int3_handler(regs))
  		return;
-@@ -544,11 +587,17 @@ static void __exit acpi_ipmi_exit(void)
- 	 * handler and free it.
- 	 */
- 	mutex_lock(&driver_data.ipmi_lock);
--	list_for_each_entry_safe(ipmi_device, temp,
--				&driver_data.ipmi_devices, head) {
--		acpi_remove_ipmi_device(ipmi_device);
--		put_device(ipmi_device->smi_data.dev);
--		kfree(ipmi_device);
-+	while (!list_empty(&driver_data.ipmi_devices)) {
-+		ipmi_device = list_first_entry(&driver_data.ipmi_devices,
-+					       struct acpi_ipmi_device,
-+					       head);
-+		list_del(&ipmi_device->head);
-+		mutex_unlock(&driver_data.ipmi_lock);
+ #endif
++	if (poke_int3_handler(regs))
++		return;
 +
-+		ipmi_flush_tx_msg(ipmi_device);
-+		acpi_ipmi_dev_put(ipmi_device);
-+
-+		mutex_lock(&driver_data.ipmi_lock);
- 	}
- 	mutex_unlock(&driver_data.ipmi_lock);
- }
--- 
-1.7.10
+ 	prev_state = exception_enter();
+ #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
+ 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index b58b490..6e33498 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -1709,7 +1709,7 @@ EXPORT_SYMBOL_GPL(unregister_kprobes);
+ 
+ static struct notifier_block kprobe_exceptions_nb = {
+ 	.notifier_call = kprobe_exceptions_notify,
+-	.priority = 0x7ffffff0 /* High priority, but not first.  */
++	.priority = 0x7fffffff /* we need to be notified first */
+ };
+ 
+ unsigned long __weak arch_deref_entry_point(void *entry)
 
+-- 
+Jiri Kosina
+SUSE Labs
