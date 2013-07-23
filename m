@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934529Ab3GWW41 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:56:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41494 "EHLO
+	id S935064Ab3GWW4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:56:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41491 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934128Ab3GWW1G (ORCPT
+	with ESMTP id S934478Ab3GWW1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:06 -0400
+	Tue, 23 Jul 2013 18:27:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Chen Gang <gang.chen@asianux.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 015/103] powerpc/numa: Do not update sysfs cpu registration from invalid context
-Date: Tue, 23 Jul 2013 15:25:26 -0700
-Message-Id: <20130723220420.290001879@linuxfoundation.org>
+Subject: [ 014/103] powerpc/smp: Section mismatch from smp_release_cpus to __initdata spinning_secondaries
+Date: Tue, 23 Jul 2013 15:25:25 -0700
+Message-Id: <20130723220420.178607306@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,47 +27,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+From: Chen Gang <gang.chen@asianux.com>
 
-commit dd023217e17e72b46fb4d49c7734c426938c3dba upstream.
+commit 8246aca7058f3f2c2ae503081777965cd8df7b90 upstream.
 
-The topology update code that updates the cpu node registration in sysfs
-should not be called while in stop_machine(). The register/unregister
-calls take a lock and may sleep.
+the smp_release_cpus is a normal funciton and called in normal environments,
+  but it calls the __initdata spinning_secondaries.
+  need modify spinning_secondaries to match smp_release_cpus.
 
-This patch moves these calls outside of the call to stop_machine().
+the related warning:
+  (the linker report boot_paca.33377, but it should be spinning_secondaries)
 
-Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+-----------------------------------------------------------------------------
+
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x23176): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata
+annotation or the annotation of boot_paca.33377 is wrong.
+
+WARNING: arch/powerpc/kernel/built-in.o(.text+0x231fe): Section mismatch in reference from the function .smp_release_cpus() to the variable .init.data:boot_paca.33377
+The function .smp_release_cpus() references
+the variable __initdata boot_paca.33377.
+This is often because .smp_release_cpus lacks a __initdata
+annotation or the annotation of boot_paca.33377 is wrong.
+
+-----------------------------------------------------------------------------
+
+Signed-off-by: Chen Gang <gang.chen@asianux.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/mm/numa.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/powerpc/kernel/setup_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/mm/numa.c
-+++ b/arch/powerpc/mm/numa.c
-@@ -1433,11 +1433,9 @@ static int update_cpu_topology(void *dat
- 		if (cpu != update->cpu)
- 			continue;
+--- a/arch/powerpc/kernel/setup_64.c
++++ b/arch/powerpc/kernel/setup_64.c
+@@ -76,7 +76,7 @@
+ #endif
  
--		unregister_cpu_under_node(update->cpu, update->old_nid);
- 		unmap_cpu_from_node(update->cpu);
- 		map_cpu_to_node(update->cpu, update->new_nid);
- 		vdso_getcpu_init();
--		register_cpu_under_node(update->cpu, update->new_nid);
- 	}
+ int boot_cpuid = 0;
+-int __initdata spinning_secondaries;
++int spinning_secondaries;
+ u64 ppc64_pft_size;
  
- 	return 0;
-@@ -1485,6 +1483,9 @@ int arch_update_cpu_topology(void)
- 	stop_machine(update_cpu_topology, &updates[0], &updated_cpus);
- 
- 	for (ud = &updates[0]; ud; ud = ud->next) {
-+		unregister_cpu_under_node(ud->cpu, ud->old_nid);
-+		register_cpu_under_node(ud->cpu, ud->new_nid);
-+
- 		dev = get_cpu_device(ud->cpu);
- 		if (dev)
- 			kobject_uevent(&dev->kobj, KOBJ_CHANGE);
+ /* Pick defaults since we might want to patch instructions
 
 
