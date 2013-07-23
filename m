@@ -1,76 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935001Ab3GWWvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:51:55 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53166 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934656Ab3GWWvx (ORCPT
+	id S935052Ab3GWWw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:52:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41542 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934542Ab3GWW1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:51:53 -0400
-Date: Wed, 24 Jul 2013 00:51:50 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-Message-ID: <20130723225150.GT6123@two.firstfloor.org>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
- <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
- <20130723060108.GA18396@tassilo.jf.intel.com>
- <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 23 Jul 2013 18:27:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 018/103] powerpc/perf: Freeze PMC5/6 if were not using them
+Date: Tue, 23 Jul 2013 15:25:29 -0700
+Message-Id: <20130723220420.590938892@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+References: <20130723220418.532514378@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
-> 
-> I hate having to justify why breaking the ABI is unacceptable.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Well it's a testing ABI, so we can do changes to it.
+------------------
 
-I hope you're not suggesting that perf cannot be extended anymore.
-As you know, hardware PMUs are constantly evolving, and perf has evolve
-along with them to stay useful.
+From: Michael Ellerman <michael@ellerman.id.au>
 
-> It breaks the ABI.  The events/* sysfs files are documented as only 
-> holding values for the bitfields described in format/*.
+commit 7a7a41f9d5b28ac3a916b057a7d3cd3f435ee9a6 upstream.
 
-Ok. Need to fix the documentation then for precise=1.  I'll send patches.
+On Power8 we can freeze PMC5 and 6 if we're not using them. Normally they
+run all the time.
 
-Also can add it to format/*, but since it's not in config* it will
-be an extension. Since it would be awkward to teach every parser
-about all the flags, we could add a "flags" field that is handled 
-like config, and contains all the flags.
+As noticed by Anshuman, we should unfreeze them when we disable the PMU
+as there are legacy tools which expect them to run all the time.
 
-So format/precise would be 
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-flags:15-16
+---
+ arch/powerpc/include/asm/reg.h  |    1 +
+ arch/powerpc/perf/core-book3s.c |    5 +++--
+ arch/powerpc/perf/power8-pmu.c  |    4 ++++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-on little endian. Looks good?
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -626,6 +626,7 @@
+ #define   MMCR0_TRIGGER	0x00002000UL /* TRIGGER enable */
+ #define   MMCR0_PMAO	0x00000080UL /* performance monitor alert has occurred, set to 0 after handling exception */
+ #define   MMCR0_SHRFC	0x00000040UL /* SHRre freeze conditions between threads */
++#define   MMCR0_FC56	0x00000010UL /* freeze counters 5 and 6 */
+ #define   MMCR0_FCTI	0x00000008UL /* freeze counters in tags inactive mode */
+ #define   MMCR0_FCTA	0x00000004UL /* freeze counters in tags active mode */
+ #define   MMCR0_FCWAIT	0x00000002UL /* freeze counter in WAIT state */
+--- a/arch/powerpc/perf/core-book3s.c
++++ b/arch/powerpc/perf/core-book3s.c
+@@ -75,6 +75,7 @@ static unsigned int freeze_events_kernel
+ 
+ #define MMCR0_FCHV		0
+ #define MMCR0_PMCjCE		MMCR0_PMCnCE
++#define MMCR0_FC56		0
+ #define MMCR0_PMAO		0
+ 
+ #define SPRN_MMCRA		SPRN_MMCR2
+@@ -870,11 +871,11 @@ static void power_pmu_disable(struct pmu
+ 		}
+ 
+ 		/*
+-		 * Set the 'freeze counters' bit, clear PMAO.
++		 * Set the 'freeze counters' bit, clear PMAO/FC56.
+ 		 */
+ 		val  = mfspr(SPRN_MMCR0);
+ 		val |= MMCR0_FC;
+-		val &= ~MMCR0_PMAO;
++		val &= ~(MMCR0_PMAO | MMCR0_FC56);
+ 
+ 		/*
+ 		 * The barrier is to make sure the mtspr has been
+--- a/arch/powerpc/perf/power8-pmu.c
++++ b/arch/powerpc/perf/power8-pmu.c
+@@ -391,6 +391,10 @@ static int power8_compute_mmcr(u64 event
+ 	if (pmc_inuse & 0x7c)
+ 		mmcr[0] |= MMCR0_PMCjCE;
+ 
++	/* If we're not using PMC 5 or 6, freeze them */
++	if (!(pmc_inuse & 0x60))
++		mmcr[0] |= MMCR0_FC56;
++
+ 	mmcr[1] = mmcr1;
+ 	mmcr[2] = mmcra;
+ 
 
-> I'm a bit grumpy about this because I just finished fixing the fallout 
-> from your last time breaking the ABI a few weeks ago when your broken code 
-> started dumping non-hex fields into the sysfs event strings.  I've learned 
 
-Not sure what you're talking about?
-
-iirc the only recent sysfs change of mine merged recently was adding
-intx/intx_cp, and format files never have had hex numbers in it.
-
-> now that I have to go over your patches with a fine-tooth code because you 
-> have no regard for the ABI.
-
-Any useful code review is appreciated.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
