@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934527Ab3GWXBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 19:01:01 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:51671 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934157Ab3GWWZ1 (ORCPT
+	id S933885Ab3GWXC5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 19:02:57 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:33486 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757557Ab3GWXC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:25:27 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Olof Johansson <olof@lixom.net>, albert.u.boot@aribaud.net,
-        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
-        sunny@allwinnertech.com, shuge@allwinnertech.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 03/10] ARM: sunxi: Add the Allwinner A31 compatible to the machine definition
-Date: Wed, 24 Jul 2013 00:25:05 +0200
-Message-Id: <1374618312-19001-4-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+	Tue, 23 Jul 2013 19:02:56 -0400
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@linaro.org>
+Date: Wed, 24 Jul 2013 00:02:34 +0100
+X-Google-Sender-Auth: -Ecy_k41XN_pydFCLC6I51QNgs0
+Message-ID: <CACxGe6uW=6yh0xSS+WBWfqSwTzDQzjyb3heXArWs-yhB1n1fsw@mail.gmail.com>
+Subject: [GIT PULL] devicetree and maintainers changes for v3.11-rc2
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 is a quad-Cortex-A7 based SoC, which shares a lot of
-differences with the previous SoCs from Allwinner, like the PIO, I2C,
-UARTs, timers, watchdog IPs, but also differs but droping the WEMAC
-ethernet controller and most notably droping the in-house IRQ controller
-in favor of a ARM GIC one.
+Hi Linus,
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/mach-sunxi/Kconfig | 2 ++
- arch/arm/mach-sunxi/sunxi.c | 1 +
- 2 files changed, 3 insertions(+)
+Please pull the following tag.
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 5b045e3..3ab2f65 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -10,3 +10,5 @@ config ARCH_SUNXI
- 	select SPARSE_IRQ
- 	select SUN4I_TIMER
- 	select PINCTRL_SUNXI
-+	select ARM_GIC
-+	select HAVE_SMP
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 38a3c55..11326d9 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -96,6 +96,7 @@ static const char * const sunxi_board_dt_compat[] = {
- 	"allwinner,sun4i-a10",
- 	"allwinner,sun5i-a10s",
- 	"allwinner,sun5i-a13",
-+	"allwinner,sun6i-a31",
- 	NULL,
- };
- 
--- 
-1.8.3.2
+g.
 
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux tags/devicetree-for-linus
+
+for you to fetch changes up to cf9e2368655d86cd800e4d9fe65a407b39d29373:
+
+  of/irq: init struct resource to 0 in of_irq_to_resource()
+(2013-07-22 19:40:38 +0100)
+
+----------------------------------------------------------------
+Device tree bug fixes and maintainership updates for v3.11-rc2
+
+This branch contains a couple of minor bug fixes and several changes to
+the MAINTAINERS file regarding the subsystems I've been involved with.
+
+----------------------------------------------------------------
+Axel Lin (1):
+      of/irq: Avoid calling list_first_entry() for empty list
+
+Gabor Juhos (1):
+      of: add vendor prefix for Qualcomm Atheros, Inc.
+
+Grant Likely (4):
+      MAINTAINERS: Remove Grant Likely
+      MAINTAINERS: Change device tree mailing list
+      MAINTAINERS: Refactor device tree maintainership
+      MAINTAINERS: Fix incorrect status tag
+
+Sebastian Andrzej Siewior (1):
+      of/irq: init struct resource to 0 in of_irq_to_resource()
+
+Zhangfei Gao (1):
+      of: add vendor prefixes for hisilicon
+
+ .../devicetree/bindings/vendor-prefixes.txt        |  2 ++
+ MAINTAINERS                                        | 30 +++++++++++++---------
+ drivers/of/irq.c                                   |  6 +++--
+ 3 files changed, 24 insertions(+), 14 deletions(-)
