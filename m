@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934966Ab3GWWlw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:41:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41739 "EHLO
+	id S935170Ab3GWWly (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:41:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934608Ab3GWW1h (ORCPT
+	with ESMTP id S934700Ab3GWW1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 18:27:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 061/103] SCSI: aacraid: Fix for arrays are going offline in the system. System hangs
-Date: Tue, 23 Jul 2013 15:26:12 -0700
-Message-Id: <20130723220425.503774796@linuxfoundation.org>
+Subject: [ 060/103] SCSI: sd: Update WRITE SAME heuristics
+Date: Tue, 23 Jul 2013 15:26:11 -0700
+Message-Id: <20130723220425.317604017@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,40 +29,160 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
 
-commit c5bebd829dd95602c15f8da8cc50fa938b5e0254 upstream.
+commit 66c28f97120e8a621afd5aa7a31c4b85c547d33d upstream.
 
-One of the customer had reported that the set of raid logical arrays will
-become unavailable (I/O offline) after a long hours of IO stress test.  The OS
-wouldn`t be accessible afterwards and require a hard reset.
+SATA drives located behind a SAS controller would incorrectly receive
+WRITE SAME commands. Tweak the heuristics so that:
 
-This driver patch has a fix for race condition between the doorbell and the
-circular buffer. The driver is modified to do an extra read after clearing the
-doorbell in case there had been a completion posted during the small timing
-window.
+ - If REPORT SUPPORTED OPERATION CODES is provided we will use that to
+   choose between WRITE SAME(16), WRITE SAME(10) and disabled. This also
+   fixes an issue with the old code which would issue WRITE SAME(10)
+   despite the command not being whitelisted in REPORT SUPPORTED
+   OPERATION CODES.
 
-With this fix, we ran IO stress for ~13 days. There were no IO failures.
+ - If REPORT SUPPORTED OPERATION CODES is not provided we will fall back
+   to WRITE SAME(10) unless the device has an ATA Information VPD page.
+   The assumption is that a SATL which is smart enough to implement
+   WRITE SAME would also provide REPORT SUPPORTED OPERATION CODES.
 
-Signed-off-by: Mahesh Rajashekhara <Mahesh.Rajashekhara@pmcs.com>
+To facilitate the new heuristics scsi_report_opcode() has been modified
+to so we can distinguish between "operation not supported" and "RSOC not
+supported".
+
+Reported-by: H. Peter Anvin <hpa@zytor.com>
+Tested-by: Bernd Schubert <bernd.schubert@itwm.fraunhofer.de>
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/aacraid/src.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/scsi.c |    8 ++++----
+ drivers/scsi/sd.c   |   46 ++++++++++++++++++++++++++++++++--------------
+ drivers/scsi/sd.h   |    1 +
+ 3 files changed, 37 insertions(+), 18 deletions(-)
 
---- a/drivers/scsi/aacraid/src.c
-+++ b/drivers/scsi/aacraid/src.c
-@@ -93,6 +93,9 @@ static irqreturn_t aac_src_intr_message(
- 			int send_it = 0;
- 			extern int aac_sync_mode;
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1070,8 +1070,8 @@ EXPORT_SYMBOL_GPL(scsi_get_vpd_page);
+  * @opcode:	opcode for command to look up
+  *
+  * Uses the REPORT SUPPORTED OPERATION CODES to look up the given
+- * opcode. Returns 0 if RSOC fails or if the command opcode is
+- * unsupported. Returns 1 if the device claims to support the command.
++ * opcode. Returns -EINVAL if RSOC fails, 0 if the command opcode is
++ * unsupported and 1 if the device claims to support the command.
+  */
+ int scsi_report_opcode(struct scsi_device *sdev, unsigned char *buffer,
+ 		       unsigned int len, unsigned char opcode)
+@@ -1081,7 +1081,7 @@ int scsi_report_opcode(struct scsi_devic
+ 	int result;
  
-+			src_writel(dev, MUnit.ODR_C, bellbits);
-+			src_readl(dev, MUnit.ODR_C);
+ 	if (sdev->no_report_opcodes || sdev->scsi_level < SCSI_SPC_3)
+-		return 0;
++		return -EINVAL;
+ 
+ 	memset(cmd, 0, 16);
+ 	cmd[0] = MAINTENANCE_IN;
+@@ -1097,7 +1097,7 @@ int scsi_report_opcode(struct scsi_devic
+ 	if (result && scsi_sense_valid(&sshdr) &&
+ 	    sshdr.sense_key == ILLEGAL_REQUEST &&
+ 	    (sshdr.asc == 0x20 || sshdr.asc == 0x24) && sshdr.ascq == 0x00)
+-		return 0;
++		return -EINVAL;
+ 
+ 	if ((buffer[1] & 3) == 3) /* Command supported */
+ 		return 1;
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -442,8 +442,10 @@ sd_store_write_same_blocks(struct device
+ 
+ 	if (max == 0)
+ 		sdp->no_write_same = 1;
+-	else if (max <= SD_MAX_WS16_BLOCKS)
++	else if (max <= SD_MAX_WS16_BLOCKS) {
++		sdp->no_write_same = 0;
+ 		sdkp->max_ws_blocks = max;
++	}
+ 
+ 	sd_config_write_same(sdkp);
+ 
+@@ -740,7 +742,6 @@ static void sd_config_write_same(struct
+ {
+ 	struct request_queue *q = sdkp->disk->queue;
+ 	unsigned int logical_block_size = sdkp->device->sector_size;
+-	unsigned int blocks = 0;
+ 
+ 	if (sdkp->device->no_write_same) {
+ 		sdkp->max_ws_blocks = 0;
+@@ -752,18 +753,20 @@ static void sd_config_write_same(struct
+ 	 * blocks per I/O unless the device explicitly advertises a
+ 	 * bigger limit.
+ 	 */
+-	if (sdkp->max_ws_blocks == 0)
+-		sdkp->max_ws_blocks = SD_MAX_WS10_BLOCKS;
+-
+-	if (sdkp->ws16 || sdkp->max_ws_blocks > SD_MAX_WS10_BLOCKS)
+-		blocks = min_not_zero(sdkp->max_ws_blocks,
+-				      (u32)SD_MAX_WS16_BLOCKS);
+-	else
+-		blocks = min_not_zero(sdkp->max_ws_blocks,
+-				      (u32)SD_MAX_WS10_BLOCKS);
++	if (sdkp->max_ws_blocks > SD_MAX_WS10_BLOCKS)
++		sdkp->max_ws_blocks = min_not_zero(sdkp->max_ws_blocks,
++						   (u32)SD_MAX_WS16_BLOCKS);
++	else if (sdkp->ws16 || sdkp->ws10 || sdkp->device->no_report_opcodes)
++		sdkp->max_ws_blocks = min_not_zero(sdkp->max_ws_blocks,
++						   (u32)SD_MAX_WS10_BLOCKS);
++	else {
++		sdkp->device->no_write_same = 1;
++		sdkp->max_ws_blocks = 0;
++	}
+ 
+ out:
+-	blk_queue_max_write_same_sectors(q, blocks * (logical_block_size >> 9));
++	blk_queue_max_write_same_sectors(q, sdkp->max_ws_blocks *
++					 (logical_block_size >> 9));
+ }
+ 
+ /**
+@@ -2635,9 +2638,24 @@ static void sd_read_block_provisioning(s
+ 
+ static void sd_read_write_same(struct scsi_disk *sdkp, unsigned char *buffer)
+ {
+-	if (scsi_report_opcode(sdkp->device, buffer, SD_BUF_SIZE,
+-			       WRITE_SAME_16))
++	struct scsi_device *sdev = sdkp->device;
 +
- 			if (!aac_sync_mode) {
- 				src_writel(dev, MUnit.ODR_C, bellbits);
- 				src_readl(dev, MUnit.ODR_C);
++	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, INQUIRY) < 0) {
++		sdev->no_report_opcodes = 1;
++
++		/* Disable WRITE SAME if REPORT SUPPORTED OPERATION
++		 * CODES is unsupported and the device has an ATA
++		 * Information VPD page (SAT).
++		 */
++		if (!scsi_get_vpd_page(sdev, 0x89, buffer, SD_BUF_SIZE))
++			sdev->no_write_same = 1;
++	}
++
++	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, WRITE_SAME_16) == 1)
+ 		sdkp->ws16 = 1;
++
++	if (scsi_report_opcode(sdev, buffer, SD_BUF_SIZE, WRITE_SAME) == 1)
++		sdkp->ws10 = 1;
+ }
+ 
+ static int sd_try_extended_inquiry(struct scsi_device *sdp)
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -84,6 +84,7 @@ struct scsi_disk {
+ 	unsigned	lbpws : 1;
+ 	unsigned	lbpws10 : 1;
+ 	unsigned	lbpvpd : 1;
++	unsigned	ws10 : 1;
+ 	unsigned	ws16 : 1;
+ };
+ #define to_scsi_disk(obj) container_of(obj,struct scsi_disk,dev)
 
 
