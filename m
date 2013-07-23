@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab3GWCDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:03:31 -0400
-Received: from home.keithp.com ([63.227.221.253]:43588 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754226Ab3GWCCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:02:19 -0400
-From: Keith Packard <keithp@keithp.com>
-To: linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>
-Cc: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 4/5] drm/i915: Add async page flip support for IVB
-Date: Mon, 22 Jul 2013 18:50:01 -0700
-Message-Id: <1374544202-15496-5-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374544202-15496-1-git-send-email-keithp@keithp.com>
-References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
+	id S1754393Ab3GWCEv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:04:51 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:22541 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750872Ab3GWCEu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 22:04:50 -0400
+Message-ID: <51EDE49B.7080601@huawei.com>
+Date: Tue, 23 Jul 2013 10:04:11 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Ric Wheeler <ricwheeler@gmail.com>,
+        <ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Chris Ball <cjb@laptop.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+References: <1373944014.17876.255.camel@gandalf.local.home>  <51E4BFA9.1030600@zytor.com>  <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>  <1373991399.6458.6.camel@gandalf.local.home>  <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>  <51E59F79.1040903@zytor.com>  <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>  <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>  <20130717144043.GA16513@xanatos>  <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>  <20130719120841.GH26716@gmail.com>  <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>  <1374339860.16533.6.camel@deadeye.wl.decadent.org.uk>  <51EBE097.1060204@gmail.com> <51EDDBD2.7090605@huawei.com> <1374543566.3356.121.camel@gandalf.local.home>
+In-Reply-To: <1374543566.3356.121.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the necesary register defines for async page flipping
-through the command ring, and then hooks those up for Ivybridge (gen7)
-page flipping.
+On 2013/7/23 9:39, Steven Rostedt wrote:
+> On Tue, 2013-07-23 at 09:26 +0800, Li Zefan wrote:
+> 
+>> IT companies in China, they try to make sure there's at least one (most the
+>> time the result is just one) female developer/tester in a team, and a team
+>> is ~10 people. Even if it's a kernel team, but it's harder to meet.
+>>
+>> Don't know if the same strategy is applied in other countries.
+> 
+> Just my observation, but it seems that I see more women in tech from the
+> Asian countries than from the US.
+> 
+> Watching my two teenage daughters grow up here as well as their friends,
+> the focus of our schools still seem more bent on being good in sports
+> than in academics, and even worse for science. Sports for girls happen
+> to be much more serious than when I was in school. Being a "nerd" for a
+> boy is starting to get a bit more acceptance (see Big Bang Theory), but
+> for girls they seem a bit more harsh. At least from what I can tell by
+> watching how things are with my kids and their friends. One of the
+> friends of my daughter, who does very well in school, hides her grades
+> and "pretends" to be stupid. This is really a sad state of affairs if
+> you ask me :-(
+> 
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/i915_reg.h      |  6 ++++++
- drivers/gpu/drm/i915/intel_display.c | 40 ++++++++++++++++++++++++++++++++++--
- 2 files changed, 44 insertions(+), 2 deletions(-)
+In china we are in the opposite. In college girls like to stay in school
+library to study, and in general they get better scores than boys, and
+they don't like sports. But being good in study is not the same as being
+good at programming, and in fact they are not keen in coding!
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index dc3d6a7..029cfb0 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -209,6 +209,7 @@
- #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
- #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
- #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
-+#define   MI_DISPLAY_FLIP_ASYNC_INDICATOR	(1 << 22)
- #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
- /* IVB has funny definitions for which plane to flip. */
- #define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
-@@ -217,6 +218,11 @@
- #define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
- #define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
- #define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
-+/* These go in the bottom of the base address value */
-+#define   MI_DISPLAY_FLIP_TYPE_SYNC    (0 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_ASYNC   (1 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_STEREO  (2 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_SYNCHRONOUS	(0 << 0)
- #define MI_ARB_ON_OFF		MI_INSTR(0x08, 0)
- #define   MI_ARB_ENABLE			(1<<0)
- #define   MI_ARB_DISABLE		(0<<0)
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index bdb8854..1bcc6b4 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7514,6 +7514,8 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
- 	uint32_t plane_bit = 0;
-+	uint32_t cmd;
-+	uint32_t base;
- 	int ret;
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
-@@ -7536,13 +7538,43 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
- 		goto err_unpin;
- 	}
- 
-+	cmd = MI_DISPLAY_FLIP_I915 | plane_bit;
-+	base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
-+
-+	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-+
-+		/* XXX check limitations for async flip here */
-+
-+		if (fb->pitches[0] != I915_READ(DSPSTRIDE(intel_crtc->plane))) {
-+			WARN_ONCE(1, "mismatching stride in async plane flip (%d != %d)\n",
-+				  fb->pitches[0], I915_READ(DSPSTRIDE(intel_crtc->plane)));
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+
-+		if (obj->tiling_mode != I915_TILING_X) {
-+			WARN_ONCE(1, "async plane flip requires X tiling\n");
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+
-+		if ((I915_READ(DSPCNTR(intel_crtc->plane)) & DISPPLANE_TILED) == 0) {
-+			WARN_ONCE(1, "display not currently tiled in async plane flip\n");
-+			ret = -EINVAL;
-+			goto err_unpin;
-+		}
-+		
-+		cmd |= MI_DISPLAY_FLIP_ASYNC_INDICATOR;
-+		base |= MI_DISPLAY_FLIP_TYPE_ASYNC;
-+	}
-+
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
- 		goto err_unpin;
- 
--	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
-+	intel_ring_emit(ring, cmd);
- 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
--	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
-+	intel_ring_emit(ring, base);
- 	intel_ring_emit(ring, (MI_NOOP));
- 
- 	intel_mark_page_flip_active(intel_crtc);
-@@ -9705,6 +9737,10 @@ void intel_modeset_init(struct drm_device *dev)
- 		dev->mode_config.max_width = 8192;
- 		dev->mode_config.max_height = 8192;
- 	}
-+
-+	if (IS_GEN7(dev))
-+		dev->mode_config.async_page_flip = true;
-+
- 	dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
- 
- 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
--- 
-1.8.3.2
+And I think IT companies in China tend to lower their requirements when
+the job interviewee is a female.
 
