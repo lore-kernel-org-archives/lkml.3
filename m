@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab3GWGKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 02:10:33 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:43906 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751021Ab3GWGKb (ORCPT
+	id S1753399Ab3GWG2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 02:28:39 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:65473 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3GWG2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 02:10:31 -0400
-Message-ID: <1374559827.4990.143.camel@edumazet-glaptop>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>,
-        Oliver Neukum <oliver@neukum.org>
-Cc: Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
-	<louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Date: Mon, 22 Jul 2013 23:10:27 -0700
-In-Reply-To: <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	 <1374512879.4990.19.camel@edumazet-glaptop>
-	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-	 <1374518841.4990.26.camel@edumazet-glaptop>
-	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 23 Jul 2013 02:28:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <15305281.aClQ8XUG9t@vostro.rjw.lan>
+References: <1367884221-20462-1-git-send-email-ccross@android.com>
+	<CA+55aFzUVPJe96z8V0F-znc8ZcpJid7LEeYww80M-Mx=S91tAA@mail.gmail.com>
+	<CAMbhsRReF9xB597i9CcCj7D1P5kvB4cc0JmDQYeboqi11Kp99A@mail.gmail.com>
+	<15305281.aClQ8XUG9t@vostro.rjw.lan>
+Date: Mon, 22 Jul 2013 23:28:34 -0700
+X-Google-Sender-Auth: e19BEIx0v1gXqiJiWnuw9__3DEo
+Message-ID: <CAMbhsRSsq0pgS6KvCjiFGneDEJd6zSXsYB_2MCV=sh+6F2muog@mail.gmail.com>
+Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
+ v3 13/16] futex: use freezable blocking call)
+From: Colin Cross <ccross@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Leun <lkml20130126@newton.leun.net>,
+        lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 20:47 +0100, Ben Hutchings wrote:
-> On Mon, 2013-07-22 at 11:47 -0700, Eric Dumazet wrote:
-> > On Mon, 2013-07-22 at 19:38 +0100, Ben Hutchings wrote:
-> > > On Mon, 2013-07-22 at 11:29 -0700, Grant Grundler wrote:
-> > > > On Mon, Jul 22, 2013 at 10:07 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > > > ...
-> > > > > I guess that if a driver does not advertise NETIF_F_SG, this
-> > > > > skb_linearize() call is not needed : All frames reaching your xmit
-> > > > > function should already be linear
-> > > > 
-> > > > As Ben Hutchings pointed out, hw_features is still setting this...but
-> > > > I'm not sure how that matters.
-> > > > 
-> > > > ax88179_set_features() doesn't allow setting SG or TSO features.  But
-> > > > I expect it would be "not too difficult" to add such that ethtool
-> > > > could set those features after boot.
-> > > [...]
-> > > 
-> > > It already can.  That's what putting feature flags in hw_features does.
-> > 
-> > My original concern, that inspired this patch, was to remove SG support,
-> > as this driver does not have SG support at all.
-> > 
-> > Linearize a full TSO packet needs order-5 allocations, thats likely to
-> > fail and lead to very slow TCP performance, because it will only rely on
-> > retransmits.
-> 
-> The driver could set gso_max_size to reduce that problem.  But I rather
-> doubt that TSO followed by skb_linearize() significantly improves
-> throughput or CPU-efficiency.  (If the device has a 1G link but is
-> connected to the host through a USB 2.0 port, then USB is the bottleneck
-> and TSO could improve throughput a few percent.  But that's a silly
-> configuration.)
-> 
-> The real solution would be for someone to add SG support to the usbnet
-> core.  Trying to support 1GbE with only linear skbs is not a great
-> idea... and it can only be a matter of time before there is USB ultra
-> speed (or whatever comes after 'super') with 10GbE devices...
-> 
+On Mon, Jul 22, 2013 at 6:41 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, July 22, 2013 05:42:49 PM Colin Cross wrote:
+>> On Mon, Jul 22, 2013 at 5:32 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> > On Mon, Jul 22, 2013 at 4:55 PM, Colin Cross <ccross@android.com> wrote:
+>> >>
+>> >> I think the right solution is to add a flag to the freezing task that
+>> >> marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
+>> >> normally used on kernel threads, can you see if the attached patch
+>> >> helps?
+>> >
+>> > Hmm. That does seem to be the right thing to do, but I wonder about
+>> > the *other* callers of freeze_processes() IOW, kexec and friends.
+>> >
+>> > So maybe we should do this in {freeze|thaw}_processes() itself, and
+>> > just make the rule be that the caller of freeze_processes() itself is
+>> > obviously not frozen, and has to be the same one that then thaws
+>> > things?
+>> >
+>> > Colin? Rafael? Comments?
+>> >
+>> >                 Linus
+>>
+>> I was worried about clearing the flag in thaw_processes().  If a
+>> kernel thread with PF_NOFREEZE set ever called thaw_processes(), which
+>> autosleep might do, it would clear the flag.  Or if a different thread
+>> called freeze_processes() and thaw_processes().
+>
+> Is that legitimate?
 
-This sounds a good idea.
+Nothing precludes it today, but I don't see any need for it.  I'll add
+a comment when I add the flag.
 
-Is anybody working on adding SG to usbnet ?
+>> All the other callers besides the SNAPSHOT_FREEZE ioctl stay in the kernel
+>> between freeze_processes() and thaw_processes(), which makes the fanout of
+>> places that could call try_to_freeze() much more controllable.
+>>
+>> Using a new flag that operates like PF_NOFREEZE but doesn't conflict
+>> with it, or a nofreeze_depth counter, would also work.
+>
+> Well, that would be robust enough.  At least if the purpose of that new flag
+> is clearly specified, people hopefully won't be tempted to optimize it away in
+> the future.
+>
+> Thanks,
+> Rafael
 
-
-
+OK, I'll add a new flag.
