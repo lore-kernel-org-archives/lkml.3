@@ -1,209 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934005Ab3GWUIE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:08:04 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:33913 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756829Ab3GWUIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:08:00 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Mark Brown <broonie@kernel.org>, Tomasz Figa <t.figa@samsung.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Date: Tue, 23 Jul 2013 22:07:52 +0200
-Message-ID: <1731726.KENstTPhkb@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130723194423.GA22984@kroah.com>
-References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org> <20130723193105.GP9858@sirena.org.uk> <20130723194423.GA22984@kroah.com>
+	id S934152Ab3GWUIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:08:21 -0400
+Received: from www.sr71.net ([198.145.64.142]:45209 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757881Ab3GWUIS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 16:08:18 -0400
+Message-ID: <51EEE2A6.60109@sr71.net>
+Date: Tue, 23 Jul 2013 13:08:06 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Bob Liu <bob.liu@oracle.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <lliubbo@gmail.com>, Minchan Kim <minchan@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: zswap: add runtime enable/disable
+References: <1374521642-25478-1-git-send-email-sjenning@linux.vnet.ibm.com> <51EE49D7.4060501@oracle.com> <20130723173223.GB5820@medulla.variantweb.net>
+In-Reply-To: <20130723173223.GB5820@medulla.variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 of July 2013 12:44:23 Greg KH wrote:
-> On Tue, Jul 23, 2013 at 08:31:05PM +0100, Mark Brown wrote:
-> > > You don't "know" the id of the device you are looking up, due to
-> > > multiple devices being in the system (dynamic ids, look back earlier
-> > > in
-> > > this thread for details about that.)
-> > 
-> > I got copied in very late so don't have most of the thread I'm afraid,
-> > I did try looking at web archives but didn't see a clear problem
-> > statement.  In any case this is why the APIs doing lookups do the
-> > lookups in the context of the requesting device - devices ask for
-> > whatever name they use locally.
+On 07/23/2013 10:32 AM, Seth Jennings wrote:
+> On Tue, Jul 23, 2013 at 05:16:07PM +0800, Bob Liu wrote:
+>> On 07/23/2013 03:34 AM, Seth Jennings wrote:
+>>> -To enabled zswap, the "enabled" attribute must be set to 1 at boot time.  e.g.
+>>> -zswap.enabled=1
+>>> +Zswap is disabled by default but can be enabled at boot time by setting
+>>> +the "enabled" attribute to 1 at boot time. e.g. zswap.enabled=1.  Zswap
+>>> +can also be enabled and disabled at runtime using the sysfs interface.
+>>> +An exmaple command to enable zswap at runtime, assuming sysfs is mounted
+>>> +at /sys, is:
+>>> +
+>>> +echo 1 > /sys/modules/zswap/parameters/enabled
+>>> +
+>>> +When zswap is disabled at runtime, it will stop storing pages that are
+>>> +being swapped out.  However, it will _not_ immediately write out or
+>>> +fault back into memory all of the pages stored in the compressed pool.
+>>
+>> I don't know what's you use case of adding this feature.
 > 
-> What do you mean by "locally"?
+> Dave expressed interest in having it, useful for testing, and I can see
+> people that just wanting to try it out enabling it manually at runtime.
+
+The distributions are going to have to make a decision about whether or
+not they turn this on.  If it is 100% selected at compile-time and has
+all of the potential performance implications (zswap *can* hurt with
+certain workloads), I would not expect a distribution to enable it at all.
+
+The only sane thing to do here is to compile it in, runtime-default it
+to off, and let folks enable it who want to use it on their workload.
+
+>> In my opinion I'd perfer to flush all the pages stored in zswap when
+>> disabled it, so that I can run testing without rebooting the machine.
 > 
-> The problem with the api was that the phy core wanted a id and a name to
-> create a phy, and then later other code was doing a "lookup" based on
-> the name and id (mushed together), because it "knew" that this device
-> was the one it wanted.
-> 
-> Just like the clock api, which, for multiple devices, has proven to
-> cause problems.  I don't want to see us accept an api that we know has
-> issues in it now, I'd rather us fix it up properly.
-> 
-> Subsystems should be able to create ids how ever they want to, and not
-> rely on the code calling them to specify the names of the devices that
-> way, otherwise the api is just too fragile.
-> 
-> I think, that if you create a device, then just carry around the pointer
-> to that device (in this case a phy) and pass it to whatever other code
-> needs it.  No need to do lookups on "known names" or anything else,
-> just normal pointers, with no problems for multiple devices, busses, or
-> naming issues.
+> Why would you have to reboot your machine?  If you want to force all
+> the pages out of the compressed pool, a swapoff should do it as now
+> noted in the Documentation file (below).
 
-PHY object is not a device, it is something that a device driver creates 
-(one or more instances of) when it is being probed. You don't have a clean 
-way to export this PHY object to other driver, other than keeping this PHY 
-on a list inside PHY core with some well-known ID (e.g. device name + 
-consumer port name/index, like in regulator core) and then to use this 
-well-known ID inside consumer driver as a lookup key passed to phy_get();
+It is kinda crummy that it won't be flushed, but considering the size
+and simplicity of the patch as it stands, I'm not going to whinge about
+it too much.
 
-Actually I think for PHY case, exactly the same way as used for regulators 
-might be completely fine:
-
-1. Each PHY would have some kind of platform, non-unique name, that is 
-just used to print some messages (like the platform/board name of a 
-regulator).
-2. Each PHY would have an array of consumers. Consumer specifier would 
-consist of consumer device name and consumer port name - just like in 
-regulator subsystem.
-3. PHY driver receives an array of, let's say, phy_init_data inside its 
-platform data that it would use to register its PHYs.
-4. Consumer drivers would have constant consumer port names and wouldn't 
-receive any information about PHYs from platform code.
-
-Code example:
-
-[Board file]
-
-static const struct phy_consumer_data usb_20_phy0_consumers[] = {
-	{
-		.devname = "foo-ehci",
-		.port = "usbphy",
-	},
-};
-
-static const struct phy_consumer_data usb_20_phy1_consumers[] = {
-	{
-		.devname = "foo-otg",
-		.port = "otgphy",
-	},
-};
-
-static const struct phy_init_data my_phys[] = {
-	{
-		.name = "USB 2.0 PHY 0",
-		.consumers = usb_20_phy0_consumers,
-		.num_consumers = ARRAY_SIZE(usb_20_phy0_consumers),
-	},
-	{
-		.name = "USB 2.0 PHY 1",
-		.consumers = usb_20_phy1_consumers,
-		.num_consumers = ARRAY_SIZE(usb_20_phy1_consumers),
-	},
-	{ }
-};
-
-static const struct platform_device usb_phy_pdev = {
-	.name = "foo-usbphy",
-	.id = -1,
-	.dev = {
-		.platform_data = my_phys,
-	},
-};
-
-[PHY driver]
-
-static int foo_usbphy_probe(pdev)
-{
-	struct foo_usbphy *foo;
-	struct phy_init_data *init_data = pdev->dev.platform_data;
-	/* ... */
-	// for each PHY in init_data {
-		phy_register(&foo->phy[i], &init_data[i]);
-	// }
-	/* ... */
-}
-
-[EHCI driver]
-
-static int foo_ehci_probe(pdev)
-{
-	struct phy *phy;
-	/* ... */
-	phy = phy_get(&pdev->dev, "usbphy");
-	/* ... */
-}
-
-[OTG driver]
-
-static int foo_otg_probe(pdev)
-{
-	struct phy *phy;
-	/* ... */
-	phy = phy_get(&pdev->dev, "otgphy");
-	/* ... */
-}
-
-> > > > Having to write platform data for everything gets old fast and the
-> > > > code
-> > > > duplication is pretty tedious...
-> > > 
-> > > Adding a single pointer is "tedious"?  Where is the "name" that you
-> > > are
-> > > going to lookup going to come from?  That code doesn't write
-> > > itself...
-> > 
-> > It's adding platform data in the first place that gets tedious - and
-> > of
-> > course there's also DT and ACPI to worry about, it's not just a case
-> > of
-> > platform data and then you're done.  Pushing the lookup into library
-> > code means that drivers don't have to worry about any of this stuff.
-> 
-> I agree, so just pass around the pointer to the phy and all is good.  No
-> need to worry about DT or ACPI or anything else.
-
-With Device Tree we don't have board files anymore. How would you pass any 
-pointers between provider and consumer drivers in this case?
-
-> > For most of the APIs doing this there is a clear and unambiguous name
-> > in the hardware that can be used (and for hardware process reasons is
-> > unlikely to get changed).  The major exception to this is the clock
-> > API since it is relatively rare to have clear, segregated IP level
-> > information for IPs baked into larger chips.  The other APIs tend to
-> > be establishing chip to chip links.
-> 
-> The clock api is having problems with multiple "names" due to dynamic
-> devices from what I was told.  I want to prevent the PHY interface from
-> having that same issue.
-
-Yes, the clock API has a problem related to the clock namespace being 
-global for all registered clock controllers. This is not a problem with 
-lookup in general, but with wrong lookup key chosen.
-
-Best regards,
-Tomasz
-
+Seth, it'd be nice to have you at least see if it is worth flushing all
+the pages when zswap is disabled, or whether it's too much code to go to
+the trouble.
