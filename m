@@ -1,109 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab3GWLHJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 07:07:09 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:50843 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab3GWLHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 07:07:07 -0400
-Date: Tue, 23 Jul 2013 16:36:46 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
+	id S1756922Ab3GWLJv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 07:09:51 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:59528 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755084Ab3GWLJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 07:09:50 -0400
+Date: Tue, 23 Jul 2013 06:09:47 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Robin Holt <holt@sgi.com>,
+        Nathan Zimmer <nzimmer@sgi.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
+        Mike Travis <travis@sgi.com>,
+        Daniel J Blueman <daniel@numascale-asia.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-Message-ID: <20130723110646.GA27005@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1374220211.5447.9.camel@j-VirtualBox>
- <20130722070144.GC5138@linux.vnet.ibm.com>
- <1374519467.7608.87.camel@j-VirtualBox>
+        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
+Message-ID: <20130723110947.GF3421@sgi.com>
+References: <1373594635-131067-1-git-send-email-holt@sgi.com>
+ <1373594635-131067-5-git-send-email-holt@sgi.com>
+ <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
+ <20130715174551.GA58640@asylum.americas.sgi.com>
+ <51E4375E.1010704@zytor.com>
+ <20130715182615.GF3421@sgi.com>
+ <51E43F91.1040906@zytor.com>
+ <20130723083211.GE16088@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374519467.7608.87.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072311-0320-0000-0000-000000625008
+In-Reply-To: <20130723083211.GE16088@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 23, 2013 at 10:32:11AM +0200, Ingo Molnar wrote:
 > 
-> A potential issue I have found with avg_idle is that it may sometimes be
-> not quite as accurate for the purposes of this patch, because it is
-> always given a max value (default is 1000000 ns). For example, a CPU
-> could have remained idle for 1 second and avg_idle would be set to 1
-> millisecond. Another question I have is whether we can update avg_idle
-> at all times without putting a maximum value on avg_idle, or increase
-> the maximum value of avg_idle by a lot.
-
-May be the current max value is a limiting factor, but I think there
-should be a limit to the maximum value. Peter and Ingo may help us
-understand why they limited to the 1ms. But I dont think we should
-introduce a new variable just for this.
+> * H. Peter Anvin <hpa@zytor.com> wrote:
 > 
-> > Should we take the consideration of whether a idle_balance was
-> > successful or not?
-> 
-> I recently ran fserver on the 8 socket machine with HT-enabled and found
-> that load balance was succeeding at a higher than average rate, but idle
-> balance was still lowering performance of that workload by a lot.
-> However, it makes sense to allow idle balance to run longer/more often
-> when it has a higher success rate.
-> 
-
-If idle balance did succeed, then it means that the system was indeed
-imbalanced. So idle balance was the right thing to do. May be we chose
-the wrong task to pull. May be after numa balancing enhancements go in,
-we pick a better task to pull atleast across nodes. And there could be
-other opportunities/strategies to select a right task to pull.
-
-Again, schedstats during the application run should give us hints here.
-
-> > I am not sure whats a reasonable value for n can be, but may be we could
-> > try with n=3.
-> 
-> Based on some of the data I collected, n = 10 to 20 provides much better
-> performance increases.
-> 
-
-I was saying it the other way. 
-your suggestion is to run idle balance once in n runs .. where n is 10
-to 20. 
-My thinking was to not run idle balance once in n unsuccessful runs. 
-
-
-> > Also have we checked the performance after adjusting the
-> > sched_migration_cost tunable?
+> > On 07/15/2013 11:26 AM, Robin Holt wrote:
+> >
+> > > Is there a fairly cheap way to determine definitively that the struct 
+> > > page is not initialized?
 > > 
-> > I guess, if we increase the sched_migration_cost, we should have lesser
-> > newly idle balance requests. 
+> > By definition I would assume no.  The only way I can think of would be 
+> > to unmap the memory associated with the struct page in the TLB and 
+> > initialize the struct pages at trap time.
 > 
-> Yes, I have done quite a bit of testing with sched_migration_cost and
-> adjusting it does help performance when idle balance overhead is high.
-> But I have found that a higher value may decrease the performance during
-> situations where the cost of idle_balance is not high. Additionally,
-> when to modify this tunable and by how much to modify it by can
-> sometimes be unpredictable. 
+> But ... the only fastpath impact I can see of delayed initialization right 
+> now is this piece of logic in prep_new_page():
+> 
+> @@ -903,6 +964,10 @@ static int prep_new_page(struct page *page, int order, gfp_t gfp_flags)
+> 
+>         for (i = 0; i < (1 << order); i++) {
+>                 struct page *p = page + i;
+> +
+> +               if (PageUninitialized2Mib(p))
+> +                       expand_page_initialization(page);
+> +
+>                 if (unlikely(check_new_page(p)))
+>                         return 1;
+> 
+> That is where I think it can be made zero overhead in the 
+> already-initialized case, because page-flags are already used in 
+> check_new_page():
 
-I think people understand that migration_cost depends on the
-hardware/application and thats why they kept it as a tunable.
-But is there something that we can look from the hardware and the
-application behaviour to set a migration cost? May be doing this 
-just complicates stuff then necessary.
+The problem I see here is that the page flags we need to check for the
+uninitialized flag are in the "other" page for the page aligned at the
+2MiB virtual address, not the page currently being referenced.
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+Let me try a version of the patch where we set the PG_unintialized_2m
+flag on all pages, including the aligned pages and see what that does
+to performance.
 
+Robin
+
+> 
+> static inline int check_new_page(struct page *page)
+> {
+>         if (unlikely(page_mapcount(page) |
+>                 (page->mapping != NULL)  |
+>                 (atomic_read(&page->_count) != 0)  |
+>                 (page->flags & PAGE_FLAGS_CHECK_AT_PREP) |
+>                 (mem_cgroup_bad_page_check(page)))) {
+>                 bad_page(page);
+>                 return 1;
+> 
+> see that PAGE_FLAGS_CHECK_AT_PREP flag? That always gets checked for every 
+> struct page on allocation.
+> 
+> We can micro-optimize that low overhead to zero-overhead, by integrating 
+> the PageUninitialized2Mib() check into check_new_page(). This can be done 
+> by adding PG_uninitialized2mib to PAGE_FLAGS_CHECK_AT_PREP and doing:
+> 
+> 
+> 	if (unlikely(page->flags & PAGE_FLAGS_CHECK_AT_PREP)) {
+> 		if (PageUninitialized2Mib(p))
+> 			expand_page_initialization(page);
+> 		...
+> 	}
+> 
+>         if (unlikely(page_mapcount(page) |
+>                 (page->mapping != NULL)  |
+>                 (atomic_read(&page->_count) != 0)  |
+>                 (mem_cgroup_bad_page_check(page)))) {
+>                 bad_page(page);
+> 
+>                 return 1;
+> 
+> this will result in making it essentially zero-overhead, the 
+> expand_page_initialization() logic is now in a slowpath.
+> 
+> Am I missing anything here?
+> 
+> Thanks,
+> 
+> 	Ingo
