@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935076Ab3GWWb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:31:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41899 "EHLO
+	id S934954Ab3GWWcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:32:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41892 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934917Ab3GWW2C (ORCPT
+	with ESMTP id S934904Ab3GWW2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:28:02 -0400
+	Tue, 23 Jul 2013 18:28:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 096/103] tracing: Failed to create system directory
-Date: Tue, 23 Jul 2013 15:26:47 -0700
-Message-Id: <20130723220432.460187468@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 094/103] perf: Remove WARN_ON_ONCE() check in __perf_event_enable() for valid scenario
+Date: Tue, 23 Jul 2013 15:26:45 -0700
+Message-Id: <20130723220432.068118698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -28,146 +32,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 6e94a780374ed31b280f939d4757e8d7858dff16 upstream.
+commit 06f417968beac6e6b614e17b37d347aa6a6b1d30 upstream.
 
-Running the following:
+The '!ctx->is_active' check has a valid scenario, so
+there's no need for the warning.
 
- # cd /sys/kernel/debug/tracing
- # echo p:i do_sys_open > kprobe_events
- # echo p:j schedule >> kprobe_events
- # cat kprobe_events
-p:kprobes/i do_sys_open
-p:kprobes/j schedule
- # echo p:i do_sys_open >> kprobe_events
- # cat kprobe_events
-p:kprobes/j schedule
-p:kprobes/i do_sys_open
- # ls /sys/kernel/debug/tracing/events/kprobes/
-enable  filter  j
+The reason is that there's a time window between the
+'ctx->is_active' check in the perf_event_enable() function
+and the __perf_event_enable() function having:
 
-Notice that the 'i' is missing from the kprobes directory.
+  - IRQs on
+  - ctx->lock unlocked
 
-The console produces:
+where the task could be killed and 'ctx' deactivated by
+perf_event_exit_task(), ending up with the warning below.
 
-"Failed to create system directory kprobes"
+So remove the WARN_ON_ONCE() check and add comments to
+explain it all.
 
-This is because kprobes passes in a allocated name for the system
-and the ftrace event subsystem saves off that name instead of creating
-a duplicate for it. But the kprobes may free the system name making
-the pointer to it invalid.
+This addresses the following warning reported by Vince Weaver:
 
-This bug was introduced by 92edca073c37 "tracing: Use direct field, type
-and system names" which switched from using kstrdup() on the system name
-in favor of just keeping apointer to it, as the internal ftrace event
-system names are static and exist for the life of the computer being booted.
+[  324.983534] ------------[ cut here ]------------
+[  324.984420] WARNING: at kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
+[  324.984420] Modules linked in:
+[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
+[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
+[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
+[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
+[  324.984420] Call Trace:
+[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
+[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
+[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
+[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
+[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
+[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
+[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
+[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
+[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
+[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
+[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
+[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
+[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
+[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
+[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
+[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
+[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
+[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
+[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
+[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
+[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
+[  324.984420] ---[ end trace 442ec2f04db3771a ]---
 
-Instead of reverting back to duplicating system names again, we can use
-core_kernel_data() to determine if the passed in name was allocated or
-static. Then use the MSB of the ref_count to be a flag to keep track if
-the name was allocated or not. Then we can still save from having to duplicate
-strings that will always exist, but still copy the ones that may be freed.
-
-Reported-by: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
-Reported-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Tested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/trace/trace_events.c |   41 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 35 insertions(+), 6 deletions(-)
+ kernel/events/core.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -41,6 +41,23 @@ static LIST_HEAD(ftrace_common_fields);
- static struct kmem_cache *field_cachep;
- static struct kmem_cache *file_cachep;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1761,7 +1761,16 @@ static int __perf_event_enable(void *inf
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+ 	int err;
  
-+#define SYSTEM_FL_FREE_NAME		(1 << 31)
-+
-+static inline int system_refcount(struct event_subsystem *system)
-+{
-+	return system->ref_count & ~SYSTEM_FL_FREE_NAME;
-+}
-+
-+static int system_refcount_inc(struct event_subsystem *system)
-+{
-+	return (system->ref_count++) & ~SYSTEM_FL_FREE_NAME;
-+}
-+
-+static int system_refcount_dec(struct event_subsystem *system)
-+{
-+	return (--system->ref_count) & ~SYSTEM_FL_FREE_NAME;
-+}
-+
- /* Double loops, do not use break, only goto's work */
- #define do_for_each_event_file(tr, file)			\
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {	\
-@@ -349,8 +366,8 @@ static void __put_system(struct event_su
- {
- 	struct event_filter *filter = system->filter;
+-	if (WARN_ON_ONCE(!ctx->is_active))
++	/*
++	 * There's a time window between 'ctx->is_active' check
++	 * in perf_event_enable function and this place having:
++	 *   - IRQs on
++	 *   - ctx->lock unlocked
++	 *
++	 * where the task could be killed and 'ctx' deactivated
++	 * by perf_event_exit_task.
++	 */
++	if (!ctx->is_active)
+ 		return -EINVAL;
  
--	WARN_ON_ONCE(system->ref_count == 0);
--	if (--system->ref_count)
-+	WARN_ON_ONCE(system_refcount(system) == 0);
-+	if (system_refcount_dec(system))
- 		return;
- 
- 	list_del(&system->list);
-@@ -359,13 +376,15 @@ static void __put_system(struct event_su
- 		kfree(filter->filter_string);
- 		kfree(filter);
- 	}
-+	if (system->ref_count & SYSTEM_FL_FREE_NAME)
-+		kfree(system->name);
- 	kfree(system);
- }
- 
- static void __get_system(struct event_subsystem *system)
- {
--	WARN_ON_ONCE(system->ref_count == 0);
--	system->ref_count++;
-+	WARN_ON_ONCE(system_refcount(system) == 0);
-+	system_refcount_inc(system);
- }
- 
- static void __get_system_dir(struct ftrace_subsystem_dir *dir)
-@@ -379,7 +398,7 @@ static void __put_system_dir(struct ftra
- {
- 	WARN_ON_ONCE(dir->ref_count == 0);
- 	/* If the subsystem is about to be freed, the dir must be too */
--	WARN_ON_ONCE(dir->subsystem->ref_count == 1 && dir->ref_count != 1);
-+	WARN_ON_ONCE(system_refcount(dir->subsystem) == 1 && dir->ref_count != 1);
- 
- 	__put_system(dir->subsystem);
- 	if (!--dir->ref_count)
-@@ -1279,7 +1298,15 @@ create_new_subsystem(const char *name)
- 		return NULL;
- 
- 	system->ref_count = 1;
--	system->name = name;
-+
-+	/* Only allocate if dynamic (kprobes and modules) */
-+	if (!core_kernel_data((unsigned long)name)) {
-+		system->ref_count |= SYSTEM_FL_FREE_NAME;
-+		system->name = kstrdup(name, GFP_KERNEL);
-+		if (!system->name)
-+			goto out_free;
-+	} else
-+		system->name = name;
- 
- 	system->filter = NULL;
- 
-@@ -1292,6 +1319,8 @@ create_new_subsystem(const char *name)
- 	return system;
- 
-  out_free:
-+	if (system->ref_count & SYSTEM_FL_FREE_NAME)
-+		kfree(system->name);
- 	kfree(system);
- 	return NULL;
- }
+ 	raw_spin_lock(&ctx->lock);
 
 
