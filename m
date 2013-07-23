@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab3GWNDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:03:34 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:34642 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757159Ab3GWNDd (ORCPT
+	id S932312Ab3GWNGt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:06:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53528 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756599Ab3GWNGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:03:33 -0400
-Message-ID: <51EE7F1C.9020506@gmail.com>
-Date: Tue, 23 Jul 2013 21:03:24 +0800
-From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.5) Gecko/20120607 Thunderbird/10.0.5
+	Tue, 23 Jul 2013 09:06:48 -0400
+Date: Tue, 23 Jul 2013 14:06:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Message-ID: <20130723130622.GB9858@sirena.org.uk>
+References: <20130723102320.56bc4555@armhf>
+ <20130723084347.GP24642@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, len.brown@intel.com, pavel@ucw.cz,
-        rjw@sisk.pl
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2] x86, acpi: Correct out-of-date comment of __acpi_map_table
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vMk55pD2JuhdWiRw"
+Content-Disposition: inline
+In-Reply-To: <20130723084347.GP24642@n2100.arm.linux.org.uk>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ARM: kirkwood: enable S/PDIF
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-The implementation of function __acpi_map_table() has been changed
-long time ago, and now it directly invokes early_ioremap() to setup
-the temporarily acpi table mappings. So correct its out-of-date
-comment.
+--vMk55pD2JuhdWiRw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
----
--v2: Replace the comment with a simple correct one instead of removing
-     it -- suggested by Ingo
----
- arch/x86/kernel/acpi/boot.c |   13 +++----------
- 1 files changed, 3 insertions(+), 10 deletions(-)
+On Tue, Jul 23, 2013 at 09:43:47AM +0100, Russell King - ARM Linux wrote:
+> On Tue, Jul 23, 2013 at 10:23:20AM +0200, Jean-Francois Moine wrote:
+> > This patch enables S/PDIF.
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 2627a81..c7f61cf 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -141,16 +141,8 @@ static u32 irq_to_gsi(int irq)
- }
- 
- /*
-- * Temporarily use the virtual area starting from FIX_IO_APIC_BASE_END,
-- * to map the target physical address. The problem is that set_fixmap()
-- * provides a single page, and it is possible that the page is not
-- * sufficient.
-- * By using this area, we can map up to MAX_IO_APICS pages temporarily,
-- * i.e. until the next __va_range() call.
-- *
-- * Important Safety Note:  The fixed I/O APIC page numbers are *subtracted*
-- * from the fixed base.  That's why we start at FIX_IO_APIC_BASE_END and
-- * count idx down while incrementing the phys address.
-+ * This is just a simple wrapper around early_ioremap(),
-+ * with sanity checks for phys == 0 and size == 0.
-  */
- char *__init __acpi_map_table(unsigned long phys, unsigned long size)
- {
-@@ -160,6 +152,7 @@ char *__init __acpi_map_table(unsigned long phys, unsigned long size)
- 
- 	return early_ioremap(phys, size);
- }
-+
- void __init __acpi_unmap_table(char *map, unsigned long size)
- {
- 	if (!map || !size)
--- 
-1.7.1
+> > Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+
+> I'm not submitting my patch to do this because:
+
+> (a) we don't know what effect this has on other hardware.
+
+This patch will do absolutely nothing unless it's used in a machine
+driver which connects a S/PDIF CODEC to it.  I see no reason not to
+apply it, someone with hardware with more complex needs can always build
+on it later.
+
+--vMk55pD2JuhdWiRw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7n/LAAoJELSic+t+oim9PzsP/jbV3YimL/rOUX/iyP019vZz
+oH0D60cGVHpPCQtt0BLcsiL3BJynSc4klMnJgvd5dMeCd/nALwIiBULP4EX8k3yd
+JIClfVKikWOzf+MndetEoEIxfl+YbbYGO0uNrYExWOSNM4zu7EEsYe1ClVS3dMXA
+yh+cAAZKTlashlfGTnoaqVX30B5ZeqX9hi/wAXzPCpcKt3gsBUQLsRZIlI1BQZrl
+2n5s9/fIffvwbfafM/ObmNkUY/qa7+tCHMecuGTRT+vMaUJi4yl0ZaXNP48+gzUy
+2DkwaT60QJIyywzoHC5f8tvVHsl2dURWSZ+jKD1KuKYsPNvScWiDqNs5gH5yYnbo
+op9jRO5MJ2kRaQ7LSPSp14yo7bDWDmvCcPCuLjTkwUdlSPZXO4tF8EsOtLUgqQZ7
+eNJ/oaEsmUR9ohmjT4dPKfwMAQIs2Yf50yHpJ2RTltz0RJRSJugKd+RawEXA/LVU
+CbbWtVj01sfEcQwhEOGuM/jPqRekPWWlbvrg+t04KV+cfQC+/leFMFbFWpWLKopC
+i4nEy91DRSJ/rYU9b92d3BoDb7MtVyCXqFd76zQDSUKJWMJgoYjvf35CDnlpPW22
+Pk451LRo8XhQZ5WudAiNr1pY4NV+z0105E90cRGVkpTwxGTELsMPZJG5rlBuhrTR
+2GwvtBwWBRYtG2+RkdAW
+=cK4x
+-----END PGP SIGNATURE-----
+
+--vMk55pD2JuhdWiRw--
