@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933654Ab3GWQfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 12:35:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36224 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933197Ab3GWQfx (ORCPT
+	id S933604Ab3GWQk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 12:40:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47447 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932705Ab3GWQk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 12:35:53 -0400
-Date: Tue, 23 Jul 2013 09:35:51 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Message-ID: <20130723163551.GA12990@kroah.com>
-References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
- <51EE9EC0.6060905@ti.com>
- <20130723161846.GD2486@kroah.com>
- <51EEAF32.4040905@ti.com>
+	Tue, 23 Jul 2013 12:40:26 -0400
+Date: Tue, 23 Jul 2013 18:40:21 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: gregkh@linuxfoundation.org, kernel@pengutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: imx-drm: Fix typo in staging/imx-drm
+Message-ID: <20130723164021.GR9434@pengutronix.de>
+References: <1374595507-26418-1-git-send-email-standby24x7@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51EEAF32.4040905@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374595507-26418-1-git-send-email-standby24x7@gmail.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 18:40:07 up 40 days,  4:50, 20 users,  load average: 0.00, 0.03,
+ 0.05
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 09:58:34PM +0530, Kishon Vijay Abraham I wrote:
-> Hi Greg,
+On Wed, Jul 24, 2013 at 01:05:07AM +0900, Masanari Iida wrote:
+> Correct spelling typo in staging/imx-drm
 > 
-> On Tuesday 23 July 2013 09:48 PM, Greg KH wrote:
-> > On Tue, Jul 23, 2013 at 08:48:24PM +0530, Kishon Vijay Abraham I wrote:
-> >> Hi,
-> >>
-> >> On Tuesday 23 July 2013 08:07 PM, Alan Stern wrote:
-> >>> On Tue, 23 Jul 2013, Tomasz Figa wrote:
-> >>>
-> >>>> On Tuesday 23 of July 2013 09:29:32 Tomasz Figa wrote:
-> >>>>> Hi Alan,
-> >>>
-> >>> Thanks for helping to clarify the issues here.
-> >>>
-> >>>>>> Okay.  Are PHYs _always_ platform devices?
-> >>>>>
-> >>>>> They can be i2c, spi or any other device types as well.
-> >>>
-> >>> In those other cases, presumably there is no platform data associated
-> >>> with the PHY since it isn't a platform device.  Then how does the
-> >>> kernel know which controller is attached to the PHY?  Is this spelled
-> >>> out in platform data associated with the PHY's i2c/spi/whatever parent?
-> .
-> .
-> <snip>
-> .
-> .
-> >>
-> >> 	static struct phy *phy_lookup(void *priv) {
-> >> 		.
-> >> 		.
-> >> 		if (phy->priv==priv) //instead of string comparison, we'll use pointer
-> >> 			return phy;
-> >> 	}
-> >>
-> >> PHY driver should be like
-> >> 	phy_create((dev, ops, pdata->info);
-> >>
-> >> The controller driver would do
-> >> 	phy_get(dev, NULL, pdata->info);
-> >>
-> >> Now the PHY framework will check for a match of *priv* pointer and return the PHY.
-> >>
-> >> I think this should be possible?
-> > 
-> > Ick, no.  Why can't you just pass the pointer to the phy itself?  If you
-> > had a "priv" pointer to search from, then you could have just passed the
-> > original phy pointer in the first place, right?
-> > 
-> > The issue is that a string "name" is not going to scale at all, as it
-> > requires hard-coded information that will change over time (as the
-> > existing clock interface is already showing.)
-> > 
-> > Please just pass the real "phy" pointer around, that's what it is there
-> > for.  Your "board binding" logic/code should be able to handle this, as
-> > it somehow was going to do the same thing with a "name".
+> Singed-off-by: Masanari Iida <standby24x7@gmail.com>
+
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+Sascha
+
+> ---
+>  drivers/staging/imx-drm/Kconfig   | 2 +-
+>  drivers/staging/imx-drm/imx-ldb.c | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> The problem is the board file won't have the *phy* pointer. *phy* pointer is
-> created at a much later time when the phy driver is probed.
+> diff --git a/drivers/staging/imx-drm/Kconfig b/drivers/staging/imx-drm/Kconfig
+> index 2233905..6156e3f 100644
+> --- a/drivers/staging/imx-drm/Kconfig
+> +++ b/drivers/staging/imx-drm/Kconfig
+> @@ -15,7 +15,7 @@ config DRM_IMX_FB_HELPER
+>  	help
+>  	  The DRM framework can provide a legacy /dev/fb0 framebuffer
+>  	  for your device. This is necessary to get a framebuffer console
+> -	  and also for appplications using the legacy framebuffer API
+> +	  and also for applications using the legacy framebuffer API
+>  
+>  config DRM_IMX_PARALLEL_DISPLAY
+>  	tristate "Support for parallel displays"
+> diff --git a/drivers/staging/imx-drm/imx-ldb.c b/drivers/staging/imx-drm/imx-ldb.c
+> index 8af7f3b..bb7da0e 100644
+> --- a/drivers/staging/imx-drm/imx-ldb.c
+> +++ b/drivers/staging/imx-drm/imx-ldb.c
+> @@ -497,7 +497,7 @@ static int imx_ldb_probe(struct platform_device *pdev)
+>  		imx_ldb->ldb_ctrl |= LDB_SPLIT_MODE_EN;
+>  
+>  	/*
+> -	 * There are three diferent possible clock mux configurations:
+> +	 * There are three different possible clock mux configurations:
+>  	 * i.MX53:  ipu1_di0_sel, ipu1_di1_sel
+>  	 * i.MX6q:  ipu1_di0_sel, ipu1_di1_sel, ipu2_di0_sel, ipu2_di1_sel
+>  	 * i.MX6dl: ipu1_di0_sel, ipu1_di1_sel, lcdif_sel
+> -- 
+> 1.8.3.3.820.ge3d4493
+> 
+> 
 
-Ok, then save it then, as no one could have used it before then, right?
-
-All I don't want to see is any "get by name/void *" functions in the
-api, as that way is fragile and will break, as people have already
-shown.
-
-Just pass the real pointer around.  If that is somehow a problem, then
-something larger is a problem with how board devices are tied together :)
-
-thanks,
-
-greg k-h
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
