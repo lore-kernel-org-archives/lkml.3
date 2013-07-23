@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab3GWLfq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 07:35:46 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:48364 "EHLO SMTP.CITRIX.COM"
+	id S1756731Ab3GWLhK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 07:37:10 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:28633 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab3GWLfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 07:35:45 -0400
+	id S1756254Ab3GWLhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 07:37:08 -0400
 X-IronPort-AV: E=Sophos;i="4.89,727,1367971200"; 
-   d="scan'208";a="38669144"
-Date: Tue, 23 Jul 2013 12:35:40 +0100
+   d="scan'208";a="38669363"
+Date: Tue, 23 Jul 2013 12:37:04 +0100
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Julien Grall <julien.grall@linaro.org>
-CC: <stefano.stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Julien Grall <julien.grall@linaro.org>, <stefano.stabellini@eu.citrix.com>,
         <ian.campbell@citrix.com>, <patches@linaro.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <xen-devel@lists.xen.org>, <mark.rutland@arm.com>,
-        <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH] xen/arm64: Don't compile cpu hotplug
-In-Reply-To: <1374529258-12866-1-git-send-email-julien.grall@linaro.org>
-Message-ID: <alpine.DEB.2.02.1307231235330.4893@kaball.uk.xensource.com>
-References: <1374529258-12866-1-git-send-email-julien.grall@linaro.org>
+        <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v4] xen/arm: enable PV control for ARM
+In-Reply-To: <5228e08a-1cdb-4240-b10f-9ad690c94ac4@email.android.com>
+Message-ID: <alpine.DEB.2.02.1307231235510.4893@kaball.uk.xensource.com>
+References: <1374529321-12955-1-git-send-email-julien.grall@linaro.org> <5228e08a-1cdb-4240-b10f-9ad690c94ac4@email.android.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
@@ -28,28 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Jul 2013, Julien Grall wrote:
-> On ARM64, when CONFIG_XEN=y, the compilation will fail because CPU hotplug is
-> not yet supported with XEN. For now, disable it.
+On Mon, 22 Jul 2013, Konrad Rzeszutek Wilk wrote:
+> Julien Grall <julien.grall@linaro.org> wrote:
+> >Enable power management from the toolstack for ARM guest.
+> >
+> >Signed-off-by: Julien Grall <julien.grall@linaro.org>
+> >
+> >---
+> >    Changes in v4:
+> >        - Divide the patch in 2 distinct parts
+> >    Changes in v3:
+> >        - Fix condition to compile cpu_hotplug.o
+> >    Changes in v2:
+> >        - Don't compile xen/cpu_hotplug.o with ARM64
+> >---
+> > drivers/xen/Makefile |    3 +--
+> > 1 file changed, 1 insertion(+), 2 deletions(-)
+> >
+> >diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> >index a609353..f185e8d 100644
+> >--- a/drivers/xen/Makefile
+> >+++ b/drivers/xen/Makefile
+> >@@ -1,9 +1,8 @@
+> > ifeq ($(filter y, $(CONFIG_ARM) $(CONFIG_ARM64)),)
+> >-obj-y	+= manage.o
+> > obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+> > endif
+> > obj-$(CONFIG_X86)			+= fallback.o
+> >-obj-y	+= grant-table.o features.o events.o balloon.o time.o
+> >+obj-y	+= grant-table.o features.o events.o balloon.o time.o manage.o
+> > obj-y	+= xenbus/
+> > 
+> > nostackp := $(call cc-option, -fno-stack-protector)
 > 
-> Signed-off-by: Julien Grall <julien.grall@linaro.org>
-
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-
-
->  drivers/xen/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> The patch looks Ok but the description is off.  Power management is the term used for cpu freq,  C states and P states. While this patch touches none of that. 
 > 
-> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-> index 2bf461a..a609353 100644
-> --- a/drivers/xen/Makefile
-> +++ b/drivers/xen/Makefile
-> @@ -1,4 +1,4 @@
-> -ifneq ($(CONFIG_ARM),y)
-> +ifeq ($(filter y, $(CONFIG_ARM) $(CONFIG_ARM64)),)
->  obj-y	+= manage.o
->  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
->  endif
-> -- 
-> 1.7.10.4
-> 
+
+That's a very x86-centric view of the world, but it's true that manage.c
+is about shutdown, restart and other operations that don't fit under
+"power management".
+It could benefit from a better description.
