@@ -1,116 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755114Ab3GWH0z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 03:26:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28686 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754600Ab3GWH0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 03:26:53 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+	id S1755187Ab3GWH1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 03:27:24 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:52205 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706Ab3GWH1W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 03:27:22 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-d5-51ee3058c7bf
+Date: Tue, 23 Jul 2013 16:27:24 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>, Basil Gor <basil.gor@gmail.com>
-Subject: [PATCH net-next] tuntap: hardware vlan tx support
-Date: Tue, 23 Jul 2013 15:15:48 +0800
-Message-Id: <1374563748-38821-1-git-send-email-jasowang@redhat.com>
+Subject: Re: [PATCH v2 02/10] mm, hugetlb: remove err label in
+ dequeue_huge_page_vma()
+Message-ID: <20130723072724.GA2266@lge.com>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1374482191-3500-3-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130722161111.GI24400@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130722161111.GI24400@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inspired by commit f09e2249c4f5c7c13261ec73f5a7807076af0c8e (macvtap: restore
-vlan header on user read). This patch adds hardware vlan tx support for
-tuntap. This is done by copying vlan header directly into userspace in
-tun_put_user() instead of doing it through __vlan_put_tag() in
-dev_hard_start_xmit(). This eliminates one unnecessary memove in
-vlan_insert_tag() for 802.1ad and 802.1q traffic.
+On Mon, Jul 22, 2013 at 06:11:11PM +0200, Michal Hocko wrote:
+> On Mon 22-07-13 17:36:23, Joonsoo Kim wrote:
+> > This label is not needed now, because there is no error handling
+> > except returing NULL.
+> > 
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index fc4988c..d87f70b 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -546,11 +546,11 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+> >  	 */
+> >  	if (!vma_has_reserves(vma) &&
+> >  			h->free_huge_pages - h->resv_huge_pages == 0)
+> > -		goto err;
+> > +		return NULL;
+> >  
+> >  	/* If reserves cannot be used, ensure enough pages are in the pool */
+> >  	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+> > -		goto err;
+> > +		return NULL;
+> >  
+> >  retry_cpuset:
+> >  	cpuset_mems_cookie = get_mems_allowed();
+> > @@ -573,9 +573,6 @@ retry_cpuset:
+> >  	if (unlikely(!put_mems_allowed(cpuset_mems_cookie) && !page))
+> >  		goto retry_cpuset;
+> >  	return page;
+> > -
+> > -err:
+> > -	return NULL;
+> 
+> This doesn't give us anything IMO. It is a matter of taste but if there
+> is no cleanup I would prefer no err label.
 
-pktgen test shows about 20% improvement for 802.1q traffic:
+Okay. If this patchset need respin, I will omit this one.
 
-Before:
-  662149pps 317Mb/sec (317831520bps) errors: 0
-After:
-  801033pps 384Mb/sec (384495840bps) errors: 0
+Thanks.
 
-Cc: Basil Gor <basil.gor@gmail.com>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/net/tun.c |   39 +++++++++++++++++++++++++++++++++++----
- 1 files changed, 35 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/net/tun.c b/drivers/net/tun.c
-index a72d141..66e265d 100644
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -60,6 +60,7 @@
- #include <linux/if_arp.h>
- #include <linux/if_ether.h>
- #include <linux/if_tun.h>
-+#include <linux/if_vlan.h>
- #include <linux/crc32.h>
- #include <linux/nsproxy.h>
- #include <linux/virtio_net.h>
-@@ -1265,6 +1266,7 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- {
- 	struct tun_pi pi = { 0, skb->protocol };
- 	ssize_t total = 0;
-+	int vlan_offset = 0;
- 
- 	if (!(tun->flags & TUN_NO_PI)) {
- 		if ((len -= sizeof(pi)) < 0)
-@@ -1328,11 +1330,39 @@ static ssize_t tun_put_user(struct tun_struct *tun,
- 		total += tun->vnet_hdr_sz;
- 	}
- 
--	len = min_t(int, skb->len, len);
-+	if (!vlan_tx_tag_present(skb))
-+		len = min_t(int, skb->len, len);
-+	else {
-+		int copy, ret;
-+		struct {
-+			__be16 h_vlan_proto;
-+			__be16 h_vlan_TCI;
-+		} veth;
-+		veth.h_vlan_proto = skb->vlan_proto;
-+		veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
-+
-+		vlan_offset = offsetof(struct vlan_ethhdr, h_vlan_proto);
-+		len = min_t(int, skb->len + VLAN_HLEN, len);
-+
-+		copy = min_t(int, vlan_offset, len);
-+		ret = skb_copy_datagram_const_iovec(skb, 0, iv, total, copy);
-+		len -= copy;
-+		total += copy;
-+		if (ret || !len)
-+			goto done;
-+
-+		copy = min_t(int, sizeof(veth), len);
-+		ret = memcpy_toiovecend(iv, (void *)&veth, total, copy);
-+		len -= copy;
-+		total += copy;
-+		if (ret || !len)
-+			goto done;
-+	}
- 
--	skb_copy_datagram_const_iovec(skb, 0, iv, total, len);
--	total += skb->len;
-+	skb_copy_datagram_const_iovec(skb, vlan_offset, iv, total, len);
-+	total += len;
- 
-+done:
- 	tun->dev->stats.tx_packets++;
- 	tun->dev->stats.tx_bytes += len;
- 
-@@ -1691,7 +1721,8 @@ static int tun_set_iff(struct net *net, struct file *file, struct ifreq *ifr)
- 		tun_flow_init(tun);
- 
- 		dev->hw_features = NETIF_F_SG | NETIF_F_FRAGLIST |
--			TUN_USER_FEATURES;
-+				   TUN_USER_FEATURES | NETIF_F_HW_VLAN_CTAG_TX |
-+				   NETIF_F_HW_VLAN_STAG_TX;
- 		dev->features = dev->hw_features;
- 		dev->vlan_features = dev->features;
- 
--- 
-1.7.1
-
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
