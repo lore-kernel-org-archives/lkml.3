@@ -1,134 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab3GWR2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 13:28:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:26966 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756856Ab3GWR1w (ORCPT
+	id S933559Ab3GWR3Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 13:29:25 -0400
+Received: from fep22.mx.upcmail.net ([62.179.121.42]:36179 "EHLO
+	fep22.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab3GWR3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 13:27:52 -0400
-X-IronPort-AV: E=Sophos;i="4.89,729,1367971200"; 
-   d="scan'208";a="36903616"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: <xen-devel@lists.xensource.com>
-CC: <konrad.wilk@oracle.com>, <stefano.stabellini@eu.citrix.com>,
-        <alex@alex.org.uk>, <dcrisan@flexiant.com>, <ian.campbell@citrix.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/2] xen/m2p: use GNTTABOP_unmap_and_replace to reinstate the original mapping
-Date: Tue, 23 Jul 2013 18:27:46 +0100
-Message-ID: <1374600466-3229-2-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
+	Tue, 23 Jul 2013 13:29:24 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20974.46422.436937.172719@pilspetsen.it.uu.se>
+References: <51EEA665.2050209@odi.ch> <20974.46422.436937.172719@pilspetsen.it.uu.se>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: CONFIG_X86_PKG_TEMP_THERMAL causes #GP fault on Core i7-740QM breaking boot
+From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+Date: Tue, 23 Jul 2013 19:29:18 +0200
+To: Mikael Pettersson <mikpe@it.uu.se>
+CC: linux-kernel@vger.kernel.org
+Message-ID: <b89aaa4f-d062-4fbc-a456-f9447c73de27@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GNTTABOP_unmap_grant_ref unmaps a grant and replaces it with a 0
-mapping instead of reinstating the original mapping.
-Doing so separately would be racy.
 
-To unmap a grant and reinstate the original mapping atomically we use
-GNTTABOP_unmap_and_replace.
-GNTTABOP_unmap_and_replace doesn't work with GNTMAP_contains_pte, so
-don't use it for kmaps.  GNTTABOP_unmap_and_replace zeroes the mapping
-passed in new_addr so we have to reinstate it, however that is a
-per-cpu mapping only used for balloon scratch pages, so we can be sure that
-it's not going to be accessed while the mapping is not valid.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-CC: alex@alex.org.uk
-CC: dcrisan@flexiant.com
----
- arch/x86/xen/p2m.c   |   22 +++++++++++++++-------
- drivers/xen/gntdev.c |   11 ++---------
- 2 files changed, 17 insertions(+), 16 deletions(-)
+Mikael Pettersson <mikpe@it.uu.se> >I can see that patch in git, it's NOT present in
+>either
+>the linux-3.11-rc2.tar.xz or the patch-3.11-rc2.xz files.  Which is
+>strange
+>since the patch was committed 8 days ago, and -rc2 was released 2 days
+>ago.
 
-diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
-index 95fb2aa..0d4ec35 100644
---- a/arch/x86/xen/p2m.c
-+++ b/arch/x86/xen/p2m.c
-@@ -161,6 +161,7 @@
- #include <asm/xen/page.h>
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
-+#include <xen/balloon.h>
- #include <xen/grant_table.h>
- 
- #include "multicalls.h"
-@@ -967,7 +968,10 @@ int m2p_remove_override(struct page *page,
- 	if (kmap_op != NULL) {
- 		if (!PageHighMem(page)) {
- 			struct multicall_space mcs;
--			struct gnttab_unmap_grant_ref *unmap_op;
-+			struct gnttab_unmap_and_replace *unmap_op;
-+			struct page *scratch_page = get_balloon_scratch_page();
-+			unsigned long scratch_page_address = (unsigned long)
-+				__va(page_to_pfn(scratch_page) << PAGE_SHIFT);
- 
- 			/*
- 			 * It might be that we queued all the m2p grant table
-@@ -990,21 +994,25 @@ int m2p_remove_override(struct page *page,
- 			}
- 
- 			mcs = xen_mc_entry(
--					sizeof(struct gnttab_unmap_grant_ref));
-+					sizeof(struct gnttab_unmap_and_replace));
- 			unmap_op = mcs.args;
- 			unmap_op->host_addr = kmap_op->host_addr;
-+			unmap_op->new_addr = scratch_page_address;
- 			unmap_op->handle = kmap_op->handle;
--			unmap_op->dev_bus_addr = 0;
- 
- 			MULTI_grant_table_op(mcs.mc,
--					GNTTABOP_unmap_grant_ref, unmap_op, 1);
-+					GNTTABOP_unmap_and_replace, unmap_op, 1);
- 
- 			xen_mc_issue(PARAVIRT_LAZY_MMU);
- 
--			set_pte_at(&init_mm, address, ptep,
--					pfn_pte(pfn, PAGE_KERNEL));
--			__flush_tlb_single(address);
-+			mcs = __xen_mc_entry(0);
-+			MULTI_update_va_mapping(mcs.mc, scratch_page_address,
-+					pfn_pte(page_to_pfn(get_balloon_scratch_page()),
-+					PAGE_KERNEL_RO), 0);
-+			xen_mc_issue(PARAVIRT_LAZY_MMU);
-+
- 			kmap_op->host_addr = 0;
-+			put_balloon_scratch_page();
- 		}
- 	}
- 
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 3c8803f..51f4c95 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -270,19 +270,12 @@ static int map_grant_pages(struct grant_map *map)
- 		 * with find_grant_ptes.
- 		 */
- 		for (i = 0; i < map->count; i++) {
--			unsigned level;
- 			unsigned long address = (unsigned long)
- 				pfn_to_kaddr(page_to_pfn(map->pages[i]));
--			pte_t *ptep;
--			u64 pte_maddr = 0;
- 			BUG_ON(PageHighMem(map->pages[i]));
- 
--			ptep = lookup_address(address, &level);
--			pte_maddr = arbitrary_virt_to_machine(ptep).maddr;
--			gnttab_set_map_op(&map->kmap_ops[i], pte_maddr,
--				map->flags |
--				GNTMAP_host_map |
--				GNTMAP_contains_pte,
-+			gnttab_set_map_op(&map->kmap_ops[i], address,
-+				map->flags | GNTMAP_host_map,
- 				map->grants[i].ref,
- 				map->grants[i].domid);
- 		}
--- 
-1.7.2.5
+It was merged only after rc2. Only in the tree that it was merged from it was commited before rc2. See 
+gitk v3.11-rc2..
 
+Ortwin
