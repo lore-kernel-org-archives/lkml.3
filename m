@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934452Ab3GWW1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41444 "EHLO
+	id S935185Ab3GWW5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:57:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41474 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934426Ab3GWW05 (ORCPT
+	with ESMTP id S934451Ab3GWW1C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:26:57 -0400
+	Tue, 23 Jul 2013 18:27:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Neuling <mikey@neuling.org>,
-        Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 003/103] powerpc/hw_brk: Fix off by one error when validating DAWR region end
-Date: Tue, 23 Jul 2013 15:25:14 -0700
-Message-Id: <20130723220418.949823505@linuxfoundation.org>
+Subject: [ 009/103] powerpc/tm: Fix return of active 64bit signals
+Date: Tue, 23 Jul 2013 15:25:20 -0700
+Message-Id: <20130723220419.594834612@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -30,34 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Neuling <mikey@neuling.org>
 
-commit e2a800beaca1f580945773e57d1a0e7cd37b1056 upstream.
+commit 87b4e5393af77f5cba124638f19f6c426e210aec upstream.
 
-The Data Address Watchpoint Register (DAWR) on POWER8 can take a 512
-byte range but this range must not cross a 512 byte boundary.
+Currently we only restore signals which are transactionally suspended but it's
+possible that the transaction can be restored even when it's active.  Most
+likely this will result in a transactional rollback by the hardware as the
+transaction will have been doomed by an earlier treclaim.
 
-Unfortunately we were off by one when calculating the end of the region,
-hence we were not allowing some breakpoint regions which were actually
-valid.  This fixes this error.
+The current code is a legacy of earlier kernel implementations which did
+software rollback of active transactions in the kernel.  That code has now gone
+but we didn't correctly fix up this part of the signals code which still makes
+assumptions based on having software rollback.
+
+This changes the signal return code to always restore both contexts on 64 bit
+signal return.  It also ensures that the MSR TM bits are properly restored from
+the signal context which they are not currently.
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
-Reported-by: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/hw_breakpoint.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/powerpc/kernel/signal_64.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/powerpc/kernel/hw_breakpoint.c
-+++ b/arch/powerpc/kernel/hw_breakpoint.c
-@@ -176,7 +176,7 @@ int arch_validate_hwbkpt_settings(struct
- 		length_max = 512 ; /* 64 doublewords */
- 		/* DAWR region can't cross 512 boundary */
- 		if ((bp->attr.bp_addr >> 10) != 
--		    ((bp->attr.bp_addr + bp->attr.bp_len) >> 10))
-+		    ((bp->attr.bp_addr + bp->attr.bp_len - 1) >> 10))
- 			return -EINVAL;
- 	}
- 	if (info->len >
+--- a/arch/powerpc/kernel/signal_64.c
++++ b/arch/powerpc/kernel/signal_64.c
+@@ -410,6 +410,10 @@ static long restore_tm_sigcontexts(struc
+ 
+ 	/* get MSR separately, transfer the LE bit if doing signal return */
+ 	err |= __get_user(msr, &sc->gp_regs[PT_MSR]);
++	/* pull in MSR TM from user context */
++	regs->msr = (regs->msr & ~MSR_TS_MASK) | (msr & MSR_TS_MASK);
++
++	/* pull in MSR LE from user context */
+ 	regs->msr = (regs->msr & ~MSR_LE) | (msr & MSR_LE);
+ 
+ 	/* The following non-GPR non-FPR non-VR state is also checkpointed: */
+@@ -505,8 +509,6 @@ static long restore_tm_sigcontexts(struc
+ 	tm_enable();
+ 	/* This loads the checkpointed FP/VEC state, if used */
+ 	tm_recheckpoint(&current->thread, msr);
+-	/* The task has moved into TM state S, so ensure MSR reflects this: */
+-	regs->msr = (regs->msr & ~MSR_TS_MASK) | __MASK(33);
+ 
+ 	/* This loads the speculative FP/VEC state, if used */
+ 	if (msr & MSR_FP) {
+@@ -654,7 +656,7 @@ int sys_rt_sigreturn(unsigned long r3, u
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
+ 	if (__get_user(msr, &uc->uc_mcontext.gp_regs[PT_MSR]))
+ 		goto badframe;
+-	if (MSR_TM_SUSPENDED(msr)) {
++	if (MSR_TM_ACTIVE(msr)) {
+ 		/* We recheckpoint on return. */
+ 		struct ucontext __user *uc_transact;
+ 		if (__get_user(uc_transact, &uc->uc_link))
 
 
