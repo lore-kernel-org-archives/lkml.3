@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935026Ab3GWWxj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:53:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41528 "EHLO
+	id S935043Ab3GWWx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:53:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41524 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934526Ab3GWW1M (ORCPT
+	with ESMTP id S934518Ab3GWW1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:12 -0400
+	Tue, 23 Jul 2013 18:27:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Subject: [ 024/103] iio: Fix iio_channel_has_info
-Date: Tue, 23 Jul 2013 15:25:35 -0700
-Message-Id: <20130723220421.265515348@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 023/103] arm64: mm: dont treat user cache maintenance faults as writes
+Date: Tue, 23 Jul 2013 15:25:34 -0700
+Message-Id: <20130723220421.163801025@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,35 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 1c297a66654a3295ae87e2b7f3724d214eb2b5ec upstream.
+commit db6f41063cbdb58b14846e600e6bc3f4e4c2e888 upstream.
 
-Since the info_mask split, iio_channel_has_info() is not working correctly.
-info_mask_separate and info_mask_shared_by_type, it is not possible to compare
-them directly with the iio_chan_info_enum enum. Correct that bit using the BIT()
-macro.
+On arm64, cache maintenance faults appear as data aborts with the CM
+bit set in the ESR. The WnR bit, usually used to distinguish between
+faulting loads and stores, always reads as 1 and (slightly confusingly)
+the instructions are treated as reads by the architecture.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+This patch fixes our fault handling code to treat cache maintenance
+faults in the same way as loads.
+
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/iio/iio.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm64/mm/fault.c |   46 ++++++++++++++++++++--------------------------
+ 1 file changed, 20 insertions(+), 26 deletions(-)
 
---- a/include/linux/iio/iio.h
-+++ b/include/linux/iio/iio.h
-@@ -211,8 +211,8 @@ struct iio_chan_spec {
- static inline bool iio_channel_has_info(const struct iio_chan_spec *chan,
- 	enum iio_chan_info_enum type)
- {
--	return (chan->info_mask_separate & type) |
--	       (chan->info_mask_shared_by_type & type);
-+	return (chan->info_mask_separate & BIT(type)) |
-+	       (chan->info_mask_shared_by_type & BIT(type));
- }
+--- a/arch/arm64/mm/fault.c
++++ b/arch/arm64/mm/fault.c
+@@ -152,25 +152,8 @@ void do_bad_area(unsigned long addr, uns
+ #define ESR_CM			(1 << 8)
+ #define ESR_LNX_EXEC		(1 << 24)
  
- #define IIO_ST(si, rb, sb, sh)						\
+-/*
+- * Check that the permissions on the VMA allow for the fault which occurred.
+- * If we encountered a write fault, we must have write permission, otherwise
+- * we allow any permission.
+- */
+-static inline bool access_error(unsigned int esr, struct vm_area_struct *vma)
+-{
+-	unsigned int mask = VM_READ | VM_WRITE | VM_EXEC;
+-
+-	if (esr & ESR_WRITE)
+-		mask = VM_WRITE;
+-	if (esr & ESR_LNX_EXEC)
+-		mask = VM_EXEC;
+-
+-	return vma->vm_flags & mask ? false : true;
+-}
+-
+ static int __do_page_fault(struct mm_struct *mm, unsigned long addr,
+-			   unsigned int esr, unsigned int flags,
++			   unsigned int mm_flags, unsigned long vm_flags,
+ 			   struct task_struct *tsk)
+ {
+ 	struct vm_area_struct *vma;
+@@ -188,12 +171,17 @@ static int __do_page_fault(struct mm_str
+ 	 * it.
+ 	 */
+ good_area:
+-	if (access_error(esr, vma)) {
++	/*
++	 * Check that the permissions on the VMA allow for the fault which
++	 * occurred. If we encountered a write or exec fault, we must have
++	 * appropriate permissions, otherwise we allow any permission.
++	 */
++	if (!(vma->vm_flags & vm_flags)) {
+ 		fault = VM_FAULT_BADACCESS;
+ 		goto out;
+ 	}
+ 
+-	return handle_mm_fault(mm, vma, addr & PAGE_MASK, flags);
++	return handle_mm_fault(mm, vma, addr & PAGE_MASK, mm_flags);
+ 
+ check_stack:
+ 	if (vma->vm_flags & VM_GROWSDOWN && !expand_stack(vma, addr))
+@@ -208,9 +196,15 @@ static int __kprobes do_page_fault(unsig
+ 	struct task_struct *tsk;
+ 	struct mm_struct *mm;
+ 	int fault, sig, code;
+-	bool write = (esr & ESR_WRITE) && !(esr & ESR_CM);
+-	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE |
+-		(write ? FAULT_FLAG_WRITE : 0);
++	unsigned long vm_flags = VM_READ | VM_WRITE | VM_EXEC;
++	unsigned int mm_flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
++
++	if (esr & ESR_LNX_EXEC) {
++		vm_flags = VM_EXEC;
++	} else if ((esr & ESR_WRITE) && !(esr & ESR_CM)) {
++		vm_flags = VM_WRITE;
++		mm_flags |= FAULT_FLAG_WRITE;
++	}
+ 
+ 	tsk = current;
+ 	mm  = tsk->mm;
+@@ -248,7 +242,7 @@ retry:
+ #endif
+ 	}
+ 
+-	fault = __do_page_fault(mm, addr, esr, flags, tsk);
++	fault = __do_page_fault(mm, addr, mm_flags, vm_flags, tsk);
+ 
+ 	/*
+ 	 * If we need to retry but a fatal signal is pending, handle the
+@@ -265,7 +259,7 @@ retry:
+ 	 */
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, addr);
+-	if (flags & FAULT_FLAG_ALLOW_RETRY) {
++	if (mm_flags & FAULT_FLAG_ALLOW_RETRY) {
+ 		if (fault & VM_FAULT_MAJOR) {
+ 			tsk->maj_flt++;
+ 			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, regs,
+@@ -280,7 +274,7 @@ retry:
+ 			 * Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk of
+ 			 * starvation.
+ 			 */
+-			flags &= ~FAULT_FLAG_ALLOW_RETRY;
++			mm_flags &= ~FAULT_FLAG_ALLOW_RETRY;
+ 			goto retry;
+ 		}
+ 	}
 
 
