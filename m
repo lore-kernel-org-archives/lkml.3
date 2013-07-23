@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab3GWJC3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 05:02:29 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:58828 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab3GWJC1 (ORCPT
+	id S1756058Ab3GWJC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 05:02:59 -0400
+Received: from smtp-out-088.synserver.de ([212.40.185.88]:1092 "EHLO
+	smtp-out-088.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754916Ab3GWJCu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 05:02:27 -0400
-Subject: [PATCH 0/3] cpuidle: (powernv) cpuidle driver. 
-To: linuxppc-dev@lists.ozlabs.org
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-Cc: benh@kernel.crashing.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 23 Jul 2013 14:31:22 +0530
-Message-ID: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com>
-User-Agent: StGit/0.16
+	Tue, 23 Jul 2013 05:02:50 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 15694
+Message-ID: <51EE46EA.1020809@metafoo.de>
+Date: Tue, 23 Jul 2013 11:03:38 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@vger.kernel.org
+Subject: Re: [PATCH v3] ARM: kirkwood: extend the kirkwood i2s driver for
+ DT usage
+References: <20130723104615.3696f1a9@armhf> <20130723085346.GQ24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130723085346.GQ24642@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072308-3864-0000-0000-00000935D486
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Following patch series ports the cpuidle framework for powernv
-platform and also implements a cpuidle back-end powernv 
-idle driver calling on to power7_nap and snooze idle states.
+On 07/23/2013 10:53 AM, Russell King - ARM Linux wrote:
+> On Tue, Jul 23, 2013 at 10:46:15AM +0200, Jean-Francois Moine wrote:
+>> The kirkwood i2s driver is used without DT in the Kirkwood machine.
+>> This patch adds a DT compatible definition for use in other Marvell
+>> machines as the Armada 88AP510 (Dove).
+> 
+> Yet again, this illustrates why converting to DT causes backwards
+> steps in drivers: the conversion of devm_clk_get() to of_clk_get()
+> necessitates a clk_put().
 
-Moving the idle states over to cpuidle framework can take advantage 
-of advanced heuristics, tunables and features provided by cpuidle 
-framework. Additional idle states can be exploited using the cpuidle 
-framework. The statistics and tracing infrastructure provided by 
-the cpuidle framework also helps in enabling power management 
-related tools and help tune the system and applications.
+That's just a very poor usage of the API in this patch. devm_clk_get() works
+fine on DT and non-DT platforms. The driver shouldn't need any changes in
+that regard.
 
-This series aims to maintain compatibility and functionality to
-existing powernv idle cpu management code.  There are no new functions
-or idle states added as part of this series. This can be extended by 
-adding more states to this existing framework.
-
-With this patch series the powernv cpuidle functionalities
-are on-par with pSeries idle management.
-
-For POWERNV platform to hook into CPUIDLE framework, one
-needs to enable CONFIG_POWERNV_IDLE and disable
-CONFIG_PSERIES_IDLE 
-
- Deepthi Dharwar (3):
-      cpuidle/powernv: cpuidle backend driver for powernv
-      cpuidle/powernv: Enable idle powernv cpu to call into the cpuidle framework.
-      cpuidle/powernv: Support smt-snooze-delay parameter in powernv idle.
-
-
- arch/powerpc/include/asm/processor.h            |    2 
- arch/powerpc/platforms/powernv/Kconfig          |    9 +
- arch/powerpc/platforms/powernv/Makefile         |    1 
- arch/powerpc/platforms/powernv/powernv.h        |    3 
- arch/powerpc/platforms/powernv/processor_idle.c |  275 +++++++++++++++++++++++
- arch/powerpc/platforms/powernv/setup.c          |   12 +
- 6 files changed, 300 insertions(+), 2 deletions(-)
- create mode 100644 arch/powerpc/platforms/powernv/processor_idle.c
-
-
--- Deepthi
+- Lars
 
