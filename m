@@ -1,186 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933878Ab3GWSan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:30:43 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:51547 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933513Ab3GWSai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:30:38 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: "Serge E. Hallyn" <serge@hallyn.com>,
-        Andy Lutomirski <luto@amacapital.net>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>
-Date: Tue, 23 Jul 2013 11:30:29 -0700
-Message-ID: <877gghruwq.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S933824Ab3GWSbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:31:49 -0400
+Received: from mx1.netapp.com ([216.240.18.38]:23164 "EHLO mx1.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933577Ab3GWSbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:31:48 -0400
+X-IronPort-AV: E=Sophos;i="4.89,729,1367996400"; 
+   d="scan'208,223";a="269733848"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "rydberg@euromail.se" <rydberg@euromail.se>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andre Heider <a.heider@gmail.com>
+Subject: Re: Linux 3.11-rc2
+Thread-Topic: Linux 3.11-rc2
+Thread-Index: AQHOh0Blpp07UcC9oUem7v4bwneG7Zlx67KAgAEg6oA=
+Date: Tue, 23 Jul 2013 18:31:46 +0000
+Message-ID: <1374604305.12943.3.camel@leira.trondhjem.org>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	 <20130723010437.GA570@polaris.bitmath.org>
+	 <1374542261.7972.66.camel@leira.trondhjem.org>
+In-Reply-To: <1374542261.7972.66.camel@leira.trondhjem.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: multipart/mixed;
+	boundary="_002_1374604305129433camelleiratrondhjemorg_"
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+ierHVIHZdLC2ctJn2vMT2JuGgJFfJSB0=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.7 XMSubLong Long Subject
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4999]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [REVIEW][PATCH] vfs: Lock in place mounts from more privileged users
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--_002_1374604305129433camelleiratrondhjemorg_
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <E56FAB8144AD7C49B2F5B12265EF6952@hq.netapp.com>
+Content-Transfer-Encoding: base64
 
-When creating a less privileged mount namespace or propogating mounts
-from a more privileged to a less privileged mount namespace lock the
-submounts so they may not be unmounted individually in the child mount
-namespace revealing what is under them.
+T24gTW9uLCAyMDEzLTA3LTIyIGF0IDIxOjE3IC0wNDAwLCBUcm9uZCBNeWtsZWJ1c3Qgd3JvdGU6
+DQo+IE9uIFR1ZSwgMjAxMy0wNy0yMyBhdCAwMzowNCArMDIwMCwgcnlkYmVyZ0BldXJvbWFpbC5z
+ZSB3cm90ZToNCj4gPiBIaSBUcm9uZCwgTGludXMsDQo+ID4gDQo+ID4gT24gU3VuLCBKdWwgMjEs
+IDIwMTMgYXQgMTI6NTM6MTBQTSAtMDcwMCwgTGludXMgVG9ydmFsZHMgd3JvdGU6DQo+ID4gPiBT
+byBpdCdzIGJlZW4gYW5vdGhlciB3ZWVrLCBhbmQgLXJjMiBpcyBvdXQgdGhlcmUuDQo+ID4gDQo+
+ID4gVGhpcyBvbmUgaGFwcGVucyB0byBicmVhayBuZnMgaW4gYSByYXRoZXIgYmx1bnQtaW5zdHJ1
+bWVudCBmYXNoaW9uIC0NCj4gPiBjcmVhdGluZyBmaWxlcyBvbiBhIG5mczQgcGFydGl0aW9uIFsx
+XSBubyBsb25nZXIgd29ya3MuIEJpc2VjdGlvbg0KPiA+IHlpZWxkcyB0aGlzIGNvbW1pdCBhcyB0
+aGUgY3VscHJpdDoNCj4gPiANCj4gPiBjb21taXQgYjRhMmNmNzZhYjdjMDg2MjhjNjJiMjA2MmRh
+Y2VmYTQ5NmI1OWRmZA0KPiA+IEF1dGhvcjogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1
+c3RAbmV0YXBwLmNvbT4NCj4gPiBEYXRlOiAgIFdlZCBKdWwgMTcgMTY6NDM6MTYgMjAxMyAtMDQw
+MA0KPiA+IA0KPiA+ICAgICBORlN2NDogRml4IGEgcmVncmVzc2lvbiBhZ2FpbnN0IHRoZSBGcmVl
+QlNEIHNlcnZlcg0KPiA+ICAgICANCj4gPiAgICAgVGVjaG5pY2FsbHksIHRoZSBMaW51eCBjbGll
+bnQgaXMgYWxsb3dlZCBieSB0aGUgTkZTdjQgc3BlYyB0byBzZW5kDQo+ID4gICAgIDMgd29yZCBi
+aXRtYXBzIGFzIHBhcnQgb2YgYW4gT1BFTiByZXF1ZXN0LiBIb3dldmVyLCB0aGlzIGNhdXNlcyB0
+aGUNCj4gPiAgICAgY3VycmVudCBGcmVlQlNEIHNlcnZlciB0byByZXR1cm4gTkZTNEVSUl9BVFRS
+Tk9UU1VQUCBlcnJvcnMuDQo+ID4gICAgIA0KPiA+ICAgICBGaXggdGhlIHJlZ3Jlc3Npb24gYnkg
+bWFraW5nIHRoZSBMaW51eCBjbGllbnQgdXNlIGEgMiB3b3JkIGJpdG1hcCB1bmxlc3MNCj4gPiAg
+ICAgZG9pbmcgTkZTdjQuMiB3aXRoIGxhYmVsZWQgTkZTLg0KPiA+ICAgICANCj4gPiAgICAgU2ln
+bmVkLW9mZi1ieTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbT4N
+Cj4gPiANCj4gPiBSZXZlcnRpbmcgdGhlIHBhdGNoIHJldHVybnMgdGhpbmdzIHRvIG5vcm1hbC4N
+Cj4gDQo+IC0gQ2FuIHlvdSBwbGVhc2UgcHJvdmlkZSBtZSB3aXRoIGEgYmluYXJ5IHRjcGR1bXAg
+b3Igd2lyZXNoYXJrIGR1bXAgdGhhdA0KPiBkZW1vbnN0cmF0ZXMgdGhlIHByb2JsZW0/DQo+IA0K
+PiAtIFdoYXQgc2VydmVyIGlzIHRoaXM/DQoNCk9LLiBXaXRoIEFuZHJlJ3MgaGVscCwgSSB0aGlu
+ayB3ZSd2ZSByb290IGNhdXNlZCB0aGUgcHJvYmxlbS4gQ2FuIHlvdQ0KcGxlYXNlIGNvbmZpcm0g
+dGhhdCB0aGUgYXR0YWNoZWQgcGF0Y2ggYWxzbyBzb2x2ZXMgdGhlIGlzc3VlIGZvciB5b3U/DQoN
+Ci0tIA0KVHJvbmQgTXlrbGVidXN0DQpMaW51eCBORlMgY2xpZW50IG1haW50YWluZXINCg0KTmV0
+QXBwDQpUcm9uZC5NeWtsZWJ1c3RAbmV0YXBwLmNvbQ0Kd3d3Lm5ldGFwcC5jb20NCg==
 
-This enforces the reasonable expectation that it is not possible to
-see under a mount point.  Most of the time mounts are on empty
-directories and revealing that does not matter, however I have seen an
-occassionaly sloppy configuration where there were interesting things
-concealed under a mount point that probably should not be revealed.
+--_002_1374604305129433camelleiratrondhjemorg_
+Content-Type: text/x-patch;
+	name="0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch"
+Content-Description: 0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch
+Content-Disposition: attachment;
+	filename="0001-NFSv4-Fix-brainfart-in-attribute-length-calculation.patch";
+	size=1009; creation-date="Tue, 23 Jul 2013 18:31:46 GMT";
+	modification-date="Tue, 23 Jul 2013 18:31:46 GMT"
+Content-ID: <3DC4E422CC246847AEA3E8BB42C595BB@hq.netapp.com>
+Content-Transfer-Encoding: base64
 
-Expirable submounts are not locked because they will eventually
-unmount automatically so whatever is under them already needs
-to be safe for unprivileged users to access.
+RnJvbSAxZjg0ZTRmOWVmOWZjNGZmNTAyYzExMmRmMDQ5ZGZhNmY2NTZmNGUwIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogVHJvbmQgTXlrbGVidXN0IDxUcm9uZC5NeWtsZWJ1c3RAbmV0
+YXBwLmNvbT4NCkRhdGU6IFR1ZSwgMjMgSnVsIDIwMTMgMTI6NTM6MzkgLTA0MDANClN1YmplY3Q6
+IFtQQVRDSF0gTkZTdjQ6IEZpeCBicmFpbmZhcnQgaW4gYXR0cmlidXRlIGxlbmd0aCBjYWxjdWxh
+dGlvbg0KDQpUaGUgY2FsY3VsYXRpb24gb2YgdGhlIGF0dHJpYnV0ZSBsZW5ndGggd2FzIDQgYnl0
+ZXMgb2ZmLg0KDQpTaWduZWQtb2ZmLWJ5OiBUcm9uZCBNeWtsZWJ1c3QgPFRyb25kLk15a2xlYnVz
+dEBuZXRhcHAuY29tPg0KVGVzdGVkLWJ5OiBBbmRyZSBIZWlkZXIgPGEuaGVpZGVyQGdtYWlsLmNv
+bT4NCi0tLQ0KIGZzL25mcy9uZnM0eGRyLmMgfCAyICstDQogMSBmaWxlIGNoYW5nZWQsIDEgaW5z
+ZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pDQoNCmRpZmYgLS1naXQgYS9mcy9uZnMvbmZzNHhkci5j
+IGIvZnMvbmZzL25mczR4ZHIuYw0KaW5kZXggYzc0ZDYxNi4uMzg1MGIwMSAxMDA2NDQNCi0tLSBh
+L2ZzL25mcy9uZnM0eGRyLmMNCisrKyBiL2ZzL25mcy9uZnM0eGRyLmMNCkBAIC0xMTE4LDExICsx
+MTE4LDExIEBAIHN0YXRpYyB2b2lkIGVuY29kZV9hdHRycyhzdHJ1Y3QgeGRyX3N0cmVhbSAqeGRy
+LCBjb25zdCBzdHJ1Y3QgaWF0dHIgKmlhcCwNCiAJCQkJbGVuLCAoKGNoYXIgKilwIC0gKGNoYXIg
+KilxKSArIDQpOw0KIAkJQlVHKCk7DQogCX0NCi0JbGVuID0gKGNoYXIgKilwIC0gKGNoYXIgKilx
+IC0gKGJtdmFsX2xlbiA8PCAyKTsNCiAJKnErKyA9IGh0b25sKGJtdmFsMCk7DQogCSpxKysgPSBo
+dG9ubChibXZhbDEpOw0KIAlpZiAoYm12YWxfbGVuID09IDMpDQogCQkqcSsrID0gaHRvbmwoYm12
+YWwyKTsNCisJbGVuID0gKGNoYXIgKilwIC0gKGNoYXIgKikocSArIDEpOw0KIAkqcSA9IGh0b25s
+KGxlbik7DQogDQogLyogb3V0OiAqLw0KLS0gDQoxLjguMy4xDQoNCg==
 
->From a practical standpoint these restrictions do not appear to be
-significant for unprivileged users of the mount namespace.  Recursive
-bind mounts and pivot_root continues to work, and mounts that are
-created in a mount namespace may be unmounted there.  All of which
-means that the common idiom of keeping a directory of interesting
-files and using pivot_root to throw everything else away continues to
-work just fine.
-
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- fs/namespace.c        |   34 ++++++++++++++++++++++++++++++++++
- include/linux/mount.h |    1 +
- 2 files changed, 35 insertions(+), 0 deletions(-)
-
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7b1ca9b..7e16a73 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -831,6 +831,10 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
- 	if ((flag & CL_UNPRIVILEGED) && (mnt->mnt.mnt_flags & MNT_READONLY))
- 		mnt->mnt.mnt_flags |= MNT_LOCK_READONLY;
- 
-+	/* Don't allow unprivileged users to reveal what is under a mount */
-+	if ((flag & CL_UNPRIVILEGED) && list_empty(&old->mnt_expire))
-+		mnt->mnt.mnt_flags |= MNT_LOCKED;
-+
- 	atomic_inc(&sb->s_active);
- 	mnt->mnt.mnt_sb = sb;
- 	mnt->mnt.mnt_root = dget(root);
-@@ -1327,6 +1331,8 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
- 		goto dput_and_out;
- 	if (!check_mnt(mnt))
- 		goto dput_and_out;
-+	if (mnt->mnt.mnt_flags & MNT_LOCKED)
-+		goto dput_and_out;
- 
- 	retval = do_umount(mnt, flags);
- dput_and_out:
-@@ -1381,6 +1387,7 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
- 	if (IS_ERR(q))
- 		return q;
- 
-+	q->mnt.mnt_flags &= ~MNT_LOCKED;
- 	q->mnt_mountpoint = mnt->mnt_mountpoint;
- 
- 	p = mnt;
-@@ -1696,6 +1703,19 @@ static int do_change_type(struct path *path, int flag)
- 	return err;
- }
- 
-+static bool has_locked_children(struct mount *mnt, struct dentry *dentry)
-+{
-+	struct mount *child;
-+	list_for_each_entry(child, &mnt->mnt_mounts, mnt_child) {
-+		if (!is_subdir(child->mnt_mountpoint, dentry))
-+			continue;
-+
-+		if (child->mnt.mnt_flags & MNT_LOCKED)
-+			return true;
-+	}
-+	return false;
-+}
-+
- /*
-  * do loopback mount.
-  */
-@@ -1731,6 +1751,9 @@ static int do_loopback(struct path *path, const char *old_name,
- 	if (!check_mnt(parent) || !check_mnt(old))
- 		goto out2;
- 
-+	if (!recurse && has_locked_children(old, old_path.dentry))
-+		goto out2;
-+
- 	if (recurse)
- 		mnt = copy_tree(old, old_path.dentry, 0);
- 	else
-@@ -1741,6 +1764,8 @@ static int do_loopback(struct path *path, const char *old_name,
- 		goto out2;
- 	}
- 
-+	mnt->mnt.mnt_flags &= ~MNT_LOCKED;
-+
- 	err = graft_tree(mnt, parent, mp);
- 	if (err) {
- 		br_write_lock(&vfsmount_lock);
-@@ -1853,6 +1878,9 @@ static int do_move_mount(struct path *path, const char *old_name)
- 	if (!check_mnt(p) || !check_mnt(old))
- 		goto out1;
- 
-+	if (old->mnt.mnt_flags & MNT_LOCKED)
-+		goto out1;
-+
- 	err = -EINVAL;
- 	if (old_path.dentry != old_path.mnt->mnt_root)
- 		goto out1;
-@@ -2630,6 +2658,8 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
- 		goto out4;
- 	if (!check_mnt(root_mnt) || !check_mnt(new_mnt))
- 		goto out4;
-+	if (new_mnt->mnt.mnt_flags & MNT_LOCKED)
-+		goto out4;
- 	error = -ENOENT;
- 	if (d_unlinked(new.dentry))
- 		goto out4;
-@@ -2653,6 +2683,10 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
- 	br_write_lock(&vfsmount_lock);
- 	detach_mnt(new_mnt, &parent_path);
- 	detach_mnt(root_mnt, &root_parent);
-+	if (root_mnt->mnt.mnt_flags & MNT_LOCKED) {
-+		new_mnt->mnt.mnt_flags |= MNT_LOCKED;
-+		root_mnt->mnt.mnt_flags &= ~MNT_LOCKED;
-+	}
- 	/* mount old root on put_old */
- 	attach_mnt(root_mnt, old_mnt, old_mp);
- 	/* mount new_root on / */
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 73005f9..38cd98f 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -48,6 +48,7 @@ struct mnt_namespace;
- #define MNT_INTERNAL	0x4000
- 
- #define MNT_LOCK_READONLY	0x400000
-+#define MNT_LOCKED		0x800000
- 
- struct vfsmount {
- 	struct dentry *mnt_root;	/* root of the mounted tree */
--- 
-1.7.5.4
-
+--_002_1374604305129433camelleiratrondhjemorg_--
