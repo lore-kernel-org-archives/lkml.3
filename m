@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755019Ab3GWEZo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 00:25:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:45365 "EHLO ozlabs.org"
+	id S1754840Ab3GWEZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 00:25:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:56510 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753862Ab3GWEZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752512Ab3GWEZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 00:25:40 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: "H. Peter Anvin" <hpa@zytor.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [QUERY] lguest64
-In-Reply-To: <51E97779.3020103@zytor.com>
-References: <CALkWK0n7zedKD4tnxKh-qMuDnMJ5RXjnPJ9EUWT=cCgiokX11A@mail.gmail.com> <51E97779.3020103@zytor.com>
+To: Amit Shah <amit.shah@redhat.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        stable@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH V3 0/2] [BUGFIX] virtio/console: Fix two bugs of splice_write
+In-Reply-To: <20130722063341.GA1806@amit-x200.redhat.com>
+References: <20130722040043.7531.78801.stgit@yunodevel> <20130722063341.GA1806@amit-x200.redhat.com>
 User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 23 Jul 2013 10:58:06 +0930
-Message-ID: <87zjte9iah.fsf@rustcorp.com.au>
+Date: Tue, 23 Jul 2013 11:21:09 +0930
+Message-ID: <87txjm9h82.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"H. Peter Anvin" <hpa@zytor.com> writes:
-> On 07/19/2013 02:06 AM, Ramkumar Ramachandra wrote:
+Amit Shah <amit.shah@redhat.com> writes:
+> On (Mon) 22 Jul 2013 [13:00:43], Yoshihiro YUNOMAE wrote:
 >> Hi,
 >> 
->> I tried building lguest to play with it, but was disappointed to find
->> this in the Kconfig:
+>> This patch set fixes two bugs of splice_write in the virtio-console driver.
 >> 
->>   depends on X86_32
+>> [BUG1] Although pipe->nrbufs is empty, the driver tries to do splice_write.
+>>        => This induces oops in sg_init_table().
 >> 
->> Why is this [1]?  What is so hard about supporting 64-bit machines?  I
->> found a five-year old tree that claims to do lguest64 [2], but didn't
->> investigate further.
+>> [BUG2] No lock for competition of splice_write.
+>>        => This induces oops in splice_from_pipe_feed() by bug of any user
+>>           application.
 >> 
+>> These reports are written in each patch.
+>> 
+>> Changes in V2:
+>> - Fix a locking problem for error
+>> 
+>> Changes in V3:
+>> - Add Reviewed-by lines and stable@ line in sign-off area
 >
-> Please don't have us deal with another lguest unless there is a use case
-> for it.  We want to reduce pvops and pvops users, not increase them...
+> Thank you!
 >
-> 	-hpa
+> Rusty, please pick this up.
 
-Yes, the subset of x86-64 machines for which there isn't hardware
-virtualization support is pretty uninteresting.
+Both applied, thankyou.
 
 Cheers,
 Rusty.
