@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934817Ab3GWWrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:47:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41629 "EHLO
+	id S934854Ab3GWWrc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:47:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41619 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934619Ab3GWW10 (ORCPT
+	with ESMTP id S934613Ab3GWW10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 18:27:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Shane Huang <shane.huang@amd.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, Jean Delvare <khali@linux-fr.org>
-Subject: [ 045/103] i2c-piix4: Add AMD CZ SMBus device ID
-Date: Tue, 23 Jul 2013 15:25:56 -0700
-Message-Id: <20130723220423.601450524@linuxfoundation.org>
+        Mark Langsdorf <mark.langsdorf@calxeda.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 044/103] sata_highbank: increase retry count but shorten duration for Calxeda controller
+Date: Tue, 23 Jul 2013 15:25:55 -0700
+Message-Id: <20130723220423.481440928@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,64 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 
-commit b996ac90f595dda271cbd858b136b45557fc1a57 upstream.
+commit ddfef5de3d716f77bad32dbbba6b280158dfd721 upstream.
 
-To add AMD CZ SMBus controller device ID.
+Increase the retry count for the hard reset function to 100 but
+shorten the time out period to 500 ms. See the comment for
+ahci_highbank_hardreset for the reasons why those vaulues were
+chosen.
 
-[bhelgaas: drop pci_ids.h update]
-Signed-off-by: Shane Huang <shane.huang@amd.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/i2c/busses/i2c-piix4 |    2 +-
- drivers/i2c/busses/Kconfig         |    1 +
- drivers/i2c/busses/i2c-piix4.c     |    3 ++-
- 3 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/ata/sata_highbank.c |   20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
 
---- a/Documentation/i2c/busses/i2c-piix4
-+++ b/Documentation/i2c/busses/i2c-piix4
-@@ -13,7 +13,7 @@ Supported adapters:
-   * AMD SP5100 (SB700 derivative found on some server mainboards)
-     Datasheet: Publicly available at the AMD website
-     http://support.amd.com/us/Embedded_TechDocs/44413.pdf
--  * AMD Hudson-2
-+  * AMD Hudson-2, CZ
-     Datasheet: Not publicly available
-   * Standard Microsystems (SMSC) SLC90E66 (Victory66) southbridge
-     Datasheet: Publicly available at the SMSC website http://www.smsc.com
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -150,6 +150,7 @@ config I2C_PIIX4
- 	    ATI SB700/SP5100
- 	    ATI SB800
- 	    AMD Hudson-2
-+	    AMD CZ
- 	    Serverworks OSB4
- 	    Serverworks CSB5
- 	    Serverworks CSB6
---- a/drivers/i2c/busses/i2c-piix4.c
-+++ b/drivers/i2c/busses/i2c-piix4.c
-@@ -22,7 +22,7 @@
- 	Intel PIIX4, 440MX
- 	Serverworks OSB4, CSB5, CSB6, HT-1000, HT-1100
- 	ATI IXP200, IXP300, IXP400, SB600, SB700/SP5100, SB800
--	AMD Hudson-2
-+	AMD Hudson-2, CZ
- 	SMSC Victory66
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -196,10 +196,26 @@ static int highbank_initialize_phys(stru
+ 	return 0;
+ }
  
-    Note: we assume there can only be one device, with one or more
-@@ -522,6 +522,7 @@ static DEFINE_PCI_DEVICE_TABLE(piix4_ids
- 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_IXP400_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_HUDSON2_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, 0x790b) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
- 		     PCI_DEVICE_ID_SERVERWORKS_OSB4) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_SERVERWORKS,
++/*
++ * The Calxeda SATA phy intermittently fails to bring up a link with Gen3
++ * Retrying the phy hard reset can work around the issue, but the drive
++ * may fail again. In less than 150 out of 15000 test runs, it took more
++ * than 10 tries for the link to be established (but never more than 35).
++ * Triple the maximum observed retry count to provide plenty of margin for
++ * rare events and to guarantee that the link is established.
++ *
++ * Also, the default 2 second time-out on a failed drive is too long in
++ * this situation. The uboot implementation of the same driver function
++ * uses a much shorter time-out period and never experiences a time out
++ * issue. Reducing the time-out to 500ms improves the responsiveness.
++ * The other timing constants were kept the same as the stock AHCI driver.
++ * This change was also tested 15000 times on 24 drives and none of them
++ * experienced a time out.
++ */
+ static int ahci_highbank_hardreset(struct ata_link *link, unsigned int *class,
+ 				unsigned long deadline)
+ {
+-	const unsigned long *timing = sata_ehc_deb_timing(&link->eh_context);
++	static const unsigned long timing[] = { 5, 100, 500};
+ 	struct ata_port *ap = link->ap;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	u8 *d2h_fis = pp->rx_fis + RX_FIS_D2H_REG;
+@@ -207,7 +223,7 @@ static int ahci_highbank_hardreset(struc
+ 	bool online;
+ 	u32 sstatus;
+ 	int rc;
+-	int retry = 10;
++	int retry = 100;
+ 
+ 	ahci_stop_engine(ap);
+ 
 
 
