@@ -1,228 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932942Ab3GWNcG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 09:32:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45402 "EHLO mx1.redhat.com"
+	id S932986Ab3GWNcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 09:32:50 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53326 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932548Ab3GWNcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 09:32:02 -0400
-Date: Tue, 23 Jul 2013 09:31:54 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jeremy Allison <jra@samba.org>, Steve French <smfrench@gmail.com>,
-        linux-cifs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: Recvfile patch used for Samba.
-Message-ID: <20130723093154.4371f346@tlielax.poochiereds.net>
-In-Reply-To: <20130723071027.GJ19986@dastard>
-References: <20130722215738.GB20647@samba2>
-	<20130723071027.GJ19986@dastard>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932548Ab3GWNcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 09:32:48 -0400
+Date: Tue, 23 Jul 2013 15:32:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]Fix boot hang in 3.11-rc1/2 because of bug in AMD errata
+ check
+Message-ID: <20130723133243.GE8497@pd.tnic>
+References: <20130723134829.25251b01@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130723134829.25251b01@googlemail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013 17:10:27 +1000
-Dave Chinner <david@fromorbit.com> wrote:
+Basically this patch looks ok, just a couple of nitpicks/comments.
 
-> On Mon, Jul 22, 2013 at 02:57:38PM -0700, Jeremy Allison wrote:
-> > Hi Steve and Jeff (and others).
-> > 
-> > Here is a patch that Samba vendors have been using
-> > to implement recvfile (copy directly from socket
-> > to file). It can improve write performance on boxes
-> > by a significant amount (10% or more).
-> 
-> Is that all? It's just moving the memcpy() into the kernel?
-> 
-> > I'm not qualified to evaluate this code, can someone
-> > who is (hi there Steve and Jeff :-) take a look at
-> > this and see if it's work shepherding into the kernel ?
-> 
-> It's pretty nasty.
-> 
-> > 
-> > Cheers,
-> > 
-> > 	Jeremy.
-> 
-> > diff -urp linux-2.6.37-rc5.orig/fs/splice.c linux-2.6.37-rc5/fs/splice.c
-> > --- linux-2.6.37-rc5.orig/fs/splice.c	2010-12-06 20:09:04.000000000 -0800
-> > +++ linux-2.6.37-rc5/fs/splice.c	2010-12-07 16:16:48.000000000 -0800
-> > @@ -31,6 +31,7 @@
-> >  #include <linux/uio.h>
-> >  #include <linux/security.h>
-> >  #include <linux/gfp.h>
-> > +#include <net/sock.h>
-> >  
-> >  /*
-> >   * Attempt to steal a page from a pipe buffer. This should perhaps go into
-> > @@ -1387,6 +1388,141 @@ static long do_splice(struct file *in, l
-> >  	return -EINVAL;
-> >  }
-> >  
-> > +static ssize_t do_splice_from_socket(struct file *file, struct socket *sock,
-> > +				     loff_t __user *ppos, size_t count)
-> > +{		
-> > +	struct address_space *mapping = file->f_mapping;
-> > +	struct inode	*inode = mapping->host;
-> > +	loff_t pos;
-> > +	int count_tmp;
-> > +	int err = 0;
-> > +	int cPagePtr = 0;		
-> > +	int cPagesAllocated = 0;
-> 
-> camel case.
-> 
-> > +	struct recvfile_ctl_blk rv_cb[MAX_PAGES_PER_RECVFILE];
-> 
-> MAX_PAGES_PER_RECVFILE = 32, and the structure is 32 bytes on 64
-> bit. So 1k of stack usage right there. Bad.
-> 
-> > +	struct kvec iov[MAX_PAGES_PER_RECVFILE];
-> 
-> And that's another 512 bytes of stack. Way too much.
-> 
-> > +	struct msghdr msg;
-> 
-> Another ~52 bytes of stack.
-> 
-> > +	long rcvtimeo;
-> > +	int ret;
-> > +
-> > +	if(copy_from_user(&pos, ppos, sizeof(loff_t)))
-> > +		return -EFAULT;
-> > +
-> > +	if(count > MAX_PAGES_PER_RECVFILE * PAGE_SIZE) {
-> > +		printk("%s: count(%u) exceeds maxinum\n", __func__, count);
-> > +		return -EINVAL;
-> > +	}    
-> > +	mutex_lock(&inode->i_mutex);
-> 
-> Locking on write needs to be passed to filesystems, not done by
-> generic code. i.e. this isn't sufficient for XFS, and may also be
-> problematic for btrfs.
-> 
-> > +
-> > +	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> 
-> That doesn't exist anymore - it was removed over a year ago....
-> 
-> > +
-> > +	/* We can write back this queue in page reclaim */
-> > +	current->backing_dev_info = mapping->backing_dev_info;
-> > +
-> > +	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
-> > +	if (err != 0 || count == 0)
-> > +		goto done;
-> > +
-> > +	file_remove_suid(file);
-> > +	file_update_time(file);	
-> 
-> error checking?
-> 
-> > +
-> > +	count_tmp = count;
-> > +	do {
-> > +		unsigned long bytes;	/* Bytes to write to page */
-> > +		unsigned long offset;	/* Offset into pagecache page */
-> > +		struct page *pageP;
-> 
-> camel case
-> 
-> > +		void *fsdata;
-> > +
-> > +		offset = (pos & (PAGE_CACHE_SIZE - 1));
-> > +		bytes = PAGE_CACHE_SIZE - offset;
-> > +		if (bytes > count_tmp)
-> > +			bytes = count_tmp;
-> > +		ret = mapping->a_ops->write_begin(file, mapping, pos, bytes,
-> > +						  AOP_FLAG_UNINTERRUPTIBLE,
-> > +						  &pageP, &fsdata);
-> > +
-> > +		if (unlikely(ret)) {
-> > +			err = ret;
-> > +			for(cPagePtr = 0; cPagePtr < cPagesAllocated; cPagePtr++) {
-> > +				kunmap(rv_cb[cPagePtr].rv_page);
-> > +				ret = mapping->a_ops->write_end(file, mapping,
-> > +								rv_cb[cPagePtr].rv_pos,
-> > +								rv_cb[cPagePtr].rv_count,
-> > +								rv_cb[cPagePtr].rv_count,
-> > +								rv_cb[cPagePtr].rv_page,
-> > +								rv_cb[cPagePtr].rv_fsdata);
-> > +			}
-> > +			goto done;
-> > +		}
-> > +		rv_cb[cPagesAllocated].rv_page = pageP;
-> > +		rv_cb[cPagesAllocated].rv_pos = pos;
-> > +		rv_cb[cPagesAllocated].rv_count = bytes;
-> > +		rv_cb[cPagesAllocated].rv_fsdata = fsdata;
-> > +		iov[cPagesAllocated].iov_base = kmap(pageP) + offset;
-> > +		iov[cPagesAllocated].iov_len = bytes;
-> > +		cPagesAllocated++;
-> > +		count_tmp -= bytes;
-> > +		pos += bytes;
-> > +	} while (count_tmp);
-> 
-> So, we are nesting up to 32 page locks here. That's bad. And we are
-> nesting kmap() calls for all the pages individually - is that even
-> safe to do?
-> 
+Please change the subject to something more meaningful like
 
-You can do it, but if you run out of kmap space, it'll hang and you'll
-be screwed. Wouldn't take much either -- just a few of these calls
-running in parallel would be enough to deadlock all of them.
+"x86, AMD: Make cpu_has_amd_erratum use currect cpuinfo descriptor" or
+so.
 
-> So, what happens when we've got 16 pages in, and the filesystem has
-> allocated space for those 16 blocks, and we get ENOSPC on the 17th?
-> Sure, you undo the state here, but what about the 16 blocks that the
-> filesystem has allocated to this file? There's no notification to
-> the filesystem that they need to be truncated away because the write
-> failed....
+On Tue, Jul 23, 2013 at 01:48:29PM +0200, Torsten Kaiser wrote:
+> cpu_has_amd_erratum() is buggy, because it uses the per-cpu cpu_info
+> before it is filled by smp_store_boot_cpu_info() / smp_store_cpu_info().
 > 
-> > +
-> > +	/* IOV is ready, receive the date from socket now */
-> > +	msg.msg_name = NULL;
-> > +	msg.msg_namelen = 0;
-> > +	msg.msg_iov = (struct iovec *)&iov[0];
-> > +	msg.msg_iovlen = cPagesAllocated ;
-> > +	msg.msg_control = NULL;
-> > +	msg.msg_controllen = 0;
-> > +	msg.msg_flags = MSG_KERNSPACE;
-> > +	rcvtimeo = sock->sk->sk_rcvtimeo;    
-> > +	sock->sk->sk_rcvtimeo = 8 * HZ;
+> If early microcode loading is enabled its collect_cpu_info_amd_early() will
+> fill ->x86 and so the fallback to boot_cpu_data is not used.
+> But ->x86_vendor was not filled and is still 0 == X86_VENDOR_INTEL resulting in 
+> no errata fixes getting applied and my system hangs on boot.
 > 
-> We can hold the inode and the pages locked for 8 seconds?
+> Using cpu_info in cpu_has_amd_erratum() is wrong anyway: Its only caller
+> init_amd() will have a struct cpuinfo_x86 as parameter and the set_cpu_bug()
+> that is controlled by cpu_has_amd_erratum() also only uses that struct.
 > 
-> I'll stop there. This is fundamentally broken. It's an attempt to do
-> a multi-page write operation without any of the supporting
-> structures needed to handle the failure cases properly.  The nested
-> page locking has "deadlock" written all over it, and the lack of
-> partial failure handling shouts "data corruption" and "stale data
-> exposure" to me. The fact it can block for up to 8 seconds waiting
-> for network shenanigans to be completed while holding lots of locks
-> is going to cause all sorts of problems under memory pressure.
+> So pass the struct cpuinfo_x86 from init_amd() to cpu_has_amd_erratum() and
+> the broken fallback can be dropped.
 > 
-> Not to mention it means that all memory allocations in the msgrcv
-> path need to be done with GFP_NOFS, because GFP_KERNEL allocations
-> are almost guaranteed to deadlock on the locked pages this path
-> already holds....
-> 
+> I also turned the vendor check into an BUG_ON() because init_amd() can only
+> be used by AMD CPUs and if the current failure hadn't been silent this bug
+> would have been much more obvious.
 
-Yep, pretty broken.
+BUG_ON is kinda heavy-handed here, a WARN_ON should be fine.
 
-A better approach might be to hook this call up to the sk_write_space
-callback on the socket. Have it block until there is something to
-actually be read, and then do the loop over the pages one at a time at
-that point until all of the ready data is read (non-blocking) into the
-pages. When you run out of data, unlock everything and go back to
-blocking until there is more or until you hit the "len" passed into the
-syscall.
+Other than that, I like the commit message: it explains the whole deal
+in a very detailed manner and I'd wish more commit messages on lkml
+would be like that. Good job!
 
-Locking and error handling with that approach would still be pretty
-tricky, however...
+> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> 
+> --- a/arch/x86/kernel/cpu/amd.c	2013-07-22 06:33:10.027931005 +0200
+> +++ b/arch/x86/kernel/cpu/amd.c	2013-07-22 06:35:15.757931265 +0200
+> @@ -512,7 +512,7 @@ static void early_init_amd(struct cpuinf
+>  
+>  static const int amd_erratum_383[];
+>  static const int amd_erratum_400[];
+> -static bool cpu_has_amd_erratum(const int *erratum);
+> +static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum);
+>  
+>  static void init_amd(struct cpuinfo_x86 *c)
+>  {
+> @@ -729,11 +729,11 @@ static void init_amd(struct cpuinfo_x86
+>  		value &= ~(1ULL << 24);
+>  		wrmsrl_safe(MSR_AMD64_BU_CFG2, value);
+>  
+> -		if (cpu_has_amd_erratum(amd_erratum_383))
+> +		if (cpu_has_amd_erratum(c, amd_erratum_383))
+>  			set_cpu_bug(c, X86_BUG_AMD_TLB_MMATCH);
+>  	}
+>  
+> -	if (cpu_has_amd_erratum(amd_erratum_400))
+> +	if (cpu_has_amd_erratum(c, amd_erratum_400))
+>  		set_cpu_bug(c, X86_BUG_AMD_APIC_C1E);
+>  
+>  	rdmsr_safe(MSR_AMD64_PATCH_LEVEL, &c->microcode, &dummy);
+> @@ -878,22 +878,15 @@ static const int amd_erratum_400[] =
+>  static const int amd_erratum_383[] =
+>  	AMD_OSVW_ERRATUM(3, AMD_MODEL_RANGE(0x10, 0, 0, 0xff, 0xf));
+>  
+> -static bool cpu_has_amd_erratum(const int *erratum)
+> +
+> +static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
+>  {
+> -	struct cpuinfo_x86 *cpu = __this_cpu_ptr(&cpu_info);
+>  	int osvw_id = *erratum++;
+>  	u32 range;
+>  	u32 ms;
+>  
+> -	/*
+> -	 * If called early enough that current_cpu_data hasn't been initialized
+> -	 * yet, fall back to boot_cpu_data.
+> -	 */
+> -	if (cpu->x86 == 0)
+> -		cpu = &boot_cpu_data;
+> -
+> -	if (cpu->x86_vendor != X86_VENDOR_AMD)
+> -		return false;
+> +	/* Should never be called on non-AMD-CPUs */
+> +	BUG_ON(cpu->x86_vendor != X86_VENDOR_AMD);
+>  
+>  	if (osvw_id >= 0 && osvw_id < 65536 &&
+>  	    cpu_has(cpu, X86_FEATURE_OSVW)) {
+> 
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
