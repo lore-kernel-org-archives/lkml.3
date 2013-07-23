@@ -1,207 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab3GWCXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 22:23:12 -0400
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:63401 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab3GWCXK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 22:23:10 -0400
-Message-ID: <51EDE903.6010608@ozlabs.ru>
-Date: Tue, 23 Jul 2013 12:22:59 +1000
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130514 Thunderbird/17.0.6
-MIME-Version: 1.0
+	id S1754423Ab3GWCX5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 22:23:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753333Ab3GWCXz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Jul 2013 22:23:55 -0400
+Message-ID: <1374546224.15429.8.camel@ul30vt.home>
+Subject: Re: [PATCH 03/10] vfio: add external user support
+From: Alex Williamson <alex.williamson@redhat.com>
 To: Alexey Kardashevskiy <aik@ozlabs.ru>
-CC: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH 04/10] powerpc: Prepare to support kernel handling of
- IOMMU map/unmap
-References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru> <1373936045-22653-5-git-send-email-aik@ozlabs.ru>
-In-Reply-To: <1373936045-22653-5-git-send-email-aik@ozlabs.ru>
-Content-Type: text/plain; charset=KOI8-R
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm-ppc@vger.kernel.org
+Date: Mon, 22 Jul 2013 20:23:44 -0600
+In-Reply-To: <1373936045-22653-4-git-send-email-aik@ozlabs.ru>
+References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
+	 <1373936045-22653-4-git-send-email-aik@ozlabs.ru>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping, anyone, please?
-
-Ben needs ack from any of MM people before proceeding with this patch. Thanks!
-
-
-On 07/16/2013 10:53 AM, Alexey Kardashevskiy wrote:
-> The current VFIO-on-POWER implementation supports only user mode
-> driven mapping, i.e. QEMU is sending requests to map/unmap pages.
-> However this approach is really slow, so we want to move that to KVM.
-> Since H_PUT_TCE can be extremely performance sensitive (especially with
-> network adapters where each packet needs to be mapped/unmapped) we chose
-> to implement that as a "fast" hypercall directly in "real
-> mode" (processor still in the guest context but MMU off).
+On Tue, 2013-07-16 at 10:53 +1000, Alexey Kardashevskiy wrote:
+> VFIO is designed to be used via ioctls on file descriptors
+> returned by VFIO.
 > 
-> To be able to do that, we need to provide some facilities to
-> access the struct page count within that real mode environment as things
-> like the sparsemem vmemmap mappings aren't accessible.
+> However in some situations support for an external user is required.
+> The first user is KVM on PPC64 (SPAPR TCE protocol) which is going to
+> use the existing VFIO groups for exclusive access in real/virtual mode
+> on a host to avoid passing map/unmap requests to the user space which
+> would made things pretty slow.
 > 
-> This adds an API to increment/decrement page counter as
-> get_user_pages API used for user mode mapping does not work
-> in the real mode.
+> The protocol includes:
 > 
-> CONFIG_SPARSEMEM_VMEMMAP and CONFIG_FLATMEM are supported.
+> 1. do normal VFIO init operation:
+> 	- opening a new container;
+> 	- attaching group(s) to it;
+> 	- setting an IOMMU driver for a container.
+> When IOMMU is set for a container, all groups in it are
+> considered ready to use by an external user.
 > 
-> Cc: linux-mm@kvack.org
-> Reviewed-by: Paul Mackerras <paulus@samba.org>
-> Signed-off-by: Paul Mackerras <paulus@samba.org>
+> 2. User space passes a group fd to an external user.
+> The external user calls vfio_group_get_external_user()
+> to verify that:
+> 	- the group is initialized;
+> 	- IOMMU is set for it.
+> If both checks passed, vfio_group_get_external_user()
+> increments the container user counter to prevent
+> the VFIO group from disposal before KVM exits.
+> 
+> 3. The external user calls vfio_external_user_iommu_id()
+> to know an IOMMU ID. PPC64 KVM uses it to link logical bus
+> number (LIOBN) with IOMMU ID.
+> 
+> 4. When the external KVM finishes, it calls
+> vfio_group_put_external_user() to release the VFIO group.
+> This call decrements the container user counter.
+> Everything gets released.
+> 
+> The "vfio: Limit group opens" patch is also required for the consistency.
+> 
 > Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
-> 
+
+This looks fine to me.  Is the plan to add this through the ppc tree
+again?  Thanks,
+
+Alex
+
 > ---
-> 
 > Changes:
-> 2013/07/10:
-> * adjusted comment (removed sentence about virtual mode)
-> * get_page_unless_zero replaced with atomic_inc_not_zero to minimize
-> effect of a possible get_page_unless_zero() rework (if it ever happens).
-> 
-> 2013/06/27:
-> * realmode_get_page() fixed to use get_page_unless_zero(). If failed,
-> the call will be passed from real to virtual mode and safely handled.
-> * added comment to PageCompound() in include/linux/page-flags.h.
-> 
-> 2013/05/20:
-> * PageTail() is replaced by PageCompound() in order to have the same checks
-> for whether the page is huge in realmode_get_page() and realmode_put_page()
+> 2013/07/11:
+> * added vfio_group_get()/vfio_group_put()
+> * protocol description changed
 > 
 > Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
 > ---
->  arch/powerpc/include/asm/pgtable-ppc64.h |  4 ++
->  arch/powerpc/mm/init_64.c                | 76 +++++++++++++++++++++++++++++++-
->  include/linux/page-flags.h               |  4 +-
->  3 files changed, 82 insertions(+), 2 deletions(-)
+>  drivers/vfio/vfio.c  | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/vfio.h |  7 ++++++
+>  2 files changed, 69 insertions(+)
 > 
-> diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
-> index 46db094..aa7b169 100644
-> --- a/arch/powerpc/include/asm/pgtable-ppc64.h
-> +++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-> @@ -394,6 +394,10 @@ static inline void mark_hpte_slot_valid(unsigned char *hpte_slot_array,
->  	hpte_slot_array[index] = hidx << 4 | 0x1 << 3;
->  }
+> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+> index c488da5..58b034b 100644
+> --- a/drivers/vfio/vfio.c
+> +++ b/drivers/vfio/vfio.c
+> @@ -1370,6 +1370,68 @@ static const struct file_operations vfio_device_fops = {
+>  };
 >  
-> +struct page *realmode_pfn_to_page(unsigned long pfn);
-> +int realmode_get_page(struct page *page);
-> +int realmode_put_page(struct page *page);
-> +
->  static inline char *get_hpte_slot_array(pmd_t *pmdp)
->  {
->  	/*
-> diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-> index d0cd9e4..dcbb806 100644
-> --- a/arch/powerpc/mm/init_64.c
-> +++ b/arch/powerpc/mm/init_64.c
-> @@ -300,5 +300,79 @@ void vmemmap_free(unsigned long start, unsigned long end)
->  {
->  }
->  
-> -#endif /* CONFIG_SPARSEMEM_VMEMMAP */
-> +/*
-> + * We do not have access to the sparsemem vmemmap, so we fallback to
-> + * walking the list of sparsemem blocks which we already maintain for
-> + * the sake of crashdump. In the long run, we might want to maintain
-> + * a tree if performance of that linear walk becomes a problem.
+>  /**
+> + * External user API, exported by symbols to be linked dynamically.
 > + *
-> + * Any of realmode_XXXX functions can fail due to:
-> + * 1) As real sparsemem blocks do not lay in RAM continously (they
-> + * are in virtual address space which is not available in the real mode),
-> + * the requested page struct can be split between blocks so get_page/put_page
-> + * may fail.
-> + * 2) When huge pages are used, the get_page/put_page API will fail
-> + * in real mode as the linked addresses in the page struct are virtual
-> + * too.
+> + * The protocol includes:
+> + *  1. do normal VFIO init operation:
+> + *	- opening a new container;
+> + *	- attaching group(s) to it;
+> + *	- setting an IOMMU driver for a container.
+> + * When IOMMU is set for a container, all groups in it are
+> + * considered ready to use by an external user.
+> + *
+> + * 2. User space passes a group fd to an external user.
+> + * The external user calls vfio_group_get_external_user()
+> + * to verify that:
+> + *	- the group is initialized;
+> + *	- IOMMU is set for it.
+> + * If both checks passed, vfio_group_get_external_user()
+> + * increments the container user counter to prevent
+> + * the VFIO group from disposal before KVM exits.
+> + *
+> + * 3. The external user calls vfio_external_user_iommu_id()
+> + * to know an IOMMU ID.
+> + *
+> + * 4. When the external KVM finishes, it calls
+> + * vfio_group_put_external_user() to release the VFIO group.
+> + * This call decrements the container user counter.
 > + */
-> +struct page *realmode_pfn_to_page(unsigned long pfn)
+> +struct vfio_group *vfio_group_get_external_user(struct file *filep)
 > +{
-> +	struct vmemmap_backing *vmem_back;
-> +	struct page *page;
-> +	unsigned long page_size = 1 << mmu_psize_defs[mmu_vmemmap_psize].shift;
-> +	unsigned long pg_va = (unsigned long) pfn_to_page(pfn);
->  
-> +	for (vmem_back = vmemmap_list; vmem_back; vmem_back = vmem_back->list) {
-> +		if (pg_va < vmem_back->virt_addr)
-> +			continue;
+> +	struct vfio_group *group = filep->private_data;
 > +
-> +		/* Check that page struct is not split between real pages */
-> +		if ((pg_va + sizeof(struct page)) >
-> +				(vmem_back->virt_addr + page_size))
-> +			return NULL;
+> +	if (filep->f_op != &vfio_group_fops)
+> +		return ERR_PTR(-EINVAL);
 > +
-> +		page = (struct page *) (vmem_back->phys + pg_va -
-> +				vmem_back->virt_addr);
-> +		return page;
+> +	if (!atomic_inc_not_zero(&group->container_users))
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	if (!group->container->iommu_driver ||
+> +			!vfio_group_viable(group)) {
+> +		atomic_dec(&group->container_users);
+> +		return ERR_PTR(-EINVAL);
 > +	}
 > +
-> +	return NULL;
+> +	vfio_group_get(group);
+> +
+> +	return group;
 > +}
-> +EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
+> +EXPORT_SYMBOL_GPL(vfio_group_get_external_user);
 > +
-> +#elif defined(CONFIG_FLATMEM)
-> +
-> +struct page *realmode_pfn_to_page(unsigned long pfn)
+> +void vfio_group_put_external_user(struct vfio_group *group)
 > +{
-> +	struct page *page = pfn_to_page(pfn);
-> +	return page;
+> +	vfio_group_put(group);
+> +	vfio_group_try_dissolve_container(group);
 > +}
-> +EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
+> +EXPORT_SYMBOL_GPL(vfio_group_put_external_user);
 > +
-> +#endif /* CONFIG_SPARSEMEM_VMEMMAP/CONFIG_FLATMEM */
-> +
-> +#if defined(CONFIG_SPARSEMEM_VMEMMAP) || defined(CONFIG_FLATMEM)
-> +int realmode_get_page(struct page *page)
+> +int vfio_external_user_iommu_id(struct vfio_group *group)
 > +{
-> +	if (PageCompound(page))
-> +		return -EAGAIN;
-> +
-> +	if (!atomic_inc_not_zero(&page->_count))
-> +		return -EAGAIN;
-> +
-> +	return 0;
+> +	return iommu_group_id(group->iommu_group);
 > +}
-> +EXPORT_SYMBOL_GPL(realmode_get_page);
+> +EXPORT_SYMBOL_GPL(vfio_external_user_iommu_id);
 > +
-> +int realmode_put_page(struct page *page)
-> +{
-> +	if (PageCompound(page))
-> +		return -EAGAIN;
-> +
-> +	if (!atomic_add_unless(&page->_count, -1, 1))
-> +		return -EAGAIN;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL_GPL(realmode_put_page);
-> +#endif
-> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-> index 6d53675..98ada58 100644
-> --- a/include/linux/page-flags.h
-> +++ b/include/linux/page-flags.h
-> @@ -329,7 +329,9 @@ static inline void set_page_writeback(struct page *page)
->   * System with lots of page flags available. This allows separate
->   * flags for PageHead() and PageTail() checks of compound pages so that bit
->   * tests can be used in performance sensitive paths. PageCompound is
-> - * generally not used in hot code paths.
-> + * generally not used in hot code paths except arch/powerpc/mm/init_64.c
-> + * and arch/powerpc/kvm/book3s_64_vio_hv.c which use it to detect huge pages
-> + * and avoid handling those in real mode.
+> +/**
+>   * Module/class support
 >   */
->  __PAGEFLAG(Head, head) CLEARPAGEFLAG(Head, head)
->  __PAGEFLAG(Tail, tail)
-> 
+>  static char *vfio_devnode(struct device *dev, umode_t *mode)
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index ac8d488..24579a0 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -90,4 +90,11 @@ extern void vfio_unregister_iommu_driver(
+>  	TYPE tmp;						\
+>  	offsetof(TYPE, MEMBER) + sizeof(tmp.MEMBER); })		\
+>  
+> +/*
+> + * External user API
+> + */
+> +extern struct vfio_group *vfio_group_get_external_user(struct file *filep);
+> +extern void vfio_group_put_external_user(struct vfio_group *group);
+> +extern int vfio_external_user_iommu_id(struct vfio_group *group);
+> +
+>  #endif /* VFIO_H */
 
 
--- 
-Alexey
+
