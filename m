@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934042Ab3GWTP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:15:56 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48151 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933819Ab3GWTPz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:15:55 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <8638rt3svt.fsf@void.printf.net>
-References: <201307051751.20729.arnd@arndb.de>
-	<8638rt3svt.fsf@void.printf.net>
-Date: Tue, 23 Jul 2013 12:15:54 -0700
-Message-ID: <CAOesGMiVzH7qyu_tBpKV5PTHBvvwE9E6Q9f39ENfVOO-6wY3+w@mail.gmail.com>
-Subject: Re: [PATCH] ARM: pxa: propagate errors from regulator_enable() to pxamci
-From: Olof Johansson <olof@lixom.net>
-To: Chris Ball <cjb@laptop.org>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S934075Ab3GWTQE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:16:04 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:56846 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933819Ab3GWTQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 15:16:00 -0400
+Message-ID: <1374606958.10171.2.camel@joe-AO722>
+Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
+From: Joe Perches <joe@perches.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
+        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
+        mina86@mina86.com, gong.chen@linux.intel.com,
+        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
+        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
+        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-acpi@vger.kernel.org
+Date: Tue, 23 Jul 2013 12:15:58 -0700
+In-Reply-To: <20130723184843.GG21100@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+	 <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
+	 <20130723184843.GG21100@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 5, 2013 at 8:53 AM, Chris Ball <cjb@laptop.org> wrote:
-> Hi,
->
-> On Fri, Jul 05 2013, Arnd Bergmann wrote:
->> The em_x270_mci_setpower() and em_x270_usb_hub_init() functions
->> call regulator_enable(), which may return an error that must
->> be checked.
->>
->> This changes the em_x270_usb_hub_init() function to bail out
->> if it fails, and changes the pxamci_platform_data->setpower
->> callback so that the a failed em_x270_mci_setpower call
->> can be propagated by the pxamci driver into the mmc core.
->>
->> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
->
-> For pxamci:
->
-> Acked-by: Chris Ball <cjb@laptop.org>
+On Tue, 2013-07-23 at 14:48 -0400, Tejun Heo wrote:
+> On Fri, Jul 19, 2013 at 03:59:14PM +0800, Tang Chen wrote:
+> > The Hot-Pluggable field in SRAT suggests if the memory could be
+> > hotplugged while the system is running. Print it as well when
+> > parsing SRAT will help users to know which memory is hotpluggable.
+[]
+> a nit below
+> 
+> > +	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+> > +		node, pxm,
+> > +		(unsigned long long) start, (unsigned long long) end - 1,
+> > +		hotpluggable ? "Hot Pluggable" : "");
+> 
+> The following would be more conventional.
+> 
+>   "...10Lx]%s\n", ..., hotpluggable ? " Hot Pluggable" : ""
+> 
+> Also, isn't "Hot Pluggable" a bit too verbose?  "hotplug" should be
+> fine, I think.
 
-Applied with your ack to arm-soc fixes branch for 3.11, after fixing
-the set/test ordering pointed out in the thread.
+It's also a tiny nit better to use:
 
-Thanks!
+	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]%s\n",
+		node, pxm,
+		(unsigned long long) start, (unsigned long long) end - 1,
+		hotpluggable ? " Hot Pluggable" : "");
 
--Olof
+(or " hotplug")
+
+so there's no space before newline.
+
