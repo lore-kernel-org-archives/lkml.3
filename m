@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934825Ab3GWW1v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:27:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41793 "EHLO
+	id S935206Ab3GWWgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:36:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41819 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934717Ab3GWW1q (ORCPT
+	with ESMTP id S934811Ab3GWW1u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:46 -0400
+	Tue, 23 Jul 2013 18:27:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sven Geggus <lists@fuchsschwanzdomain.de>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 074/103] svcrpc: fix failures to handle -1 uids
-Date: Tue, 23 Jul 2013 15:26:25 -0700
-Message-Id: <20130723220427.948126757@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 080/103] drm/i915: Only clear write-domains after a successful wait-seqno
+Date: Tue, 23 Jul 2013 15:26:31 -0700
+Message-Id: <20130723220429.196416052@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,41 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 0979292bfa301cb87d936b69af428090d2feea1b upstream.
+commit daa13e1ca587bc773c1aae415ed1af6554117bd4 upstream.
 
-As of f025adf191924e3a75ce80e130afcd2485b53bb8 "sunrpc: Properly decode
-kuids and kgids in RPC_AUTH_UNIX credentials" any rpc containing a -1
-(0xffff) uid or gid would fail with a badcred error.
+In the introduction of the non-blocking wait, I cut'n'pasted the wait
+completion code from normal locked path. Unfortunately, this neglected
+that the normal path returned early if the wait returned early. The
+result is that read-only waits may return whilst the GPU is still
+writing to the bo.
 
-Commit afe3c3fd5392b2f0066930abc5dbd3f4b14a0f13 "svcrpc: fix failures to
-handle -1 uid's and gid's" fixed part of the problem, but overlooked the
-gid upcall--the kernel can request supplementary gid's for the -1 uid,
-but mountd's attempt write a response will get -EINVAL.
+Fixes regression from
+commit 3236f57a0162391f84b93f39fc1882c49a8998c7 [v3.7]
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Aug 24 09:35:09 2012 +0100
 
-Symptoms were nfsd failing to reply to the first attempt to use a newly
-negotiated krb5 context.
+    drm/i915: Use a non-blocking wait for set-to-domain ioctl
 
-Reported-by: Sven Geggus <lists@fuchsschwanzdomain.de>
-Tested-by: Sven Geggus <lists@fuchsschwanzdomain.de>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66163
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/svcauth_unix.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -493,8 +493,6 @@ static int unix_gid_parse(struct cache_d
- 	if (rv)
- 		return -EINVAL;
- 	uid = make_kuid(&init_user_ns, id);
--	if (!uid_valid(uid))
--		return -EINVAL;
- 	ug.uid = uid;
- 
- 	expiry = get_expiry(&mesg);
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1160,7 +1160,8 @@ i915_gem_object_wait_rendering__nonblock
+ 	/* Manually manage the write flush as we may have not yet
+ 	 * retired the buffer.
+ 	 */
+-	if (obj->last_write_seqno &&
++	if (ret == 0 &&
++	    obj->last_write_seqno &&
+ 	    i915_seqno_passed(seqno, obj->last_write_seqno)) {
+ 		obj->last_write_seqno = 0;
+ 		obj->base.write_domain &= ~I915_GEM_GPU_DOMAINS;
 
 
