@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933850Ab3GWSAU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:00:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37381 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933793Ab3GWR77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 13:59:59 -0400
-Date: Tue, 23 Jul 2013 11:01:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Tomasz Figa <t.figa@samsung.com>, Kishon Vijay Abraham I <kishon@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        arnd@arndb.de, swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Message-ID: <20130723180110.GA8688@kroah.com>
-References: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
- <51EE9EC0.6060905@ti.com>
- <20130723161846.GD2486@kroah.com>
- <1446965.6APW5ZgLBW@amdc1227>
- <20130723173710.GB28284@kroah.com>
- <20130723174456.GM9858@sirena.org.uk>
+	id S933822Ab3GWSAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:00:18 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:49519 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933598Ab3GWSAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:00:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,729,1367971200"; 
+   d="scan'208";a="38784470"
+Message-ID: <1374602409.6623.138.camel@hastur.hellion.org.uk>
+Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out
+ pages
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: <xen-devel@lists.xensource.com>, <konrad.wilk@oracle.com>,
+        <alex@alex.org.uk>, <dcrisan@flexiant.com>,
+        <linux-kernel@vger.kernel.org>
+Date: Tue, 23 Jul 2013 19:00:09 +0100
+In-Reply-To: <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
+	 <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723174456.GM9858@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:44:56PM +0100, Mark Brown wrote:
-> On Tue, Jul 23, 2013 at 10:37:11AM -0700, Greg KH wrote:
-> > On Tue, Jul 23, 2013 at 06:50:29PM +0200, Tomasz Figa wrote:
-> 
-> > > I fully agree that a simple, single string will not scale even in some, not 
-> > > so uncommon cases, but there is already a lot of existing lookup solutions 
-> > > over the kernel and so there is no point in introducing another one.
-> 
-> > I'm trying to get _rid_ of lookup "solutions" and just use a real
-> > pointer, as you should.  I'll go tackle those other ones after this one
-> > is taken care of, to show how the others should be handled as well.
-> 
-> What are the problems you are seeing with doing things with lookups?
+On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
+> +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
+> +				    unsigned long action, void *hcpu)
+> +{
+> +	int cpu = (long)hcpu;
+> +	switch (action) {
+> +	case CPU_UP_PREPARE:
+> +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
+> +			break;
 
-You don't "know" the id of the device you are looking up, due to
-multiple devices being in the system (dynamic ids, look back earlier in
-this thread for details about that.)
+Thinking about this a bit more -- do we know what happens to the per-cpu
+area for a CPU which is unplugged and then reintroduced? Is it preserved
+or is it reset?
 
-> Having to write platform data for everything gets old fast and the code
-> duplication is pretty tedious...
+If it is reset then this gets more complicated :-( We might be able to
+use the core mm page reference count, so that when the last reference is
+removed the page is automatically reclaimed. We can obviously take a
+reference whenever we add a mapping of the trade page, but I'm not sure
+we are always on the path which removes such mappings... Even then you
+could waste pages for some potentially large amount of time each time
+you replug a VCPU.
 
-Adding a single pointer is "tedious"?  Where is the "name" that you are
-going to lookup going to come from?  That code doesn't write itself...
+Urg, I really hope the per-cpu area is preserved!
 
-thanks,
+Ian.
 
-greg k-h
