@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934484Ab3GWX4M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 19:56:12 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37941 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934085Ab3GWX4K (ORCPT
+	id S934489Ab3GWX46 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 19:56:58 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:41684 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934085Ab3GWX44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 19:56:10 -0400
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <20130723234040.GB27761@codeaurora.org>
-References: <20130625200211.GA11625@codeaurora.org>
-	<CAOesGMj5AZcB7-kcS8_JqfKAg_RUKqTdDZf7bdwkebn3pwADAw@mail.gmail.com>
-	<20130723234040.GB27761@codeaurora.org>
-Date: Tue, 23 Jul 2013 16:56:09 -0700
-Message-ID: <CAOesGMiornt0twdQv=tYMtAX56Lc79MVyNrHaK1nWpOk189dDA@mail.gmail.com>
-Subject: Re: [GIT PULL] Remove ARM local timer API
-From: Olof Johansson <olof@lixom.net>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Brown <davidb@codeaurora.org>, Barry Song <baohua.song@csr.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Jul 2013 19:56:56 -0400
+Message-ID: <1374623813.3449.52.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: bhutchings@solarflare.com, oliver@neukum.org, grundler@google.com,
+        freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
+Date: Tue, 23 Jul 2013 16:56:53 -0700
+In-Reply-To: <20130723.164656.1794159338719943519.davem@davemloft.net>
+References: <1374518841.4990.26.camel@edumazet-glaptop>
+	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	 <1374559827.4990.143.camel@edumazet-glaptop>
+	 <20130723.164656.1794159338719943519.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 4:40 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 07/23, Olof Johansson wrote:
+On Tue, 2013-07-23 at 16:46 -0700, David Miller wrote:
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 22 Jul 2013 23:10:27 -0700
+> 
+> > On Mon, 2013-07-22 at 20:47 +0100, Ben Hutchings wrote:
+> >> The real solution would be for someone to add SG support to the usbnet
+> >> core.  Trying to support 1GbE with only linear skbs is not a great
+> >> idea... and it can only be a matter of time before there is USB ultra
+> >> speed (or whatever comes after 'super') with 10GbE devices...
+> >> 
+> > 
+> > This sounds a good idea.
+> > 
+> > Is anybody working on adding SG to usbnet ?
+> 
+> This is a good long-term plan, but right now we have to do something
+> reasonable.
+> 
+> A quick scan shows that smsc75xx, smsc95xx, and ax88179_178a all have
+> this problem.
+> 
+> Instead of the patch starting this thread, I'd like to see one that
+> hits all three drivers and removes all SG and TSO features bits from
+> both the ->features _and_ ->hw_features settings.
+> 
+> Could someone toss that together quickly?
 
->> Merged in as localtimer/removal into next/cleanup.
->>
->> I had quite a few merge conflicts due to the __cpuinit removal, so
->> please double-check my resolutions.
->>
->
-> A __cpuinit is leftover in smp_twd.c. Hopefully you can just
-> redo the merge?
-
-Done, thanks for catching it. I thought I grepped for them but I
-somehow missed that one. Fixed now.
+Yes, I can prepare this patch.
 
 
--Olof
