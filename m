@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab3GWM6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 08:58:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52921 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756626Ab3GWM6B (ORCPT
+	id S1757363Ab3GWM7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 08:59:13 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:55552 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756482Ab3GWM7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 08:58:01 -0400
-Date: Tue, 23 Jul 2013 13:57:56 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@vger.kernel.org
-Message-ID: <20130723125756.GZ9858@sirena.org.uk>
-References: <20130723104641.6ee0b9ec@armhf>
+	Tue, 23 Jul 2013 08:59:12 -0400
+Message-ID: <51EE7E1A.3040301@gmail.com>
+Date: Tue, 23 Jul 2013 14:59:06 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B5JjOzmn0Nsc+m1x"
-Content-Disposition: inline
-In-Reply-To: <20130723104641.6ee0b9ec@armhf>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ARM: kirkwood: extend the kirkwood pcm/dma driver for DT
- usage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Mark Brown <broonie@kernel.org>
+CC: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
+ driver for DT usage
+References: <20130723104615.3696f1a9@armhf> <20130723123444.GW9858@sirena.org.uk>
+In-Reply-To: <20130723123444.GW9858@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/23/13 14:34, Mark Brown wrote:
+> On Tue, Jul 23, 2013 at 10:46:15AM +0200, Jean-Francois Moine wrote:
+>
+>> +	np = pdev->dev.of_node;
+>> +	if (np) {
+>> +		struct of_phandle_args clkspec;
+>> +
+>> +		priv->burst = 128;			/* might be 32 or 128 */
+>
+> The comment says this needs to be variable (depending on what?) but it's
+> hard coded.
+>
+>> +		priv->clk = of_clk_get(np, 0);	/* internal clock */
+>> +		err = of_parse_phandle_with_args(np,
+>> +					"clocks", "#clock-cells", 1,
+>> +					&clkspec);
+>
+> As others have pointed out if you need to change the clock get code
+> there's something wrong here, DT should be handled transparently by the
+> clock API.
 
---B5JjOzmn0Nsc+m1x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+IMHO the reason why of_clk_get() was/is mis-used in that way is mostly
+compatibility with legacy platform_data based setup.
 
-On Tue, Jul 23, 2013 at 10:46:41AM +0200, Jean-Francois Moine wrote:
+Kirkwood-i2s never knew about anything else than internal clock, then
+Dove allows additional external clock input, aso. All changes are
+incremental and more or less sane. But now is a good opportunity to
+clean up this.
 
-> +- compatible: "marvell,mvebu-pcm-audio"
-> +
-> +Example:
-> +
-> +pcm: pcm {
-> +	compatible = "marvell,mvebu-pcm-audio";
-> +};
+As Sascha Hauer pointed out, clocks should be distinguished by names
+(clock-names property) instead of position and then use
+devm_clk_get(&pdev->dev, "internal") and
+devm_clk_get(&pdev->dev, "external") respectively.
 
-This device has no registers or other hardware - this looks like a stub
-device which shouldn't be visible in DT but should instead be created by
-the I2S driver - look at how most of the other DT platforms using
-dmaengine work.
+This will possibly also require to update platform_data and legacy
+users of kirkwood-i2s or have different setup functions for non-DT
+and DT.
 
---B5JjOzmn0Nsc+m1x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Also, while ASoC API separates the audio-controller into cpu-side
+and codec-side parts, the DT should not. IIRC and as Russell repeated
+again, we mentioned to merge kirkwood-i2s.c and kirkwood-dma.c into
+a single file, didn't we?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+I know we didn't care that much in the past, but one last thing that I
+catched while reading another thead about compatible strings:
 
-iQIcBAEBAgAGBQJR7n3RAAoJELSic+t+oim9dNUP/3IjP2kD7nXYhF3Q+lf0c6yP
-s82/82I90Meg63GFu5XbnLEDrWxzkRC0OivNLNuQ3sOZ4U1szve8bA2mqtNMPY8K
-CHVTV8U73mf1YrbeDr1MvfR7VqzQ5gBwCejOweX+7ufJ/0n9wibVyJziPohqGAU8
-Y6JNHakNpeK3QxjikMwoysl0WnkES6qRumMmq4Z+S+dgn91Th9WKU6ioBZY49Lzv
-W2gJ9HHMB2IKxkBd/KxFCSxqZfZepLOFPCJZ46uSzeL7Z8tBY7kf1nsmZWZcKeWY
-QE00jpFl7Ccn0bhYMg+Cli6oJzQ5b32aWvTCSpU07AsmDXqLZDDRvJJMCcSvwkd6
-21/mAyDJGNaNNULaYK6rm9XdAqzV2K6w0AFsyCl3VM7TQuVancA74+JoIcyBk5DC
-UWoDS4Oi4Ya4Cjudp/wBvV+HgjNWlbvn40NcoOa+2gjPLp++d4SP3APmeHMMUi3/
-w2OXJxgL9mmOrfeCfG6B+1Ab7xuCH+0y+KG+MALpqQrbZqqGP81fPzzNsN8gB3I6
-YqXunumiH/9GhKttzlDpT282dMm63abv1VNF1qH/bvL+VPYZrDFOIt9uOdXp3Cav
-bPF6Ey6JOEG/iNItBKuYkz41tMsay2aBn0c0eJRtEcG1n0y7PtL3Q6cD/OjIqCPG
-qA/4F9rH7LpxqJuUXmKZ
-=EhT2
------END PGP SIGNATURE-----
+We should really be more careful about those. The correct usage
+of compatible strings should be "marvell,mvebu-i2s" as common fallback,
+but also "marvell,dove-i2s" and "marvell,kirkwood-i2s" for the SoC dtsi
+files. We do not need to have all possible compatible strings in the
+_driver's_ of_device_id table but the dtsi should contain them.
 
---B5JjOzmn0Nsc+m1x--
+Finally, I2S DT node will end up as:
+
+i2s1: audio-controller@b4000 {
+	compatible = "marvell,dove-i2s", "marvell,mvebu-i2s";
+	reg = <0xb4000 0x2210>;
+	interrupts = <21>, <22>;
+	clocks = <&gate_clk 13>, <&si5351a 1>;
+	clock-names = "internal", "external";
+};
+
+Jean-Francois, can you re-spin your patches with the comments made by
+others and the above summary? I really like to see i2s for DT soon,
+although we will not be able to support multiple codecs per DAI, yet.
+
+Sebastian
