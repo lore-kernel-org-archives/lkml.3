@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933847Ab3GWSCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:02:33 -0400
-Received: from sauhun.de ([89.238.76.85]:58692 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756071Ab3GWSCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:02:30 -0400
-From: Wolfram Sang <wsa@the-dreams.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>, linux-pm@vger.kernel.org
-Subject: [PATCH 03/27] drivers/cpuidle: don't check resource with devm_ioremap_resource
-Date: Tue, 23 Jul 2013 20:01:36 +0200
-Message-Id: <1374602524-3398-4-git-send-email-wsa@the-dreams.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
+	id S933594Ab3GWSNH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:13:07 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:57369 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933204Ab3GWSNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:13:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374602524-3398-14-git-send-email-wsa@the-dreams.de>
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de> <1374602524-3398-14-git-send-email-wsa@the-dreams.de>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 23 Jul 2013 12:12:42 -0600
+Message-ID: <CAErSpo4jazaN8YahJGs+KD1-j6o8QHe2LmiQwBY9+UweBVkHxQ@mail.gmail.com>
+Subject: Re: [PATCH 13/27] drivers/pci/host: don't check resource with devm_ioremap_resource
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devm_ioremap_resource does sanity checks on the given resource. No need to
-duplicate this in the driver.
+[+cc Jingoo]
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
----
-Please apply via the subsystem-tree.
+On Tue, Jul 23, 2013 at 12:01 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 
- drivers/cpuidle/cpuidle-kirkwood.c |    3 ---
- 1 file changed, 3 deletions(-)
+Acked-by: Bjorn Helgaas <bhelgaas@google.com>
 
-diff --git a/drivers/cpuidle/cpuidle-kirkwood.c b/drivers/cpuidle/cpuidle-kirkwood.c
-index 521b0a7..2237135 100644
---- a/drivers/cpuidle/cpuidle-kirkwood.c
-+++ b/drivers/cpuidle/cpuidle-kirkwood.c
-@@ -60,9 +60,6 @@ static int kirkwood_cpuidle_probe(struct platform_device *pdev)
- 	struct resource *res;
- 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (res == NULL)
--		return -EINVAL;
--
- 	ddr_operation_base = devm_ioremap_resource(&pdev->dev, res);
- 	if (IS_ERR(ddr_operation_base))
- 		return PTR_ERR(ddr_operation_base);
--- 
-1.7.10.4
+Jingoo, I can apply this, or if you have other pcie-designware.c
+updates this cycle, you can fold it into those.  Just let me know what
+you'd prefer.
 
+Bjorn
+
+
+>  drivers/pci/host/pcie-designware.c |   12 ------------
+>  1 file changed, 12 deletions(-)
+>
+> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+> index 26bdbda..f0ba6ef 100644
+> --- a/drivers/pci/host/pcie-designware.c
+> +++ b/drivers/pci/host/pcie-designware.c
+> @@ -817,28 +817,16 @@ static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
+>         int ret;
+>
+>         elbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -       if (!elbi_base) {
+> -               dev_err(&pdev->dev, "couldn't get elbi base resource\n");
+> -               return -EINVAL;
+> -       }
+>         pp->elbi_base = devm_ioremap_resource(&pdev->dev, elbi_base);
+>         if (IS_ERR(pp->elbi_base))
+>                 return PTR_ERR(pp->elbi_base);
+>
+>         phy_base = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> -       if (!phy_base) {
+> -               dev_err(&pdev->dev, "couldn't get phy base resource\n");
+> -               return -EINVAL;
+> -       }
+>         pp->phy_base = devm_ioremap_resource(&pdev->dev, phy_base);
+>         if (IS_ERR(pp->phy_base))
+>                 return PTR_ERR(pp->phy_base);
+>
+>         purple_base = platform_get_resource(pdev, IORESOURCE_MEM, 2);
+> -       if (!purple_base) {
+> -               dev_err(&pdev->dev, "couldn't get purple base resource\n");
+> -               return -EINVAL;
+> -       }
+>         pp->purple_base = devm_ioremap_resource(&pdev->dev, purple_base);
+>         if (IS_ERR(pp->purple_base))
+>                 return PTR_ERR(pp->purple_base);
+> --
+> 1.7.10.4
+>
