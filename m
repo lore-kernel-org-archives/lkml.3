@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab3GVX4E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Jul 2013 19:56:04 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:53299 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752671Ab3GVXz7 (ORCPT
+	id S1753106Ab3GWAIw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Jul 2013 20:08:52 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:41025 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752581Ab3GWAIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Jul 2013 19:55:59 -0400
+	Mon, 22 Jul 2013 20:08:50 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130723010250.5a3465ec@xenia.leun.net>
-References: <1367884221-20462-1-git-send-email-ccross@android.com>
-	<1367884221-20462-14-git-send-email-ccross@android.com>
-	<20130723010250.5a3465ec@xenia.leun.net>
-Date: Mon, 22 Jul 2013 16:55:58 -0700
-X-Google-Sender-Auth: 6Pa_-U6vkrIfbBlNCx_ewEec598
-Message-ID: <CAMbhsRQv+W897_5qGuNJD47jQ9ozN6KxeCa6UJAvZpqVuBpQ4w@mail.gmail.com>
-Subject: Re: 3.11-rc regression bisected: s2disk does not work (was Re: [PATCH
- v3 13/16] futex: use freezable blocking call)
-From: Colin Cross <ccross@android.com>
-To: Michael Leun <lkml20130126@newton.leun.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-nfs <linux-nfs@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: multipart/mixed; boundary=047d7b3a7f8004216704e2226b54
+In-Reply-To: <1372860295-8306-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1372860295-8306-1-git-send-email-mika.westerberg@linux.intel.com> <1372860295-8306-2-git-send-email-mika.westerberg@linux.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 22 Jul 2013 18:08:28 -0600
+Message-ID: <CAErSpo7=ed3=P7ab9zYB23qnwe8Z-ghRfCEurskpcNW5m86j8g@mail.gmail.com>
+Subject: Re: [PATCH v2 1/8] x86/PCI: prevent re-allocation of already existing
+ bridge and ROM resources
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Penner, Miles J" <miles.j.penner@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---047d7b3a7f8004216704e2226b54
-Content-Type: text/plain; charset=ISO-8859-1
-
-On Mon, Jul 22, 2013 at 4:02 PM, Michael Leun
-<lkml20130126@newton.leun.net> wrote:
-> On Mon,  6 May 2013 16:50:18 -0700
-> Colin Cross <ccross@android.com> wrote:
+On Wed, Jul 3, 2013 at 8:04 AM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> In hotplug case (especially with Thunderbolt enabled systems) we might need
+> to call pcibios_resource_survey_bus() several times for a bus. The function
+> ends up calling pci_claim_resource() for each bridge resource that then
+> fails claiming that the resource exists already (which it does). Once this
+> happens the resource is invalidated thus preventing devices behind the
+> bridge to allocate their resources.
 >
->> Avoid waking up every thread sleeping in a futex_wait call during
-> [...]
+> To fix this we do what has been done in pcibios_allocate_dev_resources()
+> and check 'parent' of the given resource. If it is non-NULL it means that
+> the resource has been allocated already and we can skip it. We do the same
+> for ROM resources as well.
 >
-> With 3.11-rc s2disk from suspend-utils stopped working: Frozen at
-> displaying 0% of saving image to disk.
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+This looks reasonable to me.
+
+However, the use of "r->parent" to determine whether the resource is
+already allocated is nothing specific to x86.  So I think we might be
+missing an opportunity to make this more consistent across
+architectures.  I looked at other callers of pci_claim_resource() for
+bridge and ROM resources, and it looks like we might be able to make
+similar changes in:
+
+  frv pcibios_allocate_bus_resources()
+  ia64 pcibios_fixup_resources() (via pcibios_fixup_bridge_resources())
+  mn10300 pcibios_allocate_bus_resources()
+  mn10300 pcibios_assign_resources() (ROM)
+  mn10300 pcibios_fixup_device_resources()
+  parisc lba_fixup_bus()
+
+I really hate the idea of fixing something for x86 but not for other
+arches, so maybe somebody could take a deeper look at this and see if
+it would make sense to change the other arches, too.
+
+Bjorn
+
+> ---
+>  arch/x86/pci/i386.c | 4 ++++
+>  1 file changed, 4 insertions(+)
 >
-> echo "1" >/sys/power/state still works.
+> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+> index 94919e3..db6b1ab 100644
+> --- a/arch/x86/pci/i386.c
+> +++ b/arch/x86/pci/i386.c
+> @@ -210,6 +210,8 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
+>                 r = &dev->resource[idx];
+>                 if (!r->flags)
+>                         continue;
+> +               if (r->parent)  /* Already allocated */
+> +                       continue;
+>                 if (!r->start || pci_claim_resource(dev, idx) < 0) {
+>                         /*
+>                          * Something is wrong with the region.
+> @@ -318,6 +320,8 @@ static void pcibios_allocate_dev_rom_resource(struct pci_dev *dev)
+>         r = &dev->resource[PCI_ROM_RESOURCE];
+>         if (!r->flags || !r->start)
+>                 return;
+> +       if (r->parent) /* Already allocated */
+> +               return;
 >
-> Bisecting yielded 88c8004fd3a5fdd2378069de86b90b21110d33a4, reverting
-> that from 3.11-rc2 makes s2disk working again.
+>         if (pci_claim_resource(dev, PCI_ROM_RESOURCE) < 0) {
+>                 r->end -= r->start;
+> --
+> 1.8.3.2
 >
-
-I think the expanded use of the freezable_* helpers is exposing an
-existing bug in hibernation.  The SNAPSHOT_FREEZE ioctl calls
-freeze_processes(), which sets the global system_freezing_cnt and
-pm_freezing.  try_to_freeze_tasks then sends every process except
-current a signal which causes them all to end up in the refrigerator.
-The current task then returns back to userspace and continues its work
-to suspend to disk.  If that task ever hits a call to try_to_freeze()
-in the kernel, it will see system_freezing_cnt and pm_freezing=true
-and freeze, and suspend to disk will hang forever.  It could hit
-try_to_freeze() because of a signal delivered to the task, or from
-calling any syscall that uses a freezable_* helper like the one I
-added to sys_futex.
-
-I think the right solution is to add a flag to the freezing task that
-marks it unfreezable.  I  think PF_NOFREEZE would work, although it is
-normally used on kernel threads, can you see if the attached patch
-helps?
-
---047d7b3a7f8004216704e2226b54
-Content-Type: application/octet-stream; 
-	name="0001-power-set-PF_NOFREEZE-flag-on-SNAPSHOT_FREEZE-task.patch"
-Content-Disposition: attachment; 
-	filename="0001-power-set-PF_NOFREEZE-flag-on-SNAPSHOT_FREEZE-task.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hjgc1d5z0
-
-RnJvbSAwZjIyZjJiMzU3YjA2MjA4ZmM3YzBiODJjZTNmMDkyOWQwMDg3N2NhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBDb2xpbiBDcm9zcyA8Y2Nyb3NzQGFuZHJvaWQuY29tPgpEYXRl
-OiBNb24sIDIyIEp1bCAyMDEzIDE2OjUzOjE1IC0wNzAwClN1YmplY3Q6IFtQQVRDSF0gcG93ZXI6
-IHNldCBQRl9OT0ZSRUVaRSBmbGFnIG9uIFNOQVBTSE9UX0ZSRUVaRSB0YXNrCgpUaGUgdGFzayB0
-aGF0IGNhbGxzIHRoZSBTTkFQU0hPVF9GUkVFWkUgaW9jdGwgbmVlZHMgdG8gcmV0dXJuIGJhY2sK
-dG8gdXNlcnNwYWNlIGFuZCBjb250aW51ZSBwcmVwYXJpbmcgYSBzdXNwZW5kLXRvLWRpc2sgaW1h
-Z2UuIFNldAp0aGUgUEZfTk9GUkVFWkUgZmxhZyBvbiBpdCBzbyB0aGF0IGl0IGRvZXNuJ3QgYWNj
-aWRlbnRhbGx5IGZyZWV6ZQppZiBpdCBjb21lcyBhY3Jvc3MgYSBjYWxsIHRvIHRyeV90b19mcmVl
-emUoKS4KClJlcG9ydGVkLWJ5OiBNaWNoYWVsIExldW4gPGxrbWwyMDEzMDEyNkBuZXd0b24ubGV1
-bi5uZXQ+ClNpZ25lZC1vZmYtYnk6IENvbGluIENyb3NzIDxjY3Jvc3NAYW5kcm9pZC5jb20+Ci0t
-LQoga2VybmVsL3Bvd2VyL3VzZXIuYyB8IDIgKysKIDEgZmlsZSBjaGFuZ2VkLCAyIGluc2VydGlv
-bnMoKykKCmRpZmYgLS1naXQgYS9rZXJuZWwvcG93ZXIvdXNlci5jIGIva2VybmVsL3Bvd2VyL3Vz
-ZXIuYwppbmRleCA0ZWQ4MWU3Li4xN2Y5YzIwIDEwMDY0NAotLS0gYS9rZXJuZWwvcG93ZXIvdXNl
-ci5jCisrKyBiL2tlcm5lbC9wb3dlci91c2VyLmMKQEAgLTIxOSw2ICsyMTksNyBAQCBzdGF0aWMg
-bG9uZyBzbmFwc2hvdF9pb2N0bChzdHJ1Y3QgZmlsZSAqZmlscCwgdW5zaWduZWQgaW50IGNtZCwK
-IAkJc3lzX3N5bmMoKTsKIAkJcHJpbnRrKCJkb25lLlxuIik7CiAKKwkJY3VycmVudC0+ZmxhZ3Mg
-fD0gUEZfTk9GUkVFWkU7CiAJCWVycm9yID0gZnJlZXplX3Byb2Nlc3NlcygpOwogCQlpZiAoIWVy
-cm9yKQogCQkJZGF0YS0+ZnJvemVuID0gMTsKQEAgLTIyOSw2ICsyMzAsNyBAQCBzdGF0aWMgbG9u
-ZyBzbmFwc2hvdF9pb2N0bChzdHJ1Y3QgZmlsZSAqZmlscCwgdW5zaWduZWQgaW50IGNtZCwKIAkJ
-CWJyZWFrOwogCQlwbV9yZXN0b3JlX2dmcF9tYXNrKCk7CiAJCXRoYXdfcHJvY2Vzc2VzKCk7CisJ
-CWN1cnJlbnQtPmZsYWdzICY9IH5QRl9OT0ZSRUVaRTsKIAkJZGF0YS0+ZnJvemVuID0gMDsKIAkJ
-YnJlYWs7CiAKLS0gCjEuOC4zCgo=
---047d7b3a7f8004216704e2226b54--
