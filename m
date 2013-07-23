@@ -1,146 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932917Ab3GWOhL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 10:37:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56464 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757638Ab3GWOhG (ORCPT
+	id S1757654Ab3GWOit (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 10:38:49 -0400
+Received: from mail-ye0-f182.google.com ([209.85.213.182]:51542 "EHLO
+	mail-ye0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757510Ab3GWOir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 10:37:06 -0400
-Date: Tue, 23 Jul 2013 10:37:05 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tomasz Figa <tomasz.figa@gmail.com>
-cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>, <broonie@kernel.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, <kyungmin.park@samsung.com>,
-        <balbi@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <grant.likely@linaro.org>, <tony@atomide.com>,
-        <arnd@arndb.de>, <swarren@nvidia.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <olof@lixom.net>, Stephen Warren <swarren@wwwdotorg.org>,
-        <b.zolnierkie@samsung.com>, Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-In-Reply-To: <3419798.aorxYv8pdo@flatron>
-Message-ID: <Pine.LNX.4.44L0.1307231017290.1304-100000@iolanthe.rowland.org>
+	Tue, 23 Jul 2013 10:38:47 -0400
+Date: Tue, 23 Jul 2013 10:38:41 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, bhelgaas@google.com,
+        Yinghai Lu <yinghai@kernel.org>,
+        Alex Duyck <alexander.h.duyck@intel.com>
+Subject: Re: workqueue, pci: INFO: possible recursive locking detected
+Message-ID: <20130723143841.GA18458@mtj.dyndns.org>
+References: <51E55B7D.2040209@linux.vnet.ibm.com>
+ <51E66CCC.9010600@cn.fujitsu.com>
+ <51E84EDC.5090502@linux.vnet.ibm.com>
+ <51E89ABB.20808@cn.fujitsu.com>
+ <51E8FF76.5030706@linux.vnet.ibm.com>
+ <51ED1D02.80205@cn.fujitsu.com>
+ <20130722213231.GC16776@mtj.dyndns.org>
+ <51EDDB02.20502@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51EDDB02.20502@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013, Tomasz Figa wrote:
+Hey, Lai.
 
-> On Tuesday 23 of July 2013 09:29:32 Tomasz Figa wrote:
-> > Hi Alan,
+On Tue, Jul 23, 2013 at 09:23:14AM +0800, Lai Jiangshan wrote:
+> The problem is that the userS may not know their work_on_cpu() nested,
+> especially when work_on_cpu()s are on different subsystems and the call depth
+> is deep enough but the nested work_on_cpu() depends on some conditions.
 
-Thanks for helping to clarify the issues here.
+Yeah, that's a possibility.  Not sure how much it'd actually matter
+tho given that this is the only instance we have and we've had the
+lockdep annotation for years.
 
-> > > Okay.  Are PHYs _always_ platform devices?
-> > 
-> > They can be i2c, spi or any other device types as well.
+> I prefer to change the user instead of introducing work_on_cpu_nested(), and
+> I accept to change the user only instead of change work_on_cpu() since there is only
+> one nested-calls case found.
+> 
+> But I'm thinking, since nested work_on_cpu() don't have any problem,
+> Why workqueue.c don't offer a more friendly API/behavior?
 
-In those other cases, presumably there is no platform data associated
-with the PHY since it isn't a platform device.  Then how does the
-kernel know which controller is attached to the PHY?  Is this spelled
-out in platform data associated with the PHY's i2c/spi/whatever parent?
+If we wanna solve it from workqueue side, let's please do it by
+introduing an internal flush_work() variant which skips the lockdep
+annotation.  I'd really like to avoid using completion here.  It's
+nasty as it depends solely on the fact that completion doesn't have
+lockdep annotation yet.  Let's do it explicitly.
 
-> > > > > 	PHY.  Currently this information is represented by name or 
-> ID
-> > > > > 	strings embedded in platform data.
-> > > > 
-> > > > right. It's embedded in the platform data of the controller.
-> > > 
-> > > It must also be embedded in the PHY's platform data somehow.
-> > > Otherwise, how would the kernel know which PHY to use?
-> > 
-> > By using a PHY lookup as Stephen and I suggested in our previous
-> > replies. Without any extra data in platform data. (I have even posted a
-> > code example.)
+Thanks.
 
-I don't understand, because I don't know what "a PHY lookup" does.
-
-> > > In this case, it doesn't matter where the platform_device structures
-> > > are created or where the driver source code is.  Let's take a simple
-> > > example.  Suppose the system design includes a PHY named "foo".  Then
-> > > the board file could contain:
-> > > 
-> > > struct phy_info { ... } phy_foo;
-> > > EXPORT_SYMBOL_GPL(phy_foo);
-> > > 
-> > > and a header file would contain:
-> > > 
-> > > extern struct phy_info phy_foo;
-> > > 
-> > > The PHY supplier could then call phy_create(&phy_foo), and the PHY
-> > > client could call phy_find(&phy_foo).  Or something like that; make up
-> > > your own structure tags and function names.
-> > > 
-> > > It's still possible to have conflicts, but now two PHYs with the same
-> > > name (or a misspelled name somewhere) will cause an error at link
-> > > time.
-> > 
-> > This is incorrect, sorry. First of all it's a layering violation - you
-> > export random driver-specific symbols from one driver to another. Then
-
-No, that's not what I said.  Neither the PHY driver nor the controller
-driver exports anything to the other.  Instead, both drivers use data
-exported by the board file.
-
-> > imagine 4 SoCs - A, B, C, D. There are two PHY types PHY1 and PHY2 and
-> > there are two types of consumer drivers (e.g. USB host controllers). Now
-> > consider following mapping:
-> > 
-> > SoC	PHY	consumer
-> > A	PHY1	HOST1
-> > B	PHY1	HOST2
-> > C	PHY2	HOST1
-> > D	PHY2	HOST2
-> > 
-> > So we have to be able to use any of the PHYs with any of the host
-> > drivers. This means you would have to export symbol with the same name
-> > from both PHY drivers, which obviously would not work in this case,
-> > because having both drivers enabled (in a multiplatform aware
-> > configuration) would lead to linking conflict.
-
-You're right; the scheme was too simple.  Instead, the board file must
-export two types of data structures, one for PHYs and one for
-controllers.  Like this:
-
-struct phy_info {
-	/* Info for the controller attached to this PHY */
-	struct controller_info	*hinfo;
-};
-
-struct controller_info {
-	/* Info for the PHY which this controller is attached to */
-	struct phy_info		*pinfo;
-};
-
-The board file for SoC A would contain:
-
-struct phy_info phy1 = {&host1);
-EXPORT_SYMBOL(phy1);
-struct controller_info host1 = {&phy1};
-EXPORT_SYMBOL(host1);
-
-The board file for SoC B would contain:
-
-struct phy_info phy1 = {&host2);
-EXPORT_SYMBOL(phy1);
-struct controller_info host2 = {&phy1};
-EXPORT_SYMBOL(host2);
-
-And so on.  This explicitly gives the connection between PHYs and
-controllers.  The PHY providers would use &phy1 or &phy2, and the PHY
-consumers would use &host1 or &host2.
-
-Alan Stern
-
+-- 
+tejun
