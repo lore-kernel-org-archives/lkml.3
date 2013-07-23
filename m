@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934124Ab3GWT0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 15:26:39 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45490 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933900Ab3GWT0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 15:26:37 -0400
-Message-ID: <1374607596.10171.4.camel@joe-AO722>
-Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
-From: Joe Perches <joe@perches.com>
+	id S934130Ab3GWT2L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 15:28:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56556 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933884Ab3GWT2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 15:28:09 -0400
+Date: Tue, 23 Jul 2013 14:28:01 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>, tglx@linutronix.de, mingo@elte.hu,
-        hpa@zytor.com, akpm@linux-foundation.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Date: Tue, 23 Jul 2013 12:26:36 -0700
-In-Reply-To: <20130723192009.GL21100@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
-	 <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
-	 <20130723184843.GG21100@mtj.dyndns.org>
-	 <20130723192009.GL21100@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
+Message-ID: <20130723192801.GA9923@tp>
+References: <20130723181606.GA6342@sergelap>
+ <20130723183018.GF21100@mtj.dyndns.org>
+ <20130723183841.GA9021@tp>
+ <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+ <20130723190426.GA9577@tp>
+ <20130723191245.GI21100@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723191245.GI21100@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 15:20 -0400, Tejun Heo wrote:
-> On Tue, Jul 23, 2013 at 12:15:58PM -0700, Joe Perches wrote:
-[]
-> > so there's no space before newline.
-> Which was my first point which apparently wasn't clear enough. :)
+Quoting Tejun Heo (tj@kernel.org):
+> Hello,
+> 
+> On Tue, Jul 23, 2013 at 02:04:26PM -0500, Serge Hallyn wrote:
+> > If task A is uid 1000 on the host, and creates task B as uid X in a new
+> > user namespace, then task A, still being uid 1000 on the host, is
+> > privileged with respect to B and his namespace - i.e.
+> > ns_capable(B->userns, CAP_SYS_ADMIN) is true.
+> 
+> Well, that also is the exact type of priv delegation we're moving away
+> from, so....
 
-Nah, I just constantly need to relearn how to read...
+I think that's unreasonable, but I guess I'll have to go reread the
+old thread.
 
+> > > Besides, I find the whole check rather bogus and would actually much
+> > > prefer just nuking the check and just follow the standard permission
+> > > checks.
+> > 
+> > I'd be ok with that - but there's one case I'm not sure about:  If PAM
+> > sets me up with /sys/fs/cgroup/devices/serge owned by me, then if I'm
+> > thinking right, removing can_attach would mean I could move init into
+> > /sys/fs/cgroup/devices/serge...
+> > 
+> > Is there something else stopping that from happening?
+> 
+> If PAM is giving out perms on cgroup directory, the whole system is
+> prone to DoS in various ways anyway.  It's already utterly broken, so
+
+If we have decent enforcement of hierarchy for devices.{allow,deny},
+which we now do, then I don't see why this has to be the case.
+
+> kinda moot point.  If there are people actually doing that in the
+> wild, we can conditionalize it on cgroup_sane_behavior().
+
+Guess we'll stop using cgroups for now.
+
+-serge
