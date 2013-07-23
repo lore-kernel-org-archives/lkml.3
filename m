@@ -1,99 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab3GWIKP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:10:15 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3476 "EHLO mga11.intel.com"
+	id S1755854Ab3GWIOb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:14:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3747 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754383Ab3GWIJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:09:09 -0400
+	id S1755321Ab3GWIKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 04:10:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,725,1367996400"; 
-   d="scan'208";a="374543142"
+   d="scan'208";a="350032545"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
         Zhao Yakui <yakui.zhao@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 00/13] ACPI/IPMI: Fix several issues in the current codes
-Date: Tue, 23 Jul 2013 16:08:32 +0800
-Message-Id: <cover.1374566394.git.lv.zheng@intel.com>
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device members
+Date: Tue, 23 Jul 2013 16:10:06 +0800
+Message-Id: <b70ad0fe8c19e25eae9cef6fba21dfce237051bb.1374566394.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1370652213.git.lv.zheng@intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
+In-Reply-To: <cover.1374566394.git.lv.zheng@intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset tries to fix the following kernel bug:
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=46741
-This is fixed by [PATCH 05].
+This is a trivial patch:
+1. Deletes a member of the acpi_ipmi_device - smi_data which is not
+   actually used.
+2. Updates a member of the acpi_ipmi_device - pnp_dev which is only used
+   by dev_warn() invocations, so changes it to struct device.
 
-The bug shows IPMI operation region may appear in a device not under the
-IPMI system interface device's scope, thus it's required to install the
-ACPI IPMI operation region handler from the root of the ACPI namespace.
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reviewed-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/acpi_ipmi.c |   30 ++++++++++++++----------------
+ 1 file changed, 14 insertions(+), 16 deletions(-)
 
-The original acpi_ipmi implementation includes several issues that break
-the test process.  This patchset also includes a re-design of acpi_ipmi
-module to make the test possible.
+diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
+index 0ee1ea6..7f93ffd 100644
+--- a/drivers/acpi/acpi_ipmi.c
++++ b/drivers/acpi/acpi_ipmi.c
+@@ -63,11 +63,10 @@ struct acpi_ipmi_device {
+ 	struct list_head tx_msg_list;
+ 	spinlock_t	tx_msg_lock;
+ 	acpi_handle handle;
+-	struct pnp_dev *pnp_dev;
++	struct device *dev;
+ 	ipmi_user_t	user_interface;
+ 	int ipmi_ifnum; /* IPMI interface number */
+ 	long curr_msgid;
+-	struct ipmi_smi_info smi_data;
+ 	atomic_t refcnt;
+ };
  
-[PATCH 01-05] are bug-fix patches that can be applied to the kernels whose
-              version is > 2.6.38.  This can be confirmed with:
-              # git tag --contains e92b297c
-[PATCH 06] is also a bug-fix patch.
-           The drivers/acpi/osl.c part can be back ported to the kernels
-           whose version > 2.6.14.  This can be confirmed with:
-           # git tag --contains 4be44fcd
-           The drivers/acpi/acpi_ipmi.c part can be applied on top of
-           [PATCH 01-05].
-[PATCH 07] is a tuning patch for acpi_ipmi.c.
-[PATCH 08-10] are cleanup patches for acpi_ipmi.c.
-[PATCH 11] is a cleanup patch not for acpi_ipmi.c.
-[PATCH 12-13] are test patches.
-              [PATCH 12] may be accepted by upstream kernel as a useful
-                         facility to test the loading/unloading of the
-                         modules.
-              [PATCH 13] should not be merged by any published kernel as it
-                         is a driver for a pseudo device with a PnP ID that
-                         does not exist in the real machines.
-
-This patchset has passed the test around a fake device accessing IPMI
-operation region fields on an IPMI capable platform.  A stress test of
-module(acpi_ipmi) load/unload has been performed on such platform.  No
-races can be found and the IPMI operation region handler is functioning
-now.  It is not possible to test module(ipmi_si) load/unload as it can't be
-unloaded due to its' transfer flushing implementation.
-
-Lv Zheng (13):
-  ACPI/IPMI: Fix potential response buffer overflow
-  ACPI/IPMI: Fix atomic context requirement of ipmi_msg_handler()
-  ACPI/IPMI: Fix race caused by the unprotected ACPI IPMI transfers
-  ACPI/IPMI: Fix race caused by the unprotected ACPI IPMI user
-  ACPI/IPMI: Fix issue caused by the per-device registration of the
-    IPMI operation region handler
-  ACPI/IPMI: Add reference counting for ACPI operation region handlers
-  ACPI/IPMI: Add reference counting for ACPI IPMI transfers
-  ACPI/IPMI: Cleanup several acpi_ipmi_device members
-  ACPI/IPMI: Cleanup some initialization codes
-  ACPI/IPMI: Cleanup some inclusion codes
-  ACPI/IPMI: Cleanup some Kconfig codes
-  Testing: Add module load/unload test suite
-  ACPI/IPMI: Add IPMI operation region test device driver
-
- drivers/acpi/Kconfig                          |   71 +++-
- drivers/acpi/Makefile                         |    1 +
- drivers/acpi/acpi_ipmi.c                      |  513 +++++++++++++++----------
- drivers/acpi/ipmi_test.c                      |  254 ++++++++++++
- drivers/acpi/osl.c                            |  224 +++++++++++
- include/acpi/acpi_bus.h                       |    5 +
- tools/testing/module-unloading/endless_cat.sh |   32 ++
- tools/testing/module-unloading/endless_mod.sh |   81 ++++
- 8 files changed, 977 insertions(+), 204 deletions(-)
- create mode 100644 drivers/acpi/ipmi_test.c
- create mode 100755 tools/testing/module-unloading/endless_cat.sh
- create mode 100755 tools/testing/module-unloading/endless_mod.sh
-
+@@ -132,7 +131,7 @@ static struct ipmi_driver_data driver_data = {
+ };
+ 
+ static struct acpi_ipmi_device *
+-ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
++ipmi_dev_alloc(int iface, struct device *pdev, acpi_handle handle)
+ {
+ 	struct acpi_ipmi_device *ipmi_device;
+ 	int err;
+@@ -148,14 +147,13 @@ ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
+ 	spin_lock_init(&ipmi_device->tx_msg_lock);
+ 
+ 	ipmi_device->handle = handle;
+-	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
+-	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct ipmi_smi_info));
++	ipmi_device->dev = get_device(pdev);
+ 	ipmi_device->ipmi_ifnum = iface;
+ 
+ 	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
+ 			       ipmi_device, &user);
+ 	if (err) {
+-		put_device(smi_data->dev);
++		put_device(pdev);
+ 		kfree(ipmi_device);
+ 		return NULL;
+ 	}
+@@ -175,7 +173,7 @@ acpi_ipmi_dev_get(struct acpi_ipmi_device *ipmi_device)
+ static void ipmi_dev_release(struct acpi_ipmi_device *ipmi_device)
+ {
+ 	ipmi_destroy_user(ipmi_device->user_interface);
+-	put_device(ipmi_device->smi_data.dev);
++	put_device(ipmi_device->dev);
+ 	kfree(ipmi_device);
+ }
+ 
+@@ -263,7 +261,7 @@ static int acpi_format_ipmi_request(struct acpi_ipmi_msg *tx_msg,
+ 	buffer = (struct acpi_ipmi_buffer *)value;
+ 	/* copy the tx message data */
+ 	if (buffer->length > ACPI_IPMI_MAX_MSG_LENGTH) {
+-		dev_WARN_ONCE(&tx_msg->device->pnp_dev->dev, true,
++		dev_WARN_ONCE(tx_msg->device->dev, true,
+ 			      "Unexpected request (msg len %d).\n",
+ 			      buffer->length);
+ 		return -EINVAL;
+@@ -382,11 +380,11 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 	struct acpi_ipmi_device *ipmi_device = user_msg_data;
+ 	int msg_found = 0;
+ 	struct acpi_ipmi_msg *tx_msg;
+-	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
++	struct device *dev = ipmi_device->dev;
+ 	unsigned long flags;
+ 
+ 	if (msg->user != ipmi_device->user_interface) {
+-		dev_warn(&pnp_dev->dev,
++		dev_warn(dev,
+ 			 "Unexpected response is returned. returned user %p, expected user %p\n",
+ 			 msg->user, ipmi_device->user_interface);
+ 		goto out_msg;
+@@ -404,7 +402,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+ 
+ 	if (!msg_found) {
+-		dev_warn(&pnp_dev->dev,
++		dev_warn(dev,
+ 			 "Unexpected response (msg id %ld) is returned.\n",
+ 			 msg->msgid);
+ 		goto out_msg;
+@@ -412,7 +410,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+ 
+ 	/* copy the response data to Rx_data buffer */
+ 	if (msg->msg.data_len > ACPI_IPMI_MAX_MSG_LENGTH) {
+-		dev_WARN_ONCE(&pnp_dev->dev, true,
++		dev_WARN_ONCE(dev, true,
+ 			      "Unexpected response (msg len %d).\n",
+ 			      msg->msg.data_len);
+ 		goto out_comp;
+@@ -431,7 +429,7 @@ out_msg:
+ static void ipmi_register_bmc(int iface, struct device *dev)
+ {
+ 	struct acpi_ipmi_device *ipmi_device, *temp;
+-	struct pnp_dev *pnp_dev;
++	struct device *pdev;
+ 	int err;
+ 	struct ipmi_smi_info smi_data;
+ 	acpi_handle handle;
+@@ -445,11 +443,11 @@ static void ipmi_register_bmc(int iface, struct device *dev)
+ 	handle = smi_data.addr_info.acpi_info.acpi_handle;
+ 	if (!handle)
+ 		goto err_ref;
+-	pnp_dev = to_pnp_dev(smi_data.dev);
++	pdev = smi_data.dev;
+ 
+-	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
++	ipmi_device = ipmi_dev_alloc(iface, pdev, handle);
+ 	if (!ipmi_device) {
+-		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
++		dev_warn(pdev, "Can't create IPMI user interface\n");
+ 		goto err_ref;
+ 	}
+ 
 -- 
 1.7.10
 
