@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab3GWIUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:20:47 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:60837 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755437Ab3GWIUo (ORCPT
+	id S1755697Ab3GWIXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:23:18 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:34720 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755178Ab3GWIXQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:20:44 -0400
-Date: Tue, 23 Jul 2013 10:20:39 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Robin Holt <holt@sgi.com>,
-        Robert Richter <rric@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Yinghai Lu <yinghai@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC 0/4] Transparent on-demand struct page initialization
- embedded in the buddy allocator
-Message-ID: <20130723082039.GD16088@gmail.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <20130712082756.GA4328@gmail.com>
- <20130716085502.GA31276@lge.com>
- <20130716090805.GC4402@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130716090805.GC4402@pd.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Jul 2013 04:23:16 -0400
+Date: Tue, 23 Jul 2013 10:23:20 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] ARM: kirkwood: enable S/PDIF
+Message-ID: <20130723102320.56bc4555@armhf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch enables S/PDIF.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ sound/soc/kirkwood/kirkwood-i2s.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-> On Tue, Jul 16, 2013 at 05:55:02PM +0900, Joonsoo Kim wrote:
-> > How about executing a perf in usermodehelper and collecting output
-> > in tmpfs? Using this approach, we can start a perf after rootfs
-> > initialization,
-> 
-> What for if we can start logging to buffers much earlier? *Reading*
-> from those buffers can be done much later, at our own leisure with full
-> userspace up.
+diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+index 4c9dad3..ad94c50 100644
+--- a/sound/soc/kirkwood/kirkwood-i2s.c
++++ b/sound/soc/kirkwood/kirkwood-i2s.c
+@@ -159,6 +159,7 @@ static int kirkwood_i2s_hw_params(struct snd_pcm_substream *substream,
+ 	case SNDRV_PCM_FORMAT_S16_LE:
+ 		i2s_value |= KIRKWOOD_I2S_CTL_SIZE_16;
+ 		ctl_play = KIRKWOOD_PLAYCTL_SIZE_16_C |
++			   KIRKWOOD_PLAYCTL_SPDIF_EN |
+ 			   KIRKWOOD_PLAYCTL_I2S_EN;
+ 		ctl_rec = KIRKWOOD_RECCTL_SIZE_16_C |
+ 			  KIRKWOOD_RECCTL_I2S_EN;
+@@ -169,6 +170,7 @@ static int kirkwood_i2s_hw_params(struct snd_pcm_substream *substream,
+ 	case SNDRV_PCM_FORMAT_S20_3LE:
+ 		i2s_value |= KIRKWOOD_I2S_CTL_SIZE_20;
+ 		ctl_play = KIRKWOOD_PLAYCTL_SIZE_20 |
++			   KIRKWOOD_PLAYCTL_SPDIF_EN |
+ 			   KIRKWOOD_PLAYCTL_I2S_EN;
+ 		ctl_rec = KIRKWOOD_RECCTL_SIZE_20 |
+ 			  KIRKWOOD_RECCTL_I2S_EN;
+@@ -177,6 +179,7 @@ static int kirkwood_i2s_hw_params(struct snd_pcm_substream *substream,
+ 	case SNDRV_PCM_FORMAT_S24_LE:
+ 		i2s_value |= KIRKWOOD_I2S_CTL_SIZE_24;
+ 		ctl_play = KIRKWOOD_PLAYCTL_SIZE_24 |
++			   KIRKWOOD_PLAYCTL_SPDIF_EN |
+ 			   KIRKWOOD_PLAYCTL_I2S_EN;
+ 		ctl_rec = KIRKWOOD_RECCTL_SIZE_24 |
+ 			  KIRKWOOD_RECCTL_I2S_EN;
 
-Yeah, agreed, I think this needs to be more integrated into the kernel, so 
-that people don't have to worry about "when does userspace start up the 
-earliest" details.
-
-Fundamentally all perf really needs here is some memory to initialize and 
-buffer into.
-
-Thanks,
-
-	Ingo
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
