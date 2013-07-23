@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639Ab3GWIyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 04:54:04 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38191 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754916Ab3GWIyA (ORCPT
+	id S1755952Ab3GWI4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 04:56:02 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:55929 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755335Ab3GWIz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 04:54:00 -0400
-Date: Tue, 23 Jul 2013 09:53:46 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@vger.kernel.org
-Subject: Re: [PATCH v3] ARM: kirkwood: extend the kirkwood i2s driver for
-	DT usage
-Message-ID: <20130723085346.GQ24642@n2100.arm.linux.org.uk>
-References: <20130723104615.3696f1a9@armhf>
+	Tue, 23 Jul 2013 04:55:58 -0400
+Date: Tue, 23 Jul 2013 09:55:52 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arnd@arndb.de, linus.walleij@stericsson.com,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH 07/22] ARM: exynos: Remove '0x's from Exynos4110 DTSI file
+Message-ID: <20130723085552.GF26801@laptop>
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
+ <2350088.9z671SCjFz@flatron>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130723104615.3696f1a9@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2350088.9z671SCjFz@flatron>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 10:46:15AM +0200, Jean-Francois Moine wrote:
-> The kirkwood i2s driver is used without DT in the Kirkwood machine.
-> This patch adds a DT compatible definition for use in other Marvell
-> machines as the Armada 88AP510 (Dove).
+On Mon, 22 Jul 2013, Tomasz Figa wrote:
 
-Yet again, this illustrates why converting to DT causes backwards
-steps in drivers: the conversion of devm_clk_get() to of_clk_get()
-necessitates a clk_put().
+> Hi Lee,
+> 
+> On Monday 22 of July 2013 11:52:26 Lee Jones wrote:
+> > Cc: Kukjin Kim <kgene.kim@samsung.com>
+> > Cc: linux-samsung-soc@vger.kernel.org
+> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> > ---
+> >  arch/arm/boot/dts/exynos4210.dtsi | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/arm/boot/dts/exynos4210.dtsi
+> > b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
+> > --- a/arch/arm/boot/dts/exynos4210.dtsi
+> > +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> > @@ -72,7 +72,7 @@
+> >  		};
+> >  	};
+> > 
+> > -	clock: clock-controller@0x10030000 {
+> > +	clock: clock-controller@10030000 {
+> >  		compatible = "samsung,exynos4210-clock";
+> >  		reg = <0x10030000 0x20000>;
+> >  		#clock-cells = <1>;
+> 
+> This looks fine, but please fix commit message - it should be Exynos4210. 
+> Also some explanation why this change is needed would be good, even if 
+> it's obvious.
 
-Can someone please provide a devm_of_clk_get() function before we
-accept any more patches doing this kind of thing?
+Hi Tomasz,
 
-The other issue is that kirkwood-dma.c and kirkwood-i2s.c should be
-one driver; they're not separate hardware on these platforms, so that
-needs fixing before coming up with any kind of DT model for this stuff.
+I'm happy to fixup the $SUBJECT line, but do we really have to enter
+an explanation if it's obvious? Seems a little belt and braces.
+
+Kind regards,
+Lee
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
