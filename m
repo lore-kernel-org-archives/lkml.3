@@ -1,68 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757336Ab3GWMF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 08:05:29 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39858 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756937Ab3GWMF2 (ORCPT
+	id S1757289Ab3GWMMT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 08:12:19 -0400
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:63062 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab3GWMMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 08:05:28 -0400
-Date: Tue, 23 Jul 2013 14:05:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Jason Low <jason.low2@hp.com>, Ingo Molnar <mingo@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
-        Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-Message-ID: <20130723120501.GY27075@twins.programming.kicks-ass.net>
-References: <1374220211.5447.9.camel@j-VirtualBox>
- <20130722070144.GC5138@linux.vnet.ibm.com>
- <1374519467.7608.87.camel@j-VirtualBox>
- <20130723110646.GA27005@linux.vnet.ibm.com>
+	Tue, 23 Jul 2013 08:12:17 -0400
+Message-ID: <51EE7319.408@monstr.eu>
+Date: Tue, 23 Jul 2013 14:12:09 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723110646.GA27005@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <axboe@kernel.dk>,
+        LKML <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: scatterlist: sg_set_buf() argument must be in linear mapping
+ (sha1: ac4e97abce9b80c020e7113325f49e58b7b15e3f)
+References: <51E64C6B.3080306@monstr.eu> <87siz7xt4z.fsf@rustcorp.com.au> <51ED2C74.7050502@monstr.eu> <87ppua9feh.fsf@rustcorp.com.au> <20130723103704.GS24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130723103704.GS24642@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2JKADNTBITLJSCJXSAXFK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 04:36:46PM +0530, Srikar Dronamraju wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2JKADNTBITLJSCJXSAXFK
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> May be the current max value is a limiting factor, but I think there
-> should be a limit to the maximum value. Peter and Ingo may help us
-> understand why they limited to the 1ms. But I dont think we should
-> introduce a new variable just for this.
+On 07/23/2013 12:37 PM, Russell King - ARM Linux wrote:
+> On Tue, Jul 23, 2013 at 12:00:30PM +0930, Rusty Russell wrote:
+>> Michal Simek <monstr@monstr.eu> writes:
+>>> Let me take some code from virtio_rpmsg_bus.c to show that problemati=
+c part.
+>>>
+>>> bufs_va =3D dma_alloc_coherent(vdev->dev.parent->parent,
+>>> 				RPMSG_TOTAL_BUF_SPACE,
+>>> 				&vrp->bufs_dma, GFP_KERNEL);
+>>> vrp->rbufs =3D bufs_va;
+>>> for (i =3D 0; i < RPMSG_NUM_BUFS / 2; i++) {
+>>> 	struct scatterlist sg;
+>>> 	void *cpu_addr =3D vrp->rbufs + i * RPMSG_BUF_SIZE;
+>>>
+>>> 	sg_init_one(&sg, cpu_addr, RPMSG_BUF_SIZE);
+>>> }
+>>
+>> Hmm.  Looking at arch/arm/include/asm/memory.h:
+>>
+>> #define virt_to_page(kaddr)	pfn_to_page(__pa(kaddr) >> PAGE_SHIFT)
+>> #define virt_addr_valid(kaddr)	((unsigned long)(kaddr) >=3D PAGE_OFFSE=
+T && (unsigned long)(kaddr) < (unsigned long)high_memory)
+>>
+>> pfn_to_page in ARM seems to be the asm-generic one, which depends on
+>> CONFIG_SPARSEMEM/CONFIG_DISCONTIGMEM/CONFIG_FLATMEM etc.
+>>
+>> Perhaps virt_addr_valid() is wrong for your config?  It's pretty clear=
 
-/me blames it all on Mike.. I tried to remember why he did that, but
-alas.
+>> that you shouldn't call virt_to_page() on something for which
+>> !virt_addr_valid().
+>=20
+> The above code fragment is just wrong.  You can't make any assumptions =
+about
+> the memory returned from dma_alloc_coherent(), because:
+>=20
+> - On x86, it is kernel direct mapped memory, where things like
+>   virt_to_phys(cpuaddr) will work fine with it.
+>=20
+> - On any architecture which needs to remap memory to make it coherent
+>   with the DMA device, the key word there is "remap" - it's not kernel
+>   direct mapped memory, and virt_to_phys(cpuaddr) on it is illegal.
+>=20
+> The only valid operation with scatterlists and such memory returned fro=
+m
+> dma_alloc_coherent() is:
+>=20
+> 	sg_dma_address(sg) =3D dma_address;
+> 	sg_dma_len(sg) =3D dma_length;
+>=20
+> and not to use the virtual address(es) at all in the scatterlist.  And
+> it is very very important to realise that you must not mix the streamin=
+g
+> and coherent DMA APIs - you must never pass coherent memory into the
+> dma_map_* functions.
 
-> If idle balance did succeed, then it means that the system was indeed
-> imbalanced. So idle balance was the right thing to do. May be we chose
-> the wrong task to pull. May be after numa balancing enhancements go in,
-> we pick a better task to pull atleast across nodes. And there could be
-> other opportunities/strategies to select a right task to pull.
-> 
-> Again, schedstats during the application run should give us hints here.
+Ohad: This code is probably yours and you know the whole history of it.
+Can you please comment it?
 
-Not necessarily so, IIRC the newidle idx is 0 which means that its very
-aggressive at pulling load, there might not actually be an imbalance
-with higher idx averages.
+Thanks,
+Michal
 
-> I was saying it the other way. 
-> your suggestion is to run idle balance once in n runs .. where n is 10
-> to 20. 
-> My thinking was to not run idle balance once in n unsuccessful runs. 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-I think you're talking past each other. Each having a different N :-)
 
+
+------enig2JKADNTBITLJSCJXSAXFK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHucx4ACgkQykllyylKDCHUFgCgiX1ivcYplmCyYUqW7ZujXr1q
+VmcAnRa9oYDA8E+red3Igf8+CvPN7J7F
+=IiEC
+-----END PGP SIGNATURE-----
+
+------enig2JKADNTBITLJSCJXSAXFK--
