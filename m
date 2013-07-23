@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab3GWW47 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:56:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41487 "EHLO
+	id S934573Ab3GWW5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:57:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41484 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934466Ab3GWW1E (ORCPT
+	with ESMTP id S934460Ab3GWW1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 23 Jul 2013 18:27:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Michael Ellerman <michael@ellerman.id.au>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 013/103] powerpc: Wire up the HV facility unavailable exception
-Date: Tue, 23 Jul 2013 15:25:24 -0700
-Message-Id: <20130723220420.076307910@linuxfoundation.org>
+Subject: [ 012/103] powerpc: Rename and flesh out the facility unavailable exception handler
+Date: Tue, 23 Jul 2013 15:25:23 -0700
+Message-Id: <20130723220419.956205389@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,103 +27,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Ellerman <michael@ellerman.id.au>
+From: Michael Ellerman <michaele@au1.ibm.com>
 
-commit b14b6260efeee6eb8942c6e6420e31281892acb6 upstream.
+commit 021424a1fce335e05807fd770eb8e1da30a63eea upstream.
 
-Similar to the facility unavailble exception, except the facilities are
-controlled by HFSCR.
+The exception at 0xf60 is not the TM (Transactional Memory) unavailable
+exception, it is the "Facility Unavailable Exception", rename it as
+such.
 
-Adapt the facility_unavailable_exception() so it can be called for
-either the regular or Hypervisor facility unavailable exceptions.
+Flesh out the handler to acknowledge the fact that it can be called for
+many reasons, one of which is TM being unavailable.
+
+Use STD_EXCEPTION_COMMON() for the exception body, for some reason we
+had it open-coded, I've checked the generated code is identical.
 
 Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/exceptions-64s.S |   15 +++++++++++++++
- arch/powerpc/kernel/traps.c          |   16 ++++++++++++----
- 2 files changed, 27 insertions(+), 4 deletions(-)
+ arch/powerpc/kernel/exceptions-64s.S |   21 +++++++--------------
+ arch/powerpc/kernel/traps.c          |   33 +++++++++++++++++++++++++--------
+ 2 files changed, 32 insertions(+), 22 deletions(-)
 
 --- a/arch/powerpc/kernel/exceptions-64s.S
 +++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -347,6 +347,12 @@ facility_unavailable_trampoline:
+@@ -341,10 +341,11 @@ vsx_unavailable_pSeries_1:
  	EXCEPTION_PROLOG_0(PACA_EXGEN)
- 	b	facility_unavailable_pSeries
+ 	b	vsx_unavailable_pSeries
  
-+hv_facility_unavailable_trampoline:
-+	. = 0xf80
-+	SET_SCRATCH0(r13)
-+	EXCEPTION_PROLOG_0(PACA_EXGEN)
-+	b	facility_unavailable_hv
-+
++facility_unavailable_trampoline:
+ 	. = 0xf60
+ 	SET_SCRATCH0(r13)
+ 	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	tm_unavailable_pSeries
++	b	facility_unavailable_pSeries
+ 
  #ifdef CONFIG_CBE_RAS
  	STD_EXCEPTION_HV(0x1200, 0x1202, cbe_system_error)
- 	KVM_HANDLER_SKIP(PACA_EXGEN, EXC_HV, 0x1202)
-@@ -525,6 +531,8 @@ denorm_done:
+@@ -522,7 +523,7 @@ denorm_done:
+ 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf20)
+ 	STD_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf40)
- 	STD_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
+-	STD_EXCEPTION_PSERIES_OOL(0xf60, tm_unavailable)
++	STD_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
  	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf60)
-+	STD_EXCEPTION_HV_OOL(0xf82, facility_unavailable)
-+	KVM_HANDLER(PACA_EXGEN, EXC_HV, 0xf82)
  
  /*
-  * An interrupt came in while soft-disabled. We set paca->irq_happened, then:
-@@ -836,6 +844,12 @@ facility_unavailable_relon_trampoline:
+@@ -829,11 +830,11 @@ vsx_unavailable_relon_pSeries_1:
  	EXCEPTION_PROLOG_0(PACA_EXGEN)
- 	b	facility_unavailable_relon_pSeries
+ 	b	vsx_unavailable_relon_pSeries
  
-+hv_facility_unavailable_relon_trampoline:
-+	. = 0x4f80
-+	SET_SCRATCH0(r13)
-+	EXCEPTION_PROLOG_0(PACA_EXGEN)
-+	b	facility_unavailable_relon_hv
-+
+-tm_unavailable_relon_pSeries_1:
++facility_unavailable_relon_trampoline:
+ 	. = 0x4f60
+ 	SET_SCRATCH0(r13)
+ 	EXCEPTION_PROLOG_0(PACA_EXGEN)
+-	b	tm_unavailable_relon_pSeries
++	b	facility_unavailable_relon_pSeries
+ 
  	STD_RELON_EXCEPTION_PSERIES(0x5300, 0x1300, instruction_breakpoint)
  #ifdef CONFIG_PPC_DENORMALISATION
- 	. = 0x5500
-@@ -1174,6 +1188,7 @@ __end_handlers:
+@@ -1159,15 +1160,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_VSX)
+ 	bl	.vsx_unavailable_exception
+ 	b	.ret_from_except
+ 
+-	.align	7
+-	.globl tm_unavailable_common
+-tm_unavailable_common:
+-	EXCEPTION_PROLOG_COMMON(0xf60, PACA_EXGEN)
+-	bl	.save_nvgprs
+-	DISABLE_INTS
+-	addi	r3,r1,STACK_FRAME_OVERHEAD
+-	bl	.tm_unavailable_exception
+-	b	.ret_from_except
++	STD_EXCEPTION_COMMON(0xf60, facility_unavailable, .facility_unavailable_exception)
+ 
+ 	.align	7
+ 	.globl	__end_handlers
+@@ -1180,7 +1173,7 @@ __end_handlers:
+ 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf00, performance_monitor)
  	STD_RELON_EXCEPTION_PSERIES_OOL(0xf20, altivec_unavailable)
  	STD_RELON_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
- 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
-+	STD_RELON_EXCEPTION_HV_OOL(0xf80, facility_unavailable)
+-	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, tm_unavailable)
++	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
  
  #if defined(CONFIG_PPC_PSERIES) || defined(CONFIG_PPC_POWERNV)
  /*
 --- a/arch/powerpc/kernel/traps.c
 +++ b/arch/powerpc/kernel/traps.c
-@@ -1295,10 +1295,18 @@ void facility_unavailable_exception(stru
- 		"EBB",
- 		"TAR",
- 	};
--	char *facility;
-+	char *facility, *prefix;
- 	u64 value;
+@@ -1282,25 +1282,42 @@ void vsx_unavailable_exception(struct pt
+ 	die("Unrecoverable VSX Unavailable Exception", regs, SIGABRT);
+ }
  
--	value = mfspr(SPRN_FSCR) >> 56;
-+	if (regs->trap == 0xf60) {
-+		value = mfspr(SPRN_FSCR);
-+		prefix = "";
-+	} else {
-+		value = mfspr(SPRN_HFSCR);
-+		prefix = "Hypervisor ";
-+	}
+-void tm_unavailable_exception(struct pt_regs *regs)
++void facility_unavailable_exception(struct pt_regs *regs)
+ {
++	static char *facility_strings[] = {
++		"FPU",
++		"VMX/VSX",
++		"DSCR",
++		"PMU SPRs",
++		"BHRB",
++		"TM",
++		"AT",
++		"EBB",
++		"TAR",
++	};
++	char *facility;
++	u64 value;
 +
-+	value = value >> 56;
- 
++	value = mfspr(SPRN_FSCR) >> 56;
++
  	/* We restore the interrupt state now */
  	if (!arch_irq_disabled_regs(regs))
-@@ -1309,8 +1317,8 @@ void facility_unavailable_exception(stru
- 	else
- 		facility = "unknown";
+ 		local_irq_enable();
  
--	pr_err("Facility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
--		facility, regs->nip, regs->msr);
-+	pr_err("%sFacility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
-+		prefix, facility, regs->nip, regs->msr);
+-	/* Currently we never expect a TMU exception.  Catch
+-	 * this and kill the process!
+-	 */
+-	printk(KERN_EMERG "Unexpected TM unavailable exception at %lx "
+-	       "(msr %lx)\n",
+-	       regs->nip, regs->msr);
++	if (value < ARRAY_SIZE(facility_strings))
++		facility = facility_strings[value];
++	else
++		facility = "unknown";
++
++	pr_err("Facility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
++		facility, regs->nip, regs->msr);
  
  	if (user_mode(regs)) {
  		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
+ 		return;
+ 	}
+ 
+-	die("Unexpected TM unavailable exception", regs, SIGABRT);
++	die("Unexpected facility unavailable exception", regs, SIGABRT);
+ }
+ 
+ #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
 
 
