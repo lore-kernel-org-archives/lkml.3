@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934472Ab3GWUXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 16:23:18 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:23563 "EHLO
+	id S934405Ab3GWUVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 16:21:54 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:23554 "EHLO
 	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934268Ab3GWUVz (ORCPT
+	with ESMTP id S934356Ab3GWUVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 16:21:55 -0400
-Message-ID: <5494352daa11f4452e7003aff5d0b2d0792b0cfb.1374609949.git.cmetcalf@tilera.com>
+	Tue, 23 Jul 2013 16:21:45 -0400
+Message-ID: <c771786187acf6f712420dc7d604e7ad115226f3.1374609949.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1374609948.git.cmetcalf@tilera.com>
 References: <cover.1374609948.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
 Date: Tue, 23 Jul 2013 16:05:48 -0400
-Subject: [PATCH 10/13] tile: support multiple mPIPE shims in tilegx network driver
+Subject: [PATCH 06/13] tile: support jumbo frames in the tilegx network driver
 To: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -20,1402 +20,890 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initial driver support was for a single mPIPE shim on the chip
-(as is the case for the Gx36 hardware).  The Gx72 chip has two mPIPE
-shims, so we extend the driver to handle that case.
-
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/gxio/iorpc_mpipe_info.c         |  18 +
- arch/tile/gxio/mpipe.c                    |  26 +-
- arch/tile/include/gxio/iorpc_mpipe_info.h |   4 +
- arch/tile/include/gxio/mpipe.h            |  28 ++
- arch/tile/include/hv/drv_mpipe_intf.h     |   3 +
- drivers/net/ethernet/tile/tilegx.c        | 561 ++++++++++++++++++------------
- drivers/net/ethernet/tile/tilegx_ptp.c    |  36 +-
- 7 files changed, 448 insertions(+), 228 deletions(-)
+ arch/tile/gxio/iorpc_mpipe.c         |  47 +++++
+ arch/tile/gxio/mpipe.c               |  18 +-
+ arch/tile/include/gxio/iorpc_mpipe.h |   4 +
+ arch/tile/include/gxio/mpipe.h       | 101 +++++++++-
+ drivers/net/ethernet/tile/tilegx.c   | 349 +++++++++++++++++++----------------
+ 5 files changed, 352 insertions(+), 167 deletions(-)
 
-diff --git a/arch/tile/gxio/iorpc_mpipe_info.c b/arch/tile/gxio/iorpc_mpipe_info.c
-index d0254aa..64883aa 100644
---- a/arch/tile/gxio/iorpc_mpipe_info.c
-+++ b/arch/tile/gxio/iorpc_mpipe_info.c
-@@ -16,6 +16,24 @@
- #include "gxio/iorpc_mpipe_info.h"
+diff --git a/arch/tile/gxio/iorpc_mpipe.c b/arch/tile/gxio/iorpc_mpipe.c
+index ad48e71..fb0af69 100644
+--- a/arch/tile/gxio/iorpc_mpipe.c
++++ b/arch/tile/gxio/iorpc_mpipe.c
+@@ -387,6 +387,27 @@ int gxio_mpipe_link_close_aux(gxio_mpipe_context_t * context, int mac)
  
+ EXPORT_SYMBOL(gxio_mpipe_link_close_aux);
  
-+struct instance_aux_param {
-+	_gxio_mpipe_link_name_t name;
++struct link_set_attr_aux_param {
++	int mac;
++	uint32_t attr;
++	int64_t val;
 +};
 +
-+int gxio_mpipe_info_instance_aux(gxio_mpipe_info_context_t * context,
-+				 _gxio_mpipe_link_name_t name)
++int gxio_mpipe_link_set_attr_aux(gxio_mpipe_context_t * context, int mac,
++				 uint32_t attr, int64_t val)
 +{
-+	struct instance_aux_param temp;
-+	struct instance_aux_param *params = &temp;
++	struct link_set_attr_aux_param temp;
++	struct link_set_attr_aux_param *params = &temp;
 +
-+	params->name = name;
++	params->mac = mac;
++	params->attr = attr;
++	params->val = val;
 +
 +	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
-+			     sizeof(*params), GXIO_MPIPE_INFO_OP_INSTANCE_AUX);
++			     sizeof(*params), GXIO_MPIPE_OP_LINK_SET_ATTR_AUX);
 +}
 +
-+EXPORT_SYMBOL(gxio_mpipe_info_instance_aux);
++EXPORT_SYMBOL(gxio_mpipe_link_set_attr_aux);
+ 
+ struct get_timestamp_aux_param {
+ 	uint64_t sec;
+@@ -454,6 +475,32 @@ int gxio_mpipe_adjust_timestamp_aux(gxio_mpipe_context_t * context,
+ 
+ EXPORT_SYMBOL(gxio_mpipe_adjust_timestamp_aux);
+ 
++struct config_edma_ring_blks_param {
++	unsigned int ering;
++	unsigned int max_blks;
++	unsigned int min_snf_blks;
++	unsigned int db;
++};
 +
- struct enumerate_aux_param {
- 	_gxio_mpipe_link_name_t name;
- 	_gxio_mpipe_link_mac_t mac;
++int gxio_mpipe_config_edma_ring_blks(gxio_mpipe_context_t * context,
++				     unsigned int ering, unsigned int max_blks,
++				     unsigned int min_snf_blks, unsigned int db)
++{
++	struct config_edma_ring_blks_param temp;
++	struct config_edma_ring_blks_param *params = &temp;
++
++	params->ering = ering;
++	params->max_blks = max_blks;
++	params->min_snf_blks = min_snf_blks;
++	params->db = db;
++
++	return hv_dev_pwrite(context->fd, 0, (HV_VirtAddr) params,
++			     sizeof(*params),
++			     GXIO_MPIPE_OP_CONFIG_EDMA_RING_BLKS);
++}
++
++EXPORT_SYMBOL(gxio_mpipe_config_edma_ring_blks);
++
+ struct adjust_timestamp_freq_param {
+ 	int32_t ppb;
+ };
 diff --git a/arch/tile/gxio/mpipe.c b/arch/tile/gxio/mpipe.c
-index 0567cf0..665f88b 100644
+index e71c633..0567cf0 100644
 --- a/arch/tile/gxio/mpipe.c
 +++ b/arch/tile/gxio/mpipe.c
-@@ -36,8 +36,15 @@ int gxio_mpipe_init(gxio_mpipe_context_t *context, unsigned int mpipe_index)
- 	int fd;
- 	int i;
+@@ -383,7 +383,7 @@ EXPORT_SYMBOL_GPL(gxio_mpipe_iqueue_init);
  
-+	if (mpipe_index >= GXIO_MPIPE_INSTANCE_MAX) {
-+		return -EINVAL;
-+	}
-+
- 	snprintf(file, sizeof(file), "mpipe/%d/iorpc", mpipe_index);
- 	fd = hv_dev_open((HV_VirtAddr) file, 0);
-+
-+	context->fd = fd;
-+
- 	if (fd < 0) {
- 		if (fd >= GXIO_ERR_MIN && fd <= GXIO_ERR_MAX)
- 			return fd;
-@@ -45,8 +52,6 @@ int gxio_mpipe_init(gxio_mpipe_context_t *context, unsigned int mpipe_index)
- 			return -ENODEV;
- 	}
+ int gxio_mpipe_equeue_init(gxio_mpipe_equeue_t *equeue,
+ 			   gxio_mpipe_context_t *context,
+-			   unsigned int edma_ring_id,
++			   unsigned int ering,
+ 			   unsigned int channel,
+ 			   void *mem, unsigned int mem_size,
+ 			   unsigned int mem_flags)
+@@ -394,7 +394,7 @@ int gxio_mpipe_equeue_init(gxio_mpipe_equeue_t *equeue,
+ 	/* Offset used to read number of completed commands. */
+ 	MPIPE_EDMA_POST_REGION_ADDR_t offset;
  
--	context->fd = fd;
--
- 	/* Map in the MMIO space. */
- 	context->mmio_cfg_base = (void __force *)
- 		iorpc_ioremap(fd, HV_MPIPE_CONFIG_MMIO_OFFSET,
-@@ -64,12 +69,15 @@ int gxio_mpipe_init(gxio_mpipe_context_t *context, unsigned int mpipe_index)
- 	for (i = 0; i < 8; i++)
- 		context->__stacks.stacks[i] = 255;
+-	int result = gxio_mpipe_init_edma_ring(context, edma_ring_id, channel,
++	int result = gxio_mpipe_init_edma_ring(context, ering, channel,
+ 					       mem, mem_size, mem_flags);
+ 	if (result < 0)
+ 		return result;
+@@ -405,7 +405,7 @@ int gxio_mpipe_equeue_init(gxio_mpipe_equeue_t *equeue,
+ 	offset.region =
+ 		MPIPE_MMIO_ADDR__REGION_VAL_EDMA -
+ 		MPIPE_MMIO_ADDR__REGION_VAL_IDMA;
+-	offset.ring = edma_ring_id;
++	offset.ring = ering;
  
-+	context->instance = mpipe_index;
-+
+ 	__gxio_dma_queue_init(&equeue->dma_queue,
+ 			      context->mmio_fast_base + offset.word,
+@@ -413,6 +413,9 @@ int gxio_mpipe_equeue_init(gxio_mpipe_equeue_t *equeue,
+ 	equeue->edescs = mem;
+ 	equeue->mask_num_entries = num_entries - 1;
+ 	equeue->log2_num_entries = __builtin_ctz(num_entries);
++	equeue->context = context;
++	equeue->ering = ering;
++	equeue->channel = channel;
+ 
  	return 0;
- 
-       fast_failed:
- 	iounmap((void __force __iomem *)(context->mmio_cfg_base));
-       cfg_failed:
- 	hv_dev_close(context->fd);
-+	context->fd = -1;
- 	return -ENODEV;
+ }
+@@ -543,3 +546,12 @@ int gxio_mpipe_link_close(gxio_mpipe_link_t *link)
  }
  
-@@ -496,6 +504,20 @@ static gxio_mpipe_context_t *_gxio_get_link_context(void)
- 	return contextp;
- }
- 
-+int gxio_mpipe_link_instance(const char *link_name)
+ EXPORT_SYMBOL_GPL(gxio_mpipe_link_close);
++
++int gxio_mpipe_link_set_attr(gxio_mpipe_link_t *link, uint32_t attr,
++			     int64_t val)
 +{
-+	_gxio_mpipe_link_name_t name;
-+	gxio_mpipe_context_t *context = _gxio_get_link_context();
-+
-+	if (!context)
-+		return GXIO_ERR_NO_DEVICE;
-+
-+	strncpy(name.name, link_name, sizeof(name.name));
-+	name.name[GXIO_MPIPE_LINK_NAME_LEN - 1] = '\0';
-+
-+	return gxio_mpipe_info_instance_aux(context, name);
++	return gxio_mpipe_link_set_attr_aux(link->context, link->mac, attr,
++					    val);
 +}
 +
- int gxio_mpipe_link_enumerate_mac(int idx, char *link_name, uint8_t *link_mac)
- {
- 	int rv;
-diff --git a/arch/tile/include/gxio/iorpc_mpipe_info.h b/arch/tile/include/gxio/iorpc_mpipe_info.h
-index 0bcf3f7..476c5e5 100644
---- a/arch/tile/include/gxio/iorpc_mpipe_info.h
-+++ b/arch/tile/include/gxio/iorpc_mpipe_info.h
-@@ -27,11 +27,15 @@
- #include <asm/pgtable.h>
++EXPORT_SYMBOL_GPL(gxio_mpipe_link_set_attr);
+diff --git a/arch/tile/include/gxio/iorpc_mpipe.h b/arch/tile/include/gxio/iorpc_mpipe.h
+index 6961ec2..19801e4 100644
+--- a/arch/tile/include/gxio/iorpc_mpipe.h
++++ b/arch/tile/include/gxio/iorpc_mpipe.h
+@@ -44,10 +44,12 @@
+ #define GXIO_MPIPE_OP_REGISTER_CLIENT_MEMORY IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1210)
+ #define GXIO_MPIPE_OP_LINK_OPEN_AUX    IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1211)
+ #define GXIO_MPIPE_OP_LINK_CLOSE_AUX   IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1212)
++#define GXIO_MPIPE_OP_LINK_SET_ATTR_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1213)
  
+ #define GXIO_MPIPE_OP_GET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x121e)
+ #define GXIO_MPIPE_OP_SET_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x121f)
+ #define GXIO_MPIPE_OP_ADJUST_TIMESTAMP_AUX IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x1220)
++#define GXIO_MPIPE_OP_CONFIG_EDMA_RING_BLKS IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1221)
+ #define GXIO_MPIPE_OP_ADJUST_TIMESTAMP_FREQ IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1222)
+ #define GXIO_MPIPE_OP_ARM_POLLFD       IORPC_OPCODE(IORPC_FORMAT_KERNEL_POLLFD, 0x9000)
+ #define GXIO_MPIPE_OP_CLOSE_POLLFD     IORPC_OPCODE(IORPC_FORMAT_KERNEL_POLLFD, 0x9001)
+@@ -115,6 +117,8 @@ int gxio_mpipe_link_open_aux(gxio_mpipe_context_t * context,
  
-+#define GXIO_MPIPE_INFO_OP_INSTANCE_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1250)
- #define GXIO_MPIPE_INFO_OP_ENUMERATE_AUX IORPC_OPCODE(IORPC_FORMAT_NONE, 0x1251)
- #define GXIO_MPIPE_INFO_OP_GET_MMIO_BASE IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8000)
- #define GXIO_MPIPE_INFO_OP_CHECK_MMIO_OFFSET IORPC_OPCODE(IORPC_FORMAT_NONE_NOUSER, 0x8001)
+ int gxio_mpipe_link_close_aux(gxio_mpipe_context_t * context, int mac);
  
++int gxio_mpipe_link_set_attr_aux(gxio_mpipe_context_t * context, int mac,
++				 uint32_t attr, int64_t val);
  
-+int gxio_mpipe_info_instance_aux(gxio_mpipe_info_context_t * context,
-+				 _gxio_mpipe_link_name_t name);
-+
- int gxio_mpipe_info_enumerate_aux(gxio_mpipe_info_context_t * context,
- 				  unsigned int idx,
- 				  _gxio_mpipe_link_name_t * name,
+ int gxio_mpipe_get_timestamp_aux(gxio_mpipe_context_t * context, uint64_t * sec,
+ 				 uint64_t * nsec, uint64_t * cycles);
 diff --git a/arch/tile/include/gxio/mpipe.h b/arch/tile/include/gxio/mpipe.h
-index 6b99d35..0b1c4f6 100644
+index 57f5ca2..6b99d35 100644
 --- a/arch/tile/include/gxio/mpipe.h
 +++ b/arch/tile/include/gxio/mpipe.h
-@@ -220,6 +220,13 @@ typedef MPIPE_PDESC_t gxio_mpipe_idesc_t;
+@@ -810,7 +810,7 @@ extern int gxio_mpipe_alloc_edma_rings(gxio_mpipe_context_t *context,
+ /* Initialize an eDMA ring, using the given memory and size.
+  *
+  * @param context An initialized mPIPE context.
+- * @param ring The eDMA ring index.
++ * @param ering The eDMA ring index.
+  * @param channel The channel to use.  This must be one of the channels
+  * associated with the context's set of open links.
+  * @param mem A physically contiguous region of memory to be filled
+@@ -823,10 +823,37 @@ extern int gxio_mpipe_alloc_edma_rings(gxio_mpipe_context_t *context,
+  * ::GXIO_ERR_INVAL_MEMORY_SIZE on failure.
   */
- typedef MPIPE_EDMA_DESC_t gxio_mpipe_edesc_t;
+ extern int gxio_mpipe_init_edma_ring(gxio_mpipe_context_t *context,
+-				     unsigned int ring, unsigned int channel,
++				     unsigned int ering, unsigned int channel,
+ 				     void *mem, size_t mem_size,
+ 				     unsigned int mem_flags);
  
-+/*
-+ * Max # of mpipe instances. 2 currently.
-+ */
-+#define GXIO_MPIPE_INSTANCE_MAX  HV_MPIPE_INSTANCE_MAX
-+
-+#define NR_MPIPE_MAX   GXIO_MPIPE_INSTANCE_MAX
-+
- /* Get the "va" field from an "idesc".
-  *
-  * This is the address at which the ingress hardware copied the first
-@@ -311,6 +318,9 @@ typedef struct {
- 	/* File descriptor for calling up to Linux (and thus the HV). */
- 	int fd;
- 
-+	/* Corresponding mpipe instance #. */
-+	int instance;
-+
- 	/* The VA at which configuration registers are mapped. */
- 	char *mmio_cfg_base;
- 
-@@ -1716,6 +1726,24 @@ typedef struct {
- 	uint8_t mac;
- } gxio_mpipe_link_t;
- 
-+/* Translate a link name to the instance number of the mPIPE shim which is
-+ *  connected to that link.  This call does not verify whether the link is
-+ *  currently available, and does not reserve any link resources;
-+ *  gxio_mpipe_link_open() must be called to perform those functions.
++/* Set the "max_blks", "min_snf_blks", and "db" fields of
++ * ::MPIPE_EDMA_RG_INIT_DAT_THRESH_t for a given edma ring.
 + *
-+ *  Typically applications will call this function to translate a link name
-+ *  to an mPIPE instance number; call gxio_mpipe_init(), passing it that
-+ *  instance number, to initialize the mPIPE shim; and then call
-+ *  gxio_mpipe_link_open(), passing it the same link name plus the mPIPE
-+ *  context, to configure the link.
++ * The global pool of dynamic blocks will be automatically adjusted.
 + *
-+ * @param link_name Name of the link; see @ref gxio_mpipe_link_names.
-+ * @return The mPIPE instance number which is associated with the named
-+ *  link, or a negative error code (::GXIO_ERR_NO_DEVICE) if the link does
-+ *  not exist.
++ * This function should not be called after any egress has been done
++ * on the edma ring.
++ *
++ * Most applications should just use gxio_mpipe_equeue_set_snf_size().
++ *
++ * @param context An initialized mPIPE context.
++ * @param ering The eDMA ring index.
++ * @param max_blks The number of blocks to dedicate to the ring
++ * (normally min_snf_blks + 1).  Must be greater than min_snf_blocks.
++ * @param min_snf_blks The number of blocks which must be stored
++ * prior to starting to send the packet (normally 12).
++ * @param db Whether to allow use of dynamic blocks by the ring
++ * (normally 1).
++ *
++ * @return 0 on success, negative on error.
 + */
-+extern int gxio_mpipe_link_instance(const char *link_name);
++extern int gxio_mpipe_config_edma_ring_blks(gxio_mpipe_context_t *context,
++					    unsigned int ering,
++					    unsigned int max_blks,
++					    unsigned int min_snf_blks,
++					    unsigned int db);
 +
- /* Retrieve one of this system's legal link names, and its MAC address.
+ /*****************************************************************
+  *                      Classifier Program                        *
+  ******************************************************************/
+@@ -1288,15 +1315,39 @@ typedef struct {
+ 	/* The log2() of the number of entries. */
+ 	unsigned long log2_num_entries;
+ 
++	/* The context. */
++	gxio_mpipe_context_t *context;
++
++	/* The ering. */
++	unsigned int ering;
++
++	/* The channel. */
++	unsigned int channel;
++
+ } gxio_mpipe_equeue_t;
+ 
+ /* Initialize an "equeue".
   *
-  * @param index Link name index.  If a system supports N legal link names,
-diff --git a/arch/tile/include/hv/drv_mpipe_intf.h b/arch/tile/include/hv/drv_mpipe_intf.h
-index 6cdae3b..c97e416 100644
---- a/arch/tile/include/hv/drv_mpipe_intf.h
-+++ b/arch/tile/include/hv/drv_mpipe_intf.h
-@@ -23,6 +23,9 @@
- #include <arch/mpipe_constants.h>
+- * Takes the equeue plus the same args as gxio_mpipe_init_edma_ring().
++ * This function uses gxio_mpipe_init_edma_ring() to initialize the
++ * underlying edma_ring using the provided arguments.
++ *
++ * @param equeue An egress queue to be initialized.
++ * @param context An initialized mPIPE context.
++ * @param ering The eDMA ring index.
++ * @param channel The channel to use.  This must be one of the channels
++ * associated with the context's set of open links.
++ * @param mem A physically contiguous region of memory to be filled
++ * with a ring of ::gxio_mpipe_edesc_t structures.
++ * @param mem_size Number of bytes in the ring.  Must be 512, 2048,
++ * 8192 or 65536, times 16 (i.e. sizeof(gxio_mpipe_edesc_t)).
++ * @param mem_flags ::gxio_mpipe_mem_flags_e memory flags.
++ *
++ * @return 0 on success, ::GXIO_MPIPE_ERR_BAD_EDMA_RING or
++ * ::GXIO_ERR_INVAL_MEMORY_SIZE on failure.
+  */
+ extern int gxio_mpipe_equeue_init(gxio_mpipe_equeue_t *equeue,
+ 				  gxio_mpipe_context_t *context,
+-				  unsigned int edma_ring_id,
++				  unsigned int ering,
+ 				  unsigned int channel,
+ 				  void *mem, unsigned int mem_size,
+ 				  unsigned int mem_flags);
+@@ -1494,6 +1545,37 @@ static inline int gxio_mpipe_equeue_is_complete(gxio_mpipe_equeue_t *equeue,
+ 					    completion_slot, update);
+ }
  
- 
-+/** Number of mPIPE instances supported */
-+#define HV_MPIPE_INSTANCE_MAX   (2)
++/* Set the snf (store and forward) size for an equeue.
++ *
++ * The snf size for an equeue defaults to 1536, and encodes the size
++ * of the largest packet for which egress is guaranteed to avoid
++ * transmission underruns and/or corrupt checksums under heavy load.
++ *
++ * The snf size affects a global resource pool which cannot support,
++ * for example, all 24 equeues each requesting an snf size of 8K.
++ *
++ * To ensure that jumbo packets can be egressed properly, the snf size
++ * should be set to the size of the largest possible packet, which
++ * will usually be limited by the size of the app's largest buffer.
++ *
++ * This is a convenience wrapper around
++ * gxio_mpipe_config_edma_ring_blks().
++ *
++ * This function should not be called after any egress has been done
++ * on the equeue.
++ *
++ * @param equeue An egress queue initialized via gxio_mpipe_equeue_init().
++ * @param size The snf size, in bytes.
++ * @return Zero on success, negative error otherwise.
++ */
++static inline int gxio_mpipe_equeue_set_snf_size(gxio_mpipe_equeue_t *equeue,
++						 size_t size)
++{
++	int blks = (size + 127) / 128;
++	return gxio_mpipe_config_edma_ring_blks(equeue->context, equeue->ering,
++						blks + 1, blks, 1);
++}
 +
- /** Number of buffer stacks (32). */
- #define HV_MPIPE_NUM_BUFFER_STACKS \
-   (MPIPE_MMIO_INIT_DAT_GX36_1__BUFFER_STACK_MASK_WIDTH)
+ /*****************************************************************
+  *                        Link Management                         *
+  ******************************************************************/
+@@ -1697,6 +1779,17 @@ static inline int gxio_mpipe_link_channel(gxio_mpipe_link_t *link)
+ 	return link->channel;
+ }
+ 
++/* Set a link attribute.
++ *
++ * @param link A properly initialized link state object.
++ * @param attr An attribute from the set of @ref gxio_mpipe_link_attrs.
++ * @param val New value of the attribute.
++ * @return 0 if the attribute was successfully set, or a negative error
++ *  code.
++ */
++extern int gxio_mpipe_link_set_attr(gxio_mpipe_link_t *link, uint32_t attr,
++				    int64_t val);
++
+ ///////////////////////////////////////////////////////////////////
+ //                             Timestamp                         //
+ ///////////////////////////////////////////////////////////////////
 diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
-index 9c128ff..18eb7b9 100644
+index 3d4406c..8d1f748 100644
 --- a/drivers/net/ethernet/tile/tilegx.c
 +++ b/drivers/net/ethernet/tile/tilegx.c
-@@ -133,27 +133,31 @@ struct tile_net_tx_wake {
+@@ -76,6 +76,9 @@
  
- /* Info for a specific cpu. */
- struct tile_net_info {
--	/* The NAPI struct. */
--	struct napi_struct napi;
--	/* Packet queue. */
--	gxio_mpipe_iqueue_t iqueue;
- 	/* Our cpu. */
- 	int my_cpu;
--	/* True if iqueue is valid. */
--	bool has_iqueue;
--	/* NAPI flags. */
--	bool napi_added;
--	bool napi_enabled;
--	/* Number of buffers (by kind) which must still be provided. */
--	unsigned int num_needed_buffers[MAX_KINDS];
+ #define MAX_FRAGS (MAX_SKB_FRAGS + 1)
+ 
++/* The "kinds" of buffer stacks (small/large/jumbo). */
++#define MAX_KINDS 3
++
+ /* Size of completions data to allocate.
+  * ISSUE: Probably more than needed since we don't use all the channels.
+  */
+@@ -141,10 +144,8 @@ struct tile_net_info {
+ 	/* NAPI flags. */
+ 	bool napi_added;
+ 	bool napi_enabled;
+-	/* Number of small sk_buffs which must still be provided. */
+-	unsigned int num_needed_small_buffers;
+-	/* Number of large sk_buffs which must still be provided. */
+-	unsigned int num_needed_large_buffers;
++	/* Number of buffers (by kind) which must still be provided. */
++	unsigned int num_needed_buffers[MAX_KINDS];
  	/* A timer for handling egress completions. */
  	struct hrtimer egress_timer;
  	/* True if "egress_timer" is scheduled. */
- 	bool egress_timer_scheduled;
--	/* Comps for each egress channel. */
--	struct tile_net_comps *comps_for_echannel[TILE_NET_CHANNELS];
--	/* Transmit wake timer for each egress channel. */
--	struct tile_net_tx_wake tx_wake[TILE_NET_CHANNELS];
-+	struct info_mpipe {
-+		/* Packet queue. */
-+		gxio_mpipe_iqueue_t iqueue;
-+		/* The NAPI struct. */
-+		struct napi_struct napi;
-+		/* Number of buffers (by kind) which must still be provided. */
-+		unsigned int num_needed_buffers[MAX_KINDS];
-+		/* instance id. */
-+		int instance;
-+		/* True if iqueue is valid. */
-+		bool has_iqueue;
-+		/* NAPI flags. */
-+		bool napi_added;
-+		bool napi_enabled;
-+		/* Comps for each egress channel. */
-+		struct tile_net_comps *comps_for_echannel[TILE_NET_CHANNELS];
-+		/* Transmit wake timer for each egress channel. */
-+		struct tile_net_tx_wake tx_wake[TILE_NET_CHANNELS];
-+	} mpipe[NR_MPIPE_MAX];
- };
+@@ -200,24 +201,25 @@ static DEFINE_PER_CPU(struct tile_net_info, per_cpu_info);
+ /* The "context" for all devices. */
+ static gxio_mpipe_context_t context;
  
- /* Info for egress on a particular egress channel. */
-@@ -178,17 +182,54 @@ struct tile_net_priv {
- 	int loopify_channel;
- 	/* The egress channel (channel or loopify_channel). */
- 	int echannel;
-+	/* mPIPE instance, 0 or 1. */
-+	int instance;
- };
- 
--/* Egress info, indexed by "priv->echannel" (lazily created as needed). */
--static struct tile_net_egress egress_for_echannel[TILE_NET_CHANNELS];
-+static struct mpipe_data {
-+	/* The ingress irq. */
-+	int ingress_irq;
- 
--/* Devices currently associated with each channel.
-- * NOTE: The array entry can become NULL after ifconfig down, but
-- * we do not free the underlying net_device structures, so it is
-- * safe to use a pointer after reading it from this array.
-- */
--static struct net_device *tile_net_devs_for_channel[TILE_NET_CHANNELS];
-+	/* The "context" for all devices. */
-+	gxio_mpipe_context_t context;
-+
-+	/* Egress info, indexed by "priv->echannel"
-+	 * (lazily created as needed).
-+	 */
-+	struct tile_net_egress
-+	egress_for_echannel[TILE_NET_CHANNELS];
-+
-+	/* Devices currently associated with each channel.
-+	 * NOTE: The array entry can become NULL after ifconfig down, but
-+	 * we do not free the underlying net_device structures, so it is
-+	 * safe to use a pointer after reading it from this array.
-+	 */
-+	struct net_device
-+	*tile_net_devs_for_channel[TILE_NET_CHANNELS];
-+
-+	/* The actual memory allocated for the buffer stacks. */
-+	void *buffer_stack_vas[MAX_KINDS];
-+
-+	/* The amount of memory allocated for each buffer stack. */
-+	size_t buffer_stack_bytes[MAX_KINDS];
-+
-+	/* The first buffer stack index
-+	 * (small = +0, large = +1, jumbo = +2).
-+	 */
-+	int first_buffer_stack;
-+
-+	/* The buckets. */
-+	int first_bucket;
-+	int num_buckets;
-+
-+} mpipe_data[NR_MPIPE_MAX] = {
-+	[0 ... (NR_MPIPE_MAX - 1)] {
-+		.ingress_irq = -1,
-+		.first_buffer_stack = -1,
-+		.first_bucket = -1,
-+		.num_buckets = 1
-+	}
+-/* Buffer sizes and mpipe enum codes for buffer stacks.
++/* The buffer size enums for each buffer stack.
+  * See arch/tile/include/gxio/mpipe.h for the set of possible values.
++ * We avoid the "10384" size because it can induce "false chaining"
++ * on "cut-through" jumbo packets.
+  */
+-#define BUFFER_SIZE_SMALL_ENUM GXIO_MPIPE_BUFFER_SIZE_128
+-#define BUFFER_SIZE_SMALL 128
+-#define BUFFER_SIZE_LARGE_ENUM GXIO_MPIPE_BUFFER_SIZE_1664
+-#define BUFFER_SIZE_LARGE 1664
++static gxio_mpipe_buffer_size_enum_t buffer_size_enums[MAX_KINDS] = {
++	GXIO_MPIPE_BUFFER_SIZE_128,
++	GXIO_MPIPE_BUFFER_SIZE_1664,
++	GXIO_MPIPE_BUFFER_SIZE_16384
 +};
  
- /* A mutex for "tile_net_devs_for_channel". */
- static DEFINE_MUTEX(tile_net_devs_for_channel_mutex);
-@@ -196,8 +237,6 @@ static DEFINE_MUTEX(tile_net_devs_for_channel_mutex);
- /* The per-cpu info. */
- static DEFINE_PER_CPU(struct tile_net_info, per_cpu_info);
+-/* The small/large "buffer stacks". */
+-static int small_buffer_stack = -1;
+-static int large_buffer_stack = -1;
++/* The actual memory allocated for the buffer stacks. */
++static void *buffer_stack_vas[MAX_KINDS];
  
--/* The "context" for all devices. */
--static gxio_mpipe_context_t context;
- 
- /* The buffer size enums for each buffer stack.
-  * See arch/tile/include/gxio/mpipe.h for the set of possible values.
-@@ -210,22 +249,6 @@ static gxio_mpipe_buffer_size_enum_t buffer_size_enums[MAX_KINDS] = {
- 	GXIO_MPIPE_BUFFER_SIZE_16384
- };
+-/* Amount of memory allocated for each buffer stack. */
+-static size_t buffer_stack_size;
++/* The amount of memory allocated for each buffer stack. */
++static size_t buffer_stack_bytes[MAX_KINDS];
  
 -/* The actual memory allocated for the buffer stacks. */
--static void *buffer_stack_vas[MAX_KINDS];
--
--/* The amount of memory allocated for each buffer stack. */
--static size_t buffer_stack_bytes[MAX_KINDS];
--
--/* The first buffer stack index (small = +0, large = +1, jumbo = +2). */
--static int first_buffer_stack = -1;
--
--/* The buckets. */
--static int first_bucket = -1;
--static int num_buckets = 1;
--
--/* The ingress irq. */
--static int ingress_irq = -1;
--
- /* Text value of tile_net.cpus if passed as a module parameter. */
- static char *network_cpus_string;
+-static void *small_buffer_stack_va;
+-static void *large_buffer_stack_va;
++/* The first buffer stack index (small = +0, large = +1, jumbo = +2). */
++static int first_buffer_stack = -1;
  
-@@ -241,6 +264,13 @@ static char *custom_str;
- /* If "tile_net.jumbo=NUM" was specified, this is "NUM". */
- static uint jumbo_num;
+ /* The buckets. */
+ static int first_bucket = -1;
+@@ -238,6 +240,9 @@ static char *loopify_link_name;
+ /* If "tile_net.custom" was specified, this is non-NULL. */
+ static char *custom_str;
  
-+/* Obtain mpipe instance from struct tile_net_priv given struct net_device. */
-+static inline int mpipe_instance(struct net_device *dev)
-+{
-+	struct tile_net_priv *priv = netdev_priv(dev);
-+	return priv->instance;
-+}
++/* If "tile_net.jumbo=NUM" was specified, this is "NUM". */
++static uint jumbo_num;
 +
  /* The "tile_net.cpus" argument specifies the cpus that are dedicated
   * to handle ingress packets.
   *
-@@ -314,8 +344,9 @@ static void tile_net_stats_add(unsigned long value, unsigned long *field)
+@@ -292,6 +297,12 @@ MODULE_PARM_DESC(loopify, "name the device to use loop0/1 for ingress/egress");
+ module_param_named(custom, custom_str, charp, 0444);
+ MODULE_PARM_DESC(custom, "indicates a (heavily) customized classifier");
+ 
++/* The "tile_net.jumbo" argument causes us to support "jumbo" packets,
++ * and to allocate the given number of "jumbo" buffers.
++ */
++module_param_named(jumbo, jumbo_num, uint, 0444);
++MODULE_PARM_DESC(jumbo, "the number of buffers to support jumbo packets");
++
+ /* Atomically update a statistics field.
+  * Note that on TILE-Gx, this operation is fire-and-forget on the
+  * issuing core (single-cycle dispatch) and takes only a few cycles
+@@ -305,15 +316,15 @@ static void tile_net_stats_add(unsigned long value, unsigned long *field)
  }
  
  /* Allocate and push a buffer. */
--static bool tile_net_provide_buffer(int kind)
-+static bool tile_net_provide_buffer(int instance, int kind)
+-static bool tile_net_provide_buffer(bool small)
++static bool tile_net_provide_buffer(int kind)
  {
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	gxio_mpipe_buffer_size_enum_t bse = buffer_size_enums[kind];
- 	size_t bs = gxio_mpipe_buffer_size_enum_to_buffer_size(bse);
+-	int stack = small ? small_buffer_stack : large_buffer_stack;
++	gxio_mpipe_buffer_size_enum_t bse = buffer_size_enums[kind];
++	size_t bs = gxio_mpipe_buffer_size_enum_to_buffer_size(bse);
  	const unsigned long buffer_alignment = 128;
-@@ -337,7 +368,7 @@ static bool tile_net_provide_buffer(int kind)
+ 	struct sk_buff *skb;
+ 	int len;
+ 
+-	len = sizeof(struct sk_buff **) + buffer_alignment;
+-	len += (small ? BUFFER_SIZE_SMALL : BUFFER_SIZE_LARGE);
++	len = sizeof(struct sk_buff **) + buffer_alignment + bs;
+ 	skb = dev_alloc_skb(len);
+ 	if (skb == NULL)
+ 		return false;
+@@ -328,7 +339,7 @@ static bool tile_net_provide_buffer(bool small)
  	/* Make sure "skb" and the back-pointer have been flushed. */
  	wmb();
  
--	gxio_mpipe_push_buffer(&context, first_buffer_stack + kind,
-+	gxio_mpipe_push_buffer(&md->context, md->first_buffer_stack + kind,
+-	gxio_mpipe_push_buffer(&context, stack,
++	gxio_mpipe_push_buffer(&context, first_buffer_stack + kind,
  			       (void *)va_to_tile_io_addr(skb->data));
  
  	return true;
-@@ -363,11 +394,14 @@ static struct sk_buff *mpipe_buf_to_skb(void *va)
- 	return skb;
- }
- 
--static void tile_net_pop_all_buffers(int stack)
-+static void tile_net_pop_all_buffers(int instance, int stack)
- {
-+	struct mpipe_data *md = &mpipe_data[instance];
-+
- 	for (;;) {
- 		tile_io_addr_t addr =
--			(tile_io_addr_t)gxio_mpipe_pop_buffer(&context, stack);
-+			(tile_io_addr_t)gxio_mpipe_pop_buffer(&md->context,
-+							      stack);
- 		if (addr == 0)
- 			break;
- 		dev_kfree_skb_irq(mpipe_buf_to_skb(tile_io_addr_to_va(addr)));
-@@ -378,17 +412,23 @@ static void tile_net_pop_all_buffers(int stack)
+@@ -369,24 +380,19 @@ static void tile_net_pop_all_buffers(int stack)
  static void tile_net_provide_needed_buffers(void)
  {
  	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
--	int kind;
 -
--	for (kind = 0; kind < MAX_KINDS; kind++) {
--		while (info->num_needed_buffers[kind] != 0) {
--			if (!tile_net_provide_buffer(kind)) {
--				/* Add info to the allocation failure dump. */
--				pr_notice("Tile %d still needs some buffers\n",
--					  info->my_cpu);
--				return;
-+	int instance, kind;
-+	for (instance = 0; instance < NR_MPIPE_MAX &&
-+		     info->mpipe[instance].has_iqueue; instance++)	{
-+		for (kind = 0; kind < MAX_KINDS; kind++) {
-+			while (info->mpipe[instance].num_needed_buffers[kind]
-+			       != 0) {
-+				if (!tile_net_provide_buffer(instance, kind)) {
-+					/* Add info to the allocation
-+					   failure dump. */
-+					pr_notice("Tile %d still needs"	\
-+						  " some buffers\n",
-+						  info->my_cpu);
-+					return;
-+				}
-+				info->mpipe[instance].
-+					num_needed_buffers[kind]--;
- 			}
--			info->num_needed_buffers[kind]--;
- 		}
+-	while (info->num_needed_small_buffers != 0) {
+-		if (!tile_net_provide_buffer(true))
+-			goto oops;
+-		info->num_needed_small_buffers--;
+-	}
+-
+-	while (info->num_needed_large_buffers != 0) {
+-		if (!tile_net_provide_buffer(false))
+-			goto oops;
+-		info->num_needed_large_buffers--;
++	int kind;
++
++	for (kind = 0; kind < MAX_KINDS; kind++) {
++		while (info->num_needed_buffers[kind] != 0) {
++			if (!tile_net_provide_buffer(kind)) {
++				/* Add info to the allocation failure dump. */
++				pr_notice("Tile %d still needs some buffers\n",
++					  info->my_cpu);
++				return;
++			}
++			info->num_needed_buffers[kind]--;
++		}
  	}
+-
+-	return;
+-
+-oops:
+-	/* Add a description to the page allocation failure dump. */
+-	pr_notice("Tile %d still needs some buffers\n", info->my_cpu);
  }
-@@ -406,12 +446,13 @@ static void tile_rx_timestamp(struct sk_buff *skb, gxio_mpipe_idesc_t *idesc)
- }
  
- /* Get TX timestamp, and store it in the skb. */
--static void tile_tx_timestamp(struct sk_buff *skb)
-+static void tile_tx_timestamp(struct sk_buff *skb, int instance)
- {
- #ifdef CONFIG_PTP_1588_CLOCK_TILEGX
- 	struct skb_shared_hwtstamps shhwtstamps;
- 	struct skb_shared_info *shtx;
- 	struct timespec ts;
-+	struct mpipe_data *md = &mpipe_data[instance];
- 
- 	shtx = skb_shinfo(skb);
- 	if (likely((shtx->tx_flags & SKBTX_HW_TSTAMP) == 0))
-@@ -419,7 +460,7 @@ static void tile_tx_timestamp(struct sk_buff *skb)
- 
- 	shtx->tx_flags |= SKBTX_IN_PROGRESS;
- 
--	gxio_mpipe_get_timestamp(&context, &ts);
-+	gxio_mpipe_get_timestamp(&md->context, &ts);
- 	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
- 	shhwtstamps.hwtstamp = ktime_set(ts.tv_sec, ts.tv_nsec);
- 	skb_tstamp_tx(skb, &shhwtstamps);
-@@ -445,6 +486,7 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
- 				 gxio_mpipe_idesc_t *idesc, unsigned long len)
- {
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	int instance = mpipe_instance(dev);
- 
- 	/* Encode the actual packet length. */
- 	skb_put(skb, len);
-@@ -458,7 +500,7 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
- 	/* Get RX timestamp from idesc. */
- 	tile_rx_timestamp(skb, idesc);
- 
--	napi_gro_receive(&info->napi, skb);
-+	napi_gro_receive(&info->mpipe[instance].napi, skb);
- 
- 	/* Update stats. */
- 	tile_net_stats_add(1, &dev->stats.rx_packets);
-@@ -466,18 +508,19 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
+ /* Get RX timestamp, and store it in the skb. */
+@@ -462,10 +468,12 @@ static void tile_net_receive_skb(struct net_device *dev, struct sk_buff *skb,
+ 	tile_net_stats_add(len, &priv->stats.rx_bytes);
  
  	/* Need a new buffer. */
- 	if (idesc->size == buffer_size_enums[0])
--		info->num_needed_buffers[0]++;
-+		info->mpipe[instance].num_needed_buffers[0]++;
- 	else if (idesc->size == buffer_size_enums[1])
--		info->num_needed_buffers[1]++;
-+		info->mpipe[instance].num_needed_buffers[1]++;
+-	if (idesc->size == BUFFER_SIZE_SMALL_ENUM)
+-		info->num_needed_small_buffers++;
++	if (idesc->size == buffer_size_enums[0])
++		info->num_needed_buffers[0]++;
++	else if (idesc->size == buffer_size_enums[1])
++		info->num_needed_buffers[1]++;
  	else
--		info->num_needed_buffers[2]++;
-+		info->mpipe[instance].num_needed_buffers[2]++;
+-		info->num_needed_large_buffers++;
++		info->num_needed_buffers[2]++;
  }
  
  /* Handle a packet.  Return true if "processed", false if "filtered". */
--static bool tile_net_handle_packet(gxio_mpipe_idesc_t *idesc)
-+static bool tile_net_handle_packet(int instance, gxio_mpipe_idesc_t *idesc)
+@@ -473,28 +481,28 @@ static bool tile_net_handle_packet(gxio_mpipe_idesc_t *idesc)
  {
  	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
--	struct net_device *dev = tile_net_devs_for_channel[idesc->channel];
-+	struct mpipe_data *md = &mpipe_data[instance];
-+	struct net_device *dev = md->tile_net_devs_for_channel[idesc->channel];
+ 	struct net_device *dev = tile_net_devs_for_channel[idesc->channel];
++	struct tile_net_priv *priv = netdev_priv(dev);
  	uint8_t l2_offset;
  	void *va;
  	void *buf;
-@@ -544,14 +587,20 @@ static int tile_net_poll(struct napi_struct *napi, int budget)
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
- 	unsigned int work = 0;
- 	gxio_mpipe_idesc_t *idesc;
--	int i, n;
--
--	/* Process packets. */
--	while ((n = gxio_mpipe_iqueue_try_peek(&info->iqueue, &idesc)) > 0) {
-+	int instance, i, n;
-+	struct mpipe_data *md;
-+	struct info_mpipe *info_mpipe =
-+		container_of(napi, struct info_mpipe, napi);
-+
-+	instance = info_mpipe->instance;
-+	while ((n = gxio_mpipe_iqueue_try_peek(
-+			&info_mpipe->iqueue,
-+			&idesc)) > 0) {
- 		for (i = 0; i < n; i++) {
- 			if (i == TILE_NET_BATCH)
- 				goto done;
--			if (tile_net_handle_packet(idesc + i)) {
-+			if (tile_net_handle_packet(instance,
-+						   idesc + i)) {
- 				if (++work >= budget)
- 					goto done;
- 			}
-@@ -559,14 +608,16 @@ static int tile_net_poll(struct napi_struct *napi, int budget)
- 	}
+ 	unsigned long len;
+ 	bool filter;
  
- 	/* There are no packets left. */
--	napi_complete(&info->napi);
-+	napi_complete(&info_mpipe->napi);
- 
-+	md = &mpipe_data[instance];
- 	/* Re-enable hypervisor interrupts. */
--	gxio_mpipe_enable_notif_ring_interrupt(&context, info->iqueue.ring);
-+	gxio_mpipe_enable_notif_ring_interrupt(
-+		&md->context, info->mpipe[instance].iqueue.ring);
- 
- 	/* HACK: Avoid the "rotting packet" problem. */
--	if (gxio_mpipe_iqueue_try_peek(&info->iqueue, &idesc) > 0)
--		napi_schedule(&info->napi);
-+	if (gxio_mpipe_iqueue_try_peek(&info_mpipe->iqueue, &idesc) > 0)
-+		napi_schedule(&info_mpipe->napi);
- 
- 	/* ISSUE: Handle completions? */
- 
-@@ -576,11 +627,11 @@ done:
- 	return work;
- }
- 
--/* Handle an ingress interrupt on the current cpu. */
--static irqreturn_t tile_net_handle_ingress_irq(int irq, void *unused)
-+/* Handle an ingress interrupt from an instance on the current cpu. */
-+static irqreturn_t tile_net_handle_ingress_irq(int irq, void *id)
- {
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
--	napi_schedule(&info->napi);
-+	napi_schedule(&info->mpipe[(uint64_t)id].napi);
- 	return IRQ_HANDLED;
- }
- 
-@@ -622,7 +673,9 @@ static void tile_net_schedule_tx_wake_timer(struct net_device *dev,
- {
- 	struct tile_net_info *info = &per_cpu(per_cpu_info, tx_queue_idx);
- 	struct tile_net_priv *priv = netdev_priv(dev);
--	struct tile_net_tx_wake *tx_wake = &info->tx_wake[priv->echannel];
-+	int instance = priv->instance;
-+	struct tile_net_tx_wake *tx_wake =
-+		&info->mpipe[instance].tx_wake[priv->echannel];
- 
- 	hrtimer_start(&tx_wake->timer,
- 		      ktime_set(0, TX_TIMER_DELAY_USEC * 1000UL),
-@@ -660,7 +713,7 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
- 	unsigned long irqflags;
- 	bool pending = false;
--	int i;
-+	int i, instance;
- 
- 	local_irq_save(irqflags);
- 
-@@ -668,13 +721,19 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- 	info->egress_timer_scheduled = false;
- 
- 	/* Free all possible comps for this tile. */
--	for (i = 0; i < TILE_NET_CHANNELS; i++) {
--		struct tile_net_egress *egress = &egress_for_echannel[i];
--		struct tile_net_comps *comps = info->comps_for_echannel[i];
--		if (comps->comp_last >= comps->comp_next)
--			continue;
--		tile_net_free_comps(egress->equeue, comps, -1, true);
--		pending = pending || (comps->comp_last < comps->comp_next);
-+	for (instance = 0; instance < NR_MPIPE_MAX &&
-+		     info->mpipe[instance].has_iqueue; instance++) {
-+		for (i = 0; i < TILE_NET_CHANNELS; i++) {
-+			struct tile_net_egress *egress =
-+				&mpipe_data[instance].egress_for_echannel[i];
-+			struct tile_net_comps *comps =
-+				info->mpipe[instance].comps_for_echannel[i];
-+			if (!egress || comps->comp_last >= comps->comp_next)
-+				continue;
-+			tile_net_free_comps(egress->equeue, comps, -1, true);
-+			pending = pending ||
-+				(comps->comp_last < comps->comp_next);
-+		}
- 	}
- 
- 	/* Reschedule timer if needed. */
-@@ -686,13 +745,15 @@ static enum hrtimer_restart tile_net_handle_egress_timer(struct hrtimer *t)
- 	return HRTIMER_NORESTART;
- }
- 
--/* Helper function for "tile_net_update()". */
--static void manage_ingress_irq(void *enable)
-+/* Helper functions for "tile_net_update()". */
-+static void enable_ingress_irq(void *irq)
- {
--	if (enable)
--		enable_percpu_irq(ingress_irq, 0);
--	else
--		disable_percpu_irq(ingress_irq);
-+	enable_percpu_irq((long)irq, 0);
-+}
-+
-+static void disable_ingress_irq(void *irq)
-+{
-+	disable_percpu_irq((long)irq);
- }
- 
- /* Helper function for tile_net_open() and tile_net_stop().
-@@ -702,19 +763,22 @@ static int tile_net_update(struct net_device *dev)
- {
- 	static gxio_mpipe_rules_t rules;  /* too big to fit on the stack */
- 	bool saw_channel = false;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	int channel;
- 	int rc;
- 	int cpu;
- 
--	gxio_mpipe_rules_init(&rules, &context);
-+	saw_channel = false;
-+	gxio_mpipe_rules_init(&rules, &md->context);
- 
- 	for (channel = 0; channel < TILE_NET_CHANNELS; channel++) {
--		if (tile_net_devs_for_channel[channel] == NULL)
-+		if (md->tile_net_devs_for_channel[channel] == NULL)
- 			continue;
- 		if (!saw_channel) {
- 			saw_channel = true;
--			gxio_mpipe_rules_begin(&rules, first_bucket,
--					       num_buckets, NULL);
-+			gxio_mpipe_rules_begin(&rules, md->first_bucket,
-+					       md->num_buckets, NULL);
- 			gxio_mpipe_rules_set_headroom(&rules, NET_IP_ALIGN);
- 		}
- 		gxio_mpipe_rules_add_channel(&rules, channel);
-@@ -725,7 +789,8 @@ static int tile_net_update(struct net_device *dev)
+-	/* Drop packets for which no buffer was available.
+-	 * NOTE: This happens under heavy load.
++	/* Drop packets for which no buffer was available (which can
++	 * happen under heavy load), or for which the me/tr/ce flags
++	 * are set (which can happen for jumbo cut-through packets,
++	 * or with a customized classifier).
  	 */
- 	rc = gxio_mpipe_rules_commit(&rules);
- 	if (rc != 0) {
--		netdev_warn(dev, "gxio_mpipe_rules_commit failed: %d\n", rc);
-+		netdev_warn(dev, "gxio_mpipe_rules_commit: mpipe[%d] %d\n",
-+			    instance, rc);
- 		return -EIO;
+-	if (idesc->be) {
+-		struct tile_net_priv *priv = netdev_priv(dev);
+-		tile_net_stats_add(1, &priv->stats.rx_dropped);
+-		gxio_mpipe_iqueue_consume(&info->iqueue, idesc);
+-		if (net_ratelimit())
+-			pr_info("Dropping packet (insufficient buffers).\n");
+-		return false;
++	if (idesc->be || idesc->me || idesc->tr || idesc->ce) {
++		if (dev)
++			tile_net_stats_add(1, &priv->stats.rx_errors);
++		goto drop;
  	}
  
-@@ -733,35 +798,38 @@ static int tile_net_update(struct net_device *dev)
- 	 * We use on_each_cpu to handle the IPI mask or unmask.
- 	 */
- 	if (!saw_channel)
--		on_each_cpu(manage_ingress_irq, (void *)0, 1);
-+		on_each_cpu(disable_ingress_irq,
-+			    (void *)(long)(md->ingress_irq), 1);
- 	for_each_online_cpu(cpu) {
- 		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
--		if (!info->has_iqueue)
-+
-+		if (!info->mpipe[instance].has_iqueue)
- 			continue;
- 		if (saw_channel) {
--			if (!info->napi_added) {
--				netif_napi_add(dev, &info->napi,
-+			if (!info->mpipe[instance].napi_added) {
-+				netif_napi_add(dev, &info->mpipe[instance].napi,
- 					       tile_net_poll, TILE_NET_WEIGHT);
--				info->napi_added = true;
-+				info->mpipe[instance].napi_added = true;
- 			}
--			if (!info->napi_enabled) {
--				napi_enable(&info->napi);
--				info->napi_enabled = true;
-+			if (!info->mpipe[instance].napi_enabled) {
-+				napi_enable(&info->mpipe[instance].napi);
-+				info->mpipe[instance].napi_enabled = true;
- 			}
- 		} else {
--			if (info->napi_enabled) {
--				napi_disable(&info->napi);
--				info->napi_enabled = false;
-+			if (info->mpipe[instance].napi_enabled) {
-+				napi_disable(&info->mpipe[instance].napi);
-+				info->mpipe[instance].napi_enabled = false;
- 			}
- 			/* FIXME: Drain the iqueue. */
- 		}
+ 	/* Get the "l2_offset", if allowed. */
+ 	l2_offset = custom_str ? 0 : gxio_mpipe_idesc_get_l2_offset(idesc);
+ 
+-	/* Get the raw buffer VA (includes "headroom"). */
++	/* Get the VA (including NET_IP_ALIGN bytes of "headroom"). */
+ 	va = tile_io_addr_to_va((unsigned long)(long)idesc->va);
+ 
+ 	/* Get the actual packet start/length. */
+@@ -506,7 +514,10 @@ static bool tile_net_handle_packet(gxio_mpipe_idesc_t *idesc)
+ 
+ 	filter = filter_packet(dev, buf);
+ 	if (filter) {
+-		gxio_mpipe_iqueue_drop(&info->iqueue, idesc);
++		if (dev)
++			tile_net_stats_add(1, &priv->stats.rx_dropped);
++	drop:
++		gxio_mpipe_iqueue_drop(&info->mpipe[instance].iqueue, idesc);
+ 	} else {
+ 		struct sk_buff *skb = mpipe_buf_to_skb(va);
+ 
+@@ -516,7 +527,7 @@ static bool tile_net_handle_packet(gxio_mpipe_idesc_t *idesc)
+ 		tile_net_receive_skb(dev, skb, idesc, len);
  	}
- 	if (saw_channel)
--		on_each_cpu(manage_ingress_irq, (void *)1, 1);
-+		on_each_cpu(enable_ingress_irq,
-+			    (void *)(long)(md->ingress_irq), 1);
  
- 	/* HACK: Allow packets to flow in the simulator. */
- 	if (saw_channel)
--		sim_enable_mpipe_links(0, -1);
-+		sim_enable_mpipe_links(instance, -1);
+-	gxio_mpipe_iqueue_consume(&info->iqueue, idesc);
++	gxio_mpipe_iqueue_consume(&info->mpipe[instance].iqueue, idesc);
+ 	return !filter;
+ }
  
+@@ -758,86 +769,95 @@ static int tile_net_update(struct net_device *dev)
  	return 0;
  }
-@@ -771,46 +839,52 @@ static int create_buffer_stack(struct net_device *dev,
- 			       int kind, size_t num_buffers)
+ 
+-/* Allocate and initialize mpipe buffer stacks, and register them in
+- * the mPIPE TLBs, for both small and large packet sizes.
+- * This routine supports tile_net_init_mpipe(), below.
+- */
+-static int init_buffer_stacks(struct net_device *dev, int num_buffers)
++/* Initialize a buffer stack. */
++static int create_buffer_stack(struct net_device *dev,
++			       int kind, size_t num_buffers)
  {
  	pte_t hash_pte = pte_set_home((pte_t) { 0 }, PAGE_HOME_HASH);
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	size_t needed = gxio_mpipe_calc_buffer_stack_bytes(num_buffers);
--	int stack_idx = first_buffer_stack + kind;
-+	int stack_idx = md->first_buffer_stack + kind;
- 	void* va;
- 	int i, rc;
+-	int rc;
++	size_t needed = gxio_mpipe_calc_buffer_stack_bytes(num_buffers);
++	int stack_idx = first_buffer_stack + kind;
++	void* va;
++	int i, rc;
  
- 	/* Round up to 64KB and then use alloc_pages() so we get the
- 	 * required 64KB alignment.
+-	/* Compute stack bytes; we round up to 64KB and then use
+-	 * alloc_pages() so we get the required 64KB alignment as well.
++	/* Round up to 64KB and then use alloc_pages() so we get the
++	 * required 64KB alignment.
  	 */
--	buffer_stack_bytes[kind] = ALIGN(needed, 64 * 1024);
-+	md->buffer_stack_bytes[kind] =
-+		ALIGN(needed, 64 * 1024);
+-	buffer_stack_size =
+-		ALIGN(gxio_mpipe_calc_buffer_stack_bytes(num_buffers),
+-		      64 * 1024);
++	buffer_stack_bytes[kind] = ALIGN(needed, 64 * 1024);
  
--	va = alloc_pages_exact(buffer_stack_bytes[kind], GFP_KERNEL);
-+	va = alloc_pages_exact(md->buffer_stack_bytes[kind], GFP_KERNEL);
- 	if (va == NULL) {
- 		netdev_err(dev,
- 			   "Could not alloc %zd bytes for buffer stack %d\n",
--			   buffer_stack_bytes[kind], kind);
-+			   md->buffer_stack_bytes[kind], kind);
- 		return -ENOMEM;
- 	}
- 
- 	/* Initialize the buffer stack. */
--	rc = gxio_mpipe_init_buffer_stack(&context, stack_idx,
--					  buffer_size_enums[kind],
--					  va, buffer_stack_bytes[kind], 0);
-+	rc = gxio_mpipe_init_buffer_stack(&md->context, stack_idx,
-+					  buffer_size_enums[kind],  va,
-+					  md->buffer_stack_bytes[kind], 0);
- 	if (rc != 0) {
--		netdev_err(dev, "gxio_mpipe_init_buffer_stack: %d\n", rc);
--		free_pages_exact(va, buffer_stack_bytes[kind]);
-+		netdev_err(dev, "gxio_mpipe_init_buffer_stack: mpipe[%d] %d\n",
-+			   instance, rc);
-+		free_pages_exact(va, md->buffer_stack_bytes[kind]);
- 		return rc;
- 	}
- 
--	buffer_stack_vas[kind] = va;
-+	md->buffer_stack_vas[kind] = va;
- 
--	rc = gxio_mpipe_register_client_memory(&context, stack_idx,
-+	rc = gxio_mpipe_register_client_memory(&md->context, stack_idx,
- 					       hash_pte, 0);
- 	if (rc != 0) {
--		netdev_err(dev, "gxio_mpipe_register_client_memory: %d\n", rc);
-+		netdev_err(dev,
-+			   "gxio_mpipe_register_client_memory: mpipe[%d] %d\n",
-+			   instance, rc);
- 		return rc;
- 	}
- 
- 	/* Provide initial buffers. */
- 	for (i = 0; i < num_buffers; i++) {
--		if (!tile_net_provide_buffer(kind)) {
-+		if (!tile_net_provide_buffer(instance, kind)) {
- 			netdev_err(dev, "Cannot allocate initial sk_bufs!\n");
- 			return -ENOMEM;
- 		}
-@@ -829,14 +903,18 @@ static int init_buffer_stacks(struct net_device *dev,
- 	int num_kinds = MAX_KINDS - (jumbo_num == 0);
- 	size_t num_buffers;
- 	int rc;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 
- 	/* Allocate the buffer stacks. */
--	rc = gxio_mpipe_alloc_buffer_stacks(&context, num_kinds, 0, 0);
-+	rc = gxio_mpipe_alloc_buffer_stacks(&md->context, num_kinds, 0, 0);
- 	if (rc < 0) {
--		netdev_err(dev, "gxio_mpipe_alloc_buffer_stacks: %d\n", rc);
-+		netdev_err(dev,
-+			   "gxio_mpipe_alloc_buffer_stacks: mpipe[%d] %d\n",
-+			   instance, rc);
- 		return rc;
- 	}
--	first_buffer_stack = rc;
-+	md->first_buffer_stack = rc;
- 
- 	/* Enough small/large buffers to (normally) avoid buffer errors. */
- 	num_buffers =
-@@ -865,6 +943,8 @@ static int alloc_percpu_mpipe_resources(struct net_device *dev,
- {
- 	struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
- 	int order, i, rc;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	struct page *page;
- 	void *addr;
- 
-@@ -879,7 +959,7 @@ static int alloc_percpu_mpipe_resources(struct net_device *dev,
- 	addr = pfn_to_kaddr(page_to_pfn(page));
- 	memset(addr, 0, COMPS_SIZE);
- 	for (i = 0; i < TILE_NET_CHANNELS; i++)
--		info->comps_for_echannel[i] =
-+		info->mpipe[instance].comps_for_echannel[i] =
- 			addr + i * sizeof(struct tile_net_comps);
- 
- 	/* If this is a network cpu, create an iqueue. */
-@@ -893,14 +973,15 @@ static int alloc_percpu_mpipe_resources(struct net_device *dev,
- 			return -ENOMEM;
- 		}
- 		addr = pfn_to_kaddr(page_to_pfn(page));
--		rc = gxio_mpipe_iqueue_init(&info->iqueue, &context, ring++,
--					    addr, NOTIF_RING_SIZE, 0);
-+		rc = gxio_mpipe_iqueue_init(&info->mpipe[instance].iqueue,
-+					    &md->context, ring++, addr,
-+					    NOTIF_RING_SIZE, 0);
- 		if (rc < 0) {
- 			netdev_err(dev,
- 				   "gxio_mpipe_iqueue_init failed: %d\n", rc);
- 			return rc;
- 		}
--		info->has_iqueue = true;
-+		info->mpipe[instance].has_iqueue = true;
- 	}
- 
- 	return ring;
-@@ -913,40 +994,41 @@ static int init_notif_group_and_buckets(struct net_device *dev,
- 					int ring, int network_cpus_count)
- {
- 	int group, rc;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 
- 	/* Allocate one NotifGroup. */
--	rc = gxio_mpipe_alloc_notif_groups(&context, 1, 0, 0);
-+	rc = gxio_mpipe_alloc_notif_groups(&md->context, 1, 0, 0);
- 	if (rc < 0) {
--		netdev_err(dev, "gxio_mpipe_alloc_notif_groups failed: %d\n",
--			   rc);
-+		netdev_err(dev, "gxio_mpipe_alloc_notif_groups: mpipe[%d] %d\n",
-+			   instance, rc);
- 		return rc;
- 	}
- 	group = rc;
- 
- 	/* Initialize global num_buckets value. */
- 	if (network_cpus_count > 4)
--		num_buckets = 256;
-+		md->num_buckets = 256;
- 	else if (network_cpus_count > 1)
--		num_buckets = 16;
-+		md->num_buckets = 16;
- 
- 	/* Allocate some buckets, and set global first_bucket value. */
--	rc = gxio_mpipe_alloc_buckets(&context, num_buckets, 0, 0);
-+	rc = gxio_mpipe_alloc_buckets(&md->context, md->num_buckets, 0, 0);
- 	if (rc < 0) {
--		netdev_err(dev, "gxio_mpipe_alloc_buckets failed: %d\n", rc);
-+		netdev_err(dev, "gxio_mpipe_alloc_buckets: mpipe[%d] %d\n",
-+			   instance, rc);
- 		return rc;
- 	}
--	first_bucket = rc;
-+	md->first_bucket = rc;
- 
- 	/* Init group and buckets. */
- 	rc = gxio_mpipe_init_notif_group_and_buckets(
--		&context, group, ring, network_cpus_count,
--		first_bucket, num_buckets,
-+		&md->context, group, ring, network_cpus_count,
-+		md->first_bucket, md->num_buckets,
- 		GXIO_MPIPE_BUCKET_STICKY_FLOW_LOCALITY);
- 	if (rc != 0) {
--		netdev_err(
--			dev,
--			"gxio_mpipe_init_notif_group_and_buckets failed: %d\n",
--			rc);
-+		netdev_err(dev,	"gxio_mpipe_init_notif_group_and_buckets: "
-+			   "mpipe[%d] %d\n", instance, rc);
- 		return rc;
- 	}
- 
-@@ -960,30 +1042,39 @@ static int init_notif_group_and_buckets(struct net_device *dev,
-  */
- static int tile_net_setup_interrupts(struct net_device *dev)
- {
--	int cpu, rc;
-+	int cpu, rc, irq;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
-+
-+	irq = md->ingress_irq;
-+	if (irq < 0) {
-+		irq = create_irq();
-+		if (irq < 0) {
-+			netdev_err(dev,
-+				   "create_irq failed: mpipe[%d] %d\n",
-+				   instance, irq);
-+			return irq;
-+		}
-+		tile_irq_activate(irq, TILE_IRQ_PERCPU);
- 
--	rc = create_irq();
+-	/* Allocate two buffer stack indices. */
+-	rc = gxio_mpipe_alloc_buffer_stacks(&context, 2, 0, 0);
 -	if (rc < 0) {
--		netdev_err(dev, "create_irq failed: %d\n", rc);
+-		netdev_err(dev, "gxio_mpipe_alloc_buffer_stacks failed: %d\n",
+-			   rc);
 -		return rc;
 -	}
--	ingress_irq = rc;
--	tile_irq_activate(ingress_irq, TILE_IRQ_PERCPU);
--	rc = request_irq(ingress_irq, tile_net_handle_ingress_irq,
--			 0, "tile_net", NULL);
--	if (rc != 0) {
--		netdev_err(dev, "request_irq failed: %d\n", rc);
--		destroy_irq(ingress_irq);
--		ingress_irq = -1;
--		return rc;
-+		rc = request_irq(irq, tile_net_handle_ingress_irq,
-+				 0, "tile_net", (void *)((uint64_t)instance));
+-	small_buffer_stack = rc;
+-	large_buffer_stack = rc + 1;
+-
+-	/* Allocate the small memory stack. */
+-	small_buffer_stack_va =
+-		alloc_pages_exact(buffer_stack_size, GFP_KERNEL);
+-	if (small_buffer_stack_va == NULL) {
++	va = alloc_pages_exact(buffer_stack_bytes[kind], GFP_KERNEL);
++	if (va == NULL) {
+ 		netdev_err(dev,
+-			   "Could not alloc %zd bytes for buffer stacks\n",
+-			   buffer_stack_size);
++			   "Could not alloc %zd bytes for buffer stack %d\n",
++			   buffer_stack_bytes[kind], kind);
+ 		return -ENOMEM;
+ 	}
+-	rc = gxio_mpipe_init_buffer_stack(&context, small_buffer_stack,
+-					  BUFFER_SIZE_SMALL_ENUM,
+-					  small_buffer_stack_va,
+-					  buffer_stack_size, 0);
 +
-+		if (rc != 0) {
-+			netdev_err(dev, "request_irq failed: mpipe[%d] %d\n",
-+				   instance, rc);
-+			destroy_irq(irq);
-+			return rc;
++	/* Initialize the buffer stack. */
++	rc = gxio_mpipe_init_buffer_stack(&context, stack_idx,
++					  buffer_size_enums[kind],
++					  va, buffer_stack_bytes[kind], 0);
+ 	if (rc != 0) {
+ 		netdev_err(dev, "gxio_mpipe_init_buffer_stack: %d\n", rc);
++		free_pages_exact(va, buffer_stack_bytes[kind]);
+ 		return rc;
+ 	}
+-	rc = gxio_mpipe_register_client_memory(&context, small_buffer_stack,
++
++	buffer_stack_vas[kind] = va;
++
++	rc = gxio_mpipe_register_client_memory(&context, stack_idx,
+ 					       hash_pte, 0);
+ 	if (rc != 0) {
+-		netdev_err(dev,
+-			   "gxio_mpipe_register_buffer_memory failed: %d\n",
+-			   rc);
++		netdev_err(dev, "gxio_mpipe_register_client_memory: %d\n", rc);
+ 		return rc;
+ 	}
+ 
+-	/* Allocate the large buffer stack. */
+-	large_buffer_stack_va =
+-		alloc_pages_exact(buffer_stack_size, GFP_KERNEL);
+-	if (large_buffer_stack_va == NULL) {
+-		netdev_err(dev,
+-			   "Could not alloc %zd bytes for buffer stacks\n",
+-			   buffer_stack_size);
+-		return -ENOMEM;
+-	}
+-	rc = gxio_mpipe_init_buffer_stack(&context, large_buffer_stack,
+-					  BUFFER_SIZE_LARGE_ENUM,
+-					  large_buffer_stack_va,
+-					  buffer_stack_size, 0);
+-	if (rc != 0) {
+-		netdev_err(dev, "gxio_mpipe_init_buffer_stack failed: %d\n",
+-			   rc);
+-		return rc;
++	/* Provide initial buffers. */
++	for (i = 0; i < num_buffers; i++) {
++		if (!tile_net_provide_buffer(kind)) {
++			netdev_err(dev, "Cannot allocate initial sk_bufs!\n");
++			return -ENOMEM;
 +		}
-+		md->ingress_irq = irq;
  	}
- 
- 	for_each_online_cpu(cpu) {
- 		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
--		if (info->has_iqueue) {
--			gxio_mpipe_request_notif_ring_interrupt(
--				&context, cpu_x(cpu), cpu_y(cpu),
--				KERNEL_PL, ingress_irq, info->iqueue.ring);
-+		if (info->mpipe[instance].has_iqueue) {
-+			gxio_mpipe_request_notif_ring_interrupt(&md->context,
-+				cpu_x(cpu), cpu_y(cpu), KERNEL_PL, irq,
-+				info->mpipe[instance].iqueue.ring);
- 		}
+-	rc = gxio_mpipe_register_client_memory(&context, large_buffer_stack,
+-					       hash_pte, 0);
+-	if (rc != 0) {
+-		netdev_err(dev,
+-			   "gxio_mpipe_register_buffer_memory failed: %d\n",
+-			   rc);
++
++	return 0;
++}
++
++/* Allocate and initialize mpipe buffer stacks, and register them in
++ * the mPIPE TLBs, for small, large, and (possibly) jumbo packet sizes.
++ * This routine supports tile_net_init_mpipe(), below.
++ */
++static int init_buffer_stacks(struct net_device *dev,
++			      int network_cpus_count)
++{
++	int num_kinds = MAX_KINDS - (jumbo_num == 0);
++	size_t num_buffers;
++	int rc;
++
++	/* Allocate the buffer stacks. */
++	rc = gxio_mpipe_alloc_buffer_stacks(&context, num_kinds, 0, 0);
++	if (rc < 0) {
++		netdev_err(dev, "gxio_mpipe_alloc_buffer_stacks: %d\n", rc);
+ 		return rc;
  	}
++	first_buffer_stack = rc;
  
-@@ -991,40 +1082,45 @@ static int tile_net_setup_interrupts(struct net_device *dev)
+-	return 0;
++	/* Enough small/large buffers to (normally) avoid buffer errors. */
++	num_buffers =
++		network_cpus_count * (IQUEUE_ENTRIES + TILE_NET_BATCH);
++
++	/* Allocate the small memory stack. */
++	if (rc >= 0)
++		rc = create_buffer_stack(dev, 0, num_buffers);
++
++	/* Allocate the large buffer stack. */
++	if (rc >= 0)
++		rc = create_buffer_stack(dev, 1, num_buffers);
++
++	/* Allocate the jumbo buffer stack if needed. */
++	if (rc >= 0 && jumbo_num != 0)
++		rc = create_buffer_stack(dev, 2, jumbo_num);
++
++	return rc;
  }
  
+ /* Allocate per-cpu resources (memory for completions and idescs).
+@@ -976,13 +996,14 @@ static int tile_net_setup_interrupts(struct net_device *dev)
  /* Undo any state set up partially by a failed call to tile_net_init_mpipe. */
--static void tile_net_init_mpipe_fail(void)
-+static void tile_net_init_mpipe_fail(int instance)
+ static void tile_net_init_mpipe_fail(void)
  {
- 	int kind, cpu;
-+	struct mpipe_data *md = &mpipe_data[instance];
+-	int cpu;
++	int kind, cpu;
  
  	/* Do cleanups that require the mpipe context first. */
- 	for (kind = 0; kind < MAX_KINDS; kind++) {
--		if (buffer_stack_vas[kind] != NULL) {
--			tile_net_pop_all_buffers(first_buffer_stack + kind);
-+		if (md->buffer_stack_vas[kind] != NULL) {
-+			tile_net_pop_all_buffers(instance,
-+						 md->first_buffer_stack +
-+						 kind);
- 		}
- 	}
+-	if (small_buffer_stack >= 0)
+-		tile_net_pop_all_buffers(small_buffer_stack);
+-	if (large_buffer_stack >= 0)
+-		tile_net_pop_all_buffers(large_buffer_stack);
++	for (kind = 0; kind < MAX_KINDS; kind++) {
++		if (buffer_stack_vas[kind] != NULL) {
++			tile_net_pop_all_buffers(first_buffer_stack + kind);
++		}
++	}
  
  	/* Destroy mpipe context so the hardware no longer owns any memory. */
--	gxio_mpipe_destroy(&context);
-+	gxio_mpipe_destroy(&md->context);
- 
- 	for_each_online_cpu(cpu) {
- 		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
--		free_pages((unsigned long)(info->comps_for_echannel[0]),
--			   get_order(COMPS_SIZE));
--		info->comps_for_echannel[0] = NULL;
--		free_pages((unsigned long)(info->iqueue.idescs),
-+		free_pages(
-+			(unsigned long)(
-+				info->mpipe[instance].comps_for_echannel[0]),
-+			get_order(COMPS_SIZE));
-+		info->mpipe[instance].comps_for_echannel[0] = NULL;
-+		free_pages((unsigned long)(info->mpipe[instance].iqueue.idescs),
- 			   get_order(NOTIF_RING_SIZE));
--		info->iqueue.idescs = NULL;
-+		info->mpipe[instance].iqueue.idescs = NULL;
+ 	gxio_mpipe_destroy(&context);
+@@ -997,15 +1018,15 @@ static void tile_net_init_mpipe_fail(void)
+ 		info->iqueue.idescs = NULL;
  	}
  
- 	for (kind = 0; kind < MAX_KINDS; kind++) {
--		if (buffer_stack_vas[kind] != NULL) {
--			free_pages_exact(buffer_stack_vas[kind],
--					 buffer_stack_bytes[kind]);
--			buffer_stack_vas[kind] = NULL;
-+		if (md->buffer_stack_vas[kind] != NULL) {
-+			free_pages_exact(md->buffer_stack_vas[kind],
-+					 md->buffer_stack_bytes[kind]);
-+			md->buffer_stack_vas[kind] = NULL;
- 		}
- 	}
+-	if (small_buffer_stack_va)
+-		free_pages_exact(small_buffer_stack_va, buffer_stack_size);
+-	if (large_buffer_stack_va)
+-		free_pages_exact(large_buffer_stack_va, buffer_stack_size);
++	for (kind = 0; kind < MAX_KINDS; kind++) {
++		if (buffer_stack_vas[kind] != NULL) {
++			free_pages_exact(buffer_stack_vas[kind],
++					 buffer_stack_bytes[kind]);
++			buffer_stack_vas[kind] = NULL;
++		}
++	}
  
--	first_buffer_stack = -1;
--	first_bucket = -1;
-+	md->first_buffer_stack = -1;
-+	md->first_bucket = -1;
+-	small_buffer_stack_va = NULL;
+-	large_buffer_stack_va = NULL;
+-	large_buffer_stack = -1;
+-	small_buffer_stack = -1;
++	first_buffer_stack = -1;
+ 	first_bucket = -1;
  }
  
- /* The first time any tilegx network device is opened, we initialize
-@@ -1042,6 +1138,8 @@ static int tile_net_init_mpipe(struct net_device *dev)
+@@ -1020,7 +1041,7 @@ static void tile_net_init_mpipe_fail(void)
+  */
+ static int tile_net_init_mpipe(struct net_device *dev)
+ {
+-	int i, num_buffers, rc;
++	int rc;
  	int cpu;
  	int first_ring, ring;
  	struct timespec ts;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	int network_cpus_count = cpus_weight(network_cpus_map);
- 
- 	if (!hash_default) {
-@@ -1049,15 +1147,16 @@ static int tile_net_init_mpipe(struct net_device *dev)
- 		return -EIO;
- 	}
- 
--	rc = gxio_mpipe_init(&context, 0);
-+	rc = gxio_mpipe_init(&md->context, instance);
- 	if (rc != 0) {
--		netdev_err(dev, "gxio_mpipe_init failed: %d\n", rc);
-+		netdev_err(dev, "gxio_mpipe_init: mpipe[%d] %d\n",
-+			   instance, rc);
- 		return -EIO;
- 	}
- 
- 	/* Sync mPIPE's timestamp up with Linux system time. */
- 	getnstimeofday(&ts);
--	gxio_mpipe_set_timestamp(&context, &ts);
-+	gxio_mpipe_set_timestamp(&md->context, &ts);
+@@ -1042,27 +1063,10 @@ static int tile_net_init_mpipe(struct net_device *dev)
+ 	gxio_mpipe_set_timestamp(&context, &ts);
  
  	/* Set up the buffer stacks. */
- 	rc = init_buffer_stacks(dev, network_cpus_count);
-@@ -1065,7 +1164,8 @@ static int tile_net_init_mpipe(struct net_device *dev)
+-	num_buffers =
+-		network_cpus_count * (IQUEUE_ENTRIES + TILE_NET_BATCH);
+-	rc = init_buffer_stacks(dev, num_buffers);
++	rc = init_buffer_stacks(dev, network_cpus_count);
+ 	if (rc != 0)
  		goto fail;
  
+-	/* Provide initial buffers. */
+-	rc = -ENOMEM;
+-	for (i = 0; i < num_buffers; i++) {
+-		if (!tile_net_provide_buffer(true)) {
+-			netdev_err(dev, "Cannot allocate initial sk_bufs!\n");
+-			goto fail;
+-		}
+-	}
+-	for (i = 0; i < num_buffers; i++) {
+-		if (!tile_net_provide_buffer(false)) {
+-			netdev_err(dev, "Cannot allocate initial sk_bufs!\n");
+-			goto fail;
+-		}
+-	}
+-
  	/* Allocate one NotifRing for each network cpu. */
--	rc = gxio_mpipe_alloc_notif_rings(&context, network_cpus_count, 0, 0);
-+	rc = gxio_mpipe_alloc_notif_rings(&md->context,
-+					  network_cpus_count, 0, 0);
+ 	rc = gxio_mpipe_alloc_notif_rings(&context, network_cpus_count, 0, 0);
  	if (rc < 0) {
- 		netdev_err(dev, "gxio_mpipe_alloc_notif_rings failed %d\n",
- 			   rc);
-@@ -1095,7 +1195,7 @@ static int tile_net_init_mpipe(struct net_device *dev)
- 	return 0;
- 
- fail:
--	tile_net_init_mpipe_fail();
-+	tile_net_init_mpipe_fail(instance);
- 	return rc;
- }
- 
-@@ -1113,9 +1213,11 @@ static int tile_net_init_egress(struct net_device *dev, int echannel)
+@@ -1104,13 +1108,13 @@ fail:
+  */
+ static int tile_net_init_egress(struct net_device *dev, int echannel)
+ {
++	static int ering = -1;
+ 	struct page *headers_page, *edescs_page, *equeue_page;
+ 	gxio_mpipe_edesc_t *edescs;
+ 	gxio_mpipe_equeue_t *equeue;
+ 	unsigned char *headers;
  	int headers_order, edescs_order, equeue_order;
  	size_t edescs_size;
+-	int edma;
  	int rc = -ENOMEM;
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
  
  	/* Only initialize once. */
--	if (egress_for_echannel[echannel].equeue != NULL)
-+	if (md->egress_for_echannel[echannel].equeue != NULL)
- 		return 0;
- 
- 	/* Allocate memory for the "headers". */
-@@ -1154,20 +1256,21 @@ static int tile_net_init_egress(struct net_device *dev, int echannel)
- 
- 	/* Allocate an edma ring (using a one entry "free list"). */
- 	if (ering < 0) {
--		rc = gxio_mpipe_alloc_edma_rings(&context, 1, 0, 0);
-+		rc = gxio_mpipe_alloc_edma_rings(&md->context, 1, 0, 0);
- 		if (rc < 0) {
--			netdev_warn(dev, "gxio_mpipe_alloc_edma_rings: %d\n",
--				    rc);
-+			netdev_warn(dev, "gxio_mpipe_alloc_edma_rings: "
-+				    "mpipe[%d] %d\n", instance, rc);
- 			goto fail_equeue;
- 		}
- 		ering = rc;
+@@ -1151,25 +1155,37 @@ static int tile_net_init_egress(struct net_device *dev, int echannel)
  	}
+ 	equeue = pfn_to_kaddr(page_to_pfn(equeue_page));
+ 
+-	/* Allocate an edma ring.  Note that in practice this can't
+-	 * fail, which is good, because we will leak an edma ring if so.
+-	 */
+-	rc = gxio_mpipe_alloc_edma_rings(&context, 1, 0, 0);
+-	if (rc < 0) {
+-		netdev_warn(dev, "gxio_mpipe_alloc_edma_rings failed: %d\n",
+-			    rc);
+-		goto fail_equeue;
++	/* Allocate an edma ring (using a one entry "free list"). */
++	if (ering < 0) {
++		rc = gxio_mpipe_alloc_edma_rings(&context, 1, 0, 0);
++		if (rc < 0) {
++			netdev_warn(dev, "gxio_mpipe_alloc_edma_rings: %d\n",
++				    rc);
++			goto fail_equeue;
++		}
++		ering = rc;
+ 	}
+-	edma = rc;
  
  	/* Initialize the equeue. */
--	rc = gxio_mpipe_equeue_init(equeue, &context, ering, echannel,
-+	rc = gxio_mpipe_equeue_init(equeue, &md->context, ering, echannel,
+-	rc = gxio_mpipe_equeue_init(equeue, &context, edma, echannel,
++	rc = gxio_mpipe_equeue_init(equeue, &context, ering, echannel,
  				    edescs, edescs_size, 0);
  	if (rc != 0) {
--		netdev_err(dev, "gxio_mpipe_equeue_init failed: %d\n", rc);
-+		netdev_err(dev, "gxio_mpipe_equeue_init: mpipe[%d] %d\n",
-+			   instance, rc);
+ 		netdev_err(dev, "gxio_mpipe_equeue_init failed: %d\n", rc);
  		goto fail_equeue;
  	}
  
-@@ -1184,8 +1287,8 @@ static int tile_net_init_egress(struct net_device *dev, int echannel)
- 	}
- 
++	/* Don't reuse the ering later. */
++	ering = -1;
++
++	if (jumbo_num != 0) {
++		/* Make sure "jumbo" packets can be egressed safely. */
++		if (gxio_mpipe_equeue_set_snf_size(equeue, 10368) < 0) {
++			/* ISSUE: There is no "gxio_mpipe_equeue_destroy()". */
++			netdev_warn(dev, "Jumbo packets may not be egressed"
++				    " properly on channel %d\n", echannel);
++		}
++	}
++
  	/* Done. */
--	egress_for_echannel[echannel].equeue = equeue;
--	egress_for_echannel[echannel].headers = headers;
-+	md->egress_for_echannel[echannel].equeue = equeue;
-+	md->egress_for_echannel[echannel].headers = headers;
- 	return 0;
- 
- fail_equeue:
-@@ -1205,9 +1308,12 @@ fail:
- static int tile_net_link_open(struct net_device *dev, gxio_mpipe_link_t *link,
- 			      const char *link_name)
- {
--	int rc = gxio_mpipe_link_open(link, &context, link_name, 0);
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
-+	int rc = gxio_mpipe_link_open(link, &md->context, link_name, 0);
- 	if (rc < 0) {
--		netdev_err(dev, "Failed to open '%s'\n", link_name);
-+		netdev_err(dev, "Failed to open '%s', mpipe[%d], %d\n",
-+			   link_name, instance, rc);
+ 	egress_for_echannel[echannel].equeue = equeue;
+ 	egress_for_echannel[echannel].headers = headers;
+@@ -1197,6 +1213,17 @@ static int tile_net_link_open(struct net_device *dev, gxio_mpipe_link_t *link,
+ 		netdev_err(dev, "Failed to open '%s'\n", link_name);
  		return rc;
  	}
- 	if (jumbo_num != 0) {
-@@ -1234,12 +1340,20 @@ static int tile_net_link_open(struct net_device *dev, gxio_mpipe_link_t *link,
- static int tile_net_open(struct net_device *dev)
- {
- 	struct tile_net_priv *priv = netdev_priv(dev);
--	int cpu, rc;
-+	int cpu, rc, instance;
- 
- 	mutex_lock(&tile_net_devs_for_channel_mutex);
- 
--	/* Do one-time initialization the first time any device is opened. */
--	if (ingress_irq < 0) {
-+	/* Get the instance info. */
-+	rc = gxio_mpipe_link_instance(dev->name);
-+	if (rc < 0 || rc >= NR_MPIPE_MAX)
-+		return -EIO;
-+
-+	priv->instance = rc;
-+	instance = rc;
-+	if (!mpipe_data[rc].context.mmio_fast_base) {
-+		/* Do one-time initialization per instance the first time any
-+		   device is opened. */
- 		rc = tile_net_init_mpipe(dev);
- 		if (rc != 0)
- 			goto fail;
-@@ -1270,7 +1384,7 @@ static int tile_net_open(struct net_device *dev)
- 	if (rc != 0)
- 		goto fail;
- 
--	tile_net_devs_for_channel[priv->channel] = dev;
-+	mpipe_data[instance].tile_net_devs_for_channel[priv->channel] = dev;
- 
- 	rc = tile_net_update(dev);
- 	if (rc != 0)
-@@ -1282,7 +1396,7 @@ static int tile_net_open(struct net_device *dev)
- 	for_each_online_cpu(cpu) {
- 		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
- 		struct tile_net_tx_wake *tx_wake =
--			&info->tx_wake[priv->echannel];
-+			&info->mpipe[instance].tx_wake[priv->echannel];
- 
- 		hrtimer_init(&tx_wake->timer, CLOCK_MONOTONIC,
- 			     HRTIMER_MODE_REL);
-@@ -1308,7 +1422,7 @@ fail:
- 		priv->channel = -1;
- 	}
- 	priv->echannel = -1;
--	tile_net_devs_for_channel[priv->channel] = NULL;
-+	mpipe_data[instance].tile_net_devs_for_channel[priv->channel] =	NULL;
- 	mutex_unlock(&tile_net_devs_for_channel_mutex);
- 
- 	/* Don't return raw gxio error codes to generic Linux. */
-@@ -1320,18 +1434,20 @@ static int tile_net_stop(struct net_device *dev)
- {
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int cpu;
-+	int instance = priv->instance;
-+	struct mpipe_data *md = &mpipe_data[instance];
- 
- 	for_each_online_cpu(cpu) {
- 		struct tile_net_info *info = &per_cpu(per_cpu_info, cpu);
- 		struct tile_net_tx_wake *tx_wake =
--			&info->tx_wake[priv->echannel];
-+			&info->mpipe[instance].tx_wake[priv->echannel];
- 
- 		hrtimer_cancel(&tx_wake->timer);
- 		netif_stop_subqueue(dev, cpu);
- 	}
- 
- 	mutex_lock(&tile_net_devs_for_channel_mutex);
--	tile_net_devs_for_channel[priv->channel] = NULL;
-+	md->tile_net_devs_for_channel[priv->channel] = NULL;
- 	(void)tile_net_update(dev);
- 	if (priv->loopify_channel >= 0) {
- 		if (gxio_mpipe_link_close(&priv->loopify_link) != 0)
-@@ -1351,7 +1467,9 @@ static int tile_net_stop(struct net_device *dev)
- 
- gxio_mpipe_context_t *get_mpipe_context(int index)
- {
--	return ingress_irq < 0 ? NULL : &context;
-+	if (!mpipe_data[index].context.mmio_fast_base)
-+		return NULL;
-+	return &mpipe_data[index].context;
- }
- EXPORT_SYMBOL_GPL(get_mpipe_context);
- 
-@@ -1547,6 +1665,8 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
- 		       struct sk_buff *skb, unsigned char *headers, s64 slot)
- {
- 	struct skb_shared_info *sh = skb_shinfo(skb);
-+	int instance = mpipe_instance(dev);
-+	struct mpipe_data *md = &mpipe_data[instance];
- 	unsigned int sh_len = skb_transport_offset(skb) + tcp_hdrlen(skb);
- 	unsigned int data_len = skb->len - sh_len;
- 	unsigned int p_len = sh->gso_size;
-@@ -1569,8 +1689,8 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
++	if (jumbo_num != 0) {
++		u32 attr = GXIO_MPIPE_LINK_RECEIVE_JUMBO;
++		rc = gxio_mpipe_link_set_attr(link, attr, 1);
++		if (rc != 0) {
++			netdev_err(dev,
++				   "Cannot receive jumbo packets on '%s'\n",
++				   link_name);
++			gxio_mpipe_link_close(link);
++			return rc;
++		}
++	}
+ 	rc = gxio_mpipe_link_channel(link);
+ 	if (rc < 0 || rc >= TILE_NET_CHANNELS) {
+ 		netdev_err(dev, "gxio_mpipe_link_channel bad value: %d\n", rc);
+@@ -1546,8 +1573,8 @@ static void tso_egress(struct net_device *dev, gxio_mpipe_equeue_t *equeue,
  	edesc_head.xfer_size = sh_len;
  
  	/* This is only used to specify the TLB. */
--	edesc_head.stack_idx = first_buffer_stack;
--	edesc_body.stack_idx = first_buffer_stack;
-+	edesc_head.stack_idx = md->first_buffer_stack;
-+	edesc_body.stack_idx = md->first_buffer_stack;
+-	edesc_head.stack_idx = large_buffer_stack;
+-	edesc_body.stack_idx = large_buffer_stack;
++	edesc_head.stack_idx = first_buffer_stack;
++	edesc_body.stack_idx = first_buffer_stack;
  
  	/* Egress all the edescs. */
  	for (segment = 0; segment < sh->gso_segs; segment++) {
-@@ -1645,8 +1765,11 @@ static int tile_net_tx_tso(struct sk_buff *skb, struct net_device *dev)
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
- 	int channel = priv->echannel;
--	struct tile_net_egress *egress = &egress_for_echannel[channel];
--	struct tile_net_comps *comps = info->comps_for_echannel[channel];
-+	int instance = priv->instance;
-+	struct mpipe_data *md = &mpipe_data[instance];
-+	struct tile_net_egress *egress = &md->egress_for_echannel[channel];
-+	struct tile_net_comps *comps =
-+		info->mpipe[instance].comps_for_echannel[channel];
- 	gxio_mpipe_equeue_t *equeue = egress->equeue;
- 	unsigned long irqflags;
- 	int num_edescs;
-@@ -1710,10 +1833,13 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- {
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
- 	struct tile_net_priv *priv = netdev_priv(dev);
--	struct tile_net_egress *egress = &egress_for_echannel[priv->echannel];
-+	int instance = priv->instance;
-+	struct mpipe_data *md = &mpipe_data[instance];
-+	struct tile_net_egress *egress =
-+		&md->egress_for_echannel[priv->echannel];
- 	gxio_mpipe_equeue_t *equeue = egress->equeue;
- 	struct tile_net_comps *comps =
--		info->comps_for_echannel[priv->echannel];
-+		info->mpipe[instance].comps_for_echannel[priv->echannel];
- 	unsigned int len = skb->len;
- 	unsigned char *data = skb->data;
- 	unsigned int num_edescs;
-@@ -1730,7 +1856,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
+@@ -1707,7 +1734,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
  	num_edescs = tile_net_tx_frags(frags, skb, data, skb_headlen(skb));
  
  	/* This is only used to specify the TLB. */
--	edesc.stack_idx = first_buffer_stack;
-+	edesc.stack_idx = md->first_buffer_stack;
+-	edesc.stack_idx = large_buffer_stack;
++	edesc.stack_idx = first_buffer_stack;
  
  	/* Prepare the edescs. */
  	for (i = 0; i < num_edescs; i++) {
-@@ -1764,7 +1890,7 @@ static int tile_net_tx(struct sk_buff *skb, struct net_device *dev)
- 		gxio_mpipe_equeue_put_at(equeue, edescs[i], slot++);
- 
- 	/* Store TX timestamp if needed. */
--	tile_tx_timestamp(skb);
-+	tile_tx_timestamp(skb, instance);
- 
- 	/* Add a completion record. */
- 	add_comp(equeue, comps, slot - 1, skb);
-@@ -1846,9 +1972,13 @@ static int tile_net_set_mac_address(struct net_device *dev, void *p)
-  */
- static void tile_net_netpoll(struct net_device *dev)
+@@ -1796,7 +1823,9 @@ static struct net_device_stats *tile_net_get_stats(struct net_device *dev)
+ /* Change the MTU. */
+ static int tile_net_change_mtu(struct net_device *dev, int new_mtu)
  {
--	disable_percpu_irq(ingress_irq);
--	tile_net_handle_ingress_irq(ingress_irq, NULL);
--	enable_percpu_irq(ingress_irq, 0);
-+	int instance = mpipe_instance(dev);
-+	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
-+	struct mpipe_data *md = &mpipe_data[instance];
-+
-+	disable_percpu_irq(md->ingress_irq);
-+	napi_schedule(&info->mpipe[instance].napi);
-+	enable_percpu_irq(md->ingress_irq, 0);
- }
- #endif
- 
-@@ -1945,9 +2075,12 @@ static void tile_net_init_module_percpu(void *unused)
- {
- 	struct tile_net_info *info = &__get_cpu_var(per_cpu_info);
- 	int my_cpu = smp_processor_id();
-+	int instance;
- 
--	info->has_iqueue = false;
--
-+	for (instance = 0; instance < NR_MPIPE_MAX; instance++) {
-+		info->mpipe[instance].has_iqueue = false;
-+		info->mpipe[instance].instance = instance;
-+	}
- 	info->my_cpu = my_cpu;
- 
- 	/* Initialize the egress timer. */
-@@ -1964,6 +2097,8 @@ static int __init tile_net_init_module(void)
- 
- 	pr_info("Tilera Network Driver\n");
- 
-+	BUILD_BUG_ON(NR_MPIPE_MAX != 2);
-+
- 	mutex_init(&tile_net_devs_for_channel_mutex);
- 
- 	/* Initialize each CPU. */
-diff --git a/drivers/net/ethernet/tile/tilegx_ptp.c b/drivers/net/ethernet/tile/tilegx_ptp.c
-index a188463..035efcc 100644
---- a/drivers/net/ethernet/tile/tilegx_ptp.c
-+++ b/drivers/net/ethernet/tile/tilegx_ptp.c
-@@ -42,13 +42,14 @@ MODULE_LICENSE("GPL");
- 
- 
- struct mpipe_clock {
-+	int index;
- 	struct ptp_clock *ptp_clock;
- 	gxio_mpipe_context_t *context;
- 	struct ptp_clock_info caps;
- 	struct mutex lock;
- };
- 
--static struct mpipe_clock mpipe_clock;
-+static struct mpipe_clock mpipe_clock[NR_MPIPE_MAX];
- 
- extern gxio_mpipe_context_t *get_mpipe_context(int index);
- 
-@@ -58,7 +59,7 @@ extern gxio_mpipe_context_t *get_mpipe_context(int index);
- static inline int mpipe_context_check(struct mpipe_clock *clock)
- {
- 	if (!clock->context) {
--		clock->context = get_mpipe_context(0);
-+		clock->context = get_mpipe_context(clock->index);
- 		if (!clock->context) {
- 			pr_debug("Invalid mPIPE context.\n");
- 			return -EIO;
-@@ -176,23 +177,32 @@ static struct ptp_clock_info ptp_mpipe_caps = {
- 
- static void __exit ptp_tilegx_exit(void)
- {
--	ptp_clock_unregister(mpipe_clock.ptp_clock);
--	mutex_destroy(&mpipe_clock.lock);
-+	int i;
-+
-+	for (i = 0; i < NR_MPIPE_MAX; i++) {
-+		ptp_clock_unregister(mpipe_clock[i].ptp_clock);
-+		mutex_destroy(&mpipe_clock[i].lock);
-+	}
- }
- 
- 
- static int __init ptp_tilegx_init(void)
- {
- 	int err = 0;
--
--	mpipe_clock.context = NULL;
--	mpipe_clock.caps = ptp_mpipe_caps;
--	mutex_init(&mpipe_clock.lock);
--
--	mpipe_clock.ptp_clock = ptp_clock_register(&mpipe_clock.caps, NULL);
--	if (IS_ERR(mpipe_clock.ptp_clock)) {
--		err = PTR_ERR(mpipe_clock.ptp_clock);
--		pr_debug("Register ptp clock fail: %d\n", err);
-+	int i;
-+
-+	for (i = 0; i < NR_MPIPE_MAX; i++) {
-+		mpipe_clock[i].index = i;
-+		mpipe_clock[i].context = NULL;
-+		mpipe_clock[i].caps = ptp_mpipe_caps;
-+		mutex_init(&mpipe_clock[i].lock);
-+
-+		mpipe_clock[i].ptp_clock =
-+			ptp_clock_register(&mpipe_clock[i].caps, NULL);
-+		if (IS_ERR(mpipe_clock[i].ptp_clock)) {
-+			err = PTR_ERR(mpipe_clock[i].ptp_clock);
-+			pr_debug("Register ptp clock %d fail: %d\n", i, err);
-+		}
- 	}
- 
- 	return err;
+-	if ((new_mtu < 68) || (new_mtu > 1500))
++	if (new_mtu < 68)
++		return -EINVAL;
++	if (new_mtu > ((jumbo_num != 0) ? 9000 : 1500))
+ 		return -EINVAL;
+ 	dev->mtu = new_mtu;
+ 	return 0;
 -- 
 1.8.3.1
 
