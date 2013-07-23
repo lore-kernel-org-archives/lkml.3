@@ -1,171 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934573Ab3GWW5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:57:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41484 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934460Ab3GWW1E (ORCPT
+	id S935176Ab3GWW5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:57:33 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38695 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934460Ab3GWW52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [ 012/103] powerpc: Rename and flesh out the facility unavailable exception handler
-Date: Tue, 23 Jul 2013 15:25:23 -0700
-Message-Id: <20130723220419.956205389@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
-References: <20130723220418.532514378@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Tue, 23 Jul 2013 18:57:28 -0400
+Date: Wed, 24 Jul 2013 01:57:15 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that
+ hasn't changed
+Message-ID: <20130723225715.GD31864@blackmetal.musicnaut.iki.fi>
+References: <1374383575-31493-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374383575-31493-1-git-send-email-paul.gortmaker@windriver.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Sun, Jul 21, 2013 at 01:12:55AM -0400, Paul Gortmaker wrote:
+> Looking at the bigger picture, the need for this file has simply
+> passed.  It was trying to detail required versions of userspace
+> packages, in order to cater to hand-crafted systems.  But now the
+> majority of users get their userspace all at once from some kind
+> of distro, and we are probably a lot more serious about avoiding
+> breaking userspace than we were a dozen years ago.
 
-From: Michael Ellerman <michaele@au1.ibm.com>
+Is there any file describing the needed tools (and minimum versions) to
+_build_ the kernel? I agree that trying to describe such for the run-time
+userspace does not belong to the kernel tree, but the required/supported
+versions of build tools should be still maybe documented...
 
-commit 021424a1fce335e05807fd770eb8e1da30a63eea upstream.
-
-The exception at 0xf60 is not the TM (Transactional Memory) unavailable
-exception, it is the "Facility Unavailable Exception", rename it as
-such.
-
-Flesh out the handler to acknowledge the fact that it can be called for
-many reasons, one of which is TM being unavailable.
-
-Use STD_EXCEPTION_COMMON() for the exception body, for some reason we
-had it open-coded, I've checked the generated code is identical.
-
-Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/powerpc/kernel/exceptions-64s.S |   21 +++++++--------------
- arch/powerpc/kernel/traps.c          |   33 +++++++++++++++++++++++++--------
- 2 files changed, 32 insertions(+), 22 deletions(-)
-
---- a/arch/powerpc/kernel/exceptions-64s.S
-+++ b/arch/powerpc/kernel/exceptions-64s.S
-@@ -341,10 +341,11 @@ vsx_unavailable_pSeries_1:
- 	EXCEPTION_PROLOG_0(PACA_EXGEN)
- 	b	vsx_unavailable_pSeries
- 
-+facility_unavailable_trampoline:
- 	. = 0xf60
- 	SET_SCRATCH0(r13)
- 	EXCEPTION_PROLOG_0(PACA_EXGEN)
--	b	tm_unavailable_pSeries
-+	b	facility_unavailable_pSeries
- 
- #ifdef CONFIG_CBE_RAS
- 	STD_EXCEPTION_HV(0x1200, 0x1202, cbe_system_error)
-@@ -522,7 +523,7 @@ denorm_done:
- 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf20)
- 	STD_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
- 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf40)
--	STD_EXCEPTION_PSERIES_OOL(0xf60, tm_unavailable)
-+	STD_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
- 	KVM_HANDLER_PR(PACA_EXGEN, EXC_STD, 0xf60)
- 
- /*
-@@ -829,11 +830,11 @@ vsx_unavailable_relon_pSeries_1:
- 	EXCEPTION_PROLOG_0(PACA_EXGEN)
- 	b	vsx_unavailable_relon_pSeries
- 
--tm_unavailable_relon_pSeries_1:
-+facility_unavailable_relon_trampoline:
- 	. = 0x4f60
- 	SET_SCRATCH0(r13)
- 	EXCEPTION_PROLOG_0(PACA_EXGEN)
--	b	tm_unavailable_relon_pSeries
-+	b	facility_unavailable_relon_pSeries
- 
- 	STD_RELON_EXCEPTION_PSERIES(0x5300, 0x1300, instruction_breakpoint)
- #ifdef CONFIG_PPC_DENORMALISATION
-@@ -1159,15 +1160,7 @@ END_FTR_SECTION_IFSET(CPU_FTR_VSX)
- 	bl	.vsx_unavailable_exception
- 	b	.ret_from_except
- 
--	.align	7
--	.globl tm_unavailable_common
--tm_unavailable_common:
--	EXCEPTION_PROLOG_COMMON(0xf60, PACA_EXGEN)
--	bl	.save_nvgprs
--	DISABLE_INTS
--	addi	r3,r1,STACK_FRAME_OVERHEAD
--	bl	.tm_unavailable_exception
--	b	.ret_from_except
-+	STD_EXCEPTION_COMMON(0xf60, facility_unavailable, .facility_unavailable_exception)
- 
- 	.align	7
- 	.globl	__end_handlers
-@@ -1180,7 +1173,7 @@ __end_handlers:
- 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf00, performance_monitor)
- 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf20, altivec_unavailable)
- 	STD_RELON_EXCEPTION_PSERIES_OOL(0xf40, vsx_unavailable)
--	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, tm_unavailable)
-+	STD_RELON_EXCEPTION_PSERIES_OOL(0xf60, facility_unavailable)
- 
- #if defined(CONFIG_PPC_PSERIES) || defined(CONFIG_PPC_POWERNV)
- /*
---- a/arch/powerpc/kernel/traps.c
-+++ b/arch/powerpc/kernel/traps.c
-@@ -1282,25 +1282,42 @@ void vsx_unavailable_exception(struct pt
- 	die("Unrecoverable VSX Unavailable Exception", regs, SIGABRT);
- }
- 
--void tm_unavailable_exception(struct pt_regs *regs)
-+void facility_unavailable_exception(struct pt_regs *regs)
- {
-+	static char *facility_strings[] = {
-+		"FPU",
-+		"VMX/VSX",
-+		"DSCR",
-+		"PMU SPRs",
-+		"BHRB",
-+		"TM",
-+		"AT",
-+		"EBB",
-+		"TAR",
-+	};
-+	char *facility;
-+	u64 value;
-+
-+	value = mfspr(SPRN_FSCR) >> 56;
-+
- 	/* We restore the interrupt state now */
- 	if (!arch_irq_disabled_regs(regs))
- 		local_irq_enable();
- 
--	/* Currently we never expect a TMU exception.  Catch
--	 * this and kill the process!
--	 */
--	printk(KERN_EMERG "Unexpected TM unavailable exception at %lx "
--	       "(msr %lx)\n",
--	       regs->nip, regs->msr);
-+	if (value < ARRAY_SIZE(facility_strings))
-+		facility = facility_strings[value];
-+	else
-+		facility = "unknown";
-+
-+	pr_err("Facility '%s' unavailable, exception at 0x%lx, MSR=%lx\n",
-+		facility, regs->nip, regs->msr);
- 
- 	if (user_mode(regs)) {
- 		_exception(SIGILL, regs, ILL_ILLOPC, regs->nip);
- 		return;
- 	}
- 
--	die("Unexpected TM unavailable exception", regs, SIGABRT);
-+	die("Unexpected facility unavailable exception", regs, SIGABRT);
- }
- 
- #ifdef CONFIG_PPC_TRANSACTIONAL_MEM
-
-
+A.
