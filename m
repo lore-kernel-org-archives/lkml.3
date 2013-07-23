@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933848Ab3GWSsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:48:52 -0400
-Received: from mail-ye0-f181.google.com ([209.85.213.181]:54774 "EHLO
-	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932572Ab3GWSsu (ORCPT
+	id S933866Ab3GWSuY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:50:24 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:41099 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933293Ab3GWSuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:48:50 -0400
-Date: Tue, 23 Jul 2013 14:48:43 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
-Message-ID: <20130723184843.GG21100@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
+	Tue, 23 Jul 2013 14:50:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130723183841.GA9021@tp>
+References: <20130723181606.GA6342@sergelap>
+	<20130723183018.GF21100@mtj.dyndns.org>
+	<20130723183841.GA9021@tp>
+Date: Tue, 23 Jul 2013 14:50:22 -0400
+X-Google-Sender-Auth: EMC25Rqr1k9lifeIQ4QONOixIKc
+Message-ID: <CAOS58YPynQ-QBx5nZEnYrP5kGTVvv9VAj0cV0aYeikTitvTQbA@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] devices cgroup: allow can_attach() if ns_capable
+From: Tejun Heo <tj@kernel.org>
+To: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 03:59:14PM +0800, Tang Chen wrote:
-> The Hot-Pluggable field in SRAT suggests if the memory could be
-> hotplugged while the system is running. Print it as well when
-> parsing SRAT will help users to know which memory is hotpluggable.
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+On Tue, Jul 23, 2013 at 2:38 PM, Serge Hallyn <serge.hallyn@ubuntu.com> wrote:
+> This doesn't delegate it into the container.  It allows me, on the host,
+> to set the cgroup for a container.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Hmmm? I'm a bit confused. Isn't the description saying that the patch
+allows pseudo-root in userns to change cgroup membership even if it
+isn't actually root?
 
-But a nit below
-
-> +	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
-> +		node, pxm,
-> +		(unsigned long long) start, (unsigned long long) end - 1,
-> +		hotpluggable ? "Hot Pluggable" : "");
-
-The following would be more conventional.
-
-  "...10Lx]%s\n", ..., hotpluggable ? " Hot Pluggable" : ""
-
-Also, isn't "Hot Pluggable" a bit too verbose?  "hotplug" should be
-fine, I think.
+Besides, I find the whole check rather bogus and would actually much
+prefer just nuking the check and just follow the standard permission
+checks.
 
 Thanks.
 
--- 
+--
 tejun
