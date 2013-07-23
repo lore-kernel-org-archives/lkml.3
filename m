@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506Ab3GWPCA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 11:02:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60504 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932873Ab3GWPB5 (ORCPT
+	id S1757689Ab3GWPFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 11:05:30 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:56140 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754566Ab3GWPF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 11:01:57 -0400
-Date: Tue, 23 Jul 2013 16:01:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Jean-Francois Moine <moinejf@free.fr>, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Message-ID: <20130723150150.GH9858@sirena.org.uk>
-References: <20130723104615.3696f1a9@armhf>
- <20130723123444.GW9858@sirena.org.uk>
- <51EE7E1A.3040301@gmail.com>
- <20130723132016.GC9858@sirena.org.uk>
- <51EE8591.7060005@gmail.com>
+	Tue, 23 Jul 2013 11:05:28 -0400
+Message-ID: <51EE9BB6.8000501@lwfinger.net>
+Date: Tue, 23 Jul 2013 10:05:26 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lvzXnIqIiPbDUI27"
-Content-Disposition: inline
-In-Reply-To: <51EE8591.7060005@gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] [PATCH v3] ARM: kirkwood: extend the kirkwood i2s
- driver for DT usage
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: =?UTF-8?B?IlBhdWwgUm9sbGFuZCAo44Od44O844Or44O744Ot44Op44OzKSI=?= 
+	<rol@witbe.net>
+CC: Richard Genoud <richard.genoud@gmail.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: rtl8192cu: slow path warning
+References: <20130611123814.GA9854@lnx-rg> <20130626142241.GA13107@lnx-rg> <51CB0E9C.50408@lwfinger.net> <CACQ1gAh+WjQZHo+_afZpzcwt1=KPM8VMBOe=YCHN_LEZu+jPNQ@mail.gmail.com> <20130723142907.53103aab@tux.DEF.witbe.net>
+In-Reply-To: <20130723142907.53103aab@tux.DEF.witbe.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/23/2013 07:29 AM, Paul Rolland (ポール・ロラン) wrote:
+> Hello,
+>
+> On Thu, 27 Jun 2013 09:33:20 +0200
+> Richard Genoud <richard.genoud@gmail.com> wrote:
+>
+>> Yes, of course, you can add my
+>> Reported-by: Richard Genoud <richard.genoud@gmail.com>
+>>
+>> But the patch doesn't compile on my platform ( since I'm on ARM, I
+>> haven't got a PCI bus, so rtlwifi/pci.c is not compiled ) :
+>>
+>> ERROR: "rtl_lps_change_work_callback"
+>> [drivers/net/wireless/rtlwifi/rtlwifi.ko] undefined!
+>
+> Is that the reason why this patch is not yet in 3.10.x or 3.11-rcY ?
+> I'm running a 3.10.1 with USB dongle including 8192CU, and I can see this
+> warning when the machine starts.
+> I've check 3.10.1, 3.10.2 and 3.11-rc3 source code, but this fix is not
+> there. Is there a different fix that went in in 3.10.2 or 3.11-rc?
 
---lvzXnIqIiPbDUI27
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The reason that patch is not in mainline is that it takes time. If you want to 
+have it, you can get the official patch from 
+http://marc.info/?l=linux-wireless&m=137242880222442&w=2, or you need to 
+implement kernels from the wireless-testing git tree, where it was added on June 
+28 as commit bcfb879. My original patch included the following note for John 
+Linville:
 
-On Tue, Jul 23, 2013 at 03:30:57PM +0200, Sebastian Hesselbarth wrote:
-> On 07/23/13 15:20, Mark Brown wrote:
+"Ideally, this patch should be pushed to the 3.10 stream; however, at this late 
+time that is not possible. Please push it for 3.11 and the Cc to stable will get 
+it into 3.10.X."
 
-> >Why would this be required?  The driver is already asking for multiple
-> >clocks...
+As you see, it was marked with a Cc for Stable, and it will be propagated to 
+3.10 when it gets incorporated by Linus. I think I have done all that I can do 
+for now.
 
-> The driver is asking for multiple *DT based* clocks. Legacy
-> platform_data has never been updated to reflect that. Mainly because
-> multiple clocks are only supported on Dove, which has no active non-DT
-> board in mainline.
+If you want to lobby Linus to get stuff accepted faster, that is your 
+prerogative; however, I could not recommend that action, and I certainly will 
+never do anything like that.
 
-Why would platform data have anything to do with this?  To repeat again
-the way the clocks are mapped should be totally transparent to the
-driver requesting them, if it isn't then the driver is not using the API
-properly.
+Larry
 
---lvzXnIqIiPbDUI27
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7prbAAoJELSic+t+oim94yEQAI8Lxb6zeff+wXWxZsZuHv+Y
-Y7U0ls8+Gx4xPE2DwvyPCj49v3rJIJBhZc916VfM3TbTjqDJiZedCkff7rm2Df8T
-WoKoLbZuagN5MVWy/6VS2tKNKtGzCEfg5eekpR7LZ4n74/Hua9r083w4ztohSnjn
-paUN+d8385eVdXVkd/HS6M0NRFAssk9Fq4e5H1pznQjBEFyQDSYLBSjjVbO1yJiw
-2hTjx+3Oe0FTB7pjULQX9e/X47bqFBDpBLfoIwgxMTerRxyTxsIv1E3aotHKRg0Y
-E/nDe5fIY915t8Sjro6E8PNJ7QWMGTC02W9L0o1d7PgDaISdyBBlLlcGj+u/T+x3
-/N5aa/mlat1tv9ffR6Lt9JFYZQZ2u9cqQfuDELZynU5uJnn5HtEZuHJoZCmdJEMl
-lVvJUAZxvZrWKWqxNnoHJ4AIVCHjt8jbHPwHvIGtmki/RuPsNOMw8iJQXuzczzcd
-weOewZ3Mb56jzYJ2qgZb4fllg9qhJiDvhFpBtFCnNhhb0jCD0qoswzgPTUtoX6yz
-9eRfP96OmT1lPtyi+xeZbj+xzNL2gEDSsGExXPBNOk3zIhZqdwVsneFizxGkKeUj
-RY8vN8gi4OF6FWElLxHs6G6uN+epw+T55JhFHmco5vEmeTQVnxMlcCOFTtFkD+tC
-YGK8Q0Q2+H+WxRdRvhJb
-=0T+r
------END PGP SIGNATURE-----
-
---lvzXnIqIiPbDUI27--
