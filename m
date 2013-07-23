@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756529Ab3GWLeB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 07:34:01 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:49567 "EHLO gloria.sntech.de"
+	id S1756654Ab3GWLfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 07:35:46 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:48364 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab3GWLeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 07:34:00 -0400
-From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl: rockchip: include correct clk header
-Date: Tue, 23 Jul 2013 13:34:20 +0200
-User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>
+	id S1756254Ab3GWLfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 07:35:45 -0400
+X-IronPort-AV: E=Sophos;i="4.89,727,1367971200"; 
+   d="scan'208";a="38669144"
+Date: Tue, 23 Jul 2013 12:35:40 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Julien Grall <julien.grall@linaro.org>
+CC: <stefano.stabellini@eu.citrix.com>, <konrad.wilk@oracle.com>,
+        <ian.campbell@citrix.com>, <patches@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <xen-devel@lists.xen.org>, <mark.rutland@arm.com>,
+        <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH] xen/arm64: Don't compile cpu hotplug
+In-Reply-To: <1374529258-12866-1-git-send-email-julien.grall@linaro.org>
+Message-ID: <alpine.DEB.2.02.1307231235330.4893@kaball.uk.xensource.com>
+References: <1374529258-12866-1-git-send-email-julien.grall@linaro.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307231334.21272.heiko@sntech.de>
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The correct header to include for clock handling is clk.h .
-clk-provider.h should not be used in simple clock consumers.
+On Mon, 22 Jul 2013, Julien Grall wrote:
+> On ARM64, when CONFIG_XEN=y, the compilation will fail because CPU hotplug is
+> not yet supported with XEN. For now, disable it.
+> 
+> Signed-off-by: Julien Grall <julien.grall@linaro.org>
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
-After mixing them up to often this time, I'll hopefully remember this in
-the future :-) .
+Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
- drivers/pinctrl/pinctrl-rockchip.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/pinctrl/pinctrl-rockchip.c b/drivers/pinctrl/pinctrl-rockchip.c
-index 1eb5a2e..dc90c02 100644
---- a/drivers/pinctrl/pinctrl-rockchip.c
-+++ b/drivers/pinctrl/pinctrl-rockchip.c
-@@ -36,7 +36,7 @@
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/pinconf-generic.h>
- #include <linux/irqchip/chained_irq.h>
--#include <linux/clk-provider.h>
-+#include <linux/clk.h>
- #include <dt-bindings/pinctrl/rockchip.h>
- 
- #include "core.h"
--- 
-1.7.10.4
+>  drivers/xen/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
+> index 2bf461a..a609353 100644
+> --- a/drivers/xen/Makefile
+> +++ b/drivers/xen/Makefile
+> @@ -1,4 +1,4 @@
+> -ifneq ($(CONFIG_ARM),y)
+> +ifeq ($(filter y, $(CONFIG_ARM) $(CONFIG_ARM64)),)
+>  obj-y	+= manage.o
+>  obj-$(CONFIG_HOTPLUG_CPU)		+= cpu_hotplug.o
+>  endif
+> -- 
+> 1.7.10.4
+> 
