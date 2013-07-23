@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870Ab3GWSCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 14:02:40 -0400
-Received: from sauhun.de ([89.238.76.85]:58701 "EHLO pokefinder.org"
+	id S933854Ab3GWSCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 14:02:37 -0400
+Received: from sauhun.de ([89.238.76.85]:58696 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757693Ab3GWSCg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 14:02:36 -0400
+	id S933845Ab3GWSCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 14:02:33 -0400
 From: Wolfram Sang <wsa@the-dreams.de>
 To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        =?UTF-8?q?Terje=20Bergstr=C3=B6m?= <tbergstrom@nvidia.com>,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org
-Subject: [PATCH 05/27] drivers/gpu/host1x/drm: don't check resource with devm_ioremap_resource
-Date: Tue, 23 Jul 2013 20:01:38 +0200
-Message-Id: <1374602524-3398-6-git-send-email-wsa@the-dreams.de>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: [PATCH 04/27] drivers/dma: don't check resource with devm_ioremap_resource
+Date: Tue, 23 Jul 2013 20:01:37 +0200
+Message-Id: <1374602524-3398-5-git-send-email-wsa@the-dreams.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
 References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
@@ -29,23 +27,38 @@ Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
 ---
 Please apply via the subsystem-tree.
 
- drivers/gpu/host1x/drm/hdmi.c |    3 ---
- 1 file changed, 3 deletions(-)
+ drivers/dma/mmp_pdma.c |    3 ---
+ drivers/dma/mmp_tdma.c |    3 ---
+ 2 files changed, 6 deletions(-)
 
-diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
-index 01097da..9ffece6 100644
---- a/drivers/gpu/host1x/drm/hdmi.c
-+++ b/drivers/gpu/host1x/drm/hdmi.c
-@@ -1248,9 +1248,6 @@ static int tegra_hdmi_probe(struct platform_device *pdev)
- 		return err;
+diff --git a/drivers/dma/mmp_pdma.c b/drivers/dma/mmp_pdma.c
+index c26699f..7eba967 100644
+--- a/drivers/dma/mmp_pdma.c
++++ b/drivers/dma/mmp_pdma.c
+@@ -778,9 +778,6 @@ static int mmp_pdma_probe(struct platform_device *op)
+ 	pdev->dev = &op->dev;
  
- 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
--	if (!regs)
--		return -ENXIO;
+ 	iores = platform_get_resource(op, IORESOURCE_MEM, 0);
+-	if (!iores)
+-		return -EINVAL;
 -
- 	hdmi->regs = devm_ioremap_resource(&pdev->dev, regs);
- 	if (IS_ERR(hdmi->regs))
- 		return PTR_ERR(hdmi->regs);
+ 	pdev->base = devm_ioremap_resource(pdev->dev, iores);
+ 	if (IS_ERR(pdev->base))
+ 		return PTR_ERR(pdev->base);
+diff --git a/drivers/dma/mmp_tdma.c b/drivers/dma/mmp_tdma.c
+index 9b93665..1f1885a 100644
+--- a/drivers/dma/mmp_tdma.c
++++ b/drivers/dma/mmp_tdma.c
+@@ -549,9 +549,6 @@ static int mmp_tdma_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!iores)
+-		return -EINVAL;
+-
+ 	tdev->base = devm_ioremap_resource(&pdev->dev, iores);
+ 	if (IS_ERR(tdev->base))
+ 		return PTR_ERR(tdev->base);
 -- 
 1.7.10.4
 
