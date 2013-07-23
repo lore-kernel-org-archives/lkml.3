@@ -1,125 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab3GWEkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 00:40:31 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:41667 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab3GWEka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 00:40:30 -0400
-Date: Tue, 23 Jul 2013 05:40:20 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes 
-Message-ID: <alpine.DEB.2.00.1307230535040.3501@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751578Ab3GWEth (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 00:49:37 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:51960 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750720Ab3GWEtf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 00:49:35 -0400
+Message-ID: <51EE0B41.2090002@st.com>
+Date: Tue, 23 Jul 2013 10:19:05 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1085120751-1374554420=:3501"
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
+        Mohit KUMAR <Mohit.KUMAR@st.com>
+Cc: "'Bjorn Helgaas'" <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Arnd Bergmann'" <arnd@arndb.de>, "'Sean Cross'" <xobs@kosagi.com>,
+        "'Thierry Reding'" <thierry.reding@gmail.com>,
+        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys
+ part and Exynos part
+References: <002801ce8376$a807dbf0$f81793d0$@samsung.com> <51ED49D6.9050209@ti.com> <000701ce8741$fe47deb0$fad79c10$@samsung.com>
+In-Reply-To: <000701ce8741$fe47deb0$fad79c10$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 7/23/2013 6:44 AM, Jingoo Han wrote:
+>>> +           if (restype == IORESOURCE_MEM) {
+>>> > >+                   of_pci_range_to_resource(&range, np, &pp->mem);
+>>> > >+                   pp->mem.name = "MEM";
+>>> > >+                   pp->config.mem_size = resource_size(&pp->mem);
+>>> > >+                   pp->config.mem_bus_addr = range.pci_addr;
+>>> > >+           }
+>>> > >+           if (restype == 0) {
+>>> > >+                   of_pci_range_to_resource(&range, np, &pp->cfg);
+>>> > >+                   pp->config.cfg0_size = resource_size(&pp->cfg)/2;
+>>> > >+                   pp->config.cfg1_size = resource_size(&pp->cfg)/2;
+>>> > >+           }
+>>> > >+   }
+>>> > >+
+>>> > >+   pp->dbi_base = devm_ioremap(pp->dev, pp->cfg.start,
+>>> > >+                           resource_size(&pp->cfg));
+>> >
+>> >Why is configuraion space divided into two?
+> Sorry, I don't know the exact reason.:(
+> Pratyush Anand may know about this.
+> Pratyush Anand, could you answer the question?
+>
 
---29444707-1085120751-1374554420=:3501
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+CfgRd1 and CfgWr1 transactions are needed when an EP is not directly 
+connected to RC, rather connected through a bridge. For more detail see 
+PCIe specs.
+Now, if we wish to generate a CfgRd/Wr1 transaction using SNPS 
+controller then we can not use same programmed viewport as that for 
+CfgRd/Wr0. However, a viewport can be reprogrammed using same physical 
+cfg address to generate either cfg0 or cfg1. So, in that case we can do 
+with only one cfg area and no reason to divide it into two.
+Current code assumes that there are only 4 viewports available (2 in 
+outbound and 2 in inbound direction) and it always programs viewport 
+dynamically for cfg0/1 as per need. But same can not be true for all 
+implementations. There can be a case where hardware has sufficient 
+number of viewports and software does not need to reprogram it 
+dynamically. In that situation different physical memory area for each 
+type of TLP would make the execution faster.
+
+> Also, if you find some problems, please let me know.
+>
+>
+>> >Why should it be same as dbi_base?
+>> >AFAIK, jacinto6 has a dedicated configuration/io/memory space that is entirely
+>> >different from dbi_base.
+> According to the Synopsys designware PCIe datasheet,
+> in chapter 5.1.1 Register Space Layout,
+> 'Port Logic Registers' are placed between (config space 0x0 + 0x700)
+> and (config space 0x0 + 0xFFF).
+> 'dbi_base' is used for reading/writing 'Port Logic Registers'.
+> Exynos are using 'dbi_base' like this. Thus, the base addresses of
+> both 'dbi_base' and configuration/io/memory space are same.
+
+Yes address space are same, but at any moment they work either as dbi 
+space or as configuration/io/memory space depending on the dbi_enable 
+bit of application register. Similar functionality was there in one 
+older SPEAr implementation.
+
+>
+> Just now, I looked at Spear PCIe driver.
+> However, in the case of Spear, the base address of configuration/io/memory
+> space is defined as 0x80000000. The base address of 'Port Logic Registers'
+> is defined as 0xb1000000.
+> I think that the situation of 'jacinto6' is similar with Spear, right?
+
+In SPEAr1340 PCIe memory layout is as follows:
+
+DBI base (0xB1000000 to 0xB1001FFF): This space is used to read/write 
+own PCI Configuration Header, Capability and Port Logic(PL) Registers.
+
+ELBI space (0xB1002000 to  0xB17FFFFF): These are completely SPEAr 
+specific application registers.
+
+configuration/io/memory space(0x80000000 to 0x8FFFFFFF): These can be 
+used in viewport programming to generate different type of outbound 
+transaction.
+
+Regards
+Pratyush
 
 
-Hi Linus,
+>
+> Then, I will move pp->dbi_base mapping code from pcie-designware.c
+> to pci-exynos.c.
 
-This is just a regular fixes pull, mostly nouveau and i915, the i915 ones
-fix RC6 on Sandybridge after suspend/resume, which I think people have be 
-wanting for quite a while!
 
-Now you shouldn't wish for more patches, as the new mutex/reservation code 
-found a number of problems with the qxl driver, and it currently makes 
-lockdep angry, I'm working on a set of fixes for it, but its a bit large, 
-I'll submit them separately later today or tomorrow once I've banged on 
-them a bit more, just warning you in advance :-)
-
-Dave.
-
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
-
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to 058ca4a22ebf22ea1cbedd6cc0340ed1e2e94ee1:
-
-  Merge tag 'drm-intel-fixes-2013-07-22' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2013-07-22 16:14:26 +1000)
-
-----------------------------------------------------------------
-
-Ben Skeggs (4):
-      Merge remote-tracking branch 'airlied/drm-next' into drm-nouveau-next
-      drm/nouveau: fix locking issues in page flipping paths
-      drm/nv50/kms: fix pin refcnt leaks
-      drm/nouveau: use dedicated channel for async moves on GT/GF chipsets.
-
-Chris Wilson (2):
-      drm/i915: Fix dereferencing invalid connectors in is_crtc_connector_off()
-      drm/i915: Serialize almost all register access
-
-Daniel Vetter (7):
-      drm/i915: fix up readout of the lvds dither bit on gen2/3
-      drm/i915: fix pfit regression for non-autoscaled resolutions
-      drm/i915: Sanitize shared dpll state
-      Merge tag 'v3.10' into drm-intel-fixes
-      drm/i915: correctly restore fences with objects attached
-      drm/i915: fix up gt init sequence fallout
-      drm/crtc-helper: explicit DPMS on after modeset
-
-Dave Airlie (2):
-      Merge branch 'drm-nouveau-next' of git://anongit.freedesktop.org/git/nouveau/linux-2.6
-      Merge tag 'drm-intel-fixes-2013-07-22' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-
-Kamal Mostafa (1):
-      drm/i915: quirk no PCH_PWM_ENABLE for Dell XPS13 backlight
-
-Konstantin Khlebnikov (1):
-      drm/i915: fix long-standing SNB regression in power consumption after resume v2
-
-Maarten Lankhorst (5):
-      drm/nouveau: fix some error-path leaks in fbcon handling code
-      drm/nouveau: do not unpin in nouveau_gem_object_del
-      drm/nouveau: bump fence timeout to 15 seconds
-      drm/nouveau: add falcon interrupt handler
-      drm/nouveau: do not allow negative sizes for now
-
-Stéphane Marchesin (1):
-      drm/i915: Preserve the DDI_A_4_LANES bit from the bios
-
- drivers/gpu/drm/drm_crtc_helper.c                  | 27 ++++-----
- drivers/gpu/drm/i915/i915_dma.c                    | 18 +++---
- drivers/gpu/drm/i915/i915_drv.c                    | 13 ++--
- drivers/gpu/drm/i915/i915_drv.h                    |  3 +-
- drivers/gpu/drm/i915/i915_gem.c                    | 18 +++++-
- drivers/gpu/drm/i915/intel_ddi.c                   | 10 ++--
- drivers/gpu/drm/i915/intel_display.c               | 69 ++++++++++++++++------
- drivers/gpu/drm/i915/intel_drv.h                   |  2 +-
- drivers/gpu/drm/i915/intel_lvds.c                  | 12 ++--
- drivers/gpu/drm/i915/intel_panel.c                 |  6 +-
- drivers/gpu/drm/i915/intel_pm.c                    |  8 ++-
- drivers/gpu/drm/nouveau/core/engine/bsp/nvc0.c     |  1 +
- drivers/gpu/drm/nouveau/core/engine/bsp/nve0.c     |  1 +
- drivers/gpu/drm/nouveau/core/engine/falcon.c       | 19 ++++++
- drivers/gpu/drm/nouveau/core/engine/ppp/nvc0.c     |  1 +
- drivers/gpu/drm/nouveau/core/engine/vp/nvc0.c      |  1 +
- drivers/gpu/drm/nouveau/core/engine/vp/nve0.c      |  1 +
- .../gpu/drm/nouveau/core/include/engine/falcon.h   |  2 +
- drivers/gpu/drm/nouveau/nouveau_bo.c               | 21 +++++--
- drivers/gpu/drm/nouveau/nouveau_display.c          | 69 ++++++++++------------
- drivers/gpu/drm/nouveau/nouveau_drm.c              | 15 ++++-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c            |  1 +
- drivers/gpu/drm/nouveau/nouveau_fence.c            |  2 +-
- drivers/gpu/drm/nouveau/nouveau_gem.c              |  6 --
- drivers/gpu/drm/nouveau/nv50_display.c             | 46 +++++++++++----
- 25 files changed, 242 insertions(+), 130 deletions(-)
---29444707-1085120751-1374554420=:3501--
