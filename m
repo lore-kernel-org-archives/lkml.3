@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935040Ab3GWWlF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 18:41:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41755 "EHLO
+	id S934867Ab3GWWlg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 18:41:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41742 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934684Ab3GWW1k (ORCPT
+	with ESMTP id S934709Ab3GWW1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 18:27:40 -0400
+	Tue, 23 Jul 2013 18:27:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [ 065/103] SCSI: mpt2sas: fix firmware failure with wrong task attribute
-Date: Tue, 23 Jul 2013 15:26:16 -0700
-Message-Id: <20130723220426.316016790@linuxfoundation.org>
+Subject: [ 062/103] SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
+Date: Tue, 23 Jul 2013 15:26:13 -0700
+Message-Id: <20130723220425.679813150@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 References: <20130723220418.532514378@linuxfoundation.org>
@@ -27,35 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
 
-commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
+commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
 
-When SCSI command is received with task attribute not set, set it to SIMPLE.
-Previously it is set to untagged. This causes the firmware to fail the commands.
+FCP device remains in status ERP_FAILED when device is switched online
+or adapter recovery is triggered  while link to SAN is down.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+When Exchange Configuration Data command returns the FSF status
+FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
+The only retries are done during the common error recovery procedure
+(i.e. max. 3 retries with 8sec sleep between) and remains in status
+ERP_FAILED with QDIO down.
+
+This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
+(zfcp: Fix adapter activation on link down).
+When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
+adapter recovery will be finished without any retries. QDIO will be
+up now and status changes such as LINK UP will be received now.
+
+Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3994,11 +3994,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
- 			else
- 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 		} else
--/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
--/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
-- */
--			mpi_control |= (0x500);
--
-+			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	} else
- 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	/* Make sure Device is not raid volume.
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -563,6 +563,10 @@ static void zfcp_fsf_exchange_config_dat
+ 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
+ 		adapter->hydra_version = 0;
+ 
++		/* avoids adapter shutdown to be able to recognize
++		 * events such as LINK UP */
++		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
++				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
+ 		break;
 
 
