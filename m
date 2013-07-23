@@ -1,144 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757681Ab3GWOsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 10:48:00 -0400
-Received: from mail1.windriver.com ([147.11.146.13]:35438 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757539Ab3GWOr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 10:47:58 -0400
-Message-ID: <51EE976A.5060109@windriver.com>
-Date: Tue, 23 Jul 2013 10:47:06 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1757730Ab3GWOsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 10:48:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43668 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757546Ab3GWOsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 10:48:20 -0400
+Date: Tue, 23 Jul 2013 16:48:16 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Tim Hockin <thockin@hockin.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, lpoetter <lpoetter@redhat.com>,
+        workman-devel <workman-devel@redhat.com>,
+        "dhaval.giani" <dhaval.giani@gmail.com>,
+        Cgroups <cgroups@vger.kernel.org>, bsingharora <bsingharora@gmail.com>
+Subject: Re: [Workman-devel] cgroup: status-quo and userland efforts
+Message-ID: <20130723144816.GK8677@dhcp22.suse.cz>
+References: <1372311907.5871.78.camel@marge.simpson.net>
+ <20130627180143.GD5599@mtj.dyndns.org>
+ <1372391198.5989.110.camel@marge.simpson.net>
+ <20130628040930.GC2500@htj.dyndns.org>
+ <1372394950.5989.128.camel@marge.simpson.net>
+ <20130628050138.GD2500@htj.dyndns.org>
+ <20130628150513.GD5125@dhcp22.suse.cz>
+ <20130628180155.GD16483@redhat.com>
+ <20130630183838.GB23731@dhcp22.suse.cz>
+ <20130715184940.GG27338@redhat.com>
 MIME-Version: 1.0
-To: Rob Landley <rob@landley.net>
-CC: <trivial@kernel.org>, <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Documentation: update git pull info in SubmittingPatches
-References: <1373923096-25674-1-git-send-email-paul.gortmaker@windriver.com> <1374338111.3719.21@driftwood>
-In-Reply-To: <1374338111.3719.21@driftwood>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130715184940.GG27338@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13-07-20 12:35 PM, Rob Landley wrote:
-> On 07/15/2013 04:18:16 PM, Paul Gortmaker wrote:
->> The info in this section was overdue for an update; it had manual
->> individual steps listed for collecting the information that a
->> pull request should contain, and no mention of having a proper
->> overall summary in the pull request that could be used for a
->> merge commit.
->>
->> There are other chunks of this file that need updates to match
->> current git workflows, but giant wholesale updates are more likely
->> to get caught up in bike shedding discussions over small details,
->> so lets start somewhere and attack the problem piece-wise.
->>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+On Mon 15-07-13 14:49:40, Vivek Goyal wrote:
+> On Sun, Jun 30, 2013 at 08:38:38PM +0200, Michal Hocko wrote:
+> > On Fri 28-06-13 14:01:55, Vivek Goyal wrote:
+> > > On Fri, Jun 28, 2013 at 05:05:13PM +0200, Michal Hocko wrote:
+> > [...]
+> > > > OK, so libcgroup's rules daemon will still work and place my tasks in
+> > > > appropriate cgroups?
+> > > 
+> > > Do you use that daemon in practice?
+> > 
+> > I am not but my users do. And that is why I care.
 > 
-> Acked-by: Rob Landley <rob@landley.net>
-
-Hi Rob,
-
-I see you added trivial to the CC but (inadvertently?) dropped the
-linux-doc (and lkml) from the CC.
-
-Were you wanting this patch to go via the trivial tree?  Perhaps that
-would be OK if there was just a one-off single doc patch, but even in
-this case, it isn't really what I'd call trivial.  There is a genuine
-change here -- we describe a new way of how to do pull requests, and
-if someone doesn't like that change, they would be fair in complaining
-about it "sneaking in" via the trivial tree.
-
-I guess my point is that there are more doc patches coming; I've got
-the one Jon acked, the Changes removal, and more in the works, so I'd
-rather see these stacked in a real doc branch somewhere.  I don't think
-it makes sense to vector all doc patches via trivial tree.
-
-Didn't you recently get your kernel.org details sorted out for that, or
-am I thinking of someone else?  In any case, if you aren't able to collect
-them on a branch for one reason or another, I'll simply collect the acks
-etc. myself and stack them up on a public branch on kernel.org.
-
-Thanks,
-Paul.
---
-
+> Michael, 
 > 
->> diff --git a/Documentation/SubmittingPatches  
->> b/Documentation/SubmittingPatches
->> index 6e97e73..6102da9 100644
->> --- a/Documentation/SubmittingPatches
->> +++ b/Documentation/SubmittingPatches
->> @@ -590,33 +590,32 @@ See more details on the proper patch format in  
->> the following
->>  references.
->>
->>
->> -16) Sending "git pull" requests  (from Linus emails)
->> -
->> -Please write the git repo address and branch name alone on the same  
->> line
->> -so that I can't even by mistake pull from the wrong branch, and so
->> -that a triple-click just selects the whole thing.
->> -
->> -So the proper format is something along the lines of:
->> -
->> -	"Please pull from
->> -
->> -		git://jdelvare.pck.nerim.net/jdelvare-2.6 i2c-for-linus
->> -
->> -	 to get these changes:"
->> -
->> -so that I don't have to hunt-and-peck for the address and inevitably
->> -get it wrong (actually, I've only gotten it wrong a few times, and
->> -checking against the diffstat tells me when I get it wrong, but I'm
->> -just a lot more comfortable when I don't have to "look for" the right
->> -thing to pull, and double-check that I have the right branch-name).
->> -
->> -
->> -Please use "git diff -M --stat --summary" to generate the diffstat:
->> -the -M enables rename detection, and the summary enables a summary of
->> -new/deleted or renamed files.
->> -
->> -With rename detection, the statistics are rather different [...]
->> -because git will notice that a fair number of the changes are  
->> renames.
->> +16) Sending "git pull" requests
->> +
->> +For a long time now, the "git request-pull" command has existed,
->> +and gives a uniform pre-canned text with all the expected information
->> +within it.  Use this as the basis of your pull request e-mail, and
->> +prefix it with a sensible description of what the overall series
->> +of commits achieves.  Assume that this text will be used by the
->> +maintainer in their merge commit of your changes, and hence be part
->> +of the git history, just like the changelog of each commit.  Use
->> +the triple dash described above to separate the merge commit text
->> +in the top of your mail from the output from "git request-pull".
->> +
->> +You are strongly discouraged against manually creating your own
->> +pull request text.  Doing so just increases the odds of having
->> +a typo in the repo location, the branch name, or other missing
->> +information.  In addition to creating all the required text output,
->> +the command also validates that your commits are actually reachable
->> +at the specified location, ensuring you don't waste the maintainer's
->> +time with having to hunt around trying find the location that you
->> +really meant.
->> +
->> +Your mail subject should be prefixed with "[GIT PULL]" and also
->> +mention the subsystem it is for, and if possible a very brief
->> +theme of what the changes achieve, e.g.
->> +
->> +   "[GIT PULL] x86: Remove uniprocessor support"
->>
->>  -----------------------------------
->>  SECTION 2 - HINTS, TIPS, AND TRICKS
->> --
->> 1.8.1.2
->>
->>
+> would you have more details of how those users are exactly using
+> rules engine daemon.
+
+The most common usage is uid and exec names.
+
+> To me rulesengined processed 3 kinds of rules.
 > 
+> - uid based
+> - gid based
+> - exec file path based
+> 
+> uid/gid based rule exection can be taken care by pam_cgroup module too.
+> So I think one should not need cgrulesengined for that.
+
+I am not familiar with pam_cgroup much but it is a part of libcgroup
+package, right?
+
+> I am curious what kind of exec rules are useful. Any placement of
+> services one can do using systemd. So only executables we are left
+> to manage are which are not services. 
+
+Yes, those are usually backup processes which should not disrupt the
+regular server workload.
+
+uid ones are used to keep a leash on local users of the machine but i do
+not have many details as I usually do not have access to those machines.
+All I see are complains when something explodes ;)
+-- 
+Michal Hocko
+SUSE Labs
