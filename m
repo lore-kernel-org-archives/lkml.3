@@ -1,189 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab3GWX1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 19:27:14 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35412 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933466Ab3GWX1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 19:27:12 -0400
-Message-ID: <51EF1143.1020503@linux.vnet.ibm.com>
-Date: Tue, 23 Jul 2013 16:26:59 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S934336Ab3GWXkn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 19:40:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:35102 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933968Ab3GWXkl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 19:40:41 -0400
+Date: Tue, 23 Jul 2013 16:40:40 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "arm@kernel.org" <arm@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Russell King <rmk@arm.linux.org.uk>,
+        David Brown <davidb@codeaurora.org>, Barry Song <baohua.song@csr.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] Remove ARM local timer API
+Message-ID: <20130723234040.GB27761@codeaurora.org>
+References: <20130625200211.GA11625@codeaurora.org>
+ <CAOesGMj5AZcB7-kcS8_JqfKAg_RUKqTdDZf7bdwkebn3pwADAw@mail.gmail.com>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, tj@kernel.org, trenn@suse.de,
-        yinghai@kernel.org, jiang.liu@huawei.com, wency@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        izumi.taku@jp.fujitsu.com, mgorman@suse.de, minchan@kernel.org,
-        mina86@mina86.com, gong.chen@linux.intel.com,
-        vasilis.liaskovitis@profitbricks.com, lwoodman@redhat.com,
-        riel@redhat.com, jweiner@redhat.com, prarit@redhat.com,
-        zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com, x86@kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 13/21] x86, acpi: Try to find SRAT in firmware earlier.
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-14-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1374220774-29974-14-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072323-0320-0000-0000-00000064EC1A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMj5AZcB7-kcS8_JqfKAg_RUKqTdDZf7bdwkebn3pwADAw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 12:59 AM, Tang Chen wrote:
-> This patch introduce early_acpi_firmware_srat() to find the
-> phys addr of SRAT provided by firmware. And call it in
-> reserve_hotpluggable_memory().
->
-> Since we have initialized acpi_gbl_root_table_list earlier,
-> and store all the tables' phys addrs and signatures in it,
-> it is easy to find the SRAT.
->
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> ---
->   drivers/acpi/acpica/tbxface.c |   34 ++++++++++++++++++++++++++++++++++
->   drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
->   include/acpi/acpixf.h         |    4 ++++
->   include/linux/acpi.h          |    4 ++++
->   mm/memory_hotplug.c           |   10 +++++++---
->   5 files changed, 73 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/acpi/acpica/tbxface.c b/drivers/acpi/acpica/tbxface.c
-> index ad11162..95f8d1b 100644
-> --- a/drivers/acpi/acpica/tbxface.c
-> +++ b/drivers/acpi/acpica/tbxface.c
-> @@ -181,6 +181,40 @@ acpi_status acpi_reallocate_root_table(void)
->   	return_ACPI_STATUS(status);
->   }
->
-> +/*
-> + * acpi_get_table_desc - Get the acpi table descriptor of a specific table.
-> + * @signature: The signature of the table to be found.
-> + * @out_desc: The out returned descriptor.
+On 07/23, Olof Johansson wrote:
+> On Tue, Jun 25, 2013 at 1:02 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> > Olof/Arnd,
+> >
+> > These patches remove the ARM local timer API. The ARM architected
+> > timers have already moved away from this API so this series
+> > migrates the rest of the users allowing us to remove the API
+> > entirely. Thomas has been kind enough to take the first two
+> > patches into timers/core in the tip tree (thanks Thomas!) so I've
+> > merged that into v3.10-rc1 and then applied the rest of the
+> > patches on top. Let me know if this is acceptable.
+> >
+> > These patches have been through multiple rounds and tested by
+> > multiple people since before the 3.10 merge window closed. Only
+> > Barry's ack is missing (Cced).
+> >
+> > Since I don't have a tree on kernel.org, David Brown has been
+> > kind enough to push my tag out to his repo. Please pull.
+> >
+> > The following changes since commit 42cba6e27c4cddc4df701c597dbfa666e1c013c8:
+> >
+> >   Merge branch 'timers/core' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip into remove-local-timers (2013-06-24 17:45:02 -0700)
+> >
+> > are available in the git repository at:
+> >
+> >
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git tags/remove-local-timers
+> >
+> > for you to fetch changes up to 060fd3043e5e3488504b9e70182e188dd9113aea:
+> >
+> >   ARM: smp: Remove local timer API (2013-06-24 17:47:34 -0700)
+> >
+> > ----------------------------------------------------------------
+> > Now that we have a generic arch hook for broadcast we can remove the local
+> > timer API entirely. Doing so will reduce code in ARM core, reduce the
+> > architecture dependencies of our timer drivers, and simplify the code because
+> > we no longer go through an architecture layer that is essentially a hotplug
+> > notifier.
+> 
+> Hi,
+> 
+> Merged in as localtimer/removal into next/cleanup.
+> 
+> I had quite a few merge conflicts due to the __cpuinit removal, so
+> please double-check my resolutions.
+> 
 
-The "@out_desc:" line looks funky. Also, I believe changes to this file 
-need to go in via acpica & probably conform to their commenting standards?
+A __cpuinit is leftover in smp_twd.c. Hopefully you can just
+redo the merge?
 
-> + *
-> + * This function iterates acpi_gbl_root_table_list and find the specified
-> + * table's descriptor.
-> + *
-> + * NOTE: The caller has the responsibility to allocate memory for @out_desc.
-> + *
-> + * Return AE_OK on success, AE_NOT_FOUND if the table is not found.
-> + */
-> +acpi_status acpi_get_table_desc(char *signature,
-> +				struct acpi_table_desc *out_desc)
-> +{
-> +	int pos;
-> +
-> +	for (pos = 0;
-> +	     pos < acpi_gbl_root_table_list.current_table_count;
-> +	     pos++) {
-> +		if (!ACPI_COMPARE_NAME
-> +		    (&(acpi_gbl_root_table_list.tables[pos].signature),
-> +		    signature))
-> +			continue;
-> +
-> +		memcpy(out_desc, &acpi_gbl_root_table_list.tables[pos],
-> +		       sizeof(struct acpi_table_desc));
-> +
-> +		return_ACPI_STATUS(AE_OK);
-> +	}
-> +
-> +	return_ACPI_STATUS(AE_NOT_FOUND);
-> +}
-> +
->   /*******************************************************************************
->    *
->    * FUNCTION:    acpi_get_table_header
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index fa6b973..a2e4596 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -53,6 +53,7 @@
->   #include <acpi/acpi.h>
->   #include <acpi/acpi_bus.h>
->   #include <acpi/processor.h>
-> +#include <acpi/acpixf.h>
->
->   #define _COMPONENT		ACPI_OS_SERVICES
->   ACPI_MODULE_NAME("osl");
-> @@ -750,6 +751,29 @@ void __init acpi_initrd_override(void *data, size_t size)
->   }
->   #endif /* CONFIG_ACPI_INITRD_TABLE_OVERRIDE */
->
-> +#ifdef CONFIG_ACPI_NUMA
-> +#include <asm/numa.h>
-> +#include <linux/memblock.h>
-> +
-> +/*
-> + * early_acpi_firmware_srat - Get the phys addr of SRAT provide by firmware.
-
-s/provide/provided/
-
-> + *
-> + * This function iterate acpi_gbl_root_table_list, find SRAT and return the
-
-Perhaps: "Iterate over acpi_gbl_root_table_list to find SRAT then return 
-its phys addr"
-
-Though I wonder if this comment is even needed, as the iteration is done 
-in acpi_get_table_desc() (added above).
-
-> + * phys addr of SRAT.
-> + *
-> + * Return the phys addr of SRAT, or 0 on error.
-
-
-
-> + */
-> +phys_addr_t __init early_acpi_firmware_srat()
-> +{
-> +	struct acpi_table_desc table_desc;
-> +
-> +	if (acpi_get_table_desc(ACPI_SIG_SRAT, &table_desc))
-> +		return 0;
-> +
-> +	return table_desc.address;
-> +}
-> +#endif	/* CONFIG_ACPI_NUMA */
-> +
->   static void acpi_table_taint(struct acpi_table_header *table)
->   {
->   	pr_warn(PREFIX
-
-[...]
-
-> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-> index 066873e..15b11d3 100644
-> --- a/mm/memory_hotplug.c
-> +++ b/mm/memory_hotplug.c
-> @@ -106,10 +106,14 @@ void __init reserve_hotpluggable_memory(void)
->   {
->   	phys_addr_t srat_paddr;
->
-> -	/* Try to find if SRAT is overrided */
-> +	/* Try to find out if SRAT is overrided */
->   	srat_paddr = early_acpi_override_srat();
-> -	if (!srat_paddr)
-> -		return;
-> +	if (!srat_paddr) {
-> +		/* Try to find SRAT from firmware if it wasn't overrided */
-
-s/overrided/overridden/
-
-> +		srat_paddr = early_acpi_firmware_srat();
-> +		if (!srat_paddr)
-> +			return;
-> +	}
->
->   	/* Will reserve hotpluggable memory here */
->   }
->
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
