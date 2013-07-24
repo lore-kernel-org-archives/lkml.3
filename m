@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554Ab3GXWGC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55309 "EHLO
+	id S1754664Ab3GXWG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab3GXWFp (ORCPT
+	with ESMTP id S1752799Ab3GXWGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:45 -0400
+	Wed, 24 Jul 2013 18:06:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ralf Baechle <ralf@linux-mips.org>, John Crispin <blogic@openwrt.org>
-Subject: [PATCH 02/36] mips: convert vpe_class to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:05 -0700
-Message-Id: <1374703539-9705-3-git-send-email-gregkh@linuxfoundation.org>
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: [PATCH 21/36] cuse: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:24 -0700
+Message-Id: <1374703539-9705-22-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,72 +22,59 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the MIPS vpe_class code to use
-the correct field.
+should be used instead.  This converts the cuse class code to use the
+correct field.
 
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: John Crispin <blogic@openwrt.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Ralf, feel free to apply this to your tree, or ACK it and I can take it through
-mine.
+Miklos, feel free to take this through your tree, or ACK it and I can
+take it through mine.
 
- arch/mips/kernel/vpe.c | 17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ fs/fuse/cuse.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/arch/mips/kernel/vpe.c b/arch/mips/kernel/vpe.c
-index 1765bab0..faf84c5f 100644
---- a/arch/mips/kernel/vpe.c
-+++ b/arch/mips/kernel/vpe.c
-@@ -1335,8 +1335,9 @@ static ssize_t store_kill(struct device *dev, struct device_attribute *attr,
+diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
+index aef34b1e..adbfd66b 100644
+--- a/fs/fuse/cuse.c
++++ b/fs/fuse/cuse.c
+@@ -568,6 +568,7 @@ static ssize_t cuse_class_waiting_show(struct device *dev,
  
- 	return len;
+ 	return sprintf(buf, "%d\n", atomic_read(&cc->fc.num_waiting));
  }
-+static DEVICE_ATTR(kill, S_IWUSR, NULL, store_kill);
++static DEVICE_ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL);
  
--static ssize_t show_ntcs(struct device *cd, struct device_attribute *attr,
-+static ssize_t ntcs_show(struct device *cd, struct device_attribute *attr,
- 			 char *buf)
- {
- 	struct vpe *vpe = get_vpe(tclimit);
-@@ -1344,7 +1345,7 @@ static ssize_t show_ntcs(struct device *cd, struct device_attribute *attr,
- 	return sprintf(buf, "%d\n", vpe->ntcs);
+ static ssize_t cuse_class_abort_store(struct device *dev,
+ 				      struct device_attribute *attr,
+@@ -578,12 +579,14 @@ static ssize_t cuse_class_abort_store(struct device *dev,
+ 	fuse_abort_conn(&cc->fc);
+ 	return count;
  }
++static DEVICE_ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store);
  
--static ssize_t store_ntcs(struct device *dev, struct device_attribute *attr,
-+static ssize_t ntcs_store(struct device *dev, struct device_attribute *attr,
- 			  const char *buf, size_t len)
- {
- 	struct vpe *vpe = get_vpe(tclimit);
-@@ -1365,12 +1366,14 @@ static ssize_t store_ntcs(struct device *dev, struct device_attribute *attr,
- out_einval:
- 	return -EINVAL;
- }
-+static DEVICE_ATTR_RW(ntcs);
- 
--static struct device_attribute vpe_class_attributes[] = {
--	__ATTR(kill, S_IWUSR, NULL, store_kill),
--	__ATTR(ntcs, S_IRUGO | S_IWUSR, show_ntcs, store_ntcs),
--	{}
-+static struct attribute vpe_attrs[] = {
-+	&dev_attr_kill.attr,
-+	&dev_attr_ntcs.attr,
+-static struct device_attribute cuse_class_dev_attrs[] = {
+-	__ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL),
+-	__ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store),
+-	{ }
++static struct attribute *cuse_class_dev_attrs[] = {
++	&dev_attr_waiting.attr,
++	&dev_attr_abort.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(vpe);
++ATTRIBUTE_GROUPS(cuse_class_dev);
  
- static void vpe_device_release(struct device *cd)
- {
-@@ -1381,7 +1384,7 @@ struct class vpe_class = {
- 	.name = "vpe",
- 	.owner = THIS_MODULE,
- 	.dev_release = vpe_device_release,
--	.dev_attrs = vpe_class_attributes,
-+	.dev_groups = vpe_groups,
- };
+ static struct miscdevice cuse_miscdev = {
+ 	.minor		= MISC_DYNAMIC_MINOR,
+@@ -609,7 +612,7 @@ static int __init cuse_init(void)
+ 	if (IS_ERR(cuse_class))
+ 		return PTR_ERR(cuse_class);
  
- struct device vpe_device;
+-	cuse_class->dev_attrs = cuse_class_dev_attrs;
++	cuse_class->dev_groups = cuse_class_dev_groups;
+ 
+ 	rc = misc_register(&cuse_miscdev);
+ 	if (rc) {
 -- 
 1.8.3.rc0.20.gb99dd2e
 
