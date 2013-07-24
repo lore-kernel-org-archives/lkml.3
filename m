@@ -1,87 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3GXWGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55326 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab3GXWFt (ORCPT
+	id S1754540Ab3GXWJO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:09:14 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:38945 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab3GXWJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 07/36] extcon: convert extcon_class to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:10 -0700
-Message-Id: <1374703539-9705-8-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 24 Jul 2013 18:09:09 -0400
+Date: Wed, 24 Jul 2013 15:09:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
+ machine
+Message-ID: <20130724220902.GA3889@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130718004141.GI4161@linux.vnet.ibm.com>
+ <20130718013259.GA7398@somewhere>
+ <20130718033921.GL4161@linux.vnet.ibm.com>
+ <20130718142450.GB7398@somewhere>
+ <20130718164749.GV4161@linux.vnet.ibm.com>
+ <20130718224620.GF7398@somewhere>
+ <20130719002408.GB21367@linux.vnet.ibm.com>
+ <20130719021207.GA19491@somewhere>
+ <20130719050625.GC21367@linux.vnet.ibm.com>
+ <20130724180903.GB23431@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130724180903.GB23431@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072422-4834-0000-0000-0000095ECD51
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the extcon_class code to use the
-correct field.
+On Wed, Jul 24, 2013 at 08:09:04PM +0200, Frederic Weisbecker wrote:
+> On Thu, Jul 18, 2013 at 10:06:25PM -0700, Paul E. McKenney wrote:
+> > > Lets summarize the last sequence, the following happens ordered by time:
+> > > 
+> > >         CPU 0                          CPU 1
+> > > 
+> > >      cmpxchg(&full_sysidle_state,
+> > >              RCU_SYSIDLE_SHORT,
+> > >              RCU_SYSIDLE_LONG);
+> > > 
+> > >      smp_mb() //cmpxchg
+> > > 
+> > >      atomic_read(rdtp(1)->dynticks_idle)
+> > > 
+> > >      //CPU 0 goes to sleep
+> > >                                        //CPU 1 wakes up
+> > >                                        atomic_inc(rdtp(1)->dynticks_idle)
+> > > 
+> > >                                        smp_mb()
+> > > 
+> > >                                        ACCESS_ONCE(full_sysidle_state)
+> > > 
+> > > 
+> > > Are you suggesting that because the CPU 1 executes its atomic_inc() _after_ (in terms
+> > > of absolute time) the atomic_read of CPU 0, the ordering settled in both sides guarantees
+> > > that the value read from CPU 1 is the one from the cmpxchg that precedes the atomic_read,
+> > > or FULL or FULL_NOTED that happen later.
+> > > 
+> > > If so that's a big lesson for me.                                     
+> > 
+> > It is not absolute time that matters.  Instead, it is the fact that
+> > CPU 0, when reading from ->dynticks_idle, read the old value before the
+> > atomic_inc().  Therefore, anything CPU 0 did before that memory barrier
+> > preceding CPU 0's read must come before anything CPU 1 did after that
+> > memory barrier following the atomic_inc().  For this to work, there
+> > must be some access to the same variable on each CPU.
+> 
+> Aren't we in the following situation?
+> 
+>     CPU 0                          CPU 1
+> 
+>     STORE A                        STORE B
+>     LOAD B                         LOAD A
+> 
+> 
+> If so and referring to your perfbook, this is an "ears to mouth" situation.
+> And it seems to describe there is no strong guarantee in that situation.
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
-MyungJoo, feel free to apply this to your tree, or ACK it and I can take it
-through mine.
+"Yes" to the first, but on modern hardware, "no" to the second.  The key
+paragraph is Section 12.2.4.5:
 
- drivers/extcon/extcon-class.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+	The following pairings from Table 12.1 can be used on modern
+	hardware, but might fail on some systems that were produced in
+	the 1990s. However, these can safely be used on all mainstream
+	hardware introduced since the year 2000.
 
-diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-index 18ccadef..022ca369 100644
---- a/drivers/extcon/extcon-class.c
-+++ b/drivers/extcon/extcon-class.c
-@@ -148,6 +148,7 @@ static ssize_t state_store(struct device *dev, struct device_attribute *attr,
- 
- 	return count;
- }
-+static DEVICE_ATTR_RW(state);
- 
- static ssize_t name_show(struct device *dev, struct device_attribute *attr,
- 		char *buf)
-@@ -163,6 +164,7 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
- 
- 	return sprintf(buf, "%s\n", dev_name(edev->dev));
- }
-+static DEVICE_ATTR_RO(name);
- 
- static ssize_t cable_name_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
-@@ -527,11 +529,12 @@ int extcon_unregister_notifier(struct extcon_dev *edev,
- }
- EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
- 
--static struct device_attribute extcon_attrs[] = {
--	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
--	__ATTR_RO(name),
--	__ATTR_NULL,
-+static struct attribute *extcon_attrs[] = {
-+	&dev_attr_state.attr,
-+	&dev_attr_name.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(extcon);
- 
- static int create_extcon_class(void)
- {
-@@ -539,7 +542,7 @@ static int create_extcon_class(void)
- 		extcon_class = class_create(THIS_MODULE, "extcon");
- 		if (IS_ERR(extcon_class))
- 			return PTR_ERR(extcon_class);
--		extcon_class->dev_attrs = extcon_attrs;
-+		extcon_class->dev_groups = extcon_groups;
- 
- #if defined(CONFIG_ANDROID)
- 		switch_class = class_compat_register("switch");
--- 
-1.8.3.rc0.20.gb99dd2e
+That said, you are not the first to be confused by this, so I might need
+to rework this section to make it clear that each can in fact be used on
+modern hardware.
+
+If you happen to have an old Sequent NUMA-Q or Symmetry box lying around,
+things are a bit different.  On the other hand, I don't believe that any
+of these old boxes are still running Linux.  (Hey, I am as sentimental as
+the next guy, but there are limits!)
+
+I updated this section and pushed it, please let me know if this helps!
+
+							Thanx, Paul
+
+> > Or, if you must think in terms of time, you need a separate independent
+> > timeline for each variable, with no direct mapping from one timeline to
+> > another, except resulting from memory-barrier interactions.
+> > 
+> > 							Thanx, Paul
+> > 
+> 
 
