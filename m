@@ -1,97 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab3GXQ1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:27:22 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:46155 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752101Ab3GXQ1T (ORCPT
+	id S1754592Ab3GXQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:27:55 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:61475 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753665Ab3GXQ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:27:19 -0400
+	Wed, 24 Jul 2013 12:27:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAHtARFFWaMGfutTS4h3hrV8KDOf=gtk3Z3uOUQzoOAERoG1TPg@mail.gmail.com>
-References: <20130709203927.31676.35169.stgit@amt.stowe>
-	<1373404695.18560.17.camel@dabdike>
-	<CAHtARFHbEz8UQUjh5cPSFYDxqW93EmFz7aiQ=91hfkDj0fCWdQ@mail.gmail.com>
-	<1373436657.7970.1.camel@dabdike>
-	<CAHtARFFWaMGfutTS4h3hrV8KDOf=gtk3Z3uOUQzoOAERoG1TPg@mail.gmail.com>
-Date: Wed, 24 Jul 2013 10:27:18 -0600
-Message-ID: <CAL-B5D3qmf-iAZu2S7vF0vwYeBnSpwruQMm4O2nizi-TLXd8_w@mail.gmail.com>
-Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev) pdev's
-From: Myron Stowe <myron.stowe@gmail.com>
-To: adam radford <aradford@gmail.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Neela Syam Kolli <megaraidlinux@lsi.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-pci <linux-pci@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20130721190212.GA31470@pd.tnic>
+References: <20130721144819.GJ24717@sanechka.spb.ru>
+	<20130721190212.GA31470@pd.tnic>
+Date: Wed, 24 Jul 2013 09:27:53 -0700
+Message-ID: <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
+Subject: Re: lockdep warning in edac_create_sysfs_mci_device
+From: Tony Luck <tony.luck@gmail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Well???  I responded yesterday but I still don't see it on the list so
-at the expense of some getting a double response I'll try again ...
-
-On Mon, Jul 22, 2013 at 6:27 PM, adam radford <aradford@gmail.com> wrote:
-> On Tue, Jul 9, 2013 at 11:10 PM, James Bottomley
-> <James.Bottomley@hansenpartnership.com> wrote:
->> On Tue, 2013-07-09 at 15:12 -0700, adam radford wrote:
->>> On Tue, Jul 9, 2013 at 2:18 PM, James Bottomley
->>> > Adam, you do drive by coding on this for LSI ... ack or reject, please.
->>
->>> I have just now located my box of MegaRAID Parallel SCSI controllers.
->>> I will review and test the patch series from Myron and respond by next Monday.
->>
->> Thanks,
->>
->> James
->>
->>
+On Sun, Jul 21, 2013 at 12:02 PM, Borislav Petkov <bp@alien8.de> wrote:
+> A fix is on the way:
 >
-> Unfortunately my box of MegaRAID Parallel SCSI controllers only
-> contains only cards intended for megaraid_mbox.c (I tested all 20 of
-> them),
->
-> and does not contain any of the following really old Symbios based
-> megaraid cards:
->
-> static struct pci_device_id megaraid_pci_tbl[] = {
->         {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID,
->                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
->         {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID2,
->                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
->         {PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_AMI_MEGARAID3,
->                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
->         {0,}
-> };
->
-> which I had located previously before the company headquarters moved.
->  I cannot currently locate any of the above 3 controllers anywhere at
-> LSI headquarters after an exhaustive search, so I cannot test the
-> patches to megaraid.c from Myron @ RedHat.
-Adam:
+> http://marc.info/?l=linux-edac&m=137422971614927&w=2
 
-Thanks for looking/trying.
->
-> Myron, do you actually have the hardware and have you tested the
-> patches yourself ?
+Fix was pulled into Linus' tree yesterday evening (Portland, OR timezone):
 
-No, the closest to the above that I have access to is a NEC platform
-with a PCI_VENDOR_ID_NCR vendor's PCI_DEVICE_ID_AMI_MEGARAID3 device.
+commit 88d84ac97378c2f1d5fec9af1e8b7d9a662d6b00
+Author: Borislav Petkov <bp@suse.de>
+Date:   Fri Jul 19 12:28:25 2013 +0200
 
-I stumbled onto the issue because I want to get rid of the driver's use
-of 'struct pci_dev'.  It seems, from my looking, to be the only driver
-that keeps local copies of such, and upon further investigation I
-noticed that the intended use of the local copies is flawed to the point
-that keeping them makes no sense (which further supported my desire to
-get rid of them).
+    EDAC: Fix lockdep splat
 
-Myron
+Alexandra: Give it a test and let me and Boris know if you still see
+any problems.
 
->
-> -Adam
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Tony
