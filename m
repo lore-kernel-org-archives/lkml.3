@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753555Ab3GXOTh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:19:37 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34261 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751189Ab3GXOTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:19:35 -0400
-Date: Wed, 24 Jul 2013 16:19:27 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]Fix early microcode loading on AMD
-Message-ID: <20130724141927.GI30777@pd.tnic>
-References: <20130723135853.579c3cd5@googlemail.com>
- <20130723151552.GF8497@pd.tnic>
- <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753643Ab3GXOUE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:20:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45891 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752433Ab3GXOGp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:06:45 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
+        "Russell King" <rmk+kernel@arm.linux.org.uk>,
+        "Jed Davis" <jld@mozilla.com>
+Date: Wed, 24 Jul 2013 15:02:45 +0100
+Message-ID: <lsq.1374674565.482089959@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [34/85] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
+In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
-> > The other problem I see is not updating c->microcode since it is going
-> > to be overwritten by smp_store_cpu_info, which is unfortunate.
-> >
-> > And I don't see where Intel are updating that cpuinfo_x86.microcode
-> > field on early load too.
-> >
-> > So, AFAICT, c->microcode would remain unset when we only do early
-> > microcode load. But that is something we should fix as a later patch.
-> 
-> I don't see a problem with that staying unset.
-> apply_microcode_amd() directly reads the rev from
-> MSR_AMD64_PATCH_LEVEL so it does not depend on that being correct.
-> And smp_store_(boot)_cpu_info will also read the current rev directly
-> from the CPU to fill ->microcode.
+3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-We need to store the actual microcode revision to c->microcode for
-/proc/cpuinfo and MCE.
+------------------
 
-> 
-> > So I think you should switch load_ucode_amd_ap to __apply_microcode_amd:
-> >
-> >         p = find_patch()
-> >
-> >         __apply_microcode_amd(p->mc_data);
-> >
-> > which should take care of the issue you're seeing, IMHO.
-> 
-> The issue I'm seeing is that collect_cpu_info_amd_early() fills c->x86
-> but not c->x86_vendor.
-> Which breaks cpu_has_amd_erratum() and then Erratum 400 breaks the boot.
-> 
-> I did not really want to switch from apply_microcode_amd() to
-> __apply_microcode_amd() because then I would lose the check if the new
-> microcode is really an upgrade.
+From: Jed Davis <jld@mozilla.com>
 
-Well, if the BSP has already loaded the pcache, there's no need for
-the AP to parse and load the same microcode blobs file for the initrd,
-right?
+commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
 
-> >> * load_ucode_ap(): Quick exit for !cpu, because without load_microcode_amd()
-> >> getting called apply_microcode_amd() can't do anything. Exit, if no microcode
-> >> could be loaded.
-> >
-> > This could probably be a WARN_ON(!cpu) to catch errors...
-> 
-> No, load_ucode_ap() will be called for cpu == 0.
+With this change, we no longer lose the innermost entry in the user-mode
+part of the call chain.  See also the x86 port, which includes the ip.
 
-This needs fixing IMO...
+It's possible to partially work around this problem by post-processing
+the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
+wasn't in the kernel when the sample was taken.
 
-Btw, thanks for looking at this and asking critical questions!
+Signed-off-by: Jed Davis <jld@mozilla.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ arch/arm/kernel/perf_event.c | 1 +
+ 1 file changed, 1 insertion(+)
 
--- 
-Regards/Gruss,
-    Boris.
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -795,6 +795,7 @@ perf_callchain_user(struct perf_callchai
+ 	struct frame_tail __user *tail;
+ 
+ 
++	perf_callchain_store(entry, regs->ARM_pc);
+ 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
+ 
+ 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
 
-Sent from a fat crate under my desk. Formatting is fine.
---
