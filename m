@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758082Ab3GXAEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:04:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42815 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757959Ab3GXAEe (ORCPT
+	id S934314Ab3GXAFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:05:16 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:51247 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752810Ab3GXAFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:04:34 -0400
-Date: Tue, 23 Jul 2013 17:04:33 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v2 0/9] mostly lockless tty echo
-Message-ID: <20130724000433.GA27651@kroah.com>
-References: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com>
- <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 23 Jul 2013 20:05:13 -0400
+Message-ID: <1374624310.3449.53.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: bhutchings@solarflare.com, oliver@neukum.org, grundler@google.com,
+        freddy@asix.com.tw, netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, louis@asix.com.tw, allan@asix.com.tw
+Date: Tue, 23 Jul 2013 17:05:10 -0700
+In-Reply-To: <1374623813.3449.52.camel@edumazet-glaptop>
+References: <1374518841.4990.26.camel@edumazet-glaptop>
+	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	 <1374559827.4990.143.camel@edumazet-glaptop>
+	 <20130723.164656.1794159338719943519.davem@davemloft.net>
+	 <1374623813.3449.52.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 15, 2013 at 10:04:20AM -0400, Peter Hurley wrote:
-> ** v2 changes **
-> - Rebased on v2 of 'lockless tty flip buffers'
-> 
-> This 3rd of 4 patchsets implements a mostly-lockless tty echo output.
-> 
-> Because echoing is performed solely by the single-threaded ldisc
-> receive_buf() method, most of the lockless requirements are already
-> in-place. The main existing complications were;
-> 1) Echoing could overrun itself. A fixed-size buffer is used to record
->    the operations necessary when outputting the echoes; the most recent
->    echo data is preserved.
-> 2) An attempt to push unprocessed echoes is made by the n_tty_write method
->    (on a different thread) before attempting write output.
-> 
-> The overrun condition is solved by outputting the echoes in blocks and
-> ensuring that at least that much space is available each time an echo
-> operation is committed. At the conclusion of each flip buffer received,
-> any remaining unprocessed echoes are output.
-> 
-> This block output method is particularly effective when there is no reader
-> (the tty is output-only) and termios is misconfigured with echo enabled.
-> 
-> The concurrent access by the n_tty_write() method is already excluded
-> by the existing output_lock mutex.
+On Tue, 2013-07-23 at 16:56 -0700, Eric Dumazet wrote:
 
-Applied, thanks.
+> > A quick scan shows that smsc75xx, smsc95xx, and ax88179_178a all have
+> > this problem.
+> > 
+> > Instead of the patch starting this thread, I'd like to see one that
+> > hits all three drivers and removes all SG and TSO features bits from
+> > both the ->features _and_ ->hw_features settings.
+> > 
+> > Could someone toss that together quickly?
+> 
+> Yes, I can prepare this patch.
 
-greg k-h
+Looks like only ax88179_178a & smsc75xx are impacted.
+
+
