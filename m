@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab3GXANh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:13:37 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:56031 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3GXANg (ORCPT
+	id S1758139Ab3GXAP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:15:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54598 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab3GXAPz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:13:36 -0400
-Date: Wed, 24 Jul 2013 01:13:32 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Felipe Tonello <eu@felipetonello.com>
-Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
-        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
-        linux-kernel@vger.kernel.org,
-        "Felipe F. Tonello" <ftonello@cercacor.com>
-Message-ID: <20130724001332.GW9858@sirena.org.uk>
-References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
- <20130722000157.GI9858@sirena.org.uk>
- <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
- <20130723124023.GX9858@sirena.org.uk>
- <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com>
+	Tue, 23 Jul 2013 20:15:55 -0400
+Message-ID: <51EF1C7E.8030903@infradead.org>
+Date: Tue, 23 Jul 2013 17:14:54 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XqOulWco09xrjj7X"
-Content-Disposition: inline
-In-Reply-To: <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Rob Landley <rob@landley.net>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that hasn't
+ changed
+References: <1374621001.3031.1@driftwood>
+In-Reply-To: <1374621001.3031.1@driftwood>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/23/13 16:10, Rob Landley wrote:
+> On 07/23/2013 05:57:15 PM, Aaro Koskinen wrote:
+>> Hi,
+>>
+>> On Sun, Jul 21, 2013 at 01:12:55AM -0400, Paul Gortmaker wrote:
+>> > Looking at the bigger picture, the need for this file has simply
+>> > passed.  It was trying to detail required versions of userspace
+>> > packages, in order to cater to hand-crafted systems.  But now the
+>> > majority of users get their userspace all at once from some kind
+>> > of distro, and we are probably a lot more serious about avoiding
+>> > breaking userspace than we were a dozen years ago.
+> 
+> You're right, there's no such thing as "embedded linux", nobody creates their own hand-crafted systems, or assembles cross-compiling environments to target hardware other than x86. That's crazy talk.
+> 
+>> Is there any file describing the needed tools (and minimum versions) to
+>> _build_ the kernel? I agree that trying to describe such for the run-time
+>> userspace does not belong to the kernel tree, but the required/supported
+>> versions of build tools should be still maybe documented...
+> 
+> Documentation/changes _is_ the file that describes the kernel's build-time prerequisites. It hasn't changed in a while because we've been maintaining backwards compatability, especially for several non-x86 targets where it's fiddly to get newer toolchain versions.
 
---XqOulWco09xrjj7X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+and if this file is removed, I'll just have to refer to it in older kernel releases
+to at least get hints about what tools to use, where to find them, and what
+used to be the version requirements....
 
-On Tue, Jul 23, 2013 at 05:10:29PM -0700, Felipe Tonello wrote:
-> On Tue, Jul 23, 2013 at 5:40 AM, Mark Brown <broonie@kernel.org> wrote:
+> (Personally I use the last GPLv2 releases of each package, so gcc 4.2.1, binutils 2.17, make 3.81, and busybox.)
+> 
+> I agree squashfs and such aren't build time prerequisites. It might make more sense to move some of these to menuconfig text for the appropriate option. But that's not the same as not documenting it at all, and "this document has been true for a long time and remains true, therefore we must discard it" strikes me as a really weird document retention criteria.
 
-> > This was the existing kernel API at the time that the code was added -
-> > I beleive people had been doing that for simple switches that detect the
-> > physical presence of a jack since it looks exactly like a button from a
-> > hardware point of view.  See the original commit adding the code.
 
-> I saw it. I don't know what you think is the best way to go. I'm not
-> sure if someone is using this input event API, since even PulseAudio
-> even declined that implementation due KControl implementation.
 
-It's used quite a bit in embedded systems, there are actually patches
-for PulseAudio which were deployed for a while - I guess they might have
-been removed or something.  The kcontrol stuff was actually implemented
-after that was already in place.
-
-> I'm thinking in re-implement core/jack.c using only kcontrol for
-> reporting status and leaving input events only for keys (which is
-> already implemented). This will break compatibility if any user-space
-> checks for jack status using input events, but again, is anyone using
-> this?
-
-The jack core should be implementing all three methods of reporting
-jacks (input, controls and extcon).
-
---XqOulWco09xrjj7X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7xwoAAoJELSic+t+oim9i8EP/izZNeMOqmIDTN83yRbfPWH4
-HPrIZD9EAMnmlf52inh8JJ96xf2liIl1xJuMTMbqRmzZdf+Y1IMQgABuDqiysfus
-MfASZyDn1KFqQpLu50SuUGa1rOkSgpJb+uEwmM+W+bk0/kEnw2ZuXvquv45OQQaH
-2kqdH9ib3JFu3poDwKgBunp4DcZgso/V0LisKDG2Jjr2O3CNDU+fprtzn+may+0O
-x9NMmts4U2cNIVAeK5NvkHZOTBXuGpzc3sY1NKobQqk8dA0DiYbQK60Lc6khbkh4
-x3HWyvBYMe5Mbs6Kgmxhna3/DXq76lTO51HVFyyurzsjOuraebpgUuCFsz5yU6u0
-EAWSlwI3gJ5wJLxE6g0auZQvuUMIfKg/IZBqJPnN7KdXcSUfRa5LapdaCfLT0Xv1
-Qi/kSWtL4ou7y0z7MsF7OKTXjyfE5VTCuDsCuF0OUm4gYVs9YYIqKcGqmjwFnEwc
-aTqcVB12uegLqGNF2TRbXfJM5ROMpoDfLC818tLI4JIKAQOrX7lgFlnHXsJmvwyN
-brA6v0TxDVQwzRBBTytx1obbsdaqwF3OABk6al5CeivXBNozua5Sz7XhNCSIdb0P
-dpTOK3CKmmoIgmDjL64Fjdaa7g9iVBMnqzNzJKpH+Ec7rsG1/n9ppmyV9WAcRGyq
-VXHktlImFAFtqQXD0mep
-=9Xnz
------END PGP SIGNATURE-----
-
---XqOulWco09xrjj7X--
+-- 
+~Randy
