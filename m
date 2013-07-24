@@ -1,116 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab3GXLxO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 07:53:14 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59366 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3GXLxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 07:53:10 -0400
-Message-ID: <51EFC1D4.9060800@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 17:30:20 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751419Ab3GXLxM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 07:53:12 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46215 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751008Ab3GXLxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 07:53:09 -0400
+Message-ID: <51EFBFCC.9060302@ti.com>
+Date: Wed, 24 Jul 2013 14:51:40 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com>
-In-Reply-To: <20130724103907.GF16400@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Graeme Gregory <gg@slimlogic.co.uk>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>, <linux-omap@vger.kernel.org>,
+        Ruslan Bilovol <ruslan.bilovol@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] mfd: twl6030-irq: add error check when IRQs are masked
+ initially
+References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com> <1374595624-15054-3-git-send-email-grygorii.strashko@ti.com> <51EEC69F.9000006@slimlogic.co.uk>
+In-Reply-To: <51EEC69F.9000006@slimlogic.co.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072411-3864-0000-0000-0000093C2BA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 04:09 PM, Gleb Natapov wrote:
-> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
->> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
->>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
->>>> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
->> [...]
->>>> +
->>>> +	/*
->>>> +	 * halt until it's our turn and kicked. Note that we do safe halt
->>>> +	 * for irq enabled case to avoid hang when lock info is overwritten
->>>> +	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
->>>> +	 */
->>>> +	if (arch_irqs_disabled_flags(flags))
->>>> +		halt();
->>>> +	else
->>>> +		safe_halt();
->>>> +
->>>> +out:
->>> So here now interrupts can be either disabled or enabled. Previous
->>> version disabled interrupts here, so are we sure it is safe to have them
->>> enabled at this point? I do not see any problem yet, will keep thinking.
+On 07/23/2013 09:08 PM, Graeme Gregory wrote:
+> On 23/07/13 17:07, Grygorii Strashko wrote:
+>> Add a missed check for errors when TWL IRQs are masked
+>> initially on probe and report an error in case of failure.
 >>
->> If we enable interrupt here, then
+>> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+>> ---
+>>   drivers/mfd/twl6030-irq.c |   13 +++++++++----
+>>   1 file changed, 9 insertions(+), 4 deletions(-)
 >>
+>> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
+>> index b6030d9..790cc28 100644
+>> --- a/drivers/mfd/twl6030-irq.c
+>> +++ b/drivers/mfd/twl6030-irq.c
+>> @@ -313,7 +313,7 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+>>   	struct			device_node *node = dev->of_node;
+>>   	int			nr_irqs, irq_base, irq_end;
+>>   	static struct irq_chip  twl6030_irq_chip;
+>> -	int			status = 0;
+>> +	int			status;
+>>   	int			i;
+>>   	u8			mask[3];
 >>
->>>> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+>> @@ -335,11 +335,16 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+>>   	mask[2] = 0xFF;
 >>
->> and if we start serving lock for an interrupt that came here,
->> cpumask clear and w->lock=null may not happen atomically.
->> if irq spinlock does not take slow path we would have non null value
->> for lock, but with no information in waitingcpu.
+>>   	/* mask all int lines */
+>> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_LINE_A, 3);
+>> +	status = twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_LINE_A, 3);
+>>   	/* mask all int sts */
+>> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_STS_A, 3);
+>> +	status |= twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_STS_A, 3);
+>>   	/* clear INT_STS_A,B,C */
+>> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_STS_A, 3);
+>> +	status |= twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_STS_A, 3);
+>> +
+> You can save two i2c writes here for slightly faster initialisation,
+> only one of the REG_INT_STS_A registers needs to be written to clear
+> them all. As per the irq handling routine comment.
+
+Good point. thanks
+
+>> +	if (status < 0) {
+>> +		dev_err(dev, "I2C err writing TWL_MODULE_PIH: %d\n", status);
+>> +		return status;
+>> +	}
 >>
->> I am still thinking what would be problem with that.
+>>   	twl6030_irq_base = irq_base;
 >>
-> Exactly, for kicker waiting_cpus and w->lock updates are
-> non atomic anyway.
 >
->>>> +	w->lock = NULL;
->>>> +	local_irq_restore(flags);
->>>> +	spin_time_accum_blocked(start);
->>>> +}
->>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
->>>> +
->>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
->>>> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
->>>> +{
->>>> +	int cpu;
->>>> +
->>>> +	add_stats(RELEASED_SLOW, 1);
->>>> +	for_each_cpu(cpu, &waiting_cpus) {
->>>> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
->>>> +		if (ACCESS_ONCE(w->lock) == lock &&
->>>> +		    ACCESS_ONCE(w->want) == ticket) {
->>>> +			add_stats(RELEASED_SLOW_KICKED, 1);
->>>> +			kvm_kick_cpu(cpu);
->>> What about using NMI to wake sleepers? I think it was discussed, but
->>> forgot why it was dismissed.
->>
->> I think I have missed that discussion. 'll go back and check. so
->> what is the idea here? we can easily wake up the halted vcpus that
->> have interrupt disabled?
-> We can of course. IIRC the objection was that NMI handling path is very
-> fragile and handling NMI on each wakeup will be more expensive then
-> waking up a guest without injecting an event, but it is still interesting
-> to see the numbers.
+> Graeme
 >
 
-Haam, now I remember, We had tried request based mechanism. (new
-request like REQ_UNHALT) and process that. It had worked, but had some
-complex hacks in vcpu_enter_guest to avoid guest hang in case of
-request cleared.  So had left it there..
-
-https://lkml.org/lkml/2012/4/30/67
-
-But I do not remember performance impact though.
-
+Regards,
+- grygorii
