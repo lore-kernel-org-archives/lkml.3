@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab3GXOPp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:15:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45778 "EHLO
+	id S1753324Ab3GXOPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:15:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45734 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752371Ab3GXOGt (ORCPT
+	by vger.kernel.org with ESMTP id S1751923Ab3GXOGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:49 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Greg KH" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "John W. Linville" <linville@tuxdriver.com>,
+        "Anderson Lizardo" <anderson.lizardo@openbossa.org>,
+        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.257952240@decadent.org.uk>
+Message-ID: <lsq.1374674565.441252761@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [84/85] MAINTAINERS: Greg's suse email address is dead
+Subject: [21/85] Bluetooth: Fix crash in l2cap_build_cmd() with small MTU
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,123 +32,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg KH <gregkh@linuxfoundation.org>
+From: Anderson Lizardo <anderson.lizardo@openbossa.org>
 
-commit 879a5a001b62a020e074d460b3a7c0fd993f9832 upstream.
+commit 300b962e5244a1ea010df7e88595faa0085b461d upstream.
 
-My email address has changed, the suse.de one is now dead, so update all
-of my MAINTAINER entries with the correct one so that patches don't get
-lost.
+If a too small MTU value is set with ioctl(HCISETACLMTU) or by a bogus
+controller, memory corruption happens due to a memcpy() call with
+negative length.
 
-Also change the status of some of my entries as I'm supposed to be doing
-this stuff now for real.
+Fix this crash on either incoming or outgoing connections with a MTU
+smaller than L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE:
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[   46.885433] BUG: unable to handle kernel paging request at f56ad000
+[   46.888037] IP: [<c03d94cd>] memcpy+0x1d/0x40
+[   46.888037] *pdpt = 0000000000ac3001 *pde = 00000000373f8067 *pte = 80000000356ad060
+[   46.888037] Oops: 0002 [#1] SMP DEBUG_PAGEALLOC
+[   46.888037] Modules linked in: hci_vhci bluetooth virtio_balloon i2c_piix4 uhci_hcd usbcore usb_common
+[   46.888037] CPU: 0 PID: 1044 Comm: kworker/u3:0 Not tainted 3.10.0-rc1+ #12
+[   46.888037] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+[   46.888037] Workqueue: hci0 hci_rx_work [bluetooth]
+[   46.888037] task: f59b15b0 ti: f55c4000 task.ti: f55c4000
+[   46.888037] EIP: 0060:[<c03d94cd>] EFLAGS: 00010212 CPU: 0
+[   46.888037] EIP is at memcpy+0x1d/0x40
+[   46.888037] EAX: f56ac1c0 EBX: fffffff8 ECX: 3ffffc6e EDX: f55c5cf2
+[   46.888037] ESI: f55c6b32 EDI: f56ad000 EBP: f55c5c68 ESP: f55c5c5c
+[   46.888037]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   46.888037] CR0: 8005003b CR2: f56ad000 CR3: 3557d000 CR4: 000006f0
+[   46.888037] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[   46.888037] DR6: ffff0ff0 DR7: 00000400
+[   46.888037] Stack:
+[   46.888037]  fffffff8 00000010 00000003 f55c5cac f8c6a54c ffffffff f8c69eb2 00000000
+[   46.888037]  f4783cdc f57f0070 f759c590 1001c580 00000003 0200000a 00000000 f5a88560
+[   46.888037]  f5ba2600 f5a88560 00000041 00000000 f55c5d90 f8c6f4c7 00000008 f55c5cf2
+[   46.888037] Call Trace:
+[   46.888037]  [<f8c6a54c>] l2cap_send_cmd+0x1cc/0x230 [bluetooth]
+[   46.888037]  [<f8c69eb2>] ? l2cap_global_chan_by_psm+0x152/0x1a0 [bluetooth]
+[   46.888037]  [<f8c6f4c7>] l2cap_connect+0x3f7/0x540 [bluetooth]
+[   46.888037]  [<c019b37b>] ? trace_hardirqs_off+0xb/0x10
+[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
+[   46.888037]  [<c064ad20>] ? mutex_lock_nested+0x280/0x360
+[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
+[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
+[   46.888037]  [<c064ad08>] ? mutex_lock_nested+0x268/0x360
+[   46.888037]  [<c01a125b>] ? trace_hardirqs_on+0xb/0x10
+[   46.888037]  [<f8c72f8d>] l2cap_recv_frame+0xb2d/0x1d30 [bluetooth]
+[   46.888037]  [<c01a0ff8>] ? mark_held_locks+0x68/0x110
+[   46.888037]  [<c064b9d9>] ? __mutex_unlock_slowpath+0xa9/0x150
+[   46.888037]  [<c01a118c>] ? trace_hardirqs_on_caller+0xec/0x1b0
+[   46.888037]  [<f8c754f1>] l2cap_recv_acldata+0x2a1/0x320 [bluetooth]
+[   46.888037]  [<f8c491d8>] hci_rx_work+0x518/0x810 [bluetooth]
+[   46.888037]  [<f8c48df2>] ? hci_rx_work+0x132/0x810 [bluetooth]
+[   46.888037]  [<c0158979>] process_one_work+0x1a9/0x600
+[   46.888037]  [<c01588fb>] ? process_one_work+0x12b/0x600
+[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
+[   46.888037]  [<c015922e>] ? worker_thread+0x19e/0x320
+[   46.888037]  [<c0159187>] worker_thread+0xf7/0x320
+[   46.888037]  [<c0159090>] ? rescuer_thread+0x290/0x290
+[   46.888037]  [<c01602f8>] kthread+0xa8/0xb0
+[   46.888037]  [<c0656777>] ret_from_kernel_thread+0x1b/0x28
+[   46.888037]  [<c0160250>] ? flush_kthread_worker+0x120/0x120
+[   46.888037] Code: c3 90 8d 74 26 00 e8 63 fc ff ff eb e8 90 55 89 e5 83 ec 0c 89 5d f4 89 75 f8 89 7d fc 3e 8d 74 26 00 89 cb 89 c7 c1 e9 02 89 d6 <f3> a5 89 d9 83 e1 03 74 02 f3 a4 8b 5d f4 8b 75 f8 8b 7d fc 89
+[   46.888037] EIP: [<c03d94cd>] memcpy+0x1d/0x40 SS:ESP 0068:f55c5c5c
+[   46.888037] CR2: 00000000f56ad000
+[   46.888037] ---[ end trace 0217c1f4d78714a9 ]---
+
+Signed-off-by: Anderson Lizardo <anderson.lizardo@openbossa.org>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- MAINTAINERS | 29 ++++++++++++++---------------
- 1 file changed, 14 insertions(+), 15 deletions(-)
+ net/bluetooth/l2cap_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -159,7 +159,7 @@ S:	Maintained
- F:	drivers/net/ethernet/realtek/r8169.c
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -1737,6 +1737,9 @@ static struct sk_buff *l2cap_build_cmd(s
+ 	BT_DBG("conn %p, code 0x%2.2x, ident 0x%2.2x, len %d",
+ 			conn, code, ident, dlen);
  
- 8250/16?50 (AND CLONE UARTS) SERIAL DRIVER
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	linux-serial@vger.kernel.org
- W:	http://serial.sourceforge.net
- S:	Maintained
-@@ -1781,9 +1781,9 @@ X:	net/wireless/wext*
++	if (conn->mtu < L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE)
++		return NULL;
++
+ 	len = L2CAP_HDR_SIZE + L2CAP_CMD_HDR_SIZE + dlen;
+ 	count = min_t(unsigned int, conn->mtu, len);
  
- CHAR and MISC DRIVERS
- M:	Arnd Bergmann <arnd@arndb.de>
--M:	Greg Kroah-Hartman <greg@kroah.com>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
--S:	Maintained
-+S:	Supported
- F:	drivers/char/*
- F:	drivers/misc/*
- 
-@@ -2315,7 +2315,7 @@ F:	lib/lru_cache.c
- F:	Documentation/blockdev/drbd/
- 
- DRIVER CORE, KOBJECTS, DEBUGFS AND SYSFS
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git
- S:	Supported
- F:	Documentation/kobject.txt
-@@ -6257,15 +6257,15 @@ S:	Maintained
- F:	arch/alpha/kernel/srm_env.c
- 
- STABLE BRANCH
--M:	Greg Kroah-Hartman <greg@kroah.com>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	stable@vger.kernel.org
--S:	Maintained
-+S:	Supported
- 
- STAGING SUBSYSTEM
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
- L:	devel@driverdev.osuosl.org
--S:	Maintained
-+S:	Supported
- F:	drivers/staging/
- 
- STAGING - AGERE HERMES II and II.5 WIRELESS DRIVERS
-@@ -6654,8 +6654,8 @@ S:	Maintained
- K:	^Subject:.*(?i)trivial
- 
- TTY LAYER
--M:	Greg Kroah-Hartman <gregkh@suse.de>
--S:	Maintained
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+S:	Supported
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6.git
- F:	drivers/tty/*
- F:	drivers/tty/serial/serial_core.c
-@@ -6943,7 +6943,7 @@ S:	Maintained
- F:	drivers/usb/serial/digi_acceleport.c
- 
- USB SERIAL DRIVER
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	linux-usb@vger.kernel.org
- S:	Supported
- F:	Documentation/usb/usb-serial.txt
-@@ -6958,9 +6958,8 @@ S:	Maintained
- F:	drivers/usb/serial/empeg.c
- 
- USB SERIAL KEYSPAN DRIVER
--M:	Greg Kroah-Hartman <greg@kroah.com>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	linux-usb@vger.kernel.org
--W:	http://www.kroah.com/linux/
- S:	Maintained
- F:	drivers/usb/serial/*keyspan*
- 
-@@ -6988,7 +6987,7 @@ F:	Documentation/video4linux/sn9c102.txt
- F:	drivers/media/video/sn9c102/
- 
- USB SUBSYSTEM
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- L:	linux-usb@vger.kernel.org
- W:	http://www.linux-usb.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
-@@ -7075,7 +7074,7 @@ F:	fs/hppfs/
- 
- USERSPACE I/O (UIO)
- M:	"Hans J. Koch" <hjk@hansjkoch.de>
--M:	Greg Kroah-Hartman <gregkh@suse.de>
-+M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
- S:	Maintained
- F:	Documentation/DocBook/uio-howto.tmpl
- F:	drivers/uio/
 
