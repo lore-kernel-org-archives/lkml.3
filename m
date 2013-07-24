@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab3GXKC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 06:02:56 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:63818 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3GXKCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 06:02:54 -0400
-Message-ID: <51EFA62B.3020508@huawei.com>
-Date: Wed, 24 Jul 2013 18:02:19 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1752769Ab3GXKCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 06:02:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49440 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752153Ab3GXKCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 06:02:39 -0400
+Date: Wed, 24 Jul 2013 12:02:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: Piotr Sarna <p.sarna@partner.samsung.com>, konrad.wilk@oracle.com,
+        bob.liu@oracle.com, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org, b.zolnierkie@samsung.com,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] zcache: fix "zcache=" kernel parameter
+Message-ID: <20130724100235.GC2540@dhcp22.suse.cz>
+References: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH v2 6/8] memcg: fail to create cgroup if the cgroup id is too
- big
-References: <51EFA554.6080801@huawei.com>
-In-Reply-To: <51EFA554.6080801@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memcg requires the cgroup id to be smaller than 65536.
+I have posted a similar fix quite some time ago and I guess Greg should
+already have it.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- mm/memcontrol.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Greg?
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 35d8286..403c8d9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -512,6 +512,12 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
- 	return (memcg == root_mem_cgroup);
- }
- 
-+/*
-+ * We restrict the id in the range of [1, 65535], so it can fit into
-+ * an unsigned short.
-+ */
-+#define MEM_CGROUP_ID_MAX	(65535)
-+
- static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
- {
- 	/*
-@@ -6243,6 +6249,9 @@ mem_cgroup_css_alloc(struct cgroup *cont)
- 	long error = -ENOMEM;
- 	int node;
- 
-+	if (cont->id > MEM_CGROUP_ID_MAX)
-+		return ERR_PTR(-ENOSPC);
-+
- 	memcg = mem_cgroup_alloc();
- 	if (!memcg)
- 		return ERR_PTR(error);
+On Fri 19-07-13 16:46:41, Piotr Sarna wrote:
+> Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
+> a module") introduced an incorrect handling of "zcache=" parameter.
+> 
+> Inside zcache_comp_init() function, zcache_comp_name variable is
+> checked for being empty. If not empty, the above variable is tested
+> for being compatible with Crypto API. Unfortunately, after that
+> function ends unconditionally (by the "goto out" directive) and returns:
+> - non-zero value if verification succeeded, wrongly indicating an error
+> - zero value if verification failed, falsely informing that function
+>   zcache_comp_init() ended properly.
+> 
+> A solution to this problem is as following:
+> 1. Move the "goto out" directive inside the "if (!ret)" statement
+> 2. In case that crypto_has_comp() returned 0, change the value of ret
+>    to non-zero before "goto out" to indicate an error.
+> 
+> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> ---
+>  drivers/staging/zcache/zcache-main.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index dcceed2..81972fa 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+>  #else
+>  	if (*zcache_comp_name != '\0') {
+>  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+> -		if (!ret)
+> +		if (!ret) {
+>  			pr_info("zcache: %s not supported\n",
+>  					zcache_comp_name);
+> -		goto out;
+> +			ret = 1;
+> +			goto out;
+> +		}
+>  	}
+>  	if (!ret)
+>  		strcpy(zcache_comp_name, "lzo");
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
 -- 
-1.8.0.2
+Michal Hocko
+SUSE Labs
