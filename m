@@ -1,114 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab3GXHGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 03:06:37 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:20965 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3GXHGf (ORCPT
+	id S1752391Ab3GXHG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 03:06:58 -0400
+Received: from mail-ye0-f180.google.com ([209.85.213.180]:33696 "EHLO
+	mail-ye0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab3GXHG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 03:06:35 -0400
-Message-ID: <1374649590.2740.12.camel@j-VirtualBox>
-Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Alex Shi <alex.shi@intel.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Morten Rasmussen <morten.rasmussen@arm.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
-        chegu_vinod@hp.com
-Date: Wed, 24 Jul 2013 00:06:30 -0700
-In-Reply-To: <20130723110345.GX27075@twins.programming.kicks-ass.net>
-References: <1374220211.5447.9.camel@j-VirtualBox>
-	 <20130722070144.GC5138@linux.vnet.ibm.com>
-	 <1374519467.7608.87.camel@j-VirtualBox>
-	 <20130723110345.GX27075@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Wed, 24 Jul 2013 03:06:56 -0400
+Message-ID: <51EF7CFB.8030104@redhat.com>
+Date: Wed, 24 Jul 2013 09:06:35 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Jason Wang <jasowang@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, KY Srinivasan <kys@microsoft.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com> <1374572465-15278-4-git-send-email-jasowang@redhat.com> <bd93bc49300a4d99996cc4f57c19a008@SN2PR03MB061.namprd03.prod.outlook.com> <51EE97BD.4050402@zytor.com> <51EF59FB.8040207@redhat.com> <51EF5C9C.6070403@zytor.com> <51EF7A2A.6040003@redhat.com>
+In-Reply-To: <51EF7A2A.6040003@redhat.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > > Should we take the consideration of whether a idle_balance was
-> > > successful or not?
-> > 
-> > I recently ran fserver on the 8 socket machine with HT-enabled and found
-> > that load balance was succeeding at a higher than average rate, but idle
-> > balance was still lowering performance of that workload by a lot.
-> > However, it makes sense to allow idle balance to run longer/more often
-> > when it has a higher success rate.
-> > 
-> > > I am not sure whats a reasonable value for n can be, but may be we could
-> > > try with n=3.
-> > 
-> > Based on some of the data I collected, n = 10 to 20 provides much better
-> > performance increases.
+Il 24/07/2013 08:54, Jason Wang ha scritto:
+> On 07/24/2013 12:48 PM, H. Peter Anvin wrote:
+>> On 07/23/2013 09:37 PM, Jason Wang wrote:
+>>> On 07/23/2013 10:48 PM, H. Peter Anvin wrote:
+>>>> On 07/23/2013 06:55 AM, KY Srinivasan wrote:
+>>>>> This strategy of hypervisor detection based on some detection order IMHO is not
+>>>>> a robust detection strategy. The current scheme works since the only hypervisor emulated
+>>>>> (by other hypervisors happens to be Hyper-V). What if this were to change.
+>>>>>
+>>>> One strategy would be to pick the *last* one in the CPUID list, since
+>>>> the ones before it are logically the one(s) being emulated...
+>>>>
+>>>> 	-hpa
+>>>>
+>>> How about simply does a reverse loop from 0x40010000 to 0x40010000?
+>>>
+>> Not all systems like being poked too far into hyperspace.  Just remember
+>> the last match and walk the list.
+>>
+>> 	-hpa
+>>
 > 
-> Right, so I'm still a bit puzzled by why this is so; maybe we're
-> over-estimating the idle duration due to significant variance in the
-> idle time?
+> Ok, but it raises a question - how to know it was the 'last' match
+> without knowing all signatures of other hyper-visor?
 
-This time, I also collected per domain stats on the number of load
-balances that pulled a task(s) and the number of load balances that did
-not pull tasks. Here are some of those numbers for a CPU when running
-fserver at 8 socket Hyperthreading enabled:
+You can return a "priority" value from the .detect function.  The
+priority value can simply be the CPUID leaf where the signature was
+found (or a low value such as 1 if detection was done with DMI).
 
-CPU #2:
-	| load balance	| load balance	|  # total	|  load balance
-domain	| pulled task	| did not	|  attempts	|  success rate
-	|		| pull tasks	|		|
---------------------------------------------------------------------------
-  0	|  10574	|  175311	|  185885	|  5.69%
---------------------------------------------------------------------------
-  1	|  18218	|  157092	|  175310	|  10.39%
---------------------------------------------------------------------------
-  2	|  0		|  157092	|  157092	|  0%
---------------------------------------------------------------------------
-  3	|  14858	|  142234	|  157092	|  9.46%
---------------------------------------------------------------------------
-  4	|  8632		|  133602	|  142234	|  6.07%
---------------------------------------------------------------------------
-  5	|  4570		|  129032	|  133602	|  3.42%
+Then you can pick the hypervisor with the highest priority instead of
+hard-coding the order.
 
-Note: The % load balance success rate can be a lot lower in some of the
-other AIM7 workloads with 8 socket HT on.
-
-In this case, most of the load balances which did not pull tasks were
-either due to find_busiest_group() returning NULL or failing to move any
-tasks after attempting to move task.
-
-Based on this current data, one possible explanation for why average
-load balance cost per domain can be a lot less than the avg CPU idle
-time, yet idle balancing is still lowering performance, is because the
-load balance success rate for some of these domains can be very small.
-At the same time, there's still the overhead of doing
-update_sd_lb_stats(), idle_cpu(), acquiring the rq->lock, ect...
-
-So assume that the average cost of load balance on domain 0 is 30000 ns
-and the CPU's average idle time is 500000 ns. The average cost of
-attempting each balance on domain 0 is a lot less than the average time
-the CPU remains idle. However, since load balance in domain 0 is useful
-only 5.69% of the time, it is expected to pay (30000 ns / 0.0569) =
-527240 ns worth of kernel time for every load balance that moved a
-task(s) to this particular CPU. Additionally, domain 2 in this case is
-essentially never moving tasks during its balance attempts, and so a
-larger N means spending even less time balancing in a domain in which no
-tasks ever gets moved.
-
-Perhaps one of the metrics I may use for computing N is the balance
-success rate for each sched domain. So in the above case, we give little
-to no time for idle balancing within domain 2, but allow more time to be
-spent balancing between domain 1 and domain 3 because the expected
-return is greater?
-
-Jason
-
+Paolo
