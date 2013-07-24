@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab3GXDio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:38:44 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:60523 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab3GXDim (ORCPT
+	id S1751591Ab3GXDmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:42:33 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:50361 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab3GXDmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:38:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374600763-19466-1-git-send-email-tobetter@gmail.com>
-References: <1374600763-19466-1-git-send-email-tobetter@gmail.com>
-Date: Wed, 24 Jul 2013 09:08:41 +0530
-Message-ID: <CAK9yfHz10ao32Y4VRsvjNLe+zaq+hYk4KVgtwFgSLDsN-9Pfpw@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add USB host node for Exynos4
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 23 Jul 2013 23:42:32 -0400
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: koba@kmckk.co.jp, Magnus Damm <magnus.damm@gmail.com>, horms@verge.net.au,
+        linux-sh@vger.kernel.org
+Date: Wed, 24 Jul 2013 12:42:40 +0900
+Message-Id: <20130724034240.30596.52917.sendpatchset@w520>
+Subject: [PATCH] ARM: shmobile: emev2: add PMU information to emev2.dtsi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 July 2013 23:02, Dongjin Kim <tobetter@gmail.com> wrote:
-> This patch adds EHCI and OHCI host device nodes for Exynos4.
->
-> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
-> ---
->  arch/arm/boot/dts/exynos4.dtsi |   20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-> index 3f94fe8..1cdbf89 100644
-> --- a/arch/arm/boot/dts/exynos4.dtsi
-> +++ b/arch/arm/boot/dts/exynos4.dtsi
-> @@ -155,6 +155,26 @@
->                 status = "disabled";
->         };
->
-> +       ehci@12580000 {
-> +               compatible = "samsung,exynos4210-ehci";
-> +               reg = <0x12580000 0x100>;
-> +               interrupts = <0 70 0>;
-> +               status = "disabled";
-> +
-> +               clocks = <&clock 304>;
-> +               clock-names = "usbhost";
-> +       };
-> +
-> +       ohci@12590000 {
-> +               compatible = "samsung,exynos4210-ohci";
-> +               reg = <0x12580000 0x100>;
+From: Magnus Damm <damm@opensource.se>
 
-Register value and node name do not match. Typo?
+Add PMU information to emev2.dtsi. With this
+included KZM9D DT reference may use the PMU.
 
+Signed-off-by: Magnus Damm <damm@opensource.se>
+---
 
-> +               interrupts = <0 70 0>;
-> +               status = "disabled";
-> +
-> +               clocks = <&clock 304>;
-> +               clock-names = "usbhost";
-> +       };
-> +
->         mfc: codec@13400000 {
->                 compatible = "samsung,mfc-v5";
->                 reg = <0x13400000 0x10000>;
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ arch/arm/boot/dts/emev2.dtsi |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-
-
--- 
-With warm regards,
-Sachin
+--- 0009/arch/arm/boot/dts/emev2.dtsi
++++ work/arch/arm/boot/dts/emev2.dtsi	2013-07-02 17:32:45.000000000 +0900
+@@ -46,6 +46,12 @@
+ 		      <0xe0020000 0x0100>;
+ 	};
+ 
++	pmu {
++		compatible = "arm,cortex-a9-pmu";
++		interrupts = <0 120 4>,
++			     <0 121 4>;
++	};
++
+ 	sti@e0180000 {
+ 		compatible = "renesas,em-sti";
+ 		reg = <0xe0180000 0x54>;
