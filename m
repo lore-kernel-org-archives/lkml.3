@@ -1,86 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab3GXMXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 08:23:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47303 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751088Ab3GXMXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 08:23:48 -0400
-Date: Wed, 24 Jul 2013 15:23:09 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <linux-arm-msm@vger.kernel.org>, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/7] usb: phy: msm: Move mach dependent code to platform
- data
-Message-ID: <20130724122309.GD17962@radagast>
-Reply-To: <balbi@ti.com>
-References: <1372087664-26396-1-git-send-email-iivanov@mm-sol.com>
- <1372087664-26396-2-git-send-email-iivanov@mm-sol.com>
+	id S1751367Ab3GXM3C (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 08:29:02 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:38136 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750909Ab3GXM27 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 08:28:59 -0400
+Message-ID: <51EFCA42.5020009@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 18:06:18 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="mR8QP4gmHujQHb1c"
-Content-Disposition: inline
-In-Reply-To: <1372087664-26396-2-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com>
+In-Reply-To: <20130724120647.GG16400@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072412-5816-0000-0000-00000911DE67
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---mR8QP4gmHujQHb1c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/24/2013 05:36 PM, Gleb Natapov wrote:
+> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
+>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
+>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>>>> [...]
+>>>>>> +
+>>>>>> +	/*
+>>>>>> +	 * halt until it's our turn and kicked. Note that we do safe halt
+>>>>>> +	 * for irq enabled case to avoid hang when lock info is overwritten
+>>>>>> +	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
+>>>>>> +	 */
+>>>>>> +	if (arch_irqs_disabled_flags(flags))
+>>>>>> +		halt();
+>>>>>> +	else
+>>>>>> +		safe_halt();
+>>>>>> +
+>>>>>> +out:
+>>>>> So here now interrupts can be either disabled or enabled. Previous
+>>>>> version disabled interrupts here, so are we sure it is safe to have them
+>>>>> enabled at this point? I do not see any problem yet, will keep thinking.
+>>>>
+>>>> If we enable interrupt here, then
+>>>>
+>>>>
+>>>>>> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+>>>>
+>>>> and if we start serving lock for an interrupt that came here,
+>>>> cpumask clear and w->lock=null may not happen atomically.
+>>>> if irq spinlock does not take slow path we would have non null value
+>>>> for lock, but with no information in waitingcpu.
+>>>>
+>>>> I am still thinking what would be problem with that.
+>>>>
+>>> Exactly, for kicker waiting_cpus and w->lock updates are
+>>> non atomic anyway.
+>>>
+>>>>>> +	w->lock = NULL;
+>>>>>> +	local_irq_restore(flags);
+>>>>>> +	spin_time_accum_blocked(start);
+>>>>>> +}
+>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+>>>>>> +
+>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+>>>>>> +{
+>>>>>> +	int cpu;
+>>>>>> +
+>>>>>> +	add_stats(RELEASED_SLOW, 1);
+>>>>>> +	for_each_cpu(cpu, &waiting_cpus) {
+>>>>>> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+>>>>>> +		if (ACCESS_ONCE(w->lock) == lock &&
+>>>>>> +		    ACCESS_ONCE(w->want) == ticket) {
+>>>>>> +			add_stats(RELEASED_SLOW_KICKED, 1);
+>>>>>> +			kvm_kick_cpu(cpu);
+>>>>> What about using NMI to wake sleepers? I think it was discussed, but
+>>>>> forgot why it was dismissed.
+>>>>
+>>>> I think I have missed that discussion. 'll go back and check. so
+>>>> what is the idea here? we can easily wake up the halted vcpus that
+>>>> have interrupt disabled?
+>>> We can of course. IIRC the objection was that NMI handling path is very
+>>> fragile and handling NMI on each wakeup will be more expensive then
+>>> waking up a guest without injecting an event, but it is still interesting
+>>> to see the numbers.
+>>>
+>>
+>> Haam, now I remember, We had tried request based mechanism. (new
+>> request like REQ_UNHALT) and process that. It had worked, but had some
+>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
+>> request cleared.  So had left it there..
+>>
+>> https://lkml.org/lkml/2012/4/30/67
+>>
+>> But I do not remember performance impact though.
+> No, this is something different. Wakeup with NMI does not need KVM changes at
+> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
+>
 
-On Mon, Jun 24, 2013 at 06:27:38PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->=20
-> This patch fix compilation error and is an intermediate step
-> before the addition of DeviceTree support for newer targets.
-> Fix suggested here: https://lkml.org/lkml/2013/6/19/381
->=20
-> Cc: David Brown <davidb@codeaurora.org>
-> Cc: Daniel Walker <dwalker@fifo99.com>
-> Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
->=20
-> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+True. It was not NMI.
+just to confirm, are you talking about something like this to be tried ?
 
-I need Acks
+apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
 
---=20
-balbi
-
---mR8QP4gmHujQHb1c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR78ctAAoJEIaOsuA1yqREyfYP/394WcISJ9uD8VSm9WbupLSN
-E2fYAxNXL8C2jsYfg3241/xNj2OzaffLzyMBHOAhtL97SBjs2KY6s0DCMvx7w/Ug
-WTRilAFKhmJNfr+CkYoJ9Z1XFiMgWd4zeuqfwJebwM2qFSDGRpeZ/M5VqoNerDlT
-SHNZjM5tdpjt/p5YPjQN6lxuZg0HePk4gKuvuYI64+0sA5gfUqz3cG2Wsx5J9n2d
-TqcorlY/yK/ybMRIL0md9U5WD4t5ni6seHqKV/F3mBkTBTnwp6hWbkopOXjIDHkk
-wnwPawbV37+SqH54jqsA3iaaPPMb4LxY8CEDw5oUKK3ZldtLDDgFsPLC+NiqL03N
-XGg+z9oCKKirt7WYnYJjZnVQHGybi4A0x+re6Z8eo0QoaQQV9AyIBab4WLBlK8vM
-Zqm3X2kPXTsW2nOLxYpR1TDV/1YSiHe8MeY5UjnHmqIcJcnCuy78yXicS0zpNYaC
-y9fp/4dsKLQ0SfiOos0wVHTichX964TVy6Quje3W7zctVx6cPpgte+OlRm2C7tlC
-l3pL4pFeUXuwo/1/8WyODlMXjd41NVo6Kzk16fNsIL2KF0meJOb3zWknVXWr2CFZ
-XaWRbm2Dvl0UDbMDNtw2TIblrVvipEVM7eP/ieV3ZnUgsXHxex5tsnMjmhj4RmSj
-1gL1tZ4uuxBCqOVeMT/6
-=FjDQ
------END PGP SIGNATURE-----
-
---mR8QP4gmHujQHb1c--
