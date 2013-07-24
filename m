@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3GXOKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:10:22 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45815 "EHLO
+	id S1753198Ab3GXOKU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:10:20 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45829 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752189Ab3GXOGy (ORCPT
+	by vger.kernel.org with ESMTP id S1752231Ab3GXOGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:54 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,21 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "Dmitry Torokhov" <rydberg@euromail.se>,
-        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
+        "Paul Mackerras" <paulus@samba.org>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Namhyung Kim" <namhyung@kernel.org>, "Jiri Olsa" <jolsa@redhat.com>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Vince Weaver" <vincent.weaver@maine.edu>,
+        "Corey Ashford" <cjashfor@linux.vnet.ibm.com>,
+        "Ingo Molnar" <mingo@elte.hu>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.974236672@decadent.org.uk>
+Message-ID: <lsq.1374674565.922133172@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [62/85] HID: apple: Add support for the 2013 Macbook Air
+Subject: [75/85] perf: Remove WARN_ON_ONCE() check in __perf_event_enable()
+ for valid scenario
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,72 +40,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dmitry Torokhov <rydberg@euromail.se>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit 9d9a04ee758b4c1fcc7586d065cdde7a7607e156 upstream.
+commit 06f417968beac6e6b614e17b37d347aa6a6b1d30 upstream.
 
-This patch adds keyboard support for MacbookAir6,2 as WELLSPRING8
-(0x0291, 0x0292, 0x0293). The touchpad is handled in a separate
-bcm5974 patch, as usual.
+The '!ctx->is_active' check has a valid scenario, so
+there's no need for the warning.
 
-Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+The reason is that there's a time window between the
+'ctx->is_active' check in the perf_event_enable() function
+and the __perf_event_enable() function having:
+
+  - IRQs on
+  - ctx->lock unlocked
+
+where the task could be killed and 'ctx' deactivated by
+perf_event_exit_task(), ending up with the warning below.
+
+So remove the WARN_ON_ONCE() check and add comments to
+explain it all.
+
+This addresses the following warning reported by Vince Weaver:
+
+[  324.983534] ------------[ cut here ]------------
+[  324.984420] WARNING: at kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
+[  324.984420] Modules linked in:
+[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
+[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
+[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
+[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
+[  324.984420] Call Trace:
+[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
+[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
+[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
+[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
+[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
+[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
+[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
+[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
+[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
+[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
+[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
+[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
+[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
+[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
+[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
+[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
+[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
+[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
+[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
+[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
+[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
+[  324.984420] ---[ end trace 442ec2f04db3771a ]---
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-apple.c | 6 ++++++
- drivers/hid/hid-core.c  | 6 ++++++
- drivers/hid/hid-ids.h   | 3 +++
- 3 files changed, 15 insertions(+)
+ kernel/events/core.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -529,6 +529,12 @@ static const struct hid_device_id apple_
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
-+		.driver_data = APPLE_HAS_FN },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
-+		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
-+		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1386,6 +1386,9 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
-@@ -1995,6 +1998,9 @@ static const struct hid_device_id hid_mo
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
- 	{ }
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -136,6 +136,9 @@
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
- #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
-+#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
- #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
- #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
- #define USB_DEVICE_ID_APPLE_ATV_IRCONTROL	0x8241
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1687,7 +1687,16 @@ static int __perf_event_enable(void *inf
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+ 	int err;
+ 
+-	if (WARN_ON_ONCE(!ctx->is_active))
++	/*
++	 * There's a time window between 'ctx->is_active' check
++	 * in perf_event_enable function and this place having:
++	 *   - IRQs on
++	 *   - ctx->lock unlocked
++	 *
++	 * where the task could be killed and 'ctx' deactivated
++	 * by perf_event_exit_task.
++	 */
++	if (!ctx->is_active)
+ 		return -EINVAL;
+ 
+ 	raw_spin_lock(&ctx->lock);
 
