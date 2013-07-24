@@ -1,43 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab3GXEpG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 00:45:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42330 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab3GXEpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 00:45:03 -0400
-Message-ID: <51EF5BAE.1020905@redhat.com>
-Date: Wed, 24 Jul 2013 12:44:30 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>, tglx@linutronix.de, mingo@redhat.com,
-        x86@kernel.org, gleb@redhat.com, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: introduce hypervisor_cpuid_base()
-References: <1374572465-15278-1-git-send-email-jasowang@redhat.com> <51EE553C.40305@zytor.com> <51EE65F4.3000703@redhat.com> <51EEA96D.3070208@zytor.com>
-In-Reply-To: <51EEA96D.3070208@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751424Ab3GXEqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 00:46:54 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:32886 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3GXEqw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 00:46:52 -0400
+Date: Wed, 24 Jul 2013 12:46:44 +0800
+From: majianpeng <majianpeng@gmail.com>
+To: sage <sage@inktank.com>
+Cc: ceph-devel <ceph-devel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Reply-To: majianpeng <majianpeng@gmail.com>
+Subject: Re: Re: [PATCH] ceph: Don't use ceph-sync-mode for synchronous-fs.
+References: <201306271556037311581@gmail.com>, 
+	<201307161949279533980@gmail.com> <201307240828220999500@gmail.com>, 
+	<alpine.DEB.2.00.1307231812280.8332@cobra.newdream.net>
+X-Priority: 3
+X-GUID: 7FABF9DC-66BF-4D53-868E-1897418653CA
+X-Has-Attach: no
+X-Mailer: Foxmail 7.0.1.90[en]
+Mime-Version: 1.0
+Message-ID: <201307241246395750351@gmail.com>
+Content-Type: text/plain;
+	charset="gb2312"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6O4l1BT025552
 
-On 07/24/2013 12:03 AM, H. Peter Anvin wrote:
-> On 07/23/2013 04:16 AM, Paolo Bonzini wrote:
->> That's nicer, though strcmp is what the replaced code used to do in
->> patches 2 and 3.
->>
->> Note that memcmp requires the caller to use "KVMKVMKVM\0\0" as the
->> signature (or alternatively hypervisor_cpuid_base can copy the argument
->> into another 12-byte local variable).
->>
-> Which is the actual signature, though...
+>Hi,
 >
-> 	-hpa
+>Sorry for the slow review.  The patch looks good, but I have a hard time 
+>understanding your changelog... is it okay if I change it to something 
+>like:
 >
 >
+>Sending reads and writes through the sync read/write paths bypasses the 
+>page cache, which is not expected or generally a good idea.  Removing 
+>the write check is safe as there is a conditional vfs_fsync_range() later 
+>in ceph_aio_write that already checks for the same flag (via 
+>IS_SYNC(inode)).
+>
+Very good.
+It's my fault. I will notice the message later.
 
-Since it's just a minor optimization. How about just keep using the
-strcmp()?
+Thanks !
+Jianpeng Ma
+>?
+>
+>Thanks!
+>sage
+>
+>
+>On Wed, 24 Jul 2013, majianpeng wrote:
+>
+>> Ping
+>> >Hi sage,
+>> >	How about this patch?Can you give some advisement?
+>> >Thanks!
+>> >Jianpeng Ma
+>> >>At now for synchronous-fs, all write-operations use ceph_sync_mode.
+>> >>But for the file which opened with O_SYNC, it don't use sync_mode.
+>> >>The behaviour of them should be the same.
+>> >>For fs which mounted using '-o sync', it want all I/O to the filesystem
+>> >>should be done synchronously.But the ceph-sync-mode don't be suitful
+>> >>for.For example,using ceph-sync-mode the content of file don't have in
+>> >>memory.This will cause the following read only from osd rather than
+>> >>memory.
+>> >>
+>> >>Signed-off-by: Jianpeng Ma <majianpeng@gmail.com>
+>> >>---
+>> >> fs/ceph/file.c | 2 --
+>> >> 1 file changed, 2 deletions(-)
+>> >>
+>> >>diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+>> >>index 656e169..44670ad 100644
+>> >>--- a/fs/ceph/file.c
+>> >>+++ b/fs/ceph/file.c
+>> >>@@ -659,7 +659,6 @@ again:
+>> >> 
+>> >> 	if ((got & (CEPH_CAP_FILE_CACHE|CEPH_CAP_FILE_LAZYIO)) == 0 ||
+>> >> 	    (iocb->ki_filp->f_flags & O_DIRECT) ||
+>> >>-	    (inode->i_sb->s_flags & MS_SYNCHRONOUS) ||
+>> >> 	    (fi->flags & CEPH_F_SYNC))
+>> >> 		/* hmm, this isn't really async... */
+>> >> 		ret = ceph_sync_read(filp, base, len, ppos, &checkeof);
+>> >>@@ -764,7 +763,6 @@ retry_snap:
+>> >> 
+>> >> 	if ((got & (CEPH_CAP_FILE_BUFFER|CEPH_CAP_FILE_LAZYIO)) == 0 ||
+>> >> 	    (iocb->ki_filp->f_flags & O_DIRECT) ||
+>> >>-	    (inode->i_sb->s_flags & MS_SYNCHRONOUS) ||
+>> >> 	    (fi->flags & CEPH_F_SYNC)) {
+>> >> 		mutex_unlock(&inode->i_mutex);
+>> >> 		written = ceph_sync_write(file, iov->iov_base, count,
+>> >>-- 
+>> >>1.8.1.2ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
