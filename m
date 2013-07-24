@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab3GXO1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:27:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60397 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753961Ab3GXO1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:27:53 -0400
-Date: Wed, 24 Jul 2013 16:27:51 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 6/8] memcg: fail to create cgroup if the cgroup id is
- too big
-Message-ID: <20130724142751.GI2540@dhcp22.suse.cz>
-References: <51EFA554.6080801@huawei.com>
- <51EFA62B.3020508@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754062Ab3GXO20 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:28:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45719 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752258Ab3GXOGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:06:35 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <51EFA62B.3020508@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Jerome Marchand" <jmarchan@redhat.com>,
+        "Minchan Kim" <minchan@kernel.org>, "Jiang Liu" <jiang.liu@huawei.com>,
+        "Jiang Liu" <liuj97@gmail.com>
+Date: Wed, 24 Jul 2013 15:02:45 +0100
+Message-ID: <lsq.1374674565.73680118@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [10/85] zram: destroy all devices on error recovery path in
+ zram_init()
+In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-07-13 18:02:19, Li Zefan wrote:
-> memcg requires the cgroup id to be smaller than 65536.
-> 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
+3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+------------------
 
-One suggestion bellow
+From: Jiang Liu <liuj97@gmail.com>
 
-> ---
->  mm/memcontrol.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 35d8286..403c8d9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -512,6 +512,12 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
->  	return (memcg == root_mem_cgroup);
->  }
->  
-> +/*
-> + * We restrict the id in the range of [1, 65535], so it can fit into
-> + * an unsigned short.
-> + */
-> +#define MEM_CGROUP_ID_MAX	(65535)
+commit 39a9b8ac9333e4268ecff7da6c9d1ab3823ff243 upstream.
 
-USHRT_MAX
+On error recovery path of zram_init(), it leaks the zram device object
+causing the failure. So change create_device() to free allocated
+resources on error path.
 
-> +
->  static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
->  {
->  	/*
-> @@ -6243,6 +6249,9 @@ mem_cgroup_css_alloc(struct cgroup *cont)
->  	long error = -ENOMEM;
->  	int node;
->  
-> +	if (cont->id > MEM_CGROUP_ID_MAX)
-> +		return ERR_PTR(-ENOSPC);
-> +
->  	memcg = mem_cgroup_alloc();
->  	if (!memcg)
->  		return ERR_PTR(error);
-> -- 
-> 1.8.0.2
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Acked-by: Jerome Marchand <jmarchan@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/staging/zram/zram_drv.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
--- 
-Michal Hocko
-SUSE Labs
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -715,7 +715,7 @@ static const struct block_device_operati
+ 
+ static int create_device(struct zram *zram, int device_id)
+ {
+-	int ret = 0;
++	int ret = -ENOMEM;
+ 
+ 	init_rwsem(&zram->lock);
+ 	init_rwsem(&zram->init_lock);
+@@ -725,7 +725,6 @@ static int create_device(struct zram *zr
+ 	if (!zram->queue) {
+ 		pr_err("Error allocating disk queue for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+ 		goto out;
+ 	}
+ 
+@@ -735,11 +734,9 @@ static int create_device(struct zram *zr
+ 	 /* gendisk structure */
+ 	zram->disk = alloc_disk(1);
+ 	if (!zram->disk) {
+-		blk_cleanup_queue(zram->queue);
+ 		pr_warning("Error allocating disk structure for device %d\n",
+ 			device_id);
+-		ret = -ENOMEM;
+-		goto out;
++		goto out_free_queue;
+ 	}
+ 
+ 	zram->disk->major = zram_major;
+@@ -768,11 +765,17 @@ static int create_device(struct zram *zr
+ 				&zram_disk_attr_group);
+ 	if (ret < 0) {
+ 		pr_warning("Error creating sysfs group");
+-		goto out;
++		goto out_free_disk;
+ 	}
+ 
+ 	zram->init_done = 0;
++	return 0;
+ 
++out_free_disk:
++	del_gendisk(zram->disk);
++	put_disk(zram->disk);
++out_free_queue:
++	blk_cleanup_queue(zram->queue);
+ out:
+ 	return ret;
+ }
+
