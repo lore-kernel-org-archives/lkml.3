@@ -1,102 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751710Ab3GXMuS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 08:50:18 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:40127 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751003Ab3GXMuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 08:50:16 -0400
-Date: Wed, 24 Jul 2013 13:50:11 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Kevin Hilman <khilman@linaro.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        Ruslan Bilovol <ruslan.bilovol@ti.com>, linux-kernel@vger.kernel.org,
-        Naga Venkata Srikanth V <vnv.srikanth@samsung.com>,
-        Oleg_Kosheliev <oleg.kosheliev@ti.com>
-Subject: Re: [PATCH 1/4] mfd: twl6030-irq: migrate to IRQ threaded handler
-Message-ID: <20130724125011.GM26801@laptop>
-References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com>
- <1374595624-15054-2-git-send-email-grygorii.strashko@ti.com>
- <20130724104945.GH26801@laptop>
- <51EFC072.9070702@ti.com>
+	id S1751942Ab3GXMvT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 08:51:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21920 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750902Ab3GXMvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 08:51:17 -0400
+Date: Wed, 24 Jul 2013 14:50:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V8 13/15] perf tools: expand
+ perf_event__synthesize_sample()
+Message-ID: <20130724125025.GA4203@krava.brq.redhat.com>
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+ <1374144177-24762-14-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51EFC072.9070702@ti.com>
+In-Reply-To: <1374144177-24762-14-git-send-email-adrian.hunter@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>+	if (ret) {
-> >>+		pr_warn("%s: I2C error %d reading PIH ISR\n", __func__, ret);
-> >
-> >Does the user really care which function we're returning from.
-> >
-> >Would it be better if you replace '__func__' with the device name?
-> 
-> This module hasn't been converted to the device yet:(
-> (I mean "interrupt-controller").
-> But I'm thinking about it as the next step :) and then It will be
-> absolutely reasonable change to replace pr_*() with dev_*() and
-> remove __func__.
+On Thu, Jul 18, 2013 at 01:42:55PM +0300, Adrian Hunter wrote:
 
-I don't mean anything as compicated as that for 'this' patch. (NB: See my
-comment in subsequent patches about creating a 'struct twl6030' where
-you could store 'struct dev'.) In this patch I mean litterally
-replacing "%s: ", with "tw16030_irq: ". Simples. :)
+SNIP
 
-> Now, the pointer on "dev" (in our case "twl-core" device) isn't passed
-> in IRQ handler, so It can't be used here.
-> 
-> Of course it can be done, but would it make code better?
-> My opinion - no.
+> @@ -1349,11 +1349,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>  }
+>  
+>  int perf_event__synthesize_sample(union perf_event *event, u64 type,
+> +				  u64 sample_regs_user,
+>  				  const struct perf_sample *sample,
+>  				  bool swapped)
+>  {
+>  	u64 *array;
+> -
+> +	size_t sz;
+>  	/*
+>  	 * used for cross-endian analysis. See git commit 65014ab3
+>  	 * for why this goofiness is needed.
+> @@ -1426,6 +1427,73 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+>  		array++;
+>  	}
+>  
+> +	if (type & PERF_SAMPLE_READ) {
+> +		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+> +		return -1;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_CALLCHAIN) {
+> +		sz = (sample->callchain->nr + 1) * sizeof(u64);
+> +		memcpy(array, sample->callchain, sz);
+> +		array = (void *)array + sz;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_RAW) {
+> +		u.val32[0] = sample->raw_size;
+> +		if (WARN_ONCE(swapped,
+> +			      "Endianness of raw data not corrected!\n")) {
+> +			/*
+> +			 * Inverse of what is done in perf_evsel__parse_sample
+> +			 */
+> +			u.val32[0] = bswap_32(u.val32[0]);
+> +			u.val32[1] = bswap_32(u.val32[1]);
+> +			u.val64 = bswap_64(u.val64);
+> +		}
+> +		*array = u.val64;
+> +		array = (void *)array + sizeof(u32);
+> +
+> +		memcpy(array, sample->raw_data, sample->raw_size);
+> +		array = (void *)array + sample->raw_size;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_BRANCH_STACK) {
+> +		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
+> +		sz += sizeof(u64);
+> +		memcpy(array, sample->branch_stack, sz);
+> +		array = (void *)array + sz;
+> +	}
+> +
+> +	if (type & PERF_SAMPLE_REGS_USER) {
+> +		if (sample->user_regs.regs && sample_regs_user) {
+> +			*array++ = sample_regs_user;
 
-> >>+	if (sts.bytes[2] & 0x10)
-> >>+		sts.bytes[2] |= 0x08;
-> >>
-> >>-		for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
-> >>-			local_irq_disable();
-> >>-			if (sts.int_sts & 0x1) {
-> >>-				int module_irq = twl6030_irq_base +
-> >>+	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
-> >>+		if (sts.int_sts & 0x1) {
-> >
-> >I'm a little confused by this. Where does sts.int_sts come from?
-> 
-> See my comment above, pls
+it's 'enum perf_sample_regs_abi' value that goes here ^^^
 
-Okay, that's my fault for not understanding unions properly as I've
-never had to use one, but now I do, thanks.
+I guess for now it could be hardcoded like:
 
-> >>@@ -437,10 +386,13 @@ int twl6030_exit_irq(void)
-> >>  {
-> >>  	unregister_pm_notifier(&twl6030_irq_pm_notifier_block);
-> >>
-> >>-	if (twl6030_irq_base) {
-> >>+	if (!twl6030_irq_base) {
-> >>  		pr_err("twl6030: can't yet clean up IRQs?\n");
-> >>  		return -ENOSYS;
-> >>  	}
-> >>+
-> >>+	free_irq(twl_irq, NULL);
-> >>+
-> >
-> >If request_threaded_irq() fails, isn't there a chance that
-> >twl6030_irq_base will be allocated, but twl_irq will still be
-> >undefined?
-> 
-> Yes. A mess is here (historically:), thanks. Will use twl_irq
-> instead of twl6030_irq_base (I did it, actually, in patch [3]:).
+#if defined(__x86_64__)
+abi = PERF_SAMPLE_REGS_ABI_64
+#else
+#if defined(__i386__)
+abi = PERF_SAMPLE_REGS_ABI_64
+#endif
+WARN()
+#endif
 
-Yes, I saw it. It would be better if you still fixed up this patch to
-be correct though. Even if you break it out and add it as [PATCH 1/x].
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+jirka
