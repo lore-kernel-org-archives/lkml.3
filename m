@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753481Ab3GXOQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:16:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45744 "EHLO
+	id S1753375Ab3GXOQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:16:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45765 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752319Ab3GXOGs (ORCPT
+	by vger.kernel.org with ESMTP id S1752353Ab3GXOGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:48 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Soeren Moch" <smoch@web.de>,
-        "Sakari Ailus" <sakari.ailus@iki.fi>,
-        "Mauro Carvalho Chehab" <mchehab@redhat.com>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Vince Weaver" <vincent.weaver@maine.edu>,
+        "Oleg Nesterov" <oleg@redhat.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.555105067@decadent.org.uk>
+Message-ID: <lsq.1374674565.874013700@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [27/85] [media] media: dmxdev: remove dvb_ringbuffer_flush() on
- writer side
+Subject: [29/85] hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,55 +33,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Soeren Moch <smoch@web.de>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 414abbd2cd4c2618895f02ed3a76ec6647281436 upstream.
+commit c790b0ad23f427c7522ffed264706238c57c007e upstream.
 
-In dvb_ringbuffer lock-less synchronizationof reader and writer threads is done
-with separateread and write pointers. Sincedvb_ringbuffer_flush() modifies the
-read pointer, this function must not be called from the writer thread.
-This patch removes the dvb_ringbuffer_flush() calls in the dmxdev ringbuffer
-write functions, this fixes Oopses "Unable to handle kernel paging request"
-I could observe for the call chaindvb_demux_read ->dvb_dmxdev_buffer_read ->
-dvb_ringbuffer_read_user -> __copy_to_user (the reader side of the ringbuffer).
-The flush calls at the write side are not necessary anyway since ringbuffer_flush
-is also called in dvb_dmxdev_buffer_read() when an error condition is set in the
-ringbuffer.
-This patch should also be applied to stable kernels.
+fetch_bp_busy_slots() and toggle_bp_slot() use
+for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
+cpu_down(), we can over/under account the per-cpu numbers.
 
-Signed-off-by: Soeren Moch <smoch@web.de>
-Reviewed-by: Sakari Ailus <sakari.ailus@iki.fi>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[bwh: Backported to 3.2: adjust filename]
+For example:
+
+	# echo 0 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10 -p 1 &
+	# echo 1 >> /sys/devices/system/cpu/cpu1/online
+	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
+	# taskset -p 0x2 1
+
+triggers the same WARN_ONCE("Can't find any breakpoint slot") in
+arch_install_hw_breakpoint().
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/media/dvb/dvb-core/dmxdev.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ kernel/events/hw_breakpoint.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/media/dvb/dvb-core/dmxdev.c
-+++ b/drivers/media/dvb/dvb-core/dmxdev.c
-@@ -380,10 +380,8 @@ static int dvb_dmxdev_section_callback(c
- 		ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer2,
- 					      buffer2_len);
+--- a/kernel/events/hw_breakpoint.c
++++ b/kernel/events/hw_breakpoint.c
+@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots
+ 		return;
  	}
--	if (ret < 0) {
--		dvb_ringbuffer_flush(&dmxdevfilter->buffer);
-+	if (ret < 0)
- 		dmxdevfilter->buffer.error = ret;
--	}
- 	if (dmxdevfilter->params.sec.flags & DMX_ONESHOT)
- 		dmxdevfilter->state = DMXDEV_STATE_DONE;
- 	spin_unlock(&dmxdevfilter->dev->lock);
-@@ -419,10 +417,8 @@ static int dvb_dmxdev_ts_callback(const
- 	ret = dvb_dmxdev_buffer_write(buffer, buffer1, buffer1_len);
- 	if (ret == buffer1_len)
- 		ret = dvb_dmxdev_buffer_write(buffer, buffer2, buffer2_len);
--	if (ret < 0) {
--		dvb_ringbuffer_flush(buffer);
-+	if (ret < 0)
- 		buffer->error = ret;
--	}
- 	spin_unlock(&dmxdevfilter->dev->lock);
- 	wake_up(&buffer->queue);
- 	return 0;
+ 
+-	for_each_online_cpu(cpu) {
++	for_each_possible_cpu(cpu) {
+ 		unsigned int nr;
+ 
+ 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
+@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bo
+ 	if (cpu >= 0) {
+ 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	} else {
+-		for_each_online_cpu(cpu)
++		for_each_possible_cpu(cpu)
+ 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
+ 	}
+ 
 
