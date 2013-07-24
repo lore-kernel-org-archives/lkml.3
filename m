@@ -1,105 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751296Ab3GXCYf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 22:24:35 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:38593 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab3GXCYd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 22:24:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130723162835.GA20430@redhat.com>
-References: <20130723162835.GA20430@redhat.com>
-Date: Tue, 23 Jul 2013 19:24:31 -0700
-X-Google-Sender-Auth: mCdVbDT5JSi9LWGuHQF8ADhFlnk
-Message-ID: <CA+55aFw9Vo_vugB63kbjh6=jPDoJZP47Nw+hEgMCxFPiExYn5w@mail.gmail.com>
-Subject: Re: spinlock lockup, rcu stalls etc.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751310Ab3GXC0z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 22:26:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:53808 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864Ab3GXC0y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 22:26:54 -0400
+From: Michael Ellerman <michael@ellerman.id.au>
+To: <linux-kernel@vger.kernel.org>
+Cc: acme@ghostprotocols.net, a.p.zijlstra@chello.nl, mingo@redhat.com,
+        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>
+Subject: [PATCH] perf tools: Add support for pinned modifier
+Date: Wed, 24 Jul 2013 12:26:42 +1000
+Message-Id: <1374632802-15436-1-git-send-email-michael@ellerman.id.au>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Thomas and Ingo due to that timer/nmi thing. ]
+This commit adds support for a new modifier "P", which requests that the
+event, or group of events, be pinned to the PMU.
 
-On Tue, Jul 23, 2013 at 9:28 AM, Dave Jones <davej@redhat.com> wrote:
-> Woke up to a box that I could log into, but would hang as soon as I tried to
-> do any disk IO.  This is what hit the logs before that.
->
-> [28853.503179] hrtimer: interrupt took 4847 ns
+This is an oft-requested feature from our HW folks, who want to be able
+to run a large number of events, but also want 100% accurate results for
+instructions per cycle.
 
-Ugh. There's some nasty timer congestion there..
+Comparison of results with and without pinning:
 
-> [28932.599607] BUG: spinlock lockup suspected on CPU#0, trinity-child2/6990
-> [28932.600419]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
+$ perf stat -e '{cycles,instructions}:P' -e cycles,instructions,...
 
-So the current owner of the lock is cpu 1. The other CPU's agree:
+  79,590,480,683 cycles         #  0.000 GHz
+ 166,123,716,524 instructions   #  2.09  insns per cycle
+                                #  0.11  stalled cycles per insn
+  79,352,134,463 cycles         #  0.000 GHz                     [11.11%]
+ 165,178,301,818 instructions   #  2.08  insns per cycle
+                                #  0.11  stalled cycles per insn [11.13%]
 
-> [28932.606666] BUG: spinlock lockup suspected on CPU#2, trinity-child2/6764
-> [28932.606669]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
-> [28932.617231] sending NMI to all CPUs:
-> [28932.635092] BUG: spinlock lockup suspected on CPU#3, trinity-child3/6975
-> [28932.635095]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
+As you can see although perf does a very good job of scaling the values
+in the non-pinned case, there is some small discrepancy.
 
-.. and their backtrace all points to them trying to take that
-spinlock. So that is all consistent.
+The patch is fairly straight forward, the one detail is that we need to
+make sure we only request pinning for the group leader when we have a
+group.
 
-And here's cpu1, edited down a bit:
+Signed-off-by: Michael Ellerman <michael@ellerman.id.au>
+---
 
-> [28932.777623] NMI backtrace for cpu 1
-> [28932.777625] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 91.230 msecs
+I would have used "p" obviously, but that's taken. Are folks happy that
+"P" is sufficiently different from "p"? I couldn't think of anything
+better.
+---
+ tools/perf/Documentation/perf-list.txt | 1 +
+ tools/perf/util/parse-events.c         | 9 +++++++++
+ tools/perf/util/parse-events.l         | 2 +-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
 
-Whee. 91 msec? We have something going on there too. irq entry locks?
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 826f3d6..7ecf655 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -29,6 +29,7 @@ counted. The following modifiers exist:
+  G - guest counting (in KVM guests)
+  H - host counting (not in KVM guests)
+  p - precise level
++ P - pin the event to the PMU
+ 
+ The 'p' modifier can be used for specifying how precise the instruction
+ address should be. The 'p' modifier can be specified multiple times:
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 2c460ed..962093a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -687,6 +687,7 @@ struct event_modifier {
+ 	int eG;
+ 	int precise;
+ 	int exclude_GH;
++	int pinned;
+ };
+ 
+ static int get_event_modifier(struct event_modifier *mod, char *str,
+@@ -698,6 +699,7 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 	int eH = evsel ? evsel->attr.exclude_host : 0;
+ 	int eG = evsel ? evsel->attr.exclude_guest : 0;
+ 	int precise = evsel ? evsel->attr.precise_ip : 0;
++	int pinned = evsel ? evsel->attr.pinned : 0;
+ 
+ 	int exclude = eu | ek | eh;
+ 	int exclude_GH = evsel ? evsel->exclude_GH : 0;
+@@ -730,6 +732,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 			/* use of precise requires exclude_guest */
+ 			if (!exclude_GH)
+ 				eG = 1;
++		} else if (*str == 'P') {
++			pinned = 1;
+ 		} else
+ 			break;
+ 
+@@ -756,6 +760,8 @@ static int get_event_modifier(struct event_modifier *mod, char *str,
+ 	mod->eG = eG;
+ 	mod->precise = precise;
+ 	mod->exclude_GH = exclude_GH;
++	mod->pinned = pinned;
++
+ 	return 0;
+ }
+ 
+@@ -806,6 +812,9 @@ int parse_events__modifier_event(struct list_head *list, char *str, bool add)
+ 		evsel->attr.exclude_host   = mod.eH;
+ 		evsel->attr.exclude_guest  = mod.eG;
+ 		evsel->exclude_GH          = mod.exclude_GH;
++
++		if (evsel->leader == evsel)
++			evsel->attr.pinned = mod.pinned;
+ 	}
+ 
+ 	return 0;
+diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+index e9d1134..587dac0 100644
+--- a/tools/perf/util/parse-events.l
++++ b/tools/perf/util/parse-events.l
+@@ -82,7 +82,7 @@ num_hex		0x[a-fA-F0-9]+
+ num_raw_hex	[a-fA-F0-9]+
+ name		[a-zA-Z_*?][a-zA-Z0-9_*?]*
+ name_minus	[a-zA-Z_*?][a-zA-Z0-9\-_*?]*
+-modifier_event	[ukhpGH]+
++modifier_event	[ukhpGHP]+
+ modifier_bp	[rwx]{1,3}
+ 
+ %%
+-- 
+1.8.1.2
 
-> [28932.779440] CPU: 1 PID: 6763 Comm: trinity-child1 Not tainted 3.11.0-rc2+ #54
-> [28932.782283] RIP: 0010:[<ffffffff81710385>]  [<ffffffff81710385>] add_preempt_count+0x25/0xf0
-> [28932.797761] Call Trace:
-> [28932.798737]  <IRQ>
-> [28932.799715]  [<ffffffff81320851>] delay_tsc+0x61/0xe0
-> [28932.800693]  [<ffffffff81320789>] __const_udelay+0x29/0x30
-> [28932.801674]  [<ffffffff810816d4>] __rcu_read_unlock+0x54/0xa0
-> [28932.802657]  [<ffffffff810af531>] cpuacct_account_field+0xf1/0x200
-> [28932.804613]  [<ffffffff8109e430>] account_system_time+0xb0/0x1b0
-> [28932.805561]  [<ffffffff8109e565>] __vtime_account_system+0x35/0x40
-> [28932.806506]  [<ffffffff8109e59d>] vtime_account_system.part.2+0x2d/0x50
-> [28932.807445]  [<ffffffff8109e8e5>] vtime_account_irq_enter+0x55/0x80
-> [28932.808365]  [<ffffffff8105f42f>] irq_enter+0x4f/0x90
-> [28932.809269]  [<ffffffff81716a15>] smp_apic_timer_interrupt+0x35/0x60
-> [28932.810156]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
-> [28932.812756]  [<ffffffff8105f53d>] irq_exit+0xcd/0xe0
-> [28932.813618]  [<ffffffff81716a25>] smp_apic_timer_interrupt+0x45/0x60
-> [28932.814483]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
-> [28932.815345]  <EOI>
-> [28932.816207]  [<ffffffff8170c6a0>] ? retint_restore_args+0xe/0xe
-> [28932.817069]  [<ffffffff810c1275>] ? lock_acquired+0x105/0x3f0
-> [28932.817924]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
-> [28932.818767]  [<ffffffff8170b62c>] _raw_spin_lock+0x6c/0x80
-> [28932.819616]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
-> [28932.820468]  [<ffffffff811ec8e2>] sync_inodes_sb+0x1c2/0x2a0
-> [28932.821310]  [<ffffffff81708c1f>] ? wait_for_completion+0xdf/0x110
-> [28932.823819]  [<ffffffff811f2a49>] sync_inodes_one_sb+0x19/0x20
-> [28932.824649]  [<ffffffff811c2b12>] iterate_supers+0xb2/0x110
-> [28932.825477]  [<ffffffff811f2cb5>] sys_sync+0x35/0x90
-> [28932.826300]  [<ffffffff81714c54>] tracesys+0xdd/0xe2
-> [28932.827119]  [<ffffffffa0000000>] ? 0xffffffff9fffffff
-
-.. and again, it actually looks like the time is not necessarily spent
-inside the spinlock in sync_inodes_sb(), but in a timer interrupt that
-just happened to go off during that. I wonder if this is the same
-issue that caused that earlier hrtimer long delay.. I'm not
-necessarily seeing 91 msecs worth, but..
-
-You seem to have CONFIG_PROVE_RCU_DELAY enabled, which explains that
-delay_tsc() call in there. I wonder how much things like that make it
-worse. Together with the (crazy bad) back-off in __spin_lock_debug(),
-there might be a *lot* of these delays.
-
-That said, the fact that your machine is dead after all this implies
-that there is something else wrong than just things being very slow.
-But I suspect at least *part* of your problems may be due to these
-kinds of debugging options that make things much much worse.
-
-              Linus
