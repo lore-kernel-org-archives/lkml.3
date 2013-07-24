@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753564Ab3GXQDw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:03:52 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:58369 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab3GXQDu (ORCPT
+	id S1753227Ab3GXQFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:05:46 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:34200 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752155Ab3GXQFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:03:50 -0400
-Date: Wed, 24 Jul 2013 12:03:42 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 11/21] x86: get pg_data_t's memory from other node
-Message-ID: <20130724160342.GC20377@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-12-git-send-email-tangchen@cn.fujitsu.com>
- <20130723200924.GP21100@mtj.dyndns.org>
- <51EF4F95.1050308@cn.fujitsu.com>
+	Wed, 24 Jul 2013 12:05:44 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: "Serge E. Hallyn" <serge@hallyn.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <877gghruwq.fsf@xmission.com>
+	<CALCETrXXGhVbkG6AnRck+W1kMns5TJuNYAqe_tV44JvWgDoUzA@mail.gmail.com>
+	<87li4wpi2b.fsf@xmission.com> <20130724124933.GA16517@mail.hallyn.com>
+	<20130724153018.GA17960@mail.hallyn.com>
+Date: Wed, 24 Jul 2013 09:05:36 -0700
+In-Reply-To: <20130724153018.GA17960@mail.hallyn.com> (Serge E. Hallyn's
+	message of "Wed, 24 Jul 2013 15:30:18 +0000")
+Message-ID: <87ehaolz8v.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EF4F95.1050308@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18uacL4OhHKyYRq/MffUKB/Ja/Hz27UiY4=
+X-SA-Exim-Connect-IP: 98.207.154.105
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.7 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
+	*      [score: 0.0335]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;"Serge E. Hallyn" <serge@hallyn.com>
+X-Spam-Relay-Country: 
+Subject: Re: [REVIEW][PATCH] vfs: Lock in place mounts from more privileged users
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tang.
+"Serge E. Hallyn" <serge@hallyn.com> writes:
 
-On Wed, Jul 24, 2013 at 11:52:53AM +0800, Tang Chen wrote:
-> The node data should be on local, I agree with that. I'm not saying I
-> won't do it. Just for now, it will be complicated to fix memory hot-remove
-> path. So I think pushing this patch for now, and do the local node things
-> in the next step.
+> Quoting Serge E. Hallyn (serge@hallyn.com):
+>> Quoting Eric W. Biederman (ebiederm@xmission.com):
+>> > 
+>> > Serge does this patch break lxc?  I think all should be well but I want
+>> > to make certain there is not some hidden case where this fundamentaly
+>> > breaks some functionality.
+>> 
+>> I haven't yet tried.  I'll build and test a kernel today.  I'm pretty
+>> sure all the child's mounts are done after clone, so I *think* the worst
+>> case will be that the unmounting of put_old after pivot_root() will
+>> be noisy.  Will let you know.
+>> 
+>> -serge
+>
+> Just tested it - works fine.  Warns about all of the failed umounts.
 
-I see.  As long as it's clearly noted in the patch description and as
-comment && the behavior is off unless explicitly enabled, it should be
-fine for now, I think.  As currently implemented, the users of memory
-hotplug would have to pay pretty heavy price in terms of memory
-locality overhead in general and it could be that the ones missed here
-might not make noticeable difference anyway.
+Just to confirm.  Can you do a lazy umount of put_old and get rid of
+them?
 
-Thanks.
+> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+>
+> ( Mind you I'm not approving of the idea of hiding mounts as a security
+> mechanisms, but I know that neither are you :)
 
--- 
-tejun
+As a security mechanism, not really.  This is more about closing a
+theoretical hole in case someone was sloppy, and doing it before user
+namespaces are too widely deployed so we avoid massive user space
+breakage.  It let's me sleep more soundly at night if I know you can't
+more access more with user namespaces that you can without user
+namespaces.
+
+Eric
+
