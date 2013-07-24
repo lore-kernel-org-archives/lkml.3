@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752598Ab3GXOGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:06:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45849 "EHLO
+	id S1753781Ab3GXOWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:22:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45810 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752273Ab3GXOGg (ORCPT
+	by vger.kernel.org with ESMTP id S1752266Ab3GXOGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:36 -0400
+	Wed, 24 Jul 2013 10:06:43 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,13 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Paul Clements" <paul.clements@steeleye.com>,
-        "Rob Landley" <rob@landley.net>
+        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
+        "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.879707266@decadent.org.uk>
+Message-ID: <lsq.1374674565.448874626@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [70/85] nbd: correct disconnect behavior
+Subject: [54/85] UBIFS: fix a horrid bug
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,72 +32,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Clements <paul.clements@steeleye.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit c378f70adbc1bbecd9e6db145019f14b2f688c7c upstream.
+commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
 
-Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
-ioctl) the return from NBD_DO_IT is undefined (it is usually one of
-several error codes).  This means that nbd-client does not know if a
-manual disconnect was performed or whether a network error occurred.
-Because of this, nbd-client's persist mode (which tries to reconnect after
-error, but not after manual disconnect) does not always work correctly.
+Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
+mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
+in the middle of 'ubifs_readdir()'.
 
-This change fixes this by causing NBD_DO_IT to always return 0 if a user
-requests a disconnect.  This means that nbd-client can correctly either
-persist the connection (if an error occurred) or disconnect (if the user
-requested it).
+This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
+it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
+but this may corrupt memory and lead to all kinds of problems like crashes an
+security holes.
 
-Signed-off-by: Paul Clements <paul.clements@steeleye.com>
-Acked-by: Rob Landley <rob@landley.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust device pointer name]
+This patch fixes the problem by using the 'file->f_version' field, which
+'->llseek()' always unconditionally sets to zero. We set it to 1 in
+'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
+seek and it is time to clear the state saved in 'file->private_data'.
+
+I tested this patch by writing a user-space program which runds readdir and
+seek in parallell. I could easily crash the kernel without these patches, but
+could not crash it with these patches.
+
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/block/nbd.c | 7 ++++++-
- include/linux/nbd.h | 1 +
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ fs/ubifs/dir.c | 30 +++++++++++++++++++++++++++---
+ 1 file changed, 27 insertions(+), 3 deletions(-)
 
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -598,8 +598,10 @@ static int __nbd_ioctl(struct block_devi
- 		if (!lo->sock)
- 			return -EINVAL;
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -373,6 +373,24 @@ static int ubifs_readdir(struct file *fi
+ 		 */
+ 		return 0;
  
-+		lo->disconnect = 1;
++	if (file->f_version == 0) {
++		/*
++		 * The file was seek'ed, which means that @file->private_data
++		 * is now invalid. This may also be just the first
++		 * 'ubifs_readdir()' invocation, in which case
++		 * @file->private_data is NULL, and the below code is
++		 * basically a no-op.
++		 */
++		kfree(file->private_data);
++		file->private_data = NULL;
++	}
 +
- 		nbd_send_req(lo, &sreq);
--                return 0;
-+		return 0;
- 	}
-  
- 	case NBD_CLEAR_SOCK: {
-@@ -629,6 +631,7 @@ static int __nbd_ioctl(struct block_devi
- 				lo->sock = SOCKET_I(inode);
- 				if (max_part > 0)
- 					bdev->bd_invalidated = 1;
-+				lo->disconnect = 0; /* we're connected now */
- 				return 0;
- 			} else {
- 				fput(file);
-@@ -701,6 +704,8 @@ static int __nbd_ioctl(struct block_devi
- 		set_capacity(lo->disk, 0);
- 		if (max_part > 0)
- 			ioctl_by_bdev(bdev, BLKRRPART, 0);
-+		if (lo->disconnect) /* user requested, ignore socket errors */
++	/*
++	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
++	 * zero, and we use this for detecting whether the file was seek'ed.
++	 */
++	file->f_version = 1;
++
+ 	/* File positions 0 and 1 correspond to "." and ".." */
+ 	if (pos == 0) {
+ 		ubifs_assert(!file->private_data);
+@@ -446,6 +464,14 @@ static int ubifs_readdir(struct file *fi
+ 		file->f_pos = pos = key_hash_flash(c, &dent->key);
+ 		file->private_data = dent;
+ 		cond_resched();
++
++		if (file->f_version == 0)
++			/*
++			 * The file was seek'ed meanwhile, lets return and start
++			 * reading direntries from the new position on the next
++			 * invocation.
++			 */
 +			return 0;
- 		return lo->harderror;
  	}
  
---- a/include/linux/nbd.h
-+++ b/include/linux/nbd.h
-@@ -68,6 +68,7 @@ struct nbd_device {
- 	u64 bytesize;
- 	pid_t pid; /* pid of nbd-client, if attached */
- 	int xmit_timeout;
-+	int disconnect; /* a disconnect has been requested by user */
- };
+ out:
+@@ -456,15 +482,13 @@ out:
  
- #endif
+ 	kfree(file->private_data);
+ 	file->private_data = NULL;
++	/* 2 is a special value indicating that there are no more direntries */
+ 	file->f_pos = 2;
+ 	return 0;
+ }
+ 
+-/* If a directory is seeked, we have to free saved readdir() state */
+ static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
+ {
+-	kfree(file->private_data);
+-	file->private_data = NULL;
+ 	return generic_file_llseek(file, offset, origin);
+ }
+ 
 
