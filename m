@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab3GXOOM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:14:12 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45842 "EHLO
+	id S1753410Ab3GXOPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:15:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45778 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752389Ab3GXOGw (ORCPT
+	by vger.kernel.org with ESMTP id S1752371Ab3GXOGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:52 -0400
+	Wed, 24 Jul 2013 10:06:49 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -15,12 +15,11 @@ From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
         "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Mikulas Patocka" <mpatocka@artax.karlin.mff.cuni.cz>,
-        "Mikulas Patocka" <mikulas@artax.karlin.mff.cuni.cz>
+        "Greg KH" <gregkh@linuxfoundation.org>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.458422748@decadent.org.uk>
+Message-ID: <lsq.1374674565.257952240@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [71/85] hpfs: better test for errors
+Subject: [84/85] MAINTAINERS: Greg's suse email address is dead
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,52 +32,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Greg KH <gregkh@linuxfoundation.org>
 
-commit 3ebacb05044f82c5f0bb456a894eb9dc57d0ed90 upstream.
+commit 879a5a001b62a020e074d460b3a7c0fd993f9832 upstream.
 
-The test if bitmap access is out of bound could errorneously pass if the
-device size is divisible by 16384 sectors and we are asking for one bitmap
-after the end.
+My email address has changed, the suse.de one is now dead, so update all
+of my MAINTAINER entries with the correct one so that patches don't get
+lost.
 
-Check for invalid size in the superblock. Invalid size could cause integer
-overflows in the rest of the code.
+Also change the status of some of my entries as I'm supposed to be doing
+this stuff now for real.
 
-Signed-off-by: Mikulas Patocka <mpatocka@artax.karlin.mff.cuni.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/hpfs/map.c   | 3 ++-
- fs/hpfs/super.c | 8 +++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+ MAINTAINERS | 29 ++++++++++++++---------------
+ 1 file changed, 14 insertions(+), 15 deletions(-)
 
---- a/fs/hpfs/map.c
-+++ b/fs/hpfs/map.c
-@@ -17,7 +17,8 @@ unsigned int *hpfs_map_bitmap(struct sup
- 			 struct quad_buffer_head *qbh, char *id)
- {
- 	secno sec;
--	if (hpfs_sb(s)->sb_chk) if (bmp_block * 16384 > hpfs_sb(s)->sb_fs_size) {
-+	unsigned n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
-+	if (hpfs_sb(s)->sb_chk) if (bmp_block >= n_bands) {
- 		hpfs_error(s, "hpfs_map_bitmap called with bad parameter: %08x at %s", bmp_block, id);
- 		return NULL;
- 	}
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -553,7 +553,13 @@ static int hpfs_fill_super(struct super_
- 	sbi->sb_cp_table = NULL;
- 	sbi->sb_c_bitmap = -1;
- 	sbi->sb_max_fwd_alloc = 0xffffff;
--	
-+
-+	if (sbi->sb_fs_size >= 0x80000000) {
-+		hpfs_error(s, "invalid size in superblock: %08x",
-+			(unsigned)sbi->sb_fs_size);
-+		goto bail4;
-+	}
-+
- 	/* Load bitmap directory */
- 	if (!(sbi->sb_bmp_dir = hpfs_load_bitmap_directory(s, le32_to_cpu(superblock->bitmaps))))
- 		goto bail4;
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -159,7 +159,7 @@ S:	Maintained
+ F:	drivers/net/ethernet/realtek/r8169.c
+ 
+ 8250/16?50 (AND CLONE UARTS) SERIAL DRIVER
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	linux-serial@vger.kernel.org
+ W:	http://serial.sourceforge.net
+ S:	Maintained
+@@ -1781,9 +1781,9 @@ X:	net/wireless/wext*
+ 
+ CHAR and MISC DRIVERS
+ M:	Arnd Bergmann <arnd@arndb.de>
+-M:	Greg Kroah-Hartman <greg@kroah.com>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git
+-S:	Maintained
++S:	Supported
+ F:	drivers/char/*
+ F:	drivers/misc/*
+ 
+@@ -2315,7 +2315,7 @@ F:	lib/lru_cache.c
+ F:	Documentation/blockdev/drbd/
+ 
+ DRIVER CORE, KOBJECTS, DEBUGFS AND SYSFS
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git
+ S:	Supported
+ F:	Documentation/kobject.txt
+@@ -6257,15 +6257,15 @@ S:	Maintained
+ F:	arch/alpha/kernel/srm_env.c
+ 
+ STABLE BRANCH
+-M:	Greg Kroah-Hartman <greg@kroah.com>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	stable@vger.kernel.org
+-S:	Maintained
++S:	Supported
+ 
+ STAGING SUBSYSTEM
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
+ L:	devel@driverdev.osuosl.org
+-S:	Maintained
++S:	Supported
+ F:	drivers/staging/
+ 
+ STAGING - AGERE HERMES II and II.5 WIRELESS DRIVERS
+@@ -6654,8 +6654,8 @@ S:	Maintained
+ K:	^Subject:.*(?i)trivial
+ 
+ TTY LAYER
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
+-S:	Maintained
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
++S:	Supported
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty-2.6.git
+ F:	drivers/tty/*
+ F:	drivers/tty/serial/serial_core.c
+@@ -6943,7 +6943,7 @@ S:	Maintained
+ F:	drivers/usb/serial/digi_acceleport.c
+ 
+ USB SERIAL DRIVER
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	linux-usb@vger.kernel.org
+ S:	Supported
+ F:	Documentation/usb/usb-serial.txt
+@@ -6958,9 +6958,8 @@ S:	Maintained
+ F:	drivers/usb/serial/empeg.c
+ 
+ USB SERIAL KEYSPAN DRIVER
+-M:	Greg Kroah-Hartman <greg@kroah.com>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	linux-usb@vger.kernel.org
+-W:	http://www.kroah.com/linux/
+ S:	Maintained
+ F:	drivers/usb/serial/*keyspan*
+ 
+@@ -6988,7 +6987,7 @@ F:	Documentation/video4linux/sn9c102.txt
+ F:	drivers/media/video/sn9c102/
+ 
+ USB SUBSYSTEM
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ L:	linux-usb@vger.kernel.org
+ W:	http://www.linux-usb.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6.git
+@@ -7075,7 +7074,7 @@ F:	fs/hppfs/
+ 
+ USERSPACE I/O (UIO)
+ M:	"Hans J. Koch" <hjk@hansjkoch.de>
+-M:	Greg Kroah-Hartman <gregkh@suse.de>
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+ S:	Maintained
+ F:	Documentation/DocBook/uio-howto.tmpl
+ F:	drivers/uio/
 
