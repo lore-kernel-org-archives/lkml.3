@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752611Ab3GXRU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:20:29 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:47333 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3GXRUZ (ORCPT
+	id S1752666Ab3GXRUg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:20:36 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:43027 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab3GXRU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:20:25 -0400
+	Wed, 24 Jul 2013 13:20:29 -0400
 From: Peng Tao <bergwolf@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, "John L. Hammond" <john.hammond@intel.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Sebastien Buisson <sebastien.buisson@bull.net>,
         Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-RESEND 2/8] staging/lustre/llite: handle io init failure in ll_fault_io_init()
-Date: Thu, 25 Jul 2013 01:17:25 +0800
-Message-Id: <1374686251-3152-3-git-send-email-bergwolf@gmail.com>
+Subject: [PATCH-RESEND 3/8] staging/lustre: fix 'data race condition' issues in at_reset()
+Date: Thu, 25 Jul 2013 01:17:26 +0800
+Message-Id: <1374686251-3152-4-git-send-email-bergwolf@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374686251-3152-1-git-send-email-bergwolf@gmail.com>
 References: <1374686251-3152-1-git-send-email-bergwolf@gmail.com>
@@ -21,103 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John L. Hammond <john.hammond@intel.com>
+From: Sebastien Buisson <sebastien.buisson@bull.net>
 
-In ll_fault_io_init(), if cl_io_init() has failed then cleanup and
-return an ERR_PTR(). This fixes an oops in the page fault handling
-code when a partially initialized io is used. In ll_page_mkwrite0() do
-not call cl_io_fini() on an ERR_PTR().
+Fix 'data race condition' defects found by Coverity version
+6.5.0:
+Data race condition (MISSING_LOCK)
+Accessing variable without holding lock. Elsewhere,
+this variable is accessed with lock held.
 
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-3487
-Lustre-change: http://review.whamcloud.com/6735
-Signed-off-by: John L. Hammond <john.hammond@intel.com>
-Reviewed-by: Lai Siyao <lai.siyao@intel.com>
-Reviewed-by: Jinshan Xiong <jinshan.xiong@intel.com>
+at_reset() needs to take at->at_lock before modifying its members.
+
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2744
+Lustre-change: http://review.whamcloud.com/6569
+Signed-off-by: Sebastien Buisson <sebastien.buisson@bull.net>
+Reviewed-by: Bob Glossman <bob.glossman@intel.com>
+Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
 Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <tao.peng@emc.com>
 Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/llite/llite_mmap.c |   36 +++++++++++++---------
- 1 files changed, 21 insertions(+), 15 deletions(-)
+ .../staging/lustre/lustre/include/lustre_import.h  |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/llite_mmap.c b/drivers/staging/lustre/lustre/llite/llite_mmap.c
-index d9590d8..8aa1dae 100644
---- a/drivers/staging/lustre/lustre/llite/llite_mmap.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_mmap.c
-@@ -107,11 +107,12 @@ struct cl_io *ll_fault_io_init(struct vm_area_struct *vma,
- 			       struct cl_env_nest *nest,
- 			       pgoff_t index, unsigned long *ra_flags)
- {
--	struct file       *file  = vma->vm_file;
--	struct inode      *inode = file->f_dentry->d_inode;
--	struct cl_io      *io;
--	struct cl_fault_io *fio;
--	struct lu_env     *env;
-+	struct file	       *file = vma->vm_file;
-+	struct inode	       *inode = file->f_dentry->d_inode;
-+	struct cl_io	       *io;
-+	struct cl_fault_io     *fio;
-+	struct lu_env	       *env;
-+	int			rc;
- 	ENTRY;
- 
- 	*env_ret = NULL;
-@@ -152,17 +153,22 @@ struct cl_io *ll_fault_io_init(struct vm_area_struct *vma,
- 	CDEBUG(D_MMAP, "vm_flags: %lx (%lu %d)\n", vma->vm_flags,
- 	       fio->ft_index, fio->ft_executable);
- 
--	if (cl_io_init(env, io, CIT_FAULT, io->ci_obj) == 0) {
-+	rc = cl_io_init(env, io, CIT_FAULT, io->ci_obj);
-+	if (rc == 0) {
- 		struct ccc_io *cio = ccc_env_io(env);
- 		struct ll_file_data *fd = LUSTRE_FPRIVATE(file);
- 
- 		LASSERT(cio->cui_cl.cis_io == io);
- 
--		/* mmap lock must be MANDATORY
--		 * it has to cache pages. */
-+		/* mmap lock must be MANDATORY it has to cache
-+		 * pages. */
- 		io->ci_lockreq = CILR_MANDATORY;
--
--		cio->cui_fd  = fd;
-+		cio->cui_fd = fd;
-+	} else {
-+		LASSERT(rc < 0);
-+		cl_io_fini(env, io);
-+		cl_env_nested_put(nest, env);
-+		io = ERR_PTR(rc);
- 	}
- 
- 	return io;
-@@ -190,7 +196,7 @@ static int ll_page_mkwrite0(struct vm_area_struct *vma, struct page *vmpage,
- 
- 	result = io->ci_result;
- 	if (result < 0)
--		GOTO(out, result);
-+		GOTO(out_io, result);
- 
- 	io->u.ci_fault.ft_mkwrite = 1;
- 	io->u.ci_fault.ft_writable = 1;
-@@ -252,14 +258,14 @@ static int ll_page_mkwrite0(struct vm_area_struct *vma, struct page *vmpage,
- 	}
- 	EXIT;
- 
--out:
-+out_io:
- 	cl_io_fini(env, io);
- 	cl_env_nested_put(&nest, env);
--
-+out:
- 	CDEBUG(D_MMAP, "%s mkwrite with %d\n", current->comm, result);
--
- 	LASSERT(ergo(result == 0, PageLocked(vmpage)));
--	return(result);
-+
-+	return result;
+diff --git a/drivers/staging/lustre/lustre/include/lustre_import.h b/drivers/staging/lustre/lustre/include/lustre_import.h
+index 3a5dd6a..67259eb 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_import.h
++++ b/drivers/staging/lustre/lustre/include/lustre_import.h
+@@ -336,9 +336,11 @@ static inline unsigned int at_timeout2est(unsigned int val)
  }
  
- 
+ static inline void at_reset(struct adaptive_timeout *at, int val) {
++	spin_lock(&at->at_lock);
+ 	at->at_current = val;
+ 	at->at_worst_ever = val;
+ 	at->at_worst_time = cfs_time_current_sec();
++	spin_unlock(&at->at_lock);
+ }
+ static inline void at_init(struct adaptive_timeout *at, int val, int flags) {
+ 	memset(at, 0, sizeof(*at));
 -- 
 1.7.1
 
