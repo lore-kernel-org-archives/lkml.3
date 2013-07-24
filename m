@@ -1,38 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab3GXUeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:34:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54477 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163Ab3GXUeH (ORCPT
+	id S1752793Ab3GXUgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:36:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:51516 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab3GXUgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:34:07 -0400
-Date: Wed, 24 Jul 2013 13:34:06 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Won Kang <wkang77@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        wonkang@gctsemi.com
-Subject: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
-Message-ID: <20130724203406.GA16300@kroah.com>
-References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
- <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 16:36:14 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2] ARM: Fix deadlock scenario with smp_send_stop()
+Date: Wed, 24 Jul 2013 13:36:10 -0700
+Message-Id: <1374698170-26605-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.4.840.g6a90778
+In-Reply-To: <20130724202148.GA24642@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 03:36:17AM +0900, Won Kang wrote:
-> GCT Semiconductor GDM7240 is 4G LTE chip.
-> This driver supports GCT reference platform as a USB device.
+If one process calls sys_reboot and that process then stops other
+CPUs while those CPUs are within a spin_lock() region we can
+potentially encounter a deadlock scenario like below.
 
-I've applied this now, and fixed up the tty build warnings (which you
-should have also seen.)  I'm not sure I got the tty fixes correct, can
-you test the changes that I made to ensure it still works properly now?
+CPU 0                   CPU 1
+-----                   -----
+                        spin_lock(my_lock)
+smp_send_stop()
+ <send IPI>             handle_IPI()
+                         disable_preemption/irqs
+                          while(1);
+ <PREEMPT>
+spin_lock(my_lock) <--- Waits forever
 
-thanks,
+We shouldn't attempt to run any other tasks after we send a stop
+IPI to a CPU so disable preemption so that this task runs to
+completion. We use local_irq_disable() here for cross-arch
+consistency with x86.
 
-greg k-h
+Reported-by: Sundarajan Srinivasan <sundaraj@codeaurora.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+
+Changes since v1:
+ - Use local_irq_disable() instead of preempt_disable()
+
+ arch/arm/kernel/process.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
+index d3ca4f6..08b47eb 100644
+--- a/arch/arm/kernel/process.c
++++ b/arch/arm/kernel/process.c
+@@ -197,6 +197,7 @@ void machine_shutdown(void)
+  */
+ void machine_halt(void)
+ {
++	local_irq_disable();
+ 	smp_send_stop();
+ 
+ 	local_irq_disable();
+@@ -211,6 +212,7 @@ void machine_halt(void)
+  */
+ void machine_power_off(void)
+ {
++	local_irq_disable();
+ 	smp_send_stop();
+ 
+ 	if (pm_power_off)
+@@ -230,6 +232,7 @@ void machine_power_off(void)
+  */
+ void machine_restart(char *cmd)
+ {
++	local_irq_disable();
+ 	smp_send_stop();
+ 
+ 	arm_pm_restart(reboot_mode, cmd);
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
