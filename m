@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab3GXD4d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:56:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38391 "EHLO
+	id S1751958Ab3GXD5k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:57:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38434 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab3GXD42 (ORCPT
+	with ESMTP id S1751763Ab3GXD5h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:56:28 -0400
-Date: Tue, 23 Jul 2013 20:55:54 -0700
+	Tue, 23 Jul 2013 23:57:37 -0400
+Date: Tue, 23 Jul 2013 20:56:56 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org>
+Message-ID: <tip-7d9ffa8961482232d964173cccba6e14d2d543b2@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, adrian.hunter@intel.com, tglx@linutronix.de
+        davidlohr.bueso@hp.com, efault@gmx.de, peterz@infradead.org,
+        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, adrian.hunter@intel.com, tglx@linutronix.de
-In-Reply-To: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
-References: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
+        davidlohr.bueso@hp.com, peterz@infradead.org, efault@gmx.de,
+        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
+In-Reply-To: <51D5008E.6030102@linux.vnet.ibm.com>
+References: <51D5008E.6030102@linux.vnet.ibm.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Update perf_event_type documentation
-Git-Commit-ID: a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+Subject: [tip:perf/core] sched: Micro-optimize the smart wake-affine logic
+Git-Commit-ID: 7d9ffa8961482232d964173cccba6e14d2d543b2
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,165 +29,92 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 20:56:01 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 20:57:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a5cdd40c9877e9aba704c020fd65d26b5cfecf18
-Gitweb:     http://git.kernel.org/tip/a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+Commit-ID:  7d9ffa8961482232d964173cccba6e14d2d543b2
+Gitweb:     http://git.kernel.org/tip/7d9ffa8961482232d964173cccba6e14d2d543b2
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Tue, 16 Jul 2013 17:09:07 +0200
+AuthorDate: Thu, 4 Jul 2013 12:56:46 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 23 Jul 2013 12:17:08 +0200
+CommitDate: Tue, 23 Jul 2013 12:22:06 +0200
 
-perf: Update perf_event_type documentation
+sched: Micro-optimize the smart wake-affine logic
 
-Due to a discussion with Adrian I had a good look at the perf_event_type record
-layout and found the documentation to be somewhat unclear.
+Smart wake-affine is using node-size as the factor currently, but the overhead
+of the mask operation is high.
 
-Cc: Adrian Hunter <adrian.hunter@intel.com>
+Thus, this patch introduce the 'sd_llc_size' percpu variable, which will record
+the highest cache-share domain size, and make it to be the new factor, in order
+to reduce the overhead and make it more reasonable.
+
+Tested-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Tested-by: Michael Wang <wangyun@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20130716150907.GL23818@dyad.programming.kicks-ass.net
+Acked-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Link: http://lkml.kernel.org/r/51D5008E.6030102@linux.vnet.ibm.com
+[ Tidied up the changelog. ]
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- include/uapi/linux/perf_event.h | 18 +++++++++++++++++-
- kernel/events/core.c            | 31 ++++++++++++++++---------------
- 2 files changed, 33 insertions(+), 16 deletions(-)
+ kernel/sched/core.c  | 7 ++++++-
+ kernel/sched/fair.c  | 2 +-
+ kernel/sched/sched.h | 1 +
+ 3 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 0b1df41..00d8274 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -478,6 +478,16 @@ enum perf_event_type {
- 	 * file will be supported by older perf tools, with these new optional
- 	 * fields being ignored.
- 	 *
-+	 * struct sample_id {
-+	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
-+	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
-+	 * 	{ u64			id;       } && PERF_SAMPLE_ID
-+	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
-+	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-+	 * } && perf_event_attr::sample_id_all
-+	 */
-+
-+	/*
- 	 * The MMAP events record the PROT_EXEC mappings so that we can
- 	 * correlate userspace IPs to code. They have the following structure:
- 	 *
-@@ -498,6 +508,7 @@ enum perf_event_type {
- 	 *	struct perf_event_header	header;
- 	 *	u64				id;
- 	 *	u64				lost;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_LOST			= 2,
-@@ -508,6 +519,7 @@ enum perf_event_type {
- 	 *
- 	 *	u32				pid, tid;
- 	 *	char				comm[];
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_COMM			= 3,
-@@ -518,6 +530,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_EXIT			= 4,
-@@ -528,6 +541,7 @@ enum perf_event_type {
- 	 *	u64				time;
- 	 *	u64				id;
- 	 *	u64				stream_id;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_THROTTLE			= 5,
-@@ -539,6 +553,7 @@ enum perf_event_type {
- 	 *	u32				pid, ppid;
- 	 *	u32				tid, ptid;
- 	 *	u64				time;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_FORK			= 7,
-@@ -549,6 +564,7 @@ enum perf_event_type {
- 	 *	u32				pid, tid;
- 	 *
- 	 *	struct read_format		values;
-+	 * 	struct sample_id		sample_id;
- 	 * };
- 	 */
- 	PERF_RECORD_READ			= 8,
-@@ -596,7 +612,7 @@ enum perf_event_type {
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
--	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
-+	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
- 	 * };
- 	 */
- 	PERF_RECORD_SAMPLE			= 9,
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 5e2bce9..1274114 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index b7c32cb..6df0fbe 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -5083,18 +5083,23 @@ static void destroy_sched_domains(struct sched_domain *sd, int cpu)
+  * two cpus are in the same cache domain, see cpus_share_cache().
+  */
+ DEFINE_PER_CPU(struct sched_domain *, sd_llc);
++DEFINE_PER_CPU(int, sd_llc_size);
+ DEFINE_PER_CPU(int, sd_llc_id);
  
--	if (!event->attr.watermark) {
--		int wakeup_events = event->attr.wakeup_events;
--
--		if (wakeup_events) {
--			struct ring_buffer *rb = handle->rb;
--			int events = local_inc_return(&rb->events);
--
--			if (events >= wakeup_events) {
--				local_sub(wakeup_events, &rb->events);
--				local_inc(&rb->wakeup);
--			}
--		}
--	}
--
- 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
- 		if (data->br_stack) {
- 			size_t size;
-@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
- 		}
- 	}
+ static void update_top_cache_domain(int cpu)
+ {
+ 	struct sched_domain *sd;
+ 	int id = cpu;
++	int size = 1;
  
--	if (sample_type & PERF_SAMPLE_STACK_USER)
-+	if (sample_type & PERF_SAMPLE_STACK_USER) {
- 		perf_output_sample_ustack(handle,
- 					  data->stack_user_size,
- 					  data->regs_user.regs);
+ 	sd = highest_flag_domain(cpu, SD_SHARE_PKG_RESOURCES);
+-	if (sd)
++	if (sd) {
+ 		id = cpumask_first(sched_domain_span(sd));
++		size = cpumask_weight(sched_domain_span(sd));
 +	}
  
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
- 
- 	if (sample_type & PERF_SAMPLE_DATA_SRC)
- 		perf_output_put(handle, data->data_src.val);
-+
-+	if (!event->attr.watermark) {
-+		int wakeup_events = event->attr.wakeup_events;
-+
-+		if (wakeup_events) {
-+			struct ring_buffer *rb = handle->rb;
-+			int events = local_inc_return(&rb->events);
-+
-+			if (events >= wakeup_events) {
-+				local_sub(wakeup_events, &rb->events);
-+				local_inc(&rb->wakeup);
-+			}
-+		}
-+	}
+ 	rcu_assign_pointer(per_cpu(sd_llc, cpu), sd);
++	per_cpu(sd_llc_size, cpu) = size;
+ 	per_cpu(sd_llc_id, cpu) = id;
  }
  
- void perf_prepare_sample(struct perf_event_header *header,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 860063a..f237437 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3175,7 +3175,7 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ static int wake_wide(struct task_struct *p)
+ {
+-	int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
++	int factor = this_cpu_read(sd_llc_size);
+ 
+ 	/*
+ 	 * Yeah, it's the switching-frequency, could means many wakee or
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 5e129ef..4c1cb80 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -594,6 +594,7 @@ static inline struct sched_domain *highest_flag_domain(int cpu, int flag)
+ }
+ 
+ DECLARE_PER_CPU(struct sched_domain *, sd_llc);
++DECLARE_PER_CPU(int, sd_llc_size);
+ DECLARE_PER_CPU(int, sd_llc_id);
+ 
+ struct sched_group_power {
