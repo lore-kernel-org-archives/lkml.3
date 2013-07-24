@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752117Ab3GXIew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:34:52 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44648 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab3GXIes (ORCPT
+	id S1752051Ab3GXIft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:35:49 -0400
+Received: from hop-nat-141.emc.com ([168.159.213.141]:31802 "EHLO
+	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750855Ab3GXIfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:34:48 -0400
-Message-ID: <51EF919F.2000706@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 16:34:39 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Rakib Mullick <rakib.mullick@gmail.com>
-CC: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
- building sched domain.
-References: <1374601332.9192.0.camel@localhost.localdomain> <51EF4969.4050807@linux.vnet.ibm.com> <CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com>
-In-Reply-To: <CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072408-5140-0000-0000-00000391C788
+	Wed, 24 Jul 2013 04:35:46 -0400
+From: mail-agent-noreply@emc.com
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peng Tao <bergwolf@gmail.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 0/8] staging/lustre: Intel tree sync and two fixups
+Date: Wed, 24 Jul 2013 16:31:24 +0800
+Message-Id: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
+X-Mailer: git-send-email 1.7.1
+X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 04:01 PM, Rakib Mullick wrote:
-> On Wed, Jul 24, 2013 at 9:26 AM, Michael Wang
-> <wangyun@linux.vnet.ibm.com> wrote:
->> Hi, Rakib
->>
->> On 07/24/2013 01:42 AM, Rakib Mullick wrote:
->>> Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
->>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
->>> domain and update only at the times of building schedule domains.
->>>
->>>       partition_sched_domains()
->>>               detach_destroy_domain()
->>>                       cpu_attach_domain()
->>>                               update_top_cache_domain()
->>
->> IMHO, cpu_attach_domain() and update_top_cache_domain() should be
->> paired, below patch will open a window which 'rq->sd == NULL' while
->> 'sd_llc != NULL', isn't it?
->>
->> I don't think we have the promise that before we rebuild the stuff
->> correctly, no one will utilize 'sd_llc'...
->>
-> I never said it. My point is different.  partition_sched_domain works as -
-> 
-> 	- destroying existing schedule domain (if previous domain and new
-> domain aren't same)
-> 	- building new partition
-> 
-> while doing the first it needs to detach all the cpus on that domain.
-> By detaching what it does,
-> it fall backs to it's root default domain. In this context (which i've
-> proposed to skip), by means
-> of updating top cache domain it takes the highest flag domain to setup
-> it's sd_llc_id or cpu itself.
-> 
-> Whatever done above gets overwritten (updating top cache domain),
-> while building new partition.
-> Then, why we did that before? Hope you understand my point.
+From: Peng Tao <bergwolf@gmail.com>
 
-I think you missed this in PeterZ's suggestion:
+Hi Greg,
 
--               cpu_attach_domain(NULL, &def_root_domain, i);
+I've fixed up the rest of Intel tree ported patches and rebased them on top
+of your staging-next. Also I found that the Lustre errno translate code breaks
+build on non-x86 systems. I've added one patch to fix it. Please queue them if
+they are OK to you.
 
-With this change, it will be safe since you will still get an un-freed
-sd, although it's an old one.
+Thanks,
+Tao
 
-But your patch will run the risk to get a freed sd, since you make
-'sd_llc' wrong for a period of time (between destroy and rebuild) IMO.
+Cc: Andreas Dilger <andreas.dilger@intel.com>
 
-I guess I get you point, you are trying to save one time update since
-you think this will be done twice, but actually the result of this two
-time update was different, it's not redo and it's in order to sync
-'sd_llc' with 'rq->sd'.
+John L. Hammond (2):
+  staging/lustre/llite: handle io init failure in ll_fault_io_init()
+  staging/lustre/obdclass: use a dummy structure for lu_ref_link
 
-Regards,
-Michael Wang
+Liu Xuezhao (1):
+  staging/lustre/obdclass: add obd_target.h
 
+Peng Tao (2):
+  staging/lustre: fix Kconfig bool defaults
+  staging/lustre: fix build on non-x86
 
-> 
-> Thanks,
-> Rakib.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Sebastien Buisson (2):
+  staging/lustre: fix 'data race condition' issues in at_reset()
+  staging/lustre/llite: fix 'data race condition' issues of lli_flags
+
+Thomas Leibovici (1):
+  staging/lustre/lmv: support DNE with HSM.
+
+ drivers/staging/lustre/lustre/Kconfig              |    2 +-
+ drivers/staging/lustre/lustre/include/cl_object.h  |   10 +-
+ .../lustre/lustre/include/linux/lustre_fsfilt.h    |   10 -
+ .../staging/lustre/lustre/include/lprocfs_status.h |   36 --
+ drivers/staging/lustre/lustre/include/lu_object.h  |   18 +-
+ drivers/staging/lustre/lustre/include/lu_ref.h     |   14 +-
+ .../staging/lustre/lustre/include/lustre_import.h  |    2 +
+ drivers/staging/lustre/lustre/include/obd.h        |  140 +-----
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    4 +
+ drivers/staging/lustre/lustre/llite/llite_mmap.c   |   36 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |    5 +-
+ drivers/staging/lustre/lustre/lmv/lmv_obd.c        |  200 +++++++-
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    1 -
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   18 +-
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
+ drivers/staging/lustre/lustre/obdclass/cl_io.c     |   17 +-
+ drivers/staging/lustre/lustre/obdclass/cl_lock.c   |    6 +-
+ drivers/staging/lustre/lustre/obdclass/cl_page.c   |    5 +-
+ .../lustre/lustre/obdclass/lprocfs_jobstats.c      |  560 --------------------
+ drivers/staging/lustre/lustre/obdclass/lu_object.c |   15 +-
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c |    1 -
+ drivers/staging/lustre/lustre/osc/osc_cache.c      |    8 +-
+ drivers/staging/lustre/lustre/ptlrpc/Makefile      |    2 +-
+ drivers/staging/lustre/lustre/ptlrpc/errno.c       |    4 +-
+ 24 files changed, 301 insertions(+), 815 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/lprocfs_jobstats.c
 
