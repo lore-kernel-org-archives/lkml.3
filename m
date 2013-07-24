@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754746Ab3GXWOo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:14:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55374 "EHLO
+	id S1754797Ab3GXWOq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:14:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55369 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab3GXWGC (ORCPT
+	with ESMTP id S1753467Ab3GXWGB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:06:02 -0400
+	Wed, 24 Jul 2013 18:06:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 23/36] backing-dev: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:26 -0700
-Message-Id: <1374703539-9705-24-git-send-email-gregkh@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>
+Subject: [PATCH 22/36] staging: comedi: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:25 -0700
+Message-Id: <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -23,67 +23,134 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the backing device class code to
-use the correct field.
+should be used instead.  This converts the comedi class code to use the
+correct field.
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>
+Cc: Ian Abbott <abbotti@mev.co.uk>
+Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ drivers/staging/comedi/comedi_fops.c | 39 ++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 19 deletions(-)
 
-Andres, feel free to take this through your tree, or ACK it and I can
-take it through mine.
-
- mm/backing-dev.c | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index e04454cd..37d9edcd 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -180,7 +180,8 @@ static ssize_t name##_show(struct device *dev,				\
- 	struct backing_dev_info *bdi = dev_get_drvdata(dev);		\
- 									\
- 	return snprintf(page, PAGE_SIZE-1, "%lld\n", (long long)expr);	\
--}
-+}									\
-+static DEVICE_ATTR_RW(name);
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index 86475182..2f2ff8f0 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -262,7 +262,7 @@ static int resize_async_buffer(struct comedi_device *dev,
  
- BDI_SHOW(read_ahead_kb, K(bdi->ra_pages))
+ /* sysfs attribute files */
  
-@@ -231,14 +232,16 @@ static ssize_t stable_pages_required_show(struct device *dev,
- 	return snprintf(page, PAGE_SIZE-1, "%d\n",
- 			bdi_cap_stable_pages_required(bdi) ? 1 : 0);
+-static ssize_t show_max_read_buffer_kb(struct device *csdev,
++static ssize_t max_read_buffer_kb_show(struct device *csdev,
+ 				       struct device_attribute *attr, char *buf)
+ {
+ 	unsigned int minor = MINOR(csdev->devt);
+@@ -283,7 +283,7 @@ static ssize_t show_max_read_buffer_kb(struct device *csdev,
+ 	return snprintf(buf, PAGE_SIZE, "%i\n", size);
  }
-+static DEVICE_ATTR_RO(stable_pages_required);
  
--static struct device_attribute bdi_dev_attrs[] = {
--	__ATTR_RW(read_ahead_kb),
--	__ATTR_RW(min_ratio),
--	__ATTR_RW(max_ratio),
--	__ATTR_RO(stable_pages_required),
--	__ATTR_NULL,
-+static struct attribute *bdi_dev_attrs[] = {
-+	&dev_attr_read_ahead_kb.attr,
-+	&dev_attr_min_ratio.attr,
-+	&dev_attr_max_ratio.attr,
-+	&dev_attr_stable_pages_required.attr,
+-static ssize_t store_max_read_buffer_kb(struct device *csdev,
++static ssize_t max_read_buffer_kb_store(struct device *csdev,
+ 					struct device_attribute *attr,
+ 					const char *buf, size_t count)
+ {
+@@ -314,8 +314,9 @@ static ssize_t store_max_read_buffer_kb(struct device *csdev,
+ 
+ 	return err ? err : count;
+ }
++static DEVICE_ATTR_RW(max_read_buffer_kb);
+ 
+-static ssize_t show_read_buffer_kb(struct device *csdev,
++static ssize_t read_buffer_kb_show(struct device *csdev,
+ 				   struct device_attribute *attr, char *buf)
+ {
+ 	unsigned int minor = MINOR(csdev->devt);
+@@ -336,7 +337,7 @@ static ssize_t show_read_buffer_kb(struct device *csdev,
+ 	return snprintf(buf, PAGE_SIZE, "%i\n", size);
+ }
+ 
+-static ssize_t store_read_buffer_kb(struct device *csdev,
++static ssize_t read_buffer_kb_store(struct device *csdev,
+ 				    struct device_attribute *attr,
+ 				    const char *buf, size_t count)
+ {
+@@ -367,8 +368,9 @@ static ssize_t store_read_buffer_kb(struct device *csdev,
+ 
+ 	return err ? err : count;
+ }
++static DEVICE_ATTR_RW(read_buffer_kb);
+ 
+-static ssize_t show_max_write_buffer_kb(struct device *csdev,
++static ssize_t max_write_buffer_kb_show(struct device *csdev,
+ 					struct device_attribute *attr,
+ 					char *buf)
+ {
+@@ -390,7 +392,7 @@ static ssize_t show_max_write_buffer_kb(struct device *csdev,
+ 	return snprintf(buf, PAGE_SIZE, "%i\n", size);
+ }
+ 
+-static ssize_t store_max_write_buffer_kb(struct device *csdev,
++static ssize_t max_write_buffer_kb_store(struct device *csdev,
+ 					 struct device_attribute *attr,
+ 					 const char *buf, size_t count)
+ {
+@@ -421,8 +423,9 @@ static ssize_t store_max_write_buffer_kb(struct device *csdev,
+ 
+ 	return err ? err : count;
+ }
++static DEVICE_ATTR_RW(max_write_buffer_kb);
+ 
+-static ssize_t show_write_buffer_kb(struct device *csdev,
++static ssize_t write_buffer_kb_show(struct device *csdev,
+ 				    struct device_attribute *attr, char *buf)
+ {
+ 	unsigned int minor = MINOR(csdev->devt);
+@@ -443,7 +446,7 @@ static ssize_t show_write_buffer_kb(struct device *csdev,
+ 	return snprintf(buf, PAGE_SIZE, "%i\n", size);
+ }
+ 
+-static ssize_t store_write_buffer_kb(struct device *csdev,
++static ssize_t write_buffer_kb_store(struct device *csdev,
+ 				     struct device_attribute *attr,
+ 				     const char *buf, size_t count)
+ {
+@@ -474,18 +477,16 @@ static ssize_t store_write_buffer_kb(struct device *csdev,
+ 
+ 	return err ? err : count;
+ }
++static DEVICE_ATTR_RW(write_buffer_kb);
+ 
+-static struct device_attribute comedi_dev_attrs[] = {
+-	__ATTR(max_read_buffer_kb, S_IRUGO | S_IWUSR,
+-		show_max_read_buffer_kb, store_max_read_buffer_kb),
+-	__ATTR(read_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
+-		show_read_buffer_kb, store_read_buffer_kb),
+-	__ATTR(max_write_buffer_kb, S_IRUGO | S_IWUSR,
+-		show_max_write_buffer_kb, store_max_write_buffer_kb),
+-	__ATTR(write_buffer_kb, S_IRUGO | S_IWUSR | S_IWGRP,
+-		show_write_buffer_kb, store_write_buffer_kb),
+-	__ATTR_NULL
++static struct attribute *comedi_dev_attrs[] = {
++	&dev_attr_max_read_buffer_kb.attr,
++	&dev_attr_read_buffer_kb.attr,
++	&dev_attr_max_write_buffer_kb.attr,
++	&dev_attr_write_buffer_kb.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(bdi_dev);
++ATTRIBUTE_GROUPS(comedi_dev);
  
- static __init int bdi_class_init(void)
- {
-@@ -246,7 +249,7 @@ static __init int bdi_class_init(void)
- 	if (IS_ERR(bdi_class))
- 		return PTR_ERR(bdi_class);
+ static void comedi_set_subdevice_runflags(struct comedi_subdevice *s,
+ 					  unsigned mask, unsigned bits)
+@@ -2554,7 +2555,7 @@ static int __init comedi_init(void)
+ 		return PTR_ERR(comedi_class);
+ 	}
  
--	bdi_class->dev_attrs = bdi_dev_attrs;
-+	bdi_class->dev_groups = bdi_dev_groups;
- 	bdi_debug_init();
- 	return 0;
- }
+-	comedi_class->dev_attrs = comedi_dev_attrs;
++	comedi_class->dev_groups = comedi_dev_groups;
+ 
+ 	/* XXX requires /proc interface */
+ 	comedi_proc_init();
 -- 
 1.8.3.rc0.20.gb99dd2e
 
