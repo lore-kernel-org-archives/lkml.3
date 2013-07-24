@@ -1,129 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab3GXNqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:46:37 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:40337 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3GXNqf (ORCPT
+	id S1751602Ab3GXNuQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:50:16 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:37702 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3GXNuO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:46:35 -0400
-Date: Wed, 24 Jul 2013 09:46:22 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Cc: linux-pci@vger.kernel.org,
+	Wed, 24 Jul 2013 09:50:14 -0400
+Date: Wed, 24 Jul 2013 14:50:11 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>, bhelgaas@google.com,
-        Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-Message-ID: <20130724134622.GC2518@phenom.dumpdata.com>
-References: <51EF451A.8050003@oracle.com>
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+Message-ID: <20130724135011.GE12572@e103034-lin>
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
+ <20130713064909.GW25631@dyad.programming.kicks-ass.net>
+ <20130713102350.GA8067@MacBook-Pro.local>
+ <20130715203922.GD23818@dyad.programming.kicks-ass.net>
+ <20130716124248.GB10036@arm.com>
+ <51E5655C.7050304@linux.intel.com>
+ <20130717141426.GG27948@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EF451A.8050003@oracle.com>
+In-Reply-To: <20130717141426.GG27948@arm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-OriginalArrivalTime: 24 Jul 2013 13:50:11.0309 (UTC) FILETIME=[B74B91D0:01CE8874]
+X-MC-Unique: 113072414501202201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 11:08:10AM +0800, Zhenzhong Duan wrote:
-> xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
-> in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
+On Wed, Jul 17, 2013 at 03:14:26PM +0100, Catalin Marinas wrote:
+> On Tue, Jul 16, 2013 at 04:23:08PM +0100, Arjan van de Ven wrote:
+> > On 7/16/2013 5:42 AM, Catalin Marinas wrote:
+> > > Morten's power scheduler tries to address the above and it will grow
+> > > into controlling a new model of power driver (and taking into account
+> > > Arjan's and others' comments regarding the API). At the same time, we
+> > > need some form of task packing. The power scheduler can drive this
+> > > (currently via cpu_power) or can simply turn a knob if there are better
+> > > options that will be accepted in the scheduler.
+> > 
+> > how much would you be helped if there was a simple switch
+> > 
+> > sort left   versus    sort right
+> > 
+> > (assuming the big cores are all either low or high numbers)
 > 
-> Move restore of mask in default_restore_msi_irqs, this could avoid mask
-> restored twice in dom0, once in hypercall, the other in kernel.
-
-Why not remove the hypercall then? Or alter the function to detect
-whether the restore of the mask has occurred?
-
+> It helps a bit compared to the current behaviour but there is a lot of
+> room for improvement.
 > 
-> Without that, qlcnic driver calling pci_reset_function will lost interrupt
-> in dom0.
+> > the sorting is mostly statistical, but that's good enough in practice..
+> > each time a task wakes up, you get a bias towards either low or high
+> > numbered idle cpus
 > 
-> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> ---
->  drivers/pci/msi.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
+> If cores within a cluster (socket) are not power-gated individually
+> (implementation dependent), it makes more sense to spread the tasks
+> among the cores to either get a lower frequency or just get to idle
+> quicker. For little cores, even when they are individually power-gated,
+> they don't consume much so we would rather spread the tasks equally.
 > 
-> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> index 87223ae..922fb49 100644
-> --- a/drivers/pci/msi.c
-> +++ b/drivers/pci/msi.c
-> @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
->  #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
->  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->  {
-> +	int pos;
-> +	u16 control;
->  	struct msi_desc *entry;
->  
->  	entry = NULL;
-> @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->  		entry = irq_get_msi_desc(irq);
->  	}
->  
-> -	if (entry)
-> +	if (entry) {
->  		write_msi_msg(irq, &entry->msg);
-> +		if (dev->msix_enabled) {
-> +			msix_mask_irq(entry, entry->masked);
-> +			readl(entry->mask_base);
-> +		} else {
-> +			pos = entry->msi_attrib.pos;
-> +			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
-> +					     &control);
-> +			msi_mask_irq(entry, msi_capable_mask(control),
-> +				     entry->masked);
-> +		}
-> +	}
->  }
->  #endif
->  
-> @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
->  	arch_restore_msi_irqs(dev, dev->irq);
->  
->  	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
-> -	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-
-Before this patch we had:
-
-	write_msi_msg(..)
-	pci_read_config_work(PCI_MSI_FLAGS, &control)
-	pci_write_config_dword(~msi_capable_mask(control) | entry->masked)
-	control &= ~_PCI_MSI_FLAGS_QSIZE;
-	control |= ...
-	pci_write_config_dword(PCI_MSI_FLAGS, control)
-
-while with this you have now:
-
-	write_msi_msg(..)
-	pci_read_config_work(PCI_MSI_FLAGS, &_control)
-	pci_write_config_dword(~msi_capable_mask(_control) | entry->masked)
---> 	pci_read_config_work(PCI_MSI_FLAGS, &control)
-	control &= ~_PCI_MSI_FLAGS_QSIZE;
-	control |= ...
-	pci_write_config_dword(PCI_MSI_FLAGS, control)
-
-see the problem? The 'control' value in __pci_restore_msi_state reads the
-value _after_ it has been masked (which is now done in default_restore_msi_irqs).
-
-Wouldn't that cause problems?
-
-
->  	control &= ~PCI_MSI_FLAGS_QSIZE;
->  	control |= (entry->msi_attrib.multiple << 4) | PCI_MSI_FLAGS_ENABLE;
->  	pci_write_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, control);
-> @@ -430,7 +442,6 @@ static void __pci_restore_msix_state(struct pci_dev *dev)
->  
->  	list_for_each_entry(entry, &dev->msi_list, list) {
->  		arch_restore_msi_irqs(dev, entry->irq);
-> -		msix_mask_irq(entry, entry->masked);
->  	}
->  
->  	control &= ~PCI_MSIX_FLAGS_MASKALL;
-> -- 
-> 1.7.3
+> > very quickly all tasks will be on one side, unless your system is so
+> > loaded that all cpus are full.
 > 
+> It should be more like left socket vs both sockets with the possibility
+> of different balancing within a socket. But then we get back to the
+> sched_smt/sched_mc power aware scheduling that was removed from the
+> kernel.
+> 
+> It's also important when to make this decision to sort left vs right and
+> we want to avoid migrating threads unnecessarily. There could be small
+> threads (e.g. an mp3 decoding thread) that should stay on the little
+> core.
+
+Given that the power topology is taken into account, a sort
+left/right-like mechanism would only help performance insensitive tasks
+on big.LITTLE. Performance sensitive tasks that each can use more than
+a little cpu should move in the opposite direction. Well, directly to a
+big cpu, even if some little cpus are idle.
+
+It can be discussed whether smaller performance sensitive tasks that
+would fit on a little cpu should be put on a little or big cpu. That
+would depend on the nature of the task and if other tasks depend on it.
+
+
