@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3GXOSQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:18:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45788 "EHLO
+	id S1753567Ab3GXOSP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:18:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45860 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752188Ab3GXOGq (ORCPT
+	by vger.kernel.org with ESMTP id S1752289Ab3GXOGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:46 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Jens Axboe" <axboe@kernel.dk>, "Kees Cook" <keescook@chromium.org>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "Dirk Hohndel" <dirk@hohndel.org>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.798137674@decadent.org.uk>
+Message-ID: <lsq.1374674565.933584477@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [67/85] block: do not pass disk names as format strings
+Subject: [61/85] HID: Add support for the MacBook Pro 10,2 keyboard / touchpad
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,61 +31,117 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Dirk Hohndel <dirk@hohndel.org>
 
-commit ffc8b30866879ed9ba62bd0a86fecdbd51cd3d19 upstream.
+commit 8d80da90f53d37cf6caefc61353e1cc3a145b9e0 upstream.
 
-Disk names may contain arbitrary strings, so they must not be
-interpreted as format strings.  It seems that only md allows arbitrary
-strings to be used for disk names, but this could allow for a local
-memory corruption from uid 0 into ring 0.
+This enables the existing drivers for keyboard and touchpad with the new
+USB IDs found on the MBP 13" Reasonable Resolution (also known as the
+Retina Display).
 
-CVE-2013-2851
+Added entries to both keyboard and mouse ignore lists.
 
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust device pointer name in nbd.c]
+Signed-off-by: Dirk Hohndel <dirk@hohndel.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: format of limits in bcm5974 changed]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- block/genhd.c              | 2 +-
- drivers/block/nbd.c        | 3 ++-
- drivers/scsi/osd/osd_uld.c | 2 +-
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/hid/hid-apple.c       |  6 ++++++
+ drivers/hid/hid-core.c        |  6 ++++++
+ drivers/hid/hid-ids.h         |  3 +++
+ drivers/input/mouse/bcm5974.c | 21 +++++++++++++++++++++
+ 4 files changed, 36 insertions(+)
 
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -519,7 +519,7 @@ void register_disk(struct gendisk *disk)
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -523,6 +523,12 @@ static const struct hid_device_id apple_
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1383,6 +1383,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -1989,6 +1992,9 @@ static const struct hid_device_id hid_mo
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -119,6 +119,9 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
+ #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI	0x0249
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO	0x024a
+ #define USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS	0x024b
+--- a/drivers/input/mouse/bcm5974.c
++++ b/drivers/input/mouse/bcm5974.c
+@@ -83,6 +83,10 @@
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
+ #define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
++/* MacbookPro10,2 (unibody, October 2012) */
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
++#define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
  
- 	ddev->parent = disk->driverfs_dev;
- 
--	dev_set_name(ddev, disk->disk_name);
-+	dev_set_name(ddev, "%s", disk->disk_name);
- 
- 	/* delay uevents, until we scanned partition table */
- 	dev_set_uevent_suppress(ddev, 1);
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -675,7 +675,8 @@ static int __nbd_ioctl(struct block_devi
- 
- 		mutex_unlock(&lo->tx_lock);
- 
--		thread = kthread_create(nbd_thread, lo, lo->disk->disk_name);
-+		thread = kthread_create(nbd_thread, lo, "%s",
-+					lo->disk->disk_name);
- 		if (IS_ERR(thread)) {
- 			mutex_lock(&lo->tx_lock);
- 			return PTR_ERR(thread);
---- a/drivers/scsi/osd/osd_uld.c
-+++ b/drivers/scsi/osd/osd_uld.c
-@@ -465,7 +465,7 @@ static int osd_probe(struct device *dev)
- 	oud->class_dev.class = &osd_uld_class;
- 	oud->class_dev.parent = dev;
- 	oud->class_dev.release = __remove;
--	error = dev_set_name(&oud->class_dev, disk->disk_name);
-+	error = dev_set_name(&oud->class_dev, "%s", disk->disk_name);
- 	if (error) {
- 		OSD_ERR("dev_set_name failed => %d\n", error);
- 		goto err_put_cdev;
+ #define BCM5974_DEVICE(prod) {					\
+ 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
+@@ -136,6 +140,10 @@ static const struct usb_device_id bcm597
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
+ 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
++	/* MacbookPro10,2 */
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
++	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
+ 	/* Terminating entry */
+ 	{}
+ };
+@@ -369,6 +377,18 @@ static const struct bcm5974_config bcm59
+ 		HAS_INTEGRATED_BUTTON,
+ 		0x84, sizeof(struct bt_data),
+ 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
++		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
++		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
++		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
++		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
++	},
++	{
++		USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI,
++		USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO,
++		USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS,
++		HAS_INTEGRATED_BUTTON,
++		0x84, sizeof(struct bt_data),
++		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
+ 		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
+ 		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
+ 		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
 
