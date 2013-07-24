@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab3GXVFW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:05:22 -0400
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:61591 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753840Ab3GXVFP (ORCPT
+	id S1754301Ab3GXVFU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:05:20 -0400
+Received: from mail-ea0-f179.google.com ([209.85.215.179]:53576 "EHLO
+	mail-ea0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754122Ab3GXVFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:05:15 -0400
-Message-ID: <1374699912.29835.8.camel@x61.thuisdomein>
-Subject: Re: compile x86_64 waring
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Jianpeng Ma <majianpeng@gmail.com>, Tom Rini <trini@ti.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Cc: tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 24 Jul 2013 23:05:12 +0200
-In-Reply-To: <201307051956052638321@gmail.com>
-References: <201307051956052638321@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jul 2013 21:05:13.0404 (UTC) FILETIME=[7D5B2FC0:01CE88B1]
-X-RcptDomain: vger.kernel.org
+	Wed, 24 Jul 2013 17:05:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130724210200.GY5939@phenom.ffwll.local>
+References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl>
+	<17420057.BAULu67LQ3@vostro.rjw.lan>
+	<CA+55aFzDgAcrzkkq06Qe9CBbBv6xKMYwPqtwv+ACryRSTRDOSQ@mail.gmail.com>
+	<20130724210200.GY5939@phenom.ffwll.local>
+Date: Wed, 24 Jul 2013 14:05:15 -0700
+X-Google-Sender-Auth: _SQe0HDWsgVvUSVbb0yWKtr6i2s
+Message-ID: <CA+55aFxvLox_iwPAg=iJx4F9M_FpMPY3ettFtAJOUk78d4+0pw@mail.gmail.com>
+Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lu@intel.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        =?UTF-8?B?KiBTQU3DjSAq?= <miaousami@hotmail.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Igor Gnatenko <i.gnatenko.brain@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added Tom and Rusty because they might be able to say what's really
-going on here.]
+On Wed, Jul 24, 2013 at 2:02 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>
+> I think a i915 module option should be doable, otoh people seem to have a
+> viable workaround by setting a different acpi os version already.
 
-On Fri, 2013-07-05 at 19:56 +0800, majianpeng wrote:
-> Compile x86_64 meet those messages:
-> WARNING: arch/x86/mm/built-in.o(.text.unlikely+0xbf8): Section mismatch in reference from the function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed
-> The function __node_set.constprop.0() references
-> the variable __initdata numa_nodes_parsed.
-> This is often because __node_set.constprop.0 lacks a __initdata 
-> annotation or the annotation of numa_nodes_parsed is wrong.
-> 
-> WARNING: arch/x86/built-in.o(.text.unlikely+0x171d): Section mismatch in reference from the function __node_set.constprop.0() to the variable .init.data:numa_nodes_parsed
-> The function __node_set.constprop.0() references
-> the variable __initdata numa_nodes_parsed.
-> This is often because __node_set.constprop.0 lacks a __initdata 
-> annotation or the annotation of numa_nodes_parsed is wrong.
+At least the original claim was that if you set a non-windows8 acpi os
+version, you hit other bugs..
 
-0) I noticed these too, on v3.11-rc1 and v3.12.-rc2. I assume Jianpeng
-Ma reported these for a linux-next release that preceded v3.11-rc1.
+But yeah, if we just do a plain revert, that may be the only option
+for the people for whom the current (to-be-reverted) patches made
+things work.
 
-1) The only hits for node_set and numa_nodes_parsed in arch/x86/mm are
-in amdtopology.c, numa.c, and srat.c. If I peek at the object files
-generated for these three files I notice that numa.o and srat.o have
-node_set() in their .text.unlikely section. (amdtopology.o doesn't have
-a .text.unlikely section.) 
-
-2) I guess that since commit 06df44ee41442d83be061c5fd1b1de4f5fc6fbbf
-("modpost.c: Add .text.unlikely to TEXT_SECTIONS"), which was included
-in v3.11-rc1, code in .text.unlikely sections generates a mismatch
-warning if it references __initdata code (and numa_nodes_parsed is
-__initdata). But all calls of node_set() in these two files are from
-within functions that are marked __init. And I think references from
-__init code to __initdata code shouldn't lead to mismatch warnings,
-should they?
-
-3) So this looks like a false positive to me (but I'm not at all
-familiar with, well, the section mismatch checks). Would there be a way
-to silence this warning? Other than dropping __initdata from
-numa_nodes_parsed, of course.
-
-
-Paul Bolle
-
+            Linus
