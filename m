@@ -1,90 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab3GXJ5B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:57:01 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:38230 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3GXJ47 (ORCPT
+	id S1752455Ab3GXJ7Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 05:59:24 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:5386 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3GXJ7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:56:59 -0400
+	Wed, 24 Jul 2013 05:59:22 -0400
+Message-ID: <51EFA554.6080801@huawei.com>
+Date: Wed, 24 Jul 2013 17:58:44 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
-References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Wed, 24 Jul 2013 17:56:38 +0800
-Message-ID: <CA+a=Yy4Zf3uzd_ZnxgtP+CypU9ur1Uf0YWvb8dtmGseEvLoc=w@mail.gmail.com>
-Subject: Re: [PATCH 0/8] staging/lustre: Intel tree sync and two fixups
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH v2 0/8] memcg, cgroup: kill css_id
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 4:31 PM,  <mail-agent-noreply@emc.com> wrote:
-> From: Peng Tao <bergwolf@gmail.com>
->
-> Hi Greg,
->
-> I've fixed up the rest of Intel tree ported patches and rebased them on top
-> of your staging-next. Also I found that the Lustre errno translate code breaks
-> build on non-x86 systems. I've added one patch to fix it. Please queue them if
-> they are OK to you.
->
-btw, the build error only reveals itself after we fix the Kconfig bool
-default value bug in [PATCH 6/8].
+This patchset converts memcg to use cgroup->id, and then we can remove
+cgroup css_id.
 
-Thanks,
-Tao
+As we've removed memcg's own refcnt, converting memcg to use cgroup->id
+is very straight-forward.
 
-> Thanks,
-> Tao
->
-> Cc: Andreas Dilger <andreas.dilger@intel.com>
->
-> John L. Hammond (2):
->   staging/lustre/llite: handle io init failure in ll_fault_io_init()
->   staging/lustre/obdclass: use a dummy structure for lu_ref_link
->
-> Liu Xuezhao (1):
->   staging/lustre/obdclass: add obd_target.h
->
-> Peng Tao (2):
->   staging/lustre: fix Kconfig bool defaults
->   staging/lustre: fix build on non-x86
->
-> Sebastien Buisson (2):
->   staging/lustre: fix 'data race condition' issues in at_reset()
->   staging/lustre/llite: fix 'data race condition' issues of lli_flags
->
-> Thomas Leibovici (1):
->   staging/lustre/lmv: support DNE with HSM.
->
->  drivers/staging/lustre/lustre/Kconfig              |    2 +-
->  drivers/staging/lustre/lustre/include/cl_object.h  |   10 +-
->  .../lustre/lustre/include/linux/lustre_fsfilt.h    |   10 -
->  .../staging/lustre/lustre/include/lprocfs_status.h |   36 --
->  drivers/staging/lustre/lustre/include/lu_object.h  |   18 +-
->  drivers/staging/lustre/lustre/include/lu_ref.h     |   14 +-
->  .../staging/lustre/lustre/include/lustre_import.h  |    2 +
->  drivers/staging/lustre/lustre/include/obd.h        |  140 +-----
->  drivers/staging/lustre/lustre/llite/llite_lib.c    |    4 +
->  drivers/staging/lustre/lustre/llite/llite_mmap.c   |   36 +-
->  drivers/staging/lustre/lustre/llite/namei.c        |    5 +-
->  drivers/staging/lustre/lustre/lmv/lmv_obd.c        |  200 +++++++-
->  drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    1 -
->  drivers/staging/lustre/lustre/mdc/mdc_request.c    |   18 +-
->  drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
->  drivers/staging/lustre/lustre/obdclass/cl_io.c     |   17 +-
->  drivers/staging/lustre/lustre/obdclass/cl_lock.c   |    6 +-
->  drivers/staging/lustre/lustre/obdclass/cl_page.c   |    5 +-
->  .../lustre/lustre/obdclass/lprocfs_jobstats.c      |  560 --------------------
->  drivers/staging/lustre/lustre/obdclass/lu_object.c |   15 +-
->  drivers/staging/lustre/lustre/obdclass/obd_mount.c |    1 -
->  drivers/staging/lustre/lustre/osc/osc_cache.c      |    8 +-
->  drivers/staging/lustre/lustre/ptlrpc/Makefile      |    2 +-
->  drivers/staging/lustre/lustre/ptlrpc/errno.c       |    4 +-
->  24 files changed, 301 insertions(+), 815 deletions(-)
->  delete mode 100644 drivers/staging/lustre/lustre/obdclass/lprocfs_jobstats.c
->
+The patchset is based on Tejun's cgroup tree.
+
+Li Zefan (8):
+      cgroup: convert cgroup_ida to cgroup_idr
+      cgroup: document how cgroup IDs are assigned
+      cgroup: implement cgroup_from_id()
+      memcg: convert to use cgroup_is_descendant()
+      memcg: convert to use cgroup id
+      memcg: fail to create cgroup if the cgroup id is too big
+      memcg: stop using css id
+      cgroup: kill css_id
+--
+ include/linux/cgroup.h |  49 ++-------
+ kernel/cgroup.c        | 308 ++++++++-----------------------------------------------
+ mm/memcontrol.c        |  59 ++++++-----
+ 3 files changed, 90 insertions(+), 326 deletions(-)
