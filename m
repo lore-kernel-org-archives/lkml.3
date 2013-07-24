@@ -1,71 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754570Ab3GXPau (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:30:50 -0400
-Received: from sauhun.de ([89.238.76.85]:59055 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754257Ab3GXPaV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:30:21 -0400
-Date: Wed, 24 Jul 2013 17:30:16 +0200
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-rpi-kernel@lists.infradead.org, linux-spi@vger.kernel.org
-Subject: Re: [PATCH 17/27] drivers/spi: don't check resource with
- devm_ioremap_resource
-Message-ID: <20130724153016.GB3016@katana>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
- <1374602524-3398-18-git-send-email-wsa@the-dreams.de>
- <20130724142940.GC9858@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
-Content-Disposition: inline
-In-Reply-To: <20130724142940.GC9858@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754451Ab3GXPb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:31:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:22272 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754080Ab3GXP3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 11:29:20 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=DZ_3W3kpw8MA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=G2gUIJbuQTUA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=J8l4cvyrY8pGt16UqIUA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130724152916.688280666@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Wed, 24 Jul 2013 11:27:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next-3.11][PATCH 5/9] tracing: Change tracing_entries_fops to rely on tracing_get_cpu()
+References: <20130724152706.535638468@goodmis.org>
+Content-Disposition: inline; filename=0005-tracing-Change-tracing_entries_fops-to-rely-on-traci.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Oleg Nesterov <oleg@redhat.com>
 
---eJnRUKwClWJh1Khz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+tracing_open_generic_tc() is racy, the memory inode->i_private
+points to can be already freed.
 
-On Wed, Jul 24, 2013 at 03:29:40PM +0100, Mark Brown wrote:
-> On Tue, Jul 23, 2013 at 08:01:50PM +0200, Wolfram Sang wrote:
-> > devm_ioremap_resource does sanity checks on the given resource. No need=
- to
-> > duplicate this in the driver.
->=20
-> Applied, thanks.  With all these it'd be good to have subject lines
-> matching up with the standards for the subsystem.
+1. Change its last user, tracing_entries_fops, to use
+   tracing_*_generic_tr() instead.
 
-OK. Let's see if I can script that :)
+2. Change debugfs_create_file("buffer_size_kb", data) callers
+   to pass "data = tr".
+
+3. Change tracing_entries_read() and tracing_entries_write() to
+   use tracing_get_cpu().
+
+4. Kill the no longer used tracing_open_generic_tc() and
+   tracing_release_generic_tc().
+
+Link: http://lkml.kernel.org/r/20130723152606.GA23730@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |   49 ++++++++++++-------------------------------------
+ 1 file changed, 12 insertions(+), 37 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e29dc8f..68b4685 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2984,23 +2984,6 @@ static int tracing_open_generic_tr(struct inode *inode, struct file *filp)
+ 	return 0;
+ }
+ 
+-static int tracing_open_generic_tc(struct inode *inode, struct file *filp)
+-{
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
+-
+-	if (tracing_disabled)
+-		return -ENODEV;
+-
+-	if (trace_array_get(tr) < 0)
+-		return -ENODEV;
+-
+-	filp->private_data = inode->i_private;
+-
+-	return 0;
+-	
+-}
+-
+ static int tracing_release(struct inode *inode, struct file *file)
+ {
+ 	struct seq_file *m = file->private_data;
+@@ -3054,15 +3037,6 @@ static int tracing_release_generic_tr(struct inode *inode, struct file *file)
+ 	return 0;
+ }
+ 
+-static int tracing_release_generic_tc(struct inode *inode, struct file *file)
+-{
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
+-
+-	trace_array_put(tr);
+-	return 0;
+-}
+-
+ static int tracing_single_release_tr(struct inode *inode, struct file *file)
+ {
+ 	struct trace_array *tr = inode->i_private;
+@@ -4382,15 +4356,16 @@ static ssize_t
+ tracing_entries_read(struct file *filp, char __user *ubuf,
+ 		     size_t cnt, loff_t *ppos)
+ {
+-	struct trace_cpu *tc = filp->private_data;
+-	struct trace_array *tr = tc->tr;
++	struct inode *inode = file_inode(filp);
++	struct trace_array *tr = inode->i_private;
++	int cpu = tracing_get_cpu(inode);
+ 	char buf[64];
+ 	int r = 0;
+ 	ssize_t ret;
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+-	if (tc->cpu == RING_BUFFER_ALL_CPUS) {
++	if (cpu == RING_BUFFER_ALL_CPUS) {
+ 		int cpu, buf_size_same;
+ 		unsigned long size;
+ 
+@@ -4417,7 +4392,7 @@ tracing_entries_read(struct file *filp, char __user *ubuf,
+ 		} else
+ 			r = sprintf(buf, "X\n");
+ 	} else
+-		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, tc->cpu)->entries >> 10);
++		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, cpu)->entries >> 10);
+ 
+ 	mutex_unlock(&trace_types_lock);
+ 
+@@ -4429,7 +4404,8 @@ static ssize_t
+ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 		      size_t cnt, loff_t *ppos)
+ {
+-	struct trace_cpu *tc = filp->private_data;
++	struct inode *inode = file_inode(filp);
++	struct trace_array *tr = inode->i_private;
+ 	unsigned long val;
+ 	int ret;
+ 
+@@ -4443,8 +4419,7 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 
+ 	/* value is in KB */
+ 	val <<= 10;
+-
+-	ret = tracing_resize_ring_buffer(tc->tr, val, tc->cpu);
++	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -4892,11 +4867,11 @@ static const struct file_operations tracing_pipe_fops = {
+ };
+ 
+ static const struct file_operations tracing_entries_fops = {
+-	.open		= tracing_open_generic_tc,
++	.open		= tracing_open_generic_tr,
+ 	.read		= tracing_entries_read,
+ 	.write		= tracing_entries_write,
+ 	.llseek		= generic_file_llseek,
+-	.release	= tracing_release_generic_tc,
++	.release	= tracing_release_generic_tr,
+ };
+ 
+ static const struct file_operations tracing_total_entries_fops = {
+@@ -5580,7 +5555,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 				tr, cpu, &tracing_stats_fops);
+ 
+ 	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_entries_fops);
++				tr, cpu, &tracing_entries_fops);
+ 
+ #ifdef CONFIG_TRACER_SNAPSHOT
+ 	trace_create_cpu_file("snapshot", 0644, d_cpu,
+@@ -6156,7 +6131,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ 			  tr, &tracing_pipe_fops);
+ 
+ 	trace_create_file("buffer_size_kb", 0644, d_tracer,
+-			(void *)&tr->trace_cpu, &tracing_entries_fops);
++			  tr, &tracing_entries_fops);
+ 
+ 	trace_create_file("buffer_total_size_kb", 0444, d_tracer,
+ 			  tr, &tracing_total_entries_fops);
+-- 
+1.7.10.4
 
 
---eJnRUKwClWJh1Khz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7/MIAAoJEBQN5MwUoCm2iiIQAJOMA2/AMu6mr5J/SBZd4XzM
-4ZH5zQMa8muN0gLt3o+ck63fnPScPJW0HOyoEipkX55RoAJURSHjJFjdPCnm0zw9
-n07Jn42BjRzOWz3mA1++ipgqjBitZLMUzT+S+ldiSxAyiEWkeMSTlFmF9slYW4Tr
-nlivQLwdJC5y1dfZAFotbaM9429jVBlbN8yPd5nqn8K9KQ35eLDCm3jX9K5u0+qz
-GTU1PsW8h/Jgrrhg470fuSAhC6DMEz3xvkai96JN/az9szBziWQyiRZp0GO19Heq
-Hnkr56JCd5uh8mLmsRWrAnglLAh3SY/v6zEjkUlyBXT22fynKvfHf4S7y3P+j6F9
-cQJv0Y82XJKoVu4GMJ8Mvhx44XHcEbN7XByjq3C+/PLnqa8EMRcp82Nx0+w9yNnl
-Fw0is94Fi1kG1UupODVFto11QhO/R8+vjxbYATNpKRUAgyiyojQxAT4I2Q5QIh0D
-ZX7hI7QmnmFqEbBJq03x/HMkfkQsCkvDhMbBxumpRMgi5w1IFjMHcc7pI+1DliYG
-6rRo1+GoEPS/p90Oj593SZYVvGZN7UliJYoEIpbWpU/Tpu/zewhBfBxcnaKW7+MM
-j62af+4zE0mhPuYs2AdDyhW/SDqTq2w4M2H5y2DhTI1WmJ0ybiVj0YiE8R9uCFfD
-De3/tF7mvoKeTg7xDe0x
-=qn9r
------END PGP SIGNATURE-----
-
---eJnRUKwClWJh1Khz--
