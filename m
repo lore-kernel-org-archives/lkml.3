@@ -1,120 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab3GXOKN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:10:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45831 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752338Ab3GXOG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:57 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	id S1753107Ab3GXONr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:13:47 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:44047 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752751Ab3GXONm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:13:42 -0400
+Date: Wed, 24 Jul 2013 07:13:34 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: spinlock lockup, rcu stalls etc.
+Message-ID: <20130724141334.GA3668@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130723162835.GA20430@redhat.com>
+ <CA+55aFw9Vo_vugB63kbjh6=jPDoJZP47Nw+hEgMCxFPiExYn5w@mail.gmail.com>
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "Paul Mackerras" <paulus@samba.org>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Namhyung Kim" <namhyung@kernel.org>, "Jiri Olsa" <jolsa@redhat.com>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Vince Weaver" <vincent.weaver@maine.edu>,
-        "Corey Ashford" <cjashfor@linux.vnet.ibm.com>,
-        "Ingo Molnar" <mingo@elte.hu>
-Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.270241944@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [74/85] perf: Clone child context from parent context pmu
-In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw9Vo_vugB63kbjh6=jPDoJZP47Nw+hEgMCxFPiExYn5w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072414-7182-0000-0000-000007D6BF70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
+On Tue, Jul 23, 2013 at 07:24:31PM -0700, Linus Torvalds wrote:
+> [ Added Thomas and Ingo due to that timer/nmi thing. ]
+> 
+> On Tue, Jul 23, 2013 at 9:28 AM, Dave Jones <davej@redhat.com> wrote:
+> > Woke up to a box that I could log into, but would hang as soon as I tried to
+> > do any disk IO.  This is what hit the logs before that.
+> >
+> > [28853.503179] hrtimer: interrupt took 4847 ns
+> 
+> Ugh. There's some nasty timer congestion there..
+> 
+> > [28932.599607] BUG: spinlock lockup suspected on CPU#0, trinity-child2/6990
+> > [28932.600419]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
+> 
+> So the current owner of the lock is cpu 1. The other CPU's agree:
+> 
+> > [28932.606666] BUG: spinlock lockup suspected on CPU#2, trinity-child2/6764
+> > [28932.606669]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
+> > [28932.617231] sending NMI to all CPUs:
+> > [28932.635092] BUG: spinlock lockup suspected on CPU#3, trinity-child3/6975
+> > [28932.635095]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
+> 
+> .. and their backtrace all points to them trying to take that
+> spinlock. So that is all consistent.
+> 
+> And here's cpu1, edited down a bit:
+> 
+> > [28932.777623] NMI backtrace for cpu 1
+> > [28932.777625] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 91.230 msecs
+> 
+> Whee. 91 msec? We have something going on there too. irq entry locks?
 
-------------------
+Not sure what the deal is with the other stuff, but the stacks are being
+dumped from NMI handlers, and maybe the console got backed up a bit,
+slowing down the dump.  -Might- account for the 91msec in an NMI handler.
 
-From: Jiri Olsa <jolsa@redhat.com>
+							Thanx, Paul
 
-commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
-
-Currently when the child context for inherited events is
-created, it's based on the pmu object of the first event
-of the parent context.
-
-This is wrong for the following scenario:
-
-  - HW context having HW and SW event
-  - HW event got removed (closed)
-  - SW event stays in HW context as the only event
-    and its pmu is used to clone the child context
-
-The issue starts when the cpu context object is touched
-based on the pmu context object (__get_cpu_context). In
-this case the HW context will work with SW cpu context
-ending up with following WARN below.
-
-Fixing this by using parent context pmu object to clone
-from child context.
-
-Addresses the following warning reported by Vince Weaver:
-
-[ 2716.472065] ------------[ cut here ]------------
-[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
-[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
-[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
-[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
-[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
-[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
-[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
-[ 2716.476035] Call Trace:
-[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
-[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
-[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
-[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
-[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
-[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
-[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
-[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
-[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
-[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
-[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
-[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
-[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
-[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
-[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
-[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
-[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- kernel/events/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6797,7 +6797,7 @@ inherit_task_group(struct perf_event *ev
- 		 * child.
- 		 */
- 
--		child_ctx = alloc_perf_context(event->pmu, child);
-+		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
- 		if (!child_ctx)
- 			return -ENOMEM;
- 
+> > [28932.779440] CPU: 1 PID: 6763 Comm: trinity-child1 Not tainted 3.11.0-rc2+ #54
+> > [28932.782283] RIP: 0010:[<ffffffff81710385>]  [<ffffffff81710385>] add_preempt_count+0x25/0xf0
+> > [28932.797761] Call Trace:
+> > [28932.798737]  <IRQ>
+> > [28932.799715]  [<ffffffff81320851>] delay_tsc+0x61/0xe0
+> > [28932.800693]  [<ffffffff81320789>] __const_udelay+0x29/0x30
+> > [28932.801674]  [<ffffffff810816d4>] __rcu_read_unlock+0x54/0xa0
+> > [28932.802657]  [<ffffffff810af531>] cpuacct_account_field+0xf1/0x200
+> > [28932.804613]  [<ffffffff8109e430>] account_system_time+0xb0/0x1b0
+> > [28932.805561]  [<ffffffff8109e565>] __vtime_account_system+0x35/0x40
+> > [28932.806506]  [<ffffffff8109e59d>] vtime_account_system.part.2+0x2d/0x50
+> > [28932.807445]  [<ffffffff8109e8e5>] vtime_account_irq_enter+0x55/0x80
+> > [28932.808365]  [<ffffffff8105f42f>] irq_enter+0x4f/0x90
+> > [28932.809269]  [<ffffffff81716a15>] smp_apic_timer_interrupt+0x35/0x60
+> > [28932.810156]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
+> > [28932.812756]  [<ffffffff8105f53d>] irq_exit+0xcd/0xe0
+> > [28932.813618]  [<ffffffff81716a25>] smp_apic_timer_interrupt+0x45/0x60
+> > [28932.814483]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
+> > [28932.815345]  <EOI>
+> > [28932.816207]  [<ffffffff8170c6a0>] ? retint_restore_args+0xe/0xe
+> > [28932.817069]  [<ffffffff810c1275>] ? lock_acquired+0x105/0x3f0
+> > [28932.817924]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
+> > [28932.818767]  [<ffffffff8170b62c>] _raw_spin_lock+0x6c/0x80
+> > [28932.819616]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
+> > [28932.820468]  [<ffffffff811ec8e2>] sync_inodes_sb+0x1c2/0x2a0
+> > [28932.821310]  [<ffffffff81708c1f>] ? wait_for_completion+0xdf/0x110
+> > [28932.823819]  [<ffffffff811f2a49>] sync_inodes_one_sb+0x19/0x20
+> > [28932.824649]  [<ffffffff811c2b12>] iterate_supers+0xb2/0x110
+> > [28932.825477]  [<ffffffff811f2cb5>] sys_sync+0x35/0x90
+> > [28932.826300]  [<ffffffff81714c54>] tracesys+0xdd/0xe2
+> > [28932.827119]  [<ffffffffa0000000>] ? 0xffffffff9fffffff
+> 
+> .. and again, it actually looks like the time is not necessarily spent
+> inside the spinlock in sync_inodes_sb(), but in a timer interrupt that
+> just happened to go off during that. I wonder if this is the same
+> issue that caused that earlier hrtimer long delay.. I'm not
+> necessarily seeing 91 msecs worth, but..
+> 
+> You seem to have CONFIG_PROVE_RCU_DELAY enabled, which explains that
+> delay_tsc() call in there. I wonder how much things like that make it
+> worse. Together with the (crazy bad) back-off in __spin_lock_debug(),
+> there might be a *lot* of these delays.
+> 
+> That said, the fact that your machine is dead after all this implies
+> that there is something else wrong than just things being very slow.
+> But I suspect at least *part* of your problems may be due to these
+> kinds of debugging options that make things much much worse.
+> 
+>               Linus
+> 
 
