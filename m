@@ -1,155 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab3GXRJS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:09:18 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:10761 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GXRJR (ORCPT
+	id S1752308Ab3GXRJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:09:40 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:2366 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751619Ab3GXRJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:09:17 -0400
-X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jul 2013 13:09:16 EDT
-Message-ID: <1374685121.16322.218.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
-        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
-        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Date: Wed, 24 Jul 2013 10:58:41 -0600
-In-Reply-To: <20130724042041.GA8504@gmail.com>
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
-	 <20130722083721.GC25976@gmail.com>
-	 <1374513120.16322.21.camel@misato.fc.hp.com>
-	 <20130723080101.GB15255@gmail.com>
-	 <1374612301.16322.136.camel@misato.fc.hp.com>
-	 <20130724042041.GA8504@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Wed, 24 Jul 2013 13:09:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 24 Jul 2013 10:08:26 -0700
+Message-ID: <51F00A4E.1020100@nvidia.com>
+Date: Wed, 24 Jul 2013 13:09:34 -0400
+From: Rhyland Klein <rklein@nvidia.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Joseph Lo <josephl@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] regulator: palmas: fix pdata ptr not be updated after
+ it has been allocated
+References: <1374683282-17517-1-git-send-email-rklein@nvidia.com> <20130724170215.GP9858@sirena.org.uk>
+In-Reply-To: <20130724170215.GP9858@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 06:20 +0200, Ingo Molnar wrote:
-> * Toshi Kani <toshi.kani@hp.com> wrote:
+On 7/24/2013 1:02 PM, Mark Brown wrote:
+> * PGP Signed by an unknown key
 > 
-> > On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
-> > > * Toshi Kani <toshi.kani@hp.com> wrote:
-> > > 
-> > > > > Could we please also fix it to never crash the kernel, even if stupid 
-> > > > > ranges are provided?
-> > > > 
-> > > > Yes, this probe interface can be enhanced to verify the firmware 
-> > > > information before adding a given memory address.  However, such change 
-> > > > would interfere its test use of "fake" hotplug, which is only the known 
-> > > > use-case of this interface on x86.
-> > > 
-> > > Not crashing the kernel is not a novel concept even for test interfaces...
-> > 
-> > Agreed.
-> > 
-> > > Where does the possible crash come from - from using invalid RAM ranges, 
-> > > right? I.e. on x86 to fix the crash we need to check the RAM is present in 
-> > > the e820 maps, is marked RAM there, and is not already registered with the 
-> > > kernel, or so?
-> > 
-> > Yes, the crash comes from using invalid RAM ranges.  How to check if the
-> > RAM is present is different if the system supports hotplug or not.
-> > 
-> > > > In order to verify if a given memory address is enabled at run-time (as 
-> > > > opposed to boot-time), we need to check with ACPI memory device objects 
-> > > > on x86.  However, system vendors tend to not implement memory device 
-> > > > objects unless their systems support memory hotplug.  Dave Hansen is 
-> > > > using this interface for his testing as a way to fake a hotplug event on 
-> > > > a system that does not support memory hotplug.
-> > > 
-> > > All vendors implement e820 maps for the memory present at boot time.
-> > 
-> > Yes for boot time.  At run-time, e820 is not guaranteed to represent a
-> > new memory added. [...]
+> On Wed, Jul 24, 2013 at 12:28:02PM -0400, Rhyland Klein wrote:
 > 
-> Yes I know that, the e820 map is boot only.
+>> +	/* Store the pdata pointer after everything else passes */
+>> +	pdev->dev.platform_data = pdata;
 > 
-> You claimed that the only purpose of this on x86 was that testing was done 
-> on non-hotplug systems, using this interface. Non-hotplug systems have 
-> e820 maps.
+> No, this is bad - the driver should not be modifying the platform_data
+> pointer, it's owned by the thing that created the device.  If the
+> platform data needs to be modified it should be copied somewhere in the
+> driver data.
 
-Right.  Sorry, I first thought that the interface needed to work as
-defined, i.e. detect a new memory.  But for the test purpose on
-non-hotplug systems, that is not necessary.  So, I agree that we can
-check e820.
+Alright, thanks.
 
-I summarized two options in the email below.
-https://lkml.org/lkml/2013/7/23/602
+-rhyland
 
-Option 1) adds a check with e820.  Option 2) deprecates the interface by
-removing the config option from x86 Kconfig.  I was thinking that we
-could evaluate two options after this patch gets in.  Does it make
-sense?   
-
-> > > How does the hotplug event based approach solve double adds? Relies on 
-> > > the hardware not sending a hot-add event twice for the same memory 
-> > > area or for an invalid memory area, or does it include fail-safes and 
-> > > double checks as well to avoid double adds and adding invalid memory? 
-> > > If yes then that could be utilized here as well.
-> > 
-> > In high-level, here is how ACPI memory hotplug works:
-> > 
-> > 1. ACPI sends a hotplug event to a new ACPI memory device object that is
-> > hot-added.
-> > 2. The kernel is notified, and verifies if the new memory device object
-> > has not been attached by any handler yet.
-> > 3. The memory handler is called, and obtains a new memory range from the
-> > ACPI memory device object. 
-> > 4. The memory handler calls add_memory() with the new address range.
-> > 
-> > The above step 1-4 proceeds automatically within the kernel.  No user 
-> > input (nor sysfs interface) is necessary.  Step 2 prevents double adds 
-> > [...]
 > 
-> If this 'new memory device object' is some ACPI detail then I don't see 
-> how it protects the kernel from a buggy ACPI implementation double adding 
-> the same physical memory range.
-
-You are right that the kernel is not fully protected from buggy ACPI.
-In case of double adding, though, such hot-add operation fails
-gracefully since add_memory() returns with -EEXIST.  But if buggy ACPI
-returns an invalid RAM range, then it can crash the system, just like an
-invalid address in e820 can crash the system as well.
-
-> > and step 3 gets a valid address range from the firmware directly.  Step 
-> > 4 is basically the same as the "probe" interface, but with all the 
-> > verification up front, this step is safe.
+> * Unknown Key
+> * 0x7EA229BD
 > 
-> So what verification does the kernel do to ensure that a buggy ACPI 
-> implementation does not pass us a crappy memory range, such a double 
-> physical range (represented via separate 'memory device objects'), or a 
-> range overlapping with an existing physical memory range already known to 
-> the kernel, or a totally nonsensical range the CPU cannot even access 
-> physically, etc.?
-
-The kernel checks if the status of an ACPI memory device object is
-marked as enabled.  But it does not protect from buggy ACPI because
-anything can be wrong... 
-
-Overlapping and double add cases are verified in add_memory(), i.e.
-register_memory_resource() fails.
-
-If an address range is unique & wrong, we have no protection from it.
-
-> Also, is there any verification done to make sure that the new memory 
-> range is actually RAM - i.e. we could write the first and last word of it 
-> and see whether it gets modified correctly [to keep the sanity check 
-> fast]?
-
-No such check is performed -- just like we don't at boot-time.
-
-This may sound bad, but in my experience, such obvious bugs are quickly
-found and fixed during the FW development phase.
 
 
-Thanks,
--Toshi
-
+-- 
+nvpublic
