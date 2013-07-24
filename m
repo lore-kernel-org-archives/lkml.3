@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526Ab3GXWGY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55345 "EHLO
+	id S1754463Ab3GXWGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab3GXWFz (ORCPT
+	with ESMTP id S1753112Ab3GXWF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:55 -0400
+	Wed, 24 Jul 2013 18:05:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH 14/36] PCI: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:17 -0700
-Message-Id: <1374703539-9705-15-git-send-email-gregkh@linuxfoundation.org>
+        Rodolfo Giometti <giometti@enneenne.com>
+Subject: [PATCH 16/36] PPS: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:19 -0700
+Message-Id: <1374703539-9705-17-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,111 +22,151 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the PCI class code to use the
+should be used instead.  This converts the pps class code to use the
 correct field.
 
-Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Rodolfo Giometti <giometti@enneenne.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Bjorn, feel free to take this through your tree, or ACK it and I can take it
+Rodolfo, feel free to take this through your tree, or ACK it and I can take it
 through mine.
 
- drivers/pci/pci-sysfs.c | 32 +++++++++++++++++++++-----------
- drivers/pci/pci.h       |  2 +-
- drivers/pci/probe.c     |  2 +-
- 3 files changed, 23 insertions(+), 13 deletions(-)
+ drivers/pps/pps.c          |  2 +-
+ drivers/pps/sysfs.c        | 55 +++++++++++++++++++++++++++++-----------------
+ include/linux/pps_kernel.h |  2 +-
+ 3 files changed, 37 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index c0dbe1f6..7128cfdd 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -131,19 +131,19 @@ static ssize_t pci_bus_show_cpuaffinity(struct device *dev,
- 	return ret;
- }
- 
--static inline ssize_t pci_bus_show_cpumaskaffinity(struct device *dev,
--					struct device_attribute *attr,
--					char *buf)
-+static ssize_t cpuaffinity_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
- {
- 	return pci_bus_show_cpuaffinity(dev, 0, attr, buf);
- }
-+static DEVICE_ATTR_RO(cpuaffinity);
- 
--static inline ssize_t pci_bus_show_cpulistaffinity(struct device *dev,
--					struct device_attribute *attr,
--					char *buf)
-+static ssize_t cpulistaffinity_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
- {
- 	return pci_bus_show_cpuaffinity(dev, 1, attr, buf);
- }
-+static DEVICE_ATTR_RO(cpulistaffinity);
- 
- /* show resources */
- static ssize_t
-@@ -379,6 +379,7 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index 7173e3ad..2f07cd61 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -406,7 +406,7 @@ static int __init pps_init(void)
+ 		pr_err("failed to allocate class\n");
+ 		return PTR_ERR(pps_class);
  	}
- 	return count;
+-	pps_class->dev_attrs = pps_attrs;
++	pps_class->dev_groups = pps_groups;
+ 
+ 	err = alloc_chrdev_region(&pps_devt, 0, PPS_MAX_SOURCES, "pps");
+ 	if (err < 0) {
+diff --git a/drivers/pps/sysfs.c b/drivers/pps/sysfs.c
+index ef0978c7..aefb75d6 100644
+--- a/drivers/pps/sysfs.c
++++ b/drivers/pps/sysfs.c
+@@ -29,8 +29,8 @@
+  * Attribute functions
+  */
+ 
+-static ssize_t pps_show_assert(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t assert_show(struct device *dev, struct device_attribute *attr,
++			   char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+@@ -41,9 +41,10 @@ static ssize_t pps_show_assert(struct device *dev,
+ 			(long long) pps->assert_tu.sec, pps->assert_tu.nsec,
+ 			pps->assert_sequence);
  }
-+static DEVICE_ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_bus_rescan_store);
++static DEVICE_ATTR_RO(assert);
  
- #if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_ACPI)
- static ssize_t d3cold_allowed_store(struct device *dev,
-@@ -514,11 +515,20 @@ struct device_attribute pci_dev_attrs[] = {
- 	__ATTR_NULL,
- };
+-static ssize_t pps_show_clear(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t clear_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
  
--struct device_attribute pcibus_dev_attrs[] = {
--	__ATTR(rescan, (S_IWUSR|S_IWGRP), NULL, dev_bus_rescan_store),
--	__ATTR(cpuaffinity, S_IRUGO, pci_bus_show_cpumaskaffinity, NULL),
--	__ATTR(cpulistaffinity, S_IRUGO, pci_bus_show_cpulistaffinity, NULL),
+@@ -54,45 +55,59 @@ static ssize_t pps_show_clear(struct device *dev,
+ 			(long long) pps->clear_tu.sec, pps->clear_tu.nsec,
+ 			pps->clear_sequence);
+ }
++static DEVICE_ATTR_RO(clear);
+ 
+-static ssize_t pps_show_mode(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t mode_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+ 	return sprintf(buf, "%4x\n", pps->info.mode);
+ }
++static DEVICE_ATTR_RO(mode);
+ 
+-static ssize_t pps_show_echo(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t echo_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+ 	return sprintf(buf, "%d\n", !!pps->info.echo);
+ }
++static DEVICE_ATTR_RO(echo);
+ 
+-static ssize_t pps_show_name(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t name_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+ 	return sprintf(buf, "%s\n", pps->info.name);
+ }
++static DEVICE_ATTR_RO(name);
+ 
+-static ssize_t pps_show_path(struct device *dev,
+-				struct device_attribute *attr, char *buf)
++static ssize_t path_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct pps_device *pps = dev_get_drvdata(dev);
+ 
+ 	return sprintf(buf, "%s\n", pps->info.path);
+ }
++static DEVICE_ATTR_RO(path);
++
++static struct attribute *pps_attrs[] = {
++	&dev_attr_assert.attr,
++	&dev_attr_clear.attr,
++	&dev_attr_mode.attr,
++	&dev_attr_echo.attr,
++	&dev_attr_name.attr,
++	&dev_attr_path.attr,
++	NULL,
++};
++
++static const struct attribute_group pps_group = {
++	.attrs = pps_attrs,
++};
+ 
+-struct device_attribute pps_attrs[] = {
+-	__ATTR(assert, S_IRUGO, pps_show_assert, NULL),
+-	__ATTR(clear, S_IRUGO, pps_show_clear, NULL),
+-	__ATTR(mode, S_IRUGO, pps_show_mode, NULL),
+-	__ATTR(echo, S_IRUGO, pps_show_echo, NULL),
+-	__ATTR(name, S_IRUGO, pps_show_name, NULL),
+-	__ATTR(path, S_IRUGO, pps_show_path, NULL),
 -	__ATTR_NULL,
-+static struct attribute *pcibus_attrs[] = {
-+	&dev_attr_rescan.attr,
-+	&dev_attr_cpuaffinity.attr,
-+	&dev_attr_cpulistaffinity.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group pcibus_group = {
-+	.attrs = pcibus_attrs,
-+};
-+
-+const struct attribute_group *pcibus_groups[] = {
-+	&pcibus_group,
++const struct attribute_group *pps_groups[] = {
++	&pps_group,
 +	NULL,
  };
+diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
+index 7db3eb93..1d2cd212 100644
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -80,7 +80,7 @@ struct pps_device {
+  * Global variables
+  */
  
- static ssize_t
-diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
-index d1182c4a..816c297f 100644
---- a/drivers/pci/pci.h
-+++ b/drivers/pci/pci.h
-@@ -151,7 +151,7 @@ static inline int pci_no_d1d2(struct pci_dev *dev)
+-extern struct device_attribute pps_attrs[];
++extern const struct attribute_group *pps_groups[];
  
- }
- extern struct device_attribute pci_dev_attrs[];
--extern struct device_attribute pcibus_dev_attrs[];
-+extern const struct attribute_group *pcibus_groups[];
- extern struct device_type pci_dev_type;
- extern struct bus_attribute pci_bus_attrs[];
- 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 46ada5c0..cf57fe79 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -96,7 +96,7 @@ static void release_pcibus_dev(struct device *dev)
- static struct class pcibus_class = {
- 	.name		= "pci_bus",
- 	.dev_release	= &release_pcibus_dev,
--	.dev_attrs	= pcibus_dev_attrs,
-+	.dev_groups	= pcibus_groups,
- };
- 
- static int __init pcibus_class_init(void)
+ /*
+  * Internal functions.
 -- 
 1.8.3.rc0.20.gb99dd2e
 
