@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab3GXAWn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:22:43 -0400
-Received: from smtp-fw-2101.amazon.com ([72.21.196.25]:16431 "EHLO
-	smtp-fw-2101.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab3GXAWm (ORCPT
+	id S1758007Ab3GXAcw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:32:52 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:44301 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3GXAcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:22:42 -0400
-X-IronPort-AV: E=Sophos;i="4.89,731,1367971200"; 
-   d="scan'208";a="585125542"
-Date: Tue, 23 Jul 2013 17:22:36 -0700
-From: Matt Wilson <msw@amazon.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, <xen-devel@lists.xensource.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>, <linux-kernel@vger.kernel.org>,
-        <virtualization@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Brandon Philips <brandon@ifup.org>
-Subject: Re: [Xen-devel] is kexec on Xen domU possible?
-Message-ID: <20130724002235.GA15047@u109add4315675089e695.ant.amazon.com>
-References: <20130719020603.GA22932@kroah.com>
- <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
- <20130719151243.GA15488@kroah.com>
- <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
- <20130719191449.GA1882@kroah.com>
- <51E9A85D.2060206@zytor.com>
- <20130722170307.GB14451@debian70-amd64.local.net-space.pl>
- <87wqoise9d.fsf@xmission.com>
- <51ED78EE.9020903@zytor.com>
- <20130722183315.GA29273@kroah.com>
+	Tue, 23 Jul 2013 20:32:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20130722183315.GA29273@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374621001.3031.1@driftwood>
+References: <20130723225715.GD31864@blackmetal.musicnaut.iki.fi> <1374621001.3031.1@driftwood>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 23 Jul 2013 20:32:19 -0400
+X-Google-Sender-Auth: vq4jA6II0DZxmflV69zDCItz7Nc
+Message-ID: <CAP=VYLqvxctQCmTqrdhtgrc1Fr1bfFGG-xn1RA68vUW6yWyG6w@mail.gmail.com>
+Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that hasn't changed
+To: Rob Landley <rob@landley.net>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 11:33:15AM -0700, Greg KH wrote:
-> On Mon, Jul 22, 2013 at 11:24:46AM -0700, H. Peter Anvin wrote:
-> > On 07/22/2013 10:20 AM, Eric W. Biederman wrote:
-> > >>>
-> > >>> Also, in any virtualized environment the hypervisor can do a better job
-> > >>> for things like kdump, simply because it can provide two things that are
-> > >>> otherwise hard to do:
-> > >>>
-> > >>> 1. a known-good system state;
-> > >>> 2. a known-clean kdump image.
-> > >>>
-> > >>> As such, I do encourage the virtualization people to (also) develop
-> > >>> hypervisor-*aware* solutions for these kinds of things.
-> > >>
-> > >> In general I agree but if you could not change hypervisor
-> > >> and/or dom0 (e.g. you are using cloud providers which are
-> > >> stick to old versions of Xen) then you have no choice.
-> > > 
-> > > Which tends to be where kexec on panic comes in most cases.  Getting
-> > > platform vendors to do something sane tends to be a multi-year political
-> > > effort of dubious worth while just solving the problem locally actually
-> > > gets the problem solved for those who care.
-> > > 
-> > 
-> > It should not be a "one or the other" issue.
-> 
-> I don't care about kdump, I care about kexec on domU for people who are
-> running on cloud providers with old versions of Xen so that they can
-> control what kernel they can boot, when they want to boot it.  If kdump
-> works as well, that's just a bonus, but it's down on the list of things
-> for me to be concerned about.
+On Tue, Jul 23, 2013 at 7:10 PM, Rob Landley <rob@landley.net> wrote:
+> On 07/23/2013 05:57:15 PM, Aaro Koskinen wrote:
+>>
+>> Hi,
+>>
+>> On Sun, Jul 21, 2013 at 01:12:55AM -0400, Paul Gortmaker wrote:
+>> > Looking at the bigger picture, the need for this file has simply
+>> > passed.  It was trying to detail required versions of userspace
+>> > packages, in order to cater to hand-crafted systems.  But now the
+>> > majority of users get their userspace all at once from some kind
+>> > of distro, and we are probably a lot more serious about avoiding
+>> > breaking userspace than we were a dozen years ago.
+>
+>
+> You're right, there's no such thing as "embedded linux", nobody creates
+> their own hand-crafted systems, or assembles cross-compiling environments to
+> target hardware other than x86. That's crazy talk.
 
-Many Xen-based cloud providers provide a mechanism for users to boot
-the kernels they want. For example you can use PV-GRUB on EC2
-instances to boot a kernel that is stored within an AMI.
+Aside from the obvious sarcasm, what are you trying to say here?   The above
+seems like a classic strawman argument to me, since _none_ of the above are
+things that I have said or implied.   And if pressed, I can give many counter
+examples to drive that point home.  Do I really need to?
 
-For more info:
-  http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedkernels.html
+>
+>> Is there any file describing the needed tools (and minimum versions) to
+>> _build_ the kernel? I agree that trying to describe such for the run-time
+>> userspace does not belong to the kernel tree, but the required/supported
+>> versions of build tools should be still maybe documented...
+>
+>
+> Documentation/changes _is_ the file that describes the kernel's build-time
+> prerequisites. It hasn't changed in a while because we've been maintaining
+> backwards compatability, especially for several non-x86 targets where it's
+> fiddly to get newer toolchain versions.
 
---msw
+See the mail from hpa --- what may be the "latest" for some less common
+arch may also be simply too old for another arch.  Hence this kind of stuff
+needs to be in an arch specific file, let alone not in a mis-named "Changes"
+file.
+
+>
+> (Personally I use the last GPLv2 releases of each package, so gcc 4.2.1,
+> binutils 2.17, make 3.81, and busybox.)
+
+And this works on every arch that linux supports?
+
+>
+> I agree squashfs and such aren't build time prerequisites. It might make
+> more sense to move some of these to menuconfig text for the appropriate
+> option. But that's not the same as not documenting it at all, and "this
+> document has been true for a long time and remains true, therefore we must
+> discard it" strikes me as a really weird document retention criteria.
+
+Again, a strawman.  You suggest I said the above with your "this document..."
+quote, but I never said anything like that, and it totally mis-represents why I
+suggested we should remove it.
+
+Lets move forward from here and not descend into arguing over details.
+
+To that end, if we create a required-packages.txt that covers the generic
+stuff like "make" version, and then the arch specific stuff (in arch specific
+files) for key stuff like gcc version, and gas version, etc, would you not
+see that as an improvement over what is currently in the mis-named and
+largely abandoned Changes file?
+
+Paul.
+--
+
+
+>
+> Rob--
+>
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
