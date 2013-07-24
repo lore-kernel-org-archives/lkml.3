@@ -1,120 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783Ab3GXMH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 08:07:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39495 "EHLO mx1.redhat.com"
+	id S1751435Ab3GXMMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 08:12:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:37650 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750909Ab3GXMHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 08:07:54 -0400
-Date: Wed, 24 Jul 2013 15:06:48 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130724120647.GG16400@redhat.com>
-References: <20130722061631.24737.75508.sendpatchset@codeblue>
- <20130722062016.24737.54554.sendpatchset@codeblue>
- <20130723150748.GC6029@redhat.com>
- <51EFA24E.2060103@linux.vnet.ibm.com>
- <20130724103907.GF16400@redhat.com>
- <51EFC1D4.9060800@linux.vnet.ibm.com>
+	id S1750909Ab3GXMMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 08:12:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
+Date: Wed, 24 Jul 2013 14:22:50 +0200
+Message-ID: <3731352.ObxOHG6eQe@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQURY5WFFJekPHV_s0HPi8uhKzSDOLSXHAkyLPf1=i8oAw@mail.gmail.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <3215120.cRBBS5jciE@vostro.rjw.lan> <CAE9FiQURY5WFFJekPHV_s0HPi8uhKzSDOLSXHAkyLPf1=i8oAw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EFC1D4.9060800@linux.vnet.ibm.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
-> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
-> >On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
-> >>On 07/23/2013 08:37 PM, Gleb Natapov wrote:
-> >>>On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
-> >>>>+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
-> >>[...]
-> >>>>+
-> >>>>+	/*
-> >>>>+	 * halt until it's our turn and kicked. Note that we do safe halt
-> >>>>+	 * for irq enabled case to avoid hang when lock info is overwritten
-> >>>>+	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
-> >>>>+	 */
-> >>>>+	if (arch_irqs_disabled_flags(flags))
-> >>>>+		halt();
-> >>>>+	else
-> >>>>+		safe_halt();
-> >>>>+
-> >>>>+out:
-> >>>So here now interrupts can be either disabled or enabled. Previous
-> >>>version disabled interrupts here, so are we sure it is safe to have them
-> >>>enabled at this point? I do not see any problem yet, will keep thinking.
-> >>
-> >>If we enable interrupt here, then
-> >>
-> >>
-> >>>>+	cpumask_clear_cpu(cpu, &waiting_cpus);
-> >>
-> >>and if we start serving lock for an interrupt that came here,
-> >>cpumask clear and w->lock=null may not happen atomically.
-> >>if irq spinlock does not take slow path we would have non null value
-> >>for lock, but with no information in waitingcpu.
-> >>
-> >>I am still thinking what would be problem with that.
-> >>
-> >Exactly, for kicker waiting_cpus and w->lock updates are
-> >non atomic anyway.
+On Tuesday, July 23, 2013 07:20:53 PM Yinghai Lu wrote:
+> On Tue, Jul 23, 2013 at 2:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 > >
-> >>>>+	w->lock = NULL;
-> >>>>+	local_irq_restore(flags);
-> >>>>+	spin_time_accum_blocked(start);
-> >>>>+}
-> >>>>+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-> >>>>+
-> >>>>+/* Kick vcpu waiting on @lock->head to reach value @ticket */
-> >>>>+static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
-> >>>>+{
-> >>>>+	int cpu;
-> >>>>+
-> >>>>+	add_stats(RELEASED_SLOW, 1);
-> >>>>+	for_each_cpu(cpu, &waiting_cpus) {
-> >>>>+		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
-> >>>>+		if (ACCESS_ONCE(w->lock) == lock &&
-> >>>>+		    ACCESS_ONCE(w->want) == ticket) {
-> >>>>+			add_stats(RELEASED_SLOW_KICKED, 1);
-> >>>>+			kvm_kick_cpu(cpu);
-> >>>What about using NMI to wake sleepers? I think it was discussed, but
-> >>>forgot why it was dismissed.
-> >>
-> >>I think I have missed that discussion. 'll go back and check. so
-> >>what is the idea here? we can easily wake up the halted vcpus that
-> >>have interrupt disabled?
-> >We can of course. IIRC the objection was that NMI handling path is very
-> >fragile and handling NMI on each wakeup will be more expensive then
-> >waking up a guest without injecting an event, but it is still interesting
-> >to see the numbers.
+> > Ugh, stupid bug, sorry about it.  We try to unregister something that may have
+> > not been registered.
+> >
+> > Can you please check if the appended patch helps (on top of
+> > linux-pm.git/linux-next)?
+> >
+> > Rafael
+> >
+> >
+> > ---
+> >  drivers/pci/hotplug/acpiphp_glue.c |    4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> >
+> > Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
+> > +++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+> > @@ -340,6 +340,7 @@ static acpi_status register_slot(acpi_ha
+> >
+> >                 retval = acpiphp_register_hotplug_slot(slot, sun);
+> >                 if (retval) {
+> > +                       slot->slot = NULL;
+> >                         bridge->nr_slots--;
+> >                         if (retval == -EBUSY)
+> >                                 warn("Slot %llu already registered by another "
+> > @@ -429,7 +430,8 @@ static void cleanup_bridge(struct acpiph
+> >                                         err("failed to remove notify handler\n");
+> >                         }
+> >                 }
+> > -               acpiphp_unregister_hotplug_slot(slot);
+> > +               if (slot->slot)
+> > +                       acpiphp_unregister_hotplug_slot(slot);
+> >         }
+> >
+> >         mutex_lock(&bridge_mutex);
 > >
 > 
-> Haam, now I remember, We had tried request based mechanism. (new
-> request like REQ_UNHALT) and process that. It had worked, but had some
-> complex hacks in vcpu_enter_guest to avoid guest hang in case of
-> request cleared.  So had left it there..
-> 
-> https://lkml.org/lkml/2012/4/30/67
-> 
-> But I do not remember performance impact though.
-No, this is something different. Wakeup with NMI does not need KVM changes at
-all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
+> yes, that fixes the problem. Thanks
 
---
-			Gleb.
+Great, thanks for testing!
+
+I'm adding this to the series (after commit 7342798):
+
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / hotplug / PCI: Fix NULL pointer dereference in cleanup_bridge()
+
+After commit bbd34fc (ACPI / hotplug / PCI: Register all devices
+under the given bridge) register_slot() is called for all PCI
+devices under a given bridge that have corresponding objects in
+the ACPI namespace, but it calls acpiphp_register_hotplug_slot()
+only for devices satisfying specific criteria.  Still,
+cleanup_bridge() calls acpiphp_unregister_hotplug_slot() for all
+objects created by register_slot(), although it should only call it
+for the ones that acpiphp_register_hotplug_slot() has been called
+for (successfully).  This causes a NULL pointer to be dereferenced
+by the acpiphp_unregister_hotplug_slot() executed by cleanup_bridge()
+if the object it is called for has not been passed to
+acpiphp_register_hotplug_slot().
+
+To fix this problem, check if the 'slot' field of the object passed
+to acpiphp_unregister_hotplug_slot() in cleanup_bridge() is not NULL,
+which only is the case if acpiphp_register_hotplug_slot() has been
+executed for that object.  In addition to that, make register_slot()
+reset the 'slot' field to NULL if acpiphp_register_hotplug_slot() has
+failed for the given object to prevent stale pointers from being
+used by acpiphp_unregister_hotplug_slot().
+
+Reported-and-tested-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/pci/hotplug/acpiphp_glue.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+===================================================================
+--- linux-pm.orig/drivers/pci/hotplug/acpiphp_glue.c
++++ linux-pm/drivers/pci/hotplug/acpiphp_glue.c
+@@ -340,6 +340,7 @@ static acpi_status register_slot(acpi_ha
+ 
+ 		retval = acpiphp_register_hotplug_slot(slot, sun);
+ 		if (retval) {
++			slot->slot = NULL;
+ 			bridge->nr_slots--;
+ 			if (retval == -EBUSY)
+ 				warn("Slot %llu already registered by another "
+@@ -429,7 +430,8 @@ static void cleanup_bridge(struct acpiph
+ 					err("failed to remove notify handler\n");
+ 			}
+ 		}
+-		acpiphp_unregister_hotplug_slot(slot);
++		if (slot->slot)
++			acpiphp_unregister_hotplug_slot(slot);
+ 	}
+ 
+ 	mutex_lock(&bridge_mutex);
+
