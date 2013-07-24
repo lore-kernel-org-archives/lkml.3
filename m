@@ -1,98 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736Ab3GXQje (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:39:34 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48290 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752188Ab3GXQjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:39:31 -0400
-Message-ID: <51F0031B.1050307@ti.com>
-Date: Wed, 24 Jul 2013 12:38:51 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754705Ab3GXQmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:42:09 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:37282 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3GXQmI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 12:42:08 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Gavin Shan" <shangw@linux.vnet.ibm.com>
+Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
+References: <lsq.1374674565.832521875@decadent.org.uk>
+Date: Wed, 24 Jul 2013 17:42:04 +0100
+In-Reply-To: <lsq.1374674565.832521875@decadent.org.uk> (Ben Hutchings's
+	message of "Wed, 24 Jul 2013 15:02:45 +0100")
+Message-ID: <87zjtbzz8j.fsf@canonical.com>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Sricharan R <r.sricharan@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com>
-In-Reply-To: <51EFFBE1.4090505@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 July 2013 12:08 PM, Nishanth Menon wrote:
-> On 07/22/2013 11:23 AM, Santosh Shilimkar wrote:
->> To summaries it again, what I understood from Sricharan's proposal,
->>
->> - Setup all the routing at cross-bar probe so that kernel continue to
->> work like normal IRQ controller with cross-bar scope vanishes once
->> the routing is done. Cross-bar does this before any of the devices
->> are created.
->> - Something similar needs to happen for DMA lines as well or for any
->> other event routing in future.
->> - Cross-bar callbacks for device drivers for error paths.
->> (Sricharan, you have to drop these because it doesn't bring any
->> functionality and rather can create a side effects of drivers
->> getting polluted.)
-> Ack.
-> 
->>
->> The concern raised on above was instead of fixing the routing at DT
->> statically, doing at the driver probes where the loop-up for IRQ or DMA
->> lines should happen in background transparently on drivers call of
->> request_irq/request_dma_channel etc with cross-bar number as
->> an input to it. Though it will be nice to have
->> such feature, it doesn't bring anything special and brings the
->> notion of these APIs which expect that you know what IRQ and DMA
->> lines you want while calling these.
-> Unfortunately, we do have a constraint without allocating dynamic IRQs - what IP instances should hwmod and dts contain?
-> 
-> If we go with current series of patches[1] [2] for DRA7 dts which assumes default mapping, hence, uart7-10, GPTimers12-16 dont have default irq - hence they dont exist in dts etc.
-> 
-> How would we like to support those with pinctrl approach?
+Ben Hutchings <ben@decadent.org.uk> writes:
+
+> 3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 >
-The whole reason the cross-bar being there because all the peripherals
-IRQs can not me routed to the IRQ controller. So You pick up a configuration
-would like to support and stick to it. It will be good to specify all the
-peripheral devices but tsome of them might not have the IRQ/DMA lines
-associated with them because of limited slots on IRQ/DMA controller.
+> ------------------
+>
+> From: Gavin Shan <shangw@linux.vnet.ibm.com>
+>
+> commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
+>
+> When the EEH error is the result of a fenced host bridge, MMIO accesses
+> can be very slow (milliseconds) to timeout and return all 1's,
+> thus causing the driver various timeout loops to take way too long and
+> trigger soft-lockup warnings (in addition to taking minutes to recover).
+>
+> It might be worthwhile to check if for any of these cases, ffffffff is
+> a valid possible value, and if not, bail early since that means the HW
+> is either gone or isolated. In the meantime, checking that the PCI channel
+> is offline would be workaround of the problem.
+>
+> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> [bwh: Backported to 3.2: adjust context, indentation]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
+>  drivers/net/ethernet/broadcom/tg3.c | 36 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 36 insertions(+)
+>
+> --- a/drivers/net/ethernet/broadcom/tg3.c
+> +++ b/drivers/net/ethernet/broadcom/tg3.c
+> @@ -688,6 +688,9 @@ static int tg3_ape_lock(struct tg3 *tp,
+>  		status = tg3_ape_read32(tp, gnt + off);
+>  		if (status == bit)
+>  			break;
+> +		if (pci_channel_offline(tp->pdev))
+> +			break;
+> +
+>  		udelay(10);
+>  	}
+>  
+> @@ -1465,6 +1468,9 @@ static void tg3_wait_for_event_ack(struc
+>  	for (i = 0; i < delay_cnt; i++) {
+>  		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
+>  			break;
+> +		if (pci_channel_offline(tp->pdev))
+> +			break;
+> +
+>  		udelay(8);
+>  	}
+>  }
+> @@ -1628,6 +1634,9 @@ static int tg3_poll_fw(struct tg3 *tp)
+>  		for (i = 0; i < 200; i++) {
+>  			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
+>  				return 0;
+> +			if (pci_channel_offline(tp->pdev))
+> +				return -ENODEV;
+> +
+>  			udelay(100);
+>  		}
+>  		return -ENODEV;
+> @@ -1638,6 +1647,15 @@ static int tg3_poll_fw(struct tg3 *tp)
+>  		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
+>  		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
+>  			break;
+> +		if (pci_channel_offline(tp->pdev)) {
+> +			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
+> +				tg3_flag_set(tp, NO_FWARE_REPORTED);
+> +				netdev_info(tp->dev, "No firmware running\n");
+> +			}
+> +
+> +			break;
+> +		}
+> +
+>  		udelay(10);
+>  	}
+>  
+> @@ -3067,6 +3085,10 @@ static int tg3_halt_cpu(struct tg3 *tp,
+>  			tw32(offset + CPU_MODE,  CPU_MODE_HALT);
+>  			if (tr32(offset + CPU_MODE) & CPU_MODE_HALT)
+>  				break;
+> +			if (pci_channel_offline(tp->pdev))
+> +				return -EBUSY;
+> +			if (pci_channel_offline(tp->pdev))
+> +				return -EBUSY;
+>  		}
 
->>
->> Note that mux inputs are pretty much fixed. Its his connection
->> to IRQ controller or DMA controller is what needs to be programmed.
->> So scope is pretty much limited. I felt this requirement is pretty
->> similar to pin-mux and hence thought of it as a viable option.
->>
->> Having said all of above, if there is a better alternative than
->> enhanced pin-mux we surely can do that.
-> We could look at it as a signal mux problem as this thread suggests OR look at it as interrupt distribution problem (which is how it looks like at the face of it).
-Its not interrupt distribution problem but rather setting up the signal
-routing which otherwise generally hardwired in SOC. Hence the pin-control analogy.
-Pinmux also lets you set many possible combinations but we pick one for a board design.
+I believe you didn't want to have these two invocations to the
+pci_channel_offline() function.  i guess you wanted to have one of
+these moved to the other branch of the 'if' statement.
 
-> That said, maybe a intermediate pinctrl approach might be more pragmatic andless theoretically flexible.
-> an option might be to "statically allocate" default number of interrupts to a domain - example:
-> * GIC IRQ 72->78 allotted to UARTs
-> * pinctrl mapping provided for those but only 6 can be used (rest are marked status="disabled" as default) at any given time (choice of pinctrl option determines GIC interrupt line to use)
-> * All modules will have a pinctrl definition to have a mapping - to avoid bootloader overriding default cross bar setting in ways un-expected by kernel.
-> 
-> Does that sound fair trade off?
-This sounds better. That way we can get all the devices in the DT at least.
+[ btw, I've just replied to an email by David S. Miller about his
+  backport to 3.4 (and 3.2) of this commit. ]
 
-Regards,
-Santosh
+Cheers,
+-- 
+Luis
 
+
+>  
+>  		tw32(offset + CPU_STATE, 0xffffffff); @@ -7569,6
+> +7591,14 @@ static int tg3_stop_block(struct tg3 *tp tw32_f(ofs,
+> val);
+>  
+>  	for (i = 0; i < MAX_WAIT_CNT; i++) {
+> +		if (pci_channel_offline(tp->pdev)) {
+> +			dev_err(&tp->pdev->dev,
+> +				"tg3_stop_block device offline, "
+> +				"ofs=%lx enable_bit=%x\n",
+> +				ofs, enable_bit);
+> +			return -ENODEV;
+> +		}
+> +
+>  		udelay(100);
+>  		val = tr32(ofs);
+>  		if ((val & enable_bit) == 0)
+> @@ -7592,6 +7622,13 @@ static int tg3_abort_hw(struct tg3 *tp,
+>  
+>  	tg3_disable_ints(tp);
+>  
+> +	if (pci_channel_offline(tp->pdev)) {
+> +		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
+> +		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
+> +		err = -ENODEV;
+> +		goto err_no_dev;
+> +	}
+> +
+>  	tp->rx_mode &= ~RX_MODE_ENABLE;
+>  	tw32_f(MAC_RX_MODE, tp->rx_mode);
+>  	udelay(10);
+> @@ -7640,6 +7677,7 @@ static int tg3_abort_hw(struct tg3 *tp,
+>  	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
+>  	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
+>  
+> +err_no_dev:
+>  	for (i = 0; i < tp->irq_cnt; i++) {
+>  		struct tg3_napi *tnapi = &tp->napi[i];
+>  		if (tnapi->hw_status)
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
