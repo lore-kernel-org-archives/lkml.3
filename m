@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab3GXS0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:26:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:8934 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751222Ab3GXS0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:26:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="375809063"
-Date: Wed, 24 Jul 2013 11:26:35 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: xhci: Mark two functions __maybe_unused
-Message-ID: <20130724182635.GI5289@xanatos>
-References: <1374605900-29700-1-git-send-email-olof@lixom.net>
+	id S1752198Ab3GXSav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:30:51 -0400
+Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:51677 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750933Ab3GXSat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 14:30:49 -0400
+Date: Wed, 24 Jul 2013 14:31:44 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Andi Kleen <andi@firstfloor.org>
+cc: Sasha Levin <sasha.levin@oracle.com>, Andi Kleen <ak@linux.intel.com>,
+        acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+In-Reply-To: <20130724013315.GU6123@two.firstfloor.org>
+Message-ID: <alpine.DEB.2.02.1307241427550.8230@pianoman.cluster.toy>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
+ <51EF222D.9070909@oracle.com> <20130724013315.GU6123@two.firstfloor.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374605900-29700-1-git-send-email-olof@lixom.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020206.51F01D59.00B8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:58:20AM -0700, Olof Johansson wrote:
-> Resolves the following build warnings:
-> drivers/usb/host/xhci.c:332:13: warning: 'xhci_msix_sync_irqs' defined but not used [-Wunused-function]
-> drivers/usb/host/xhci.c:3901:12: warning: 'xhci_change_max_exit_latency' defined but not used [-Wunused-function]
-> 
-> These functions are not always used, and since they're marked static
-> they will produce build warnings:
-> - xhci_msix_sync_irqs is only used with CONFIG_PCI.
-> - xhci_change_max_exit_latency is a little more complicated with
->   dependencies on CONFIG_PM and CONFIG_PM_RUNTIME.
-> 
-> Instead of building a bigger maze of ifdefs in this code, I've just
-> marked both with __maybe_unused.
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> ---
-> 
-> Sarah,
-> 
-> I guess taste might differ on ifdef vs __maybe_unused, let me know this
-> is not to your liking.
+On Wed, 24 Jul 2013, Andi Kleen wrote:
 
-__maybe_unused is fine, I will queue this up shortly.
+> On Tue, Jul 23, 2013 at 08:39:09PM -0400, Sasha Levin wrote:
+> It sounds like trinity is breaking (well printing a message, not really
+> breaking) on any addition. So if we follow that the perf sysfs interface
+> would be completely frozen and can never be extended over today.
 
-Sarah Sharp
+Trinity is breaking on any *ABI-breaking* additions.
+You can add arbitrary fields to sysfs events/* as long as there's
+a corresponding format/* entry.
 
-> 
-> Thanks,
-> 
-> -Olof
-> 
->  drivers/usb/host/xhci.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-> index 2c49f00..87ae8cd 100644
-> --- a/drivers/usb/host/xhci.c
-> +++ b/drivers/usb/host/xhci.c
-> @@ -329,7 +329,7 @@ static void xhci_cleanup_msix(struct xhci_hcd *xhci)
->  	return;
->  }
->  
-> -static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-> +static void __maybe_unused xhci_msix_sync_irqs(struct xhci_hcd *xhci)
->  {
->  	int i;
->  
-> @@ -3898,7 +3898,7 @@ int xhci_find_raw_port_number(struct usb_hcd *hcd, int port1)
->   * Issue an Evaluate Context command to change the Maximum Exit Latency in the
->   * slot context.  If that succeeds, store the new MEL in the xhci_virt_device.
->   */
-> -static int xhci_change_max_exit_latency(struct xhci_hcd *xhci,
-> +static int __maybe_unused xhci_change_max_exit_latency(struct xhci_hcd *xhci,
->  			struct usb_device *udev, u16 max_exit_latency)
->  {
->  	struct xhci_virt_device *virt_dev;
-> -- 
-> 1.7.10.4
-> 
+> I don't think it's a big problem that a test tool needs to be extended
+> when the software it's testing changes.
+
+Trinity isn't the only tool that would break, I just picked it as an 
+example because it's one that kernel devs have likely heard of.
+
+Vince
