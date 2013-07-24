@@ -1,53 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936Ab3GXGRK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:17:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:60586 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab3GXGRJ (ORCPT
+	id S1751772Ab3GXGV1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:21:27 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:28783
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750876Ab3GXGV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:17:09 -0400
-Message-ID: <51EF7159.8030409@canonical.com>
-Date: Wed, 24 Jul 2013 08:16:57 +0200
-From: David Henningsson <david.henningsson@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 02:21:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v5 0/4] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Wed, 24 Jul 2013 14:21:05 +0800
+Message-ID: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Felipe Tonello <eu@felipetonello.com>, alsa-devel@alsa-project.org,
-        lgirdwood@gmail.com, "Felipe F. Tonello" <ftonello@cercacor.com>,
-        TakashiIwaitiwai@suse.de, linux-kernel@vger.kernel.org,
-        JaroslavKyselaperex@perex.cz
-Subject: Re: [alsa-devel] [PATCH] ALSA: SoC: Added jack detection kcontrol
- support
-References: <1374281962-3786-1-git-send-email-eu@felipetonello.com> <20130722000157.GI9858@sirena.org.uk> <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com> <20130723124023.GX9858@sirena.org.uk> <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com> <20130724001332.GW9858@sirena.org.uk>
-In-Reply-To: <20130724001332.GW9858@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 02:13 AM, Mark Brown wrote:
-> On Tue, Jul 23, 2013 at 05:10:29PM -0700, Felipe Tonello wrote:
->> On Tue, Jul 23, 2013 at 5:40 AM, Mark Brown <broonie@kernel.org> wrote:
->
->>> This was the existing kernel API at the time that the code was added -
->>> I beleive people had been doing that for simple switches that detect the
->>> physical presence of a jack since it looks exactly like a button from a
->>> hardware point of view.  See the original commit adding the code.
->
->> I saw it. I don't know what you think is the best way to go. I'm not
->> sure if someone is using this input event API, since even PulseAudio
->> even declined that implementation due KControl implementation.
->
-> It's used quite a bit in embedded systems, there are actually patches
-> for PulseAudio which were deployed for a while- I guess they might have
-> been removed or something.
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-The input event implementation was only in Ubuntu (for a release or 
-two), and was never merged in upstream PA. (I guess one could find them 
-by looking in the Ubuntu archives.)
+Hi Vinod, Dan, Scott and Leo, please have a look at these V2 patches.
+
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used corrently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (4):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+  DMA: Freescale: eliminate a compiling warning
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  118 +++++++++++++++-----
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |   11 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 269 insertions(+), 41 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
 
 -- 
-David Henningsson, Canonical Ltd.
-https://launchpad.net/~diwic
+1.7.9.5
+
+
+
