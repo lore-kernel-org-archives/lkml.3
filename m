@@ -1,124 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab3GXI3N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:29:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33441 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788Ab3GXI3J convert rfc822-to-8bit (ORCPT
+	id S1751799Ab3GXIay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:30:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54498 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab3GXIax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:29:09 -0400
-From: "Fernandes, Joel" <joelf@ti.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        "Tony Lindgren" <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "Vutla, Lokesh" <lokeshvutla@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Matt Porter <matt@ohporter.com>, Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
-Thread-Topic: [PATCH] dma: edma: add device_slave_caps() support
-Thread-Index: AQHOh8PCY4Hlwr7i50+6wc3Ud45aB5lzzNsA//+uYoCAAFePAP//rT3R
-Date: Wed, 24 Jul 2013 08:28:32 +0000
-Message-ID: <FB20353E-4890-4462-A671-3587A3841B4A@ti.com>
-References: <1374597804-3961-1-git-send-email-joelf@ti.com>
- <51EF8A52.90902@metafoo.de>
- <51EF8C2B.2030409@ti.com>,<51EF8F4E.8080806@metafoo.de>
-In-Reply-To: <51EF8F4E.8080806@metafoo.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Jul 2013 04:30:53 -0400
+Date: Wed, 24 Jul 2013 10:30:41 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Robin Gong <b38343@freescale.com>
+Cc: broonie@kernel.org, shawn.guo@linaro.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, lgirdwood@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
+Message-ID: <20130724083041.GC4332@pengutronix.de>
+References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374398247-11384-1-git-send-email-b38343@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:03:39 up 40 days, 20:13, 26 users,  load average: 0.29, 0.31,
+ 0.19
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-On Jul 24, 2013, at 3:23 AM, "Lars-Peter Clausen" <lars@metafoo.de> wrote:
+I tested your patch and had to change two things to actually make it
+work. See below...
 
-> On 07/24/2013 10:11 AM, Joel Fernandes wrote:
->> On 07/24/2013 03:03 AM, Lars-Peter Clausen wrote:
->>> On 07/23/2013 06:43 PM, Joel Fernandes wrote:
->>>> Implement device_slave_caps(). EDMA has a limited number of slots.
->>>> Slave drivers such as omap_hsmmc will query the driver to make
->>>> sure they don't pass in more than these many scatter segments.
->>>> 
->>>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>>> ---
->>>> Vinod, or Dan- If this patch looks ok, can you please merge in for
->>>> -rc cycle? This patch is required to fix MMC support on AM33xx. This
->>>> patch is blocking 3 other patches which fix various MMC things. Thanks!
->>>> 
->>>> Notes:
->>>> (1) this approach is temporary and only for -rc cycle to fix MMC on
->>>> AM335x. It will be replace by the RFC series in future kernels:
->>>> http://www.spinics.net/lists/arm-kernel/msg260094.html
->>>> 
->>>> (2) Patch depends Vinod's patch at:
->>>> http://permalink.gmane.org/gmane.linux.kernel/1525112
->>>> 
->>>> drivers/dma/edma.c |    9 +++++++++
->>>> 1 file changed, 9 insertions(+)
->>>> 
->>>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->>>> index 7222cbe..81d5429 100644
->>>> --- a/drivers/dma/edma.c
->>>> +++ b/drivers/dma/edma.c
->>>> @@ -517,6 +517,14 @@ static void edma_issue_pending(struct dma_chan *chan)
->>>>    spin_unlock_irqrestore(&echan->vchan.lock, flags);
->>>> }
->>>> 
->>>> +static inline int edma_slave_caps(struct dma_chan *chan,
->>>> +    struct dma_slave_caps *caps)
->>>> +{
->>>> +    caps->max_sg_nr = MAX_NR_SG;
->>> 
->>> Hm, what about the other fields?
->> 
->> Other fields are unused, the max segment size is supposed to be
->> calculated "given" the address width and burst size. Since these
->> can't be provided to get_caps, I have left it out for now.
->> See: https://lkml.org/lkml/2013/3/6/464
+On Sun, Jul 21, 2013 at 05:17:27PM +0800, Robin Gong wrote:
+> Add pfuze100 regulator driver.
 > 
-> The PL330 driver is similar in this regard, the maximum segment size also
-> depends on address width and burst width. What I did for the get_slave_caps
-> implementation is to set it to the minimum maximum size. E.g. in you case
-> that should be SZ_64K - 1 (burstsize and addrwidth both set to 1).
+> Signed-off-by: Robin Gong <b38343@freescale.com>
 
-So you're setting max to minimum maximum size? Isn't that like telling the driver that its segments can't be bigger than this... Unless I'm missing something..
+(...)
 
-> 
->> 
->> Even if it did, the "segment size" itself is unused in the MMC driver
->> that this is supposed to fix, unlike the "number of segments" which I'm
->> populating above.
-> 
-> E.g. for ALSA we'll need to know the max segment size, so I think it doesn't
-> hurt add this in this patch as well.
+> ---
 
-For alsa it would dma only the minimum max size even if the dma controller could do more?
+> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+> new file mode 100644
+> index 0000000..fd259ef
+> --- /dev/null
+> +++ b/drivers/regulator/pfuze100-regulator.c
+> @@ -0,0 +1,462 @@
 
-> 
-> And you should also initialize all the other fields, even though if there
-> are no users yet. It will be really painful to write generic drivers using
-> the dmaengine API if none of the dmaengine drivers actually initializes the
-> caps struct properly.
+(...)
 
-Ok sure.
+> +static struct regulator_ops pfuze100_ldo_regulator_ops = {
+> +	.enable = regulator_enable_regmap,
+> +	.disable = regulator_disable_regmap,
+> +	.is_enabled = regulator_is_enabled_regmap,
+> +	.list_voltage = regulator_list_voltage_linear,
+> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> +};
+> +
+> +static struct regulator_ops pfuze100_fixed_regulator_ops = {
+> +	.list_voltage = regulator_list_voltage_linear,
+> +};
+
+
+This needs:
+
+diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+index 07d5a54..d0d67b4 100644
+--- a/drivers/regulator/pfuze100-regulator.c
++++ b/drivers/regulator/pfuze100-regulator.c
+@@ -133,6 +133,7 @@ static struct regulator_ops pfuze100_ldo_regulator_ops = {
+
+ static struct regulator_ops pfuze100_fixed_regulator_ops = {
+	.list_voltage = regulator_list_voltage_linear,
++	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+ };
+
+ static struct regulator_ops pfuze100_sw_regulator_ops = {
+
+
+Otherwise the fixed_regulator VDDR isn't registered and the driver then unloads
+completely. This is at least the case for v3.10. I haven't had the chance to test
+it on v3.11-rcX. If the _regulator_do_set_voltage logic changes, then scratch this.
+
+> +
+> +static struct regulator_ops pfuze100_sw_regulator_ops = {
+> +	.list_voltage = regulator_list_voltage_linear,
+> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> +	.set_voltage_time_sel = regulator_set_voltage_time_sel,
+> +	.set_ramp_delay = pfuze100_set_ramp_delay,
+> +};
+> +
+> +static struct regulator_ops pfuze100_swb_regulator_ops = {
+> +	.list_voltage = regulator_list_voltage_table,
+> +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> +	.get_voltage_sel = regulator_get_voltage_sel_regmap,
+> +
+> +};
+> +
+> +#define PFUZE100_FIXED_REG(_name, base, voltage)	\
+> +{	\
+> +	[PFUZE100_ ## _name] = {	\
+> +		.desc = {	\
+> +			.name = #_name,	\
+> +			.n_voltages = 1,	\
+> +			.ops = &pfuze100_fixed_regulator_ops,	\
+> +			.type = REGULATOR_VOLTAGE,	\
+> +			.id = PFUZE100_ ## _name,	\
+> +			.owner = THIS_MODULE,	\
+> +			.min_uV = (voltage),	\
+> +			.enable_reg = (base),	\
+> +			.enable_mask = 0x10,	\
+> +		},	\
+> +	}	\
+> +}
+> +
+
+With this and the following defines I had to remove the first and last
+curly braces. It didn't compile with them. I'm not that into the preprocessor,
+to fully understand if it is valid C syntax or not.
+Other drivers (e.g. mc13xxx) seem to also ommit these.
+
+> +#define PFUZE100_SW_REG(_name, base, min, max, step)	\
+> +{	\
+> +	[PFUZE100_ ## _name] = {	\
+> +		.desc = {	\
+> +			.name = #_name,\
+> +			.n_voltages = ((max) - (min)) / (step) + 1,	\
+> +			.ops = &pfuze100_sw_regulator_ops,	\
+> +			.type = REGULATOR_VOLTAGE,	\
+> +			.id = PFUZE100_ ## _name,	\
+> +			.owner = THIS_MODULE,	\
+> +			.min_uV = (min),	\
+> +			.uV_step = (step),	\
+> +			.vsel_reg = (base) + PFUZE100_VOL_OFFSET,	\
+> +			.vsel_mask = 0x3f,	\
+> +		},	\
+> +		.stby_reg = (base) + PFUZE100_STANDBY_OFFSET,	\
+> +		.stby_mask = 0x3f,	\
+> +	}	\
+> +}
+> +
+> +#define PFUZE100_SWB_REG(_name, base, mask, voltages)	\
+> +{	\
+> +	[PFUZE100_ ## _name] = {	\
+> +		.desc = {	\
+> +			.name = #_name,	\
+> +			.n_voltages = ARRAY_SIZE(voltages),	\
+> +			.ops = &pfuze100_swb_regulator_ops,	\
+> +			.type = REGULATOR_VOLTAGE,	\
+> +			.id = PFUZE100_ ## _name,	\
+> +			.owner = THIS_MODULE,	\
+> +			.volt_table = voltages,	\
+> +			.vsel_reg = (base),	\
+> +			.vsel_mask = (mask),	\
+> +		},	\
+> +	}	\
+> +}
+> +
+> +#define PFUZE100_VGEN_REG(_name, base, min, max, step)	\
+> +{	\
+> +	[PFUZE100_ ## _name] = {	\
+> +		.desc = {	\
+> +			.name = #_name,	\
+> +			.n_voltages = ((max) - (min)) / (step) + 1,	\
+> +			.ops = &pfuze100_ldo_regulator_ops,	\
+> +			.type = REGULATOR_VOLTAGE,	\
+> +			.id = PFUZE100_ ## _name,	\
+> +			.owner = THIS_MODULE,	\
+> +			.min_uV = (min),	\
+> +			.uV_step = (step),	\
+> +			.vsel_reg = (base),	\
+> +			.vsel_mask = 0xf,	\
+> +			.enable_reg = (base),	\
+> +			.enable_mask = 0x10,	\
+> +		},	\
+> +		.stby_reg = (base),	\
+> +		.stby_mask = 0x20,	\
+> +	}	\
+> +}
+> +
 
 Thanks,
+Steffen
 
--Joel
-
-> 
-> - Lars
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
