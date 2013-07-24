@@ -1,61 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab3GXGWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:22:09 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:22047
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750876Ab3GXGVv (ORCPT
+	id S1752020Ab3GXGWs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:22:48 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:40763 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3GXGWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:21:51 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 14
-X-BigFish: VS14(zz67favzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v5 4/4] DMA: Freescale: eliminate a compiling warning
-Date: Wed, 24 Jul 2013 14:21:09 +0800
-Message-ID: <1374646870-5162-5-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
+	Wed, 24 Jul 2013 02:22:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <Pine.LNX.4.64.1307232233190.26199@axis700.grange>
+References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
+	<1374576609-27748-3-git-send-email-g.liakhovetski@gmx.de>
+	<CANqRtoRnMkUjYKp3j2agoN7ufh9DGGbha6xQS8ugibLvK3hGfA@mail.gmail.com>
+	<Pine.LNX.4.64.1307232233190.26199@axis700.grange>
+Date: Wed, 24 Jul 2013 15:22:44 +0900
+Message-ID: <CANqRtoSdfU=SP+MuOTLenPOHCp17CFLA+OVtjqpAgP7bxMVC=Q@mail.gmail.com>
+Subject: Re: [PATCH v4 02/15] DMA: shdma: add r8a7740 DMAC data to the device
+ ID table
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Vinod Koul <vinod.koul@intel.com>, SH-Linux <linux-sh@vger.kernel.org>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
+Hi Guennadi,
 
-The variable cookie is initialized in a list_for_each_entry loop, if(unlikely)
-the list is empty, this variable will be used uninitialized, so we get a gcc
-compiling warning about this. This patch fixes this defect by setting an
-initial value to the varialble cookie.
+On Wed, Jul 24, 2013 at 6:19 AM, Guennadi Liakhovetski
+<g.liakhovetski@gmx.de> wrote:
+> On Wed, 24 Jul 2013, Magnus Damm wrote:
+>
+>> Hi Guennadi,
+>>
+>> Thanks for your efforts on this.
+>>
+>> On Tue, Jul 23, 2013 at 7:49 PM, Guennadi Liakhovetski
+>> <g.liakhovetski@gmx.de> wrote:
+>> > This configuration data will be re-used, when DMAC DT support is added to
+>> > r8a7740, DMAC platform data in setup-r8a7740.c will be removed.
+>> >
+>> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
+>> > ---
+>> >
+>> > v4: make struct sh_dmae_pdata r8a7740_dma_pdata "const"
+>> >
+>>
+>> [snip]
+>>
+>> > --- /dev/null
+>> > +++ b/drivers/dma/sh/shdma-r8a7740.c
+>> > @@ -0,0 +1,95 @@
+>> > +#include <linux/sh_dma.h>
+>> > +
+>> > +#include <mach/dma-register.h>
+>> > +#include <mach/r8a7740.h>
+>>
+>> Including stuff from <mach/..> isn't really compatible with
+>> MULTIPLATFORM,
+>
+> Hmm, right. I modeled this arch-specific driver code after Laurent's
+> pinctrl driver revamp, which also includes <mach/*.h> headers. So, we'll
+> have to think how to fix both.
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
----
- drivers/dma/fsldma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I mentioned this to Laurent when he started converting to PINCTRL, and
+I believe the only remaining bits are the static GPIO-to-IRQ tables.
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 16a9a48..14d68a4 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -406,7 +406,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
- 	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
- 	struct fsl_desc_sw *child;
- 	unsigned long flags;
--	dma_cookie_t cookie;
-+	dma_cookie_t cookie = 0;
- 
- 	spin_lock_irqsave(&chan->desc_lock, flags);
- 
--- 
-1.7.9.5
+>> so please don't write new code like this. Actually we
+>> don't want any code under drivers/ to include stuff from the mach
+>> directory.
+>
+> Sure, understood.
 
+Good.
 
+>> I suggest that you arrange your code in a way so the C version of DMAC
+>> support has tables with slave ids as usual under
+>> arch/arm/mach-shmobile/, but the DT bits that operate independently of
+>> C stay in drivers/... Over time we will get rid of the C version, and
+>> until that happens the DT and C version can coexist in parallel.
+>
+> That's already how it is. Data, that I took to drivers/dma/sh/ is needed
+> for both DT and C. DMA stuff, needed only for C are only DMAC devices and
+> resources. I think, I might be able to carry those DMA specific headers
+> and defines over from mach/ to drivers/dma/sh. Maybe it would be easier to
+> do this in several steps:
+>
+> 1. add my drivers/dma/sh/shdma-<arch>.c files *with* mach/ headers
+> 2. switch arches over to those files
+> (the above two steps are already done in my patch series)
+> 3. move headers to drivers/dma/sh
+>
+> Ok, alternatively, I might be able to do (1) above without using mach/
+> headers at all by directly copying them to drivers/dma/sh/ and then
+> removing the original mach/headers in step (2)? I'll look in more detail
+> at the code tomorrow.
 
+Thanks. My apologies for reviewing your code late in the cycle, but
+I've now looked through this series and the following questions popped
+up:
+
+1) How will it look like in DT when a DMA Engine slave device will use DMA?
+
+2) Isn't it possible to leave the SHDMA_SLAVE_xx bits to only be used
+by legacy C SoC and board code in arch/arm/mach-shmobile? I don't
+understand why you have to move them over to drivers/... I just assume
+these SHDMA_SLAVE bits won't be used by 1) above.
+
+3) How difficult would it be to describe the information in "struct
+sh_dmae_slave_config" using DT?
+
+4) It seems that some patches in this series are unrelated. Can you
+submit 4/15 and 9/15 from v4 independently somehow?
+
+5) Reducing and extending (reducing is optional of course)
+
+At this point you cover r8a7740, r8a73a0 and r8a73a4. I'm not sure why
+your picked those 3 SoCs, but perhaps it would be a good idea to
+select a single SoC to begin with but extend the support to also
+provide DT code that makes use of DMA Engine in slave devices like for
+instance MMCIF (this would cover question 1) above). When we have
+agreed on the big picture then additional SoCs can easily be added
+later.
+
+6) Remove untested bits
+
+And while doing this conversion, perhaps this is a good opportunity to
+only move over DMA Engine slaves that can be tested? Having tons of
+unused DMA configuration seems overly heavy to me. If it's not tested
+then it's broken.
+
+Cheers,
+
+/ magnus
