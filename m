@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab3GXWGA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55306 "EHLO
+	id S1754670Ab3GXWP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:15:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55362 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3GXWFp (ORCPT
+	with ESMTP id S1753343Ab3GXWGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:45 -0400
+	Wed, 24 Jul 2013 18:06:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: [PATCH 01/36] misc: c2port: use dev_bin_attrs instead of hand-coding it
-Date: Wed, 24 Jul 2013 15:05:04 -0700
-Message-Id: <1374703539-9705-2-git-send-email-gregkh@linuxfoundation.org>
+        "Hans J. Koch" <hjk@hansjkoch.de>
+Subject: [PATCH 20/36] UIO: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:23 -0700
+Message-Id: <1374703539-9705-21-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,93 +21,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Classes support a list of default binary attributes, so use that in the
-c2port driver, instead of hand creating and destroying the file, which
-is racing with userspace.  Bonus is this removes lines of code.
+The dev_attrs field of struct class is going away soon, dev_groups
+should be used instead.  This converts the uio class code to use the
+correct field.
 
-Cc: Rodolfo Giometti <giometti@linux.it>
+Cc: Hans J. Koch <hjk@hansjkoch.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/misc/c2port/core.c | 30 +++++++++++++-----------------
- 1 file changed, 13 insertions(+), 17 deletions(-)
+ drivers/uio/uio.c | 22 +++++++++++++---------
+ 1 file changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
-index f32550a7..a3b8370c 100644
---- a/drivers/misc/c2port/core.c
-+++ b/drivers/misc/c2port/core.c
-@@ -867,14 +867,17 @@ static struct device_attribute c2port_attrs[] = {
- 	__ATTR_NULL,
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index 3b96f185..170a178d 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -224,38 +224,42 @@ static struct kobj_type portio_attr_type = {
+ 	.default_attrs	= portio_attrs,
  };
  
--static struct bin_attribute c2port_bin_attrs = {
--	.attr	= {
--		.name	= "flash_data",
--		.mode	= 0644
-+static struct bin_attribute c2port_bin_attrs[] = {
-+	{
-+		.attr	= {
-+			.name	= "flash_data",
-+			.mode	= 0644
-+		},
-+		.read	= c2port_read_flash_data,
-+		.write	= c2port_write_flash_data,
-+		/* .size is computed at run-time */
- 	},
--	.read	= c2port_read_flash_data,
--	.write	= c2port_write_flash_data,
--	/* .size is computed at run-time */
-+	__ATTR_NULL
+-static ssize_t show_name(struct device *dev,
++static ssize_t name_show(struct device *dev,
+ 			 struct device_attribute *attr, char *buf)
+ {
+ 	struct uio_device *idev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%s\n", idev->info->name);
+ }
++static DEVICE_ATTR_RO(name);
+ 
+-static ssize_t show_version(struct device *dev,
++static ssize_t version_show(struct device *dev,
+ 			    struct device_attribute *attr, char *buf)
+ {
+ 	struct uio_device *idev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%s\n", idev->info->version);
+ }
++static DEVICE_ATTR_RO(version);
+ 
+-static ssize_t show_event(struct device *dev,
++static ssize_t event_show(struct device *dev,
+ 			  struct device_attribute *attr, char *buf)
+ {
+ 	struct uio_device *idev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", (unsigned int)atomic_read(&idev->event));
+ }
++static DEVICE_ATTR_RO(event);
+ 
+-static struct device_attribute uio_class_attributes[] = {
+-	__ATTR(name, S_IRUGO, show_name, NULL),
+-	__ATTR(version, S_IRUGO, show_version, NULL),
+-	__ATTR(event, S_IRUGO, show_event, NULL),
+-	{}
++static struct attribute *uio_attrs[] = {
++	&dev_attr_name.attr,
++	&dev_attr_version.attr,
++	&dev_attr_event.attr,
++	NULL,
+ };
++ATTRIBUTE_GROUPS(uio);
+ 
+ /* UIO class infrastructure */
+ static struct class uio_class = {
+ 	.name = "uio",
+-	.dev_attrs = uio_class_attributes,
++	.dev_groups = uio_groups,
  };
  
  /*
-@@ -907,6 +910,8 @@ struct c2port_device *c2port_device_register(char *name,
- 		goto error_idr_alloc;
- 	c2dev->id = ret;
- 
-+	c2port_bin_attrs[0].size = ops->blocks_num * ops->block_size;
-+
- 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
- 				   "c2port%d", c2dev->id);
- 	if (unlikely(IS_ERR(c2dev->dev))) {
-@@ -919,12 +924,6 @@ struct c2port_device *c2port_device_register(char *name,
- 	c2dev->ops = ops;
- 	mutex_init(&c2dev->mutex);
- 
--	/* Create binary file */
--	c2port_bin_attrs.size = ops->blocks_num * ops->block_size;
--	ret = device_create_bin_file(c2dev->dev, &c2port_bin_attrs);
--	if (unlikely(ret))
--		goto error_device_create_bin_file;
--
- 	/* By default C2 port access is off */
- 	c2dev->access = c2dev->flash_access = 0;
- 	ops->access(c2dev, 0);
-@@ -937,9 +936,6 @@ struct c2port_device *c2port_device_register(char *name,
- 
- 	return c2dev;
- 
--error_device_create_bin_file:
--	device_destroy(c2port_class, 0);
--
- error_device_create:
- 	spin_lock_irq(&c2port_idr_lock);
- 	idr_remove(&c2port_idr, c2dev->id);
-@@ -959,7 +955,6 @@ void c2port_device_unregister(struct c2port_device *c2dev)
- 
- 	dev_info(c2dev->dev, "C2 port %s removed\n", c2dev->name);
- 
--	device_remove_bin_file(c2dev->dev, &c2port_bin_attrs);
- 	spin_lock_irq(&c2port_idr_lock);
- 	idr_remove(&c2port_idr, c2dev->id);
- 	spin_unlock_irq(&c2port_idr_lock);
-@@ -985,6 +980,7 @@ static int __init c2port_init(void)
- 		return PTR_ERR(c2port_class);
- 	}
- 	c2port_class->dev_attrs = c2port_attrs;
-+	c2port_class->dev_bin_attrs = c2port_bin_attrs;
- 
- 	return 0;
- }
 -- 
 1.8.3.rc0.20.gb99dd2e
 
