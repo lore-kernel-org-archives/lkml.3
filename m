@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751894Ab3GXRT6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:19:58 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:39495 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3GXRT5 (ORCPT
+	id S1752284Ab3GXRUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:20:19 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:45058 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751951Ab3GXRUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:19:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130724151743.GA15805@kroah.com>
-References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-2-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-5-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-6-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com> <20130724151743.GA15805@kroah.com>
+	Wed, 24 Jul 2013 13:20:16 -0400
 From: Peng Tao <bergwolf@gmail.com>
-Date: Thu, 25 Jul 2013 01:19:35 +0800
-Message-ID: <CA+a=Yy650o-R6uVLJ-nmr_EL4b5b2e22yTmrK9TYiPM-oKuuCQ@mail.gmail.com>
-Subject: Re: [PATCH 6/8] staging/lustre: fix Kconfig bool defaults
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>,
         Andreas Dilger <andreas.dilger@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Subject: [PATCH-RESEND 0/8] staging/lustre: Intel tree sync and two fixups
+Date: Thu, 25 Jul 2013 01:17:23 +0800
+Message-Id: <1374686251-3152-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 11:17 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Jul 24, 2013 at 04:31:30PM +0800, mail-agent-noreply@emc.com wrote:
->
-> Your email is spitting out a very invalid email address :(
->
-Sorry I was using a fake email agent to send these patches... I'll fix
-up and resend.
+Hi Greg,
+
+I've fixed up the rest of Intel tree ported patches and rebased them on top
+of your staging-next. Also I found that the Lustre errno translate code breaks
+build on non-x86 systems. I've added one patch to fix it. Please queue them if
+they are OK to you.
+
+Resend after fixing up sender email address...
 
 Thanks,
 Tao
->
->> From: Peng Tao <bergwolf@gmail.com>
->
-> Ok, that's one email address, yet...
->
->> Should be y instead of true.
->>
->> Reported-by: Paul Bolle <pebolle@tiscali.nl>
->> Cc: Andreas Dilger <andreas.dilger@intel.com>
->> Signed-off-by: Peng Tao <tao.peng@emc.com>
->
-> That's the other.  Which is it?  Please keep them the same, as you do
-> have control over them.
->
-> Care to resend this series fixing this up?
->
-> thanks,
->
-> greg k-h
+
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+
+John L. Hammond (2):
+  staging/lustre/llite: handle io init failure in ll_fault_io_init()
+  staging/lustre/obdclass: use a dummy structure for lu_ref_link
+
+Liu Xuezhao (1):
+  staging/lustre/obdclass: add obd_target.h
+
+Peng Tao (2):
+  staging/lustre: fix Kconfig bool defaults
+  staging/lustre: fix build on non-x86
+
+Sebastien Buisson (2):
+  staging/lustre: fix 'data race condition' issues in at_reset()
+  staging/lustre/llite: fix 'data race condition' issues of lli_flags
+
+Thomas Leibovici (1):
+  staging/lustre/lmv: support DNE with HSM.
+
+ drivers/staging/lustre/lustre/Kconfig              |    2 +-
+ drivers/staging/lustre/lustre/include/cl_object.h  |   10 +-
+ .../lustre/lustre/include/linux/lustre_fsfilt.h    |   10 -
+ .../staging/lustre/lustre/include/lprocfs_status.h |   36 --
+ drivers/staging/lustre/lustre/include/lu_object.h  |   18 +-
+ drivers/staging/lustre/lustre/include/lu_ref.h     |   14 +-
+ .../staging/lustre/lustre/include/lustre_import.h  |    2 +
+ drivers/staging/lustre/lustre/include/obd.h        |  140 +-----
+ drivers/staging/lustre/lustre/llite/llite_lib.c    |    4 +
+ drivers/staging/lustre/lustre/llite/llite_mmap.c   |   36 +-
+ drivers/staging/lustre/lustre/llite/namei.c        |    5 +-
+ drivers/staging/lustre/lustre/lmv/lmv_obd.c        |  200 +++++++-
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    1 -
+ drivers/staging/lustre/lustre/mdc/mdc_request.c    |   18 +-
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
+ drivers/staging/lustre/lustre/obdclass/cl_io.c     |   17 +-
+ drivers/staging/lustre/lustre/obdclass/cl_lock.c   |    6 +-
+ drivers/staging/lustre/lustre/obdclass/cl_page.c   |    5 +-
+ .../lustre/lustre/obdclass/lprocfs_jobstats.c      |  560 --------------------
+ drivers/staging/lustre/lustre/obdclass/lu_object.c |   15 +-
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c |    1 -
+ drivers/staging/lustre/lustre/osc/osc_cache.c      |    8 +-
+ drivers/staging/lustre/lustre/ptlrpc/Makefile      |    2 +-
+ drivers/staging/lustre/lustre/ptlrpc/errno.c       |    4 +-
+ 24 files changed, 301 insertions(+), 815 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/lprocfs_jobstats.c
+
