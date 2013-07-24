@@ -1,76 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844Ab3GXJm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:42:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33746 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3GXJm5 (ORCPT
+	id S1751758Ab3GXJpk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 05:45:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:52158 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3GXJpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:42:57 -0400
-Date: Wed, 24 Jul 2013 10:42:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Robin Gong <b38343@freescale.com>, shawn.guo@linaro.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        lgirdwood@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130724094228.GY9858@sirena.org.uk>
-References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
- <20130724083041.GC4332@pengutronix.de>
+	Wed, 24 Jul 2013 05:45:38 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XauJzKcUIZVdj07X"
-Content-Disposition: inline
-In-Reply-To: <20130724083041.GC4332@pengutronix.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1373499930-5055-2-git-send-email-dh.herrmann@gmail.com>
+References: <1373499930-5055-1-git-send-email-dh.herrmann@gmail.com>
+	<1373499930-5055-2-git-send-email-dh.herrmann@gmail.com>
+Date: Wed, 24 Jul 2013 11:45:36 +0200
+Message-ID: <CANq1E4RoTi8kk=r8RsnkeqHXej+JTTT2E1TbCKhQvFAhi7qBMg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] anon_inodes: allow external inode allocations
+From: David Herrmann <dh.herrmann@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Dave Airlie <airlied@redhat.com>, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        David Herrmann <dh.herrmann@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Al
 
---XauJzKcUIZVdj07X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Any comment on this?
 
-On Wed, Jul 24, 2013 at 10:30:41AM +0200, Steffen Trumtrar wrote:
-> On Sun, Jul 21, 2013 at 05:17:27PM +0800, Robin Gong wrote:
+Regards
+David
 
->=20
->  static struct regulator_ops pfuze100_fixed_regulator_ops =3D {
-> 	.list_voltage =3D regulator_list_voltage_linear,
-> +	.set_voltage_sel =3D regulator_set_voltage_sel_regmap,
->  };
-
-This doesn't make much sense, you're adding a set voltage operation to a
-fixed voltage regulator...
-
---XauJzKcUIZVdj07X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR76GBAAoJELSic+t+oim9JDQP/3R73sFk0jCjk3Gai7BdJINx
-W63STLi2xcYtsWYEJWmcyi1P6BXYmeCYtYI4EtFoRRXYT+kuTkDUO6qowXAvp+T9
-PyyRrfHmHvGWg6HofYuT34t++f8sPikYwFMMonah8Jqwbu3iQq8YPKz8zbclgTJd
-ZgwUzmFJaYz2Ws9Vm9VvDSGyAFtnAOLpkwoh8s0rgiegsXWpKvUyDxSzD+M5cabH
-Wkw0s1IOUMajr8jRbJ6OeDdQZucIDXhanyrkjY4BIUMJnTOwdm9fKfZ5+TKzsARK
-j2teBozTO/IOGkTpXjfxqTH355/0AnfWgTmyFQxqGdH81digQBv0jjWgiJbtq/4h
-sfrkYN9wQNC8fpbi81C+AanyaJy3FxNTWV+FwybbqX0hTp/mjDD9kh9sVN4P+euk
-JTu+MBsxVyAfMKLpt4PyKaMPWOeGr7q5huHKkVce7RXKhjvd4zNkLJmZ/3+xultR
-jcJdjfQteqX55OdGqnpOmAdZjgIS1aGjftB6HjfZr0H7dkHSvjhWuPVVRUd3cvSb
-FBorrRPdjCxlfxxcYLXsPiKz5jLNeeg5cppS9m1WZWuqe3VL1Mv2npDrCqJiFK1W
-xuDcuy5pZL9FxF3KaqDhc0+tIE6H9+UQoEThZh5yw4j7xsO1QH9J3HR2yVCS7ScD
-Sl+rN5Pi3FcFzTOxRvGw
-=UfOo
------END PGP SIGNATURE-----
-
---XauJzKcUIZVdj07X--
+On Thu, Jul 11, 2013 at 1:45 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> DRM core shares a single address_space across all inodes that belong to
+> the same DRM device. This allows efficient unmapping of user-space
+> mappings during buffer destruction. However, there is no easy way to get a
+> shared address_space for DRM devices during initialization. Therefore, we
+> currently delay this step until the first ->open() and save the given
+> inode for future use.
+>
+> This causes ugly delayed initialization throughout the DRM core. TTM
+> devices end up without a dev_mapping pointer and we have to carefully
+> respect any underlying filesystem implementation so we don't corrupt the
+> inode->i_mapping and inode->i_data fields.
+>
+> We can avoid this if we were allowed to allocate an anonymous inode for
+> each DRM device. We only have to set file->f_mapping during ->open()
+> and no longer need to adjust inode mappings. As fs/anon_inodes.c already
+> provides a minimal internal FS mount, we extend it to also provide
+> anonymous inodes for use in drivers like DRM.
+>
+> Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+> ---
+>  fs/anon_inodes.c            | 36 +++++++++++++++++++++++++++++-------
+>  include/linux/anon_inodes.h |  1 +
+>  2 files changed, 30 insertions(+), 7 deletions(-)
+>
+> diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+> index 47a65df..7d8a80a 100644
+> --- a/fs/anon_inodes.c
+> +++ b/fs/anon_inodes.c
+> @@ -25,6 +25,7 @@
+>  static struct vfsmount *anon_inode_mnt __read_mostly;
+>  static struct inode *anon_inode_inode;
+>  static const struct file_operations anon_inode_fops;
+> +static struct dentry *anon_inode_root;
+>
+>  /*
+>   * anon_inodefs_dname() is called from d_path().
+> @@ -87,19 +88,18 @@ static struct inode *anon_inode_mkinode(struct super_block *s)
+>  static struct dentry *anon_inodefs_mount(struct file_system_type *fs_type,
+>                                 int flags, const char *dev_name, void *data)
+>  {
+> -       struct dentry *root;
+> -       root = mount_pseudo(fs_type, "anon_inode:", NULL,
+> +       anon_inode_root = mount_pseudo(fs_type, "anon_inode:", NULL,
+>                         &anon_inodefs_dentry_operations, ANON_INODE_FS_MAGIC);
+> -       if (!IS_ERR(root)) {
+> -               struct super_block *s = root->d_sb;
+> +       if (!IS_ERR(anon_inode_root)) {
+> +               struct super_block *s = anon_inode_root->d_sb;
+>                 anon_inode_inode = anon_inode_mkinode(s);
+>                 if (IS_ERR(anon_inode_inode)) {
+> -                       dput(root);
+> +                       dput(anon_inode_root);
+>                         deactivate_locked_super(s);
+> -                       root = ERR_CAST(anon_inode_inode);
+> +                       anon_inode_root = ERR_CAST(anon_inode_inode);
+>                 }
+>         }
+> -       return root;
+> +       return anon_inode_root;
+>  }
+>
+>  static struct file_system_type anon_inode_fs_type = {
+> @@ -219,6 +219,28 @@ err_put_unused_fd:
+>  }
+>  EXPORT_SYMBOL_GPL(anon_inode_getfd);
+>
+> +/**
+> + * anon_inode_new - create private anonymous inode
+> + *
+> + * Creates a new inode on the anonymous inode FS for driver's use. The inode has
+> + * it's own address_space compared to the shared anon_inode_inode. It can be
+> + * used in situations where user-space mappings have to be shared across
+> + * different files but no backing inode is available.
+> + *
+> + * Call iput(inode) to release the inode.
+> + *
+> + * RETURNS:
+> + * New inode on success, error pointer on failure.
+> + */
+> +struct inode *anon_inode_new(void)
+> +{
+> +       if (IS_ERR(anon_inode_root))
+> +               return ERR_CAST(anon_inode_root);
+> +
+> +       return anon_inode_mkinode(anon_inode_root->d_sb);
+> +}
+> +EXPORT_SYMBOL_GPL(anon_inode_new);
+> +
+>  static int __init anon_inode_init(void)
+>  {
+>         int error;
+> diff --git a/include/linux/anon_inodes.h b/include/linux/anon_inodes.h
+> index 8013a45..ddbd67f 100644
+> --- a/include/linux/anon_inodes.h
+> +++ b/include/linux/anon_inodes.h
+> @@ -15,6 +15,7 @@ struct file *anon_inode_getfile(const char *name,
+>                                 void *priv, int flags);
+>  int anon_inode_getfd(const char *name, const struct file_operations *fops,
+>                      void *priv, int flags);
+> +struct inode *anon_inode_new(void);
+>
+>  #endif /* _LINUX_ANON_INODES_H */
+>
+> --
+> 1.8.3.2
+>
