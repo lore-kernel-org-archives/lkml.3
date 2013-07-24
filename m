@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751102Ab3GXFJk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 01:09:40 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44744 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750743Ab3GXFJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 01:09:39 -0400
-Message-ID: <1374642569.18653.27.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 07/11] MAINTAINERS: add stable_kernel_rules.txt to stable
- maintainer information
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 24 Jul 2013 06:09:29 +0100
-In-Reply-To: <20130711220546.392644563@linuxfoundation.org>
-References: <20130711220545.542911892@linuxfoundation.org>
-	 <20130711220546.392644563@linuxfoundation.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-t4Xdbo6ebx8jeSqr0v86"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1751462Ab3GXFKa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 01:10:30 -0400
+Received: from purkki.adurom.net ([80.68.90.206]:36360 "EHLO purkki.adurom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750855Ab3GXFK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 01:10:29 -0400
+From: Kalle Valo <kvalo@adurom.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>,
+        James Hogan <james@albanarts.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Steven Newbury <steve@snewbury.org.uk>
+Subject: Re: Linux 3.11-rc2
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	<5728692.GlhGgHY92H@vostro.rjw.lan> <3298830.Snx2ykMFY6@merkaba>
+	<8019054.MeLu41uqLm@vostro.rjw.lan>
+Date: Wed, 24 Jul 2013 08:10:14 +0300
+In-Reply-To: <8019054.MeLu41uqLm@vostro.rjw.lan> (Rafael J. Wysocki's message
+	of "Mon, 22 Jul 2013 15:37:42 +0200")
+Message-ID: <8761w0y24p.fsf@purkki.adurom.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
---=-t4Xdbo6ebx8jeSqr0v86
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Well, please try to revert commits efaa14c and 8c5bd7a (in this order) and see
+> if that helps.
 
-On Thu, 2013-07-11 at 15:11 -0700, Greg Kroah-Hartman wrote:
-> 3.4-stable review patch.  If anyone has any objections, please let me kno=
-w.
->=20
-> ------------------
->=20
-> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->=20
-> commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
->=20
-> This hopefully will help point developers to the proper way that patches
-> should be submitted for inclusion in the stable kernel releases.
-[...]
+On 3.11-rc2-wl (from wireless-testing.git) my Thinkpad X230 display went
+really dark every time during resume and I had to blindly write to sysfs
+to be able to see anything. With 3.10-wl I didn't see this. Reverting
+the commits above fixed the issue for me.
 
-I've queued this up for 3.2.  And, since there was fuzz, I also picked
-your email address update (commit 879a5a001b62).
+I'm using Ubuntu 12.04 64 bit. More info about my laptop:
 
-Ben.
+  thinkpad_acpi: ThinkPad ACPI Extras v0.24
+  thinkpad_acpi: http://ibm-acpi.sf.net/
+  thinkpad_acpi: ThinkPad BIOS G2ET82WW (2.02 ), EC unknown
+  thinkpad_acpi: Lenovo ThinkPad X230, model 2324JB2
+  thinkpad_acpi: detected a 8-level brightness capable ThinkPad
+  thinkpad_acpi: radio switch found; radios are enabled
+  thinkpad_acpi: This ThinkPad has standard ACPI backlight brightness
+  control, supported by the ACPI video driver
+  thinkpad_acpi: Disabling thinkpad-acpi brightness events by default...
+  thinkpad_acpi: rfkill switch tpacpi_bluetooth_sw: radio is unblocked
+  thinkpad_acpi: rfkill switch tpacpi_wwan_sw: radio is unblocked
+  thinkpad_acpi: Standard ACPI backlight interface available, not
+  loading native one
+  thinkpad_acpi: Console audio control enabled, mode: monitor (read
+  only)
+  input: ThinkPad Extra Buttons as
+  /devices/platform/thinkpad_acpi/input/input5
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-t4Xdbo6ebx8jeSqr0v86
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUe9hiee/yOyVhhEJAQpt7RAAm/ZWo8UoPKvfTh7D1f+jAcOek1mp32YY
-5yW/UsE/hgkh4/WZCr1a3DTb1KpcdvcB36emkGH0NyDBUIj+jo1Ow3b0ltijdIXS
-LZZpGnRj33aom3wbrVxSIAQe3s4bg4sKk8d3Q4Sy/3TvyLnUUH19QGd6BAZcqK5A
-1uFASovPgxWxaAaJR8JMm6SE1l+08LxVzvYaOYerfE1L/VaVOlm4pI5xmM49DUpt
-78OvB+kW9Jj8igZCF1fS3bpSPBEe3Hw8G/6YzSlyLd5jmjixOckeyIb3Zp7Ledaz
-2WLP/98Zx46WMDOc/zFq1gxbfIGL9GwXYdBBTqau2KduaEfKXuN3SbZ/nh/F8Ca3
-F9Pa41VlBSR28R8YxUHXAD8Pc/XbOxTbzZU+GB7PHAymGc78e8FD1lgSgZqO3LCt
-kOfscGPGD/pzSxP0KLIBqbJlqGeMEjyjtmnO3iO4Xv0X7v+dV6i0BqFEgZTyA6rM
-CUunLyKamITfa2oU1Qn2oDqGdZGWYjtSH/CF2M6kibnf33zLDTw66NygrDbYen68
-OH1HDNgbzZNDIvk0Gneum9CHaiVmGOB+HzHoCIdkiJkP8PE8V0W9m1wFdoO9KsnT
-VN6xspK5V9xvjVgc14EiDKuefJha6m6xxQpurF39TuXEQcswonA0thP6T8H1P901
-mU3jeukUvus=
-=cfzY
------END PGP SIGNATURE-----
-
---=-t4Xdbo6ebx8jeSqr0v86--
+-- 
+Kalle Valo
