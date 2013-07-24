@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab3GXIGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:06:22 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:36248 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab3GXIGS (ORCPT
+	id S1752183Ab3GXIHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:07:18 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:60086 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418Ab3GXIHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:06:18 -0400
-Date: Wed, 24 Jul 2013 17:06:16 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linus.walleij@stericsson.com
-Subject: Re: [PATCH 19/22] ARM: shmobile: r8a7779: Remove '0x's from R8A7779
- DTS file
-Message-ID: <20130724080616.GB10027@verge.net.au>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-19-git-send-email-lee.jones@linaro.org>
- <20130723013343.GG16481@verge.net.au>
- <20130723075232.GD26801@laptop>
+	Wed, 24 Jul 2013 04:07:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723075232.GD26801@laptop>
-Organisation: Horms Solutions Ltd.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51EF8590.7030405@samsung.com>
+References: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
+	<1374146275-5758-2-git-send-email-cw00.choi@samsung.com>
+	<CAKohpo=oTsEjzi_51UaZ8ww8UEfZ6hwKAnu9rFgGBkt=TfHi8A@mail.gmail.com>
+	<51EF2D06.7000704@samsung.com>
+	<CAKohpok7B6DaqFPWZcODEgK5GRSoAQYZ27-h2=AQ1HBBP4gH8Q@mail.gmail.com>
+	<51EF8590.7030405@samsung.com>
+Date: Wed, 24 Jul 2013 13:37:08 +0530
+Message-ID: <CAKohpom19C7JHSX6w31pSDrwcAR_PZn1HzP0Jui5iZL=bALDPQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3 v6] cpufreq: Add debugfs directory for cpufreq
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 08:52:32AM +0100, Lee Jones wrote:
-> On Tue, 23 Jul 2013, Simon Horman wrote:
-> 
-> > On Mon, Jul 22, 2013 at 11:52:38AM +0100, Lee Jones wrote:
-> > > Cc: Simon Horman <horms+renesas@verge.net.au>
-> > > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > Acked-by: Simon Horman <horms+renesas@verge.net.au>
-> > 
-> > Let me know if you want me to take this through the renesas tree.
-> 
-> Thanks Simon. To save on conflicts, I think that's best.
-> 
-> I will take all orphaned patches or ones without maintainers associated
-> with them through ARM SoC, but if you can take it, please do.
+I just realized I missed answering few questions:
 
-Understood.
+On 24 July 2013 13:13, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+> On 07/24/2013 02:05 PM, Viresh Kumar wrote:
+>> On 24 July 2013 06:55, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>>> On 07/22/2013 07:11 PM, Viresh Kumar wrote:
+>>>> On 18 July 2013 16:47, Chanwoo Choi <cw00.choi@samsung.com> wrote:
 
-I have queued this up for v3.12 in the fixes2-for-v3.12 branch
-of my renesas tree on kernel.org.
+>>>>> +static void cpufreq_move_debugfs_dir(struct cpufreq_policy *policy,
+>>>>> +                                    unsigned int new_cpu)
+>>>>> +{
+>>>>> +       struct dentry *old_entry, *new_entry;
+>>>>> +       char new_dir_name[CPUFREQ_NAME_LEN];
+>>>>> +       unsigned int j, old_cpu = policy->cpu;
+>>>>> +
+>>>>> +       if (!policy->cpu_debugfs[new_cpu])
+>>>>> +               return;
+>>>>> +
+>>>>> +       /*
+>>>>> +        * Remove symbolic link of debugfs directory except for debugfs
+>>>>> +        * directory of old_cpu.
+>>>>> +        */
+>>>>> +       for_each_present_cpu(j) {
+>>>>> +               if (old_cpu == j)
+>>>>> +                       continue;
+>>>>> +
+>>>>> +               debugfs_remove(policy->cpu_debugfs[j]);
+>>>>
+>>>> Why you need this? We aren't removing the earlier dentry at all here.
+>>
+>> haven't answered this.
+>
+> The debugfs entry of 'old_cpu' include child debugfs file(e.g., load_table)
+> If cpu is last user of policy and core call __cpufre_remove_dev() to remove last cpu,
+> core call cpufreq_move_debugfs_dir(). I have to move the data of debugfs directory/file and
+> child data for 'old_cpu' to debugfs directory for 'new_cpu'.
+>
+> If I remove earlier dentry of 'old_cpu', I can't get the child debugfs dir/file.
+> So I didn't remove the earlier dentry of 'old_cpu'.
+
+Okay.. The original question was: why do you need to remove & add
+entries or links for cpus other than policy->cpu? Because we are renaming
+the entry, wouldn't that work straight away?
