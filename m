@@ -1,70 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab3GXO3t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:29:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33192 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471Ab3GXO3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:29:45 -0400
-Date: Wed, 24 Jul 2013 15:29:40 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-rpi-kernel@lists.infradead.org, linux-spi@vger.kernel.org
-Message-ID: <20130724142940.GC9858@sirena.org.uk>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
- <1374602524-3398-18-git-send-email-wsa@the-dreams.de>
+	id S1754073Ab3GXOaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:30:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60480 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752403Ab3GXOaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:30:01 -0400
+Date: Wed, 24 Jul 2013 16:30:00 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: [PATCH v2 7/8] memcg: stop using css id
+Message-ID: <20130724143000.GJ2540@dhcp22.suse.cz>
+References: <51EFA554.6080801@huawei.com>
+ <51EFA657.1090107@huawei.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bCKTTGDksHH4MFjj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374602524-3398-18-git-send-email-wsa@the-dreams.de>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <51EFA657.1090107@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 17/27] drivers/spi: don't check resource with
- devm_ioremap_resource
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed 24-07-13 18:03:03, Li Zefan wrote:
+> Now memcg uses cgroup id instead of css id. Update some comments and
+> set mem_cgroup_subsys->use_id to 0.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
---bCKTTGDksHH4MFjj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-On Tue, Jul 23, 2013 at 08:01:50PM +0200, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
+> ---
+>  mm/memcontrol.c | 23 ++++++++---------------
+>  1 file changed, 8 insertions(+), 15 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 403c8d9..03c8bf7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -598,16 +598,11 @@ static void disarm_sock_keys(struct mem_cgroup *memcg)
+>  #ifdef CONFIG_MEMCG_KMEM
+>  /*
+>   * This will be the memcg's index in each cache's ->memcg_params->memcg_caches.
+> - * There are two main reasons for not using the css_id for this:
+> - *  1) this works better in sparse environments, where we have a lot of memcgs,
+> - *     but only a few kmem-limited. Or also, if we have, for instance, 200
+> - *     memcgs, and none but the 200th is kmem-limited, we'd have to have a
+> - *     200 entry array for that.
+> - *
+> - *  2) In order not to violate the cgroup API, we would like to do all memory
+> - *     allocation in ->create(). At that point, we haven't yet allocated the
+> - *     css_id. Having a separate index prevents us from messing with the cgroup
+> - *     core for this
+> + * The main reason for not using cgroup id for this:
+> + *  this works better in sparse environments, where we have a lot of memcgs,
+> + *  but only a few kmem-limited. Or also, if we have, for instance, 200
+> + *  memcgs, and none but the 200th is kmem-limited, we'd have to have a
+> + *  200 entry array for that.
+>   *
+>   * The current size of the caches array is stored in
+>   * memcg_limited_groups_array_size.  It will double each time we have to
+> @@ -622,14 +617,14 @@ int memcg_limited_groups_array_size;
+>   * cgroups is a reasonable guess. In the future, it could be a parameter or
+>   * tunable, but that is strictly not necessary.
+>   *
+> - * MAX_SIZE should be as large as the number of css_ids. Ideally, we could get
+> + * MAX_SIZE should be as large as the number of cgrp_ids. Ideally, we could get
+>   * this constant directly from cgroup, but it is understandable that this is
+>   * better kept as an internal representation in cgroup.c. In any case, the
+> - * css_id space is not getting any smaller, and we don't have to necessarily
+> + * cgrp_id space is not getting any smaller, and we don't have to necessarily
+>   * increase ours as well if it increases.
+>   */
+>  #define MEMCG_CACHES_MIN_SIZE 4
+> -#define MEMCG_CACHES_MAX_SIZE 65535
+> +#define MEMCG_CACHES_MAX_SIZE MEM_CGROUP_ID_MAX
+>  
+>  /*
+>   * A lot of the calls to the cache allocation functions are expected to be
+> @@ -6183,7 +6178,6 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+>  	size_t size = memcg_size();
+>  
+>  	mem_cgroup_remove_from_trees(memcg);
+> -	free_css_id(&mem_cgroup_subsys, &memcg->css);
+>  
+>  	for_each_node(node)
+>  		free_mem_cgroup_per_zone_info(memcg, node);
+> @@ -6980,7 +6974,6 @@ struct cgroup_subsys mem_cgroup_subsys = {
+>  	.bind = mem_cgroup_bind,
+>  	.base_cftypes = mem_cgroup_files,
+>  	.early_init = 0,
+> -	.use_id = 1,
+>  };
+>  
+>  #ifdef CONFIG_MEMCG_SWAP
+> -- 
+> 1.8.0.2
 
-Applied, thanks.  With all these it'd be good to have subject lines
-matching up with the standards for the subsystem.
-
---bCKTTGDksHH4MFjj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7+TRAAoJELSic+t+oim9m34P/jVTjeoy3v9G0VkCUz2UceAC
-oUBeqfi9mKVgCLo1AJZ4rTyAuy0unMaW8Tury9VAXdXBDSnKIrY720dNujpC+Ioo
-d7d1ql5c7OFo7LV/XP9kvnij/9sKj71xT830qWTH2+SvnGnfXv1ZDm/rBUOxMCYq
-SEFO7YDLuqZcw4DCx+SI+3VVfLV6oRqCV2sfoy55ib98JDwoQayqpnCWmWxmxHmi
-RfVHOwAj5EfrjRoSUZ5aUPYu8xrdhJSrAIUjmjixNtp3hxgYG6e9M6MIDmf4fHem
-8vqNnQ26NAYb6+XSnJF9pNU8GNRYYh79Xq9QiyQ2xA3aspkYyQXQI8nQfgTugA0x
-Vog5XwtYpmXN6UIdBbiQ6NJxrDU06SIXZjOTGdbaLDzHo6NG7j0fvLDkvqnz2R3A
-J6+6pnlFlvG0CqQ+6y4O6uzS6D1cutbEHpIu0FStdldATk1vwBD3RUFnMGfTRlKw
-vSKLG925u6FwLW9LW3X9bpcNPcDzyY7/gWCUX/k+J8e6UauVvpu7S+llkYXTDMuX
-0AfEDyaWLgyvdaSWeNtuyvXSsTUoFWNEUC/7KvQWuezBOA0+ZDC5JJ9PqdS4pLXL
-OMFybOae9whcxkp+Q266+xVeWZ+F0+/rxqL4aO7C7x3VgJL7x+qsuiD6BzmfpfNY
-4GMPyxXxZtSwocTwwtJo
-=wD+M
------END PGP SIGNATURE-----
-
---bCKTTGDksHH4MFjj--
+-- 
+Michal Hocko
+SUSE Labs
