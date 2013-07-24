@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab3GXOXo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:23:44 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45794 "EHLO
+	id S1753846Ab3GXOXl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:23:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45749 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752350Ab3GXOGl (ORCPT
+	by vger.kernel.org with ESMTP id S1752067Ab3GXOGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
-        "Al Viro" <viro@zeniv.linux.org.uk>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
+CC: akpm@linux-foundation.org, "Li Jinyue" <lijinyue@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Zefan Li" <lizefan@huawei.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.704800998@decadent.org.uk>
+Message-ID: <lsq.1374674565.410268832@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [57/85] ext3,ext4: don't mess with dir_file->f_pos in
- htree_dirblock_to_tree()
+Subject: [48/85] dlci: validate the net device in dlci_del()
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,53 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Zefan Li <lizefan@huawei.com>
 
-commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
+commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
 
-Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
-in-core rbtree for use by call_filldir().  All updates of ->f_pos are
-done by the latter; bumping it here (on error) is obviously wrong - we
-might very well have it nowhere near the block we'd found an error in.
+We triggered an oops while running trinity with 3.4 kernel:
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+BUG: unable to handle kernel paging request at 0000000100000d07
+IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+PGD 640c0d067 PUD 0
+Oops: 0000 [#1] PREEMPT SMP
+CPU 3
+...
+Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
+RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
+...
+Call Trace:
+  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
+  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
+  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
+  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
+  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
+...
+
+It's because the net device is not a dlci device.
+
+Reported-by: Li Jinyue <lijinyue@huawei.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ext3/namei.c | 7 ++-----
- fs/ext4/namei.c | 7 ++-----
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ drivers/net/wan/dlci.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
- 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
- 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
- 						+((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse (bh);
--			return count;
-+			/* silently ignore the rest of the block */
+--- a/drivers/net/wan/dlci.c
++++ b/drivers/net/wan/dlci.c
+@@ -385,6 +385,7 @@ static int dlci_del(struct dlci_add *dlc
+ 	struct frad_local	*flp;
+ 	struct net_device	*master, *slave;
+ 	int			err;
++	bool			found = false;
+ 
+ 	rtnl_lock();
+ 
+@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlc
+ 		err = -ENODEV;
+ 		goto out;
+ 	}
++
++	list_for_each_entry(dlp, &dlci_devs, list) {
++		if (dlp->master == master) {
++			found = true;
 +			break;
- 		}
- 		ext3fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
- 		if (ext4_check_dir_entry(dir, NULL, de, bh,
- 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
- 					 + ((char *)de - bh->b_data))) {
--			/* On error, skip the f_pos to the next block. */
--			dir_file->f_pos = (dir_file->f_pos |
--					(dir->i_sb->s_blocksize - 1)) + 1;
--			brelse(bh);
--			return count;
-+			/* silently ignore the rest of the block */
-+			break;
- 		}
- 		ext4fs_dirhash(de->name, de->name_len, hinfo);
- 		if ((hinfo->hash < start_hash) ||
++		}
++	}
++	if (!found) {
++		err = -ENODEV;
++		goto out;
++	}
+ 
+ 	if (netif_running(master)) {
+ 		err = -EBUSY;
 
