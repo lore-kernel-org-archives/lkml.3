@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab3GXWGW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55351 "EHLO
+	id S1754409Ab3GXWGU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55335 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab3GXWF5 (ORCPT
+	with ESMTP id S1753022Ab3GXWFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:57 -0400
+	Wed, 24 Jul 2013 18:05:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rodolfo Giometti <giometti@enneenne.com>
-Subject: [PATCH 16/36] PPS: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:19 -0700
-Message-Id: <1374703539-9705-17-git-send-email-gregkh@linuxfoundation.org>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: [PATCH 11/36] v4l2: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:14 -0700
+Message-Id: <1374703539-9705-12-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,151 +23,96 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the pps class code to use the
+should be used instead.  This converts the v4l2 class code to use the
 correct field.
 
-Cc: Rodolfo Giometti <giometti@enneenne.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Rodolfo, feel free to take this through your tree, or ACK it and I can take it
+Mauro, feel free to take this through your tree, or ACK it and I can take it
 through mine.
 
- drivers/pps/pps.c          |  2 +-
- drivers/pps/sysfs.c        | 55 +++++++++++++++++++++++++++++-----------------
- include/linux/pps_kernel.h |  2 +-
- 3 files changed, 37 insertions(+), 22 deletions(-)
+ drivers/media/v4l2-core/v4l2-dev.c | 30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index 7173e3ad..2f07cd61 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -406,7 +406,7 @@ static int __init pps_init(void)
- 		pr_err("failed to allocate class\n");
- 		return PTR_ERR(pps_class);
- 	}
--	pps_class->dev_attrs = pps_attrs;
-+	pps_class->dev_groups = pps_groups;
- 
- 	err = alloc_chrdev_region(&pps_devt, 0, PPS_MAX_SOURCES, "pps");
- 	if (err < 0) {
-diff --git a/drivers/pps/sysfs.c b/drivers/pps/sysfs.c
-index ef0978c7..aefb75d6 100644
---- a/drivers/pps/sysfs.c
-+++ b/drivers/pps/sysfs.c
-@@ -29,8 +29,8 @@
-  * Attribute functions
+diff --git a/drivers/media/v4l2-core/v4l2-dev.c b/drivers/media/v4l2-core/v4l2-dev.c
+index c8859d6f..b0f49b01 100644
+--- a/drivers/media/v4l2-core/v4l2-dev.c
++++ b/drivers/media/v4l2-core/v4l2-dev.c
+@@ -38,24 +38,25 @@
+  *	sysfs stuff
   */
  
--static ssize_t pps_show_assert(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t assert_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
+-static ssize_t show_index(struct device *cd,
+-			 struct device_attribute *attr, char *buf)
++static ssize_t index_show(struct device *cd,
++			  struct device_attribute *attr, char *buf)
  {
- 	struct pps_device *pps = dev_get_drvdata(dev);
+ 	struct video_device *vdev = to_video_device(cd);
  
-@@ -41,9 +41,10 @@ static ssize_t pps_show_assert(struct device *dev,
- 			(long long) pps->assert_tu.sec, pps->assert_tu.nsec,
- 			pps->assert_sequence);
+ 	return sprintf(buf, "%i\n", vdev->index);
  }
-+static DEVICE_ATTR_RO(assert);
++static DEVICE_ATTR_RO(index);
  
--static ssize_t pps_show_clear(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t clear_show(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
+-static ssize_t show_debug(struct device *cd,
+-			 struct device_attribute *attr, char *buf)
++static ssize_t debug_show(struct device *cd,
++			  struct device_attribute *attr, char *buf)
  {
- 	struct pps_device *pps = dev_get_drvdata(dev);
+ 	struct video_device *vdev = to_video_device(cd);
  
-@@ -54,45 +55,59 @@ static ssize_t pps_show_clear(struct device *dev,
- 			(long long) pps->clear_tu.sec, pps->clear_tu.nsec,
- 			pps->clear_sequence);
+ 	return sprintf(buf, "%i\n", vdev->debug);
  }
-+static DEVICE_ATTR_RO(clear);
  
--static ssize_t pps_show_mode(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t mode_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
+-static ssize_t set_debug(struct device *cd, struct device_attribute *attr,
+-		   const char *buf, size_t len)
++static ssize_t debug_store(struct device *cd, struct device_attribute *attr,
++			  const char *buf, size_t len)
  {
- 	struct pps_device *pps = dev_get_drvdata(dev);
- 
- 	return sprintf(buf, "%4x\n", pps->info.mode);
+ 	struct video_device *vdev = to_video_device(cd);
+ 	int res = 0;
+@@ -68,21 +69,24 @@ static ssize_t set_debug(struct device *cd, struct device_attribute *attr,
+ 	vdev->debug = value;
+ 	return len;
  }
-+static DEVICE_ATTR_RO(mode);
++static DEVICE_ATTR_RW(debug);
  
--static ssize_t pps_show_echo(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t echo_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
+-static ssize_t show_name(struct device *cd,
++static ssize_t name_show(struct device *cd,
+ 			 struct device_attribute *attr, char *buf)
  {
- 	struct pps_device *pps = dev_get_drvdata(dev);
+ 	struct video_device *vdev = to_video_device(cd);
  
- 	return sprintf(buf, "%d\n", !!pps->info.echo);
- }
-+static DEVICE_ATTR_RO(echo);
- 
--static ssize_t pps_show_name(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	struct pps_device *pps = dev_get_drvdata(dev);
- 
- 	return sprintf(buf, "%s\n", pps->info.name);
+ 	return sprintf(buf, "%.*s\n", (int)sizeof(vdev->name), vdev->name);
  }
 +static DEVICE_ATTR_RO(name);
  
--static ssize_t pps_show_path(struct device *dev,
--				struct device_attribute *attr, char *buf)
-+static ssize_t path_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	struct pps_device *pps = dev_get_drvdata(dev);
- 
- 	return sprintf(buf, "%s\n", pps->info.path);
- }
-+static DEVICE_ATTR_RO(path);
-+
-+static struct attribute *pps_attrs[] = {
-+	&dev_attr_assert.attr,
-+	&dev_attr_clear.attr,
-+	&dev_attr_mode.attr,
-+	&dev_attr_echo.attr,
+-static struct device_attribute video_device_attrs[] = {
+-	__ATTR(name, S_IRUGO, show_name, NULL),
+-	__ATTR(debug, 0644, show_debug, set_debug),
+-	__ATTR(index, S_IRUGO, show_index, NULL),
+-	__ATTR_NULL
++static struct attribute *video_device_attrs[] = {
 +	&dev_attr_name.attr,
-+	&dev_attr_path.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group pps_group = {
-+	.attrs = pps_attrs,
-+};
- 
--struct device_attribute pps_attrs[] = {
--	__ATTR(assert, S_IRUGO, pps_show_assert, NULL),
--	__ATTR(clear, S_IRUGO, pps_show_clear, NULL),
--	__ATTR(mode, S_IRUGO, pps_show_mode, NULL),
--	__ATTR(echo, S_IRUGO, pps_show_echo, NULL),
--	__ATTR(name, S_IRUGO, pps_show_name, NULL),
--	__ATTR(path, S_IRUGO, pps_show_path, NULL),
--	__ATTR_NULL,
-+const struct attribute_group *pps_groups[] = {
-+	&pps_group,
++	&dev_attr_debug.attr,
++	&dev_attr_index.attr,
 +	NULL,
  };
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index 7db3eb93..1d2cd212 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -80,7 +80,7 @@ struct pps_device {
-  * Global variables
-  */
- 
--extern struct device_attribute pps_attrs[];
-+extern const struct attribute_group *pps_groups[];
++ATTRIBUTE_GROUPS(video_device);
  
  /*
-  * Internal functions.
+  *	Active devices
+@@ -217,7 +221,7 @@ static void v4l2_device_release(struct device *cd)
+ 
+ static struct class video_class = {
+ 	.name = VIDEO_NAME,
+-	.dev_attrs = video_device_attrs,
++	.dev_groups = video_device_groups,
+ };
+ 
+ struct video_device *video_devdata(struct file *file)
 -- 
 1.8.3.rc0.20.gb99dd2e
 
