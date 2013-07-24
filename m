@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab3GXQsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:48:46 -0400
-Received: from mga14.intel.com ([143.182.124.37]:38731 "EHLO mga14.intel.com"
+	id S1754903Ab3GXQsv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:48:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48431 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab3GXQso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:48:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="336155898"
-Message-ID: <51F0056A.7020208@linux.intel.com>
-Date: Wed, 24 Jul 2013 09:48:42 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753662Ab3GXQsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 12:48:47 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <ddd4ff1d4b124faeb18e6a0ba8ae2128@BLUPR03MB050.namprd03.prod.outlook.com>
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com> <1374572465-15278-4-git-send-email-jasowang@redhat.com> <bd93bc49300a4d99996cc4f57c19a008@SN2PR03MB061.namprd03.prod.outlook.com> <51EE97BD.4050402@zytor.com> <51EF59FB.8040207@redhat.com> <51EF5C9C.6070403@zytor.com> <51EF7A2A.6040003@redhat.com> <51EF7CFB.8030104@redhat.com> <ddd4ff1d4b124faeb18e6a0ba8ae2128@BLUPR03MB050.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net> <20130713102350.GA8067@MacBook-Pro.local> <20130715203922.GD23818@dyad.programming.kicks-ass.net> <20130716124248.GB10036@arm.com> <51E5655C.7050304@linux.intel.com> <20130717141426.GG27948@arm.com> <20130724135011.GE12572@e103034-lin> <51EFEFD4.4020808@linux.intel.com> <20130724164607.GF12572@e103034-lin>
-In-Reply-To: <20130724164607.GF12572@e103034-lin>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: RE: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 24 Jul 2013 08:14:13 -0700
+To: KY Srinivasan <kys@microsoft.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        Jason Wang <jasowang@redhat.com>
+CC: "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <ba894640-b367-44f0-a5e2-89a2edf4951a@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I don't see how this solves the A emulates B, B emulates A problem?
+
+KY Srinivasan <kys@microsoft.com> wrote:
 >
-> I would expect performance to be disjoint for most tasks. If there was
-> an overlap, the big would probably be less power efficient (as in
-> energy/instruction) than the little so you would prefer to run on the
-> little anyway.
 >
-> In what way would you use the overlap?
+>> -----Original Message-----
+>> From: Paolo Bonzini [mailto:paolo.bonzini@gmail.com] On Behalf Of
+>Paolo
+>> Bonzini
+>> Sent: Wednesday, July 24, 2013 3:07 AM
+>> To: Jason Wang
+>> Cc: H. Peter Anvin; KY Srinivasan; tglx@linutronix.de;
+>mingo@redhat.com;
+>> x86@kernel.org; gleb@redhat.com; kvm@vger.kernel.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: Re: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+>> 
+>> Il 24/07/2013 08:54, Jason Wang ha scritto:
+>> > On 07/24/2013 12:48 PM, H. Peter Anvin wrote:
+>> >> On 07/23/2013 09:37 PM, Jason Wang wrote:
+>> >>> On 07/23/2013 10:48 PM, H. Peter Anvin wrote:
+>> >>>> On 07/23/2013 06:55 AM, KY Srinivasan wrote:
+>> >>>>> This strategy of hypervisor detection based on some detection
+>order
+>> IMHO is not
+>> >>>>> a robust detection strategy. The current scheme works since the
+>only
+>> hypervisor emulated
+>> >>>>> (by other hypervisors happens to be Hyper-V). What if this were
+>to
+>> change.
+>> >>>>>
+>> >>>> One strategy would be to pick the *last* one in the CPUID list,
+>since
+>> >>>> the ones before it are logically the one(s) being emulated...
+>> >>>>
+>> >>>> 	-hpa
+>> >>>>
+>> >>> How about simply does a reverse loop from 0x40010000 to
+>0x40010000?
+>> >>>
+>> >> Not all systems like being poked too far into hyperspace.  Just
+>remember
+>> >> the last match and walk the list.
+>> >>
+>> >> 	-hpa
+>> >>
+>> >
+>> > Ok, but it raises a question - how to know it was the 'last' match
+>> > without knowing all signatures of other hyper-visor?
+>> 
+>> You can return a "priority" value from the .detect function.  The
+>> priority value can simply be the CPUID leaf where the signature was
+>> found (or a low value such as 1 if detection was done with DMI).
+>> 
+>> Then you can pick the hypervisor with the highest priority instead of
+>> hard-coding the order.
+>
+>I like this idea; this allows some guest level control that is what we
+>want
+>when we have hypervisors emulating each other.
+>
+>
+>Regards,
+>
+>K. Y 
+>> 
+>> Paolo
+>> 
+>> 
 
-if the scheduler thinks a task would be better off on the other side
-than where it is now, it could first move it into the "overlap area" on the
-same side by means of experiment, and if the task behaves as expected there,
-THEN move it over.
-
-
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
