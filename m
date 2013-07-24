@@ -1,112 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab3GXUN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:13:29 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:10959 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3GXUN0 (ORCPT
+	id S1754188Ab3GXUOB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:14:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7935 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754007Ab3GXUNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:13:26 -0400
-From: Waiman Long <Waiman.Long@hp.com>
-Cc: Waiman Long <Waiman.Long@hp.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        George Spelvin <linux@horizon.com>,
-        Harvey Harrison <harvey.harrison@gmail.com>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: [PATCH v2 2/3] qrwlock x86: Enable x86 to use queue read/write lock
-Date: Wed, 24 Jul 2013 16:12:25 -0400
-Message-Id: <1374696746-40184-3-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1374696746-40184-1-git-send-email-Waiman.Long@hp.com>
-References: <1374696746-40184-1-git-send-email-Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
+	Wed, 24 Jul 2013 16:13:18 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Qu6ugZQ4bf4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=HnnTJNGInn0A:10 a=20KFwNOVAAAA:8 a=A-5jg6PAATL5xQ1MlGkA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374696796.3356.162.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/6] tracing: Turn event/id->i_private into
+ call->event.type
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 24 Jul 2013 16:13:16 -0400
+In-Reply-To: <20130723205909.GA9055@redhat.com>
+References: <20130723205909.GA9055@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the necessary changes at the x86 architecture specific
-layer to enable the presence of the CONFIG_QUEUE_RWLOCK kernel option
-which can be used to replace the classic read/write lock by the queue
-read/write lock.
+On Tue, 2013-07-23 at 22:59 +0200, Oleg Nesterov wrote:
+> event_id_read() is racy, ftrace_event_call can be already freed
+> by trace_remove_event_call() callers.
+> 
+> Change event_create_dir() to pass "data = call->event.type", this
+> is all event_id_read() needs. ftrace_event_id_fops no longer needs
+> tracing_open_generic().
+> 
+> We add the new helper, event_file_data(), to read ->i_private, it
+> will have more users.
+> 
+> Note: currently ACCESS_ONCE() and "id != 0" check are not needed,
+> but we are going to change event_remove/rmdir to clear ->i_mutex.
 
-The turning on of ARCH_QUEUE_RWLOCK config option does not mean that
-the classic read/write lock will be replaced. It only means that the
-architecture supports the replacement. Actual replacement will only
-happen if the QUEUE_RWLOCK config option is also set.
+We are changing i_mutex or i_private?
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- arch/x86/Kconfig                      |    3 +++
- arch/x86/include/asm/spinlock.h       |    2 ++
- arch/x86/include/asm/spinlock_types.h |    4 ++++
- 3 files changed, 9 insertions(+), 0 deletions(-)
+Anyway, this still looks too complex for the id. Just pass the id number
+to the filp->private_data, and use that. It should never be cleared, and
+as we are not using any pointers it will always return what the id
+is/was.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b32ebf9..638dbaa 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2344,6 +2344,9 @@ config X86_DMA_REMAP
- 	bool
- 	depends on STA2X11
+Keep tracing_open_generic() and have:
+
+event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t
+*ppos)
+{
+	int id = (int)(unsigned long)filp->private_data;
+	char buf[32];
+	int len;
+
+	if (*ppos)
+		return 0;
+
+	len = sprintf(buf, "%d\n", id);
+	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+}
+
+No need for accessing the inode->i_private.
+
+-- Steve
  
-+config ARCH_QUEUE_RWLOCK
-+	def_bool y
-+
- source "net/Kconfig"
- 
- source "drivers/Kconfig"
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 33692ea..613a4ff 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -137,6 +137,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
- 		cpu_relax();
- }
- 
-+#ifndef CONFIG_QUEUE_RWLOCK
- /*
-  * Read-write spinlocks, allowing multiple readers
-  * but only one writer.
-@@ -219,6 +220,7 @@ static inline void arch_write_unlock(arch_rwlock_t *rw)
- 	asm volatile(LOCK_PREFIX WRITE_LOCK_ADD(%1) "%0"
- 		     : "+m" (rw->write) : "i" (RW_LOCK_BIAS) : "memory");
- }
-+#endif /* CONFIG_QUEUE_RWLOCK */
- 
- #define arch_read_lock_flags(lock, flags) arch_read_lock(lock)
- #define arch_write_lock_flags(lock, flags) arch_write_lock(lock)
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index ad0ad07..afacd36 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -28,6 +28,10 @@ typedef struct arch_spinlock {
- 
- #define __ARCH_SPIN_LOCK_UNLOCKED	{ { 0 } }
- 
-+#ifdef CONFIG_QUEUE_RWLOCK
-+#include <asm-generic/qrwlock.h>
-+#else
- #include <asm/rwlock.h>
-+#endif
- 
- #endif /* _ASM_X86_SPINLOCK_TYPES_H */
--- 
-1.7.1
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/trace/trace_events.c |   17 ++++++++++++-----
+>  1 files changed, 12 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 76eed53..77990c4 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -409,6 +409,11 @@ static void put_system(struct ftrace_subsystem_dir *dir)
+>  	mutex_unlock(&event_mutex);
+>  }
+>  
+> +static void *event_file_data(struct file *filp)
+> +{
+> +	return ACCESS_ONCE(file_inode(filp)->i_private);
+> +}
+> +
+>  /*
+>   * Open and update trace_array ref count.
+>   * Must have the current trace_array passed to it.
+> @@ -946,14 +951,17 @@ static int trace_format_open(struct inode *inode, struct file *file)
+>  static ssize_t
+>  event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+>  {
+> -	struct ftrace_event_call *call = filp->private_data;
+> +	int id = (long)event_file_data(filp);
+>  	char buf[32];
+>  	int len;
+>  
+>  	if (*ppos)
+>  		return 0;
+>  
+> -	len = sprintf(buf, "%d\n", call->event.type);
+> +	if (unlikely(!id))
+> +		return -ENODEV;
+> +
+> +	len = sprintf(buf, "%d\n", id);
+>  	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+>  }
+>  
+> @@ -1240,7 +1248,6 @@ static const struct file_operations ftrace_event_format_fops = {
+>  };
+>  
+>  static const struct file_operations ftrace_event_id_fops = {
+> -	.open = tracing_open_generic,
+>  	.read = event_id_read,
+>  	.llseek = default_llseek,
+>  };
+> @@ -1488,8 +1495,8 @@ event_create_dir(struct dentry *parent,
+>  
+>  #ifdef CONFIG_PERF_EVENTS
+>  	if (call->event.type && call->class->reg)
+> -		trace_create_file("id", 0444, file->dir, call,
+> -		 		  id);
+> +		trace_create_file("id", 0444, file->dir,
+> +				  (void *)(long)call->event.type, id);
+>  #endif
+>  
+>  	/*
+
 
