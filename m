@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602Ab3GXNuQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:50:16 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37702 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3GXNuO convert rfc822-to-8bit (ORCPT
+	id S1751952Ab3GXNw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:52:27 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:59610 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035Ab3GXNw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:50:14 -0400
-Date: Wed, 24 Jul 2013 14:50:11 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130724135011.GE12572@e103034-lin>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
- <20130713102350.GA8067@MacBook-Pro.local>
- <20130715203922.GD23818@dyad.programming.kicks-ass.net>
- <20130716124248.GB10036@arm.com>
- <51E5655C.7050304@linux.intel.com>
- <20130717141426.GG27948@arm.com>
+	Wed, 24 Jul 2013 09:52:26 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130717141426.GG27948@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 24 Jul 2013 13:50:11.0309 (UTC) FILETIME=[B74B91D0:01CE8874]
-X-MC-Unique: 113072414501202201
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+In-Reply-To: <20130722150702.GB4706@variantweb.net>
+References: <1374331018-11045-1-git-send-email-bob.liu@oracle.com>
+	<20130722150702.GB4706@variantweb.net>
+Date: Wed, 24 Jul 2013 21:52:25 +0800
+Message-ID: <CAA_GA1dUdNzwPFJdPr6Ysvf4t+08t9A=tcE4SGL8K73m27meNw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] zcache: a new start for upstream
+From: Bob Liu <lliubbo@gmail.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Pekka Enberg <penberg@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bob Liu <bob.liu@oracle.com>, Linux-MM <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 17, 2013 at 03:14:26PM +0100, Catalin Marinas wrote:
-> On Tue, Jul 16, 2013 at 04:23:08PM +0100, Arjan van de Ven wrote:
-> > On 7/16/2013 5:42 AM, Catalin Marinas wrote:
-> > > Morten's power scheduler tries to address the above and it will grow
-> > > into controlling a new model of power driver (and taking into account
-> > > Arjan's and others' comments regarding the API). At the same time, we
-> > > need some form of task packing. The power scheduler can drive this
-> > > (currently via cpu_power) or can simply turn a knob if there are better
-> > > options that will be accepted in the scheduler.
-> > 
-> > how much would you be helped if there was a simple switch
-> > 
-> > sort left   versus    sort right
-> > 
-> > (assuming the big cores are all either low or high numbers)
-> 
-> It helps a bit compared to the current behaviour but there is a lot of
-> room for improvement.
-> 
-> > the sorting is mostly statistical, but that's good enough in practice..
-> > each time a task wakes up, you get a bias towards either low or high
-> > numbered idle cpus
-> 
-> If cores within a cluster (socket) are not power-gated individually
-> (implementation dependent), it makes more sense to spread the tasks
-> among the cores to either get a lower frequency or just get to idle
-> quicker. For little cores, even when they are individually power-gated,
-> they don't consume much so we would rather spread the tasks equally.
-> 
-> > very quickly all tasks will be on one side, unless your system is so
-> > loaded that all cpus are full.
-> 
-> It should be more like left socket vs both sockets with the possibility
-> of different balancing within a socket. But then we get back to the
-> sched_smt/sched_mc power aware scheduling that was removed from the
-> kernel.
-> 
-> It's also important when to make this decision to sort left vs right and
-> we want to avoid migrating threads unnecessarily. There could be small
-> threads (e.g. an mp3 decoding thread) that should stay on the little
-> core.
+Hi Seth,
 
-Given that the power topology is taken into account, a sort
-left/right-like mechanism would only help performance insensitive tasks
-on big.LITTLE. Performance sensitive tasks that each can use more than
-a little cpu should move in the opposite direction. Well, directly to a
-big cpu, even if some little cpus are idle.
+On Mon, Jul 22, 2013 at 11:07 PM, Seth Jennings
+<sjenning@linux.vnet.ibm.com> wrote:
+> Sorry for the dup Bob, last reply only went to linux-mm
+>
+> On Sat, Jul 20, 2013 at 10:36:56PM +0800, Bob Liu wrote:
+>> We already have zswap helps reducing the swap out/in IO operations by
+>> compressing anon pages.
+>> It has been merged into v3.11-rc1 together with the zbud allocation layer.
+>>
+>> However there is another kind of pages(clean file pages) suitable for
+>> compression as well. Upstream has already merged its frontend(cleancache).
+>> Now we are lacking of a backend of cleancache as zswap to frontswap.
+>>
+>> Furthermore, we need to balance the number of compressed anon and file pages,
+>> E.g. it's unfair to normal file pages if zswap pool occupies too much memory for
+>> the storage of compressed anon pages.
+>>
+>> Although the current version of zcache in staging tree has already done those
+>> works mentioned above, the implementation is too complicated to be merged into
+>> upstream.
+>>
+>> What I'm looking for is a new way for zcache towards upstream.
+>> The first change is no more staging tree.
+>> Second is implemented a simple cleancache backend at first, which is based on
+>> the zbud allocation same as zswap.
+>
+> I like the approach of distilling zcache down to only page cache compression
+> as a start.
+>
 
-It can be discussed whether smaller performance sensitive tasks that
-would fit on a little cpu should be put on a little or big cpu. That
-would depend on the nature of the task and if other tasks depend on it.
+Thank you for your review!
 
+> However, there is still the unresolved issue of the streaming read regression.
+> If the workload does streaming reads (i.e. reads from a set much larger than
+> RAM and does no rereads), zcache will regress that workload because it will
+> be compressing pages that will quickly be tossed out of the second chance
+> cache too.
+>
+> This is a difficult problem when it comes to page cache compression: how
+> to know whether a page will be used again.  In the case of zswap, the
+> page is persistent in memory and therefore MUST be maintained.  With
+> page cache compression, that isn't that case.  There is the option to
+> just toss it and reread from disk.
 
+Probably we can add checking whether the file page used to at the active list!
+Only putting reclaimed file pages which are from active list to cleancache!
+
+Of course this way can't fix this problem totally, but I think we can
+get a higher hit rate!
+
+>
+> The assumption is that keeping as many cached pages as possible, regardless
+> of the overhead to do so, is always a win.  But this is not always true.
+>
+>>
+>> At the end, I hope we can combine the new cleancache backend with
+>> zswap(frontswap backend), in order to have a generic in-kernel memory
+>> compression solution in upstream.
+>
+> I don't see a need to combine them since, afaict, you'd really never use them
+> at the same time as zswap (anon memory pressure in general) shreds the page
+> cache and would aggressively shrink zcache to the point of uselessness.
+>
+
+Make sense, but is there any way to share the compression functions
+and per-cpu functions?
+
+>>
+>> Bob Liu (2):
+>>   zcache: staging: %s/ZCACHE/ZCACHE_OLD
+>>   mm: zcache: core functions added
+>>
+>>  drivers/staging/zcache/Kconfig  |   12 +-
+>>  drivers/staging/zcache/Makefile |    4 +-
+>>  mm/Kconfig                      |   18 +
+>>  mm/Makefile                     |    1 +
+>>  mm/zcache.c                     |  840 +++++++++++++++++++++++++++++++++++++++
+>>  5 files changed, 867 insertions(+), 8 deletions(-)
+>>  create mode 100644 mm/zcache.c
+>
+> No code?
+>
+> Seth
+
+-- 
+Regards,
+--Bob
