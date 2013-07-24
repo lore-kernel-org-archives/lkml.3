@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab3GXTc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:32:58 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53738 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070Ab3GXTc5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:32:57 -0400
-Date: Wed, 24 Jul 2013 21:32:50 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] x86, AMD: simplify load_microcode_amd() to fix early
- microcode loading to no longer access uninitialized per-cpu data
-Message-ID: <20130724193250.GO30777@pd.tnic>
-References: <20130723230610.73bd048d@googlemail.com>
+	id S1754075Ab3GXTdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:33:50 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:31925 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753329Ab3GXTds convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 15:33:48 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 10
+X-BigFish: VS10(zzbb2dI98dI9371I1432I67favzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Date: Wed, 24 Jul 2013 14:33:31 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH v5 4/4] DMA: Freescale: eliminate a compiling warning
+To: <hongbo.zhang@freescale.com>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+References: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
+	<1374646870-5162-5-git-send-email-hongbo.zhang@freescale.com>
+In-Reply-To: <1374646870-5162-5-git-send-email-hongbo.zhang@freescale.com>
+	(from hongbo.zhang@freescale.com on Wed Jul 24 01:21:09 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1374694411.15592.63@snotra>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
 Content-Disposition: inline
-In-Reply-To: <20130723230610.73bd048d@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:06:10PM +0200, Torsten Kaiser wrote:
-> load_microcode_amd() (and the helper it is using) should not have an
-> cpu parameter. The microcode loading is not depending on the CPU it is
-> executed and all the loaded patches will end up in a global list for all
-> CPUs anyway.
-> The change from cpu to x86family in load_microcode_amd() now allows to drop
-> the code messing with cpu_data(cpu) from collect_cpu_info_amd_early(), which 
-> is wrong anyway because at that point the per-cpu cpu_info is not yet setup. 
-> And these values would later be overwritten by smp_store_boot_cpu_info() / 
-> smp_store_cpu_info().
+On 07/24/2013 01:21:09 AM, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
 > 
-> Fold the rest of collect_cpu_info_amd_early() into load_ucode_amd_ap(), because its
-> only used at one place and without the cpuinfo_x86 accesses it was not much left.
+> The variable cookie is initialized in a list_for_each_entry loop,  
+> if(unlikely)
+> the list is empty, this variable will be used uninitialized, so we  
+> get a gcc
+> compiling warning about this. This patch fixes this defect by setting  
+> an
+> initial value to the varialble cookie.
 > 
-> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> ---
+>  drivers/dma/fsldma.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index 16a9a48..14d68a4 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -406,7 +406,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct  
+> dma_async_tx_descriptor *tx)
+>  	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
+>  	struct fsl_desc_sw *child;
+>  	unsigned long flags;
+> -	dma_cookie_t cookie;
+> +	dma_cookie_t cookie = 0;
+> 
+>  	spin_lock_irqsave(&chan->desc_lock, flags);
 
-Btw, this patch is the one that fixes the boot issue on your box, correct?
+This patch is unrelated to the rest of the patch series...
 
-If so, please put a minimal version of it in the next patch set you're
-sending right after
+What are the semantics of this function if there are multiple entries  
+in the list?  Returning the last cookie seems a bit odd.
 
-[PATCH v2] x86, AMD: Make cpu_has_amd_erratum() use the correct struct cpuinfo_x86
-[PATCH 1/5] x86, AMD: fix error path in apply_microcode_amd()
+Is zero the proper error value?  include/linux/dmaengine.h suggests  
+that cookies should be < 0 to indicate error.
 
-So that all fixes can go in now.
-
-Basically, we need the fixes to be first in the patchset so that they
-can be applied straight to tip:urgent.
-
-The cleanups/improvements you're doing afterwards could wait then for
-the next merge window.
-
-Thanks a lot!
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+-Scott
