@@ -1,63 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab3GXWN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:13:29 -0400
-Received: from mail1.bemta7.messagelabs.com ([216.82.254.108]:59173 "EHLO
-	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753670Ab3GXWN0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:13:26 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-160.messagelabs.com!1374704002!6772291!11
-X-Originating-IP: [216.166.12.31]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Ian Abbott <abbotti@mev.co.uk>
-Date: Wed, 24 Jul 2013 17:11:25 -0500
-Subject: RE: [PATCH 22/36] staging: comedi: convert class code to use
- dev_groups
-Thread-Topic: [PATCH 22/36] staging: comedi: convert class code to use
- dev_groups
-Thread-Index: Ac6Iuf0+03LeC4NdQRqJZWexzkyiZwAAIaCA
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC5C1F40@AUSP01VMBX24.collaborationhost.net>
+	id S1754356Ab3GXWNR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:13:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55393 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3GXWGF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:06:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 28/36] video: backlight: lcd: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:31 -0700
+Message-Id: <1374703539-9705-29-git-send-email-gregkh@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
- <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 24, 2013 3:05 PM, Greg Kroah-Hartman wrote:
->
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the comedi class code to use the
-> correct field.
->
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/staging/comedi/comedi_fops.c | 39 ++++++++++++++++++------------------
->  1 file changed, 20 insertions(+), 19 deletions(-)
+The dev_attrs field of struct class is going away soon, dev_groups
+should be used instead.  This converts the video backlight lcd class
+code to use the correct field.
 
-Looks good to me. Not sure what my sign off should be so take your pick.
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Richard, feel free to take this through your tree, or ACK it and I can
+take it through mine.
 
-Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+ drivers/video/backlight/lcd.c | 26 +++++++++++++++-----------
+ 1 file changed, 15 insertions(+), 11 deletions(-)
 
-
-
+diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
+index 41964a71..93cf15ef 100644
+--- a/drivers/video/backlight/lcd.c
++++ b/drivers/video/backlight/lcd.c
+@@ -89,7 +89,7 @@ static inline void lcd_unregister_fb(struct lcd_device *ld)
+ }
+ #endif /* CONFIG_FB */
+ 
+-static ssize_t lcd_show_power(struct device *dev, struct device_attribute *attr,
++static ssize_t lcd_power_show(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+ {
+ 	int rc;
+@@ -105,7 +105,7 @@ static ssize_t lcd_show_power(struct device *dev, struct device_attribute *attr,
+ 	return rc;
+ }
+ 
+-static ssize_t lcd_store_power(struct device *dev,
++static ssize_t lcd_power_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	int rc;
+@@ -128,8 +128,9 @@ static ssize_t lcd_store_power(struct device *dev,
+ 
+ 	return rc;
+ }
++static DEVICE_ATTR_RW(lcd_power);
+ 
+-static ssize_t lcd_show_contrast(struct device *dev,
++static ssize_t contrast_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	int rc = -ENXIO;
+@@ -143,7 +144,7 @@ static ssize_t lcd_show_contrast(struct device *dev,
+ 	return rc;
+ }
+ 
+-static ssize_t lcd_store_contrast(struct device *dev,
++static ssize_t contrast_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t count)
+ {
+ 	int rc;
+@@ -166,14 +167,16 @@ static ssize_t lcd_store_contrast(struct device *dev,
+ 
+ 	return rc;
+ }
++static DEVICE_ATTR_RW(contrast);
+ 
+-static ssize_t lcd_show_max_contrast(struct device *dev,
++static ssize_t max_contrast_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	struct lcd_device *ld = to_lcd_device(dev);
+ 
+ 	return sprintf(buf, "%d\n", ld->props.max_contrast);
+ }
++static DEVICE_ATTR_RO(max_contrast);
+ 
+ static struct class *lcd_class;
+ 
+@@ -183,12 +186,13 @@ static void lcd_device_release(struct device *dev)
+ 	kfree(ld);
+ }
+ 
+-static struct device_attribute lcd_device_attributes[] = {
+-	__ATTR(lcd_power, 0644, lcd_show_power, lcd_store_power),
+-	__ATTR(contrast, 0644, lcd_show_contrast, lcd_store_contrast),
+-	__ATTR(max_contrast, 0444, lcd_show_max_contrast, NULL),
+-	__ATTR_NULL,
++static struct attribute *lcd_device_attrs[] = {
++	&dev_attr_lcd_power.attr,
++	&dev_attr_contrast.attr,
++	&dev_attr_max_contrast.attr,
++	NULL,
+ };
++ATTRIBUTE_GROUPS(lcd_device);
+ 
+ /**
+  * lcd_device_register - register a new object of lcd_device class.
+@@ -344,7 +348,7 @@ static int __init lcd_class_init(void)
+ 		return PTR_ERR(lcd_class);
+ 	}
+ 
+-	lcd_class->dev_attrs = lcd_device_attributes;
++	lcd_class->dev_groups = lcd_device_groups;
+ 	return 0;
+ }
+ 
+-- 
+1.8.3.rc0.20.gb99dd2e
 
