@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195Ab3GXCTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 22:19:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64332 "EHLO mx1.redhat.com"
+	id S1751270Ab3GXCTh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 22:19:37 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8086 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab3GXCTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 22:19:02 -0400
-Message-ID: <51EF3990.4010901@redhat.com>
-Date: Tue, 23 Jul 2013 21:18:56 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1750843Ab3GXCTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 22:19:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,732,1367996400"; 
+   d="scan'208";a="335831285"
+Date: Wed, 24 Jul 2013 10:04:40 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        hpa@linux.intel.com, yinghai@kernel.org, tglx@linutronix.de,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
+Message-ID: <20130724140440.GA13987@linux-youquan.bj.intel.com>
+References: <1373592159-459-1-git-send-email-youquan.song@intel.com> <20130723091729.GA19786@gmail.com>
 MIME-Version: 1.0
-To: =?UTF-8?B?IkrDs2hhbm4gQi4gR3XDsG11bmRzc29uIg==?= 
-	<johannbg@gmail.com>
-CC: Theodore Tso <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?B?IkrDsw==?= =?UTF-8?B?aGFubiBCLiBHdcOwbXVuZHNzb24i?= 
-	<johannbg@fedoraproject.org>
-Subject: Re: [PATCH 1/1] ext4: Fix Opts: (null)
-References: <1374531868-1800-1-git-send-email-johannbg@fedoraproject.org>
-In-Reply-To: <1374531868-1800-1-git-send-email-johannbg@fedoraproject.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723091729.GA19786@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/22/13 5:24 PM, Jóhann B. Guðmundsson wrote:
-> null null null no more Opts: (null) but something that actually makes sense to
-> human beings...
-
-It's not clear to me how this changes the (null) output...
-Have you tested it?  What's the difference in output?
-
--Eric
-
-> Signed-off-by: Jóhann B. Guðmundsson <johannbg@fedoraproject.org>
-> ---
->  fs/ext4/super.c | 6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
+On Tue, Jul 23, 2013 at 11:17:29AM +0200, Ingo Molnar wrote:
 > 
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 85b3dd6..ef141b7 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -4088,8 +4088,8 @@ no_journal:
->  				 "the device does not support discard");
->  	}
->  
-> -	ext4_msg(sb, KERN_INFO, "mounted filesystem with%s. "
-> -		 "Opts: %s%s%s", descr, sbi->s_es->s_mount_opts,
-> +	ext4_msg(sb, KERN_INFO, "mounted filesystem with%s "
-> +		 "%s%s%s mount option(s)", descr, sbi->s_es->s_mount_opts,
->  		 *sbi->s_es->s_mount_opts ? "; " : "", orig_data);
->  
->  	if (es->s_error_count)
-> @@ -4866,7 +4866,7 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
->  	}
->  #endif
->  
-> -	ext4_msg(sb, KERN_INFO, "re-mounted. Opts: %s", orig_data);
-> +	ext4_msg(sb, KERN_INFO, "re-mounted %s mount option(s)", orig_data);
-
->  	kfree(orig_data);
->  	return 0;
->  
+> * Youquan Song <youquan.song@intel.com> wrote:
 > 
+> > x2APIC extends APICID from 8 bits to 32 bits, but the device interrupt 
+> > routed from IOAPIC or delivered in MSI mode will keep 8 bits destination 
+> > APICID. In order to support x2APIC, the VT-d interrupt remapping is 
+> > introduced to translate the destination APICID to 32 bits in x2APIC mode 
+> > and keep the device compatible in this way.
+> > 
+> > x2APIC support both logical and physical mode in destination mode.  In 
+> > logical destination mode, the 32 bits Logical APICID has 2 sub-fields:
+> >  16 bits cluster ID and 16 bits logical ID within the cluster and it is 
+> > required VT-d interrupt remapping in x2APIC cluster mode. In physical 
+> > destination mode, the 8 bits physical id is compatible with 32 bits 
+> > physical id when CPU number < 256. When interrupt remapping 
+> > initialization fail on platform with CPU number < 256, current kernel 
+> > only enables x2APIC physical mode in virutalization environment, while 
+> > we also can enable x2APIC physcial mode in native kernel this situation, 
+> > and the device interrupt will use 8 bits destination APICID in physical 
+> > mode and be compatible with x2APIC physical when < 256 CPUs.
+> >  
+> > So we can benefit from x2APIC vs xAPIC MMIO:
+> >  - x2APIC MSR read/write is faster than xAPIC mmio
+> >  - x2APIC only ICR write to deliver interrupt without polling ICR deliver 
+> >    status bit and xAPIC need poll to read ICR deliver status bit.
+> >  - x2APIC 64 bits ICR access instead of xAPIC two 32 bits access.
+> 
+> That looks interesting. How many systems are affected by this change in 
+> practice? Have you tested it on affected hardware?
 
+Thanks Ingo!
+The machines will be affected: CPU support x2APIC and CPU number < 256,
+chipset does not support VT-d2 or VT-d is disabled in BIOS. 
+
+I have tested on one of affected hardware, it works.
+
+Thanks
+-Youquan
