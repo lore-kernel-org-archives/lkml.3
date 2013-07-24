@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab3GXQVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:21:10 -0400
-Received: from mga14.intel.com ([143.182.124.37]:37539 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752644Ab3GXQVI convert rfc822-to-8bit (ORCPT
+	id S1754236Ab3GXQXV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:23:21 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36191 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750986Ab3GXQXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:21:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="272646831"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
-Subject: RE: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Thread-Topic: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Thread-Index: AQHOiIb0dT8QWA0joUSnTutOsRQJK5l0Aa0g
-Date: Wed, 24 Jul 2013 16:20:32 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
-References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
- <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
- <20130724160008.GA17083@kroah.com>
-In-Reply-To: <20130724160008.GA17083@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 24 Jul 2013 12:23:19 -0400
+Message-ID: <1374682997.7382.8.camel@dabdike>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Date: Wed, 24 Jul 2013 09:23:17 -0700
+In-Reply-To: <1374629880.3356.130.camel@gandalf.local.home>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	 <51E4BFA9.1030600@zytor.com>
+	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	 <1373991399.6458.6.camel@gandalf.local.home>
+	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	 <51E59F79.1040903@zytor.com>
+	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	 <20130717144043.GA16513@xanatos>
+	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	 <20130719120841.GH26716@gmail.com>
+	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+	 <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
+	 <CAMP44s2J2zESnYYwEtN-Q2_4ft_M8UpdLxZavtK5q2fZcFa=SQ@mail.gmail.com>
+	 <1EC23D2B9975384993D85B5DB93AAE8861AA8D@sisaex01sj>
+	 <CAMP44s1w0dfv7peUU3DnHLujf5rtyK6xfCpcWRJhMTMvFHcjug@mail.gmail.com>
+	 <1374629194.2290.77.camel@dabdike>
+	 <1374629880.3356.130.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> >  int mei_register(struct mei_device *dev)  {
-> > +	struct device *device = &dev->pdev->dev;
-> >  	int ret;
-> > -	mei_misc_device.parent = &dev->pdev->dev;
-> > +
-> > +	mei_misc_device.parent = device;
-> >  	ret = misc_register(&mei_misc_device);
-> >  	if (ret)
-> >  		return ret;
-> >
-> > +	ret = sysfs_create_group(&device->kobj, &mei_attr_group);
-> > +	if (ret)
-> > +		return ret;
+On Tue, 2013-07-23 at 21:38 -0400, Steven Rostedt wrote:
+> On Tue, 2013-07-23 at 18:26 -0700, James Bottomley wrote:
 > 
-
-> And you just lost the race with userspace (you told it you had a device, it
-> went and scanned your attributes and saved them, then you registered
-> more...)
+> > I think it's not in the original fallacies because they come from Greek
+> > rhetoric and the Greeks believed dialectic: the taking opposite
+> > positions and arguing them thoroughly.  It's only with the advent of
+> > Western European political systems that we're conditioned to seek
+> > compromise without rigorous examination.  This actually makes argument
+> > to moderation one of the most effective rhetorical tools in use today
+> > for discrediting an opponent's argument without actually addressing it.
 > 
-> Please use the dev_groups field for your class to properly have the driver
-> core register these before userspace is told about the device, that's the
-> correct way to do this.
+> What? Really? You mean the truth doesn't lie in the middle between
+> evolution and creationism?
 
-Just to make sure, is this what you're suggesting ?
+Well, you jest, but actually Intelligent Design is usually presented as
+a false compromise between the "extremes" of evolution and creationism.
+If you listen to it's proponents, the rhetorical device they use to
+argue for legitimacy is precisely an argument to moderation.
 
-device->groups = mei_attr_groups
-mei_misc_device.parent = device;
-ret = misc_register(&mei_misc_device);
+James
 
-Thanks
-Tomas 
 
