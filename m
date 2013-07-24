@@ -1,1129 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3GXWKG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:10:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55418 "EHLO
+	id S1754047Ab3GXWGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55322 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab3GXWGL (ORCPT
+	with ESMTP id S1752866Ab3GXWFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:06:11 -0400
+	Wed, 24 Jul 2013 18:05:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 35/36] hid: roccat: convert class code to use bin_attrs in groups
-Date: Wed, 24 Jul 2013 15:05:38 -0700
-Message-Id: <1374703539-9705-36-git-send-email-gregkh@linuxfoundation.org>
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH 06/36] devfreq: convert devfreq_class to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:09 -0700
+Message-Id: <1374703539-9705-7-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that attribute groups support binary attributes, use them instead of
-the dev_bin_attrs field in struct class, as that is going away soon.
+The dev_attrs field of struct class is going away soon, dev_groups
+should be used instead.  This converts the devfreq_class code to use the
+correct field.
 
-Note, there is now a compiler warning about an unused function in the
-hid-roccat-pyra.c file with this patch:
-drivers/hid/hid-roccat-pyra.c:246:16: warning: ‘pyra_sysfs_write_settings’ defined but not used [-Wunused-function]
-
-That is because the settings binary sysfs file was previously setting
-the write field to be able to call this function on a write, yet the
-sysfs file was always marked read-only, so it was never being called.  I
-left the sysfs file the same permissions, but didn't hook up the write
-function as that makes no sense.  If wanted, I can just delete the
-function, but I'm not quite sure what is going on here with it.
-
-Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Jiri, feel free to take this through your tree, or ACK it and I can take
-it through mine.
+MyungJoo, feel free to apply this to your tree, or ACK it and I can take it
+through mine.
 
- drivers/hid/hid-roccat-arvo.c     |  34 +++++----
- drivers/hid/hid-roccat-isku.c     |  87 ++++++++++++----------
- drivers/hid/hid-roccat-kone.c     |  80 +++++++++-----------
- drivers/hid/hid-roccat-koneplus.c | 153 ++++++++++++++++----------------------
- drivers/hid/hid-roccat-konepure.c |  67 ++++++++++-------
- drivers/hid/hid-roccat-kovaplus.c | 137 ++++++++++++++--------------------
- drivers/hid/hid-roccat-pyra.c     | 136 +++++++++++++++------------------
- drivers/hid/hid-roccat-savu.c     |  58 ++++++++-------
- 8 files changed, 351 insertions(+), 401 deletions(-)
+drivers/devfreq/devfreq.c | 78 ++++++++++++++++++++++++++---------------------
+ 1 file changed, 44 insertions(+), 34 deletions(-)
 
-diff --git a/drivers/hid/hid-roccat-arvo.c b/drivers/hid/hid-roccat-arvo.c
-index 98bb89e0..eed7f520 100644
---- a/drivers/hid/hid-roccat-arvo.c
-+++ b/drivers/hid/hid-roccat-arvo.c
-@@ -237,6 +237,8 @@ static ssize_t arvo_sysfs_write_button(struct file *fp,
- 	return arvo_sysfs_write(fp, kobj, buf, off, count,
- 			sizeof(struct arvo_button), ARVO_COMMAND_BUTTON);
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index e94e619f..c99c00d3 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -703,7 +703,7 @@ err_out:
  }
-+static BIN_ATTR(button, 0220, NULL, arvo_sysfs_write_button,
-+		sizeof(struct arvo_button));
+ EXPORT_SYMBOL(devfreq_remove_governor);
  
- static ssize_t arvo_sysfs_read_info(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-@@ -245,6 +247,8 @@ static ssize_t arvo_sysfs_read_info(struct file *fp,
- 	return arvo_sysfs_read(fp, kobj, buf, off, count,
- 			sizeof(struct arvo_info), ARVO_COMMAND_INFO);
- }
-+static BIN_ATTR(info, 0440, arvo_sysfs_read_info, NULL,
-+		sizeof(struct arvo_info));
- 
- static struct attribute *arvo_attrs[] = {
- 	&dev_attr_mode_key.attr,
-@@ -252,20 +256,21 @@ static struct attribute *arvo_attrs[] = {
- 	&dev_attr_actual_profile.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(arvo);
--
--static struct bin_attribute arvo_bin_attributes[] = {
--	{
--		.attr = { .name = "button", .mode = 0220 },
--		.size = sizeof(struct arvo_button),
--		.write = arvo_sysfs_write_button
--	},
--	{
--		.attr = { .name = "info", .mode = 0440 },
--		.size = sizeof(struct arvo_info),
--		.read = arvo_sysfs_read_info
--	},
--	__ATTR_NULL
-+
-+static struct bin_attribute *arvo_bin_attributes[] = {
-+	&bin_attr_button,
-+	&bin_attr_info,
-+	NULL,
-+};
-+
-+static const struct attribute_group arvo_group = {
-+	.attrs = arvo_attrs,
-+	.bin_attrs = arvo_bin_attributes,
-+};
-+
-+static const struct attribute_group *arvo_groups[] = {
-+	&arvo_group,
-+	NULL,
- };
- 
- static int arvo_init_arvo_device_struct(struct usb_device *usb_dev,
-@@ -434,7 +439,6 @@ static int __init arvo_init(void)
- 	if (IS_ERR(arvo_class))
- 		return PTR_ERR(arvo_class);
- 	arvo_class->dev_groups = arvo_groups;
--	arvo_class->dev_bin_attrs = arvo_bin_attributes;
- 
- 	retval = hid_register_driver(&arvo_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-isku.c b/drivers/hid/hid-roccat-isku.c
-index 3983dec0..b7a4e10e 100644
---- a/drivers/hid/hid-roccat-isku.c
-+++ b/drivers/hid/hid-roccat-isku.c
-@@ -116,7 +116,6 @@ static struct attribute *isku_attrs[] = {
- 	&dev_attr_actual_profile.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(isku);
- 
- static ssize_t isku_sysfs_read(struct file *fp, struct kobject *kobj,
- 		char *buf, loff_t off, size_t count,
-@@ -185,7 +184,8 @@ ISKU_SYSFS_R(thingy, THINGY) \
- ISKU_SYSFS_W(thingy, THINGY)
- 
- #define ISKU_BIN_ATTR_RW(thingy, THINGY) \
--{ \
-+ISKU_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = ISKU_SIZE_ ## THINGY, \
- 	.read = isku_sysfs_read_ ## thingy, \
-@@ -193,52 +193,64 @@ ISKU_SYSFS_W(thingy, THINGY)
- }
- 
- #define ISKU_BIN_ATTR_R(thingy, THINGY) \
--{ \
-+ISKU_SYSFS_R(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0440 }, \
- 	.size = ISKU_SIZE_ ## THINGY, \
- 	.read = isku_sysfs_read_ ## thingy, \
- }
- 
- #define ISKU_BIN_ATTR_W(thingy, THINGY) \
--{ \
-+ISKU_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = ISKU_SIZE_ ## THINGY, \
- 	.write = isku_sysfs_write_ ## thingy \
- }
- 
--ISKU_SYSFS_RW(macro, MACRO)
--ISKU_SYSFS_RW(keys_function, KEYS_FUNCTION)
--ISKU_SYSFS_RW(keys_easyzone, KEYS_EASYZONE)
--ISKU_SYSFS_RW(keys_media, KEYS_MEDIA)
--ISKU_SYSFS_RW(keys_thumbster, KEYS_THUMBSTER)
--ISKU_SYSFS_RW(keys_macro, KEYS_MACRO)
--ISKU_SYSFS_RW(keys_capslock, KEYS_CAPSLOCK)
--ISKU_SYSFS_RW(light, LIGHT)
--ISKU_SYSFS_RW(key_mask, KEY_MASK)
--ISKU_SYSFS_RW(last_set, LAST_SET)
--ISKU_SYSFS_W(talk, TALK)
--ISKU_SYSFS_W(talkfx, TALKFX)
--ISKU_SYSFS_R(info, INFO)
--ISKU_SYSFS_W(control, CONTROL)
--ISKU_SYSFS_W(reset, RESET)
--
--static struct bin_attribute isku_bin_attributes[] = {
--	ISKU_BIN_ATTR_RW(macro, MACRO),
--	ISKU_BIN_ATTR_RW(keys_function, KEYS_FUNCTION),
--	ISKU_BIN_ATTR_RW(keys_easyzone, KEYS_EASYZONE),
--	ISKU_BIN_ATTR_RW(keys_media, KEYS_MEDIA),
--	ISKU_BIN_ATTR_RW(keys_thumbster, KEYS_THUMBSTER),
--	ISKU_BIN_ATTR_RW(keys_macro, KEYS_MACRO),
--	ISKU_BIN_ATTR_RW(keys_capslock, KEYS_CAPSLOCK),
--	ISKU_BIN_ATTR_RW(light, LIGHT),
--	ISKU_BIN_ATTR_RW(key_mask, KEY_MASK),
--	ISKU_BIN_ATTR_RW(last_set, LAST_SET),
--	ISKU_BIN_ATTR_W(talk, TALK),
--	ISKU_BIN_ATTR_W(talkfx, TALKFX),
--	ISKU_BIN_ATTR_R(info, INFO),
--	ISKU_BIN_ATTR_W(control, CONTROL),
--	ISKU_BIN_ATTR_W(reset, RESET),
--	__ATTR_NULL
-+ISKU_BIN_ATTR_RW(macro, MACRO);
-+ISKU_BIN_ATTR_RW(keys_function, KEYS_FUNCTION);
-+ISKU_BIN_ATTR_RW(keys_easyzone, KEYS_EASYZONE);
-+ISKU_BIN_ATTR_RW(keys_media, KEYS_MEDIA);
-+ISKU_BIN_ATTR_RW(keys_thumbster, KEYS_THUMBSTER);
-+ISKU_BIN_ATTR_RW(keys_macro, KEYS_MACRO);
-+ISKU_BIN_ATTR_RW(keys_capslock, KEYS_CAPSLOCK);
-+ISKU_BIN_ATTR_RW(light, LIGHT);
-+ISKU_BIN_ATTR_RW(key_mask, KEY_MASK);
-+ISKU_BIN_ATTR_RW(last_set, LAST_SET);
-+ISKU_BIN_ATTR_W(talk, TALK);
-+ISKU_BIN_ATTR_W(talkfx, TALKFX);
-+ISKU_BIN_ATTR_W(control, CONTROL);
-+ISKU_BIN_ATTR_W(reset, RESET);
-+ISKU_BIN_ATTR_R(info, INFO);
-+
-+static struct bin_attribute *isku_bin_attributes[] = {
-+	&bin_attr_macro,
-+	&bin_attr_keys_function,
-+	&bin_attr_keys_easyzone,
-+	&bin_attr_keys_media,
-+	&bin_attr_keys_thumbster,
-+	&bin_attr_keys_macro,
-+	&bin_attr_keys_capslock,
-+	&bin_attr_light,
-+	&bin_attr_key_mask,
-+	&bin_attr_last_set,
-+	&bin_attr_talk,
-+	&bin_attr_talkfx,
-+	&bin_attr_control,
-+	&bin_attr_reset,
-+	&bin_attr_info,
-+	NULL,
-+};
-+
-+static const struct attribute_group isku_group = {
-+	.attrs = isku_attrs,
-+	.bin_attrs = isku_bin_attributes,
-+};
-+
-+static const struct attribute_group *isku_groups[] = {
-+	&isku_group,
-+	NULL,
- };
- 
- static int isku_init_isku_device_struct(struct usb_device *usb_dev,
-@@ -429,7 +441,6 @@ static int __init isku_init(void)
- 	if (IS_ERR(isku_class))
- 		return PTR_ERR(isku_class);
- 	isku_class->dev_groups = isku_groups;
--	isku_class->dev_bin_attrs = isku_bin_attributes;
- 
- 	retval = hid_register_driver(&isku_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index d3626733..5eddf834 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -324,6 +324,8 @@ static ssize_t kone_sysfs_write_settings(struct file *fp, struct kobject *kobj,
- 
- 	return sizeof(struct kone_settings);
- }
-+static BIN_ATTR(settings, 0660, kone_sysfs_read_settings,
-+		kone_sysfs_write_settings, sizeof(struct kone_settings));
- 
- static ssize_t kone_sysfs_read_profilex(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr,
-@@ -378,6 +380,19 @@ static ssize_t kone_sysfs_write_profilex(struct file *fp,
- 
- 	return sizeof(struct kone_profile);
- }
-+#define PROFILE_ATTR(number)					\
-+static struct bin_attribute bin_attr_profile##number = {	\
-+	.attr = { .name = "profile##number", .mode = 0660 },	\
-+	.size = sizeof(struct kone_profile),			\
-+	.read = kone_sysfs_read_profilex,			\
-+	.write = kone_sysfs_write_profilex,			\
-+	.private = &profile_numbers[number],			\
-+};
-+PROFILE_ATTR(1);
-+PROFILE_ATTR(2);
-+PROFILE_ATTR(3);
-+PROFILE_ATTR(4);
-+PROFILE_ATTR(5);
- 
- static ssize_t kone_sysfs_show_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -616,51 +631,25 @@ static struct attribute *kone_attrs[] = {
- 	&dev_attr_startup_profile.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(kone);
--
--static struct bin_attribute kone_bin_attributes[] = {
--	{
--		.attr = { .name = "settings", .mode = 0660 },
--		.size = sizeof(struct kone_settings),
--		.read = kone_sysfs_read_settings,
--		.write = kone_sysfs_write_settings
--	},
--	{
--		.attr = { .name = "profile1", .mode = 0660 },
--		.size = sizeof(struct kone_profile),
--		.read = kone_sysfs_read_profilex,
--		.write = kone_sysfs_write_profilex,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2", .mode = 0660 },
--		.size = sizeof(struct kone_profile),
--		.read = kone_sysfs_read_profilex,
--		.write = kone_sysfs_write_profilex,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3", .mode = 0660 },
--		.size = sizeof(struct kone_profile),
--		.read = kone_sysfs_read_profilex,
--		.write = kone_sysfs_write_profilex,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4", .mode = 0660 },
--		.size = sizeof(struct kone_profile),
--		.read = kone_sysfs_read_profilex,
--		.write = kone_sysfs_write_profilex,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5", .mode = 0660 },
--		.size = sizeof(struct kone_profile),
--		.read = kone_sysfs_read_profilex,
--		.write = kone_sysfs_write_profilex,
--		.private = &profile_numbers[4]
--	},
--	__ATTR_NULL
-+
-+static struct bin_attribute *kone_bin_attributes[] = {
-+	&bin_attr_settings,
-+	&bin_attr_profile1,
-+	&bin_attr_profile2,
-+	&bin_attr_profile3,
-+	&bin_attr_profile4,
-+	&bin_attr_profile5,
-+	NULL,
-+};
-+
-+static const struct attribute_group kone_group = {
-+	.attrs = kone_attrs,
-+	.bin_attrs = kone_bin_attributes,
-+};
-+
-+static const struct attribute_group *kone_groups[] = {
-+	&kone_group,
-+	NULL,
- };
- 
- static int kone_init_kone_device_struct(struct usb_device *usb_dev,
-@@ -898,7 +887,6 @@ static int __init kone_init(void)
- 	if (IS_ERR(kone_class))
- 		return PTR_ERR(kone_class);
- 	kone_class->dev_groups = kone_groups;
--	kone_class->dev_bin_attrs = kone_bin_attributes;
- 
- 	retval = hid_register_driver(&kone_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-index 11906b4b..db4d8b6a 100644
---- a/drivers/hid/hid-roccat-koneplus.c
-+++ b/drivers/hid/hid-roccat-koneplus.c
-@@ -156,7 +156,8 @@ KONEPLUS_SYSFS_W(thingy, THINGY) \
- KONEPLUS_SYSFS_R(thingy, THINGY)
- 
- #define KONEPLUS_BIN_ATTRIBUTE_RW(thingy, THINGY) \
--{ \
-+KONEPLUS_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = KONEPLUS_SIZE_ ## THINGY, \
- 	.read = koneplus_sysfs_read_ ## thingy, \
-@@ -164,28 +165,29 @@ KONEPLUS_SYSFS_R(thingy, THINGY)
- }
- 
- #define KONEPLUS_BIN_ATTRIBUTE_R(thingy, THINGY) \
--{ \
-+KONEPLUS_SYSFS_R(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0440 }, \
- 	.size = KONEPLUS_SIZE_ ## THINGY, \
- 	.read = koneplus_sysfs_read_ ## thingy, \
- }
- 
- #define KONEPLUS_BIN_ATTRIBUTE_W(thingy, THINGY) \
--{ \
-+KONEPLUS_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = KONEPLUS_SIZE_ ## THINGY, \
- 	.write = koneplus_sysfs_write_ ## thingy \
- }
--
--KONEPLUS_SYSFS_W(control, CONTROL)
--KONEPLUS_SYSFS_RW(info, INFO)
--KONEPLUS_SYSFS_W(talk, TALK)
--KONEPLUS_SYSFS_W(macro, MACRO)
--KONEPLUS_SYSFS_RW(sensor, SENSOR)
--KONEPLUS_SYSFS_RW(tcu, TCU)
--KONEPLUS_SYSFS_R(tcu_image, TCU_IMAGE)
--KONEPLUS_SYSFS_RW(profile_settings, PROFILE_SETTINGS)
--KONEPLUS_SYSFS_RW(profile_buttons, PROFILE_BUTTONS)
-+KONEPLUS_BIN_ATTRIBUTE_W(control, CONTROL);
-+KONEPLUS_BIN_ATTRIBUTE_W(talk, TALK);
-+KONEPLUS_BIN_ATTRIBUTE_W(macro, MACRO);
-+KONEPLUS_BIN_ATTRIBUTE_R(tcu_image, TCU_IMAGE);
-+KONEPLUS_BIN_ATTRIBUTE_RW(info, INFO);
-+KONEPLUS_BIN_ATTRIBUTE_RW(sensor, SENSOR);
-+KONEPLUS_BIN_ATTRIBUTE_RW(tcu, TCU);
-+KONEPLUS_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-+KONEPLUS_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
- 
- static ssize_t koneplus_sysfs_read_profilex_settings(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-@@ -225,6 +227,25 @@ static ssize_t koneplus_sysfs_read_profilex_buttons(struct file *fp,
- 			KONEPLUS_COMMAND_PROFILE_BUTTONS);
- }
- 
-+#define PROFILE_ATTR(number)						\
-+static struct bin_attribute bin_attr_profile##number##_settings = {	\
-+	.attr = { .name = "profile##number##_settings", .mode = 0440 },	\
-+	.size = KONEPLUS_SIZE_PROFILE_SETTINGS,				\
-+	.read = koneplus_sysfs_read_profilex_settings,			\
-+	.private = &profile_numbers[number-1],				\
-+};									\
-+static struct bin_attribute bin_attr_profile##number##_buttons = {	\
-+	.attr = { .name = "profile##number##_buttons", .mode = 0440 },	\
-+	.size = KONEPLUS_SIZE_PROFILE_BUTTONS,				\
-+	.read = koneplus_sysfs_read_profilex_buttons,			\
-+	.private = &profile_numbers[number-1],				\
-+};
-+PROFILE_ATTR(1);
-+PROFILE_ATTR(2);
-+PROFILE_ATTR(3);
-+PROFILE_ATTR(4);
-+PROFILE_ATTR(5);
-+
- static ssize_t koneplus_sysfs_show_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
+-static ssize_t show_governor(struct device *dev,
++static ssize_t governor_show(struct device *dev,
+ 			     struct device_attribute *attr, char *buf)
  {
-@@ -308,79 +329,38 @@ static struct attribute *koneplus_attrs[] = {
- 	&dev_attr_firmware_version.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(koneplus);
--
--static struct bin_attribute koneplus_bin_attributes[] = {
--	KONEPLUS_BIN_ATTRIBUTE_W(control, CONTROL),
--	KONEPLUS_BIN_ATTRIBUTE_RW(info, INFO),
--	KONEPLUS_BIN_ATTRIBUTE_W(talk, TALK),
--	KONEPLUS_BIN_ATTRIBUTE_W(macro, MACRO),
--	KONEPLUS_BIN_ATTRIBUTE_RW(sensor, SENSOR),
--	KONEPLUS_BIN_ATTRIBUTE_RW(tcu, TCU),
--	KONEPLUS_BIN_ATTRIBUTE_R(tcu_image, TCU_IMAGE),
--	KONEPLUS_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS),
--	KONEPLUS_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS),
--	{
--		.attr = { .name = "profile1_settings", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_SETTINGS,
--		.read = koneplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_settings", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_SETTINGS,
--		.read = koneplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_settings", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_SETTINGS,
--		.read = koneplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_settings", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_SETTINGS,
--		.read = koneplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_settings", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_SETTINGS,
--		.read = koneplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[4]
--	},
--	{
--		.attr = { .name = "profile1_buttons", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_BUTTONS,
--		.read = koneplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_buttons", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_BUTTONS,
--		.read = koneplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_buttons", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_BUTTONS,
--		.read = koneplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_buttons", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_BUTTONS,
--		.read = koneplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_buttons", .mode = 0440 },
--		.size = KONEPLUS_SIZE_PROFILE_BUTTONS,
--		.read = koneplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[4]
--	},
--	__ATTR_NULL
-+
-+static struct bin_attribute *koneplus_bin_attributes[] = {
-+	&bin_attr_control,
-+	&bin_attr_talk,
-+	&bin_attr_macro,
-+	&bin_attr_tcu_image,
-+	&bin_attr_info,
-+	&bin_attr_sensor,
-+	&bin_attr_tcu,
-+	&bin_attr_profile_settings,
-+	&bin_attr_profile_buttons,
-+	&bin_attr_profile1_settings,
-+	&bin_attr_profile2_settings,
-+	&bin_attr_profile3_settings,
-+	&bin_attr_profile4_settings,
-+	&bin_attr_profile5_settings,
-+	&bin_attr_profile1_buttons,
-+	&bin_attr_profile2_buttons,
-+	&bin_attr_profile3_buttons,
-+	&bin_attr_profile4_buttons,
-+	&bin_attr_profile5_buttons,
-+	NULL,
-+};
-+
-+static const struct attribute_group koneplus_group = {
-+	.attrs = koneplus_attrs,
-+	.bin_attrs = koneplus_bin_attributes,
-+};
-+
-+static const struct attribute_group *koneplus_groups[] = {
-+	&koneplus_group,
-+	NULL,
- };
- 
- static int koneplus_init_koneplus_device_struct(struct usb_device *usb_dev,
-@@ -577,7 +557,6 @@ static int __init koneplus_init(void)
- 	if (IS_ERR(koneplus_class))
- 		return PTR_ERR(koneplus_class);
- 	koneplus_class->dev_groups = koneplus_groups;
--	koneplus_class->dev_bin_attrs = koneplus_bin_attributes;
- 
- 	retval = hid_register_driver(&koneplus_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-konepure.c b/drivers/hid/hid-roccat-konepure.c
-index c79d0b06..fa02b1f4 100644
---- a/drivers/hid/hid-roccat-konepure.c
-+++ b/drivers/hid/hid-roccat-konepure.c
-@@ -94,7 +94,8 @@ KONEPURE_SYSFS_W(thingy, THINGY) \
- KONEPURE_SYSFS_R(thingy, THINGY)
- 
- #define KONEPURE_BIN_ATTRIBUTE_RW(thingy, THINGY) \
--{ \
-+KONEPURE_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = KONEPURE_SIZE_ ## THINGY, \
- 	.read = konepure_sysfs_read_ ## thingy, \
-@@ -102,44 +103,56 @@ KONEPURE_SYSFS_R(thingy, THINGY)
+ 	if (!to_devfreq(dev)->governor)
+@@ -712,7 +712,7 @@ static ssize_t show_governor(struct device *dev,
+ 	return sprintf(buf, "%s\n", to_devfreq(dev)->governor->name);
  }
  
- #define KONEPURE_BIN_ATTRIBUTE_R(thingy, THINGY) \
--{ \
-+KONEPURE_SYSFS_R(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0440 }, \
- 	.size = KONEPURE_SIZE_ ## THINGY, \
- 	.read = konepure_sysfs_read_ ## thingy, \
- }
- 
- #define KONEPURE_BIN_ATTRIBUTE_W(thingy, THINGY) \
--{ \
-+KONEPURE_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = KONEPURE_SIZE_ ## THINGY, \
- 	.write = konepure_sysfs_write_ ## thingy \
- }
- 
--KONEPURE_SYSFS_RW(actual_profile, ACTUAL_PROFILE)
--KONEPURE_SYSFS_W(control, CONTROL)
--KONEPURE_SYSFS_RW(info, INFO)
--KONEPURE_SYSFS_W(talk, TALK)
--KONEPURE_SYSFS_W(macro, MACRO)
--KONEPURE_SYSFS_RW(sensor, SENSOR)
--KONEPURE_SYSFS_RW(tcu, TCU)
--KONEPURE_SYSFS_R(tcu_image, TCU_IMAGE)
--KONEPURE_SYSFS_RW(profile_settings, PROFILE_SETTINGS)
--KONEPURE_SYSFS_RW(profile_buttons, PROFILE_BUTTONS)
--
--static struct bin_attribute konepure_bin_attributes[] = {
--	KONEPURE_BIN_ATTRIBUTE_RW(actual_profile, ACTUAL_PROFILE),
--	KONEPURE_BIN_ATTRIBUTE_W(control, CONTROL),
--	KONEPURE_BIN_ATTRIBUTE_RW(info, INFO),
--	KONEPURE_BIN_ATTRIBUTE_W(talk, TALK),
--	KONEPURE_BIN_ATTRIBUTE_W(macro, MACRO),
--	KONEPURE_BIN_ATTRIBUTE_RW(sensor, SENSOR),
--	KONEPURE_BIN_ATTRIBUTE_RW(tcu, TCU),
--	KONEPURE_BIN_ATTRIBUTE_R(tcu_image, TCU_IMAGE),
--	KONEPURE_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS),
--	KONEPURE_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS),
--	__ATTR_NULL
-+KONEPURE_BIN_ATTRIBUTE_RW(actual_profile, ACTUAL_PROFILE);
-+KONEPURE_BIN_ATTRIBUTE_RW(info, INFO);
-+KONEPURE_BIN_ATTRIBUTE_RW(sensor, SENSOR);
-+KONEPURE_BIN_ATTRIBUTE_RW(tcu, TCU);
-+KONEPURE_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-+KONEPURE_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
-+KONEPURE_BIN_ATTRIBUTE_W(control, CONTROL);
-+KONEPURE_BIN_ATTRIBUTE_W(talk, TALK);
-+KONEPURE_BIN_ATTRIBUTE_W(macro, MACRO);
-+KONEPURE_BIN_ATTRIBUTE_R(tcu_image, TCU_IMAGE);
-+
-+static struct bin_attribute *konepure_bin_attributes[] = {
-+	&bin_attr_actual_profile,
-+	&bin_attr_info,
-+	&bin_attr_sensor,
-+	&bin_attr_tcu,
-+	&bin_attr_profile_settings,
-+	&bin_attr_profile_buttons,
-+	&bin_attr_control,
-+	&bin_attr_talk,
-+	&bin_attr_macro,
-+	&bin_attr_tcu_image,
-+	NULL,
-+};
-+
-+static const struct attribute_group konepure_group = {
-+	.bin_attrs = konepure_bin_attributes,
-+};
-+
-+static const struct attribute_group *konepure_groups[] = {
-+	&konepure_group,
-+	NULL,
- };
- 
-+
- static int konepure_init_konepure_device_struct(struct usb_device *usb_dev,
- 		struct konepure_device *konepure)
+-static ssize_t store_governor(struct device *dev, struct device_attribute *attr,
++static ssize_t governor_store(struct device *dev, struct device_attribute *attr,
+ 			      const char *buf, size_t count)
  {
-@@ -282,7 +295,7 @@ static int __init konepure_init(void)
- 	konepure_class = class_create(THIS_MODULE, "konepure");
- 	if (IS_ERR(konepure_class))
- 		return PTR_ERR(konepure_class);
--	konepure_class->dev_bin_attrs = konepure_bin_attributes;
-+	konepure_class->dev_groups = konepure_groups;
- 
- 	retval = hid_register_driver(&konepure_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-kovaplus.c b/drivers/hid/hid-roccat-kovaplus.c
-index ae630221..8a0f2993 100644
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -197,31 +197,25 @@ KOVAPLUS_SYSFS_W(thingy, THINGY) \
- KOVAPLUS_SYSFS_R(thingy, THINGY)
- 
- #define KOVAPLUS_BIN_ATTRIBUTE_RW(thingy, THINGY) \
--{ \
-+KOVAPLUS_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = KOVAPLUS_SIZE_ ## THINGY, \
- 	.read = kovaplus_sysfs_read_ ## thingy, \
- 	.write = kovaplus_sysfs_write_ ## thingy \
+ 	struct devfreq *df = to_devfreq(dev);
+@@ -754,9 +754,11 @@ out:
+ 		ret = count;
+ 	return ret;
  }
- 
--#define KOVAPLUS_BIN_ATTRIBUTE_R(thingy, THINGY) \
--{ \
--	.attr = { .name = #thingy, .mode = 0440 }, \
--	.size = KOVAPLUS_SIZE_ ## THINGY, \
--	.read = kovaplus_sysfs_read_ ## thingy, \
--}
--
- #define KOVAPLUS_BIN_ATTRIBUTE_W(thingy, THINGY) \
--{ \
-+KOVAPLUS_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = KOVAPLUS_SIZE_ ## THINGY, \
- 	.write = kovaplus_sysfs_write_ ## thingy \
- }
--
--KOVAPLUS_SYSFS_W(control, CONTROL)
--KOVAPLUS_SYSFS_RW(info, INFO)
--KOVAPLUS_SYSFS_RW(profile_settings, PROFILE_SETTINGS)
--KOVAPLUS_SYSFS_RW(profile_buttons, PROFILE_BUTTONS)
-+KOVAPLUS_BIN_ATTRIBUTE_W(control, CONTROL);
-+KOVAPLUS_BIN_ATTRIBUTE_RW(info, INFO);
-+KOVAPLUS_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-+KOVAPLUS_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
- 
- static ssize_t kovaplus_sysfs_read_profilex_settings(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-@@ -261,6 +255,25 @@ static ssize_t kovaplus_sysfs_read_profilex_buttons(struct file *fp,
- 			KOVAPLUS_COMMAND_PROFILE_BUTTONS);
- }
- 
-+#define PROFILE_ATTR(number)						\
-+static struct bin_attribute bin_attr_profile##number##_settings = {	\
-+	.attr = { .name = "profile##number##_settings", .mode = 0440 },	\
-+	.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,				\
-+	.read = kovaplus_sysfs_read_profilex_settings,			\
-+	.private = &profile_numbers[number-1],				\
-+};									\
-+static struct bin_attribute bin_attr_profile##number##_buttons = {	\
-+	.attr = { .name = "profile##number##_buttons", .mode = 0440 },	\
-+	.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,				\
-+	.read = kovaplus_sysfs_read_profilex_buttons,			\
-+	.private = &profile_numbers[number-1],				\
-+};
-+PROFILE_ATTR(1);
-+PROFILE_ATTR(2);
-+PROFILE_ATTR(3);
-+PROFILE_ATTR(4);
-+PROFILE_ATTR(5);
+-static ssize_t show_available_governors(struct device *d,
+-				    struct device_attribute *attr,
+-				    char *buf)
++static DEVICE_ATTR_RW(governor);
 +
- static ssize_t kovaplus_sysfs_show_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
++static ssize_t available_governors_show(struct device *d,
++					struct device_attribute *attr,
++					char *buf)
  {
-@@ -372,74 +385,33 @@ static struct attribute *kovaplus_attrs[] = {
- 	&dev_attr_actual_sensitivity_y.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(kovaplus);
+ 	struct devfreq_governor *tmp_governor;
+ 	ssize_t count = 0;
+@@ -775,9 +777,10 @@ static ssize_t show_available_governors(struct device *d,
+ 
+ 	return count;
+ }
++static DEVICE_ATTR_RO(available_governors);
+ 
+-static ssize_t show_freq(struct device *dev,
+-			 struct device_attribute *attr, char *buf)
++static ssize_t cur_freq_show(struct device *dev, struct device_attribute *attr,
++			     char *buf)
+ {
+ 	unsigned long freq;
+ 	struct devfreq *devfreq = to_devfreq(dev);
+@@ -788,20 +791,22 @@ static ssize_t show_freq(struct device *dev,
+ 
+ 	return sprintf(buf, "%lu\n", devfreq->previous_freq);
+ }
++static DEVICE_ATTR_RO(cur_freq);
+ 
+-static ssize_t show_target_freq(struct device *dev,
+-			struct device_attribute *attr, char *buf)
++static ssize_t target_freq_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
+ }
++static DEVICE_ATTR_RO(target_freq);
+ 
+-static ssize_t show_polling_interval(struct device *dev,
++static ssize_t polling_interval_show(struct device *dev,
+ 				     struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%d\n", to_devfreq(dev)->profile->polling_ms);
+ }
+ 
+-static ssize_t store_polling_interval(struct device *dev,
++static ssize_t polling_interval_store(struct device *dev,
+ 				      struct device_attribute *attr,
+ 				      const char *buf, size_t count)
+ {
+@@ -821,8 +826,9 @@ static ssize_t store_polling_interval(struct device *dev,
+ 
+ 	return ret;
+ }
++static DEVICE_ATTR_RW(polling_interval);
+ 
+-static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
++static ssize_t min_freq_store(struct device *dev, struct device_attribute *attr,
+ 			      const char *buf, size_t count)
+ {
+ 	struct devfreq *df = to_devfreq(dev);
+@@ -849,13 +855,13 @@ unlock:
+ 	return ret;
+ }
+ 
+-static ssize_t show_min_freq(struct device *dev, struct device_attribute *attr,
++static ssize_t min_freq_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+ {
+ 	return sprintf(buf, "%lu\n", to_devfreq(dev)->min_freq);
+ }
+ 
+-static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
++static ssize_t max_freq_store(struct device *dev, struct device_attribute *attr,
+ 			      const char *buf, size_t count)
+ {
+ 	struct devfreq *df = to_devfreq(dev);
+@@ -881,16 +887,18 @@ unlock:
+ 	mutex_unlock(&df->lock);
+ 	return ret;
+ }
++static DEVICE_ATTR_RW(min_freq);
+ 
+-static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
++static ssize_t max_freq_show(struct device *dev, struct device_attribute *attr,
+ 			     char *buf)
+ {
+ 	return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
+ }
++static DEVICE_ATTR_RW(max_freq);
+ 
+-static ssize_t show_available_freqs(struct device *d,
+-				    struct device_attribute *attr,
+-				    char *buf)
++static ssize_t available_frequencies_show(struct device *d,
++					  struct device_attribute *attr,
++					  char *buf)
+ {
+ 	struct devfreq *df = to_devfreq(d);
+ 	struct device *dev = df->dev.parent;
+@@ -918,9 +926,10 @@ static ssize_t show_available_freqs(struct device *d,
+ 
+ 	return count;
+ }
++static DEVICE_ATTR_RO(available_frequencies);
+ 
+-static ssize_t show_trans_table(struct device *dev, struct device_attribute *attr,
+-				char *buf)
++static ssize_t trans_stat_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
+ {
+ 	struct devfreq *devfreq = to_devfreq(dev);
+ 	ssize_t len;
+@@ -959,20 +968,21 @@ static ssize_t show_trans_table(struct device *dev, struct device_attribute *att
+ 					devfreq->total_trans);
+ 	return len;
+ }
 -
--static struct bin_attribute kovaplus_bin_attributes[] = {
--	KOVAPLUS_BIN_ATTRIBUTE_W(control, CONTROL),
--	KOVAPLUS_BIN_ATTRIBUTE_RW(info, INFO),
--	KOVAPLUS_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS),
--	KOVAPLUS_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS),
--	{
--		.attr = { .name = "profile1_settings", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,
--		.read = kovaplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_settings", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,
--		.read = kovaplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_settings", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,
--		.read = kovaplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_settings", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,
--		.read = kovaplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_settings", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_SETTINGS,
--		.read = kovaplus_sysfs_read_profilex_settings,
--		.private = &profile_numbers[4]
--	},
--	{
--		.attr = { .name = "profile1_buttons", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,
--		.read = kovaplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_buttons", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,
--		.read = kovaplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_buttons", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,
--		.read = kovaplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_buttons", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,
--		.read = kovaplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_buttons", .mode = 0440 },
--		.size = KOVAPLUS_SIZE_PROFILE_BUTTONS,
--		.read = kovaplus_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[4]
--	},
--	__ATTR_NULL
+-static struct device_attribute devfreq_attrs[] = {
+-	__ATTR(governor, S_IRUGO | S_IWUSR, show_governor, store_governor),
+-	__ATTR(available_governors, S_IRUGO, show_available_governors, NULL),
+-	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
+-	__ATTR(available_frequencies, S_IRUGO, show_available_freqs, NULL),
+-	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
+-	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
+-	       store_polling_interval),
+-	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
+-	__ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
+-	__ATTR(trans_stat, S_IRUGO, show_trans_table, NULL),
+-	{ },
++static DEVICE_ATTR_RO(trans_stat);
 +
-+static struct bin_attribute *kovaplus_bin_attributes[] = {
-+	&bin_attr_control,
-+	&bin_attr_info,
-+	&bin_attr_profile_settings,
-+	&bin_attr_profile_buttons,
-+	&bin_attr_profile1_settings,
-+	&bin_attr_profile2_settings,
-+	&bin_attr_profile3_settings,
-+	&bin_attr_profile4_settings,
-+	&bin_attr_profile5_settings,
-+	&bin_attr_profile1_buttons,
-+	&bin_attr_profile2_buttons,
-+	&bin_attr_profile3_buttons,
-+	&bin_attr_profile4_buttons,
-+	&bin_attr_profile5_buttons,
-+	NULL,
-+};
-+
-+static const struct attribute_group kovaplus_group = {
-+	.attrs = kovaplus_attrs,
-+	.bin_attrs = kovaplus_bin_attributes,
-+};
-+
-+static const struct attribute_group *kovaplus_groups[] = {
-+	&kovaplus_group,
++static struct attribute *devfreq_attrs[] = {
++	&dev_attr_governor.attr,
++	&dev_attr_available_governors.attr,
++	&dev_attr_cur_freq.attr,
++	&dev_attr_available_frequencies.attr,
++	&dev_attr_target_freq.attr,
++	&dev_attr_polling_interval.attr,
++	&dev_attr_min_freq.attr,
++	&dev_attr_max_freq.attr,
++	&dev_attr_trans_stat.attr,
 +	NULL,
  };
++ATTRIBUTE_GROUPS(devfreq);
  
- static int kovaplus_init_kovaplus_device_struct(struct usb_device *usb_dev,
-@@ -668,7 +640,6 @@ static int __init kovaplus_init(void)
- 	if (IS_ERR(kovaplus_class))
- 		return PTR_ERR(kovaplus_class);
- 	kovaplus_class->dev_groups = kovaplus_groups;
--	kovaplus_class->dev_bin_attrs = kovaplus_bin_attributes;
+ static int __init devfreq_init(void)
+ {
+@@ -988,7 +998,7 @@ static int __init devfreq_init(void)
+ 		pr_err("%s: couldn't create workqueue\n", __FILE__);
+ 		return PTR_ERR(devfreq_wq);
+ 	}
+-	devfreq_class->dev_attrs = devfreq_attrs;
++	devfreq_class->dev_groups = devfreq_groups;
  
- 	retval = hid_register_driver(&kovaplus_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
-index 7960d507..8d2a706e 100644
---- a/drivers/hid/hid-roccat-pyra.c
-+++ b/drivers/hid/hid-roccat-pyra.c
-@@ -156,7 +156,8 @@ PYRA_SYSFS_W(thingy, THINGY) \
- PYRA_SYSFS_R(thingy, THINGY)
- 
- #define PYRA_BIN_ATTRIBUTE_RW(thingy, THINGY) \
--{ \
-+PYRA_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = PYRA_SIZE_ ## THINGY, \
- 	.read = pyra_sysfs_read_ ## thingy, \
-@@ -164,24 +165,26 @@ PYRA_SYSFS_R(thingy, THINGY)
+ 	return 0;
  }
- 
- #define PYRA_BIN_ATTRIBUTE_R(thingy, THINGY) \
--{ \
-+PYRA_SYSFS_R(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0440 }, \
- 	.size = PYRA_SIZE_ ## THINGY, \
- 	.read = pyra_sysfs_read_ ## thingy, \
- }
- 
- #define PYRA_BIN_ATTRIBUTE_W(thingy, THINGY) \
--{ \
-+PYRA_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = PYRA_SIZE_ ## THINGY, \
- 	.write = pyra_sysfs_write_ ## thingy \
- }
- 
--PYRA_SYSFS_W(control, CONTROL)
--PYRA_SYSFS_RW(info, INFO)
--PYRA_SYSFS_RW(profile_settings, PROFILE_SETTINGS)
--PYRA_SYSFS_RW(profile_buttons, PROFILE_BUTTONS)
--PYRA_SYSFS_R(settings, SETTINGS)
-+PYRA_BIN_ATTRIBUTE_W(control, CONTROL);
-+PYRA_BIN_ATTRIBUTE_RW(info, INFO);
-+PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS);
-+PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS);
-+PYRA_BIN_ATTRIBUTE_R(settings, SETTINGS);
- 
- static ssize_t pyra_sysfs_read_profilex_settings(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
-@@ -221,6 +224,25 @@ static ssize_t pyra_sysfs_read_profilex_buttons(struct file *fp,
- 			PYRA_COMMAND_PROFILE_BUTTONS);
- }
- 
-+#define PROFILE_ATTR(number)						\
-+static struct bin_attribute bin_attr_profile##number##_settings = {	\
-+	.attr = { .name = "profile##number##_settings", .mode = 0440 },	\
-+	.size = PYRA_SIZE_PROFILE_SETTINGS,				\
-+	.read = pyra_sysfs_read_profilex_settings,			\
-+	.private = &profile_numbers[number-1],				\
-+};									\
-+static struct bin_attribute bin_attr_profile##number##_buttons = {	\
-+	.attr = { .name = "profile##number##_buttons", .mode = 0440 },	\
-+	.size = PYRA_SIZE_PROFILE_BUTTONS,				\
-+	.read = pyra_sysfs_read_profilex_buttons,			\
-+	.private = &profile_numbers[number-1],				\
-+};
-+PROFILE_ATTR(1);
-+PROFILE_ATTR(2);
-+PROFILE_ATTR(3);
-+PROFILE_ATTR(4);
-+PROFILE_ATTR(5);
-+
- static ssize_t pyra_sysfs_write_settings(struct file *fp,
- 		struct kobject *kobj, struct bin_attribute *attr, char *buf,
- 		loff_t off, size_t count)
-@@ -314,75 +336,34 @@ static struct attribute *pyra_attrs[] = {
- 	&dev_attr_startup_profile.attr,
- 	NULL,
- };
--ATTRIBUTE_GROUPS(pyra);
--
--static struct bin_attribute pyra_bin_attributes[] = {
--	PYRA_BIN_ATTRIBUTE_W(control, CONTROL),
--	PYRA_BIN_ATTRIBUTE_RW(info, INFO),
--	PYRA_BIN_ATTRIBUTE_RW(profile_settings, PROFILE_SETTINGS),
--	PYRA_BIN_ATTRIBUTE_RW(profile_buttons, PROFILE_BUTTONS),
--	PYRA_BIN_ATTRIBUTE_RW(settings, SETTINGS),
--	{
--		.attr = { .name = "profile1_settings", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_SETTINGS,
--		.read = pyra_sysfs_read_profilex_settings,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_settings", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_SETTINGS,
--		.read = pyra_sysfs_read_profilex_settings,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_settings", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_SETTINGS,
--		.read = pyra_sysfs_read_profilex_settings,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_settings", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_SETTINGS,
--		.read = pyra_sysfs_read_profilex_settings,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_settings", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_SETTINGS,
--		.read = pyra_sysfs_read_profilex_settings,
--		.private = &profile_numbers[4]
--	},
--	{
--		.attr = { .name = "profile1_buttons", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_BUTTONS,
--		.read = pyra_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[0]
--	},
--	{
--		.attr = { .name = "profile2_buttons", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_BUTTONS,
--		.read = pyra_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[1]
--	},
--	{
--		.attr = { .name = "profile3_buttons", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_BUTTONS,
--		.read = pyra_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[2]
--	},
--	{
--		.attr = { .name = "profile4_buttons", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_BUTTONS,
--		.read = pyra_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[3]
--	},
--	{
--		.attr = { .name = "profile5_buttons", .mode = 0440 },
--		.size = PYRA_SIZE_PROFILE_BUTTONS,
--		.read = pyra_sysfs_read_profilex_buttons,
--		.private = &profile_numbers[4]
--	},
--	__ATTR_NULL
-+
-+static struct bin_attribute *pyra_bin_attributes[] = {
-+	&bin_attr_control,
-+	&bin_attr_info,
-+	&bin_attr_profile_settings,
-+	&bin_attr_profile_buttons,
-+	&bin_attr_settings,
-+	&bin_attr_profile1_settings,
-+	&bin_attr_profile2_settings,
-+	&bin_attr_profile3_settings,
-+	&bin_attr_profile4_settings,
-+	&bin_attr_profile5_settings,
-+	&bin_attr_profile1_buttons,
-+	&bin_attr_profile2_buttons,
-+	&bin_attr_profile3_buttons,
-+	&bin_attr_profile4_buttons,
-+	&bin_attr_profile5_buttons,
-+	NULL,
-+};
-+
-+static const struct attribute_group pyra_group = {
-+	.attrs = pyra_attrs,
-+	.bin_attrs = pyra_bin_attributes,
-+};
-+
-+static const struct attribute_group *pyra_groups[] = {
-+	&pyra_group,
-+	NULL,
- };
- 
- static int pyra_init_pyra_device_struct(struct usb_device *usb_dev,
-@@ -605,7 +586,6 @@ static int __init pyra_init(void)
- 	if (IS_ERR(pyra_class))
- 		return PTR_ERR(pyra_class);
- 	pyra_class->dev_groups = pyra_groups;
--	pyra_class->dev_bin_attrs = pyra_bin_attributes;
- 
- 	retval = hid_register_driver(&pyra_driver);
- 	if (retval)
-diff --git a/drivers/hid/hid-roccat-savu.c b/drivers/hid/hid-roccat-savu.c
-index 31747a29..03322671 100644
---- a/drivers/hid/hid-roccat-savu.c
-+++ b/drivers/hid/hid-roccat-savu.c
-@@ -94,44 +94,48 @@ SAVU_SYSFS_W(thingy, THINGY) \
- SAVU_SYSFS_R(thingy, THINGY)
- 
- #define SAVU_BIN_ATTRIBUTE_RW(thingy, THINGY) \
--{ \
-+SAVU_SYSFS_RW(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0660 }, \
- 	.size = SAVU_SIZE_ ## THINGY, \
- 	.read = savu_sysfs_read_ ## thingy, \
- 	.write = savu_sysfs_write_ ## thingy \
- }
- 
--#define SAVU_BIN_ATTRIBUTE_R(thingy, THINGY) \
--{ \
--	.attr = { .name = #thingy, .mode = 0440 }, \
--	.size = SAVU_SIZE_ ## THINGY, \
--	.read = savu_sysfs_read_ ## thingy, \
--}
--
- #define SAVU_BIN_ATTRIBUTE_W(thingy, THINGY) \
--{ \
-+SAVU_SYSFS_W(thingy, THINGY); \
-+static struct bin_attribute bin_attr_##thingy = { \
- 	.attr = { .name = #thingy, .mode = 0220 }, \
- 	.size = SAVU_SIZE_ ## THINGY, \
- 	.write = savu_sysfs_write_ ## thingy \
- }
- 
--SAVU_SYSFS_W(control, CONTROL)
--SAVU_SYSFS_RW(profile, PROFILE)
--SAVU_SYSFS_RW(general, GENERAL)
--SAVU_SYSFS_RW(buttons, BUTTONS)
--SAVU_SYSFS_RW(macro, MACRO)
--SAVU_SYSFS_RW(info, INFO)
--SAVU_SYSFS_RW(sensor, SENSOR)
--
--static struct bin_attribute savu_bin_attributes[] = {
--	SAVU_BIN_ATTRIBUTE_W(control, CONTROL),
--	SAVU_BIN_ATTRIBUTE_RW(profile, PROFILE),
--	SAVU_BIN_ATTRIBUTE_RW(general, GENERAL),
--	SAVU_BIN_ATTRIBUTE_RW(buttons, BUTTONS),
--	SAVU_BIN_ATTRIBUTE_RW(macro, MACRO),
--	SAVU_BIN_ATTRIBUTE_RW(info, INFO),
--	SAVU_BIN_ATTRIBUTE_RW(sensor, SENSOR),
--	__ATTR_NULL
-+SAVU_BIN_ATTRIBUTE_W(control, CONTROL);
-+SAVU_BIN_ATTRIBUTE_RW(profile, PROFILE);
-+SAVU_BIN_ATTRIBUTE_RW(general, GENERAL);
-+SAVU_BIN_ATTRIBUTE_RW(buttons, BUTTONS);
-+SAVU_BIN_ATTRIBUTE_RW(macro, MACRO);
-+SAVU_BIN_ATTRIBUTE_RW(info, INFO);
-+SAVU_BIN_ATTRIBUTE_RW(sensor, SENSOR);
-+
-+static struct bin_attribute *savu_bin_attributes[] = {
-+	&bin_attr_control,
-+	&bin_attr_profile,
-+	&bin_attr_general,
-+	&bin_attr_buttons,
-+	&bin_attr_macro,
-+	&bin_attr_info,
-+	&bin_attr_sensor,
-+	NULL,
-+};
-+
-+static const struct attribute_group savu_group = {
-+	.bin_attrs = savu_bin_attributes,
-+};
-+
-+static const struct attribute_group *savu_groups[] = {
-+	&savu_group,
-+	NULL,
- };
- 
- static int savu_init_savu_device_struct(struct usb_device *usb_dev,
-@@ -294,7 +298,7 @@ static int __init savu_init(void)
- 	savu_class = class_create(THIS_MODULE, "savu");
- 	if (IS_ERR(savu_class))
- 		return PTR_ERR(savu_class);
--	savu_class->dev_bin_attrs = savu_bin_attributes;
-+	savu_class->dev_groups = savu_groups;
- 
- 	retval = hid_register_driver(&savu_driver);
- 	if (retval)
 -- 
 1.8.3.rc0.20.gb99dd2e
 
