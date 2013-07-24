@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3GXSCs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:02:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53047 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab3GXSCr (ORCPT
+	id S1752941Ab3GXSDX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:03:23 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:33228 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab3GXSDW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:02:47 -0400
-Date: Wed, 24 Jul 2013 11:02:46 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: devel@driverdev.osuosl.org, konrad.wilk@oracle.com,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>,
-        Piotr Sarna <p.sarna@partner.samsung.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        bob.liu@oracle.com, Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH staging] zcache: fix "zcache=" kernel parameter
-Message-ID: <20130724180246.GA28055@kroah.com>
-References: <1954608.bCh4ljCYe6@amdc1032>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1954608.bCh4ljCYe6@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 14:03:22 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>
+Subject: [PATCH-RESEND 0/3] staging/lustre: Intel tree sync and two fixups
+Date: Thu, 25 Jul 2013 02:00:18 +0800
+Message-Id: <1374688821-9874-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 07:04:14PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> From: Piotr Sarna <p.sarna@partner.samsung.com>
-> Subject: [PATCH] zcache: fix "zcache=" kernel parameter
+Hi Greg,
 
-What's with the duplicated Subject: line here?  Why?  That means the
-From: line there will probably not get recognized by git (well, it
-might), but then the subject is duplicated again, just like Linus has
-complained about not doing in the past.
+Following are the rest of previous patchset rebased on latest staging-next
+and reordered to avoid breaking bisecability. Please help to queue them.
 
-And in a mime-encoded format?  Ugh, please fix your email client and
-send it again (yes, git can handle it, but it's a pain at times...)
+Thanks,
+Tao
 
-third time's a charm?
+Liu Xuezhao (1):
+  staging/lustre/obdclass: add obd_target.h
 
-greg k-h
+Peng Tao (2):
+  staging/lustre: fix build on non-x86
+  staging/lustre: fix Kconfig bool defaults
+
+ drivers/staging/lustre/lustre/Kconfig              |    2 +-
+ .../lustre/lustre/include/linux/lustre_fsfilt.h    |   10 -
+ .../staging/lustre/lustre/include/lprocfs_status.h |   36 --
+ drivers/staging/lustre/lustre/include/obd.h        |  140 +----
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    1 -
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
+ .../lustre/lustre/obdclass/lprocfs_jobstats.c      |  560 --------------------
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c |    1 -
+ drivers/staging/lustre/lustre/ptlrpc/Makefile      |    2 +-
+ drivers/staging/lustre/lustre/ptlrpc/errno.c       |    4 +-
+ 10 files changed, 6 insertions(+), 752 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/lprocfs_jobstats.c
+
+-- 
+1.7.9.5
+
