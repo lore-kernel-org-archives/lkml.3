@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab3GXPQc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:16:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51023 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3GXPQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:16:31 -0400
-Date: Wed, 24 Jul 2013 08:17:43 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: mail-agent-noreply@emc.com
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>
-Subject: Re: [PATCH 6/8] staging/lustre: fix Kconfig bool defaults
-Message-ID: <20130724151743.GA15805@kroah.com>
-References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-2-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-5-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-6-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com>
+	id S1753409Ab3GXPQm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:16:42 -0400
+Received: from mga03.intel.com ([143.182.124.21]:30435 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753049Ab3GXPQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 11:16:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
+   d="scan'208";a="336111894"
+Message-ID: <51EFEFD4.4020808@linux.intel.com>
+Date: Wed, 24 Jul 2013 08:16:36 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Morten Rasmussen <morten.rasmussen@arm.com>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com> <20130713064909.GW25631@dyad.programming.kicks-ass.net> <20130713102350.GA8067@MacBook-Pro.local> <20130715203922.GD23818@dyad.programming.kicks-ass.net> <20130716124248.GB10036@arm.com> <51E5655C.7050304@linux.intel.com> <20130717141426.GG27948@arm.com> <20130724135011.GE12572@e103034-lin>
+In-Reply-To: <20130724135011.GE12572@e103034-lin>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 04:31:30PM +0800, mail-agent-noreply@emc.com wrote:
 
-Your email is spitting out a very invalid email address :(
+> Given that the power topology is taken into account, a sort
+> left/right-like mechanism would only help performance insensitive tasks
+> on big.LITTLE. Performance sensitive tasks that each can use more than
+> a little cpu should move in the opposite direction. Well, directly to a
+> big cpu, even if some little cpus are idle.
+>
+> It can be discussed whether smaller performance sensitive tasks that
+> would fit on a little cpu should be put on a little or big cpu. That
+> would depend on the nature of the task and if other tasks depend on it.
 
+yeah that makes it fun
 
-> From: Peng Tao <bergwolf@gmail.com>
+just a question for my education; is there overlap between big and little?
+meaning, is the "highest speed of little" as fast, or faster than "lowest speed of big"
+or are those strictly disjoint?
 
-Ok, that's one email address, yet...
+(if there's overlap that gives some room for the scheduler to experiment)
 
-> Should be y instead of true.
-> 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Andreas Dilger <andreas.dilger@intel.com>
-> Signed-off-by: Peng Tao <tao.peng@emc.com>
-
-That's the other.  Which is it?  Please keep them the same, as you do
-have control over them.
-
-Care to resend this series fixing this up?
-
-thanks,
-
-greg k-h
