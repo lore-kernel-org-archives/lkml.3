@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234Ab3GXAoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:44:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:9206 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758200Ab3GXAoR convert rfc822-to-8bit (ORCPT
+	id S1758239Ab3GXAr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:47:59 -0400
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:42811 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab3GXAr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:44:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,731,1367996400"; 
-   d="scan'208";a="272326587"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: RE: [PATCH 01/13] ACPI/IPMI: Fix potential response buffer overflow
-Thread-Topic: [PATCH 01/13] ACPI/IPMI: Fix potential response buffer overflow
-Thread-Index: AQHOh3wLKhdEYIiVUE2C0IUCYAmbI5lx0/CAgAEj1aCAAASEUA==
-Date: Wed, 24 Jul 2013 00:44:05 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435128@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <cover.1374566394.git.lv.zheng@intel.com>
- <be902a592144313dbf382876965166166bf81438.1374566394.git.lv.zheng@intel.com>
- <20130723145419.GA12065@kroah.com> 
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 23 Jul 2013 20:47:57 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130724003439.GE31864@blackmetal.musicnaut.iki.fi>
+References: <20130723225715.GD31864@blackmetal.musicnaut.iki.fi>
+ <1374621001.3031.1@driftwood> <20130724003439.GE31864@blackmetal.musicnaut.iki.fi>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Tue, 23 Jul 2013 20:47:25 -0400
+X-Google-Sender-Auth: nuSkZI74tTVcinh-t76c2cor9kI
+Message-ID: <CAP=VYLrXq_cgR-+aXVK5wkK9BQHNoYjCzHR6d1jtsYJ70qVRZQ@mail.gmail.com>
+Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that hasn't changed
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Rob Landley <rob@landley.net>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Zheng, Lv
-> Sent: Wednesday, July 24, 2013 8:22 AM
-> 
-> > From: linux-acpi-owner@vger.kernel.org
-> > [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Greg KH
-> > Sent: Tuesday, July 23, 2013 10:54 PM
-> >
-> > On Tue, Jul 23, 2013 at 04:08:59PM +0800, Lv Zheng wrote:
-> > > This patch enhances sanity checks on message size to avoid potential
-> > > buffer overflow.
-> > >
-> > > The kernel IPMI message size is IPMI_MAX_MSG_LENGTH(272 bytes) while
-> > > the ACPI specification defined IPMI message size is 64 bytes.  The
-> > > difference is not handled by the original codes.  This may cause
-> > > crash in the response handling codes.
-> > > This patch fixes this gap and also combines rx_data/tx_data to use
-> > > single data/len pair since they need not be seperated.
-> > >
-> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > > Reviewed-by: Huang Ying <ying.huang@intel.com>
-> > > ---
-> > >  drivers/acpi/acpi_ipmi.c |  100
-> > > ++++++++++++++++++++++++++++------------------
-> > >  1 file changed, 61 insertions(+), 39 deletions(-)
-> >
-> > <formletter>
-> >
-> > This is not the correct way to submit patches for inclusion in the
-> > stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
-> > for how to do this properly.
-> >
-> > </formletter>
-> >
-> > Same goes for the other patches you sent in this thread...
-> 
-> OK, I'll add prerequisites for each that want to be accepted by the stable queue
-> and re-send them (PATCH 01-06).
+On Tue, Jul 23, 2013 at 8:34 PM, Aaro Koskinen <aaro.koskinen@iki.fi> wrote:
+> Hi,
+>
+> On Tue, Jul 23, 2013 at 06:10:01PM -0500, Rob Landley wrote:
+>> On 07/23/2013 05:57:15 PM, Aaro Koskinen wrote:
+>> >Is there any file describing the needed tools (and minimum versions) to
+>> >_build_ the kernel? I agree that trying to describe such for the run-time
+>> >userspace does not belong to the kernel tree, but the required/supported
+>> >versions of build tools should be still maybe documented...
+>>
+>> Documentation/changes _is_ the file that describes the kernel's
+>> build-time prerequisites.
+>
+> So, in that case the file should not be deleted.
 
-Maybe I shouldn't.
-I looks it is not possible to add commit ID prerequisites for patch series that has not been accepted by the mainline.
-As the patches haven't been merged by the mainline, it is likely that the commit IDs in this series will be changed.
-Please ignore [PATCH 01-06] that have been sent to the stable mailing list.
-I'll just let ACPI maintainers know which patches I think that can go for stable tree and let they make the decision after the mainline acceptance.
+Or, we could create a real required-packages.txt that isn't a decade out
+of date (and poorly named), and have that in turn reference the arch
+specific files with the arch specific data.
 
-Thanks and best regards
--Lv
+C'mon folks, have an open mind here.   Put yourself in the perspective
+of the new user, and the issues that he/she faces.  Try and forget the
+knowledge that you implicitly have gained of linux over time.   Pointing
+these new users at this ancient Changes file is a good way to simply
+drive them away.
 
-> 
-> Thanks and best regards
-> -Lv
-> 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-acpi"
-> > in the body of a message to majordomo@vger.kernel.org More majordomo
-> > info at http://vger.kernel.org/majordomo-info.html
+We can do better.  I know we can.  And I know we all want that exact
+same thing once we cut away all the BS.
+
+Thanks,
+Paul.
+---
+
+>
+> A.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
