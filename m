@@ -1,109 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539Ab3GXN5W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:57:22 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:64652 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GXN5U (ORCPT
+	id S1751276Ab3GXOEE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:04:04 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:56071 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab3GXOEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:57:20 -0400
-MIME-Version: 1.0
-In-Reply-To: <51EF919F.2000706@linux.vnet.ibm.com>
-References: <1374601332.9192.0.camel@localhost.localdomain>
-	<51EF4969.4050807@linux.vnet.ibm.com>
-	<CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com>
-	<51EF919F.2000706@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 19:57:19 +0600
-Message-ID: <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
-Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
- building sched domain.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Michael Wang <wangyun@linux.vnet.ibm.com>
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Jul 2013 10:04:02 -0400
+X-AuditID: cbfec7f4-b7fd76d0000035e1-08-51efdecfae88
+From: Tomasz Figa <t.figa@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Tomasz Figa <tomasz.figa@gmail.com>, arnd@arndb.de,
+        linus.walleij@stericsson.com, Kukjin Kim <kgene.kim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCH v2 07/22] ARM: Exynos4210: Remove '0x's from Exynos4110
+ DTSI file
+Date: Wed, 24 Jul 2013 16:03:55 +0200
+Message-id: <6156493.tCYrm4xD5A@amdc1227>
+Organization: Samsung Poland R&D Center
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-reply-to: <20130724123931.GL26801@laptop>
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
+ <20130724123931.GL26801@laptop>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xK7rn770PNHh1VNzi76Rj7Ba9C66y
+	Wdz/epTRYk3LWxaLTY+vsVpc3jWHzWLG+X1MFqt2/WF04PD4/WsSo8fOWXfZPe5c28PmsXlJ
+	vUffllWMHt+XrmH3+LxJLoA9issmJTUnsyy1SN8ugStj+w2rgqXsFUf3OzYwHmDtYuTkkBAw
+	kZj0dzo7hC0mceHeerYuRi4OIYGljBLP17xlhnC6mCRWbuhlAqliE1CT+NzwCKiKg0NEQEXi
+	3BtzkBpmgaeMEl1vJoHVCAuES1zom88CYrMIqErMfPGADcTmFdCUmDbrO1gNv4C6xLttT5lA
+	5ogKuElM+JgPEuYU0JF4132aFWLvQkaJiRPvMUL0Ckr8mHwPbCazgLzEvv1TWSFsLYn1O48z
+	TWAUnIWkbBaSsllIyhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECImLLzsYFx+zOsQo
+	wMGoxMNbOOtdoBBrYllxZe4hRgkOZiURXqv57wOFeFMSK6tSi/Lji0pzUosPMTJxcEo1MK77
+	MGmGOVfZubkvzn49v37SgvbeyNfuEjObdugq2QtM+SRlYRfPqH6R/YNxXW3f9gV5BY9fqtwT
+	VVwVwGV+r/72pDN8JxcmCLDeupiwPao/6o7ZgXr28lkNvYc36XzrYo9XaZBn37V+9nZ9Za3K
+	yBn/g1X+fnx8xmT33k9Ntv9vv+Xpuqq/rkyJpTgj0VCLuag4EQAg1u44aQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 2:34 PM, Michael Wang
-<wangyun@linux.vnet.ibm.com> wrote:
-> On 07/24/2013 04:01 PM, Rakib Mullick wrote:
->> On Wed, Jul 24, 2013 at 9:26 AM, Michael Wang
->> <wangyun@linux.vnet.ibm.com> wrote:
->>> Hi, Rakib
->>>
->>> On 07/24/2013 01:42 AM, Rakib Mullick wrote:
->>>> Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
->>>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
->>>> domain and update only at the times of building schedule domains.
->>>>
->>>>       partition_sched_domains()
->>>>               detach_destroy_domain()
->>>>                       cpu_attach_domain()
->>>>                               update_top_cache_domain()
->>>
->>> IMHO, cpu_attach_domain() and update_top_cache_domain() should be
->>> paired, below patch will open a window which 'rq->sd == NULL' while
->>> 'sd_llc != NULL', isn't it?
->>>
->>> I don't think we have the promise that before we rebuild the stuff
->>> correctly, no one will utilize 'sd_llc'...
->>>
->> I never said it. My point is different.  partition_sched_domain works as -
->>
->>       - destroying existing schedule domain (if previous domain and new
->> domain aren't same)
->>       - building new partition
->>
->> while doing the first it needs to detach all the cpus on that domain.
->> By detaching what it does,
->> it fall backs to it's root default domain. In this context (which i've
->> proposed to skip), by means
->> of updating top cache domain it takes the highest flag domain to setup
->> it's sd_llc_id or cpu itself.
->>
->> Whatever done above gets overwritten (updating top cache domain),
->> while building new partition.
->> Then, why we did that before? Hope you understand my point.
->
-> I think you missed this in PeterZ's suggestion:
->
-> -               cpu_attach_domain(NULL, &def_root_domain, i);
->
-> With this change, it will be safe since you will still get an un-freed
-> sd, although it's an old one.
->
-I never meant it and clearly I missed it. If you remove
-cpu_attach_domain(), then detach_destroy_domain() becomes meaningless.
-And I don't have any intent to remove cpu_attach_domain from
-detach_destroy_domain() at all.
+On Wednesday 24 of July 2013 13:39:31 Lee Jones wrote:
+> ... for the sake of consistency and assumed convention.
+> 
+> Cc: Kukjin Kim <kgene.kim@samsung.com>
+> Cc: linux-samsung-soc@vger.kernel.org
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> diff --git a/arch/arm/boot/dts/exynos4210.dtsi
+> b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
+> --- a/arch/arm/boot/dts/exynos4210.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> @@ -72,7 +72,7 @@
+>                 };
+>         };
+> 
+> -       clock: clock-controller@0x10030000 {
+> +       clock: clock-controller@10030000 {
+>                 compatible = "samsung,exynos4210-clock";
+>                 reg = <0x10030000 0x20000>;
+>                 #clock-cells = <1>;
 
-> But your patch will run the risk to get a freed sd, since you make
-> 'sd_llc' wrong for a period of time (between destroy and rebuild) IMO.
->
-Building 'sd_llc' depends on schedule domain. If you don't have sd,
-sd_llc will point to NULL and sd_llc_id is
-the CPU itself. Since, we're  trying to re-construing so for this time
-being it doesn't matter, cause we're building
-it again. Now, please just note what you're saying, on last thread
-you've said -
+Looks good to me, except the subject which is still wrong - 
+s/Exynos4110/Exynos4210/.
 
-       "I don't think we have the promise that before we rebuild the stuff
-        correctly, no one will utilize 'sd_llc'..."
+I guess it might be fixed when applying, though.
 
-If that is the case, then we shouldn't worry about it at all. And this
-above comments (from previous thread I've quoted and this thread I'm
-replying) they're just self contradictory.
+Best regards,
+Tomasz
 
-> I guess I get you point, you are trying to save one time update since
-> you think this will be done twice, but actually the result of this two
-> time update was different, it's not redo and it's in order to sync
-> 'sd_llc' with 'rq->sd'.
->
-Yes, you got my point now, but I don't understand your points. Anyway,
-I'm not going to argue with this
-anymore, this stuff isn't much of an issue, but removing this sorts of
-stuff is typical in kernel development.
-
-Thanks,
-Rakib.
