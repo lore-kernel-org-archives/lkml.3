@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479Ab3GXPhr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:37:47 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:57970 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3GXPhp (ORCPT
+	id S1752663Ab3GXPj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:39:26 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:60100 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab3GXPjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:37:45 -0400
+	Wed, 24 Jul 2013 11:39:25 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374679746-12566-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1374679746-12566-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1374679746-12566-2-git-send-email-benjamin.tissoires@redhat.com>
-Date: Wed, 24 Jul 2013 18:37:45 +0300
-Message-ID: <CAHp75Vcr1MP7eeKHK3pwh49R5Yy0-guQHBJjZ+WXyiR5MT+ZBg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] HID: trivial devm conversion for special hid drivers
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
-        Stephane Chatty <chatty@enac.fr>,
+In-Reply-To: <alpine.LNX.2.00.1306181151030.6750@pobox.suse.cz>
+References: <1371109835-30796-1-git-send-email-benjamin.tissoires@redhat.com>
+	<alpine.LNX.2.00.1306181151030.6750@pobox.suse.cz>
+Date: Wed, 24 Jul 2013 17:39:23 +0200
+Message-ID: <CAN+gG=HA0wM=O-w_GRUtJJmGjwufmL52wTwhvLO6VLV9oPLmiA@mail.gmail.com>
+Subject: Re: [PATCH] HID: i2c-hid: add DT bindings
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        devicetree-discuss@lists.ozlabs.org,
         linux-input <linux-input@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
@@ -26,63 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 6:29 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> It is safe to use devres allocation within the hid subsystem:
-> - the devres release is called _after_ the call to .remove(), meaning
->   that no freed pointers will exists while removing the device
-> - if a .probe() fails, devres releases all the allocated ressources
->   before going to the next driver: there will not be ghost ressources
->   attached to a hid device if several drivers are probed.
+On Tue, Jun 18, 2013 at 11:51 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Thu, 13 Jun 2013, Benjamin Tissoires wrote:
 >
-> Given that, we can clean up a little some of the HID drivers. These ones
-> are trivial:
-> - there is only one kzalloc in the driver
-> - the .remove() callback contains only one kfree on top of hid_hw_stop()
-> - the error path in the probe is easy enough to be manually checked
-
-Thanks for the patch! I'm sorry I didn't find time to do what I was
-talking about last time.
-
-Few comments below.
-
-> --- a/drivers/hid/hid-a4tech.c
-> +++ b/drivers/hid/hid-a4tech.c
-
-> @@ -104,29 +103,16 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
->         ret = hid_parse(hdev);
->         if (ret) {
->                 hid_err(hdev, "parse failed\n");
-> -               goto err_free;
-> +               return ret;
->         }
+>> Add device tree based support for HID over I2C devices.
+>>
+>> Tested on an Odroid-X board with a Synaptics touchpad.
+>>
+>> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>> ---
+>>
+>> Hi guys,
+>>
+>> well, as the commit message says, this is the DT binding for HID over I2C.
+>> I honestly don't know if it will be used besides me, but it may help others
+>> with a DT based board.
+>> As the spec is for ACPI only, I had no specifications regarding the DT names. So
+>> these names can be changed if you think they are bad.
+>>
+>> I also created a new bindings directory in the devicetree doc to reflect the
+>> split we have between input and hid. However, if the DT experts prefer having
+>> it under input, I'm fine with that.
+>>
+>> Cheers,
+>> Benjamin
+>>
+>>  .../devicetree/bindings/hid/hid-over-i2c.txt       | 28 ++++++++++++++
+>>  drivers/hid/i2c-hid/i2c-hid.c                      | 44 +++++++++++++++++++++-
+>>  include/linux/i2c/i2c-hid.h                        |  3 +-
+>>  3 files changed, 73 insertions(+), 2 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/hid/hid-over-i2c.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/hid/hid-over-i2c.txt b/Documentation/devicetree/bindings/hid/hid-over-i2c.txt
 >
->         ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
-> -       if (ret) {
-> +       if (ret)
->                 hid_err(hdev, "hw start failed\n");
-> -               goto err_free;
-> -       }
+> DT folks, any objections to this, please?
 >
-> -       return 0;
+> If not, I'd like to apply this for 3.11 into my tree.
+>
 
-Isn't it better to leave explicit return 0? I think it would be fool
-proof in case someone wants to add anything in the middle.
+DT folks, ping???
 
-> -err_free:
-> -       kfree(a4);
->         return ret;
->  }
-
-> -static void a4_remove(struct hid_device *hdev)
-> -{
-> -       struct a4tech_sc *a4 = hid_get_drvdata(hdev);
-> -
-> -       hid_hw_stop(hdev);
-
-Is it safe to remove this call?
-This question is the same for all patched drivers.
-
--- 
-With Best Regards,
-Andy Shevchenko
+Cheers,
+Benjamin
