@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752900Ab3GXScv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:32:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63307 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861Ab3GXScr (ORCPT
+	id S1753111Ab3GXSeE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:34:04 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:32872 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab3GXSeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:32:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-Date: Wed, 24 Jul 2013 20:32:03 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, Tomasz Figa <t.figa@samsung.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, s.nawrocki@samsung.com,
-        kgene.kim@samsung.com, grant.likely@linaro.org, tony@atomide.com,
-        swarren@nvidia.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-References: <Pine.LNX.4.44L0.1307231708020.1304-100000@iolanthe.rowland.org> <5977067.8rykRgjgre@flatron>
-In-Reply-To: <5977067.8rykRgjgre@flatron>
+	Wed, 24 Jul 2013 14:34:01 -0400
+Message-ID: <51F01E06.6090800@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 13:33:42 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: [PATCH 0/8] Correct memory hot add/remove for powerpc
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307242032.03597.arnd@arndb.de>
-X-Provags-ID: V02:K0:NNcUlE0/cvQWtnA54EshILN93M1DTjB+Yi0Ul7d96UE
- tShwQgQ6OM2o7vugv/HIBk8tQk3WpXsLZ7zrqu/3lIGMBkflzF
- WTH1CkKSz779Oiyc9G8MA1J8C6XhgTtIkw1teQDM+KF5Fp+ckI
- dlwW1AneoT/sP4bvkbSa6VQLqDQrb1h6FmLNoXt4zyytdtV8UR
- ddEe+cSVPps0XrYFU2WCJMi/vhhaEH/wHGaPwbpbXeWcfhSuDN
- WAcyAcHti4PnLPQd8RQCSWXKT8eRD1FxRrXqvw2EIg3uKADmPa
- NbQpF4nARkcwA6EqVGqw8bMkBwwJdEbPNQHjaw/4T3ltEhiUNP
- S30BqHIUw5TgVUDqH1D0=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072418-1396-0000-0000-0000034F6D1E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 July 2013, Tomasz Figa wrote:
-> On Tuesday 23 of July 2013 17:14:20 Alan Stern wrote:
-> > On Tue, 23 Jul 2013, Tomasz Figa wrote:
-> > > Where would you want to have those phy_address arrays stored? There
-> > > are no board files when booting with DT. Not even saying that you
-> > > don't need to use any hacky schemes like this when you have DT that
-> > > nicely specifies relations between devices.
-> > 
-> > If everybody agrees DT has a nice scheme for specifying relations
-> > between devices, why not use that same scheme in the PHY core?
-> 
-> It is already used, for cases when consumer device has a DT node attached. 
-> In non-DT case this kind lookup translates loosely to something that is 
-> being done in regulator framework - you can't bind devices by pointers, 
-> because you don't have those pointers, so you need to use device names.
-> 
+The current implementation of memory hot add and remove for powerpc is broken.
+This patch set both corrects this issue and updates the memory hot add and
+remove code for powerpc so that it can be done properly in the kernel.
 
-Sorry for jumping in to the middle of the discussion, but why does a *new*
-framework even bother defining an interface for board files?
+The first two patches update the powerpc hot add and remove code to work with
+all of the updates that have gone in to enable memory remove with sparse
+vmemmap enabled. With these two patches applied the powerpc code is back to
+working, but not working properly.
 
-Can't we just drop any interfaces for platform data passing in the phy
-framework and put the burden of adding those to anyone who actually needs
-them? All the platforms we are concerned with here (exynos and omap,
-plus new platforms) can be booted using DT anyway.
+The remaining patches update the powerpc memory add and remove code so the
+work can be done in the kernel and all while holding the memory hotplug lock.
+The current powerpc implementation does some of the work in the kernel and
+some of the work in userspace. While this code did work at one time, it has
+a problem in that it does part of the work to add and remove memory without
+holding the memory hotplug lock. In this scheme memory could be added and
+removed fast enough to cause the system to crash. This was a result of
+doing part of the add or remove without holding the lock.
 
-	Arnd
+In order to do memory hot remove in the kernel, this patch set introduces
+a sysfs release file (/sys/device/system/memory/release) which one
+can write the physical address of the memory to be removed to. Additionally
+there is a new set of flags defined for the memory notification chain to
+indicate that memory is being hot added or hot removed. This allows any work
+that may need to be done prior to or after memory is hot added or removed
+to be performed.
+
+The remaining patches in the patch set update the powerpc to properly do
+memory hot add and remove in the kernel.
+
+Nathan Fontenot
+---
+ Documentation/memory-hotplug.txt                      |   26 ++++
+ arch/powerpc/mm/mem.c                                 |   35 +++++-
+ arch/powerpc/platforms/pseries/hotplug-memory.c       |   95 +---------------
+ drivers/base/memory.c                                 |   81 ++++++++++++--
+ linux/Documentation/memory-hotplug.txt                |   34 ++++-
+ linux/arch/powerpc/Kconfig                            |    2 
+ linux/arch/powerpc/mm/init_64.c                       |    6 +
+ linux/arch/powerpc/mm/mem.c                           |    9 +
+ linux/arch/powerpc/platforms/pseries/dlpar.c          |  103 ++++++++++++++++++
+ linux/arch/powerpc/platforms/pseries/hotplug-memory.c |   60 +---------
+ linux/arch/x86/Kconfig                                |    2 
+ linux/drivers/base/memory.c                           |   20 +--
+ linux/include/linux/memory.h                          |    6 +
+ linux/mm/Kconfig                                      |    2 
+ linux/mm/memory_hotplug.c                             |   25 +++-
+ 15 files changed, 322 insertions(+), 184 deletions(-)
+
