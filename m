@@ -1,47 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab3GXD7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:59:04 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:60068 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750780Ab3GXD7B (ORCPT
+	id S1751893Ab3GXD7Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:59:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38452 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751317Ab3GXD7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:59:01 -0400
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, horms@verge.net.au,
-        kuninori.morimoto.gx@renesas.com, linux-sh@vger.kernel.org
-Date: Wed, 24 Jul 2013 12:59:09 +0900
-Message-Id: <20130724035909.30648.64982.sendpatchset@w520>
-Subject: [PATCH] ARM: shmobile: r8a7740: add PMU information to r8a7740.dtsi
+	Tue, 23 Jul 2013 23:59:23 -0400
+Date: Tue, 23 Jul 2013 20:56:46 -0700
+From: tip-bot for Michael Wang <tipbot@zytor.com>
+Message-ID: <tip-62470419e993f8d9d93db0effd3af4296ecb79a5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        peterz@infradead.org, efault@gmx.de, wangyun@linux.vnet.ibm.com,
+        tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        efault@gmx.de, peterz@infradead.org, wangyun@linux.vnet.ibm.com,
+        tglx@linutronix.de
+In-Reply-To: <51D50057.9000809@linux.vnet.ibm.com>
+References: <51D50057.9000809@linux.vnet.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] sched: Implement smarter wake-affine logic
+Git-Commit-ID: 62470419e993f8d9d93db0effd3af4296ecb79a5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 20:56:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+Commit-ID:  62470419e993f8d9d93db0effd3af4296ecb79a5
+Gitweb:     http://git.kernel.org/tip/62470419e993f8d9d93db0effd3af4296ecb79a5
+Author:     Michael Wang <wangyun@linux.vnet.ibm.com>
+AuthorDate: Thu, 4 Jul 2013 12:55:51 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Tue, 23 Jul 2013 12:18:41 +0200
 
-Add PMU information to r8a7740.dtsi. With this
-included Armadillo800eva DT reference may use the PMU.
+sched: Implement smarter wake-affine logic
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
+The wake-affine scheduler feature is currently always trying to pull
+the wakee close to the waker. In theory this should be beneficial if
+the waker's CPU caches hot data for the wakee, and it's also beneficial
+in the extreme ping-pong high context switch rate case.
+
+Testing shows it can benefit hackbench up to 15%.
+
+However, the feature is somewhat blind, from which some workloads
+such as pgbench suffer. It's also time-consuming algorithmically.
+
+Testing shows it can damage pgbench up to 50% - far more than the
+benefit it brings in the best case.
+
+So wake-affine should be smarter and it should realize when to
+stop its thankless effort at trying to find a suitable CPU to wake on.
+
+This patch introduces 'wakee_flips', which will be increased each
+time the task flips (switches) its wakee target.
+
+So a high 'wakee_flips' value means the task has more than one
+wakee, and the bigger the number, the higher the wakeup frequency.
+
+Now when making the decision on whether to pull or not, pay attention to
+the wakee with a high 'wakee_flips', pulling such a task may benefit
+the wakee. Also imply that the waker will face cruel competition later,
+it could be very cruel or very fast depends on the story behind
+'wakee_flips', waker therefore suffers.
+
+Furthermore, if waker also has a high 'wakee_flips', that implies that
+multiple tasks rely on it, then waker's higher latency will damage all
+of them, so pulling wakee seems to be a bad deal.
+
+Thus, when 'waker->wakee_flips / wakee->wakee_flips' becomes
+higher and higher, the cost of pulling seems to be worse and worse.
+
+The patch therefore helps the wake-affine feature to stop its pulling
+work when:
+
+	wakee->wakee_flips > factor &&
+	waker->wakee_flips > (factor * wakee->wakee_flips)
+
+The 'factor' here is the number of CPUs in the current CPU's NUMA node,
+so a bigger node will lead to more pulling since the trial becomes more
+severe.
+
+After applying the patch, pgbench shows up to 40% improvements and no regressions.
+
+Tested with 12 cpu x86 server and tip 3.10.0-rc7.
+
+The percentages in the final column highlight the areas with the biggest wins,
+all other areas improved as well:
+
+	pgbench		    base	smart
+
+	| db_size | clients |  tps  |	|  tps  |
+	+---------+---------+-------+   +-------+
+	| 22 MB   |       1 | 10598 |   | 10796 |
+	| 22 MB   |       2 | 21257 |   | 21336 |
+	| 22 MB   |       4 | 41386 |   | 41622 |
+	| 22 MB   |       8 | 51253 |   | 57932 |
+	| 22 MB   |      12 | 48570 |   | 54000 |
+	| 22 MB   |      16 | 46748 |   | 55982 | +19.75%
+	| 22 MB   |      24 | 44346 |   | 55847 | +25.93%
+	| 22 MB   |      32 | 43460 |   | 54614 | +25.66%
+	| 7484 MB |       1 |  8951 |   |  9193 |
+	| 7484 MB |       2 | 19233 |   | 19240 |
+	| 7484 MB |       4 | 37239 |   | 37302 |
+	| 7484 MB |       8 | 46087 |   | 50018 |
+	| 7484 MB |      12 | 42054 |   | 48763 |
+	| 7484 MB |      16 | 40765 |   | 51633 | +26.66%
+	| 7484 MB |      24 | 37651 |   | 52377 | +39.11%
+	| 7484 MB |      32 | 37056 |   | 51108 | +37.92%
+	| 15 GB   |       1 |  8845 |   |  9104 |
+	| 15 GB   |       2 | 19094 |   | 19162 |
+	| 15 GB   |       4 | 36979 |   | 36983 |
+	| 15 GB   |       8 | 46087 |   | 49977 |
+	| 15 GB   |      12 | 41901 |   | 48591 |
+	| 15 GB   |      16 | 40147 |   | 50651 | +26.16%
+	| 15 GB   |      24 | 37250 |   | 52365 | +40.58%
+	| 15 GB   |      32 | 36470 |   | 50015 | +37.14%
+
+Signed-off-by: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/51D50057.9000809@linux.vnet.ibm.com
+[ Improved the changelog. ]
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
+ include/linux/sched.h |  3 +++
+ kernel/sched/fair.c   | 47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+)
 
- Dry coded based on data sheet, not runtime tested.
-
- arch/arm/boot/dts/r8a7740.dtsi |    5 +++++
- 1 file changed, 5 insertions(+)
-
---- 0001/arch/arm/boot/dts/r8a7740.dtsi
-+++ work/arch/arm/boot/dts/r8a7740.dtsi	2013-07-24 04:20:42.000000000 +0900
-@@ -32,6 +32,11 @@
- 		      <0xc2000000 0x1000>;
- 	};
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 50d04b9..4f163a8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1034,6 +1034,9 @@ struct task_struct {
+ #ifdef CONFIG_SMP
+ 	struct llist_node wake_entry;
+ 	int on_cpu;
++	struct task_struct *last_wakee;
++	unsigned long wakee_flips;
++	unsigned long wakee_flip_decay_ts;
+ #endif
+ 	int on_rq;
  
-+	pmu {
-+		compatible = "arm,cortex-a9-pmu";
-+		interrupts = <0 83 4>;
-+	};
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 765d87a..860063a 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3017,6 +3017,23 @@ static unsigned long cpu_avg_load_per_task(int cpu)
+ 	return 0;
+ }
+ 
++static void record_wakee(struct task_struct *p)
++{
++	/*
++	 * Rough decay (wiping) for cost saving, don't worry
++	 * about the boundary, really active task won't care
++	 * about the loss.
++	 */
++	if (jiffies > current->wakee_flip_decay_ts + HZ) {
++		current->wakee_flips = 0;
++		current->wakee_flip_decay_ts = jiffies;
++	}
 +
- 	/* irqpin0: IRQ0 - IRQ7 */
- 	irqpin0: irqpin@e6900000 {
- 		compatible = "renesas,intc-irqpin";
++	if (current->last_wakee != p) {
++		current->last_wakee = p;
++		current->wakee_flips++;
++	}
++}
+ 
+ static void task_waking_fair(struct task_struct *p)
+ {
+@@ -3037,6 +3054,7 @@ static void task_waking_fair(struct task_struct *p)
+ #endif
+ 
+ 	se->vruntime -= min_vruntime;
++	record_wakee(p);
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+@@ -3155,6 +3173,28 @@ static inline unsigned long effective_load(struct task_group *tg, int cpu,
+ 
+ #endif
+ 
++static int wake_wide(struct task_struct *p)
++{
++	int factor = nr_cpus_node(cpu_to_node(smp_processor_id()));
++
++	/*
++	 * Yeah, it's the switching-frequency, could means many wakee or
++	 * rapidly switch, use factor here will just help to automatically
++	 * adjust the loose-degree, so bigger node will lead to more pull.
++	 */
++	if (p->wakee_flips > factor) {
++		/*
++		 * wakee is somewhat hot, it needs certain amount of cpu
++		 * resource, so if waker is far more hot, prefer to leave
++		 * it alone.
++		 */
++		if (current->wakee_flips > (factor * p->wakee_flips))
++			return 1;
++	}
++
++	return 0;
++}
++
+ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ {
+ 	s64 this_load, load;
+@@ -3164,6 +3204,13 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+ 	unsigned long weight;
+ 	int balanced;
+ 
++	/*
++	 * If we wake multiple tasks be careful to not bounce
++	 * ourselves around too much.
++	 */
++	if (wake_wide(p))
++		return 0;
++
+ 	idx	  = sd->wake_idx;
+ 	this_cpu  = smp_processor_id();
+ 	prev_cpu  = task_cpu(p);
