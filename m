@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab3GXSJy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:09:54 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:50049 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656Ab3GXSJx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:09:53 -0400
-Message-ID: <51F0186B.1050407@gmail.com>
-Date: Thu, 25 Jul 2013 02:09:47 +0800
-From: Peng Tao <bergwolf@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	id S1752231Ab3GXSLG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:11:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:35628 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751005Ab3GXSLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 14:11:03 -0400
+Date: Wed, 24 Jul 2013 20:10:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+Message-ID: <20130724181056.GM30777@pd.tnic>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
+ <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Andreas Dilger <andreas.dilger@intel.com>,
-        Peng Tao <tao.peng@emc.com>
-Subject: Re: [PATCH-RESEND 2/3] staging/lustre: fix build on non-x86
-References: <1374688821-9874-1-git-send-email-bergwolf@gmail.com> <1374688821-9874-3-git-send-email-bergwolf@gmail.com> <20130724180516.GA4958@kroah.com>
-In-Reply-To: <20130724180516.GA4958@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 02:05 AM, Greg Kroah-Hartman wrote:
-> On Thu, Jul 25, 2013 at 02:00:20AM +0800, Peng Tao wrote:
->> On non-x86 we will build with Lustre's errno translate code but
->> it has a few issues.
->>
->> Cc: Andreas Dilger <andreas.dilger@intel.com>
->> Signed-off-by: Peng Tao <tao.peng@emc.com>
-> You forgot your "From: Peng Tao <tao.peng@emc.com>" line in this, and
-> the third, patch to get the authorship correct.
-I'll fix and resend. Sorry for the noise...
-
-Thanks,
-Tao
-> thanks,
+On Wed, Jul 24, 2013 at 10:43:47PM +0530, Naveen N. Rao wrote:
+> While looking at this, I noticed that we seem to be using varying
+> field widths in our APEI code: - einj.c has two instances using
+> %#010llx. - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
 >
-> greg k-h
+> Not sure if these are intentional and those fields truly aren't 64-bit
+> (as suggested by the usage of long long int).
 
+That's an interesting question but I think you're better fitted to
+answer it - I try to avoid the APEI spec as much as possible.
+
+:-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
