@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab3GXWGK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55322 "EHLO
+	id S1754226Ab3GXWKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:10:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab3GXWFs (ORCPT
+	with ESMTP id S1752852Ab3GXWGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:48 -0400
+	Wed, 24 Jul 2013 18:06:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH 06/36] devfreq: convert devfreq_class to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:09 -0700
-Message-Id: <1374703539-9705-7-git-send-email-gregkh@linuxfoundation.org>
+        Rodolfo Giometti <giometti@linux.it>
+Subject: [PATCH 34/36] c2port: convert class code to use bin_attrs in groups
+Date: Wed, 24 Jul 2013 15:05:37 -0700
+Message-Id: <1374703539-9705-35-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,202 +21,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the devfreq_class code to use the
-correct field.
+Now that attribute groups support binary attributes, use them instead of
+the dev_bin_attrs field in struct class, as that is going away soon.
 
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Rodolfo Giometti <giometti@linux.it>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ drivers/misc/c2port/core.c | 33 ++++++++++++++++++---------------
+ 1 file changed, 18 insertions(+), 15 deletions(-)
 
-MyungJoo, feel free to apply this to your tree, or ACK it and I can take it
-through mine.
-
-drivers/devfreq/devfreq.c | 78 ++++++++++++++++++++++++++---------------------
- 1 file changed, 44 insertions(+), 34 deletions(-)
-
-diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index e94e619f..c99c00d3 100644
---- a/drivers/devfreq/devfreq.c
-+++ b/drivers/devfreq/devfreq.c
-@@ -703,7 +703,7 @@ err_out:
- }
- EXPORT_SYMBOL(devfreq_remove_governor);
- 
--static ssize_t show_governor(struct device *dev,
-+static ssize_t governor_show(struct device *dev,
- 			     struct device_attribute *attr, char *buf)
- {
- 	if (!to_devfreq(dev)->governor)
-@@ -712,7 +712,7 @@ static ssize_t show_governor(struct device *dev,
- 	return sprintf(buf, "%s\n", to_devfreq(dev)->governor->name);
- }
- 
--static ssize_t store_governor(struct device *dev, struct device_attribute *attr,
-+static ssize_t governor_store(struct device *dev, struct device_attribute *attr,
- 			      const char *buf, size_t count)
- {
- 	struct devfreq *df = to_devfreq(dev);
-@@ -754,9 +754,11 @@ out:
- 		ret = count;
- 	return ret;
- }
--static ssize_t show_available_governors(struct device *d,
--				    struct device_attribute *attr,
--				    char *buf)
-+static DEVICE_ATTR_RW(governor);
-+
-+static ssize_t available_governors_show(struct device *d,
-+					struct device_attribute *attr,
-+					char *buf)
- {
- 	struct devfreq_governor *tmp_governor;
- 	ssize_t count = 0;
-@@ -775,9 +777,10 @@ static ssize_t show_available_governors(struct device *d,
- 
- 	return count;
- }
-+static DEVICE_ATTR_RO(available_governors);
- 
--static ssize_t show_freq(struct device *dev,
--			 struct device_attribute *attr, char *buf)
-+static ssize_t cur_freq_show(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
- {
- 	unsigned long freq;
- 	struct devfreq *devfreq = to_devfreq(dev);
-@@ -788,20 +791,22 @@ static ssize_t show_freq(struct device *dev,
- 
- 	return sprintf(buf, "%lu\n", devfreq->previous_freq);
- }
-+static DEVICE_ATTR_RO(cur_freq);
- 
--static ssize_t show_target_freq(struct device *dev,
--			struct device_attribute *attr, char *buf)
-+static ssize_t target_freq_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
- {
- 	return sprintf(buf, "%lu\n", to_devfreq(dev)->previous_freq);
- }
-+static DEVICE_ATTR_RO(target_freq);
- 
--static ssize_t show_polling_interval(struct device *dev,
-+static ssize_t polling_interval_show(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
- 	return sprintf(buf, "%d\n", to_devfreq(dev)->profile->polling_ms);
- }
- 
--static ssize_t store_polling_interval(struct device *dev,
-+static ssize_t polling_interval_store(struct device *dev,
- 				      struct device_attribute *attr,
- 				      const char *buf, size_t count)
- {
-@@ -821,8 +826,9 @@ static ssize_t store_polling_interval(struct device *dev,
+diff --git a/drivers/misc/c2port/core.c b/drivers/misc/c2port/core.c
+index abe6e251..464419b3 100644
+--- a/drivers/misc/c2port/core.c
++++ b/drivers/misc/c2port/core.c
+@@ -856,6 +856,9 @@ static ssize_t c2port_write_flash_data(struct file *filp, struct kobject *kobj,
  
  	return ret;
  }
-+static DEVICE_ATTR_RW(polling_interval);
++/* size is computed at run-time */
++static BIN_ATTR(flash_data, 0644, c2port_read_flash_data,
++		c2port_write_flash_data, 0);
  
--static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
-+static ssize_t min_freq_store(struct device *dev, struct device_attribute *attr,
- 			      const char *buf, size_t count)
- {
- 	struct devfreq *df = to_devfreq(dev);
-@@ -849,13 +855,13 @@ unlock:
- 	return ret;
- }
- 
--static ssize_t show_min_freq(struct device *dev, struct device_attribute *attr,
-+static ssize_t min_freq_show(struct device *dev, struct device_attribute *attr,
- 			     char *buf)
- {
- 	return sprintf(buf, "%lu\n", to_devfreq(dev)->min_freq);
- }
- 
--static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
-+static ssize_t max_freq_store(struct device *dev, struct device_attribute *attr,
- 			      const char *buf, size_t count)
- {
- 	struct devfreq *df = to_devfreq(dev);
-@@ -881,16 +887,18 @@ unlock:
- 	mutex_unlock(&df->lock);
- 	return ret;
- }
-+static DEVICE_ATTR_RW(min_freq);
- 
--static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
-+static ssize_t max_freq_show(struct device *dev, struct device_attribute *attr,
- 			     char *buf)
- {
- 	return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
- }
-+static DEVICE_ATTR_RW(max_freq);
- 
--static ssize_t show_available_freqs(struct device *d,
--				    struct device_attribute *attr,
--				    char *buf)
-+static ssize_t available_frequencies_show(struct device *d,
-+					  struct device_attribute *attr,
-+					  char *buf)
- {
- 	struct devfreq *df = to_devfreq(d);
- 	struct device *dev = df->dev.parent;
-@@ -918,9 +926,10 @@ static ssize_t show_available_freqs(struct device *d,
- 
- 	return count;
- }
-+static DEVICE_ATTR_RO(available_frequencies);
- 
--static ssize_t show_trans_table(struct device *dev, struct device_attribute *attr,
--				char *buf)
-+static ssize_t trans_stat_show(struct device *dev,
-+			       struct device_attribute *attr, char *buf)
- {
- 	struct devfreq *devfreq = to_devfreq(dev);
- 	ssize_t len;
-@@ -959,20 +968,21 @@ static ssize_t show_trans_table(struct device *dev, struct device_attribute *att
- 					devfreq->total_trans);
- 	return len;
- }
+ /*
+  * Class attributes
+@@ -873,19 +876,20 @@ static struct attribute *c2port_attrs[] = {
+ 	&dev_attr_flash_erase.attr,
+ 	NULL,
+ };
+-ATTRIBUTE_GROUPS(c2port);
 -
--static struct device_attribute devfreq_attrs[] = {
--	__ATTR(governor, S_IRUGO | S_IWUSR, show_governor, store_governor),
--	__ATTR(available_governors, S_IRUGO, show_available_governors, NULL),
--	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
--	__ATTR(available_frequencies, S_IRUGO, show_available_freqs, NULL),
--	__ATTR(target_freq, S_IRUGO, show_target_freq, NULL),
--	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
--	       store_polling_interval),
--	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
--	__ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
--	__ATTR(trans_stat, S_IRUGO, show_trans_table, NULL),
--	{ },
-+static DEVICE_ATTR_RO(trans_stat);
+-static struct bin_attribute c2port_bin_attrs[] = {
+-	{
+-		.attr	= {
+-			.name	= "flash_data",
+-			.mode	= 0644
+-		},
+-		.read	= c2port_read_flash_data,
+-		.write	= c2port_write_flash_data,
+-		/* .size is computed at run-time */
+-	},
+-	__ATTR_NULL
 +
-+static struct attribute *devfreq_attrs[] = {
-+	&dev_attr_governor.attr,
-+	&dev_attr_available_governors.attr,
-+	&dev_attr_cur_freq.attr,
-+	&dev_attr_available_frequencies.attr,
-+	&dev_attr_target_freq.attr,
-+	&dev_attr_polling_interval.attr,
-+	&dev_attr_min_freq.attr,
-+	&dev_attr_max_freq.attr,
-+	&dev_attr_trans_stat.attr,
++static struct bin_attribute *c2port_bin_attrs[] = {
++	&bin_attr_flash_data,
++	NULL,
++};
++
++static const struct attribute_group c2port_group = {
++	.attrs = c2port_attrs,
++	.bin_attrs = c2port_bin_attrs,
++};
++
++static const struct attribute_group *c2port_groups[] = {
++	&c2port_group,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(devfreq);
  
- static int __init devfreq_init(void)
- {
-@@ -988,7 +998,7 @@ static int __init devfreq_init(void)
- 		pr_err("%s: couldn't create workqueue\n", __FILE__);
- 		return PTR_ERR(devfreq_wq);
+ /*
+@@ -918,7 +922,7 @@ struct c2port_device *c2port_device_register(char *name,
+ 		goto error_idr_alloc;
+ 	c2dev->id = ret;
+ 
+-	c2port_bin_attrs[0].size = ops->blocks_num * ops->block_size;
++	bin_attr_flash_data.size = ops->blocks_num * ops->block_size;
+ 
+ 	c2dev->dev = device_create(c2port_class, NULL, 0, c2dev,
+ 				   "c2port%d", c2dev->id);
+@@ -988,7 +992,6 @@ static int __init c2port_init(void)
+ 		return PTR_ERR(c2port_class);
  	}
--	devfreq_class->dev_attrs = devfreq_attrs;
-+	devfreq_class->dev_groups = devfreq_groups;
+ 	c2port_class->dev_groups = c2port_groups;
+-	c2port_class->dev_bin_attrs = c2port_bin_attrs;
  
  	return 0;
  }
