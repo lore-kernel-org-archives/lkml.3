@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3GXRzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:55:20 -0400
-Received: from mail-gg0-f174.google.com ([209.85.161.174]:36505 "EHLO
-	mail-gg0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab3GXRzQ (ORCPT
+	id S1752760Ab3GXR7r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:59:47 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:56568 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3GXR7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:55:16 -0400
-Message-ID: <51F014FC.70104@twiddle.net>
-Date: Wed, 24 Jul 2013 07:55:08 -1000
-From: Richard Henderson <rth@twiddle.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 13:59:45 -0400
+Date: Wed, 24 Jul 2013 14:59:38 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        linux-media <linux-media@vger.kernel.org>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: linux-next: Tree for Jul 24 (media/usb/stk1160)
+Message-ID: <20130724175937.GC3353@localhost>
+References: <20130724163254.f026790fa2fe367f85969901@canb.auug.org.au>
+ <51F00FC9.103@infradead.org>
 MIME-Version: 1.0
-To: Michael Cree <mcree@orcon.net.nz>, Michael Cree <cree@waikato.ac.nz>,
-        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
-        ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        linux-alpha@vger.kernel.org
-Subject: Re: [PATCH 0/7] Minor Alpha updates for 3.11
-References: <20130717000347.GB2483@stolen.phys.waikato.ac.nz> <1374546701.3719.33@driftwood> <20130723032511.GA18086@stolen.phys.waikato.ac.nz> <51EE9F36.7050402@twiddle.net> <20130724102544.GA7713@omega>
-In-Reply-To: <20130724102544.GA7713@omega>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51F00FC9.103@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 12:25 AM, Michael Cree wrote:
-> Searching for NR_umount finds the following packages that compile on
-> Alpha:
+Hello Randy,
+
+On Wed, Jul 24, 2013 at 10:32:57AM -0700, Randy Dunlap wrote:
+> On 07/23/13 23:32, Stephen Rothwell wrote:
+> > Hi all,
+> > 
+> > Changes since 20130723:
+> > 
 > 
-> eglibc
+> on x86_64:
+> 
+> 
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x414e77): undefined reference to `snd_card_create'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x414f02): undefined reference to `snd_ac97_bus'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x414f3f): undefined reference to `snd_ac97_mixer'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x414f64): undefined reference to `snd_card_register'
+> drivers/built-in.o: In function `stk1160_ac97_register':
+> (.text+0x414f8f): undefined reference to `snd_card_free'
+> drivers/built-in.o: In function `stk1160_ac97_unregister':
+> (.text+0x414fd8): undefined reference to `snd_card_free'
+> 
 
-Fork of glibc, which I did examine; I'll assume it's the same code.
+If I remember correctly this is the same issue you reported on May,
+and that got solved with a patch by Mauro:
 
-> dietlibc
-> uclibc
+https://patchwork.linuxtv.org/patch/18284/
 
-Rob reports that uclibc is fixed by the rename.  From what I see in
-the dietlibc source, the same is true of Alpha, since the only mention
-of "oldumount" is in alpha/syscalls.h.
+Seems the patch never got merged.
 
-> qemu
+@Mauro: Can you apply the patch you proposed in the above link?
 
-Definitely would be fixed by the rename.
-
-Of course in both dietlibc and qemu, the packages need to be patched
-to match the kernel rename, as they don't use the kernel headers.
-
-> radare
-
-Repository has vanished?  There's a radare2 that apparently superceeds
-it, but doesn't mention umount in any relevant context.
-
-> linux-tools
-> ns3
-> skyeye
-
-I can't find source for these to browse.
-
-
-r~
+Thanks,
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
