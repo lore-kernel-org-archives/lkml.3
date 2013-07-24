@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab3GXMbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 08:31:41 -0400
-Received: from mailout02.c08.mtsvc.net ([205.186.168.190]:56212 "EHLO
-	mailout02.c08.mtsvc.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751855Ab3GXMaa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 08:30:30 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 5/9] n_tty: Factor PARMRK from normal per-char i/o
-Date: Wed, 24 Jul 2013 08:29:53 -0400
-Message-Id: <1374668997-29726-5-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374668997-29726-1-git-send-email-peter@hurleysoftware.com>
-References: <20130724001259.GA9239@kroah.com>
- <1374668997-29726-1-git-send-email-peter@hurleysoftware.com>
-X-Authenticated-User: 125194 peter@hurleysoftware.com
+	id S1752186Ab3GXMcd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 08:32:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:41689 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751217Ab3GXMcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 08:32:32 -0400
+Date: Wed, 24 Jul 2013 15:32:29 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, <balbi@ti.com>,
+        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 0/9] Tegra USB cleanup series
+Message-ID: <20130724123229.GE17962@radagast>
+Reply-To: <balbi@ti.com>
+References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com>
+ <51D1FCBD.6070104@wwwdotorg.org>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="KJY2Ze80yH5MUxol"
+Content-Disposition: inline
+In-Reply-To: <51D1FCBD.6070104@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Handle PARMRK processing on the slow per-char i/o path.
+--KJY2Ze80yH5MUxol
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 45 +++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 43 insertions(+), 2 deletions(-)
+Hi,
 
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 99bbee4..aed1e94 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -1457,6 +1457,47 @@ static inline void n_tty_receive_char(struct tty_struct *tty, unsigned char c)
- }
- 
- static inline void
-+n_tty_receive_char_fast(struct tty_struct *tty, unsigned char c)
-+{
-+	struct n_tty_data *ldata = tty->disc_data;
-+
-+	/*
-+	 * If the previous character was LNEXT, or we know that this
-+	 * character is not one of the characters that we'll have to
-+	 * handle specially, do shortcut processing to speed things
-+	 * up.
-+	 */
-+	if (!test_bit(c, ldata->char_map) || ldata->lnext) {
-+		ldata->lnext = 0;
-+
-+		if (tty->stopped && !tty->flow_stopped && I_IXON(tty) &&
-+		    I_IXANY(tty)) {
-+			start_tty(tty);
-+			process_echoes(tty);
-+		}
-+
-+		if (read_cnt(ldata) >= (N_TTY_BUF_SIZE - 1)) {
-+			/* beep if no space */
-+			if (L_ECHO(tty))
-+				process_output('\a', tty);
-+			return;
-+		}
-+		if (L_ECHO(tty)) {
-+			finish_erasing(ldata);
-+			/* Record the column of first canon char. */
-+			if (ldata->canon_head == ldata->read_head)
-+				echo_set_canon_col(ldata);
-+			echo_char(c, tty);
-+			commit_echoes(tty);
-+		}
-+		put_tty_queue(c, ldata);
-+		return;
-+	}
-+
-+	n_tty_receive_char_special(tty, c);
-+}
-+
-+static inline void
- n_tty_receive_char_closing(struct tty_struct *tty, unsigned char c)
- {
- 	if (I_ISTRIP(tty))
-@@ -1609,7 +1650,7 @@ n_tty_receive_buf_fast(struct tty_struct *tty, const unsigned char *cp,
- 		if (fp)
- 			flag = *fp++;
- 		if (likely(flag == TTY_NORMAL))
--			n_tty_receive_char(tty, *cp++);
-+			n_tty_receive_char_fast(tty, *cp++);
- 		else
- 			n_tty_receive_char_flagged(tty, *cp++, flag);
- 	}
-@@ -1628,7 +1669,7 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	else if (tty->closing && !L_EXTPROC(tty))
- 		n_tty_receive_buf_closing(tty, cp, fp, count);
- 	else {
--		if (!preops)
-+		if (!preops && !I_PARMRK(tty))
- 			n_tty_receive_buf_fast(tty, cp, fp, count);
- 		else
- 			n_tty_receive_buf_standard(tty, cp, fp, count);
--- 
-1.8.1.2
+On Mon, Jul 01, 2013 at 04:03:41PM -0600, Stephen Warren wrote:
+> On 06/28/2013 03:36 PM, Tuomas Tynkkynen wrote:
+> > Hi,
+> >=20
+> > Here's a few cleanup patches for the Tegra USB drivers, to be applied o=
+n top
+> > of Mikko's two patch sets. It mostly deals with removing all usage of p=
+latform
+> > data and using standard helpers and enums instead of Tegra-specific one=
+s.
+>=20
+> With the issues in patches 5/9 and 9/9 fixed as I mentioned, this series,
+>=20
+> Tested-by: Stephen Warren <swarren@nvidia.com>
 
+so, do you want me to apply these myself ?
+
+--=20
+balbi
+
+--KJY2Ze80yH5MUxol
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR78ldAAoJEIaOsuA1yqREUlgP/iiKDniH1mdj7o9YkBWEDIIn
+TilCUbtwagjEaoh81R7qiKaUBEisvmM2Dek//eNkEZ4zU4U8MLgMuzcuQDyQMNNI
+jmncQVJAaVqVwmulgbfUfzGaGChZ+XGkTOXX6If/9udSn/Q+m/dHoHxnAot5J5i0
+f6ZbLg9QOC9YsRYY+xUlLP/zwBXreWqwRPJnBj7LMMYpXqzISbXVMsa5Zu8dVJ7o
+M8uGm+kHxelmsyNfKmUccLoL02fFQJt0PF5mygybwAtHJ89827m3IXuo5oKc6VNK
+/am5yhxbegLS2AVgwH+CkUWa1nekGsFYpA9omZ02fEf9FV0LKjYaAb23b4aitF+H
+Up+FYT7XLAcd+a5KV9BhE8mfIQB2RvSgX5+z2xYyV+kiBn9Z6XD6Zrp84LkotAPx
+tldWLhIaGMJArZwOy7lwC+SOUOOR4m8NzbJLrLbTVhH/ASb8wEs/+bLnaaFxO5VB
+7GFmiMzVHQgMYLbi2CKgMKV09/knlijgPuM//wq9mXHCOyzU+dlkHykeotv5vd/p
+yPWSfv2ZBYJcBSIQD6q4e6/w67mEqupdNNujysB+i+fcK317Ny3Tldm8m8xcS5+Y
+winExlPbP1z3aaWLk8dBLLDKq6rOxlj0Jxf/evqfw+J8zy51AW3konwXUy5nSmjn
+AvlHD33Wq4q8bVWbesHX
+=rxUk
+-----END PGP SIGNATURE-----
+
+--KJY2Ze80yH5MUxol--
