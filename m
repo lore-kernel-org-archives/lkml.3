@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab3GXJtl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:49:41 -0400
-Received: from mail-pa0-f67.google.com ([209.85.220.67]:49221 "EHLO
-	mail-pa0-f67.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab3GXJtk (ORCPT
+	id S1752223Ab3GXJv5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 05:51:57 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45500 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751587Ab3GXJv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:49:40 -0400
+	Wed, 24 Jul 2013 05:51:56 -0400
+Date: Wed, 24 Jul 2013 11:51:45 +0200
+From: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+To: Mark Brown <broonie@kernel.org>
+Cc: Robin Gong <b38343@freescale.com>, shawn.guo@linaro.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        lgirdwood@gmail.com, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
+Message-ID: <20130724095145.GE4332@pengutronix.de>
+References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
+ <20130724083041.GC4332@pengutronix.de>
+ <20130724094228.GY9858@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <CAAse1WDGbvt5zLTS60VbLvr396rM-DxKf=8WhML+eueKkqDmWQ@mail.gmail.com>
-References: <CAAse1WDGbvt5zLTS60VbLvr396rM-DxKf=8WhML+eueKkqDmWQ@mail.gmail.com>
-From: "Francesca V." <feaeressea@gmail.com>
-Date: Wed, 24 Jul 2013 03:49:19 -0600
-Message-ID: <CAAse1WDN_ghcehSnT=P5YOR=HqAzEiNoB7-f8hdifjhk1V2jsg@mail.gmail.com>
-Subject: Speaking out against Sarah Sharp
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130724094228.GY9858@sirena.org.uk>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:45:57 up 40 days, 21:56, 26 users,  load average: 0.11, 0.24,
+ 0.14
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: str@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sarah Sharp recently posted a tirade about verbal abuse on here and
-her blog - where she dismisses all comments disagreeing with her as
-being from trolls, and deletes them - and takes pride in being
-"accidentally racist", when she's not attention-whoring on the LKML.
+On Wed, Jul 24, 2013 at 10:42:28AM +0100, Mark Brown wrote:
+> On Wed, Jul 24, 2013 at 10:30:41AM +0200, Steffen Trumtrar wrote:
+> > On Sun, Jul 21, 2013 at 05:17:27PM +0800, Robin Gong wrote:
+> 
+> > 
+> >  static struct regulator_ops pfuze100_fixed_regulator_ops = {
+> > 	.list_voltage = regulator_list_voltage_linear,
+> > +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
+> >  };
+> 
+> This doesn't make much sense, you're adding a set voltage operation to a
+> fixed voltage regulator...
 
-I want to say, as a female developer: Sarah Sharp is not
-representative of us. She's not representative of the women at Intel.
-She's not representative of women in technology.
+Hm, okay, sounds reasonable. But if I don't, VREFDDR isn't registered because
+_regulator_do_set_voltage returns with -EINVAL.
+So, I probably just fixed a symptom and not the cause.
 
-She's a bully. She bullies her husband. She dismisses bullying of her
-coworkers. (Google: 'intel kick me'). And she's trying to bully Linus.
+Thanks,
+Steffen
 
-I know he's a big boy. But dare I say, Linus is too nice to tell this
-drama queen to bugger off.
-
-No one was talking to her. Linus' 'Shut the fuck up' was to a
-developer who refused to take responsibility for his code, and blamed
-someone else's code. It was deserved criticism. Then, Linus went and
-explained just that:
-
-"Similarly, you will see fireworks if some long-term maintainer makes
-excuses for breaking user space etc. That will make me go into
-incoherent rages."
-
-Which is exactly what the emails held up as "verbal abuse" show.
-
-Sarah's exclaiming how she won't take any of this abuse, yet no one
-was directing any of it at her. It's sickening she's got nothing
-better to do then stick her nose in and decide to dictate to her
-betters how to behave.  Yes I said her betters: We all run Linux. Not
-Sarax.
-
-Sarah justifies pissing in the Linux sandbox because Intel 'pays her'
-to develop kernel drivers.  Perhaps her direct manager might rethink
-this decision in light of how she's representing Intel in her "off"
-time.
-
-To Linus: You're a hero to many of us. Don't change. Please. You DO
-NOT need to take time away from doing code to grow a pair of breasts
-and judge people's emotional states:
-
-"It does not matter if your cursing fits have causes.  The fact is that
-if you misjudge someone's emotional state for the day, you yelling at
-them is not productive."
-
-As a woman, I couldn't be silent and stand by while Sarah bullied and
-assaulted this list with her profanity and self-indulgent narcissism.
-She's the problem. Not you. Not your style of communication.  We
-technical women appreciate being treated equally by our male peers,
-with blunt directness and unambiguous criticism.  We are not fragile flowers.
-
-We can do our jobs without demanding others interact with us on our
-terms and tiptoe around our fragile egos while being considerate of
-our ever changing emotional needs.
-
-I promise you, it's true.   We're not all Sarah Sharps.
-
-I see a lot of the devs including Linus handling her with kid gloves
-to be diplomatic. Don't.  If you want to be really nice, maybe drop an
-email to her direct manager extending an apology for how hurtful it
-was to her, having to observe others having a conversation in which
-she wasn't involved.  Managers like hearing about that.
-
-We love you Linus, just the grumptastic way you are. Don't change how
-you interact, especially because of Sarah Sharp and her ilk. Please and
-thanks..
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
