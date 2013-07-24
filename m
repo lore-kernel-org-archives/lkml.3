@@ -1,75 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab3GXJ03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:26:29 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:39177 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab3GXJ01 (ORCPT
+	id S1752827Ab3GXJb2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 05:31:28 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:55371 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab3GXJb1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:26:27 -0400
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: <linux-pci@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH] PCI: update NumVFs register properly during enable/disable sriov
-Date: Wed, 24 Jul 2013 17:26:12 +0800
-Message-ID: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.11.msysgit.1
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+	Wed, 24 Jul 2013 05:31:27 -0400
+Date: Wed, 24 Jul 2013 02:31:26 -0700 (PDT)
+Message-Id: <20130724.023126.792508581970927723.davem@davemloft.net>
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 01/13] tile: handle 64-bit statistics in tilepro
+ network driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com>
+References: <cover.1374609948.git.cmetcalf@tilera.com>
+	<40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Jul 2013 02:31:27 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we only update NumVFs register during sriov_enable().
-This register should also be updated properly during sriov_disable.
-Otherwise, we will get the stale "Number of VFs" info from lspci.
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Tue, 23 Jul 2013 16:05:48 -0400
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- drivers/pci/iov.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-index de8ffac..6e4844b 100644
---- a/drivers/pci/iov.c
-+++ b/drivers/pci/iov.c
-@@ -286,7 +286,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- 	    (!(iov->cap & PCI_SRIOV_CAP_VFM) && (nr_virtfn > initial)))
- 		return -EINVAL;
- 
--	pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
- 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_OFFSET, &offset);
- 	pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_STRIDE, &stride);
- 	if (!offset || (nr_virtfn > 1 && !stride))
-@@ -334,6 +333,7 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
- 			return rc;
- 	}
- 
-+	pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
- 	iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
- 	pci_cfg_access_lock(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-@@ -368,6 +368,7 @@ failed:
- 	iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
- 	pci_cfg_access_lock(dev);
- 	pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-+	pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
- 	ssleep(1);
- 	pci_cfg_access_unlock(dev);
- 
-@@ -401,6 +402,7 @@ static void sriov_disable(struct pci_dev *dev)
- 		sysfs_remove_link(&dev->dev.kobj, "dep_link");
- 
- 	iov->num_VFs = 0;
-+	pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
- }
- 
- static int sriov_init(struct pci_dev *dev, int pos)
--- 
-1.7.1
-
+I'm pretty sure that you need to make use of the primitives in
+include/linux/u64_stats_sync.h if you want to use 64-bit statistics
+in this way.
 
