@@ -1,145 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752526Ab3GXQDW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:03:22 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:15355 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab3GXQDU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:03:20 -0400
-Message-ID: <1374681742.16322.180.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: Hush Bensen <hush.bensen@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        dave@sr71.net, kosaki.motohiro@gmail.com,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Wed, 24 Jul 2013 10:02:22 -0600
-In-Reply-To: <51EF1D38.60503@gmail.com>
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
-	  <20130722083721.GC25976@gmail.com>
-	  <1374513120.16322.21.camel@misato.fc.hp.com>
-	  <20130723080101.GB15255@gmail.com>
-	 <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753437Ab3GXQDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:03:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752941Ab3GXQDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 12:03:33 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>, John Stultz <john.stultz@linaro.org>,
+        Dave Hansen <dave@sr71.net>, x86@kernel.org
+Subject: [PATCH] x86, tsc add an initial read offset to __cycles_2_ns() calculations
+Date: Wed, 24 Jul 2013 12:03:20 -0400
+Message-Id: <1374681800-7237-1-git-send-email-prarit@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
-> On 07/24/2013 04:45 AM, Toshi Kani wrote:
-> > On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
-> >> * Toshi Kani <toshi.kani@hp.com> wrote:
-> >>
-> >>>> Could we please also fix it to never crash the kernel, even if stupid
-> >>>> ranges are provided?
-> >>> Yes, this probe interface can be enhanced to verify the firmware
-> >>> information before adding a given memory address.  However, such change
-> >>> would interfere its test use of "fake" hotplug, which is only the known
-> >>> use-case of this interface on x86.
-> >> Not crashing the kernel is not a novel concept even for test interfaces...
-> > Agreed.
-> >
-> >> Where does the possible crash come from - from using invalid RAM ranges,
-> >> right? I.e. on x86 to fix the crash we need to check the RAM is present in
-> >> the e820 maps, is marked RAM there, and is not already registered with the
-> >> kernel, or so?
-> > Yes, the crash comes from using invalid RAM ranges.  How to check if the
-> > RAM is present is different if the system supports hotplug or not.
-> 
-> Could you explain different methods to check the RAM is present if the 
-> system supports hotplkug or not?
+Note that the E5 Sandybridge processor does not have IA32_TSC_ADJUST MSR
+implemented so attempting to resynch the TSCs is not possible on the
+problem hardware.
 
-e820 and UEFI memory descriptor tables are the boot-time interfaces.
-These interfaces are not required to reflect any run-time changes.
+Thanks to John for the suggestion below.
 
-ACPI memory device objects can be used at both boot-time and run-time,
-which reflect any run-time changes.  But they are optional to implement.
-They typically are not implemented unless the system supports hotplug.
+P.
 
-> >>> In order to verify if a given memory address is enabled at run-time (as
-> >>> opposed to boot-time), we need to check with ACPI memory device objects
-> >>> on x86.  However, system vendors tend to not implement memory device
-> >>> objects unless their systems support memory hotplug.  Dave Hansen is
-> >>> using this interface for his testing as a way to fake a hotplug event on
-> >>> a system that does not support memory hotplug.
-> >> All vendors implement e820 maps for the memory present at boot time.
-> > Yes for boot time.  At run-time, e820 is not guaranteed to represent a
-> > new memory added.  Here is a quote from ACPI spec.
-> >
-> > ===
-> > 15.1 INT 15H, E820H - Query System Address Map
-> >   :
-> > The memory map conveyed by this interface is not required to reflect any
-> > changes in available physical memory that have occurred after the BIOS
-> > has initially passed control to the operating system. For example, if
-> > memory is added dynamically, this interface is not required to reflect
-> > the new system memory configuration.
-> > ===
-> >
-> > By definition, the "probe" interface is used for the kernel to recognize
-> > a new memory added at run-time.  So, it should check ACPI memory device
-> > objects (which represents run-time state) for the verification.  On x86,
-> > however, ACPI also sends a hotplug event to the kernel, which triggers
-> > the kernel to recognize the new physical memory properly.  Hence, users
-> > do not need this "probe" interface.
-> >
-> >> How is the testing done by Dave Hansen? If it's done by booting with less
-> >> RAM than available (via say the mem=1g boot parameter), and then
-> >> hot-adding some of the missing RAM, then this could be made safe via the
-> >> e820 maps and by consultig the physical memory maps (to avoid double
-> >> registry), right?
-> > If we focus on this test scenario on a system that does not support
-> > hotplug, yes, I agree that we can check with e820 since it is safe to
-> > assume that the system has no change after boot.  IOW, it is unsafe to
-> > check with e820 if the system supports hotplug, but there is no use in
-> > this interface for testing if the system supports hotplug.  So, this may
-> > be a good idea.
-> >
-> > Dave, is this how you are testing?  Do you always specify a valid memory
-> > address for your testing?
-> >
-> >> How does the hotplug event based approach solve double adds? Relies on the
-> >> hardware not sending a hot-add event twice for the same memory area or for
-> >> an invalid memory area, or does it include fail-safes and double checks as
-> >> well to avoid double adds and adding invalid memory? If yes then that
-> >> could be utilized here as well.
-> > In high-level, here is how ACPI memory hotplug works:
-> >
-> > 1. ACPI sends a hotplug event to a new ACPI memory device object that is
-> > hot-added.
-> > 2. The kernel is notified, and verifies if the new memory device object
-> > has not been attached by any handler yet.
-> > 3. The memory handler is called, and obtains a new memory range from the
-> > ACPI memory device object.
-> > 4. The memory handler calls add_memory() with the new address range.
-> >
-> > The above step 1-4 proceeds automatically within the kernel.  No user
-> > input (nor sysfs interface) is necessary.  Step 2 prevents double adds
-> > and step 3 gets a valid address range from the firmware directly.  Step
-> > 4 is basically the same as the "probe" interface, but with all the
-> > verification up front, this step is safe.
-> 
-> This is hot-added part, could you also explain how ACPI memory hotplug 
-> works for hot-remove?
+----8<----
 
-Sure.  Here is high-level.
+The TSC can have non-zero values at boot time on Intel Xeon E5 (family 6,
+model 45) aka "SandyBridge" processors.  This is documented in the Errata
+for the E5 processors as BT81.
 
-1. ACPI sends a hotplug event to an ACPI memory device object that is
-requested to hot-remove.
-2. The kernel is notified, and verifies if the memory device object is
-attached by a handler.
-3. The memory handler is called (which is being attached), and obtains
-its memory range.
-4. The memory handler calls remove_memory() with the address range.
-5. The kernel calls eject method of the ACPI memory device object.
+The __cycles_2_ns() calculation is known to overflow if a large value of
+cycles is passed into the function.  This is done by design to improve
+precision for smaller significant digits in the calculation.  Since the E5
+processor can pass in a large value,  we need to snapshot the TSC's
+initial value to avoid calculation overflows in the conversions of cycles
+to nanoseconds.
 
-Thanks,
--Toshi
+Tested successfully on various Sandybridge systems as well as a few older
+and newer systems without any issues.
 
+Also, remove the unused cycles_2_ns() function.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: x86@kernel.org
+---
+ arch/x86/include/asm/timer.h |   15 +++------------
+ arch/x86/kernel/tsc.c        |   13 +++++++++++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 34baa0e..f9d666b 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -12,6 +12,8 @@ extern int recalibrate_cpu_khz(void);
+ 
+ extern int no_timer_check;
+ 
++extern unsigned long long tsc_initial_value;
++
+ /* Accelerators for sched_clock()
+  * convert from cycles(64bits) => nanoseconds (64bits)
+  *  basic equation:
+@@ -59,21 +61,10 @@ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
++	cyc -= tsc_initial_value;
+ 	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
+ 			(1UL << CYC2NS_SCALE_FACTOR));
+ 	return ns;
+ }
+ 
+-static inline unsigned long long cycles_2_ns(unsigned long long cyc)
+-{
+-	unsigned long long ns;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-	ns = __cycles_2_ns(cyc);
+-	local_irq_restore(flags);
+-
+-	return ns;
+-}
+-
+ #endif /* _ASM_X86_TIMER_H */
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 6ff4924..63ed8cc 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -38,6 +38,16 @@ static int __read_mostly tsc_unstable;
+ static int __read_mostly tsc_disabled = -1;
+ 
+ int tsc_clocksource_reliable;
++
++/*
++ * TSC can have non-zero values at boot time on Intel Xeon E5 (family 6,
++ * model 45) aka "SandyBridge" processors.  This is documented in the
++ * Errata for the processors as BT81.  As a result, we need to snapshot
++ * the TSC's initial value to avoid calculation overflows in the conversions
++ * of cycles to nanoseconds.
++ */
++unsigned long long tsc_initial_value;
++
+ /*
+  * Scheduler clock - returns current time in nanosec units.
+  */
+@@ -979,6 +989,9 @@ void __init tsc_init(void)
+ 		return;
+ 	}
+ 
++	tsc_initial_value = get_cycles();
++	pr_info("TSC: tsc initial value = %lld\n", tsc_initial_value);
++
+ 	pr_info("Detected %lu.%03lu MHz processor\n",
+ 		(unsigned long)cpu_khz / 1000,
+ 		(unsigned long)cpu_khz % 1000);
+-- 
+1.7.9.3
 
