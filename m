@@ -1,64 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333Ab3GXOK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:10:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45766 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751243Ab3GXOGx (ORCPT
+	id S1753376Ab3GXOL5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:11:57 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:33781 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752479Ab3GXOLz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:53 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Jul 2013 10:11:55 -0400
+Message-ID: <51EFE0A3.80709@hurleysoftware.com>
+Date: Wed, 24 Jul 2013 10:11:47 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Sreekanth Reddy" <Sreekanth.Reddy@lsi.com>,
-        "James Bottomley" <JBottomley@Parallels.com>
-Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.61089473@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [37/85] [SCSI] mpt2sas: fix firmware failure with wrong task
- attribute
-In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+To: Gianluca Anzolin <gianluca@sottospazio.it>, gregkh@linuxfoundation.org
+CC: Gustavo Padovan <gustavo@padovan.org>, linux-kernel@vger.kernel.org,
+        jslaby@suse.cz
+Subject: Re: [PATCH] Fix refcount leak in tty_port.c
+References: <20130709083535.GA30227@debian.seek.priv> <20130712103026.GC2065@joana> <51E00CF1.6070302@hurleysoftware.com>
+In-Reply-To: <51E00CF1.6070302@hurleysoftware.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
+On 07/12/2013 10:04 AM, Peter Hurley wrote:
+> On 07/12/2013 06:30 AM, Gustavo Padovan wrote:
+>> Hi Gianluca,
+>>
+>> * Gianluca Anzolin <gianluca@sottospazio.it> [2013-07-09 10:35:35 +0200]:
+>>
+>>> Hello,
+>>>
+>>> In linux 3.10 in the file drivers/tty/tty_port.c the function
+>>> tty_port_tty_hangup may leak a tty reference:
+>>>
+>>>          struct tty_struct *tty = tty_port_tty_get(port);
+>>>
+>>>          if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+>>>                  tty_hangup(tty);
+>>>                  tty_kref_put(tty);
+>>>          }
+>>>
+>>> If tty != NULL and the second condition is false we never call tty_kref_put and
+>>> the reference is leaked.
+>
+> Good catch.
+>
+>>> Fix by nesting two if statements.
+>>>
+>>> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+>>
+>> As mentioned by Gianluca this is a regression of aa27a094 and we depend on
+>> this patch to go ahead with some fixes in the bluetooth subsystem.
+>
+> Gustavo,
+>
+> There's no direct dependency; ie., there aren't merge issues here.
+> We should progress with the fixes to rfcomm independent of this patch.
+>
+>> Gianluca, it might help if you send a proper git inline formated patch,
+>> mentioning the issue and which regression you are fixing.  It makes
+>> maintainer's life easier.
+>
+> As Gustavo points out, please inline the patch otherwise commenters
+> have to do it for you.
 
-------------------
+Gianluca,
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+I think Greg may be expecting you to address the comments from myself
+and Gustavo before accepting this patch.
 
-commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
+Greg, is that the case?
 
-When SCSI command is received with task attribute not set, set it to SIMPLE.
-Previously it is set to untagged. This causes the firmware to fail the commands.
+Regards,
+Peter Hurley
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c | 6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+>> Also add my Ack to the patch:
+>  >
+>>
+>> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+>>
+>>     Gustavo
+>
+> Copy of the Gianluca's patch with my comments
+>
+> --- %< ---
+>
+> Please put a proper commit message here, including that this is
+> a regression and the commit id that caused the regression so this patch
+> can eventually make its way to stable.
+>
+>
+>  > diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+>  > index 121aeb9..2198f7d 100644
+>  > --- a/drivers/tty/tty_port.c
+>  > +++ b/drivers/tty/tty_port.c
+>  > @@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
+>  >  {
+>  >      struct tty_struct *tty = tty_port_tty_get(port);
+>  >
+>  > -    if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+>  > -        tty_hangup(tty);
+>  > +    if (tty) {
+>  > +        if (!check_clocal || !C_CLOCAL(tty))
+>  > +            tty_hangup(tty);
+>  >          tty_kref_put(tty);
+>  >      }
+>  >  }
+>
+>
+> tty_kref_put() already checks for NULL tty. I would prefer:
+>
+> {
+>        struct tty_struct *tty = tty_port_tty_get(port);
+>
+>      if (tty && (!check_clocal || !C_CLOCAL(tty)))
+>          tty_hangup(tty);
+>      tty_kref_put(tty);
+> }
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3934,11 +3934,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
- 			else
- 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 		} else
--/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
--/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
-- */
--			mpi_control |= (0x500);
--
-+			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	} else
- 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	/* Make sure Device is not raid volume.
 
