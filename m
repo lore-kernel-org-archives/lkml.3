@@ -1,98 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751339Ab3GXNCW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:02:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9600 "EHLO mx1.redhat.com"
+	id S1751463Ab3GXNI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:08:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24558 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902Ab3GXNCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:02:21 -0400
-Date: Wed, 24 Jul 2013 15:01:40 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+	id S1750795Ab3GXNI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 09:08:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,735,1367996400"; 
+   d="scan'208";a="350765184"
+Message-ID: <51EFD368.2080901@intel.com>
+Date: Wed, 24 Jul 2013 16:15:20 +0300
+From: Adrian Hunter <adrian.hunter@intel.com>
+Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
+ Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130311 Thunderbird/17.0.4
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V8 14/15] perf tools: add a function to calculate sample
- event size
-Message-ID: <20130724130140.GB4203@krava.brq.redhat.com>
-References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
- <1374144177-24762-15-git-send-email-adrian.hunter@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374144177-24762-15-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH V8 13/15] perf tools: expand perf_event__synthesize_sample()
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com> <1374144177-24762-14-git-send-email-adrian.hunter@intel.com> <20130724125025.GA4203@krava.brq.redhat.com>
+In-Reply-To: <20130724125025.GA4203@krava.brq.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 01:42:56PM +0300, Adrian Hunter wrote:
+On 24/07/13 15:50, Jiri Olsa wrote:
+> On Thu, Jul 18, 2013 at 01:42:55PM +0300, Adrian Hunter wrote:
+> 
+> SNIP
+> 
+>> @@ -1349,11 +1349,12 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
+>>  }
+>>  
+>>  int perf_event__synthesize_sample(union perf_event *event, u64 type,
+>> +				  u64 sample_regs_user,
+>>  				  const struct perf_sample *sample,
+>>  				  bool swapped)
+>>  {
+>>  	u64 *array;
+>> -
+>> +	size_t sz;
+>>  	/*
+>>  	 * used for cross-endian analysis. See git commit 65014ab3
+>>  	 * for why this goofiness is needed.
+>> @@ -1426,6 +1427,73 @@ int perf_event__synthesize_sample(union perf_event *event, u64 type,
+>>  		array++;
+>>  	}
+>>  
+>> +	if (type & PERF_SAMPLE_READ) {
+>> +		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
+>> +		return -1;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_CALLCHAIN) {
+>> +		sz = (sample->callchain->nr + 1) * sizeof(u64);
+>> +		memcpy(array, sample->callchain, sz);
+>> +		array = (void *)array + sz;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_RAW) {
+>> +		u.val32[0] = sample->raw_size;
+>> +		if (WARN_ONCE(swapped,
+>> +			      "Endianness of raw data not corrected!\n")) {
+>> +			/*
+>> +			 * Inverse of what is done in perf_evsel__parse_sample
+>> +			 */
+>> +			u.val32[0] = bswap_32(u.val32[0]);
+>> +			u.val32[1] = bswap_32(u.val32[1]);
+>> +			u.val64 = bswap_64(u.val64);
+>> +		}
+>> +		*array = u.val64;
+>> +		array = (void *)array + sizeof(u32);
+>> +
+>> +		memcpy(array, sample->raw_data, sample->raw_size);
+>> +		array = (void *)array + sample->raw_size;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_BRANCH_STACK) {
+>> +		sz = sample->branch_stack->nr * sizeof(struct branch_entry);
+>> +		sz += sizeof(u64);
+>> +		memcpy(array, sample->branch_stack, sz);
+>> +		array = (void *)array + sz;
+>> +	}
+>> +
+>> +	if (type & PERF_SAMPLE_REGS_USER) {
+>> +		if (sample->user_regs.regs && sample_regs_user) {
+>> +			*array++ = sample_regs_user;
+> 
+> it's 'enum perf_sample_regs_abi' value that goes here ^^^
+> 
+> I guess for now it could be hardcoded like:
+> 
+> #if defined(__x86_64__)
+> abi = PERF_SAMPLE_REGS_ABI_64
+> #else
+> #if defined(__i386__)
+> abi = PERF_SAMPLE_REGS_ABI_64
+> #endif
+> WARN()
+> #endif
 
-SNIP
+Thanks for reviewing this.
 
-> @@ -227,6 +227,8 @@ int perf_event__preprocess_sample(const union perf_event *self,
->  
->  const char *perf_event__name(unsigned int id);
->  
-> +size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
-> +				     u64 sample_regs_user);
->  int perf_event__synthesize_sample(union perf_event *event, u64 type,
->  				  u64 sample_regs_user,
->  				  const struct perf_sample *sample,
-> diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-> index 047ab02..7a5ff06 100644
-> --- a/tools/perf/util/evsel.c
-> +++ b/tools/perf/util/evsel.c
-> @@ -1348,6 +1348,87 @@ int perf_evsel__parse_sample(struct perf_evsel *evsel, union perf_event *event,
->  	return 0;
->  }
->  
-> +size_t perf_event__sample_event_size(const struct perf_sample *sample, u64 type,
-> +				     u64 sample_regs_user)
-> +{
-> +	size_t sz, result = sizeof(struct sample_event);
-> +
-> +	if (type & PERF_SAMPLE_IDENTIFIER)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_IP)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_TID)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_TIME)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_ADDR)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_ID)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_STREAM_ID)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_CPU)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_PERIOD)
-> +		result += sizeof(u64);
-> +
-> +	if (type & PERF_SAMPLE_READ) {
-> +		fprintf(stderr, "PERF_SAMPLE_READ is unsupported for now\n");
-> +		result += 8192; /* To be on the safe side */
-> +	}
+Why isn't it better to leave it as a parameter?
 
-There' a patchset pending to be merged that implements
-PERF_SAMPLE_READ. I wonder which one makes it in first..
-looser will have to update this code ;-)
-
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-
-thanks,
-jirka
