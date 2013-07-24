@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab3GXPvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:51:44 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38647 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752239Ab3GXPvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:51:43 -0400
-Message-ID: <1374681102.18818.15.camel@joe-AO722>
-Subject: Re: [PATCH 10/27] drivers/memory: don't check resource with
- devm_ioremap_resource
-From: Joe Perches <joe@perches.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org
-Date: Wed, 24 Jul 2013 08:51:42 -0700
-In-Reply-To: <20130724152857.GA3016@katana>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
-	 <1374602524-3398-11-git-send-email-wsa@the-dreams.de>
-	 <1374630600.10171.31.camel@joe-AO722> <20130724152857.GA3016@katana>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753546Ab3GXPy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:54:59 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54066 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3GXPy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 11:54:57 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: [PATCH v3 1/3] Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
+Date: Wed, 24 Jul 2013 18:54:51 +0300
+Message-ID: <1374681293-5320-2-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1374681293-5320-1-git-send-email-illia.smyrnov@ti.com>
+References: <1374681293-5320-1-git-send-email-illia.smyrnov@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 17:28 +0200, Wolfram Sang wrote:
-> On Tue, Jul 23, 2013 at 06:50:00PM -0700, Joe Perches wrote:
-> > Hi again Wolfram
-> > 
-> > The next time you submit a patch series
-> > please use a [PATCH 0/N] cover-letter
-> > with a description of all the patches
-> > and cc all the various email lists
-> > on that [PATCH 0/N].
-> 
-> Huh? I did this and CCed all people which are CCed on the patches.
-> I wrote a script extra for that.
+Use bitfiled instead of hardcoded values to set KBD_CTRL, use BIT macro,
+remove unused defines.
 
-Ah.  Well, good try.
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/input/keyboard/omap4-keypad.c |   25 +++++++++++--------------
+ 1 files changed, 11 insertions(+), 14 deletions(-)
 
-The 0/n patch probably didn't get though vger's
-maximum # of addresses spam filter.
-
-Next time, instead of individually addressing all
-the recipients on the 0/N, just cc the mailing
-lists.  That greatly reduces the # of addresses
-and generally gets through just fine.
-
-If you really want to cc all the individual
-MAINTAINERS, you can bcc them, but I don't do
-that.  All of the MAINTAINERS should be subscribed
-to one or another of the relevant mailing lists.
-
-In my scripts I use:
-
-[relevant bits of ~/.gitconfig]
-
-[sendemail]
-	chainreplyto = false
-	thread = false
-	suppresscc = self
-	tocmd = ~/bin/to.sh
-	cccmd = ~/bin/cc.sh
-
-$ cat ~/bin/to.sh
-#!/bin/bash
-
-opts="--nogit --nogit-fallback --norolestats --pattern-depth=1"
-
-if [[ $(basename $1) =~ ^0000- ]] ; then
-    ./scripts/get_maintainer.pl --nom $opts  $(dirname $1)/*
-else
-    maint=$(./scripts/get_maintainer.pl --nol $opts $1)
-    if [ "$maint" == "" ] ; then
-	echo "linux-kernel@vger.kernel.org"
-    else
-	echo "$maint"
-    fi
-fi
-
-$ cat ~/bin/cc.sh
-#!/bin/bash
-
-opts="--nogit --nogit-fallback --norolestats"
-
-if [[ $(basename $1) =~ ^0000- ]] ; then
-    ./scripts/get_maintainer.pl --nom $opts  $(dirname $1)/*
-else
-    ./scripts/get_maintainer.pl $opts $1
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index f4aa53a..c727548 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -53,21 +53,17 @@
+ #define OMAP4_KBD_FULLCODE63_32		0x48
+ 
+ /* OMAP4 bit definitions */
+-#define OMAP4_DEF_IRQENABLE_EVENTEN	(1 << 0)
+-#define OMAP4_DEF_IRQENABLE_LONGKEY	(1 << 1)
+-#define OMAP4_DEF_IRQENABLE_TIMEOUTEN	(1 << 2)
+-#define OMAP4_DEF_WUP_EVENT_ENA		(1 << 0)
+-#define OMAP4_DEF_WUP_LONG_KEY_ENA	(1 << 1)
+-#define OMAP4_DEF_CTRL_NOSOFTMODE	(1 << 1)
+-#define OMAP4_DEF_CTRLPTVVALUE		(1 << 2)
+-#define OMAP4_DEF_CTRLPTV		(1 << 1)
++#define OMAP4_DEF_IRQENABLE_EVENTEN	BIT(0)
++#define OMAP4_DEF_IRQENABLE_LONGKEY	BIT(1)
++#define OMAP4_DEF_WUP_EVENT_ENA		BIT(0)
++#define OMAP4_DEF_WUP_LONG_KEY_ENA	BIT(1)
++#define OMAP4_DEF_CTRL_NOSOFTMODE	BIT(1)
++#define OMAP4_DEF_CTRL_PTV_SHIFT	2
+ 
+ /* OMAP4 values */
+-#define OMAP4_VAL_IRQDISABLE		0x00
+-#define OMAP4_VAL_DEBOUNCINGTIME	0x07
+-#define OMAP4_VAL_FUNCTIONALCFG		0x1E
+-
+-#define OMAP4_MASK_IRQSTATUSDISABLE	0xFFFF
++#define OMAP4_VAL_IRQDISABLE		0x0
++#define OMAP4_VAL_DEBOUNCINGTIME	0x7
++#define OMAP4_VAL_PVT			0x7
+ 
+ enum {
+ 	KBD_REVISION_OMAP4 = 0,
+@@ -175,7 +171,8 @@ static int omap4_keypad_open(struct input_dev *input)
+ 	disable_irq(keypad_data->irq);
+ 
+ 	kbd_writel(keypad_data, OMAP4_KBD_CTRL,
+-			OMAP4_VAL_FUNCTIONALCFG);
++			OMAP4_DEF_CTRL_NOSOFTMODE |
++			(OMAP4_VAL_PVT << OMAP4_DEF_CTRL_PTV_SHIFT));
+ 	kbd_writel(keypad_data, OMAP4_KBD_DEBOUNCINGTIME,
+ 			OMAP4_VAL_DEBOUNCINGTIME);
+ 	kbd_write_irqreg(keypad_data, OMAP4_KBD_IRQSTATUS,
+-- 
+1.7.0.4
 
