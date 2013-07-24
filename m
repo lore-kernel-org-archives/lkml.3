@@ -1,339 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751193Ab3GXNXZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:23:25 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:41888 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GXNXX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:23:23 -0400
-X-IronPort-AV: E=Sophos;i="4.89,735,1367971200"; 
-   d="scan'208";a="37090576"
-Message-ID: <51EFD536.8070209@citrix.com>
-Date: Wed, 24 Jul 2013 09:23:02 -0400
-From: Ben Guthro <Benjamin.Guthro@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Moore, Robert" <robert.moore@intel.com>
-CC: "Zheng, Lv" <lv.zheng@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
- hardware sleep path
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com> <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com> <1AE640813FDE7649BE1B193DEA596E880241B363@SHSMSX101.ccr.corp.intel.com> <51D2BCB7.5040105@citrix.com> <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com> <51EFC1FE.5000609@citrix.com> <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.204.241.11]
+	id S1751163Ab3GXNYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:24:32 -0400
+Received: from mga14.intel.com ([143.182.124.37]:27917 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750863Ab3GXNYb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 09:24:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,735,1367996400"; 
+   d="scan'208";a="336062315"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 2/3] mei: don't get stack in select during reset
+Date: Wed, 24 Jul 2013 16:22:58 +0300
+Message-Id: <1374672179-23949-3-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374672179-23949-1-git-send-email-tomas.winkler@intel.com>
+References: <1374672179-23949-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 09:18 AM, Moore, Robert wrote:
-> I have not looked closely at this, but we typically do things like this in ACPICA so that they only need to be implemented once to support all of the various acpica-hosted operating systems - linux, solaris, hp-ux, apple, freebsd, etc. -- even if they could be implemented "cleaner" in some way on any given host.
+Clear pending connection after hw reset but before hw start
+and wake up the waiting task in poll. Signal POLLERR in select
+when device went through reset.
 
-Even when the resulting "simplification" results in reduced functionality?
+Add wrapper mei_cl_is_connected for checking if
+the device and client are connected.
 
-Maybe I am misunderstanding the suggestion...but it sounded like it was
-basically to mimic the traditional behavior, and mask out the reduced
-hardware capabilities on these system types.
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/amthif.c | 14 +++++++++++---
+ drivers/misc/mei/client.c |  5 +----
+ drivers/misc/mei/client.h |  7 +++++++
+ drivers/misc/mei/init.c   | 13 ++++++++-----
+ drivers/misc/mei/main.c   | 22 +++++++++++++++-------
+ 5 files changed, 42 insertions(+), 19 deletions(-)
 
-It seems to me that if the system supports the reduced hardware ACPI
-sleep, you would want to make use of it...
+diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
+index 749452f..d0fdc13 100644
+--- a/drivers/misc/mei/amthif.c
++++ b/drivers/misc/mei/amthif.c
+@@ -418,15 +418,23 @@ unsigned int mei_amthif_poll(struct mei_device *dev,
+ 		struct file *file, poll_table *wait)
+ {
+ 	unsigned int mask = 0;
+-	mutex_unlock(&dev->device_lock);
++
+ 	poll_wait(file, &dev->iamthif_cl.wait, wait);
++
+ 	mutex_lock(&dev->device_lock);
+-	if (dev->iamthif_state == MEI_IAMTHIF_READ_COMPLETE &&
+-		dev->iamthif_file_object == file) {
++	if (!mei_cl_is_connected(&dev->iamthif_cl)) {
++
++		mask = POLLERR;
++
++	} else if (dev->iamthif_state == MEI_IAMTHIF_READ_COMPLETE &&
++		   dev->iamthif_file_object == file) {
++
+ 		mask |= (POLLIN | POLLRDNORM);
+ 		dev_dbg(&dev->pdev->dev, "run next amthif cb\n");
+ 		mei_amthif_run_next_cmd(dev);
+ 	}
++	mutex_unlock(&dev->device_lock);
++
+ 	return mask;
+ }
+ 
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index af1e602..e0684b4 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -635,10 +635,7 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
+ 
+ 	dev = cl->dev;
+ 
+-	if (cl->state != MEI_FILE_CONNECTED)
+-		return -ENODEV;
+-
+-	if (dev->dev_state != MEI_DEV_ENABLED)
++	if (!mei_cl_is_connected(cl))
+ 		return -ENODEV;
+ 
+ 	if (cl->read_cb) {
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index 9bae4c7..9eb031e 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -84,6 +84,13 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl);
+ /*
+  *  MEI input output function prototype
+  */
++static inline bool mei_cl_is_connected(struct mei_cl *cl)
++{
++	return (cl->dev &&
++		cl->dev->dev_state == MEI_DEV_ENABLED &&
++		cl->state == MEI_FILE_CONNECTED);
++}
++
+ bool mei_cl_is_other_connecting(struct mei_cl *cl);
+ int mei_cl_disconnect(struct mei_cl *cl);
+ int mei_cl_connect(struct mei_cl *cl, struct file *file);
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 4bb7f3c..e38e3d89 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -150,12 +150,20 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 
+ 	if (dev->dev_state != MEI_DEV_INITIALIZING &&
+ 	    dev->dev_state != MEI_DEV_POWER_UP) {
++
+ 		if (dev->dev_state != MEI_DEV_DISABLED &&
+ 		    dev->dev_state != MEI_DEV_POWER_DOWN)
+ 			dev->dev_state = MEI_DEV_RESETTING;
+ 
++
++		/* remove all waiting requests */
++		mei_cl_all_write_clear(dev);
++
+ 		mei_cl_all_disconnect(dev);
+ 
++		/* wake up all readings so they can be interrupted */
++		mei_cl_all_wakeup(dev);
++
+ 		/* remove entry if already in list */
+ 		dev_dbg(&dev->pdev->dev, "remove iamthif and wd from the file list.\n");
+ 		mei_cl_unlink(&dev->wd_cl);
+@@ -196,11 +204,6 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ 
+ 	mei_hbm_start_req(dev);
+ 
+-	/* wake up all readings so they can be interrupted */
+-	mei_cl_all_wakeup(dev);
+-
+-	/* remove all waiting requests */
+-	mei_cl_all_write_clear(dev);
+ }
+ EXPORT_SYMBOL_GPL(mei_reset);
+ 
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index 5e11b5b..173ff09 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -625,24 +625,32 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
+ 	unsigned int mask = 0;
+ 
+ 	if (WARN_ON(!cl || !cl->dev))
+-		return mask;
++		return POLLERR;
+ 
+ 	dev = cl->dev;
+ 
+ 	mutex_lock(&dev->device_lock);
+ 
+-	if (dev->dev_state != MEI_DEV_ENABLED)
+-		goto out;
+-
+-
+-	if (cl == &dev->iamthif_cl) {
+-		mask = mei_amthif_poll(dev, file, wait);
++	if (!mei_cl_is_connected(cl)) {
++		mask = POLLERR;
+ 		goto out;
+ 	}
+ 
+ 	mutex_unlock(&dev->device_lock);
++
++
++	if (cl == &dev->iamthif_cl)
++		return mei_amthif_poll(dev, file, wait);
++
+ 	poll_wait(file, &cl->tx_wait, wait);
++
+ 	mutex_lock(&dev->device_lock);
++
++	if (!mei_cl_is_connected(cl)) {
++		mask = POLLERR;
++		goto out;
++	}
++
+ 	if (MEI_WRITE_COMPLETE == cl->writing_state)
+ 		mask |= (POLLIN | POLLRDNORM);
+ 
+-- 
+1.8.1.2
 
-
-
-> 
-> 
-> 
->> -----Original Message-----
->> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
->> Sent: Wednesday, July 24, 2013 5:01 AM
->> To: Zheng, Lv
->> Cc: Konrad Rzeszutek Wilk; Jan Beulich; Rafael J . Wysocki; linux-
->> kernel@vger.kernel.org; linux-acpi@vger.kernel.org; xen-
->> devel@lists.xen.org; Moore, Robert
->> Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
->> reduced hardware sleep path
->>
->>
->>
->> On 07/24/2013 02:24 AM, Zheng, Lv wrote:
->>> Hi,
->>>
->>> Sorry for the delayed response.
->>>
->>>> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
->>>> Sent: Tuesday, July 02, 2013 7:43 PM
->>>>
->>>>
->>>> On 07/02/2013 02:19 AM, Zheng, Lv wrote:
->>>>> Thanks for your efforts!
->>>>>
->>>>> I wonder if it is possible to remove the argument - "u8 extended"
->>>>> and convert
->>>> "pm1a_control, pm1b_control" into some u8 values that are equivalent
->>>> to "acpi_gbl_sleep_type_a, acpi_gbl_sleep_type_b" in the legacy sleep
->> path.
->>>>> It can also simplify Xen codes.
->>>>
->>>> Thanks for your time to review this.
->>>>
->>>> I'm not sure that this simplifies things. I think that, in fact, it
->>>> would make them quite a bit more complicated, but perhaps I
->> misunderstand.
->>>>
->>>> Is it not preferred to use the reduced hardware sleep, over the old
->> method?
->>>> While these register definitions may be equivalent below, doing the
->>>> translation in linux, only to translate them back again at a lower
->> layer seems unnecessary.
->>>>
->>>
->>> Yes, it would require tboot layer to be able to be aware of how such
->> fields locate in the PM registers.
->>> So I think you can pass the register address of the field and the field
->> name/value pair to the tboot, this could simplify things, no lower layer
->> effort will be needed.
->>> Please don't worry about the case that a register field could be split
->> into PM1a and PM1b, it could be a hardware design issue.
->>> IMO, one field should always be in one register, either PM1a or PM1b.
->>> Or there could be hardware issues cannot be addressed by the ACPICA
->> architecture (something like natural atomicity).
->>> But maybe I'm wrong.
->>
->> Again, I don't think this simplifies things, but complicates them
->> unnecessarily. Converting the reduced hardware sleep to the legacy sleep
->> seems like it would be an unnecessary layer of translation.
->>
->> The interface now simply passes the information from ACPICA down to the
->> lower layers (xen, tboot) - and then lets them worry about the reduced
->> hardware implementation.
->>
->> FWIW, xen has shipped with this implemetation, and enterprise kernels
->> using the traditional xen kernel (like Suse) are making use of it.
->>
->> It may benefit tboot, in this case, but not Xen.
->>
->> I personally see it as an undesirable complication.
->>
->> Best regards,
->> Ben
->>
->>>
->>> Thanks and best regards
->>> -Lv
->>>
->>>> The hypervisor knows how to deal with both the reduced hardware sleep
->>>> as well as the legacy sleep path - it merely need to distinguish
->>>> these two paths, when performing the hypercall.
->>>>
->>>> Since there are two paths through the higher level ACPICA code - that
->>>> in hwsleep.c, and hwesleep.c - there needs to be some distinction
->>>> between the two paths, when calling through to the lower level
->>>> acpi_os_prepare_sleep() call.
->>>>
->>>> An alternate method would be to create another interface named
->>>> acpi_os_prepare_esleep() which would do the equivalent of this patch
->>>> series, with an "extended" parameter hidden from upper level
->> interfaces.
->>>>
->>>> This, however, would also add another function to
->>>> include/acpi/acpiosxf.h - which, I thought was undesirable, in the
->>>> impression that I got from Bob Moore, and Rafael Wysocki (though,
->>>> please correct me on this point, if I have
->>>> misunderstood)
->>>>
->>>> Best Regards
->>>>
->>>> Ben
->>>>
->>>>>
->>>>> As in ACPI specification, the bit definitions between the legacy
->>>>> sleep registers
->>>> and the extended sleep registers are equivalent.
->>>>>
->>>>> The legacy sleep register definition:
->>>>> Table 4-16 PM1 Status Registers Fixed Hardware Feature Status Bits -
->>>>> WAK_STS(bit 15) Table 4-18 PM1 Control Registers Fixed Hardware
->>>>> Feature Control Bits - SLP_TYPx (bit 10-12), SLP_EN (bit 13)
->>>>>
->>>>> The extended sleep register definition:
->>>>> Table 4-24 Sleep Control Register - SLP_TYPx (3 bits from offset 2),
->>>>> SLP_EN (1
->>>> bit from offset 5), here 10-8 = 2, and 13-8 = 5, this definition is
->>>> equivalent to Table 4-18.
->>>>> Table 4-25 Sleep Status Register - WAK_STS (1 bit 7), 15-8 = 7, this
->>>>> definition is
->>>> equivalent to Table 4-16.
->>>>>
->>>>> Thanks and best regards
->>>>> -Lv
->>>>>
->>>>>> -----Original Message-----
->>>>>> From: linux-acpi-owner@vger.kernel.org
->>>>>> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Ben Guthro
->>>>>> Sent: Wednesday, June 26, 2013 10:06 PM
->>>>>> To: Konrad Rzeszutek Wilk; Jan Beulich; Rafaell J . Wysocki;
->>>>>> linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org;
->>>>>> xen-devel@lists.xen.org
->>>>>> Cc: Ben Guthro; Moore, Robert
->>>>>> Subject: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
->>>>>> reduced hardware sleep path
->>>>>>
->>>>>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel
->>>>>> with reduced hardware sleep support, and the two changes didn't get
->>>>>> synchronized: The new code doesn't call the hook function (if so
->>>>>> requested). Fix this, requiring a parameter to be added to the hook
->>>>>> function to distinguish "extended" from "legacy" sleep.
->>>>>>
->>>>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
->>>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
->>>>>> Cc: Bob Moore <robert.moore@intel.com>
->>>>>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
->>>>>> Cc: linux-acpi@vger.kernel.org
->>>>>> ---
->>>>>>   drivers/acpi/acpica/hwesleep.c |    8 ++++++++
->>>>>>   drivers/acpi/acpica/hwsleep.c  |    2 +-
->>>>>>   drivers/acpi/osl.c             |   16 ++++++++--------
->>>>>>   include/linux/acpi.h           |   10 +++++-----
->>>>>>   4 files changed, 22 insertions(+), 14 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/acpi/acpica/hwesleep.c
->>>>>> b/drivers/acpi/acpica/hwesleep.c index 5e5f762..6834dd7 100644
->>>>>> --- a/drivers/acpi/acpica/hwesleep.c
->>>>>> +++ b/drivers/acpi/acpica/hwesleep.c
->>>>>> @@ -43,6 +43,7 @@
->>>>>>    */
->>>>>>
->>>>>>   #include <acpi/acpi.h>
->>>>>> +#include <linux/acpi.h>
->>>>>>   #include "accommon.h"
->>>>>>
->>>>>>   #define _COMPONENT          ACPI_HARDWARE
->>>>>> @@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8
->>>>>> sleep_state)
->>>>>>
->>>>>>   	ACPI_FLUSH_CPU_CACHE();
->>>>>>
->>>>>> +	status = acpi_os_prepare_sleep(sleep_state,
->> acpi_gbl_sleep_type_a,
->>>>>> +				       acpi_gbl_sleep_type_b, true);
->>>>>> +	if (ACPI_SKIP(status))
->>>>>> +		return_ACPI_STATUS(AE_OK);
->>>>>> +	if (ACPI_FAILURE(status))
->>>>>> +		return_ACPI_STATUS(status);
->>>>>> +
->>>>>>   	/*
->>>>>>   	 * Set the SLP_TYP and SLP_EN bits.
->>>>>>   	 *
->>>>>> diff --git a/drivers/acpi/acpica/hwsleep.c
->>>>>> b/drivers/acpi/acpica/hwsleep.c index e3828cc..a93c299 100644
->>>>>> --- a/drivers/acpi/acpica/hwsleep.c
->>>>>> +++ b/drivers/acpi/acpica/hwsleep.c
->>>>>> @@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
->>>>>>   	ACPI_FLUSH_CPU_CACHE();
->>>>>>
->>>>>>   	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
->>>>>> -				       pm1b_control);
->>>>>> +				       pm1b_control, false);
->>>>>>   	if (ACPI_SKIP(status))
->>>>>>   		return_ACPI_STATUS(AE_OK);
->>>>>>   	if (ACPI_FAILURE(status))
->>>>>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
->>>>>> e721863..3fc2801 100644
->>>>>> --- a/drivers/acpi/osl.c
->>>>>> +++ b/drivers/acpi/osl.c
->>>>>> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
->>>>>>   extern char line_buf[80];
->>>>>>   #endif				/*ENABLE_DEBUGGER */
->>>>>>
->>>>>> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
->>>>>> -				      u32 pm1b_ctrl);
->>>>>> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a,
->>>>>> +u32
->>>> val_b,
->>>>>> +				      u8 extended);
->>>>>>
->>>>>>   static acpi_osd_handler acpi_irq_handler;
->>>>>>   static void *acpi_irq_context;
->>>>>> @@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
->>>>>>   	return AE_OK;
->>>>>>   }
->>>>>>
->>>>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
->>>>>> -				  u32 pm1b_control)
->>>>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
->> val_b,
->>>>>> +				  u8 extended)
->>>>>>   {
->>>>>>   	int rc = 0;
->>>>>>   	if (__acpi_os_prepare_sleep)
->>>>>> -		rc = __acpi_os_prepare_sleep(sleep_state,
->>>>>> -					     pm1a_control, pm1b_control);
->>>>>> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
->>>>>> +					     extended);
->>>>>>   	if (rc < 0)
->>>>>>   		return AE_ERROR;
->>>>>>   	else if (rc > 0)
->>>>>> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
->>>>>> sleep_state,
->>>>>> u32 pm1a_control,
->>>>>>   	return AE_OK;
->>>>>>   }
->>>>>>
->>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
->>>>>> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
->>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
->> val_a,
->>>>>> +					   u32 val_b, u8 extended))
->>>>>>   {
->>>>>>   	__acpi_os_prepare_sleep = func;
->>>>>>   }
->>>>>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
->>>>>> 17b5b59..de99022 100644
->>>>>> --- a/include/linux/acpi.h
->>>>>> +++ b/include/linux/acpi.h
->>>>>> @@ -477,11 +477,11 @@ static inline bool
->>>>>> acpi_driver_match_device(struct device *dev,
->>>>>>   #endif	/* !CONFIG_ACPI */
->>>>>>
->>>>>>   #ifdef CONFIG_ACPI
->>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
->>>>>> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
->>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
->> val_a,
->>>>>> +					   u32 val_b, u8 extended));
->>>>>>
->>>>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
->>>>>> -				  u32 pm1a_control, u32 pm1b_control);
->>>>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
->> val_b,
->>>>>> +				  u8 extended);
->>>>>>   #ifdef CONFIG_X86
->>>>>>   void arch_reserve_mem_area(acpi_physical_address addr, size_t
->> size);
->>>>>>   #else
->>>>>> @@ -491,7 +491,7 @@ static inline void
->>>>>> arch_reserve_mem_area(acpi_physical_address addr,
->>>>>>   }
->>>>>>   #endif /* CONFIG_X86 */
->>>>>>   #else
->>>>>> -#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do {
->>>>>> } while
->>>>>> (0)
->>>>>> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
->>>>>> +while (0)
->>>>>>   #endif
->>>>>>
->>>>>>   #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
->>>>>> --
->>>>>> 1.7.9.5
->>>>>>
->>>>>> --
->>>>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi"
->>>>>> in the body of a message to majordomo@vger.kernel.org More
->>>>>> majordomo info at  http://vger.kernel.org/majordomo-info.html
