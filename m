@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab3GXQRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:17:33 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:52701 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751935Ab3GXQRc (ORCPT
+	id S1754152Ab3GXQVK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:21:10 -0400
+Received: from mga14.intel.com ([143.182.124.37]:37539 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752644Ab3GXQVI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:17:32 -0400
-Message-ID: <51EFFE1B.3050909@tilera.com>
-Date: Wed, 24 Jul 2013 12:17:31 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 12:21:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
+   d="scan'208";a="272646831"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
+Subject: RE: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Thread-Topic: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Thread-Index: AQHOiIb0dT8QWA0joUSnTutOsRQJK5l0Aa0g
+Date: Wed, 24 Jul 2013 16:20:32 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
+References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
+ <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
+ <20130724160008.GA17083@kroah.com>
+In-Reply-To: <20130724160008.GA17083@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-Subject: Re: [PATCH 05/13] tile: support PTP using the tilegx mPIPE (IEEE
- 1588)
-References: <cover.1374609948.git.cmetcalf@tilera.com> <77f753af79722f39c5fa77cd35adefdd1634e5d5.1374609949.git.cmetcalf@tilera.com> <20130724062900.GB5163@netboy>
-In-Reply-To: <20130724062900.GB5163@netboy>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/24/2013 2:29 AM, Richard Cochran wrote:
-> On Tue, Jul 23, 2013 at 04:05:48PM -0400, Chris Metcalf wrote:
->
->> diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
->> index 5be73ba..255ed1a 100644
->> --- a/drivers/ptp/Kconfig
->> +++ b/drivers/ptp/Kconfig
->> @@ -87,4 +87,14 @@ config PTP_1588_CLOCK_PCH
->>  	  To compile this driver as a module, choose M here: the module
->>  	  will be called ptp_pch.
->>  
->> +config PTP_1588_CLOCK_TILEGX
->> +        tristate "Tilera TILE-Gx mPIPE as PTP clock"
->> +        select PTP_1588_CLOCK
->> +        depends on TILEGX
->> +        help
->> +          This driver adds support for using the mPIPE as a PTP
->> +          clock. This clock is only useful if your PTP programs are
->> +          getting hardware time stamps on the PTP Ethernet packets
->> +          using the SO_TIMESTAMPING API.
->> +
-> Is this feature available on every TILEGX hardware variant?
-> If not, then there needs to be some provision for that.
 
-It is.
 
-> Also, this option should probably appear under the main MAC option.
+> >  int mei_register(struct mei_device *dev)  {
+> > +	struct device *device = &dev->pdev->dev;
+> >  	int ret;
+> > -	mei_misc_device.parent = &dev->pdev->dev;
+> > +
+> > +	mei_misc_device.parent = device;
+> >  	ret = misc_register(&mei_misc_device);
+> >  	if (ret)
+> >  		return ret;
+> >
+> > +	ret = sysfs_create_group(&device->kobj, &mei_attr_group);
+> > +	if (ret)
+> > +		return ret;
+> 
 
-By that I assume you mean in drivers/net/ethernet/tile/Kconfig?  I will do that.
+> And you just lost the race with userspace (you told it you had a device, it
+> went and scanned your attributes and saved them, then you registered
+> more...)
+> 
+> Please use the dev_groups field for your class to properly have the driver
+> core register these before userspace is told about the device, that's the
+> correct way to do this.
 
-Thanks!
+Just to make sure, is this what you're suggesting ?
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+device->groups = mei_attr_groups
+mei_misc_device.parent = device;
+ret = misc_register(&mei_misc_device);
+
+Thanks
+Tomas 
 
