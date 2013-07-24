@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3GXOWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:22:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45810 "EHLO
+	id S1753822Ab3GXOWt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:22:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45741 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752266Ab3GXOGn (ORCPT
+	by vger.kernel.org with ESMTP id S1751951Ab3GXOGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:43 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Artem Bityutskiy" <artem.bityutskiy@linux.intel.com>,
-        "Al Viro" <viro@zeniv.linux.org.uk>
+CC: akpm@linux-foundation.org, "Ric Wheeler" <rwheeler@redhat.com>,
+        "James Bottomley" <JBottomley@Parallels.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.448874626@decadent.org.uk>
+Message-ID: <lsq.1374674565.70752827@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [54/85] UBIFS: fix a horrid bug
+Subject: [43/85] [SCSI] sd: fix array cache flushing bug causing
+ performance problems
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,95 +32,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: James Bottomley <JBottomley@Parallels.com>
 
-commit 605c912bb843c024b1ed173dc427cd5c08e5d54d upstream.
+commit 39c60a0948cc06139e2fbfe084f83cb7e7deae3b upstream.
 
-Al Viro pointed me to the fact that '->readdir()' and '->llseek()' have no
-mutual exclusion, which means the 'ubifs_dir_llseek()' can be run while we are
-in the middle of 'ubifs_readdir()'.
+Some arrays synchronize their full non volatile cache when the sd driver sends
+a SYNCHRONIZE CACHE command.  Unfortunately, they can have Terrabytes of this
+and we send a SYNCHRONIZE CACHE for every barrier if an array reports it has a
+writeback cache.  This leads to massive slowdowns on journalled filesystems.
 
-This means that 'file->private_data' can be freed while 'ubifs_readdir()' uses
-it, and this is a very bad bug: not only 'ubifs_readdir()' can return garbage,
-but this may corrupt memory and lead to all kinds of problems like crashes an
-security holes.
+The fix is to allow userspace to turn off the writeback cache setting as a
+temporary measure (i.e. without doing the MODE SELECT to write it back to the
+device), so even though the device reported it has a writeback cache, the
+user, knowing that the cache is non volatile and all they care about is
+filesystem correctness, can turn that bit off in the kernel and avoid the
+performance ruinous (and safety irrelevant) SYNCHRONIZE CACHE commands.
 
-This patch fixes the problem by using the 'file->f_version' field, which
-'->llseek()' always unconditionally sets to zero. We set it to 1 in
-'ubifs_readdir()' and whenever we detect that it became 0, we know there was a
-seek and it is time to clear the state saved in 'file->private_data'.
+The way you do this is add a 'temporary' prefix when performing the usual
+cache setting operations, so
 
-I tested this patch by writing a user-space program which runds readdir and
-seek in parallell. I could easily crash the kernel without these patches, but
-could not crash it with these patches.
+echo temporary write through > /sys/class/scsi_disk/<disk>/cache_type
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Tested-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[bwh: Backported to 3.2: adjust context]
+Reported-by: Ric Wheeler <rwheeler@redhat.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/ubifs/dir.c | 30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ drivers/scsi/sd.c | 20 ++++++++++++++++++++
+ drivers/scsi/sd.h |  1 +
+ 2 files changed, 21 insertions(+)
 
---- a/fs/ubifs/dir.c
-+++ b/fs/ubifs/dir.c
-@@ -373,6 +373,24 @@ static int ubifs_readdir(struct file *fi
- 		 */
- 		return 0;
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -138,6 +138,7 @@ sd_store_cache_type(struct device *dev,
+ 	char *buffer_data;
+ 	struct scsi_mode_data data;
+ 	struct scsi_sense_hdr sshdr;
++	const char *temp = "temporary ";
+ 	int len;
  
-+	if (file->f_version == 0) {
-+		/*
-+		 * The file was seek'ed, which means that @file->private_data
-+		 * is now invalid. This may also be just the first
-+		 * 'ubifs_readdir()' invocation, in which case
-+		 * @file->private_data is NULL, and the below code is
-+		 * basically a no-op.
-+		 */
-+		kfree(file->private_data);
-+		file->private_data = NULL;
+ 	if (sdp->type != TYPE_DISK)
+@@ -146,6 +147,13 @@ sd_store_cache_type(struct device *dev,
+ 		 * it's not worth the risk */
+ 		return -EINVAL;
+ 
++	if (strncmp(buf, temp, sizeof(temp) - 1) == 0) {
++		buf += sizeof(temp) - 1;
++		sdkp->cache_override = 1;
++	} else {
++		sdkp->cache_override = 0;
 +	}
 +
-+	/*
-+	 * 'generic_file_llseek()' unconditionally sets @file->f_version to
-+	 * zero, and we use this for detecting whether the file was seek'ed.
-+	 */
-+	file->f_version = 1;
+ 	for (i = 0; i < ARRAY_SIZE(sd_cache_types); i++) {
+ 		len = strlen(sd_cache_types[i]);
+ 		if (strncmp(sd_cache_types[i], buf, len) == 0 &&
+@@ -158,6 +166,13 @@ sd_store_cache_type(struct device *dev,
+ 		return -EINVAL;
+ 	rcd = ct & 0x01 ? 1 : 0;
+ 	wce = ct & 0x02 ? 1 : 0;
 +
- 	/* File positions 0 and 1 correspond to "." and ".." */
- 	if (pos == 0) {
- 		ubifs_assert(!file->private_data);
-@@ -446,6 +464,14 @@ static int ubifs_readdir(struct file *fi
- 		file->f_pos = pos = key_hash_flash(c, &dent->key);
- 		file->private_data = dent;
- 		cond_resched();
++	if (sdkp->cache_override) {
++		sdkp->WCE = wce;
++		sdkp->RCD = rcd;
++		return count;
++	}
 +
-+		if (file->f_version == 0)
-+			/*
-+			 * The file was seek'ed meanwhile, lets return and start
-+			 * reading direntries from the new position on the next
-+			 * invocation.
-+			 */
-+			return 0;
- 	}
+ 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
+ 			    SD_MAX_RETRIES, &data, NULL))
+ 		return -EINVAL;
+@@ -2037,6 +2052,10 @@ sd_read_cache_type(struct scsi_disk *sdk
+ 	int old_rcd = sdkp->RCD;
+ 	int old_dpofua = sdkp->DPOFUA;
  
- out:
-@@ -456,15 +482,13 @@ out:
- 
- 	kfree(file->private_data);
- 	file->private_data = NULL;
-+	/* 2 is a special value indicating that there are no more direntries */
- 	file->f_pos = 2;
- 	return 0;
- }
- 
--/* If a directory is seeked, we have to free saved readdir() state */
- static loff_t ubifs_dir_llseek(struct file *file, loff_t offset, int origin)
- {
--	kfree(file->private_data);
--	file->private_data = NULL;
- 	return generic_file_llseek(file, offset, origin);
- }
- 
++
++	if (sdkp->cache_override)
++		return;
++
+ 	first_len = 4;
+ 	if (sdp->skip_ms_page_8) {
+ 		if (sdp->type == TYPE_RBC)
+@@ -2518,6 +2537,7 @@ static void sd_probe_async(void *data, a
+ 	sdkp->capacity = 0;
+ 	sdkp->media_present = 1;
+ 	sdkp->write_prot = 0;
++	sdkp->cache_override = 0;
+ 	sdkp->WCE = 0;
+ 	sdkp->RCD = 0;
+ 	sdkp->ATO = 0;
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -64,6 +64,7 @@ struct scsi_disk {
+ 	u8		protection_type;/* Data Integrity Field */
+ 	u8		provisioning_mode;
+ 	unsigned	ATO : 1;	/* state of disk ATO bit */
++	unsigned	cache_override : 1; /* temp override of WCE,RCD */
+ 	unsigned	WCE : 1;	/* state of disk WCE bit */
+ 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
+ 	unsigned	DPOFUA : 1;	/* state of disk DPOFUA bit */
 
