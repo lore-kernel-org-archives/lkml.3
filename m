@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3GXOQp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:16:45 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45867 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752374Ab3GXOGs (ORCPT
+	id S1752890Ab3GXOR2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:17:28 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:46186 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab3GXORY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:48 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+	Wed, 24 Jul 2013 10:17:24 -0400
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
-        "John Youn" <johnyoun@synopsys.com>
-Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.77201864@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [25/85] xhci: check for failed dma pool allocation
-In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <000101ce5c51$887309f0$99591dd0$@samsung.com>
+References: <000101ce5c51$887309f0$99591dd0$@samsung.com>
+Date: Wed, 24 Jul 2013 23:17:23 +0900
+Message-ID: <CADoNuNeax8N1TNRN66-k1fnxxpZCPRUH4Me2VehSDfJzfyq+Zg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: dts: Add USB Host nodes to Exynos4210
+From: Dongjin Kim <tobetter@gmail.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Praveen Paneri <p.paneri@samsung.com>, linux-kernel@vger.kernel.org,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
+Hi Jingoo,
 
-------------------
+I had submitted another patch almost similar contents, but my patch
+contains both EHCI and OHCI USB host devices node in exynos4.dtsi
+since I had tested on Exynos4412 and their register map are same with
+Exynos4210.
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+[1] https://patchwork.kernel.org/patch/2832779
 
-commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
-
-Fail and free the container context in case dma_pool_alloc() can't allocate
-the raw context data part of it
-
-This patch should be backported to kernels as old as 2.6.31, that
-contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
-Support for 64-byte contexts".
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: John Youn <johnyoun@synopsys.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/usb/host/xhci-mem.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -271,6 +271,10 @@ static struct xhci_container_ctx *xhci_a
- 		ctx->size += CTX_SIZE(xhci->hcc_params);
- 
- 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
-+	if (!ctx->bytes) {
-+		kfree(ctx);
-+		return NULL;
-+	}
- 	memset(ctx->bytes, 0, ctx->size);
- 	return ctx;
- }
-
+On Wed, May 29, 2013 at 6:47 PM, Jingoo Han <jg1.han@samsung.com> wrote:
+> Add device nodes for USB Host EHCI and OHCI controllers to Exynos4210.
+>
+> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+> ---
+> Tested on Exynos4210.
+>
+>  arch/arm/boot/dts/exynos4210.dtsi |   18 ++++++++++++++++++
+>  1 file changed, 18 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+> index 366795a..3c173c7 100644
+> --- a/arch/arm/boot/dts/exynos4210.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> @@ -117,6 +117,24 @@
+>                 status = "disabled";
+>         };
+>
+> +       usb@12580000 {
+> +               compatible = "samsung,exynos4210-ehci";
+> +               reg = <0x12580000 0x100>;
+> +               interrupts = <0 70 0>;
+> +
+> +               clocks = <&clock 304>;
+> +               clock-names = "usbhost";
+> +       };
+> +
+> +       usb@12590000 {
+> +               compatible = "samsung,exynos4210-ohci";
+> +               reg = <0x12590000 0x100>;
+> +               interrupts = <0 70 0>;
+> +
+> +               clocks = <&clock 304>;
+> +               clock-names = "usbhost";
+> +       };
+> +
+>         g2d@12800000 {
+>                 compatible = "samsung,s5pv210-g2d";
+>                 reg = <0x12800000 0x1000>;
+> --
+> 1.7.10.4
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
