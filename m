@@ -1,101 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab3GXOo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:44:27 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57295 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab3GXOoZ (ORCPT
+	id S1752917Ab3GXOos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:44:48 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:33542 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752709Ab3GXOoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:44:25 -0400
-Message-ID: <51EFE845.6010805@codeaurora.org>
-Date: Wed, 24 Jul 2013 10:44:21 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Wed, 24 Jul 2013 10:44:46 -0400
 MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, Barry Song <Baohua.Song@csr.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jingchang Lu <b35083@freescale.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v4 00/17] 64-bit friendly generic sched_clock()
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org>
+In-Reply-To: <20130724135610.GG30777@pd.tnic>
+References: <20130723135853.579c3cd5@googlemail.com>
+	<20130723151552.GF8497@pd.tnic>
+	<CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
+	<20130724135610.GG30777@pd.tnic>
+Date: Wed, 24 Jul 2013 16:44:45 +0200
+Message-ID: <CAPVoSvShyTo7ukAu42tJAn29Tt0HtDxGBNDXtvffiioOz5AXmA@mail.gmail.com>
+Subject: Re: [PATCH]Fix early microcode loading on AMD
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 07:21 PM, Stephen Boyd wrote:
-> This patchset adds support for 64 bit counters in the generic
-> sched_clock code and converts drivers over to use it. Based
-> on v3.11-rc1.
-> 
-> Changes since v3:
->  * Move to use seqcount to fix issues with 64-bit cyc counters
->  * Move to hrtimer to fix underflow/overflow errors in wraparound
->    calculation
->  * Use of 1 hour in clocks_calc_mult_shift
->  * Converted over drivers in drivers/clocksource
-> 
-> Stephen Boyd (17):
->   clocksource: Extract max nsec calculation into separate function
->   sched_clock: Use seqcount instead of rolling our own
->   sched_clock: Use an hrtimer instead of timer
->   sched_clock: Add support for >32 bit sched_clock
->   arch_timer: Move to generic sched_clock framework
->   sched_clock: Remove sched_clock_func() hook
->   clocksource: bcm2835: Switch to sched_clock_register()
->   ocksource: dbx500-prcmu: Switch to sched_clock_register()
->   clocksource: dw_apb_timer_of: Switch to sched_clock_register()
->   clocksource: mxs_timer: Switch to sched_clock_register()
->   clocksource: nomadik: Switch to sched_clock_register()
->   clocksource: samsung_pwm_timer: Switch to sched_clock_register()
->   clocksource: tegra: Switch to sched_clock_register()
->   clocksource: time-armada-370-xp: Switch to sched_clock_register()
->   clocksource: sirf: Switch to sched_clock_register() and use 64 bits
->   clocksource: vf_pit_timer: Switch to sched_clock_register()
->   sched_clock: Deprecate setup_sched_clock()
-> 
->  arch/arm/kernel/arch_timer.c              |  14 ----
->  arch/arm64/Kconfig                        |   1 +
->  arch/arm64/kernel/time.c                  |  10 ---
->  drivers/clocksource/arm_arch_timer.c      |   4 ++
->  drivers/clocksource/bcm2835_timer.c       |   4 +-
->  drivers/clocksource/clksrc-dbx500-prcmu.c |   5 +-
->  drivers/clocksource/dw_apb_timer_of.c     |   4 +-
->  drivers/clocksource/mxs_timer.c           |   4 +-
->  drivers/clocksource/nomadik-mtu.c         |   4 +-
->  drivers/clocksource/samsung_pwm_timer.c   |   4 +-
->  drivers/clocksource/tegra20_timer.c       |   4 +-
->  drivers/clocksource/time-armada-370-xp.c  |   4 +-
->  drivers/clocksource/timer-prima2.c        |   6 +-
->  drivers/clocksource/vf_pit_timer.c        |   4 +-
->  include/linux/clocksource.h               |   2 +
->  include/linux/sched_clock.h               |   7 +-
->  kernel/time/clocksource.c                 |  45 ++++++++-----
->  kernel/time/sched_clock.c                 | 105 +++++++++++++++---------------
->  18 files changed, 116 insertions(+), 115 deletions(-)
-> 
+On Wed, Jul 24, 2013 at 3:56 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
+>> >> * Save the amd_bsp_mpb on apply, not on load. Otherwise someone could
+>> >> later load an older microcode file that would overwrite amd_bsp_mpb,
+>> >> but would not be applied to the CPUs
+>> >
+>> > See the patch id check in apply_ucode_in_initrd()?
+>> >
+>> >         if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
+>>
+>> I meant with "load" load_microcode_amd() not the loading of the
+>> microcode into the CPU.
+>>
+>> 1.: load microcode rev X into CPU (early or normal is not important)
+>> 2.: get older microcode file that only contains rev Y with Y<X
+>> 3.: trigger load_microcode_amd() with a corrupt file: This will call
+>> cleanup() and empty pcache.
+>
+> Ok, that's actually a good catch. So I wonder: why in hell would we
+> flush the pcache if some of the blobs we're loading are corrupted. So
+> what?! Jacob, what were you thinking - I'd be very interested to know
+> what the idea behind this was.
+>
+> So, just to refresh everybody: the idea of the pcache is to keep all
+> patches for the current family in memory so that we can support all
+> sorts of hotplug and cpu mixed stepping diddling.
 
-I ran 32-bit and 64-bit kernels with these patches on the Versatile Express
-software model and things looked fine, so for the applicable patches,
+Then it would probably be the best to kill free_cache() completely.
+Which would mean cleanup() should also go.
+Which will make unloading microcode_amd.ko impossible.
+But that is probably a good idea anyway: If you unload the module
+there is no way to keep pcache.
 
-Tested-by: Christopher Covington <cov@codeaurora.org>
+But I still have another way to kill you: free_equiv_cpu_table()
+Without that table find_patch() can't work and will not return the
+correct information.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+And that can be triggered by:
+* start of load_microcode_amd(): If you reach that function (Only
+UCODE_MAGIC needs to be in the file) that table is dead.
+* __load_microcode_amd(): If the file only contains the table but no
+patches ("invalid type field in container file section header\n")
+
+>> 4.: trigger load_microcode_amd() with the older file:
+>>  * this will now load rev Y into pcache
+>>  * rev Y will be returned by find_patch and copied into amd_bsp_mpb
+>>  * any try to apply rev Y will be skipped in apply_microcode_amd()
+>>
+>> So now the CPU still correctly has rev X, but amd_bsp_mpb will contain
+>> the wrong rev Y.
+>
+> Right, so this shouldn't happen - what should happen is, pcache would
+> hold both X and Y and find_patch would automatically give you the right
+> one.
+>
+> And this is guaranteed since we keep the patches in a sorted linked list
+> by ->patch_id which is guaranteed to be increasing.
+>
+> So actually load_microcode_amd() shouldn't be doing cleanup() but simply
+> return ret upwards.
+
+But it already called free_equiv_cpu_table() and so pcache is inaccessible.
+
+And I don't think just preserving equiv_cpu_table for restoring in the
+error case will be the right solution: If the new firmware file
+contains a new table with fewer entries (or different entries!) some
+of the patches in pcache might become inaccessible.
+
+>> That copying already in load_microcode also is suspicious if someone
+>> would only load the microcode but not apply it. But I did not find
+>> a codepath in arch/x86/kernel/microcode_core.c to load it without a
+>> followup apply.
+>
+> Yeah, we always load and apply.
+>
+> So now back to the original problem - load_microcode_amd() shouldn't
+> clear the pcache and, in that case, a subsequent find_patch() would
+> always give the right patch.
+
+Not if equiv_cpu_table got mangled.
+So should install_equiv_cpu_table() be turned into
+add_to_equiv_cpu_table() or should pcache save all cpu_sig with each
+patch, so that find_patch() no longer needs equiv_cpu_table?
+I suspect saving that in struct ucode_patch might be better, to
+prevent changes in equiv_id <-> cpu_sig mapping to make a patch
+inaccessible.
+
+Torsten
