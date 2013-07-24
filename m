@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab3GXTMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:12:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:28726 "EHLO mga02.intel.com"
+	id S1753442Ab3GXTNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:13:24 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:54783 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579Ab3GXTMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:12:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="375830337"
-Date: Thu, 25 Jul 2013 00:03:29 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Dan Williams <djbw@fb.com>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "Vutla, Lokesh" <lokeshvutla@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Matt Porter <matt@ohporter.com>, Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
-Message-ID: <20130724183329.GH18642@intel.com>
-References: <1374597804-3961-1-git-send-email-joelf@ti.com>
- <51EF8A52.90902@metafoo.de>
- <51EF8C2B.2030409@ti.com>
- <51EF8F4E.8080806@metafoo.de>
- <FB20353E-4890-4462-A671-3587A3841B4A@ti.com>
- <51EF92F2.3030405@metafoo.de>
- <51F0231C.7000401@ti.com>
+	id S1752116Ab3GXTNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 15:13:23 -0400
+Date: Wed, 24 Jul 2013 21:13:16 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
+        Peter Hurley <peter@hurleysoftware.com>
+Cc: Tony Luck <tony.luck@gmail.com>, Doug Thompson <dougthompson@xmission.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep warning in edac_create_sysfs_mci_device
+Message-ID: <20130724191316.GN30777@pd.tnic>
+References: <20130721144819.GJ24717@sanechka.spb.ru>
+ <20130721190212.GA31470@pd.tnic>
+ <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
+ <20130724190429.GL24717@sanechka.spb.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51F0231C.7000401@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130724190429.GL24717@sanechka.spb.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 01:55:24PM -0500, Joel Fernandes wrote:
-> On 07/24/2013 03:40 AM, Lars-Peter Clausen wrote:
-> > On 07/24/2013 10:28 AM, Fernandes, Joel wrote:
-> >>>>>> Vinod, or Dan- If this patch looks ok, can you please merge in for
-> >>>>>> -rc cycle? This patch is required to fix MMC support on AM33xx. This
-> >>>>>> patch is blocking 3 other patches which fix various MMC things. Thanks!
-Sorry I was travelling so not realy on top of email for last few days...
+On Wed, Jul 24, 2013 at 11:04:31PM +0400, Alexandra N. Kossovsky wrote:
+> Thank you, the fix works. Now it is easier for me to find problems in
+> my modules...
 
-Now I am not sure we can send this to -rc.
-If it were just this one, we could have pushed but it also depends on a new API
-which is sitting in my -next. I am not super comfortable to send that to Linus
-for the -rcs. Sure, he would scream at me!
+On Wed, Jul 24, 2013 at 02:37:56PM -0400, Peter Hurley wrote:
+> Thanks for fixing this. Now I can fix the lockdep splat I just
+> introduced to linux-next :(
 
-Also another point worth considering is the approach Russell suggested, I havent
-gotten a chance to dig deeper but if I understood it correctly then programming
-the device_dma_parameters should be the right thing to do. Again I need to look
-deeper and esp wrt edma
+Guys, we're so happy that we could help you concentrate solely on your
+bugs.
 
-~Vinod
+:-) :-)
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
