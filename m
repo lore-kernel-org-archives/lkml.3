@@ -1,136 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934523Ab3GXAJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:09:53 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:40599 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757721Ab3GXAJv (ORCPT
+	id S1758134Ab3GXAKd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:10:33 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:37263 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758104Ab3GXAKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:09:51 -0400
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@lists.infradead.org, netdev@vger.kernel.org,
+	Tue, 23 Jul 2013 20:10:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130723124023.GX9858@sirena.org.uk>
+References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
+	<20130722000157.GI9858@sirena.org.uk>
+	<CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
+	<20130723124023.GX9858@sirena.org.uk>
+Date: Tue, 23 Jul 2013 17:10:29 -0700
+Message-ID: <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com>
+Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
+From: Felipe Tonello <eu@felipetonello.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
+        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
         linux-kernel@vger.kernel.org,
-        Fabio Baltieri <fabio.baltieri@gmail.com>
-Subject: [PATCH] mac80211: use oneshot blink API for LED triggers
-Date: Wed, 24 Jul 2013 02:09:41 +0200
-Message-Id: <1374624581-6012-2-git-send-email-fabio.baltieri@gmail.com>
-X-Mailer: git-send-email 1.8.2
-In-Reply-To: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
-References: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
+        "Felipe F. Tonello" <ftonello@cercacor.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes mac80211 LED trigger code to use the generic
-led_trigger_blink_oneshot() API for transmit and receive activity
-indication.
+Hi Mark,
 
-This gives a better feedback to the user, as with the new API each
-activity event results in a visible blink, while a constant traffic
-results in a continuous blink at constant rate.
+On Tue, Jul 23, 2013 at 5:40 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Mon, Jul 22, 2013 at 02:11:44PM -0700, Felipe Tonello wrote:
+>
+>> My question is: Why ALSA Jack support uses evdev input events to
+>> notify user-space? Is there any user-space relying on that? If no, I
+>> would like to change ALSA Jack implementation to only use KControl and
+>> remove specific implementations.
+>
+> This was the existing kernel API at the time that the code was added -
+> I beleive people had been doing that for simple switches that detect the
+> physical presence of a jack since it looks exactly like a button from a
+> hardware point of view.  See the original commit adding the code.
 
-Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
----
- net/mac80211/ieee80211_i.h |  1 -
- net/mac80211/led.c         | 21 +++++++++------------
- net/mac80211/led.h         |  2 +-
- net/mac80211/status.c      |  2 +-
- net/mac80211/tx.c          |  1 -
- 5 files changed, 11 insertions(+), 16 deletions(-)
+I saw it. I don't know what you think is the best way to go. I'm not
+sure if someone is using this input event API, since even PulseAudio
+even declined that implementation due KControl implementation.
 
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 8412a30..1178139 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1063,7 +1063,6 @@ struct ieee80211_local {
- 	u32 dot11TransmittedFrameCount;
- 
- #ifdef CONFIG_MAC80211_LEDS
--	int tx_led_counter, rx_led_counter;
- 	struct led_trigger *tx_led, *rx_led, *assoc_led, *radio_led;
- 	struct tpt_led_trigger *tpt_led_trigger;
- 	char tx_led_name[32], rx_led_name[32],
-diff --git a/net/mac80211/led.c b/net/mac80211/led.c
-index bcffa69..9bce15e 100644
---- a/net/mac80211/led.c
-+++ b/net/mac80211/led.c
-@@ -12,27 +12,24 @@
- #include <linux/export.h>
- #include "led.h"
- 
-+#define MAC80211_BLINK_DELAY 50 /* ms */
-+
- void ieee80211_led_rx(struct ieee80211_local *local)
- {
-+	unsigned long led_delay = MAC80211_BLINK_DELAY;
- 	if (unlikely(!local->rx_led))
- 		return;
--	if (local->rx_led_counter++ % 2 == 0)
--		led_trigger_event(local->rx_led, LED_OFF);
--	else
--		led_trigger_event(local->rx_led, LED_FULL);
-+	led_trigger_blink_oneshot(local->rx_led,
-+			&led_delay, &led_delay, 0);
- }
- 
--/* q is 1 if a packet was enqueued, 0 if it has been transmitted */
--void ieee80211_led_tx(struct ieee80211_local *local, int q)
-+void ieee80211_led_tx(struct ieee80211_local *local)
- {
-+	unsigned long led_delay = MAC80211_BLINK_DELAY;
- 	if (unlikely(!local->tx_led))
- 		return;
--	/* not sure how this is supposed to work ... */
--	local->tx_led_counter += 2*q-1;
--	if (local->tx_led_counter % 2 == 0)
--		led_trigger_event(local->tx_led, LED_OFF);
--	else
--		led_trigger_event(local->tx_led, LED_FULL);
-+	led_trigger_blink_oneshot(local->tx_led,
-+			&led_delay, &led_delay, 0);
- }
- 
- void ieee80211_led_assoc(struct ieee80211_local *local, bool associated)
-diff --git a/net/mac80211/led.h b/net/mac80211/led.h
-index e0275d9..6ca2f29 100644
---- a/net/mac80211/led.h
-+++ b/net/mac80211/led.h
-@@ -13,7 +13,7 @@
- 
- #ifdef CONFIG_MAC80211_LEDS
- void ieee80211_led_rx(struct ieee80211_local *local);
--void ieee80211_led_tx(struct ieee80211_local *local, int q);
-+void ieee80211_led_tx(struct ieee80211_local *local);
- void ieee80211_led_assoc(struct ieee80211_local *local,
- 			 bool associated);
- void ieee80211_led_radio(struct ieee80211_local *local,
-diff --git a/net/mac80211/status.c b/net/mac80211/status.c
-index 4343920..e3c889b 100644
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -557,7 +557,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
- 
- 	rcu_read_unlock();
- 
--	ieee80211_led_tx(local, 0);
-+	ieee80211_led_tx(local);
- 
- 	/* SNMP counters
- 	 * Fragments are passed to low-level drivers as separate skbs, so these
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 4105d0c..6c4e60d 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -1281,7 +1281,6 @@ static bool __ieee80211_tx(struct ieee80211_local *local,
- 				    txpending);
- 
- 	ieee80211_tpt_led_trig_tx(local, fc, led_len);
--	ieee80211_led_tx(local, 1);
- 
- 	WARN_ON_ONCE(!skb_queue_empty(skbs));
- 
--- 
-1.8.2
+I'm thinking in re-implement core/jack.c using only kcontrol for
+reporting status and leaving input events only for keys (which is
+already implemented). This will break compatibility if any user-space
+checks for jack status using input events, but again, is anyone using
+this?
 
+Regards,
+
+Felipe Tonello
