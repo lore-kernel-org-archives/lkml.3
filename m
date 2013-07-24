@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231Ab3GXSLG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:11:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:35628 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005Ab3GXSLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:11:03 -0400
-Date: Wed, 24 Jul 2013 20:10:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-Message-ID: <20130724181056.GM30777@pd.tnic>
-References: <1374526866-6813-1-git-send-email-bp@alien8.de>
- <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752877Ab3GXSLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:11:22 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:54277 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab3GXSLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 14:11:19 -0400
+From: Peng Tao <bergwolf@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Peng Tao <bergwolf@gmail.com>
+Subject: [PATCH-RESEND 0/3] staging/lustre: Intel tree sync and two fixups
+Date: Thu, 25 Jul 2013 02:08:16 +0800
+Message-Id: <1374689299-10126-1-git-send-email-bergwolf@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:43:47PM +0530, Naveen N. Rao wrote:
-> While looking at this, I noticed that we seem to be using varying
-> field widths in our APEI code: - einj.c has two instances using
-> %#010llx. - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
->
-> Not sure if these are intentional and those fields truly aren't 64-bit
-> (as suggested by the usage of long long int).
+Hi Greg,
 
-That's an interesting question but I think you're better fitted to
-answer it - I try to avoid the APEI spec as much as possible.
+Following are the rest of previous patchset rebased on latest staging-next
+and reordered to avoid breaking bisecability. Please help to queue them.
 
-:-)
+[Resend again to fix up patch authorship of my own. Sorry for the noise...]
+
+Thanks,
+Tao
+
+Liu Xuezhao (1):
+  staging/lustre/obdclass: add obd_target.h
+
+Peng Tao (2):
+  staging/lustre: fix build on non-x86
+  staging/lustre: fix Kconfig bool defaults
+
+ drivers/staging/lustre/lustre/Kconfig              |    2 +-
+ .../lustre/lustre/include/linux/lustre_fsfilt.h    |   10 -
+ .../staging/lustre/lustre/include/lprocfs_status.h |   36 --
+ drivers/staging/lustre/lustre/include/obd.h        |  140 +----
+ drivers/staging/lustre/lustre/lvfs/lvfs_linux.c    |    1 -
+ drivers/staging/lustre/lustre/obdclass/Makefile    |    2 +-
+ .../lustre/lustre/obdclass/lprocfs_jobstats.c      |  560 --------------------
+ drivers/staging/lustre/lustre/obdclass/obd_mount.c |    1 -
+ drivers/staging/lustre/lustre/ptlrpc/Makefile      |    2 +-
+ drivers/staging/lustre/lustre/ptlrpc/errno.c       |    4 +-
+ 10 files changed, 6 insertions(+), 752 deletions(-)
+ delete mode 100644 drivers/staging/lustre/lustre/obdclass/lprocfs_jobstats.c
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
