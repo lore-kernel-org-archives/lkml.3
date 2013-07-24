@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758134Ab3GXAKd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:10:33 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:37263 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758104Ab3GXAKa (ORCPT
+	id S1758117Ab3GXANC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:13:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42869 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757765Ab3GXANA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:10:30 -0400
+	Tue, 23 Jul 2013 20:13:00 -0400
+Date: Tue, 23 Jul 2013 17:12:59 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH v2 12/20] n_tty: Factor standard per-char i/o into
+ separate fn
+Message-ID: <20130724001259.GA9239@kroah.com>
+References: <1371305069-5366-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-1-git-send-email-peter@hurleysoftware.com>
+ <1371306096-5571-13-git-send-email-peter@hurleysoftware.com>
 MIME-Version: 1.0
-In-Reply-To: <20130723124023.GX9858@sirena.org.uk>
-References: <1374281962-3786-1-git-send-email-eu@felipetonello.com>
-	<20130722000157.GI9858@sirena.org.uk>
-	<CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com>
-	<20130723124023.GX9858@sirena.org.uk>
-Date: Tue, 23 Jul 2013 17:10:29 -0700
-Message-ID: <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com>
-Subject: Re: [PATCH] ALSA: SoC: Added jack detection kcontrol support
-From: Felipe Tonello <eu@felipetonello.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, LiamGirdwoodlgirdwood@gmail.com,
-        JaroslavKyselaperex@perex.cz, TakashiIwaitiwai@suse.de,
-        linux-kernel@vger.kernel.org,
-        "Felipe F. Tonello" <ftonello@cercacor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1371306096-5571-13-git-send-email-peter@hurleysoftware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Sat, Jun 15, 2013 at 10:21:28AM -0400, Peter Hurley wrote:
+> Simplify __receive_buf() into a dispatch function; perform per-char
+> processing for all other modes not already handled.
+> 
+> Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+> ---
+>  drivers/tty/n_tty.c | 28 ++++++++++++++++++----------
+>  1 file changed, 18 insertions(+), 10 deletions(-)
 
-On Tue, Jul 23, 2013 at 5:40 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Mon, Jul 22, 2013 at 02:11:44PM -0700, Felipe Tonello wrote:
->
->> My question is: Why ALSA Jack support uses evdev input events to
->> notify user-space? Is there any user-space relying on that? If no, I
->> would like to change ALSA Jack implementation to only use KControl and
->> remove specific implementations.
->
-> This was the existing kernel API at the time that the code was added -
-> I beleive people had been doing that for simple switches that detect the
-> physical presence of a jack since it looks exactly like a button from a
-> hardware point of view.  See the original commit adding the code.
+This patch causes the warning:
+	drivers/tty/n_tty.c: In function ‘n_tty_receive_buf_standard’:
+	drivers/tty/n_tty.c:1575:21: warning: unused variable ‘ldata’ [-Wunused-variable]
+to happen.
 
-I saw it. I don't know what you think is the best way to go. I'm not
-sure if someone is using this input event API, since even PulseAudio
-even declined that implementation due KControl implementation.
+Care to fix it up, and refresh the rest of the series (something fails
+later on), and resend these so that I can apply them?
 
-I'm thinking in re-implement core/jack.c using only kcontrol for
-reporting status and leaving input events only for keys (which is
-already implemented). This will break compatibility if any user-space
-checks for jack status using input events, but again, is anyone using
-this?
+Everything before this was applied to my tree, you should have gotten
+emails about them.
 
-Regards,
+thanks,
 
-Felipe Tonello
+greg k-h
