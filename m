@@ -1,107 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3GXPcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:32:32 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:2237 "EHLO
+	id S1754697Ab3GXPct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:32:49 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32477 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab3GXP3T (ORCPT
+	with ESMTP id S1753635Ab3GXP3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:29:19 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=Tlrs1t-6B1YA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=453Kd30X49IA:10 a=u4gv7utF6i1XELvmWBwA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+	Wed, 24 Jul 2013 11:29:18 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=nJc60xxcIqAA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1qB2q6CTtWIA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=0kbfjC1OccZKM1oZNXEA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130724152917.374206858@goodmis.org>
+Message-Id: <20130724152916.360226534@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Wed, 24 Jul 2013 11:27:14 -0400
+Date: Wed, 24 Jul 2013 11:27:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next-3.11][PATCH 8/9] ftrace: Add check for NULL regs if ops has SAVE_REGS set
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [for-next-3.11][PATCH 3/9] tracing: Change tracing_buffers_fops to rely on tracing_get_cpu()
 References: <20130724152706.535638468@goodmis.org>
-Content-Disposition: inline; filename=0008-ftrace-Add-check-for-NULL-regs-if-ops-has-SAVE_REGS-.patch
+Content-Disposition: inline; filename=0003-tracing-Change-tracing_buffers_fops-to-rely-on-traci.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-If a ftrace ops is registered with the SAVE_REGS flag set, and there's
-already a ops registered to one of its functions but without the
-SAVE_REGS flag, there's a small race window where the SAVE_REGS ops gets
-added to the list of callbacks to call for that function before the
-callback trampoline gets set to save the regs.
+tracing_buffers_open() is racy, the memory inode->i_private points
+to can be already freed.
 
-The problem is, the function is not currently saving regs, which opens
-a small race window where the ops that is expecting regs to be passed
-to it, wont. This can cause a crash if the callback were to reference
-the regs, as the SAVE_REGS guarantees that regs will be set.
+Change debugfs_create_file("trace_pipe_raw", data) caller to pass
+"data = tr", tracing_buffers_open() can use tracing_get_cpu().
 
-To fix this, we add a check in the loop case where it checks if the ops
-has the SAVE_REGS flag set, and if so, it will ignore it if regs is
-not set.
+Change debugfs_create_file("snapshot_raw_fops", data) caller too,
+this file uses tracing_buffers_open/release.
 
+Link: http://lkml.kernel.org/r/20130723152600.GA23720@redhat.com
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
+ kernel/trace/trace.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 67708f4..8ce9eef 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -1441,12 +1441,22 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
-  * the hashes are freed with call_rcu_sched().
-  */
- static int
--ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
-+ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 51a99ef..30c058a 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -4949,8 +4949,7 @@ static const struct file_operations snapshot_raw_fops = {
+ 
+ static int tracing_buffers_open(struct inode *inode, struct file *filp)
  {
- 	struct ftrace_hash *filter_hash;
- 	struct ftrace_hash *notrace_hash;
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct ftrace_buffer_info *info;
  	int ret;
  
-+#ifdef CONFIG_DYNAMIC_FTRACE_WITH_REGS
-+	/*
-+	 * There's a small race when adding ops that the ftrace handler
-+	 * that wants regs, may be called without them. We can not
-+	 * allow that handler to be called if regs is NULL.
-+	 */
-+	if (regs == NULL && (ops->flags & FTRACE_OPS_FL_SAVE_REGS))
-+		return 0;
-+#endif
-+
- 	filter_hash = rcu_dereference_raw_notrace(ops->filter_hash);
- 	notrace_hash = rcu_dereference_raw_notrace(ops->notrace_hash);
+@@ -4969,7 +4968,7 @@ static int tracing_buffers_open(struct inode *inode, struct file *filp)
+ 	mutex_lock(&trace_types_lock);
  
-@@ -4218,7 +4228,7 @@ static inline void ftrace_startup_enable(int command) { }
- # define ftrace_shutdown_sysctl()	do { } while (0)
+ 	info->iter.tr		= tr;
+-	info->iter.cpu_file	= tc->cpu;
++	info->iter.cpu_file	= tracing_get_cpu(inode);
+ 	info->iter.trace	= tr->current_trace;
+ 	info->iter.trace_buffer = &tr->trace_buffer;
+ 	info->spare		= NULL;
+@@ -5576,7 +5575,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 				&data->trace_cpu, cpu, &tracing_fops);
  
- static inline int
--ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
-+ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
- {
- 	return 1;
+ 	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_buffers_fops);
++				tr, cpu, &tracing_buffers_fops);
+ 
+ 	trace_create_cpu_file("stats", 0444, d_cpu,
+ 				&data->trace_cpu, cpu, &tracing_stats_fops);
+@@ -5589,7 +5588,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 				&data->trace_cpu, cpu, &snapshot_fops);
+ 
+ 	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &snapshot_raw_fops);
++				tr, cpu, &snapshot_raw_fops);
+ #endif
  }
-@@ -4241,7 +4251,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
- 	do_for_each_ftrace_op(op, ftrace_control_list) {
- 		if (!(op->flags & FTRACE_OPS_FL_STUB) &&
- 		    !ftrace_function_local_disabled(op) &&
--		    ftrace_ops_test(op, ip))
-+		    ftrace_ops_test(op, ip, regs))
- 			op->func(ip, parent_ip, op, regs);
- 	} while_for_each_ftrace_op(op);
- 	trace_recursion_clear(TRACE_CONTROL_BIT);
-@@ -4274,7 +4284,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
- 	 */
- 	preempt_disable_notrace();
- 	do_for_each_ftrace_op(op, ftrace_ops_list) {
--		if (ftrace_ops_test(op, ip))
-+		if (ftrace_ops_test(op, ip, regs))
- 			op->func(ip, parent_ip, op, regs);
- 	} while_for_each_ftrace_op(op);
- 	preempt_enable_notrace();
+ 
 -- 
 1.7.10.4
 
