@@ -1,119 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab3GXEUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 00:20:47 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:61713 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab3GXEUp (ORCPT
+	id S1751158Ab3GXEYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 00:24:15 -0400
+Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:30446 "EHLO
+	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab3GXEYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 00:20:45 -0400
-Date: Wed, 24 Jul 2013 06:20:41 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Toshi Kani <toshi.kani@hp.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
-        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
-        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-Message-ID: <20130724042041.GA8504@gmail.com>
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
- <20130722083721.GC25976@gmail.com>
- <1374513120.16322.21.camel@misato.fc.hp.com>
- <20130723080101.GB15255@gmail.com>
- <1374612301.16322.136.camel@misato.fc.hp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374612301.16322.136.camel@misato.fc.hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 00:24:13 -0400
+Message-ID: <1374639848.2335.7.camel@j-VirtualBox>
+Subject: Re: [RFC PATCH v2] sched: Limit idle_balance()
+From: Jason Low <jason.low2@hp.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Turner <pjt@google.com>,
+        Alex Shi <alex.shi@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, aswin@hp.com, scott.norton@hp.com,
+        chegu_vinod@hp.com
+Date: Tue, 23 Jul 2013 21:24:08 -0700
+In-Reply-To: <20130723110646.GA27005@linux.vnet.ibm.com>
+References: <1374220211.5447.9.camel@j-VirtualBox>
+	 <20130722070144.GC5138@linux.vnet.ibm.com>
+	 <1374519467.7608.87.camel@j-VirtualBox>
+	 <20130723110646.GA27005@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Toshi Kani <toshi.kani@hp.com> wrote:
-
-> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
-> > * Toshi Kani <toshi.kani@hp.com> wrote:
+On Tue, 2013-07-23 at 16:36 +0530, Srikar Dronamraju wrote:
 > > 
-> > > > Could we please also fix it to never crash the kernel, even if stupid 
-> > > > ranges are provided?
-> > > 
-> > > Yes, this probe interface can be enhanced to verify the firmware 
-> > > information before adding a given memory address.  However, such change 
-> > > would interfere its test use of "fake" hotplug, which is only the known 
-> > > use-case of this interface on x86.
+> > A potential issue I have found with avg_idle is that it may sometimes be
+> > not quite as accurate for the purposes of this patch, because it is
+> > always given a max value (default is 1000000 ns). For example, a CPU
+> > could have remained idle for 1 second and avg_idle would be set to 1
+> > millisecond. Another question I have is whether we can update avg_idle
+> > at all times without putting a maximum value on avg_idle, or increase
+> > the maximum value of avg_idle by a lot.
+> 
+> May be the current max value is a limiting factor, but I think there
+> should be a limit to the maximum value. Peter and Ingo may help us
+> understand why they limited to the 1ms. But I dont think we should
+> introduce a new variable just for this.
+
+You're right. As Peter recently mentioned, avg_idle is only used for
+idle_balance() anyway, so we should just use the existing avg_idle
+estimator.
+
 > > 
-> > Not crashing the kernel is not a novel concept even for test interfaces...
-> 
-> Agreed.
-> 
-> > Where does the possible crash come from - from using invalid RAM ranges, 
-> > right? I.e. on x86 to fix the crash we need to check the RAM is present in 
-> > the e820 maps, is marked RAM there, and is not already registered with the 
-> > kernel, or so?
-> 
-> Yes, the crash comes from using invalid RAM ranges.  How to check if the
-> RAM is present is different if the system supports hotplug or not.
-> 
-> > > In order to verify if a given memory address is enabled at run-time (as 
-> > > opposed to boot-time), we need to check with ACPI memory device objects 
-> > > on x86.  However, system vendors tend to not implement memory device 
-> > > objects unless their systems support memory hotplug.  Dave Hansen is 
-> > > using this interface for his testing as a way to fake a hotplug event on 
-> > > a system that does not support memory hotplug.
+> > > Should we take the consideration of whether a idle_balance was
+> > > successful or not?
 > > 
-> > All vendors implement e820 maps for the memory present at boot time.
+> > I recently ran fserver on the 8 socket machine with HT-enabled and found
+> > that load balance was succeeding at a higher than average rate, but idle
+> > balance was still lowering performance of that workload by a lot.
+> > However, it makes sense to allow idle balance to run longer/more often
+> > when it has a higher success rate.
+> > 
 > 
-> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
-> new memory added. [...]
-
-Yes I know that, the e820 map is boot only.
-
-You claimed that the only purpose of this on x86 was that testing was done 
-on non-hotplug systems, using this interface. Non-hotplug systems have 
-e820 maps.
-
-> > How does the hotplug event based approach solve double adds? Relies on 
-> > the hardware not sending a hot-add event twice for the same memory 
-> > area or for an invalid memory area, or does it include fail-safes and 
-> > double checks as well to avoid double adds and adding invalid memory? 
-> > If yes then that could be utilized here as well.
+> If idle balance did succeed, then it means that the system was indeed
+> imbalanced. So idle balance was the right thing to do. May be we chose
+> the wrong task to pull. May be after numa balancing enhancements go in,
+> we pick a better task to pull atleast across nodes. And there could be
+> other opportunities/strategies to select a right task to pull.
 > 
-> In high-level, here is how ACPI memory hotplug works:
+> Again, schedstats during the application run should give us hints here.
 > 
-> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
-> hot-added.
-> 2. The kernel is notified, and verifies if the new memory device object
-> has not been attached by any handler yet.
-> 3. The memory handler is called, and obtains a new memory range from the
-> ACPI memory device object. 
-> 4. The memory handler calls add_memory() with the new address range.
+> > > I am not sure whats a reasonable value for n can be, but may be we could
+> > > try with n=3.
+> > 
+> > Based on some of the data I collected, n = 10 to 20 provides much better
+> > performance increases.
+> > 
 > 
-> The above step 1-4 proceeds automatically within the kernel.  No user 
-> input (nor sysfs interface) is necessary.  Step 2 prevents double adds 
-> [...]
+> I was saying it the other way. 
+> your suggestion is to run idle balance once in n runs .. where n is 10
+> to 20. 
+> My thinking was to not run idle balance once in n unsuccessful runs. 
 
-If this 'new memory device object' is some ACPI detail then I don't see 
-how it protects the kernel from a buggy ACPI implementation double adding 
-the same physical memory range.
-
-> and step 3 gets a valid address range from the firmware directly.  Step 
-> 4 is basically the same as the "probe" interface, but with all the 
-> verification up front, this step is safe.
-
-So what verification does the kernel do to ensure that a buggy ACPI 
-implementation does not pass us a crappy memory range, such a double 
-physical range (represented via separate 'memory device objects'), or a 
-range overlapping with an existing physical memory range already known to 
-the kernel, or a totally nonsensical range the CPU cannot even access 
-physically, etc.?
-
-Also, is there any verification done to make sure that the new memory 
-range is actually RAM - i.e. we could write the first and last word of it 
-and see whether it gets modified correctly [to keep the sanity check 
-fast]?
+When I suggested N is 20, that means that if the average idle time of a
+CPU is 1,000,000 ns, then we stop idle balancing if the average cost to
+idle balance within a domain would come up to be greater than (1,000,000
+ns / 20) = 50,000 ns. In the v2 patch, N helps determine the maximum
+duration in which we allow each idle_balance() to run.
 
 Thanks,
+Jason
 
-	Ingo
