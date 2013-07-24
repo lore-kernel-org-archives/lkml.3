@@ -1,57 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab3GXSop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:44:45 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59354 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab3GXSon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:44:43 -0400
-Message-ID: <51F02069.3050207@ti.com>
-Date: Thu, 25 Jul 2013 00:13:53 +0530
-From: Sricharan R <r.sricharan@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120410 Thunderbird/11.0.1
+	id S1752950Ab3GXSp5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:45:57 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36781 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3GXSp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 14:45:56 -0400
+Message-ID: <51F020DB.3090909@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 13:45:47 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com>
-In-Reply-To: <51F00530.9090703@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 7/8]  Add memory hot add/remove notifier handlers for pwoerpc
+References: <51F01E06.6090800@linux.vnet.ibm.com>
+In-Reply-To: <51F01E06.6090800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072418-3864-0000-0000-0000093DC4FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 July 2013 10:17 PM, Nishanth Menon wrote:
-> On 07/24/2013 11:38 AM, Santosh Shilimkar wrote:
->> On Wednesday 24 July 2013 12:08 PM, Nishanth Menon wrote: 
->>> That said, maybe a intermediate pinctrl approach might be more pragmatic and less theoretically flexible.
->>> an option might be to "statically allocate" default number of interrupts to a domain - example:
->>> * GIC IRQ 72->78 allotted to UARTs
->>> * pinctrl mapping provided for those but only 6 can be used (rest are marked status="disabled" as default) at any given time (choice of pinctrl option determines GIC interrupt line to use)
->>> * All modules will have a pinctrl definition to have a mapping - to avoid bootloader overriding default cross bar setting in ways un-expected by kernel.
->>>
->>> Does that sound fair trade off?
->> This sounds better. That way we can get all the devices in the DT at least.
->
-> Fair enough - if Linus and Tony are still ok with this approach to the problem, seeing a patch series with the effect would be beneficial.
->
- Ok, i will use this idea of certain number interrupts to groups.
-Yes on DRA7XX, we have about 160 gic lines and 320 irq crossbar device inputs contending for it.
-1:2 and fully arbitrary.  But will we be really exhausting them ?
+Add memory hot add/remove notifier handlers for powerpc/pseries.
 
-Regards,
- Sricharan
+This patch allows the powerpc/pseries platforms to perform memory DLPAR
+int the kernel. The handlers for add and remove do the work of
+acquiring/releasing the memory to firmware and updating the device tree.
+
+This is only used when memory is specified in the
+ibm,dynamic-reconfiguration-memory device tree node so the memory notifiers
+are registered contingent on its existence.
+
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/dlpar.c |  103 +++++++++++++++++++++++++++++++++
+ 1 file changed, 103 insertions(+)
+
+Index: linux/arch/powerpc/platforms/pseries/dlpar.c
+===================================================================
+--- linux.orig/arch/powerpc/platforms/pseries/dlpar.c
++++ linux/arch/powerpc/platforms/pseries/dlpar.c
+@@ -15,6 +15,7 @@
+ #include <linux/notifier.h>
+ #include <linux/spinlock.h>
+ #include <linux/cpu.h>
++#include <linux/memory.h>
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include "offline_states.h"
+@@ -531,11 +532,113 @@ out:
+ 	return rc ? rc : count;
+ }
+ 
++static struct of_drconf_cell *dlpar_get_drconf_cell(struct device_node *dn,
++						    unsigned long phys_addr)
++{
++	struct of_drconf_cell *drmem;
++	u32 entries;
++	u32 *prop;
++	int i;
++
++	prop = (u32 *)of_get_property(dn, "ibm,dynamic-memory", NULL);
++	of_node_put(dn);
++	if (!prop)
++		return NULL;
++
++	entries = *prop++;
++	drmem = (struct of_drconf_cell *)prop;
++
++	for (i = 0; i < entries; i++) {
++		if (drmem[i].base_addr == phys_addr)
++			return &drmem[i];
++	}
++
++	return NULL;
++}
++
++static int dlpar_mem_probe(unsigned long phys_addr)
++{
++	struct device_node *dn;
++	struct of_drconf_cell *drmem;
++	int rc;
++
++	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (!dn)
++		return -EINVAL;
++
++	drmem = dlpar_get_drconf_cell(dn, phys_addr);
++	of_node_put(dn);
++
++	if (!drmem)
++		return -EINVAL;
++
++	if (drmem->flags & DRCONF_MEM_ASSIGNED)
++		return 0;
++
++	drmem->flags |= DRCONF_MEM_ASSIGNED;
++
++	rc = dlpar_acquire_drc(drmem->drc_index);
++	return rc;
++}
++
++static int dlpar_mem_release(unsigned long phys_addr)
++{
++	struct device_node *dn;
++	struct of_drconf_cell *drmem;
++	int rc;
++
++	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (!dn)
++		return -EINVAL;
++
++	drmem = dlpar_get_drconf_cell(dn, phys_addr);
++	of_node_put(dn);
++
++	if (!drmem)
++		return -EINVAL;
++
++	if (!drmem->flags & DRCONF_MEM_ASSIGNED)
++		return 0;
++
++	drmem->flags &= ~DRCONF_MEM_ASSIGNED;
++
++	rc = dlpar_release_drc(drmem->drc_index);
++	return rc;
++}
++
++static int pseries_dlpar_mem_callback(struct notifier_block *nb,
++				      unsigned long action, void *hp_arg)
++{
++	struct memory_notify *arg = hp_arg;
++	unsigned long phys_addr = arg->start_pfn << PAGE_SHIFT;
++	int rc = 0;
++
++
++	switch (action) {
++	case MEM_BEING_HOT_ADDED:
++		rc = dlpar_mem_probe(phys_addr);
++		break;
++	case MEM_HOT_REMOVED:
++		rc = dlpar_mem_release(phys_addr);
++		break;
++	}
++
++	return notifier_from_errno(rc);
++}
++
+ static int __init pseries_dlpar_init(void)
+ {
++	struct device_node *dn;
++
+ 	ppc_md.cpu_probe = dlpar_cpu_probe;
+ 	ppc_md.cpu_release = dlpar_cpu_release;
+ 
++	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (dn) {
++		hotplug_memory_notifier(pseries_dlpar_mem_callback, 0);
++		of_node_put(dn);
++	}
++
+ 	return 0;
+ }
+ machine_device_initcall(pseries, pseries_dlpar_init);
+
+
