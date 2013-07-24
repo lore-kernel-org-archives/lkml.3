@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3GXUUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:20:52 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:50403 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab3GXUUv (ORCPT
+	id S1754071Ab3GXUVJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:21:09 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36938 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753468Ab3GXUVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:20:51 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>
-Subject: [PATCH] gpio_msm: Fix build error due to missing err.h
-Date: Wed, 24 Jul 2013 13:20:48 -0700
-Message-Id: <1374697248-23401-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.4.840.g6a90778
+	Wed, 24 Jul 2013 16:21:06 -0400
+Message-ID: <1374697264.7382.39.camel@dabdike>
+Subject: Re: targetcli -fb now also Apache 2.0 licensed
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Andy Grover <agrover@redhat.com>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Ritesh Raj Sarraf <rrs@debian.org>,
+        targetcli-fb-devel@lists.fedorahosted.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Jul 2013 13:21:04 -0700
+In-Reply-To: <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>
+References: <51EF73EF.1040305@redhat.com>
+	 <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.8.3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/gpio/gpio-msm-v1.c: In function 'gpio_msm_v1_probe':
-drivers/gpio/gpio-msm-v1.c:656:2:
-error: implicit declaration of function 'IS_ERR'
-[-Werror=implicit-function-declaration]
-drivers/gpio/gpio-msm-v1.c:657:3:
-error: implicit declaration of function 'PTR_ERR'
-[-Werror=implicit-function-declaration]
+On Wed, 2013-07-24 at 13:09 -0700, Nicholas A. Bellinger wrote:
+> On Tue, 2013-07-23 at 23:27 -0700, Andy Grover wrote:
+> > Hi Nick,
+> > 
+> > I just wanted to let you know that I finally received permission from 
+> > all contributors, and have matched RisingTide's relicensing of targetcli 
+> > and its dependencies to Apache 2.0, by relicensing the additional 
+> > contributions in the targetcli-fb branch under the same license.
+> > 
+> > I'm not quite sure the next steps are, except enjoying all our newly 
+> > non-viral source code, but much thanks for getting the ball rolling.
+> > 
+> 
+> Making this type of announcement without coordinating with us on a plan
+> for moving forward is pretty lame.  Especially considering that we've
+> kept asking you privately about how to work together to reconcile -fb
+> with upstream, and your response essentially boiled down to "What's in
+> it for me..?".
 
-This driver failed to compile after commit 68515bb
-(gpio_msm: Convert to use devm_ioremap_resource,
-2013-06-10).
+Oh good grief, children, how about you both play nicely in the sand box
+or I'll fetch your parents to make you see sense.
 
-Cc: Tushar Behera <tushar.behera@linaro.org>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/gpio/gpio-msm-v1.c | 1 +
- 1 file changed, 1 insertion(+)
+> So if you really, really need an incentive to "do the right thing", how
+> about I start not accept kernel patches from you until you're ready to
+> drop -fb and start working with upstream for real..?
 
-diff --git a/drivers/gpio/gpio-msm-v1.c b/drivers/gpio/gpio-msm-v1.c
-index e3ceaac..73b7396 100644
---- a/drivers/gpio/gpio-msm-v1.c
-+++ b/drivers/gpio/gpio-msm-v1.c
-@@ -21,6 +21,7 @@
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/platform_device.h>
-+#include <linux/err.h>
- 
- #include <mach/msm_gpiomux.h>
- 
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Well, the thing is, being a maintainer in Linux is a position of trust.
+The fastest way to lose that trust is to hold your tree to ransom or
+indeed refuse to accept patches for anything other than technical or
+licensing reasons.
+
+James
+
 
