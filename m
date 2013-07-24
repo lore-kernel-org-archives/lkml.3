@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab3GXPz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:55:56 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:36859 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab3GXPzw (ORCPT
+	id S1754231Ab3GXP4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:56:09 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:51243 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab3GXP4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:55:52 -0400
-Date: Wed, 24 Jul 2013 11:55:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 13/21] x86, acpi: Try to find SRAT in firmware earlier.
-Message-ID: <20130724155546.GB20377@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-14-git-send-email-tangchen@cn.fujitsu.com>
- <20130723204949.GR21100@mtj.dyndns.org>
- <51EFA873.9050300@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EFA873.9050300@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 11:56:03 -0400
+From: Olof Johansson <olof@lixom.net>
+To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Cc: Pekon Gupta <pekon@ti.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        David Woodhouse <dwmw2@infradead.org>, Olof Johansson <olof@lixom.net>
+Subject: [PATCH] mtd: nand: omap2: Fix compilation warning
+Date: Wed, 24 Jul 2013 08:56:32 -0700
+Message-Id: <1374681392-6183-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 06:12:03PM +0800, Tang Chen wrote:
-> Do you mean get the SRAT's address without touching any ACPI global
-> variables, such as acpi_gbl_root_table_list ?
-> 
-> The physical addresses of all tables is stored in RSDT (Root System
-> Description Table), which is the root table. We need to parse RSDT
-> to get SRAT address.
-> 
-> Using acpi_gbl_root_table_list is very convenient. The initialization
-> of acpi_gbl_root_table_list is using acpi_os_map_memory(), so it can be
-> done before init_mem_mapping() and relocate_initrd().
-> 
-> With acpi_gbl_root_table_list initialized, we can iterate it and find
-> SRAT easily. Otherwise, we have to do the same procedure to parse RSDT,
-> and find SRAT, which I don't think could be any simpler. I think reuse
-> the existing acpi_gbl_root_table_list code is better.
+fb1585bc13b (mtd: nand: omap2: clean-up BCHx_HW and BCHx_SW ECC
+configurations in device_probe) introduced a warning when the new option
+is disabled, i.e. with omap2plus_defconfig:
 
-I see.  As long as ACPI people are fine with the modifications, I
-don't mind either way.
+drivers/mtd/nand/omap2.c:1075:13: warning: 'omap3_enable_hwecc_bch' defined but not used [-Wunused-function]
 
-Thanks.
+Fix this by rescoping the ifdef. Also remove a redudant #endif/#ifdef
+pair.
 
+Signed-off-by: Olof Johansson <olof@lixom.net>
+---
+ drivers/mtd/nand/omap2.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index c4c7e0d..cbf8b28 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1060,6 +1060,7 @@ static int omap_dev_ready(struct mtd_info *mtd)
+ 	}
+ }
+ 
++#ifdef CONFIG_MTD_NAND_OMAP_BCH
+ /**
+  * omap3_enable_hwecc_bch - Program OMAP3 GPMC to perform BCH ECC correction
+  * @mtd: MTD device structure
+@@ -1141,7 +1142,6 @@ static void omap3_enable_hwecc_bch(struct mtd_info *mtd, int mode)
+ 	writel(ECCCLEAR | ECC1, info->reg.gpmc_ecc_control);
+ }
+ 
+-#ifdef CONFIG_MTD_NAND_ECC_BCH
+ /**
+  * omap3_calculate_ecc_bch4 - Generate 7 bytes of ECC bytes
+  * @mtd: MTD device structure
+@@ -1959,8 +1959,7 @@ static int omap_nand_probe(struct platform_device *pdev)
+ 		omap_oobinfo.oobfree->offset	= omap_oobinfo.eccpos[0] +
+ 							omap_oobinfo.eccbytes;
+ 		goto custom_ecc_layout;
+-#endif
+-#ifdef CONFIG_MTD_NAND_ECC_BCH
++
+ 	case OMAP_ECC_BCH8_CODE_HW_DETECTION_SW:
+ 		pr_info("using OMAP_ECC_BCH8_CODE_HW_DETECTION_SW ECC\n");
+ 		info->nand.ecc.mode		= NAND_ECC_HW;
 -- 
-tejun
+1.7.10.4
+
