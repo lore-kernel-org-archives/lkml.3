@@ -1,123 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3GXPBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:01:41 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:55792 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3GXPBk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:01:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130724141927.GI30777@pd.tnic>
-References: <20130723135853.579c3cd5@googlemail.com>
-	<20130723151552.GF8497@pd.tnic>
-	<CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-	<20130724141927.GI30777@pd.tnic>
-Date: Wed, 24 Jul 2013 17:01:39 +0200
-Message-ID: <CAPVoSvRfo7jePJ-NK444s9XwZK96xpf5w=vwQ9xRMp8oH-rVig@mail.gmail.com>
-Subject: Re: [PATCH]Fix early microcode loading on AMD
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+	id S1753950Ab3GXPDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:03:19 -0400
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:10097
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751397Ab3GXPDS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 11:03:18 -0400
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zz98dI9371I542I1432Idbb0idbf2izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1d7338h1de098h17326ah8275dh1de097h1de096h1d68deh8275bhz2dh668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+X-WSS-ID: 0MQG4H8-02-2YA-02
+X-M-MSG: 
+From: "Hurwitz, Sherry" <sherry.hurwitz@amd.com>
+To: Marc Dietrich <marvin24@gmx.de>
+CC: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: RE: [PATCH] linux-firmware/AMD: add readme files for amd-ucode
+Thread-Topic: [PATCH] linux-firmware/AMD: add readme files for amd-ucode
+Thread-Index: AQHOhNF7p/P4/SdX30CxkUXqo4zX/5ltpW4AgAZNuuA=
+Date: Wed, 24 Jul 2013 15:03:07 +0000
+Message-ID: <ACC57DAD9FA29445AB3FF28B6500CF4E60B03D19@sausexdag01.amd.com>
+References: <1374273832-5228-1-git-send-email-sherry.hurwitz@amd.com>
+ <1581606.2MIpuxPjZY@ax5200p>
+In-Reply-To: <1581606.2MIpuxPjZY@ax5200p>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.236.48.54]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 4:19 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
->> > The other problem I see is not updating c->microcode since it is going
->> > to be overwritten by smp_store_cpu_info, which is unfortunate.
->> >
->> > And I don't see where Intel are updating that cpuinfo_x86.microcode
->> > field on early load too.
->> >
->> > So, AFAICT, c->microcode would remain unset when we only do early
->> > microcode load. But that is something we should fix as a later patch.
->>
->> I don't see a problem with that staying unset.
->> apply_microcode_amd() directly reads the rev from
->> MSR_AMD64_PATCH_LEVEL so it does not depend on that being correct.
->> And smp_store_(boot)_cpu_info will also read the current rev directly
->> from the CPU to fill ->microcode.
->
-> We need to store the actual microcode revision to c->microcode for
-> /proc/cpuinfo and MCE.
+Yes, this site is down for the moment but we are working to get it back up as an informational site.  It will not be used as the primary distribution site for the ucode.  We want to direct people to the linux-firmware tree. 
 
-init_amd() will fill that field. (You could alway compile with
-CONFIG_MICROCODE_AMD=n and that field would still need filling)
-And as that will get called before smp_store_(boo)_cpu_info()
-everything should be fine.
+> -----Original Message-----
+> From: Marc Dietrich [mailto:marvin24@gmx.de]
+> Sent: Saturday, July 20, 2013 4:44 AM
+> To: Hurwitz, Sherry
+> Cc: David Woodhouse; Ben Hutchings; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] linux-firmware/AMD: add readme files for amd-ucode
+> 
+> On Friday 19 July 2013 17:43:52 Sherry Hurwitz wrote:
+> > File: README
+> > File: microcode_amd.bin.README
+> > File: microcode_amd_fam15h.bin.README
+> >
+> > Signed-off-by: Sherry Hurwitz <sherry.hurwitz@amd.com>
+> > ---
+> >  amd-ucode/README                          |   46
+> > +++++++++++++++++++++++++++++ amd-ucode/microcode_amd.bin.README
+> |
+> > 29 ++++++++++++++++++ amd-ucode/microcode_amd_fam15h.bin.README |
+> 13
+> > ++++++++
+> >  3 files changed, 88 insertions(+)
+> >  create mode 100644 amd-ucode/README
+> >  create mode 100644 amd-ucode/microcode_amd.bin.README
+> >  create mode 100644 amd-ucode/microcode_amd_fam15h.bin.README
+> >
+> > diff --git a/amd-ucode/README b/amd-ucode/README new file mode
+> 100644
+> > index 0000000..a92831d
+> > --- /dev/null
+> > +++ b/amd-ucode/README
+> > @@ -0,0 +1,46 @@
+> > +This package provides latest microcode patches for AMD processor
+> > +families >= 0x10.
+> > +
+> > +See http://www.amd64.org/support/microcode.html
+> > +for details.
+> 
+> Wasn't this URL deprecated (at least it's offline now)?
+> 
+> Marc
+> 
 
->> > So I think you should switch load_ucode_amd_ap to __apply_microcode_amd:
->> >
->> >         p = find_patch()
->> >
->> >         __apply_microcode_amd(p->mc_data);
->> >
->> > which should take care of the issue you're seeing, IMHO.
->>
->> The issue I'm seeing is that collect_cpu_info_amd_early() fills c->x86
->> but not c->x86_vendor.
->> Which breaks cpu_has_amd_erratum() and then Erratum 400 breaks the boot.
->>
->> I did not really want to switch from apply_microcode_amd() to
->> __apply_microcode_amd() because then I would lose the check if the new
->> microcode is really an upgrade.
->
-> Well, if the BSP has already loaded the pcache, there's no need for
-> the AP to parse and load the same microcode blobs file for the initrd,
-> right?
 
-loading != applying.
-
-load_ucode_amd_ap() should probably called apply_ucode_amd_ap()
-because that is primarily for applying the microcode.
-That it also loads it (but really only once thanks to ucode_loaded) is
-only because nobody else has run yet.
-
-That whole place is hairy: Because on 32bit that seems to run much
-earlier the 64 and 32 cases are very different.
-64bit can and will use pcache/apply_microcode_amd() for the non BSP
-CPUs, but on 32 bit everything directly applys the patches from initrd
-memory into the CPUs be directly calling __apply_microcode_amd(). And
-so bypassing pcache.
-
-See comment above the 32bit version of load_ucode_amd_ap():
-/*
- * On 32-bit, since AP's early load occurs before paging is turned on, we
- * cannot traverse cpu_equiv_table and pcache in kernel heap memory. So during
- * cold boot, AP will apply_ucode_in_initrd() just like the BSP. During
- * save_microcode_in_initrd_amd() BSP's patch is copied to amd_bsp_mpb, which
- * is used upon resume from suspend.
- */
-
-As written in the other email: I'm currently trying to see if I can
-kill amd_bsp_mpb...
-
->> >> * load_ucode_ap(): Quick exit for !cpu, because without load_microcode_amd()
->> >> getting called apply_microcode_amd() can't do anything. Exit, if no microcode
->> >> could be loaded.
->> >
->> > This could probably be a WARN_ON(!cpu) to catch errors...
->>
->> No, load_ucode_ap() will be called for cpu == 0.
->
-> This needs fixing IMO...
-
-Can't answer that. I have only seen that it is called for cpu == 0 and
-that there is no special case für CPU#0 in all the places that call
-load_ucode_ap()...
-
-> Btw, thanks for looking at this and asking critical questions!
->
-> --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
