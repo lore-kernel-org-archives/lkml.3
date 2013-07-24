@@ -1,93 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752299Ab3GXGsD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:48:03 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:39633 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443Ab3GXGsA (ORCPT
+	id S1752351Ab3GXGsh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:48:37 -0400
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:52518 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab3GXGsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:48:00 -0400
+	Wed, 24 Jul 2013 02:48:36 -0400
+Message-ID: <51EF78BB.8000503@monstr.eu>
+Date: Wed, 24 Jul 2013 08:48:27 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-In-Reply-To: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
-Date: Wed, 24 Jul 2013 14:47:59 +0800
-X-Google-Sender-Auth: LANZk3xUdQA34-fGtEMTrirRAhQ
-Message-ID: <CADRPPNQEpa5AzMTo=h3c=HwWMx-=SbWzO+7sfN_iNS74DLbJJw@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] DMA: Freescale: Add support for 8-channel DMA engine
-From: Li Yang <leoli@freescale.com>
-To: hongbo.zhang@freescale.com
-Cc: Vinod Koul <vinod.koul@intel.com>, djbw@fb.com,
-        Scott Wood <scottwood@freescale.com>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        devicetree@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Rich Felker <dalias@aerifal.cx>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, dholsgrove@xilinx.com,
+        Al Viro <viro@ZenIV.linux.org.uk>, microblaze-uclinux@itee.uq.edu.au,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [microblaze-linux] [RESEND PATCH] microblaze: Fix clone syscall
+References: <080727f78ba62f457320b766234f27eff248fa67.1374644031.git.michal.simek@xilinx.com> <20130724055518.GQ3249@brightrain.aerifal.cx>
+In-Reply-To: <20130724055518.GQ3249@brightrain.aerifal.cx>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2MJMCEHFAWIFLQTLKFGVU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 2:21 PM,  <hongbo.zhang@freescale.com> wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->
-> Hi Vinod, Dan, Scott and Leo, please have a look at these V2 patches.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2MJMCEHFAWIFLQTLKFGVU
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Looks fine after the rounds of review.
+Hi Rich,
 
-Acked-by: Li Yang <leoli@freescale.com>
+On 07/24/2013 07:55 AM, Rich Felker wrote:
+> On Wed, Jul 24, 2013 at 07:34:07AM +0200, Michal Simek wrote:
+>> Microblaze was assign to CLONE_BACKWARDS type where
+>> parent tid was passed via 3rd argument.
+>> Microblaze glibc is using 4th argument for it.
+>>
+>> Create new CLONE_BACKWARDS3 type where stack_size is passed
+>> via 3rd argument, parent thread id pointer via 4th,
+>> child thread id pointer via 5th and tls value as 6th
+>> argument
+>=20
+> I believe this also affects us in musl. What is the motivation for
+> making a configure option that results in there being two incompatible
+> syscall ABIs for the same arch?
+> This sounds like a really bad idea...
 
-PS: The original email was in html and rejected by lists thanks to the
-new gmail composer.  Sorry if you received duplicated emails.
+This patch fixes bug which was introduced by Al's patch where he moved
+clone implementation from microblaze folder to generic location.
+It means I am not creating two incompatible syscalls ABIs but fixing
+broken one.
 
-- Leo
+> And how was glibc successfuly using a form that mismatched the
+> existing kernel? Did nobody ever use/test it?
 
->
-> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
-> adds support this DMA engine.
->
-> V4->V5 changes:
-> - update description in the dt binding document, to make it more resonable
-> - add new patch [4/4] to eliminate a compiling warning which already exists
->   for a long time
->
-> V3->V4 changes:
-> - introduce new patch [1/3] to revise the legacy dma binding document
-> - and then add new paragraph to describe new dt node binding in [2/3]
-> - rebase to latest kernel v3.11-rc1
->
-> V2->V3 changes:
-> - edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
-> - edit text string in Kconfig and the driver files, using "elo series" to
->   mention all the current "elo*"
->
-> V1->V2 changes:
-> - removed the codes handling the register dgsr1, since it isn't used corrently
-> - renamed the DMA DT compatible to "fsl,elo3-dma"
-> - renamed the new dts files to "elo3-dma-<n>.dtsi"
->
-> Hongbo Zhang (4):
->   DMA: Freescale: revise device tree binding document
->   DMA: Freescale: Add new 8-channel DMA engine device tree nodes
->   DMA: Freescale: update driver to support 8-channel DMA engine
->   DMA: Freescale: eliminate a compiling warning
->
->  .../devicetree/bindings/powerpc/fsl/dma.txt        |  118 +++++++++++++++-----
->  arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
->  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++
->  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++
->  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
->  drivers/dma/Kconfig                                |    9 +-
->  drivers/dma/fsldma.c                               |   11 +-
->  drivers/dma/fsldma.h                               |    2 +-
->  8 files changed, 269 insertions(+), 41 deletions(-)
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
->
-> --
-> 1.7.9.5
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+We are running LTP syscall tests and there is not LTP test which
+was able to find out this mismatch in clone. That's why I haven't
+figure it out at that time and ACKed that origin patch.
+
+In my email you can see that I have also asked about tools which should b=
+e used
+for kernel API testing.
+
+> I think the broken
+> userspace software that was already failing to work due to this
+> mismatch should simply be fixed rather than adding incompatible kernel
+> ABI variants.
+
+The incompatibility is between glibc register setup and the kernel sys_cl=
+one
+register expectation which doesn't match right now.
+
+Thanks,
+Michal
+
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+------enig2MJMCEHFAWIFLQTLKFGVU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHveLsACgkQykllyylKDCFr9ACgkkKP0zb/UUQq3PspySAT30O9
++bcAoJAZr9/vcxMQSBSpIQeOed7h+kWH
+=uuar
+-----END PGP SIGNATURE-----
+
+------enig2MJMCEHFAWIFLQTLKFGVU--
