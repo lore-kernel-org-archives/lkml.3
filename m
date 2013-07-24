@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753801Ab3GXOVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:21:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45856 "EHLO
+	id S1753622Ab3GXOVq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:21:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45758 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752313Ab3GXOGo (ORCPT
+	by vger.kernel.org with ESMTP id S1752163Ab3GXOGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:44 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Wang YanQing" <udknight@gmail.com>,
-        "Stefan Seyfried" <stefan.seyfried@googlemail.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Gavin Shan" <shangw@linux.vnet.ibm.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.159641193@decadent.org.uk>
+Message-ID: <lsq.1374674565.832521875@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [55/85] Revert "serial: 8250_pci: add support for another kind of
- NetMos Technology PCI 9835 Multi-I/O Controller"
+Subject: [40/85] net/tg3: Avoid delay during MMIO access
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,35 +31,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 828c6a102b1f2b8583fadc0e779c46b31d448f0b upstream.
+commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
 
-This reverts commit 8d2f8cd424ca0b99001f3ff4f5db87c4e525f366.
+When the EEH error is the result of a fenced host bridge, MMIO accesses
+can be very slow (milliseconds) to timeout and return all 1's,
+thus causing the driver various timeout loops to take way too long and
+trigger soft-lockup warnings (in addition to taking minutes to recover).
 
-As reported by Stefan, this device already works with the parport_serial
-driver, so the 8250_pci driver should not also try to grab it as well.
+It might be worthwhile to check if for any of these cases, ffffffff is
+a valid possible value, and if not, bail early since that means the HW
+is either gone or isolated. In the meantime, checking that the PCI channel
+is offline would be workaround of the problem.
 
-Reported-by: Stefan Seyfried <stefan.seyfried@googlemail.com>
-Cc: Wang YanQing <udknight@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[bwh: Backported to 3.2: adjust context, indentation]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/tty/serial/8250_pci.c | 4 ----
- 1 file changed, 4 deletions(-)
+ drivers/net/ethernet/broadcom/tg3.c | 36 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
 
---- a/drivers/tty/serial/8250_pci.c
-+++ b/drivers/tty/serial/8250_pci.c
-@@ -4083,10 +4083,6 @@ static struct pci_device_id serial_pci_t
- 		PCI_VENDOR_ID_IBM, 0x0299,
- 		0, 0, pbn_b0_bt_2_115200 },
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -688,6 +688,9 @@ static int tg3_ape_lock(struct tg3 *tp,
+ 		status = tg3_ape_read32(tp, gnt + off);
+ 		if (status == bit)
+ 			break;
++		if (pci_channel_offline(tp->pdev))
++			break;
++
+ 		udelay(10);
+ 	}
  
--	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9835,
--		0x1000, 0x0012,
--		0, 0, pbn_b0_bt_2_115200 },
--
- 	{	PCI_VENDOR_ID_NETMOS, PCI_DEVICE_ID_NETMOS_9901,
- 		0xA000, 0x1000,
- 		0, 0, pbn_b0_1_115200 },
+@@ -1465,6 +1468,9 @@ static void tg3_wait_for_event_ack(struc
+ 	for (i = 0; i < delay_cnt; i++) {
+ 		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
+ 			break;
++		if (pci_channel_offline(tp->pdev))
++			break;
++
+ 		udelay(8);
+ 	}
+ }
+@@ -1628,6 +1634,9 @@ static int tg3_poll_fw(struct tg3 *tp)
+ 		for (i = 0; i < 200; i++) {
+ 			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
+ 				return 0;
++			if (pci_channel_offline(tp->pdev))
++				return -ENODEV;
++
+ 			udelay(100);
+ 		}
+ 		return -ENODEV;
+@@ -1638,6 +1647,15 @@ static int tg3_poll_fw(struct tg3 *tp)
+ 		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
+ 		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
+ 			break;
++		if (pci_channel_offline(tp->pdev)) {
++			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
++				tg3_flag_set(tp, NO_FWARE_REPORTED);
++				netdev_info(tp->dev, "No firmware running\n");
++			}
++
++			break;
++		}
++
+ 		udelay(10);
+ 	}
+ 
+@@ -3067,6 +3085,10 @@ static int tg3_halt_cpu(struct tg3 *tp,
+ 			tw32(offset + CPU_MODE,  CPU_MODE_HALT);
+ 			if (tr32(offset + CPU_MODE) & CPU_MODE_HALT)
+ 				break;
++			if (pci_channel_offline(tp->pdev))
++				return -EBUSY;
++			if (pci_channel_offline(tp->pdev))
++				return -EBUSY;
+ 		}
+ 
+ 		tw32(offset + CPU_STATE, 0xffffffff);
+@@ -7569,6 +7591,14 @@ static int tg3_stop_block(struct tg3 *tp
+ 	tw32_f(ofs, val);
+ 
+ 	for (i = 0; i < MAX_WAIT_CNT; i++) {
++		if (pci_channel_offline(tp->pdev)) {
++			dev_err(&tp->pdev->dev,
++				"tg3_stop_block device offline, "
++				"ofs=%lx enable_bit=%x\n",
++				ofs, enable_bit);
++			return -ENODEV;
++		}
++
+ 		udelay(100);
+ 		val = tr32(ofs);
+ 		if ((val & enable_bit) == 0)
+@@ -7592,6 +7622,13 @@ static int tg3_abort_hw(struct tg3 *tp,
+ 
+ 	tg3_disable_ints(tp);
+ 
++	if (pci_channel_offline(tp->pdev)) {
++		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
++		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
++		err = -ENODEV;
++		goto err_no_dev;
++	}
++
+ 	tp->rx_mode &= ~RX_MODE_ENABLE;
+ 	tw32_f(MAC_RX_MODE, tp->rx_mode);
+ 	udelay(10);
+@@ -7640,6 +7677,7 @@ static int tg3_abort_hw(struct tg3 *tp,
+ 	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
+ 	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
+ 
++err_no_dev:
+ 	for (i = 0; i < tp->irq_cnt; i++) {
+ 		struct tg3_napi *tnapi = &tp->napi[i];
+ 		if (tnapi->hw_status)
 
