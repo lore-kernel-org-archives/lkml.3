@@ -1,456 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3GXStS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:49:18 -0400
-Received: from blu0-omc1-s31.blu0.hotmail.com ([65.55.116.42]:41136 "EHLO
-	blu0-omc1-s31.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070Ab3GXStQ (ORCPT
+	id S1753367Ab3GXSv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:51:28 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:58118 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222Ab3GXSv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:49:16 -0400
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jul 2013 14:49:16 EDT
-X-EIP: [s/RI4+/RccEaL4PgFTBNXx9effOVv2o2]
-X-Originating-Email: [miaousami@hotmail.com]
-Message-ID: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl>
-Date: Wed, 24 Jul 2013 20:43:00 +0200
-From: =?ISO-8859-1?Q?*_SAM=CD_*?= <miaousami@hotmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 14:51:26 -0400
+Date: Wed, 24 Jul 2013 21:51:19 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Daniel Mack <zonque@gmail.com>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: v3.11-rc1 USB regressions
+Message-ID: <20130724185119.GB26943@blackmetal.musicnaut.iki.fi>
+References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi>
+ <51E4E922.2040707@gmail.com>
+ <20130716175710.GA14385@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-To: rjw@sisk.pl
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jul 2013 18:43:03.0663 (UTC) FILETIME=[A13BFFF0:01CE889D]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130716175710.GA14385@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-it seems a lot of people are complaining about the backlight pull 
-request of RC2.
+On Tue, Jul 16, 2013 at 08:57:10PM +0300, Aaro Koskinen wrote:
+> On Tue, Jul 16, 2013 at 08:33:06AM +0200, Daniel Mack wrote:
+> > > 	fe4cb0912f8e737f8e4b8b38b9e692f8062f5423
+> > > 	usb: musb: gadget: remove hcd initialization
+> > > 	(Reverting this fixes error "cdc_ether: probe of 4-1:1.0 failed
+> > > 	 with error -110" seen on the host side.)
+> > 
+> > Which role does your musb-based hardware have in this case, and which
+> > MUSB_* config symbols do you set? You should have USB_MUSB_GADGET.
+> 
+> Here are full details:
+> 
+> Kernel v3.11-rc1 and the following USB fixes:
+> 	ARM: omap2: fix musb usage for n8x0
+> 	musb: omap: Fix: pass all the resources to musb core
 
-This is to tell you how it saved my life:
-- Changing brightness from Fn keys does work
-- Writing to /sys/class/backlight/intel_backlight/brightness does work
-- Changing brightness from gnome brightness settings does work
---> It seems everything is now working (it wasn't before).
---> I appreciate your patch and I am going to be sad if you revert it :-)
+[...]
 
+> When I revert fe4cb0912f8e737f8e4b8b38b9e692f8062f5423 and
+> 8b125df5b24cfb0ec7fa1971e343cc0badc1827d, it works like before (3.10):
 
-My laptop : Asus N56VZ
-My /proc/cpuinfo: 
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1030556/+attachment/3241093/+files/ProcCpuinfo.txt
-My dmidecode is below.
+I'm now running -rc2 with above fixes and reverts (the only way to get
+USB working). I'm seeing an additional issue, the following crash happens
+always on N900 when doing "poweroff":
 
-Changing brightness from Fn keys didn't work on 3.9 and 3.10 kernels.
-I a not sure for previous versions though a patch was made for 3.2 in 
-ubuntu. See details here:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1030556
+[   33.198699] musb-hdrc musb-hdrc.0.auto: remove, state 4
+[   33.206817] usb usb1: USB disconnect, device number 1
+[   33.215332] musb-hdrc musb-hdrc.0.auto: USB bus 1 deregistered
+[   33.225128] Unable to handle kernel NULL pointer dereference at virtual address 00000028
+[   33.236083] pgd = c0914000
+[   33.241149] [00000028] *pgd=8efc8831, *pte=00000000, *ppte=00000000
+[   33.250213] Internal error: Oops: 17 [#1] ARM
+[   33.257141] Modules linked in: usb_f_ecm g_ether u_ether libcomposite configfs omapfb cfbcopyarea cfbimgblt cfbfillrect panel_acx565akm
+[   33.275146] CPU: 0 PID: 760 Comm: poweroff Not tainted 3.11.0-rc2-n9xx #1
+[   33.284881] task: cefb8680 ti: c08c6000 task.ti: c08c6000
+[   33.293151] PC is at usb_remove_hcd+0x10/0x178
+[   33.300384] LR is at musb_gadget_stop+0x184/0x1a8
+[   33.307830] pc : [<c02499d0>]    lr : [<c0261688>]    psr: 20000013
+[   33.307830] sp : c08c7da0  ip : c08c7dc0  fp : c08c7dbc
+[   33.324920] r10: 00000000  r9 : c08c6000  r8 : 20000013
+[   33.332916] r7 : cf814010  r6 : cf814fa0  r5 : cf814fa0  r4 : 00000000
+[   33.342315] r3 : c0262b80  r2 : 00000001  r1 : c0d9edd0  r0 : 00000000
+[   33.351715] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+[   33.361846] Control: 10c5387d  Table: 80914019  DAC: 00000015
+[   33.370483] Process poweroff (pid: 760, stack limit = 0xc08c6238)
+[   33.379486] Stack: (0xc08c7da0 to 0xc08c8000)
+[   33.386627] 7da0: c0262b80 00000000 00000000 cf814fa0 c08c7de4 c08c7dc0 c0261688 c02499cc
+[   33.397918] 7dc0: c0261504 cef2d200 cf814fa0 cf93fc44 c0d9d698 c0c8bb9c c08c7dfc c08c7de8
+[   33.409149] 7de0: c0262dd8 c0261510 bf03f3a4 cef2d200 c08c7e14 c08c7e00 c0263894 c0262d60
+[   33.420440] 7e00: cf814010 cf93fc10 c08c7e24 c08c7e18 c0261c80 c026380c c08c7e3c c08c7e28
+[   33.431732] 7e20: c025b2a4 c0261c78 cf93fc1c cf93fc10 c08c7e4c c08c7e40 c01e88ec c025b27c
+[   33.443023] 7e40: c08c7e74 c08c7e50 c01e55d0 c01e88d8 00000000 4321fedc 4321fedc 00070784
+[   33.454315] 7e60: fee1dead c000e848 c08c7e84 c08c7e78 c00553c4 c01e55ac c08c7fa4 c08c7e88
+[   33.465606] 7e80: c0055658 c0055394 ffffffff 00000000 00000020 cef3add0 c0c72f6c 00000000
+[   33.476898] 7ea0: c08c7ecc c08c7eb0 c017a914 c01791d0 00000001 00000001 c0c74078 00000000
+[   33.488159] 7ec0: c08c7efc c08c7ed0 c00524b8 c017a8e8 00000001 00000007 c0337640 c0c5d9e4
+[   33.499328] 7ee0: b6e5d670 c08c7fb0 00000000 b6f28000 c08c7fac c08c7f00 c0008514 c033764c
+[   33.510498] 7f00: 00000000 c08c7f04 c08c7f04 7fffffff cefc1c00 00000000 00000001 00000010
+[   33.521667] 7f20: 00000002 00000000 00000000 c08c7f00 cefc1c00 cef4da00 00000000 cefc1c00
+[   33.532836] 7f40: cf803858 cf8037d4 c00e0528 00000000 c08c7f84 c08c7f60 c00ea404 c00d1bb0
+[   33.544067] 7f60: 00000000 00000000 00000004 00000055 00000024 c000e848 c08c7fa4 c08c7f88
+[   33.555297] 7f80: c00e0698 c00ea3a4 00000001 00000004 00000055 00000058 00000000 c08c7fa8
+[   33.566528] 7fa0: c000e6a0 c00554a4 00000001 00000004 fee1dead 28121969 4321fedc 00070784
+[   33.577789] 7fc0: 00000001 00000004 00000055 00000058 00000000 00000000 b6f28000 00000000
+[   33.589080] 7fe0: b6e5d740 be88ccc0 000605f8 b6e5d758 60000010 fee1dead 8fefe821 8fefec21
+[   33.600402] Backtrace: 
+[   33.605621] [<c02499c0>] (usb_remove_hcd+0x0/0x178) from [<c0261688>] (musb_gadget_stop+0x184/0x1a8)
+[   33.620666]  r5:cf814fa0 r4:00000000
+[   33.627166] [<c0261504>] (musb_gadget_stop+0x0/0x1a8) from [<c0262dd8>] (usb_gadget_remove_driver+0x84/0xa4)
+[   33.643005]  r8:c0c8bb9c r7:c0d9d698 r6:cf93fc44 r5:cf814fa0 r4:cef2d200
+r3:c0261504
+[   33.656890] [<c0262d54>] (usb_gadget_remove_driver+0x0/0xa4) from [<c0263894>] (usb_del_gadget_udc+0x94/0xd4)
+[   33.673065]  r4:cef2d200 r3:bf03f3a4
+[   33.679718] [<c0263800>] (usb_del_gadget_udc+0x0/0xd4) from [<c0261c80>] (musb_gadget_cleanup+0x14/0x18)
+[   33.695465]  r5:cf93fc10 r4:cf814010
+[   33.702178] [<c0261c6c>] (musb_gadget_cleanup+0x0/0x18) from [<c025b2a4>] (musb_shutdown+0x34/0x94)
+[   33.717651] [<c025b270>] (musb_shutdown+0x0/0x94) from [<c01e88ec>] (platform_drv_shutdown+0x20/0x24)
+[   33.733489]  r5:cf93fc10 r4:cf93fc1c
+[   33.740325] [<c01e88cc>] (platform_drv_shutdown+0x0/0x24) from [<c01e55d0>] (device_shutdown+0x30/0x164)
+[   33.756652] [<c01e55a0>] (device_shutdown+0x0/0x164) from [<c00553c4>] (kernel_halt+0x3c/0x60)
+[   33.769042]  r8:c000e848 r7:fee1dead r6:00070784 r5:4321fedc r4:4321fedc
+r3:00000000
+[   33.783905] [<c0055388>] (kernel_halt+0x0/0x60) from [<c0055658>] (SyS_reboot+0x1c0/0x1dc)
+[   33.795959] [<c0055498>] (SyS_reboot+0x0/0x1dc) from [<c000e6a0>] (ret_fast_syscall+0x0/0x30)
+[   33.808227]  r7:00000058 r6:00000055 r5:00000004 r4:00000001
+[   33.817565] Code: e1a0c00d e92dd830 e24cb004 e24dd008 (e5903028) 
+[   33.827331] ---[ end trace 2bdce85d64d6c523 ]---
+[   33.835418] Kernel panic - not syncing: Fatal exception
 
-There are a lot of bugs opened for this:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1173107
-http://askubuntu.com/questions/156708/how-to-get-multimedia-keys-working-at-my-asus-n56vz-ubuntu-12-04-notebook 
-
-https://bugs.archlinux.org/task/35320
-
-Regards
-Sam
-
-
-# dmidecode 2.11
-# SMBIOS entry point at 0x000f04c0
-SMBIOS 2.7 present.
-23 structures occupying 1708 bytes.
-Table at 0x000EBA70.
-
-Handle 0x0000, DMI type 0, 24 bytes
-BIOS Information
-     Vendor: American Megatrends Inc.
-     Version: N56VZ.215
-     Release Date: 11/02/2012
-     Address: 0xF0000
-     Runtime Size: 64 kB
-     ROM Size: 6144 kB
-     Characteristics:
-         PCI is supported
-         BIOS is upgradeable
-         BIOS shadowing is allowed
-         Boot from CD is supported
-         Selectable boot is supported
-         BIOS ROM is socketed
-         EDD is supported
-         5.25"/1.2 MB floppy services are supported (int 13h)
-         3.5"/720 kB floppy services are supported (int 13h)
-         3.5"/2.88 MB floppy services are supported (int 13h)
-         Print screen service is supported (int 5h)
-         8042 keyboard services are supported (int 9h)
-         Serial services are supported (int 14h)
-         Printer services are supported (int 17h)
-         ACPI is supported
-         USB legacy is supported
-         Smart battery is supported
-         BIOS boot specification is supported
-         Targeted content distribution is supported
-         UEFI is supported
-     BIOS Revision: 4.6
-
-Handle 0x0001, DMI type 1, 27 bytes
-System Information
-     Manufacturer: ASUSTeK COMPUTER INC.
-     Product Name: N56VZ
-     Version: 1.0
-     Serial Number: C6N0AS306834244
-     UUID: 10017880-B5B7-81E1-3FDF-3085A9061B75
-     Wake-up Type: Power Switch
-     SKU Number: ASUS-NotebookSKU
-     Family: N
-
-Handle 0x0002, DMI type 2, 15 bytes
-Base Board Information
-     Manufacturer: ASUSTeK COMPUTER INC.
-     Product Name: N56VZ
-     Version: 1.0
-     Serial Number: BSN12345678901234567
-     Asset Tag: ATN12345678901234567
-     Features:
-         Board is a hosting board
-         Board is replaceable
-     Location In Chassis: MIDDLE
-     Chassis Handle: 0x0003
-     Type: Motherboard
-     Contained Object Handles: 0
-
-Handle 0x0003, DMI type 3, 22 bytes
-Chassis Information
-     Manufacturer: ASUSTeK COMPUTER INC.
-     Type: Notebook
-     Lock: Not Present
-     Version: 1.0
-     Serial Number: C6N0AS306834244
-     Asset Tag: No Asset Tag
-     Boot-up State: Safe
-     Power Supply State: Safe
-     Thermal State: Safe
-     Security Status: None
-     OEM Information: 0x00000000
-     Height: Unspecified
-     Number Of Power Cords: 1
-     Contained Elements: 0
-     SKU Number: To be filled by O.E.M.
-
-Handle 0x0004, DMI type 10, 26 bytes
-On Board Device 1 Information
-     Type: Video
-     Status: Enabled
-     Description:  VGA
-On Board Device 2 Information
-     Type: Ethernet
-     Status: Enabled
-     Description:  GLAN
-On Board Device 3 Information
-     Type: Ethernet
-     Status: Enabled
-     Description:  WLAN
-On Board Device 4 Information
-     Type: Sound
-     Status: Enabled
-     Description:  Audio CODEC
-On Board Device 5 Information
-     Type: SATA Controller
-     Status: Enabled
-     Description:  SATA Controller
-On Board Device 6 Information
-     Type: Other
-     Status: Enabled
-     Description:  USB 2.0 Controller
-On Board Device 7 Information
-     Type: Other
-     Status: Enabled
-     Description:  USB 3.0 Controller
-On Board Device 8 Information
-     Type: Other
-     Status: Enabled
-     Description:  SMBus Controller
-On Board Device 9 Information
-     Type: Other
-     Status: Enabled
-     Description:  Card Reader
-On Board Device 10 Information
-     Type: Other
-     Status: Enabled
-     Description:  Cmos Camera
-On Board Device 11 Information
-     Type: Other
-     Status: Enabled
-     Description:  Bluetooth
-
-Handle 0x0005, DMI type 11, 5 bytes
-OEM Strings
-     String 1: 6kfb9jsNVeN50
-     String 2: I76yifUckyZ2n
-     String 3: W0-kvTpaXZUpn
-     String 4: 90N9IC442L1875VL355Y
-     String 5:
-     String 6:
-     String 7:
-     String 8:
-     String 9:
-     String 10:
-
-Handle 0x0006, DMI type 12, 5 bytes
-System Configuration Options
-     Option 1: DSN:            W54S4QJE
-     Option 2: DSN:57B1609A5803
-     Option 3: DSN:3085A9061B75
-     Option 4: SMI:00B2CA
-
-Handle 0x0007, DMI type 32, 20 bytes
-System Boot Information
-     Status: No errors detected
-
-Handle 0x0008, DMI type 7, 19 bytes
-Cache Information
-     Socket Designation: CPU Internal L2
-     Configuration: Enabled, Not Socketed, Level 2
-     Operational Mode: Write Through
-     Location: Internal
-     Installed Size: 1024 kB
-     Maximum Size: 1024 kB
-     Supported SRAM Types:
-         Unknown
-     Installed SRAM Type: Unknown
-     Speed: Unknown
-     Error Correction Type: Multi-bit ECC
-     System Type: Unified
-     Associativity: 8-way Set-associative
-
-Handle 0x0009, DMI type 7, 19 bytes
-Cache Information
-     Socket Designation: CPU Internal L1
-     Configuration: Enabled, Not Socketed, Level 1
-     Operational Mode: Write Through
-     Location: Internal
-     Installed Size: 256 kB
-     Maximum Size: 256 kB
-     Supported SRAM Types:
-         Unknown
-     Installed SRAM Type: Unknown
-     Speed: Unknown
-     Error Correction Type: Parity
-     System Type: Data
-     Associativity: 8-way Set-associative
-
-Handle 0x000A, DMI type 7, 19 bytes
-Cache Information
-     Socket Designation: CPU Internal L3
-     Configuration: Enabled, Not Socketed, Level 3
-     Operational Mode: Write Back
-     Location: Internal
-     Installed Size: 6144 kB
-     Maximum Size: 6144 kB
-     Supported SRAM Types:
-         Unknown
-     Installed SRAM Type: Unknown
-     Speed: Unknown
-     Error Correction Type: Multi-bit ECC
-     System Type: Unified
-     Associativity: 12-way Set-associative
-
-Handle 0x000B, DMI type 16, 23 bytes
-Physical Memory Array
-     Location: System Board Or Motherboard
-     Use: System Memory
-     Error Correction Type: None
-     Maximum Capacity: 32 GB
-     Error Information Handle: Not Provided
-     Number Of Devices: 4
-
-Handle 0x000C, DMI type 4, 42 bytes
-Processor Information
-     Socket Designation: SOCKET 0
-     Type: Central Processor
-     Family: Core i7
-     Manufacturer: Intel(R) Corporation
-     ID: A9 06 03 00 FF FB EB BF
-     Signature: Type 0, Family 6, Model 58, Stepping 9
-     Flags:
-         FPU (Floating-point unit on-chip)
-         VME (Virtual mode extension)
-         DE (Debugging extension)
-         PSE (Page size extension)
-         TSC (Time stamp counter)
-         MSR (Model specific registers)
-         PAE (Physical address extension)
-         MCE (Machine check exception)
-         CX8 (CMPXCHG8 instruction supported)
-         APIC (On-chip APIC hardware supported)
-         SEP (Fast system call)
-         MTRR (Memory type range registers)
-         PGE (Page global enable)
-         MCA (Machine check architecture)
-         CMOV (Conditional move instruction supported)
-         PAT (Page attribute table)
-         PSE-36 (36-bit page size extension)
-         CLFSH (CLFLUSH instruction supported)
-         DS (Debug store)
-         ACPI (ACPI supported)
-         MMX (MMX technology supported)
-         FXSR (FXSAVE and FXSTOR instructions supported)
-         SSE (Streaming SIMD extensions)
-         SSE2 (Streaming SIMD extensions 2)
-         SS (Self-snoop)
-         HTT (Multi-threading)
-         TM (Thermal monitor supported)
-         PBE (Pending break enabled)
-     Version: Intel(R) Core(TM) i7-3610QM CPU @ 2.30GHz
-     Voltage: 2.9 V
-     External Clock: 100 MHz
-     Max Speed: 3800 MHz
-     Current Speed: 2300 MHz
-     Status: Populated, Enabled
-     Upgrade: Socket rPGA988B
-     L1 Cache Handle: 0x0009
-     L2 Cache Handle: 0x0008
-     L3 Cache Handle: 0x000A
-     Serial Number: Not Specified
-     Asset Tag: Fill By OEM
-     Part Number: Fill By OEM
-     Core Count: 4
-     Core Enabled: 4
-     Thread Count: 8
-     Characteristics:
-         64-bit capable
-
-Handle 0x000D, DMI type 17, 34 bytes
-Memory Device
-     Array Handle: 0x000B
-     Error Information Handle: Not Provided
-     Total Width: 64 bits
-     Data Width: 64 bits
-     Size: 2048 MB
-     Form Factor: SODIMM
-     Set: None
-     Locator: ChannelA-DIMM0
-     Bank Locator: BANK 0
-     Type: DDR3
-     Type Detail: Synchronous
-     Speed: 1600 MHz
-     Manufacturer: Hynix/Hyundai
-     Serial Number: 196F857E
-     Asset Tag: 9876543210
-     Part Number: HMT325S6CFR8C-PB
-     Rank: 1
-     Configured Clock Speed: 1600 MHz
-
-Handle 0x000E, DMI type 20, 35 bytes
-Memory Device Mapped Address
-     Starting Address: 0x00000000000
-     Ending Address: 0x0007FFFFFFF
-     Range Size: 2 GB
-     Physical Device Handle: 0x000D
-     Memory Array Mapped Address Handle: 0x0013
-     Partition Row Position: Unknown
-     Interleave Position: 1
-     Interleaved Data Depth: 2
-
-Handle 0x000F, DMI type 17, 34 bytes
-Memory Device
-     Array Handle: 0x000B
-     Error Information Handle: Not Provided
-     Total Width: Unknown
-     Data Width: Unknown
-     Size: No Module Installed
-     Form Factor: DIMM
-     Set: None
-     Locator: ChannelA-DIMM1
-     Bank Locator: BANK 1
-     Type: Unknown
-     Type Detail: None
-     Speed: Unknown
-     Manufacturer: [Empty]
-     Serial Number: [Empty]
-     Asset Tag: 9876543210
-     Part Number: [Empty]
-     Rank: Unknown
-     Configured Clock Speed: Unknown
-
-Handle 0x0010, DMI type 17, 34 bytes
-Memory Device
-     Array Handle: 0x000B
-     Error Information Handle: Not Provided
-     Total Width: 64 bits
-     Data Width: 64 bits
-     Size: 4096 MB
-     Form Factor: SODIMM
-     Set: None
-     Locator: ChannelB-DIMM0
-     Bank Locator: BANK 2
-     Type: DDR3
-     Type Detail: Synchronous
-     Speed: 1600 MHz
-     Manufacturer: Hynix/Hyundai
-     Serial Number: 0D649EC1
-     Asset Tag: 9876543210
-     Part Number: HMT351S6CFR8C-PB
-     Rank: 2
-     Configured Clock Speed: 1600 MHz
-
-Handle 0x0011, DMI type 20, 35 bytes
-Memory Device Mapped Address
-     Starting Address: 0x00080000000
-     Ending Address: 0x0017FFFFFFF
-     Range Size: 4 GB
-     Physical Device Handle: 0x0010
-     Memory Array Mapped Address Handle: 0x0013
-     Partition Row Position: Unknown
-     Interleave Position: 2
-     Interleaved Data Depth: 2
-
-Handle 0x0012, DMI type 17, 34 bytes
-Memory Device
-     Array Handle: 0x000B
-     Error Information Handle: Not Provided
-     Total Width: Unknown
-     Data Width: Unknown
-     Size: No Module Installed
-     Form Factor: DIMM
-     Set: None
-     Locator: ChannelB-DIMM1
-     Bank Locator: BANK 3
-     Type: Unknown
-     Type Detail: None
-     Speed: Unknown
-     Manufacturer: [Empty]
-     Serial Number: [Empty]
-     Asset Tag: 9876543210
-     Part Number: [Empty]
-     Rank: Unknown
-     Configured Clock Speed: Unknown
-
-Handle 0x0013, DMI type 19, 31 bytes
-Memory Array Mapped Address
-     Starting Address: 0x00000000000
-     Ending Address: 0x0017FFFFFFF
-     Range Size: 6 GB
-     Physical Array Handle: 0x000B
-     Partition Width: 4
-
-Handle 0x0018, DMI type 131, 64 bytes
-OEM-specific Type
-     Header and Data:
-         83 40 18 00 31 00 00 00 00 00 00 00 00 00 00 00
-         F8 00 59 1E 00 00 00 00 01 20 00 00 00 00 08 00
-         B8 05 0A 00 00 00 00 00 C8 00 FF FF 00 00 00 00
-         00 00 00 00 66 00 00 00 76 50 72 6F 00 00 00 00
-
-Handle 0x0019, DMI type 13, 22 bytes
-BIOS Language Information
-     Language Description Format: Long
-     Installable Languages: 1
-         en|US|iso8859-1
-     Currently Installed Language: en|US|iso8859-1
-
-Handle 0x001A, DMI type 127, 4 bytes
-End Of Table
-
+A.
