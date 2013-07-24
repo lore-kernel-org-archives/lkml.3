@@ -1,68 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049Ab3GXPYQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:24:16 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:64800 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab3GXPYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:24:15 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-23-51eff19d1116
-From: Tomasz Figa <t.figa@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v3 07/22] ARM: dts: Remove '0x's from Exynos4210 DTSI file
-Date: Wed, 24 Jul 2013 17:24:12 +0200
-Message-id: <5075798.2aqxtybhC8@amdc1227>
-Organization: Samsung Poland R&D Center
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-reply-to: <20130724150937.GO26801@laptop>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
- <20130724150937.GO26801@laptop>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xq7pzP74PNNgzh9Pi76Rj7Ba9C66y
-	Wdz/epTRYk3LWxaLTY+vsVpc3jWHzWLG+X1MDuwev39NYvS4c20Pm8fmJfUefVtWMXp8X7qG
-	3ePzJrkAtigum5TUnMyy1CJ9uwSujAO3H7MWHGGrmPz0NXsD4zeWLkZODgkBE4mGh4uYIGwx
-	iQv31rOB2EICSxklPt1O7GLkArK7mCQWnj4P1sAmoCbxueERUBEHh4iAisS5N+YgYWaBfYwS
-	r1viQGxhAT+JB8tWM4PYLAKqErN3L2AFsXkFNCXePXvGDmLzC6hLvNv2lAlkjKiAm8SEj/kg
-	YU4BHYln17YxQaxdyCgxb+osJoheQYkfk++xQOySl9i3fyorhK0lsX7ncaYJjIKzkJTNQlI2
-	C0nZAkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghMfB1B+PSY1aHGAU4GJV4eAtnvQsU
-	Yk0sK67MPcQowcGsJML79sH7QCHelMTKqtSi/Pii0pzU4kOMTBycUg2MK1/K7VzDxlOoouWt
-	W1sVenV7z9ktMl9fJibWSqg7PLxowvCuLz9j/fu2+cYKOa26vQXzj312zF37tTNKcd1Tfmmp
-	T9dn8UQa6M25vbpWOqVhgZ/Fz+rbpiXPv+RIZpzxPz0vcK9rQLQFZ/I9vvnh7/ckc582uc22
-	8PdP6fNN3W+W7FBLNDquxFKckWioxVxUnAgARZIqY18CAAA=
+	id S1753438Ab3GXPZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:25:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23254 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751638Ab3GXPZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 11:25:45 -0400
+Message-ID: <1374679519.1675.1.camel@ul30vt.home>
+Subject: Re: [PATCH] intel-iommu: Fix leaks in pagetable freeing
+From: Alex Williamson <alex.williamson@redhat.com>
+To: dwmw2@infradead.org
+Cc: iommu@lists.linux-foundation.org, ddutile@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Date: Wed, 24 Jul 2013 09:25:19 -0600
+In-Reply-To: <20130615161614.2107.41044.stgit@bling.home>
+References: <20130615161614.2107.41044.stgit@bling.home>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 24 of July 2013 16:09:37 Lee Jones wrote:
-> ... for the sake of consistency and assumed convention.
-> 
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: linux-samsung-soc@vger.kernel.org
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> 
-> diff --git a/arch/arm/boot/dts/exynos4210.dtsi
-> b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
-> --- a/arch/arm/boot/dts/exynos4210.dtsi
-> +++ b/arch/arm/boot/dts/exynos4210.dtsi
-> @@ -72,7 +72,7 @@
->                 };
->         };
-> 
-> -       clock: clock-controller@0x10030000 {
-> +       clock: clock-controller@10030000 {
->                 compatible = "samsung,exynos4210-clock";
->                 reg = <0x10030000 0x20000>;
->                 #clock-cells = <1>;
 
-Acked-by: Tomasz Figa <t.figa@samsung.com>
+This is a pretty massive memory leak, anyone @Intel care?  Thanks,
 
-Best regards,
-Tomasz
+Alex
+
+On Sat, 2013-06-15 at 10:27 -0600, Alex Williamson wrote:
+> At best the current code only seems to free the leaf pagetables and
+> the root.  If you're unlucky enough to have a large gap (like any
+> QEMU guest with more than 3G of memory), only the first chunk of leaf
+> pagetables are freed (plus the root).  This is a massive memory leak.
+> This patch re-writes the pagetable freeing function to use a
+> recursive algorithm and manages to not only free all the pagetables,
+> but does it without any apparent performance loss versus the current
+> broken version.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> Cc: stable@vger.kernel.org
+> ---
+> 
+> Suggesting for stable, would like to see some soak time, but it's
+> hard to imagine this being any worse than the current code.
+> 
+> This likely also affects device domains, but the current code does
+> ok at freeing individual leaf pagetables and driver domains would
+> only get a full pruning if the driver or device is removed.
+> 
+> Some test programs:
+> https://github.com/awilliam/tests/blob/master/kvm-huge-guest-test.c
+> https://github.com/awilliam/tests/blob/master/vfio-huge-guest-test.c
+> 
+> Both of these simulate a large guest on a small host system.  They
+> mmap 4G of memory and map it across a large address space just like
+> QEMU would (aside from re-using the same mmap across multiple IOVAs).
+> On existing code the vfio version (w/o a KVM memory slot limit) will
+> leak over 1G of pagetables per run.
+> 
+>  drivers/iommu/intel-iommu.c |   72 +++++++++++++++++++++----------------------
+>  1 file changed, 35 insertions(+), 37 deletions(-)
+> 
+> diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+> index eec0d3e..15e9b57 100644
+> --- a/drivers/iommu/intel-iommu.c
+> +++ b/drivers/iommu/intel-iommu.c
+> @@ -890,56 +890,54 @@ static int dma_pte_clear_range(struct dmar_domain *domain,
+>  	return order;
+>  }
+>  
+> +static void dma_pte_free_level(struct dmar_domain *domain, int level,
+> +			       struct dma_pte *pte, unsigned long pfn,
+> +			       unsigned long start_pfn, unsigned long last_pfn)
+> +{
+> +	pfn = max(start_pfn, pfn);
+> +	pte = &pte[pfn_level_offset(pfn, level)];
+> +
+> +	do {
+> +		unsigned long level_pfn;
+> +		struct dma_pte *level_pte;
+> +
+> +		if (!dma_pte_present(pte) || dma_pte_superpage(pte))
+> +			goto next;
+> +
+> +		level_pfn = pfn & level_mask(level - 1);
+> +		level_pte = phys_to_virt(dma_pte_addr(pte));
+> +
+> +		if (level > 2)
+> +			dma_pte_free_level(domain, level - 1, level_pte,
+> +					   level_pfn, start_pfn, last_pfn);
+> +
+> +		/* If range covers entire pagetable, free it */
+> +		if (!(start_pfn > level_pfn ||
+> +		      last_pfn < level_pfn + level_size(level))) {
+> +			dma_clear_pte(pte);
+> +			domain_flush_cache(domain, pte, sizeof(*pte));
+> +			free_pgtable_page(level_pte);
+> +		}
+> +next:
+> +		pfn += level_size(level);
+> +	} while (!first_pte_in_page(++pte) && pfn <= last_pfn);
+> +}
+> +
+>  /* free page table pages. last level pte should already be cleared */
+>  static void dma_pte_free_pagetable(struct dmar_domain *domain,
+>  				   unsigned long start_pfn,
+>  				   unsigned long last_pfn)
+>  {
+>  	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+> -	struct dma_pte *first_pte, *pte;
+> -	int total = agaw_to_level(domain->agaw);
+> -	int level;
+> -	unsigned long tmp;
+> -	int large_page = 2;
+>  
+>  	BUG_ON(addr_width < BITS_PER_LONG && start_pfn >> addr_width);
+>  	BUG_ON(addr_width < BITS_PER_LONG && last_pfn >> addr_width);
+>  	BUG_ON(start_pfn > last_pfn);
+>  
+>  	/* We don't need lock here; nobody else touches the iova range */
+> -	level = 2;
+> -	while (level <= total) {
+> -		tmp = align_to_level(start_pfn, level);
+> -
+> -		/* If we can't even clear one PTE at this level, we're done */
+> -		if (tmp + level_size(level) - 1 > last_pfn)
+> -			return;
+> -
+> -		do {
+> -			large_page = level;
+> -			first_pte = pte = dma_pfn_level_pte(domain, tmp, level, &large_page);
+> -			if (large_page > level)
+> -				level = large_page + 1;
+> -			if (!pte) {
+> -				tmp = align_to_level(tmp + 1, level + 1);
+> -				continue;
+> -			}
+> -			do {
+> -				if (dma_pte_present(pte)) {
+> -					free_pgtable_page(phys_to_virt(dma_pte_addr(pte)));
+> -					dma_clear_pte(pte);
+> -				}
+> -				pte++;
+> -				tmp += level_size(level);
+> -			} while (!first_pte_in_page(pte) &&
+> -				 tmp + level_size(level) - 1 <= last_pfn);
+> +	dma_pte_free_level(domain, agaw_to_level(domain->agaw),
+> +			   domain->pgd, 0, start_pfn, last_pfn);
+>  
+> -			domain_flush_cache(domain, first_pte,
+> -					   (void *)pte - (void *)first_pte);
+> -			
+> -		} while (tmp && tmp + level_size(level) - 1 <= last_pfn);
+> -		level++;
+> -	}
+>  	/* free pgd */
+>  	if (start_pfn == 0 && last_pfn == DOMAIN_MAX_PFN(domain->gaw)) {
+>  		free_pgtable_page(domain->pgd);
+> 
+
+
 
