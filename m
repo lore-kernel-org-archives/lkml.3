@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab3GXOYe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:24:34 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45712 "EHLO
+	id S1753593Ab3GXOYc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:24:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45753 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751863Ab3GXOGk (ORCPT
+	by vger.kernel.org with ESMTP id S1752066Ab3GXOGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "H. Peter Anvin" <hpa@zytor.com>,
-        "Tejun Heo" <tj@kernel.org>
+CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Jiri Olsa" <jolsa@redhat.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.992671576@decadent.org.uk>
+Message-ID: <lsq.1374674565.440409753@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [15/85] libata: skip SRST for all SIMG [34]7x port-multipliers
+Subject: [76/85] perf: Fix perf_lock_task_context() vs RCU
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,85 +32,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 7a87718d92760fc688628ad6a430643dafa16f1f upstream.
+commit 058ebd0eba3aff16b144eabf4510ed9510e1416e upstream.
 
-For some reason, a lot of port-multipliers have issues with softreset.
-SIMG [34]7x series port-multipliers have been quite erratic in this
-regard.  I recall that it was better with some firmware revisions and
-the current list of quirks worked fine for a while.  I think it got
-worse with later firmwares or maybe my test coverage wasn't good
-enough.  Anyways, HPA is reporting that his 3726 setup suffers SRST
-failures and then the PMP gets confused and fails to probe the last
-port.
+Jiri managed to trigger this warning:
 
-The hope was that we try to stick to the standard as much as possible
-and soonish the PMPs and their firmwares will improve in quality, so
-the quirk list was kept to minimum.  Well, it seems like that's never
-gonna happen.
+ [] ======================================================
+ [] [ INFO: possible circular locking dependency detected ]
+ [] 3.10.0+ #228 Tainted: G        W
+ [] -------------------------------------------------------
+ [] p/6613 is trying to acquire lock:
+ []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
+ []
+ [] but task is already holding lock:
+ []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
+ []
+ [] which lock already depends on the new lock.
+ []
+ [] the existing dependency chain (in reverse order) is:
+ []
+ [] -> #4 (&ctx->lock){-.-...}:
+ [] -> #3 (&rq->lock){-.-.-.}:
+ [] -> #2 (&p->pi_lock){-.-.-.}:
+ [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
+ [] -> #0 (rcu_node_0){..-...}:
 
-Let's set NO_SRST for all [34]7x PMPs so that whatever remaining
-userbase of the device suffer the least.  Maybe we should do the same
-for 57xx's but unfortunately I don't have any device left to test and
-I'm not even sure 57xx's have ever been made widely available, so
-let's leave those alone for now.
+Paul was quick to explain that due to preemptible RCU we cannot call
+rcu_read_unlock() while holding scheduler (or nested) locks when part
+of the read side critical section was preemptible.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "H. Peter Anvin" <hpa@zytor.com>
+Therefore solve it by making the entire RCU read side non-preemptible.
+
+Also pull out the retry from under the non-preempt to play nice with RT.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libata-pmp.c | 33 +++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 16 deletions(-)
+ kernel/events/core.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -389,9 +389,13 @@ static void sata_pmp_quirks(struct ata_p
- 			/* link reports offline after LPM */
- 			link->flags |= ATA_LFLAG_NO_LPM;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -714,8 +714,18 @@ perf_lock_task_context(struct task_struc
+ {
+ 	struct perf_event_context *ctx;
  
--			/* Class code report is unreliable. */
-+			/*
-+			 * Class code report is unreliable and SRST times
-+			 * out under certain configurations.
-+			 */
- 			if (link->pmp < 5)
--				link->flags |= ATA_LFLAG_ASSUME_ATA;
-+				link->flags |= ATA_LFLAG_NO_SRST |
-+					       ATA_LFLAG_ASSUME_ATA;
- 
- 			/* port 5 is for SEMB device and it doesn't like SRST */
- 			if (link->pmp == 5)
-@@ -399,20 +403,17 @@ static void sata_pmp_quirks(struct ata_p
- 					       ATA_LFLAG_ASSUME_SEMB;
+-	rcu_read_lock();
+ retry:
++	/*
++	 * One of the few rules of preemptible RCU is that one cannot do
++	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
++	 * part of the read side critical section was preemptible -- see
++	 * rcu_read_unlock_special().
++	 *
++	 * Since ctx->lock nests under rq->lock we must ensure the entire read
++	 * side critical section is non-preemptible.
++	 */
++	preempt_disable();
++	rcu_read_lock();
+ 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
+ 	if (ctx) {
+ 		/*
+@@ -731,6 +741,8 @@ retry:
+ 		raw_spin_lock_irqsave(&ctx->lock, *flags);
+ 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
+ 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
++			rcu_read_unlock();
++			preempt_enable();
+ 			goto retry;
  		}
- 	} else if (vendor == 0x1095 && devid == 0x4723) {
--		/* sil4723 quirks */
--		ata_for_each_link(link, ap, EDGE) {
--			/* link reports offline after LPM */
--			link->flags |= ATA_LFLAG_NO_LPM;
--
--			/* class code report is unreliable */
--			if (link->pmp < 2)
--				link->flags |= ATA_LFLAG_ASSUME_ATA;
--
--			/* the config device at port 2 locks up on SRST */
--			if (link->pmp == 2)
--				link->flags |= ATA_LFLAG_NO_SRST |
--					       ATA_LFLAG_ASSUME_ATA;
--		}
-+		/*
-+		 * sil4723 quirks
-+		 *
-+		 * Link reports offline after LPM.  Class code report is
-+		 * unreliable.  SIMG PMPs never got SRST reliable and the
-+		 * config device at port 2 locks up on SRST.
-+		 */
-+		ata_for_each_link(link, ap, EDGE)
-+			link->flags |= ATA_LFLAG_NO_LPM |
-+				       ATA_LFLAG_NO_SRST |
-+				       ATA_LFLAG_ASSUME_ATA;
- 	} else if (vendor == 0x1095 && devid == 0x4726) {
- 		/* sil4726 quirks */
- 		ata_for_each_link(link, ap, EDGE) {
+ 
+@@ -740,6 +752,7 @@ retry:
+ 		}
+ 	}
+ 	rcu_read_unlock();
++	preempt_enable();
+ 	return ctx;
+ }
+ 
 
