@@ -1,99 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751968Ab3GXNSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:18:47 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:43699 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750795Ab3GXNSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:18:43 -0400
-Message-ID: <51EFD3D5.2070506@ti.com>
-Date: Wed, 24 Jul 2013 16:17:09 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
+	id S1751193Ab3GXNXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:23:25 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:41888 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3GXNXX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 09:23:23 -0400
+X-IronPort-AV: E=Sophos;i="4.89,735,1367971200"; 
+   d="scan'208";a="37090576"
+Message-ID: <51EFD536.8070209@citrix.com>
+Date: Wed, 24 Jul 2013 09:23:02 -0400
+From: Ben Guthro <Benjamin.Guthro@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Kevin Hilman <khilman@linaro.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, <linux-omap@vger.kernel.org>,
-        Ruslan Bilovol <ruslan.bilovol@ti.com>, <linux-kernel@vger.kernel.org>,
-        Naga Venkata Srikanth V <vnv.srikanth@samsung.com>,
-        Oleg_Kosheliev <oleg.kosheliev@ti.com>
-Subject: Re: [PATCH 1/4] mfd: twl6030-irq: migrate to IRQ threaded handler
-References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com> <1374595624-15054-2-git-send-email-grygorii.strashko@ti.com> <20130724104945.GH26801@laptop> <51EFC072.9070702@ti.com> <20130724125011.GM26801@laptop>
-In-Reply-To: <20130724125011.GM26801@laptop>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: "Moore, Robert" <robert.moore@intel.com>
+CC: "Zheng, Lv" <lv.zheng@intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
+ hardware sleep path
+References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com> <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com> <1AE640813FDE7649BE1B193DEA596E880241B363@SHSMSX101.ccr.corp.intel.com> <51D2BCB7.5040105@citrix.com> <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com> <51EFC1FE.5000609@citrix.com> <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 03:50 PM, Lee Jones wrote:
->>>> +	if (ret) {
->>>> +		pr_warn("%s: I2C error %d reading PIH ISR\n", __func__, ret);
->>>
->>> Does the user really care which function we're returning from.
->>>
->>> Would it be better if you replace '__func__' with the device name?
+On 07/24/2013 09:18 AM, Moore, Robert wrote:
+> I have not looked closely at this, but we typically do things like this in ACPICA so that they only need to be implemented once to support all of the various acpica-hosted operating systems - linux, solaris, hp-ux, apple, freebsd, etc. -- even if they could be implemented "cleaner" in some way on any given host.
+
+Even when the resulting "simplification" results in reduced functionality?
+
+Maybe I am misunderstanding the suggestion...but it sounded like it was
+basically to mimic the traditional behavior, and mask out the reduced
+hardware capabilities on these system types.
+
+It seems to me that if the system supports the reduced hardware ACPI
+sleep, you would want to make use of it...
+
+
+
+> 
+> 
+> 
+>> -----Original Message-----
+>> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+>> Sent: Wednesday, July 24, 2013 5:01 AM
+>> To: Zheng, Lv
+>> Cc: Konrad Rzeszutek Wilk; Jan Beulich; Rafael J . Wysocki; linux-
+>> kernel@vger.kernel.org; linux-acpi@vger.kernel.org; xen-
+>> devel@lists.xen.org; Moore, Robert
+>> Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+>> reduced hardware sleep path
 >>
->> This module hasn't been converted to the device yet:(
->> (I mean "interrupt-controller").
->> But I'm thinking about it as the next step :) and then It will be
->> absolutely reasonable change to replace pr_*() with dev_*() and
->> remove __func__.
->
-> I don't mean anything as compicated as that for 'this' patch. (NB: See my
-> comment in subsequent patches about creating a 'struct twl6030' where
-> you could store 'struct dev'.) In this patch I mean litterally
-> replacing "%s: ", with "tw16030_irq: ". Simples. :)
-
-Ok. I understand it now - will redo.
-
-
->
->> Now, the pointer on "dev" (in our case "twl-core" device) isn't passed
->> in IRQ handler, so It can't be used here.
 >>
->> Of course it can be done, but would it make code better?
->> My opinion - no.
->
->>>> +	if (sts.bytes[2] & 0x10)
->>>> +		sts.bytes[2] |= 0x08;
+>>
+>> On 07/24/2013 02:24 AM, Zheng, Lv wrote:
+>>> Hi,
+>>>
+>>> Sorry for the delayed response.
+>>>
+>>>> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+>>>> Sent: Tuesday, July 02, 2013 7:43 PM
 >>>>
->>>> -		for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
->>>> -			local_irq_disable();
->>>> -			if (sts.int_sts & 0x1) {
->>>> -				int module_irq = twl6030_irq_base +
->>>> +	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
->>>> +		if (sts.int_sts & 0x1) {
->>>
->>> I'm a little confused by this. Where does sts.int_sts come from?
->>
->> See my comment above, pls
->
-> Okay, that's my fault for not understanding unions properly as I've
-> never had to use one, but now I do, thanks.
->
->>>> @@ -437,10 +386,13 @@ int twl6030_exit_irq(void)
->>>>   {
->>>>   	unregister_pm_notifier(&twl6030_irq_pm_notifier_block);
 >>>>
->>>> -	if (twl6030_irq_base) {
->>>> +	if (!twl6030_irq_base) {
->>>>   		pr_err("twl6030: can't yet clean up IRQs?\n");
->>>>   		return -ENOSYS;
->>>>   	}
->>>> +
->>>> +	free_irq(twl_irq, NULL);
->>>> +
+>>>> On 07/02/2013 02:19 AM, Zheng, Lv wrote:
+>>>>> Thanks for your efforts!
+>>>>>
+>>>>> I wonder if it is possible to remove the argument - "u8 extended"
+>>>>> and convert
+>>>> "pm1a_control, pm1b_control" into some u8 values that are equivalent
+>>>> to "acpi_gbl_sleep_type_a, acpi_gbl_sleep_type_b" in the legacy sleep
+>> path.
+>>>>> It can also simplify Xen codes.
+>>>>
+>>>> Thanks for your time to review this.
+>>>>
+>>>> I'm not sure that this simplifies things. I think that, in fact, it
+>>>> would make them quite a bit more complicated, but perhaps I
+>> misunderstand.
+>>>>
+>>>> Is it not preferred to use the reduced hardware sleep, over the old
+>> method?
+>>>> While these register definitions may be equivalent below, doing the
+>>>> translation in linux, only to translate them back again at a lower
+>> layer seems unnecessary.
+>>>>
 >>>
->>> If request_threaded_irq() fails, isn't there a chance that
->>> twl6030_irq_base will be allocated, but twl_irq will still be
->>> undefined?
+>>> Yes, it would require tboot layer to be able to be aware of how such
+>> fields locate in the PM registers.
+>>> So I think you can pass the register address of the field and the field
+>> name/value pair to the tboot, this could simplify things, no lower layer
+>> effort will be needed.
+>>> Please don't worry about the case that a register field could be split
+>> into PM1a and PM1b, it could be a hardware design issue.
+>>> IMO, one field should always be in one register, either PM1a or PM1b.
+>>> Or there could be hardware issues cannot be addressed by the ACPICA
+>> architecture (something like natural atomicity).
+>>> But maybe I'm wrong.
 >>
->> Yes. A mess is here (historically:), thanks. Will use twl_irq
->> instead of twl6030_irq_base (I did it, actually, in patch [3]:).
->
-> Yes, I saw it. It would be better if you still fixed up this patch to
-> be correct though. Even if you break it out and add it as [PATCH 1/x].
->
-ok
-
+>> Again, I don't think this simplifies things, but complicates them
+>> unnecessarily. Converting the reduced hardware sleep to the legacy sleep
+>> seems like it would be an unnecessary layer of translation.
+>>
+>> The interface now simply passes the information from ACPICA down to the
+>> lower layers (xen, tboot) - and then lets them worry about the reduced
+>> hardware implementation.
+>>
+>> FWIW, xen has shipped with this implemetation, and enterprise kernels
+>> using the traditional xen kernel (like Suse) are making use of it.
+>>
+>> It may benefit tboot, in this case, but not Xen.
+>>
+>> I personally see it as an undesirable complication.
+>>
+>> Best regards,
+>> Ben
+>>
+>>>
+>>> Thanks and best regards
+>>> -Lv
+>>>
+>>>> The hypervisor knows how to deal with both the reduced hardware sleep
+>>>> as well as the legacy sleep path - it merely need to distinguish
+>>>> these two paths, when performing the hypercall.
+>>>>
+>>>> Since there are two paths through the higher level ACPICA code - that
+>>>> in hwsleep.c, and hwesleep.c - there needs to be some distinction
+>>>> between the two paths, when calling through to the lower level
+>>>> acpi_os_prepare_sleep() call.
+>>>>
+>>>> An alternate method would be to create another interface named
+>>>> acpi_os_prepare_esleep() which would do the equivalent of this patch
+>>>> series, with an "extended" parameter hidden from upper level
+>> interfaces.
+>>>>
+>>>> This, however, would also add another function to
+>>>> include/acpi/acpiosxf.h - which, I thought was undesirable, in the
+>>>> impression that I got from Bob Moore, and Rafael Wysocki (though,
+>>>> please correct me on this point, if I have
+>>>> misunderstood)
+>>>>
+>>>> Best Regards
+>>>>
+>>>> Ben
+>>>>
+>>>>>
+>>>>> As in ACPI specification, the bit definitions between the legacy
+>>>>> sleep registers
+>>>> and the extended sleep registers are equivalent.
+>>>>>
+>>>>> The legacy sleep register definition:
+>>>>> Table 4-16 PM1 Status Registers Fixed Hardware Feature Status Bits -
+>>>>> WAK_STS(bit 15) Table 4-18 PM1 Control Registers Fixed Hardware
+>>>>> Feature Control Bits - SLP_TYPx (bit 10-12), SLP_EN (bit 13)
+>>>>>
+>>>>> The extended sleep register definition:
+>>>>> Table 4-24 Sleep Control Register - SLP_TYPx (3 bits from offset 2),
+>>>>> SLP_EN (1
+>>>> bit from offset 5), here 10-8 = 2, and 13-8 = 5, this definition is
+>>>> equivalent to Table 4-18.
+>>>>> Table 4-25 Sleep Status Register - WAK_STS (1 bit 7), 15-8 = 7, this
+>>>>> definition is
+>>>> equivalent to Table 4-16.
+>>>>>
+>>>>> Thanks and best regards
+>>>>> -Lv
+>>>>>
+>>>>>> -----Original Message-----
+>>>>>> From: linux-acpi-owner@vger.kernel.org
+>>>>>> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Ben Guthro
+>>>>>> Sent: Wednesday, June 26, 2013 10:06 PM
+>>>>>> To: Konrad Rzeszutek Wilk; Jan Beulich; Rafaell J . Wysocki;
+>>>>>> linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org;
+>>>>>> xen-devel@lists.xen.org
+>>>>>> Cc: Ben Guthro; Moore, Robert
+>>>>>> Subject: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+>>>>>> reduced hardware sleep path
+>>>>>>
+>>>>>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel
+>>>>>> with reduced hardware sleep support, and the two changes didn't get
+>>>>>> synchronized: The new code doesn't call the hook function (if so
+>>>>>> requested). Fix this, requiring a parameter to be added to the hook
+>>>>>> function to distinguish "extended" from "legacy" sleep.
+>>>>>>
+>>>>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+>>>>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>>>>>> Cc: Bob Moore <robert.moore@intel.com>
+>>>>>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+>>>>>> Cc: linux-acpi@vger.kernel.org
+>>>>>> ---
+>>>>>>   drivers/acpi/acpica/hwesleep.c |    8 ++++++++
+>>>>>>   drivers/acpi/acpica/hwsleep.c  |    2 +-
+>>>>>>   drivers/acpi/osl.c             |   16 ++++++++--------
+>>>>>>   include/linux/acpi.h           |   10 +++++-----
+>>>>>>   4 files changed, 22 insertions(+), 14 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/acpi/acpica/hwesleep.c
+>>>>>> b/drivers/acpi/acpica/hwesleep.c index 5e5f762..6834dd7 100644
+>>>>>> --- a/drivers/acpi/acpica/hwesleep.c
+>>>>>> +++ b/drivers/acpi/acpica/hwesleep.c
+>>>>>> @@ -43,6 +43,7 @@
+>>>>>>    */
+>>>>>>
+>>>>>>   #include <acpi/acpi.h>
+>>>>>> +#include <linux/acpi.h>
+>>>>>>   #include "accommon.h"
+>>>>>>
+>>>>>>   #define _COMPONENT          ACPI_HARDWARE
+>>>>>> @@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8
+>>>>>> sleep_state)
+>>>>>>
+>>>>>>   	ACPI_FLUSH_CPU_CACHE();
+>>>>>>
+>>>>>> +	status = acpi_os_prepare_sleep(sleep_state,
+>> acpi_gbl_sleep_type_a,
+>>>>>> +				       acpi_gbl_sleep_type_b, true);
+>>>>>> +	if (ACPI_SKIP(status))
+>>>>>> +		return_ACPI_STATUS(AE_OK);
+>>>>>> +	if (ACPI_FAILURE(status))
+>>>>>> +		return_ACPI_STATUS(status);
+>>>>>> +
+>>>>>>   	/*
+>>>>>>   	 * Set the SLP_TYP and SLP_EN bits.
+>>>>>>   	 *
+>>>>>> diff --git a/drivers/acpi/acpica/hwsleep.c
+>>>>>> b/drivers/acpi/acpica/hwsleep.c index e3828cc..a93c299 100644
+>>>>>> --- a/drivers/acpi/acpica/hwsleep.c
+>>>>>> +++ b/drivers/acpi/acpica/hwsleep.c
+>>>>>> @@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+>>>>>>   	ACPI_FLUSH_CPU_CACHE();
+>>>>>>
+>>>>>>   	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+>>>>>> -				       pm1b_control);
+>>>>>> +				       pm1b_control, false);
+>>>>>>   	if (ACPI_SKIP(status))
+>>>>>>   		return_ACPI_STATUS(AE_OK);
+>>>>>>   	if (ACPI_FAILURE(status))
+>>>>>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
+>>>>>> e721863..3fc2801 100644
+>>>>>> --- a/drivers/acpi/osl.c
+>>>>>> +++ b/drivers/acpi/osl.c
+>>>>>> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
+>>>>>>   extern char line_buf[80];
+>>>>>>   #endif				/*ENABLE_DEBUGGER */
+>>>>>>
+>>>>>> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+>>>>>> -				      u32 pm1b_ctrl);
+>>>>>> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a,
+>>>>>> +u32
+>>>> val_b,
+>>>>>> +				      u8 extended);
+>>>>>>
+>>>>>>   static acpi_osd_handler acpi_irq_handler;
+>>>>>>   static void *acpi_irq_context;
+>>>>>> @@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
+>>>>>>   	return AE_OK;
+>>>>>>   }
+>>>>>>
+>>>>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+>>>>>> -				  u32 pm1b_control)
+>>>>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+>> val_b,
+>>>>>> +				  u8 extended)
+>>>>>>   {
+>>>>>>   	int rc = 0;
+>>>>>>   	if (__acpi_os_prepare_sleep)
+>>>>>> -		rc = __acpi_os_prepare_sleep(sleep_state,
+>>>>>> -					     pm1a_control, pm1b_control);
+>>>>>> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
+>>>>>> +					     extended);
+>>>>>>   	if (rc < 0)
+>>>>>>   		return AE_ERROR;
+>>>>>>   	else if (rc > 0)
+>>>>>> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
+>>>>>> sleep_state,
+>>>>>> u32 pm1a_control,
+>>>>>>   	return AE_OK;
+>>>>>>   }
+>>>>>>
+>>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>>>>>> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+>>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
+>> val_a,
+>>>>>> +					   u32 val_b, u8 extended))
+>>>>>>   {
+>>>>>>   	__acpi_os_prepare_sleep = func;
+>>>>>>   }
+>>>>>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
+>>>>>> 17b5b59..de99022 100644
+>>>>>> --- a/include/linux/acpi.h
+>>>>>> +++ b/include/linux/acpi.h
+>>>>>> @@ -477,11 +477,11 @@ static inline bool
+>>>>>> acpi_driver_match_device(struct device *dev,
+>>>>>>   #endif	/* !CONFIG_ACPI */
+>>>>>>
+>>>>>>   #ifdef CONFIG_ACPI
+>>>>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>>>>>> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+>>>>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
+>> val_a,
+>>>>>> +					   u32 val_b, u8 extended));
+>>>>>>
+>>>>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+>>>>>> -				  u32 pm1a_control, u32 pm1b_control);
+>>>>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+>> val_b,
+>>>>>> +				  u8 extended);
+>>>>>>   #ifdef CONFIG_X86
+>>>>>>   void arch_reserve_mem_area(acpi_physical_address addr, size_t
+>> size);
+>>>>>>   #else
+>>>>>> @@ -491,7 +491,7 @@ static inline void
+>>>>>> arch_reserve_mem_area(acpi_physical_address addr,
+>>>>>>   }
+>>>>>>   #endif /* CONFIG_X86 */
+>>>>>>   #else
+>>>>>> -#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do {
+>>>>>> } while
+>>>>>> (0)
+>>>>>> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
+>>>>>> +while (0)
+>>>>>>   #endif
+>>>>>>
+>>>>>>   #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
+>>>>>> --
+>>>>>> 1.7.9.5
+>>>>>>
+>>>>>> --
+>>>>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi"
+>>>>>> in the body of a message to majordomo@vger.kernel.org More
+>>>>>> majordomo info at  http://vger.kernel.org/majordomo-info.html
