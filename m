@@ -1,77 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3GXVCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:02:07 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:62767 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753231Ab3GXVCE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:02:04 -0400
-Date: Wed, 24 Jul 2013 23:02:00 +0200
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lu@intel.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        * =?iso-8859-1?Q?SAM=CD?= * <miaousami@hotmail.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-Message-ID: <20130724210200.GY5939@phenom.ffwll.local>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>, Aaron Lu <aaron.lu@intel.com>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	* =?iso-8859-1?Q?SAM=CD?= * <miaousami@hotmail.com>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-	Igor Gnatenko <i.gnatenko.brain@gmail.com>
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl>
- <17420057.BAULu67LQ3@vostro.rjw.lan>
- <CA+55aFzDgAcrzkkq06Qe9CBbBv6xKMYwPqtwv+ACryRSTRDOSQ@mail.gmail.com>
+	id S1753889Ab3GXVDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:03:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65257 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753350Ab3GXVC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 17:02:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,737,1367996400"; 
+   d="scan'208";a="370438191"
+Message-ID: <51F040E8.1030507@intel.com>
+Date: Wed, 24 Jul 2013 14:02:32 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzDgAcrzkkq06Qe9CBbBv6xKMYwPqtwv+ACryRSTRDOSQ@mail.gmail.com>
-X-Originating-IP: [178.83.130.250]
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KY Srinivasan <kys@microsoft.com>
+CC: Dave Hansen <dave@sr71.net>, Michal Hocko <mhocko@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>
+Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com> <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com> <51F00415.8070104@sr71.net> <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
+In-Reply-To: <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:39 PM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Wed, Jul 24, 2013 at 12:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->>
->> Well, there seems to be a number of people who'll be equally unhappy if I don't
->> do that.  Unfortunately for you, things work for them without that patch.
->
-> So I think we have to revert the behavior back, but I wonder if we
-> could keep the logic and have a i915 kernel command line option to
-> enable it.
->
-> We did that for a long time with "drm.modeset" and the
-> "i915.enable_rc6" mess. We still have the "i915.invert_brightness"
-> thing, although I don't know who actually uses it. But that option is
-> itself an indication that the i915 driver still has some backlight
-> issues.
+On 07/24/2013 12:45 PM, KY Srinivasan wrote:
+> All I am saying is that I see two classes of failures: (a) Our
+> inability to allocate memory to manage the memory that is being hot added
+> and (b) Our inability to bring the hot added memory online within a reasonable
+> amount of time. I am not sure the cause for (b) and I was just speculating that
+> this could be memory related. What is interesting is that I have seen failure related
+> to our inability to online the memory after having succeeded in hot adding the
+> memory.
 
-invert_brighntess seems to be real, at least we have a pile of quirk
-entries for Acer and Packard Bell machines. Generally I'm not too happy
-with module options since they tend to get stuck eternally in a limbo
-state where everyone in the know sets them to their liking and no one
-bothers to fix the underlying.
+I think we should hold off on this patch and other like it until we've
+been sufficiently able to explain how (b) happens.
 
-Otoh this is the backlight and I've essentially given up and opted for
-quirk entries :(
-
-> But if that kind of "revert behavior" isn't easy, we need to just
-> revert the patches entirely.
-
-I think a i915 module option should be doable, otoh people seem to have a
-viable workaround by setting a different acpi os version already.
--Daniel
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
