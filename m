@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754251Ab3GXVD5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:03:57 -0400
-Received: from mx1.corp.phx1.mozilla.com ([63.245.216.69]:56714 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab3GXVDz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:03:55 -0400
-Message-ID: <1374699833.7083.2.camel@localhost>
-Subject: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-From: Dhaval Giani <dgiani@mozilla.com>
-To: linux-kernel@vger.kernel.org
-Cc: tytso@mit.edu, tglek@mozilla.com, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Wed, 24 Jul 2013 17:03:53 -0400
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1754227Ab3GXVE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:04:28 -0400
+Received: from www.sr71.net ([198.145.64.142]:56116 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753557Ab3GXVE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 17:04:26 -0400
+Message-ID: <51F0414F.3060600@sr71.net>
+Date: Wed, 24 Jul 2013 14:04:15 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+CC: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
+        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
+        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
+        yinghan@google.com
+Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory
+ "in context"
+References: <1374701355-30799-1-git-send-email-kys@microsoft.com> <1374701399-30842-1-git-send-email-kys@microsoft.com> <1374701399-30842-2-git-send-email-kys@microsoft.com>
+In-Reply-To: <1374701399-30842-2-git-send-email-kys@microsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/2013 02:29 PM, K. Y. Srinivasan wrote:
+>  		/*
+> -		 * Wait for the memory block to be onlined.
+> -		 * Since the hot add has succeeded, it is ok to
+> -		 * proceed even if the pages in the hot added region
+> -		 * have not been "onlined" within the allowed time.
+> +		 * Before proceeding to hot add the next segment,
+> +		 * online the segment that has been hot added.
+>  		 */
+> -		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
+> +		online_memory_block(start_pfn);
 
-Hi there!
-
-I am posting this series early in its development phase to solicit some
-feedback.
-
-We are implementing transparent decompression with a focus on ext4. One
-of the main usecases is that of Firefox on Android. Currently libxul.so
-is compressed and it is loaded into memory by a custom linker on
-demand. With the use of transparent decompression, we can make do
-without the custom linker. More details (i.e. code) about the linker can
-be found at https://github.com/glandium/faulty.lib
-
-Patch 1 introduces the seekable zip format to the kernel. The tool to
-create the szip file can be found in the git repository mentioned
-earlier. Patch 2 introduces transparent decompression to ext4. This
-patch is really ugly, but it gives an idea of what I am upto right now.
-
-Now let's move on the interesting bits.
-
-There are a few flaws with the current approach (though most are easily
-fixable)
-1. The decompression takes place very late. We probably want to be
-decompressing soon after get the data off disk.
-2. No seek support. This is for simplicity as I was experimenting with
-filesystems for the first time. I have a patch that does it, but it is
-too ugly to see the world. I will fix it up in time for the next set.
-3. No mmap support. For a similar reason as 1. There is no reason it
-cannot be done, it just has not been done correctly.
-4. stat still returns the compressed size. We need to modify
-compressed files to return uncompressed size.
-5. Implementation is tied to the szip format. However it is quite easy
-to decouple the compression scheme from the filesystem. I will probably
-get to that in another 2 rounds (first goal is to get seek support
-working fine, and mmap in place)
-6. Introduction of an additional file_operation to decompress the
-buffer. This will be *removed* in the next posting once I have seek
-support implemented properly.
-7. The compressed file is read only. In order to write to the file, it
-shall have to be replaced.
-8. The kernel learns that the file is compressed with the use of the
-chattr tool. For now I am abusing the +c flag. Please let me know if
-that should not be used.
-
-In order to try this patch out, please create an szip file using the
-szip tool. Then, read the file. Just ensure that the buffer you provide
-to the kernel is big enough to fit the uncompressed file (and that you
-read the whole file in one go.)
-
-Thanks!
-Dhaval
-
---
-Dhaval Giani (2):
-  szip: Add seekable zip format
-  Add rudimentary transparent decompression support to ext4
-
- fs/ext4/file.c       |  66 ++++++++++++++++
- fs/read_write.c      |   3 +
- include/linux/fs.h   |   1 +
- include/linux/szip.h |  32 ++++++++
- lib/Kconfig          |   8 ++
- lib/Makefile         |   1 +
- lib/szip.c           | 217 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 328 insertions(+)
- create mode 100644 include/linux/szip.h
- create mode 100644 lib/szip.c
-
--- 
-1.8.1.4
-
-
-
+Ahhhhh....  You've got a timeout in the code in order to tell the
+hypervisor that you were successfully able to add the memory?  The
+userspace addition code probably wasn't running within this timeout
+period.  right?
