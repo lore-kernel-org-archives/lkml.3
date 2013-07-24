@@ -1,75 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488Ab3GXHRh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 03:17:37 -0400
-Received: from mail-ea0-f173.google.com ([209.85.215.173]:60116 "EHLO
-	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab3GXHRg (ORCPT
+	id S1752533Ab3GXHSK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 03:18:10 -0400
+Received: from ringil.hengli.com.au ([178.18.16.133]:33169 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751828Ab3GXHSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 03:17:36 -0400
-Message-ID: <51EF7F8D.3070701@monstr.eu>
-Date: Wed, 24 Jul 2013 09:17:33 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 24 Jul 2013 03:18:08 -0400
+Date: Wed, 24 Jul 2013 17:17:57 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Andreas Robinson <andr345@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhao Hongjiang <zhaohongjiang@huawei.com>, davem@davemloft.net,
+        tim.c.chen@linux.intel.com, Andrew Morton <akpm@linux-foundation.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        linux-crypto@vger.kernel.org
+Subject: [PATCH] modules: add support for soft module dependencies
+Message-ID: <20130724071757.GA30970@gondor.apana.org.au>
 MIME-Version: 1.0
-To: Vivek Subbarao <vskerneldevel@gmail.com>
-CC: Michal Simek <michal.simek@xilinx.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video: xilinxfb: Fix compilation warning
-References: <ed64cda456be840147ae1f04bec6a99733f41c24.1374643896.git.michal.simek@xilinx.com> <CAAY4GiVG-c63oJO1Kqv0Jf2Wa2Ba+hgLtHQYFqyuRW-f6hJ14Q@mail.gmail.com>
-In-Reply-To: <CAAY4GiVG-c63oJO1Kqv0Jf2Wa2Ba+hgLtHQYFqyuRW-f6hJ14Q@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="----enig2OFWEDIIUNNEIWSAGQTSE"
+Content-Type: multipart/mixed; boundary="0OAP2g/MAC+5xKAE"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2OFWEDIIUNNEIWSAGQTSE
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-On 07/24/2013 08:05 AM, Vivek Subbarao wrote:
-> Why is there a necessity to type cast to unsigned long long ? Whats the=
+--0OAP2g/MAC+5xKAE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> warning ?
->=20
+Hi Rusty:
 
-Geerts: Build regressions/improvements in v3.11-rc2
+I don't know why this patch never went into the kernel, even
+though the corresponding features have been added to modprobe
+in most if not all distros.
 
-  + drivers/video/xilinxfb.c: warning: format '%x' expects argument of ty=
-pe 'unsigned int', but argument 4 has type 'phys_addr_t' [-Wformat]:  =3D=
-> 344:3
+This is required for dependencies on crypto modules such as
+crc32c where the dependency is only visible at run-time, which
+means that depmod fails to list the necessary dependencies
+causing modules to go missing in the initrd.
+
+Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
 
 Thanks,
-Michal
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+--0OAP2g/MAC+5xKAE
+Content-Type: message/rfc822
+Content-Disposition: inline
 
+From: Andreas Robinson <andr345@gmail.com>
+Date: Thu, 5 Nov 2009 14:01:44 +0100
+Subject: [PATCH 1/2] modules: add support for soft module dependencies
 
+Additional and optional dependencies not found while building the kernel and
+modules, can now be declared explicitly.
 
-------enig2OFWEDIIUNNEIWSAGQTSE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Signed-off-by: Andreas Robinson <andr345@gmail.com>
+---
+ include/linux/module.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 482efc8..0a97fe2 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -98,6 +98,11 @@ extern struct module __this_module;
+ /* For userspace: you can also call me... */
+ #define MODULE_ALIAS(_alias) MODULE_INFO(alias, _alias)
+ 
++/* Soft module dependencies. See man modprobe.d for details.
++ * Example: MODULE_SOFTDEP("pre: module-foo post: module-bar")
++ */
++#define MODULE_SOFTDEP(_softdep) MODULE_INFO(softdep, _softdep)
++
+ /*
+  * The following license idents are currently accepted as indicating free
+  * software modules
+-- 
+1.6.3.3
 
-iEYEARECAAYFAlHvf40ACgkQykllyylKDCH75wCfXSH33j+eymnpyy8wMzkjOiyO
-dDIAn3osgQ+au5pI/OPTweCo/lBpPZQf
-=RiC7
------END PGP SIGNATURE-----
-
-------enig2OFWEDIIUNNEIWSAGQTSE--
+--0OAP2g/MAC+5xKAE--
