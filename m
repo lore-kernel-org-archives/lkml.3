@@ -1,103 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab3GXPcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:32:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:32477 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab3GXP3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754612Ab3GXPb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:31:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754029Ab3GXP3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 11:29:19 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=iHb6DO19o9wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=w4kK2zIDt8kA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=RvlEQHu-AAAA:8 a=0kbfjC1OccZKM1oZNXEA:9 a=E6k37eg1NvgA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130724152916.203705232@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 24 Jul 2013 11:27:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 2/9] tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
-References: <20130724152706.535638468@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Change-tracing_pipe_fops-to-rely-on-tracing_.patch
+From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] HID: trivial devm conversion for special hid drivers
+Date: Wed, 24 Jul 2013 17:29:05 +0200
+Message-Id: <1374679746-12566-2-git-send-email-benjamin.tissoires@redhat.com>
+In-Reply-To: <1374679746-12566-1-git-send-email-benjamin.tissoires@redhat.com>
+References: <1374679746-12566-1-git-send-email-benjamin.tissoires@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+It is safe to use devres allocation within the hid subsystem:
+- the devres release is called _after_ the call to .remove(), meaning
+  that no freed pointers will exists while removing the device
+- if a .probe() fails, devres releases all the allocated ressources
+  before going to the next driver: there will not be ghost ressources
+  attached to a hid device if several drivers are probed.
 
-tracing_open_pipe() is racy, the memory inode->i_private points to
-can be already freed.
+Given that, we can clean up a little some of the HID drivers. These ones
+are trivial:
+- there is only one kzalloc in the driver
+- the .remove() callback contains only one kfree on top of hid_hw_stop()
+- the error path in the probe is easy enough to be manually checked
 
-Change debugfs_create_file("trace_pipe", data) callers to to pass
-"data = tr", tracing_open_pipe() can use tracing_get_cpu().
-
-Link: http://lkml.kernel.org/r/20130723152557.GA23717@redhat.com
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 ---
- kernel/trace/trace.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+ drivers/hid/hid-a4tech.c     | 23 ++++-------------------
+ drivers/hid/hid-apple.c      | 16 +++-------------
+ drivers/hid/hid-magicmouse.c | 17 +++--------------
+ drivers/hid/hid-sony.c       |  9 +++------
+ drivers/hid/hid-zydacron.c   | 19 +++----------------
+ 5 files changed, 16 insertions(+), 68 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cfff63c..51a99ef 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3959,8 +3959,7 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+diff --git a/drivers/hid/hid-a4tech.c b/drivers/hid/hid-a4tech.c
+index 7c5507e..8d4e999 100644
+--- a/drivers/hid/hid-a4tech.c
++++ b/drivers/hid/hid-a4tech.c
+@@ -90,11 +90,10 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	struct a4tech_sc *a4;
+ 	int ret;
  
- static int tracing_open_pipe(struct inode *inode, struct file *filp)
- {
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
- 	struct trace_iterator *iter;
- 	int ret = 0;
+-	a4 = kzalloc(sizeof(*a4), GFP_KERNEL);
++	a4 = devm_kzalloc(&hdev->dev, sizeof(*a4), GFP_KERNEL);
+ 	if (a4 == NULL) {
+ 		hid_err(hdev, "can't alloc device descriptor\n");
+-		ret = -ENOMEM;
+-		goto err_free;
++		return -ENOMEM;
+ 	}
  
-@@ -4006,9 +4005,9 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	if (trace_clocks[tr->clock_id].in_ns)
- 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ 	a4->quirks = id->driver_data;
+@@ -104,29 +103,16 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "parse failed\n");
+-		goto err_free;
++		return ret;
+ 	}
  
--	iter->cpu_file = tc->cpu;
--	iter->tr = tc->tr;
--	iter->trace_buffer = &tc->tr->trace_buffer;
-+	iter->tr = tr;
-+	iter->trace_buffer = &tr->trace_buffer;
-+	iter->cpu_file = tracing_get_cpu(inode);
- 	mutex_init(&iter->mutex);
- 	filp->private_data = iter;
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+-	if (ret) {
++	if (ret)
+ 		hid_err(hdev, "hw start failed\n");
+-		goto err_free;
+-	}
  
-@@ -4031,8 +4030,7 @@ fail:
- static int tracing_release_pipe(struct inode *inode, struct file *file)
- {
- 	struct trace_iterator *iter = file->private_data;
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
+-	return 0;
+-err_free:
+-	kfree(a4);
+ 	return ret;
+ }
  
- 	mutex_lock(&trace_types_lock);
+-static void a4_remove(struct hid_device *hdev)
+-{
+-	struct a4tech_sc *a4 = hid_get_drvdata(hdev);
+-
+-	hid_hw_stop(hdev);
+-	kfree(a4);
+-}
+-
+ static const struct hid_device_id a4_devices[] = {
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_WCP32PU),
+ 		.driver_data = A4_2WHEEL_MOUSE_HACK_7 },
+@@ -144,7 +130,6 @@ static struct hid_driver a4_driver = {
+ 	.input_mapped = a4_input_mapped,
+ 	.event = a4_event,
+ 	.probe = a4_probe,
+-	.remove = a4_remove,
+ };
+ module_hid_driver(a4_driver);
  
-@@ -5571,7 +5569,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+index c7710b5..881cf7b 100644
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -349,7 +349,7 @@ static int apple_probe(struct hid_device *hdev,
+ 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
+ 	int ret;
  
- 	/* per cpu trace_pipe */
- 	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
--				&data->trace_cpu, cpu, &tracing_pipe_fops);
-+				tr, cpu, &tracing_pipe_fops);
+-	asc = kzalloc(sizeof(*asc), GFP_KERNEL);
++	asc = devm_kzalloc(&hdev->dev, sizeof(*asc), GFP_KERNEL);
+ 	if (asc == NULL) {
+ 		hid_err(hdev, "can't alloc apple descriptor\n");
+ 		return -ENOMEM;
+@@ -362,7 +362,7 @@ static int apple_probe(struct hid_device *hdev,
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "parse failed\n");
+-		goto err_free;
++		return ret;
+ 	}
  
- 	/* per cpu trace */
- 	trace_create_cpu_file("trace", 0644, d_cpu,
-@@ -6157,7 +6155,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
- 			(void *)&tr->trace_cpu, &tracing_fops);
+ 	if (quirks & APPLE_HIDDEV)
+@@ -373,19 +373,10 @@ static int apple_probe(struct hid_device *hdev,
+ 	ret = hid_hw_start(hdev, connect_mask);
+ 	if (ret) {
+ 		hid_err(hdev, "hw start failed\n");
+-		goto err_free;
++		return ret;
+ 	}
  
- 	trace_create_file("trace_pipe", 0444, d_tracer,
--			(void *)&tr->trace_cpu, &tracing_pipe_fops);
-+			  tr, &tracing_pipe_fops);
+ 	return 0;
+-err_free:
+-	kfree(asc);
+-	return ret;
+-}
+-
+-static void apple_remove(struct hid_device *hdev)
+-{
+-	hid_hw_stop(hdev);
+-	kfree(hid_get_drvdata(hdev));
+ }
  
- 	trace_create_file("buffer_size_kb", 0644, d_tracer,
- 			(void *)&tr->trace_cpu, &tracing_entries_fops);
+ static const struct hid_device_id apple_devices[] = {
+@@ -551,7 +542,6 @@ static struct hid_driver apple_driver = {
+ 	.id_table = apple_devices,
+ 	.report_fixup = apple_report_fixup,
+ 	.probe = apple_probe,
+-	.remove = apple_remove,
+ 	.event = apple_event,
+ 	.input_mapping = apple_input_mapping,
+ 	.input_mapped = apple_input_mapped,
+diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+index 5bc3734..d393eb7 100644
+--- a/drivers/hid/hid-magicmouse.c
++++ b/drivers/hid/hid-magicmouse.c
+@@ -484,7 +484,7 @@ static int magicmouse_probe(struct hid_device *hdev,
+ 	struct hid_report *report;
+ 	int ret;
+ 
+-	msc = kzalloc(sizeof(*msc), GFP_KERNEL);
++	msc = devm_kzalloc(&hdev->dev, sizeof(*msc), GFP_KERNEL);
+ 	if (msc == NULL) {
+ 		hid_err(hdev, "can't alloc magicmouse descriptor\n");
+ 		return -ENOMEM;
+@@ -498,13 +498,13 @@ static int magicmouse_probe(struct hid_device *hdev,
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "magicmouse hid parse failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret) {
+ 		hid_err(hdev, "magicmouse hw start failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	if (!msc->input) {
+@@ -548,19 +548,9 @@ static int magicmouse_probe(struct hid_device *hdev,
+ 	return 0;
+ err_stop_hw:
+ 	hid_hw_stop(hdev);
+-err_free:
+-	kfree(msc);
+ 	return ret;
+ }
+ 
+-static void magicmouse_remove(struct hid_device *hdev)
+-{
+-	struct magicmouse_sc *msc = hid_get_drvdata(hdev);
+-
+-	hid_hw_stop(hdev);
+-	kfree(msc);
+-}
+-
+ static const struct hid_device_id magic_mice[] = {
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+ 		USB_DEVICE_ID_APPLE_MAGICMOUSE), .driver_data = 0 },
+@@ -574,7 +564,6 @@ static struct hid_driver magicmouse_driver = {
+ 	.name = "magicmouse",
+ 	.id_table = magic_mice,
+ 	.probe = magicmouse_probe,
+-	.remove = magicmouse_remove,
+ 	.raw_event = magicmouse_raw_event,
+ 	.input_mapping = magicmouse_input_mapping,
+ 	.input_configured = magicmouse_input_configured,
+diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+index 87fbe29..30dbb6b 100644
+--- a/drivers/hid/hid-sony.c
++++ b/drivers/hid/hid-sony.c
+@@ -624,7 +624,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	struct sony_sc *sc;
+ 	unsigned int connect_mask = HID_CONNECT_DEFAULT;
+ 
+-	sc = kzalloc(sizeof(*sc), GFP_KERNEL);
++	sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
+ 	if (sc == NULL) {
+ 		hid_err(hdev, "can't alloc sony descriptor\n");
+ 		return -ENOMEM;
+@@ -636,7 +636,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "parse failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	if (sc->quirks & VAIO_RDESC_CONSTANT)
+@@ -649,7 +649,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	ret = hid_hw_start(hdev, connect_mask);
+ 	if (ret) {
+ 		hid_err(hdev, "hw start failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
+@@ -669,8 +669,6 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	return 0;
+ err_stop:
+ 	hid_hw_stop(hdev);
+-err_free:
+-	kfree(sc);
+ 	return ret;
+ }
+ 
+@@ -682,7 +680,6 @@ static void sony_remove(struct hid_device *hdev)
+ 		buzz_remove(hdev);
+ 
+ 	hid_hw_stop(hdev);
+-	kfree(sc);
+ }
+ 
+ static const struct hid_device_id sony_devices[] = {
+diff --git a/drivers/hid/hid-zydacron.c b/drivers/hid/hid-zydacron.c
+index e4cddec..1a660bd 100644
+--- a/drivers/hid/hid-zydacron.c
++++ b/drivers/hid/hid-zydacron.c
+@@ -169,7 +169,7 @@ static int zc_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	int ret;
+ 	struct zc_device *zc;
+ 
+-	zc = kzalloc(sizeof(*zc), GFP_KERNEL);
++	zc = devm_kzalloc(&hdev->dev, sizeof(*zc), GFP_KERNEL);
+ 	if (zc == NULL) {
+ 		hid_err(hdev, "can't alloc descriptor\n");
+ 		return -ENOMEM;
+@@ -180,28 +180,16 @@ static int zc_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	ret = hid_parse(hdev);
+ 	if (ret) {
+ 		hid_err(hdev, "parse failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+ 	if (ret) {
+ 		hid_err(hdev, "hw start failed\n");
+-		goto err_free;
++		return ret;
+ 	}
+ 
+ 	return 0;
+-err_free:
+-	kfree(zc);
+-
+-	return ret;
+-}
+-
+-static void zc_remove(struct hid_device *hdev)
+-{
+-	struct zc_device *zc = hid_get_drvdata(hdev);
+-
+-	hid_hw_stop(hdev);
+-	kfree(zc);
+ }
+ 
+ static const struct hid_device_id zc_devices[] = {
+@@ -217,7 +205,6 @@ static struct hid_driver zc_driver = {
+ 	.input_mapping = zc_input_mapping,
+ 	.raw_event = zc_raw_event,
+ 	.probe = zc_probe,
+-	.remove = zc_remove,
+ };
+ module_hid_driver(zc_driver);
+ 
 -- 
-1.7.10.4
-
+1.8.3.1
 
