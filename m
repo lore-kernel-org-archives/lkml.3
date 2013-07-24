@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab3GXWG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55366 "EHLO
+	id S1754706Ab3GXWGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55429 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab3GXWGA (ORCPT
+	with ESMTP id S1752799Ab3GXWGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:06:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Subject: [PATCH 21/36] cuse: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:24 -0700
-Message-Id: <1374703539-9705-22-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	Wed, 24 Jul 2013 18:06:32 -0400
+Date: Wed, 24 Jul 2013 15:06:31 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Won Kang <wkang77@gmail.com>, devel@driverdev.osuosl.org,
+        wonkang@gctsemi.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
+Message-ID: <20130724220631.GA10541@kroah.com>
+References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
+ <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>
+ <20130724215340.GY5585@mwanda>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130724215340.GY5585@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the cuse class code to use the
-correct field.
+On Thu, Jul 25, 2013 at 12:53:40AM +0300, Dan Carpenter wrote:
+> > +static int gdm_lte_ioctl_get_data(struct wm_req_t *req, struct net_device *dev)
+> > +{
+> > +	u16 id = req->data_id;
+> > +
+> > +	switch (id) {
+> > +	case GET_ENDIAN_INFO:
+> > +		/* required for the user space application to find out device endian */
+> > +		get_dev_endian(&req->data, dev);
+> > +		break;
+> > +	default:
+> > +		printk(KERN_ERR "glte: ioctl - unknown type %d\n", id);
+> > +		break;
+> > +	}
+> > +	return 0;
+> > +}
+> 
+> This should be a sysfs file not an ioctl.  What would break if we
+> fixed this right now (as opposed to waiting until we can't change
+> the API?).
+> 
+> Otherwise if we can't change this, then it should return an error
+> code instead of printing a message.
 
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
+It should just be removed, why would you care about the endian-ness of
+the device at all?
 
-Miklos, feel free to take this through your tree, or ACK it and I can
-take it through mine.
+thanks,
 
- fs/fuse/cuse.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
-index aef34b1e..adbfd66b 100644
---- a/fs/fuse/cuse.c
-+++ b/fs/fuse/cuse.c
-@@ -568,6 +568,7 @@ static ssize_t cuse_class_waiting_show(struct device *dev,
- 
- 	return sprintf(buf, "%d\n", atomic_read(&cc->fc.num_waiting));
- }
-+static DEVICE_ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL);
- 
- static ssize_t cuse_class_abort_store(struct device *dev,
- 				      struct device_attribute *attr,
-@@ -578,12 +579,14 @@ static ssize_t cuse_class_abort_store(struct device *dev,
- 	fuse_abort_conn(&cc->fc);
- 	return count;
- }
-+static DEVICE_ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store);
- 
--static struct device_attribute cuse_class_dev_attrs[] = {
--	__ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL),
--	__ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store),
--	{ }
-+static struct attribute *cuse_class_dev_attrs[] = {
-+	&dev_attr_waiting.attr,
-+	&dev_attr_abort.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(cuse_class_dev);
- 
- static struct miscdevice cuse_miscdev = {
- 	.minor		= MISC_DYNAMIC_MINOR,
-@@ -609,7 +612,7 @@ static int __init cuse_init(void)
- 	if (IS_ERR(cuse_class))
- 		return PTR_ERR(cuse_class);
- 
--	cuse_class->dev_attrs = cuse_class_dev_attrs;
-+	cuse_class->dev_groups = cuse_class_dev_groups;
- 
- 	rc = misc_register(&cuse_miscdev);
- 	if (rc) {
--- 
-1.8.3.rc0.20.gb99dd2e
-
+greg k-h
