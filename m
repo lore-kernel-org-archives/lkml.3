@@ -1,125 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab3GXOL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:11:57 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:33781 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752479Ab3GXOLz (ORCPT
+	id S1753270Ab3GXOKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:10:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45724 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752448Ab3GXOGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:11:55 -0400
-Message-ID: <51EFE0A3.80709@hurleysoftware.com>
-Date: Wed, 24 Jul 2013 10:11:47 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 10:06:53 -0400
+Content-Type: text/plain; charset="UTF-8"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-To: Gianluca Anzolin <gianluca@sottospazio.it>, gregkh@linuxfoundation.org
-CC: Gustavo Padovan <gustavo@padovan.org>, linux-kernel@vger.kernel.org,
-        jslaby@suse.cz
-Subject: Re: [PATCH] Fix refcount leak in tty_port.c
-References: <20130709083535.GA30227@debian.seek.priv> <20130712103026.GC2065@joana> <51E00CF1.6070302@hurleysoftware.com>
-In-Reply-To: <51E00CF1.6070302@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Nicolin Chen" <b42378@freescale.com>,
+        "Mark Brown" <broonie@linaro.org>
+Date: Wed, 24 Jul 2013 15:02:45 +0100
+Message-ID: <lsq.1374674565.312387739@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [22/85] ASoC: wm8962: Remove remaining direct register cache accesses
+In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2013 10:04 AM, Peter Hurley wrote:
-> On 07/12/2013 06:30 AM, Gustavo Padovan wrote:
->> Hi Gianluca,
->>
->> * Gianluca Anzolin <gianluca@sottospazio.it> [2013-07-09 10:35:35 +0200]:
->>
->>> Hello,
->>>
->>> In linux 3.10 in the file drivers/tty/tty_port.c the function
->>> tty_port_tty_hangup may leak a tty reference:
->>>
->>>          struct tty_struct *tty = tty_port_tty_get(port);
->>>
->>>          if (tty && (!check_clocal || !C_CLOCAL(tty))) {
->>>                  tty_hangup(tty);
->>>                  tty_kref_put(tty);
->>>          }
->>>
->>> If tty != NULL and the second condition is false we never call tty_kref_put and
->>> the reference is leaked.
->
-> Good catch.
->
->>> Fix by nesting two if statements.
->>>
->>> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
->>
->> As mentioned by Gianluca this is a regression of aa27a094 and we depend on
->> this patch to go ahead with some fixes in the bluetooth subsystem.
->
-> Gustavo,
->
-> There's no direct dependency; ie., there aren't merge issues here.
-> We should progress with the fixes to rfcomm independent of this patch.
->
->> Gianluca, it might help if you send a proper git inline formated patch,
->> mentioning the issue and which regression you are fixing.  It makes
->> maintainer's life easier.
->
-> As Gustavo points out, please inline the patch otherwise commenters
-> have to do it for you.
+3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-Gianluca,
+------------------
 
-I think Greg may be expecting you to address the comments from myself
-and Gustavo before accepting this patch.
+From: Nicolin Chen <b42378@freescale.com>
 
-Greg, is that the case?
+commit 2e7ee15ced914e109a1a5b6dfcd463d846a13bd5 upstream.
 
-Regards,
-Peter Hurley
+Also fix return values for headphone switch updates.
 
->> Also add my Ack to the patch:
->  >
->>
->> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
->>
->>     Gustavo
->
-> Copy of the Gianluca's patch with my comments
->
-> --- %< ---
->
-> Please put a proper commit message here, including that this is
-> a regression and the commit id that caused the regression so this patch
-> can eventually make its way to stable.
->
->
->  > diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
->  > index 121aeb9..2198f7d 100644
->  > --- a/drivers/tty/tty_port.c
->  > +++ b/drivers/tty/tty_port.c
->  > @@ -256,8 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
->  >  {
->  >      struct tty_struct *tty = tty_port_tty_get(port);
->  >
->  > -    if (tty && (!check_clocal || !C_CLOCAL(tty))) {
->  > -        tty_hangup(tty);
->  > +    if (tty) {
->  > +        if (!check_clocal || !C_CLOCAL(tty))
->  > +            tty_hangup(tty);
->  >          tty_kref_put(tty);
->  >      }
->  >  }
->
->
-> tty_kref_put() already checks for NULL tty. I would prefer:
->
-> {
->        struct tty_struct *tty = tty_port_tty_get(port);
->
->      if (tty && (!check_clocal || !C_CLOCAL(tty)))
->          tty_hangup(tty);
->      tty_kref_put(tty);
-> }
+Signed-off-by: Nicolin Chen <b42378@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ sound/soc/codecs/wm8962.c | 24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
+--- a/sound/soc/codecs/wm8962.c
++++ b/sound/soc/codecs/wm8962.c
+@@ -2117,7 +2117,6 @@ static int wm8962_put_hp_sw(struct snd_k
+ 			    struct snd_ctl_elem_value *ucontrol)
+ {
+ 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
+-	u16 *reg_cache = codec->reg_cache;
+ 	int ret;
+ 
+ 	/* Apply the update (if any) */
+@@ -2126,16 +2125,19 @@ static int wm8962_put_hp_sw(struct snd_k
+ 		return 0;
+ 
+ 	/* If the left PGA is enabled hit that VU bit... */
+-	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTL_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
+-				     reg_cache[WM8962_HPOUTL_VOLUME]);
++	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
++	if (ret & WM8962_HPOUTL_PGA_ENA) {
++		snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
++			      snd_soc_read(codec, WM8962_HPOUTL_VOLUME));
++		return 1;
++	}
+ 
+ 	/* ...otherwise the right.  The VU is stereo. */
+-	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTR_PGA_ENA)
+-		return snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
+-				     reg_cache[WM8962_HPOUTR_VOLUME]);
++	if (ret & WM8962_HPOUTR_PGA_ENA)
++		snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
++			      snd_soc_read(codec, WM8962_HPOUTR_VOLUME));
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ /* The VU bits for the speakers are in a different register to the mute
+@@ -3944,7 +3946,6 @@ static int wm8962_probe(struct snd_soc_c
+ 	int ret;
+ 	struct wm8962_priv *wm8962 = snd_soc_codec_get_drvdata(codec);
+ 	struct wm8962_pdata *pdata = dev_get_platdata(codec->dev);
+-	u16 *reg_cache = codec->reg_cache;
+ 	int i, trigger, irq_pol;
+ 	bool dmicclk, dmicdat;
+ 
+@@ -4055,8 +4056,9 @@ static int wm8962_probe(struct snd_soc_c
+ 
+ 		/* Put the speakers into mono mode? */
+ 		if (pdata->spk_mono)
+-			reg_cache[WM8962_CLASS_D_CONTROL_2]
+-				|= WM8962_SPK_MONO;
++			snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
++				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
++
+ 
+ 		/* Micbias setup, detection enable and detection
+ 		 * threasholds. */
 
