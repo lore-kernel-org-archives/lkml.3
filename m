@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab3GXO67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:58:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51561 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab3GXO65 (ORCPT
+	id S1753689Ab3GXPAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:00:05 -0400
+Received: from s15338416.onlinehome-server.info ([87.106.68.36]:36875 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab3GXPAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:58:57 -0400
-Date: Wed, 24 Jul 2013 10:58:38 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>, xen-devel@lists.xensource.com,
-        alex@alex.org.uk, dcrisan@flexiant.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out pages
-Message-ID: <20130724145838.GM2518@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
- <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
- <1374602409.6623.138.camel@hastur.hellion.org.uk>
- <20130723190521.GA7073@phenom.dumpdata.com>
- <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 24 Jul 2013 11:00:01 -0400
+Date: Wed, 24 Jul 2013 17:00:00 +0200
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Jerry Snitselaar <jerry.snitselaar@oracle.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fib_trie: potential out of bounds access in trie_show_stats()
+Message-ID: <20130724150000.GB22402@order.stressinduktion.org>
+Mail-Followup-To: Jerry Snitselaar <jerry.snitselaar@oracle.com>,
+	netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1374519718-8299-1-git-send-email-jerry.snitselaar@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1374519718-8299-1-git-send-email-jerry.snitselaar@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 12:05:05PM +0100, Stefano Stabellini wrote:
-> On Tue, 23 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
-> > > On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
-> > > > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-> > > > +				    unsigned long action, void *hcpu)
-> > > > +{
-> > > > +	int cpu = (long)hcpu;
-> > > > +	switch (action) {
-> > > > +	case CPU_UP_PREPARE:
-> > > > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
-> > > > +			break;
-> > > 
-> > > Thinking about this a bit more -- do we know what happens to the per-cpu
-> > > area for a CPU which is unplugged and then reintroduced? Is it preserved
-> > > or is it reset?
-> > > 
-> > > If it is reset then this gets more complicated :-( We might be able to
-> > > use the core mm page reference count, so that when the last reference is
-> > > removed the page is automatically reclaimed. We can obviously take a
-> > > reference whenever we add a mapping of the trade page, but I'm not sure
-> > > we are always on the path which removes such mappings... Even then you
-> > > could waste pages for some potentially large amount of time each time
-> > > you replug a VCPU.
-> > > 
-> > > Urg, I really hope the per-cpu area is preserved!
-> > 
-> > It is. During bootup time you see this:
-> > 
-> > [    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
-> > [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
-> > 
-> > which means that all of the per_CPU are shrunk down to 128 (from 
-> > CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
-> > 
-> > You might have to clear it when the vCPU comes back up though - otherwise you
-> > will have garbage.
+On Mon, Jul 22, 2013 at 12:01:58PM -0700, Jerry Snitselaar wrote:
+> With the <= max condition in the for loop, it will be always go 1
+> element further than needed. If the condition for the while loop is
+> never met, then max is MAX_STAT_DEPTH, and for loop will walk off the
+> end of nodesizes[].
 > 
-> I don't see anything in the hotplug code that would modify the value of
-> the per_cpu area of offline cpus.
+> Signed-off-by: Jerry Snitselaar <jerry.snitselaar@oracle.com>
 
-You might have never onlined the CPUs and the kernel is built with DEBUG options
-which poison the page.
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-Anyhow, doing a memset seems like a prudent thing to do? Perhaps when
-built with CONFG_DEBUG_XENFS you add poison values to it?
+Thanks,
+
+  Hannes
+
