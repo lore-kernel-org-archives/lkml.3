@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab3GXGQl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:16:41 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:42762 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751635Ab3GXGQk (ORCPT
+	id S1751936Ab3GXGRK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:17:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:60586 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab3GXGRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:16:40 -0400
+	Wed, 24 Jul 2013 02:17:09 -0400
+Message-ID: <51EF7159.8030409@canonical.com>
+Date: Wed, 24 Jul 2013 08:16:57 +0200
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CADoNuNe1t8KENvdwZXzg8tZAVNuqobV7gXAaVVuSVZX8LEc2xg@mail.gmail.com>
-References: <1374600682-19376-1-git-send-email-tobetter@gmail.com>
-	<CAK9yfHw98L-FUtX7v32FyE4UN308uYpJXx8oxDuYgYZk1uUp_A@mail.gmail.com>
-	<CADoNuNe1t8KENvdwZXzg8tZAVNuqobV7gXAaVVuSVZX8LEc2xg@mail.gmail.com>
-Date: Wed, 24 Jul 2013 11:46:39 +0530
-Message-ID: <CAK9yfHzXg_U=dgkJ=vqmme+VxXCw=WcRdCU-7V1_hPzRrgTyPQ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add USBPHY nodes to Exynos4x12
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mark Brown <broonie@kernel.org>
+CC: Felipe Tonello <eu@felipetonello.com>, alsa-devel@alsa-project.org,
+        lgirdwood@gmail.com, "Felipe F. Tonello" <ftonello@cercacor.com>,
+        TakashiIwaitiwai@suse.de, linux-kernel@vger.kernel.org,
+        JaroslavKyselaperex@perex.cz
+Subject: Re: [alsa-devel] [PATCH] ALSA: SoC: Added jack detection kcontrol
+ support
+References: <1374281962-3786-1-git-send-email-eu@felipetonello.com> <20130722000157.GI9858@sirena.org.uk> <CAGrhNMyAofsnwKYMk+60GyvpaW9pMtoJf_2Q_Tc82G8QCFOiFA@mail.gmail.com> <20130723124023.GX9858@sirena.org.uk> <CAGrhNMyWXGcDUHxexgvQ2rusKTSbSjEbcEToKZZUudtP-pYxsA@mail.gmail.com> <20130724001332.GW9858@sirena.org.uk>
+In-Reply-To: <20130724001332.GW9858@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2013 11:29, Dongjin Kim <tobetter@gmail.com> wrote:
-> Thanks Sachin,
+On 07/24/2013 02:13 AM, Mark Brown wrote:
+> On Tue, Jul 23, 2013 at 05:10:29PM -0700, Felipe Tonello wrote:
+>> On Tue, Jul 23, 2013 at 5:40 AM, Mark Brown <broonie@kernel.org> wrote:
 >
-> On Wed, Jul 24, 2013 at 2:12 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
->> Hi Dongjin,
->>
->> On 23 July 2013 23:01, Dongjin Kim <tobetter@gmail.com> wrote:
->>> This patch adds device nodes for USBPHY to Exynos4x12.
->>>
->>> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
->>> ---
->>>  arch/arm/boot/dts/exynos4x12.dtsi |   18 ++++++++++++++++++
->>>  1 file changed, 18 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
->>> index 01da194..9c3335b 100644
->>> --- a/arch/arm/boot/dts/exynos4x12.dtsi
->>> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
->>> @@ -73,4 +73,22 @@
->>>                 clock-names = "sclk_fimg2d", "fimg2d";
->>>                 status = "disabled";
->>>         };
->>> +
->>> +       usbphy@125B00000 {
->>
->> Extra 0 above.
->>
-> This is my bad, I will fix.
+>>> This was the existing kernel API at the time that the code was added -
+>>> I beleive people had been doing that for simple switches that detect the
+>>> physical presence of a jack since it looks exactly like a button from a
+>>> hardware point of view.  See the original commit adding the code.
 >
->>> +               #address-cells = <1>;
->>> +               #size-cells = <1>;
->>> +               compatible = "samsung,exynos4x12-usb2phy";
->>> +               reg = <0x125B0000 0x100>;
->>> +               ranges;
->>> +
->>> +               clocks = <&clock 2>, <&clock 305>;
->>> +               clock-names = "xusbxti", "otg";
->>> +               status = "disabled";
->>> +
->>> +               usbphy-sys {
->>> +                       /* USB device and host PHY_CONTROL registers */
->>> +                       reg = <0x10020704 0xc>,
->>> +                             <0x1001021c 0x4>;
->>> +               };
->>> +       };
->>>  };
->>
->> Please add this node after tmu node (satisfies alphabetical order as
->> well as increasing address value)
-> No tmu node in exynos4x12.dtsi in mainline v3.11-rc2 yet, even in
-> Kukjin's branch.
+>> I saw it. I don't know what you think is the best way to go. I'm not
+>> sure if someone is using this input event API, since even PulseAudio
+>> even declined that implementation due KControl implementation.
+>
+> It's used quite a bit in embedded systems, there are actually patches
+> for PulseAudio which were deployed for a while- I guess they might have
+> been removed or something.
 
-Sorry, that patch is not yet applied to for-next. I will re-send
-again. You may ignore this comment for now.
+The input event implementation was only in Ubuntu (for a release or 
+two), and was never merged in upstream PA. (I guess one could find them 
+by looking in the Ubuntu archives.)
 
 -- 
-With warm regards,
-Sachin
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
