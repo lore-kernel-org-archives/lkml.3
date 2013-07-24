@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab3GXRBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:01:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51935 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab3GXRBJ convert rfc822-to-8bit (ORCPT
+	id S1752990Ab3GXRCm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:02:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:53765 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3GXRCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:01:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="370329114"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Borislav Petkov" <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>
-Subject: RE: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-Thread-Topic: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-Thread-Index: AQHOiIYspPjuX7YEhUa+bD/+CCcJ8Jl0C14A
-Date: Wed, 24 Jul 2013 17:00:17 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C9CAD4@ORSMSX106.amr.corp.intel.com>
-References: <0104420@agluck-desk.sc.intel.com>
- <20130724155510.GA29756@naverao1-tp.watson.ibm.com>
-In-Reply-To: <20130724155510.GA29756@naverao1-tp.watson.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Jul 2013 13:02:40 -0400
+Date: Wed, 24 Jul 2013 18:02:15 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Joseph Lo <josephl@nvidia.com>,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Message-ID: <20130724170215.GP9858@sirena.org.uk>
+References: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lnCRbaW8TcgsIoW0"
+Content-Disposition: inline
+In-Reply-To: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: palmas: fix pdata ptr not be updated after it
+ has been allocated
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How about just changing MCACOD to 0xefff? I don't think we ever care
-> about the 'F' bit, so we could simplify this by just changing MCACOD.
 
-That certainly reduces the size of the patch ... I was a little worried about
-just changing this because it doesn't match the definition of the MCACOD
-field in the SDM (Figure 15-5 in 15.3.2.2 IA32_MCi_STATUS MSRS).
+--lnCRbaW8TcgsIoW0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-But auditing the existing uses of this define - we only currently use it in
-places where we are looking for specific recoverable error signatures.
-So I think a big comment in mce.h explaining the missing 'F' bit should
-suffice.
+On Wed, Jul 24, 2013 at 12:28:02PM -0400, Rhyland Klein wrote:
 
-I'm going to take Chen Gong's suggestion and break this into two patches,
-one to fix the regression from the earlier cleanup. Another to tackle the
-"F" bit issue.
+> +	/* Store the pdata pointer after everything else passes */
+> +	pdev->dev.platform_data = pdata;
 
-New patches in a while.
+No, this is bad - the driver should not be modifying the platform_data
+pointer, it's owned by the thing that created the device.  If the
+platform data needs to be modified it should be copied somewhere in the
+driver data.
 
--Tony
+--lnCRbaW8TcgsIoW0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8AiUAAoJELSic+t+oim9FlsQAIBi3RQKryKif7cc/B4lQAsu
+tIaEDnE0zkscnMDiq+zhJjQFV6B8uG+v1ASk5TPHgpDYM3jTunQMnMybF+Erq0ld
+wj7mwmxbix31k/1yS0kNuvE3Jlmo231snhe4ytboOtowmQkCGDDqTV6mlgMMQjhA
+JlO/HRKnU4Va4/6JcU7VKiGPbUzBtVD9qSx43Iri1BEHUB1YJRTDTBKgG+RHtVzs
+4vSttSdvruKhNtIO+Hx0CfDmSv4A0I/+DyBhcQsjN+RWIVIgpxbI0YQ2W7hsFy7T
+RuhMQwrwmm3iq6+v9jEuxRSoN9t/kZWKgfALszUmKydEkbs8gftwMYICQtMfI9dB
+A6StW4N+3cidVXQUbtZpLDde6XcKMUhuhx/MVB3v/fP7wh74dW6ckl6NeKvhUaQv
+ERS5TaSdFaY7p2rcqMh3EobRiuxQ7fDFszEAhEVZZH2Wc1ku1UXfVBOwAnNLul6a
+M3X/iQ155DV5/WVFzsKwUJo7AbZujPdPrtjYaY+NqIJvaQqF5ebqum/SpUGFx7G6
+jx2FBXy9t3u8J622buWY91gAxl5mKAVumwi5lMMZikT7c9lkZwG3hkmnAAmZU1KV
+1T5IAxFLmOpywnqjrsCPuXtY/Gex3sihfj0vU1mL2+POBo28+HqzP1AaaWoX97VB
+bJ979T4SkFLaPScT6KJ9
+=EoX9
+-----END PGP SIGNATURE-----
+
+--lnCRbaW8TcgsIoW0--
