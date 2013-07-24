@@ -1,169 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab3GXQmJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:42:09 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:37282 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3GXQmI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:42:08 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Gavin Shan" <shangw@linux.vnet.ibm.com>
-Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
-References: <lsq.1374674565.832521875@decadent.org.uk>
-Date: Wed, 24 Jul 2013 17:42:04 +0100
-In-Reply-To: <lsq.1374674565.832521875@decadent.org.uk> (Ben Hutchings's
-	message of "Wed, 24 Jul 2013 15:02:45 +0100")
-Message-ID: <87zjtbzz8j.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
+	id S1754750Ab3GXQnO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:43:14 -0400
+Received: from www.sr71.net ([198.145.64.142]:53843 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754140Ab3GXQnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 12:43:13 -0400
+Message-ID: <51F00415.8070104@sr71.net>
+Date: Wed, 24 Jul 2013 09:43:01 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: KY Srinivasan <kys@microsoft.com>
+CC: Dave Hansen <dave.hansen@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>
+Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com> <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings <ben@decadent.org.uk> writes:
+On 07/23/2013 10:21 AM, KY Srinivasan wrote:
+>> You have allocated some large, physically contiguous areas of memory
+>> under heavy pressure.  But you also contend that there is too much
+>> memory pressure to run a small userspace helper.  Under heavy memory
+>> pressure, I'd expect large, kernel allocations to fail much more often
+>> than running a small userspace helper.
+> 
+> I am only reporting what I am seeing. Broadly, I have two main failure conditions to
+> deal with: (a) resource related failure (add_memory() returning -ENOMEM) and (b) not being
+> able to online a segment that has been successfully hot-added. I have seen both these failures
+> under high memory pressure. By supporting "in context" onlining, we can eliminate one failure
+> case. Our inability to online is not a recoverable failure from the host's point of view - the memory
+> is committed to the guest (since hot add succeeded) but is not usable since it is not onlined.
 
-> 3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
->
-> ------------------
->
-> From: Gavin Shan <shangw@linux.vnet.ibm.com>
->
-> commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
->
-> When the EEH error is the result of a fenced host bridge, MMIO accesses
-> can be very slow (milliseconds) to timeout and return all 1's,
-> thus causing the driver various timeout loops to take way too long and
-> trigger soft-lockup warnings (in addition to taking minutes to recover).
->
-> It might be worthwhile to check if for any of these cases, ffffffff is
-> a valid possible value, and if not, bail early since that means the HW
-> is either gone or isolated. In the meantime, checking that the PCI channel
-> is offline would be workaround of the problem.
->
-> Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> [bwh: Backported to 3.2: adjust context, indentation]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
->  drivers/net/ethernet/broadcom/tg3.c | 36 ++++++++++++++++++++++++++++++++++++
->  1 file changed, 36 insertions(+)
->
-> --- a/drivers/net/ethernet/broadcom/tg3.c
-> +++ b/drivers/net/ethernet/broadcom/tg3.c
-> @@ -688,6 +688,9 @@ static int tg3_ape_lock(struct tg3 *tp,
->  		status = tg3_ape_read32(tp, gnt + off);
->  		if (status == bit)
->  			break;
-> +		if (pci_channel_offline(tp->pdev))
-> +			break;
-> +
->  		udelay(10);
->  	}
->  
-> @@ -1465,6 +1468,9 @@ static void tg3_wait_for_event_ack(struc
->  	for (i = 0; i < delay_cnt; i++) {
->  		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
->  			break;
-> +		if (pci_channel_offline(tp->pdev))
-> +			break;
-> +
->  		udelay(8);
->  	}
->  }
-> @@ -1628,6 +1634,9 @@ static int tg3_poll_fw(struct tg3 *tp)
->  		for (i = 0; i < 200; i++) {
->  			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
->  				return 0;
-> +			if (pci_channel_offline(tp->pdev))
-> +				return -ENODEV;
-> +
->  			udelay(100);
->  		}
->  		return -ENODEV;
-> @@ -1638,6 +1647,15 @@ static int tg3_poll_fw(struct tg3 *tp)
->  		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
->  		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
->  			break;
-> +		if (pci_channel_offline(tp->pdev)) {
-> +			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
-> +				tg3_flag_set(tp, NO_FWARE_REPORTED);
-> +				netdev_info(tp->dev, "No firmware running\n");
-> +			}
-> +
-> +			break;
-> +		}
-> +
->  		udelay(10);
->  	}
->  
-> @@ -3067,6 +3085,10 @@ static int tg3_halt_cpu(struct tg3 *tp,
->  			tw32(offset + CPU_MODE,  CPU_MODE_HALT);
->  			if (tr32(offset + CPU_MODE) & CPU_MODE_HALT)
->  				break;
-> +			if (pci_channel_offline(tp->pdev))
-> +				return -EBUSY;
-> +			if (pci_channel_offline(tp->pdev))
-> +				return -EBUSY;
->  		}
+Could you please precisely report on what you are seeing in detail?
+Where are the -ENOMEMs coming from?  Which allocation site?  Are you
+seeing OOMs or page allocation failure messages on the console?
 
-I believe you didn't want to have these two invocations to the
-pci_channel_offline() function.  i guess you wanted to have one of
-these moved to the other branch of the 'if' statement.
+The operation was split up in to two parts for good reason.  It's
+actually for your _precise_ use case.
 
-[ btw, I've just replied to an email by David S. Miller about his
-  backport to 3.4 (and 3.2) of this commit. ]
+A system under memory pressure is going to have troubles doing a
+hot-add.  You need memory to add memory.  Of the two operations ("add"
+and "online"), "add" is the one vastly more likely to fail.  It has to
+allocate several large swaths of contiguous physical memory.  For that
+reason, the system was designed so that you could "add" and "online"
+separately.  The intention was that you could "add" far in advance and
+then "online" under memory pressure, with the "online" having *VASTLY*
+smaller memory requirements and being much more likely to succeed.
 
-Cheers,
--- 
-Luis
+You're lumping the "allocate several large swaths of contiguous physical
+memory" failures in to the same class as "run a small userspace helper".
+ They are _really_ different problems.  Both prone to allocation
+failures for sure, but _very_ separate problems.  Please don't conflate
+them.
 
+>> It _sounds_ like you really want to be able to have the host retry the
+>> operation if it fails, and you return success/failure from inside the
+>> kernel.  It's hard for you to tell if running the userspace helper
+>> failed, so your solution is to move what what previously done in
+>> userspace in to the kernel so that you can more easily tell if it failed
+>> or succeeded.
+>>
+>> Is that right?
+> 
+> No; I am able to get the proper error code for recoverable failures (hot add failures
+> because of lack of memory). By doing what I am proposing here, we can avoid one class
+> of failures completely and I think this is what resulted in a better "hot add" experience in the
+> guest.
 
->  
->  		tw32(offset + CPU_STATE, 0xffffffff); @@ -7569,6
-> +7591,14 @@ static int tg3_stop_block(struct tg3 *tp tw32_f(ofs,
-> val);
->  
->  	for (i = 0; i < MAX_WAIT_CNT; i++) {
-> +		if (pci_channel_offline(tp->pdev)) {
-> +			dev_err(&tp->pdev->dev,
-> +				"tg3_stop_block device offline, "
-> +				"ofs=%lx enable_bit=%x\n",
-> +				ofs, enable_bit);
-> +			return -ENODEV;
-> +		}
-> +
->  		udelay(100);
->  		val = tr32(ofs);
->  		if ((val & enable_bit) == 0)
-> @@ -7592,6 +7622,13 @@ static int tg3_abort_hw(struct tg3 *tp,
->  
->  	tg3_disable_ints(tp);
->  
-> +	if (pci_channel_offline(tp->pdev)) {
-> +		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
-> +		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
-> +		err = -ENODEV;
-> +		goto err_no_dev;
-> +	}
-> +
->  	tp->rx_mode &= ~RX_MODE_ENABLE;
->  	tw32_f(MAC_RX_MODE, tp->rx_mode);
->  	udelay(10);
-> @@ -7640,6 +7677,7 @@ static int tg3_abort_hw(struct tg3 *tp,
->  	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
->  	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
->  
-> +err_no_dev:
->  	for (i = 0; i < tp->irq_cnt; i++) {
->  		struct tg3_napi *tnapi = &tp->napi[i];
->  		if (tnapi->hw_status)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I think you're taking a huge leap here: "We could not online memory,
+thus we must take userspace out of the loop."
+
+You might be right.  There might be only one way out of this situation.
+ But you need to provide a little more supporting evidence before we all
+arrive at the same conclusion.
+
+BTW, it doesn't _require_ udev.  There could easily be another listener
+for hotplug events.
