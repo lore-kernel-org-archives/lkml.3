@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754375Ab3GXOfR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:35:17 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50290 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754227Ab3GXOfO (ORCPT
+	id S1754433Ab3GXOfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:35:34 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:61954 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab3GXOf3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:35:14 -0400
-Date: Wed, 24 Jul 2013 15:35:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-kernel@vger.kernel.org, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, linux-arm-kernel@lists.infradead.org,
-        alsa-devel@alsa-project.org
-Message-ID: <20130724143511.GG9858@sirena.org.uk>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
- <1374602524-3398-25-git-send-email-wsa@the-dreams.de>
+	Wed, 24 Jul 2013 10:35:29 -0400
+Message-ID: <51EFE62A.70901@cogentembedded.com>
+Date: Wed, 24 Jul 2013 18:35:22 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TT8SSM5c4BjMHFvZ"
-Content-Disposition: inline
-In-Reply-To: <1374602524-3398-25-git-send-email-wsa@the-dreams.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 24/27] sound/soc/pxa: don't check resource with
- devm_ioremap_resource
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Francesco Fusco <ffusco@redhat.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next 2/2] sysctl: range checking in do_proc_dointvec_ms_jiffies_conv
+References: <cover.1374654531.git.ffusco@redhat.com> <de72e4265ab874b70b127011bb1ef8c2d27bfe63.1374654531.git.ffusco@redhat.com>
+In-Reply-To: <de72e4265ab874b70b127011bb1ef8c2d27bfe63.1374654531.git.ffusco@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello.
 
---TT8SSM5c4BjMHFvZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 24-07-2013 12:39, Francesco Fusco wrote:
 
-On Tue, Jul 23, 2013 at 08:01:57PM +0200, Wolfram Sang wrote:
-> devm_ioremap_resource does sanity checks on the given resource. No need to
-> duplicate this in the driver.
+> When (integer) sysctl values are expressed in ms and have to be
+> represented internally as jiffies. The msecs_to_jiffies function
+> returns an unsigned long, which gets assigned to the integer.
+> This patch prevents the value to be assigned if bigger than
+> INT_MAX, done in a similar way as in cba9f3 ("Range checking in
+> do_proc_dointvec_(userhz_)jiffies_conv").
 
-Applied, thanks.
+> Signed-off-by: Francesco Fusco <ffusco@redhat.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: linux-kernel@vger.kernel.org
+> ---
+>   kernel/sysctl.c | 6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
 
---TT8SSM5c4BjMHFvZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index ac09d98..00813e5 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -2346,7 +2346,11 @@ static int do_proc_dointvec_ms_jiffies_conv(bool *negp, unsigned long *lvalp,
+>   					    int write, void *data)
+>   {
+>   	if (write) {
+> -		*valp = msecs_to_jiffies(*negp ? -*lvalp : *lvalp);
+> +		unsigned long jif = 0;
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+    Pointless initializer. And an empty line wouldn't hurt after declaration.
 
-iQIcBAEBAgAGBQJR7+YcAAoJELSic+t+oim9U3MP/RwgExqpspyfQgbBkYUgtjM0
-jX/UL/Peb/+DKS/xcFsaHRVw3De/xq0NXP/5DEuA6ujZLEsX77/80k2dNvBfoxi9
-P9+5Rf4qYyHkJFHEjEP3nZGUYisstV5ogdgWop40ZL+xBaqrH43JKEUA/nyoS0Dq
-0P0CvdPbG7fukulEITl7d2xvgccJozMQB7Evx9ilwB2WdISfdOeB5ZHwu1EtGCuh
-9ww6rLtocM6sOcCOFSwHsUKGWwm9386XG7RZBRIU2zH0MaB85EZB5/AhOONJ7P7q
-yp20DLhgUZBzvw83ddyP8ydQO7guyADtgppUK/YsDXYVoHUMzeXJmYy9o9K7oU8o
-AjMyFQxQF1Php3nX1t7p8Rw4pM9QU/5kJHRlo2x0iU02yIcLyFwKsryZ4pJc7g9M
-evkSj1z+ZZ/P9XxtD5Bs67qNLU4hfFSyPIM4yQp3Tc3Odervi3cDbcZaetdfDlHl
-kFWBiqSYV7bzQPszP4a3dmbv1m4jrzQ6a6WMn45ZBO+JQxdUABaMcgyybX+UEzf8
-nZBfgSLOc2PV/KjMoJco7Gz30341k2GVVwUHFkeOO2yBRKHP8SkkdX410CXJ0fpV
-ayoNjf12rsesI0rvsFw9y8Lbe0LGtIozNMRFY1dy6/PGnYobJXmIUsKCeZytbC6q
-4oSz6R9op6V2W6dL54dP
-=4Wl1
------END PGP SIGNATURE-----
+> +		jif =  msecs_to_jiffies(*negp ? -*lvalp : *lvalp);
 
---TT8SSM5c4BjMHFvZ--
+    One space after = is enough.
+
+> +		if (jif > INT_MAX)
+> +			return 1;
+> +		*valp = (int)jif;
+
+WBR, Sergei
+
