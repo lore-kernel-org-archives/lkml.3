@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab3GXWNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:13:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55393 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3GXWGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752788Ab3GXWGF (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 24 Jul 2013 18:06:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55313 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3GXWFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:05:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Richard Purdie <rpurdie@rpsys.net>, Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH 28/36] video: backlight: lcd: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:31 -0700
-Message-Id: <1374703539-9705-29-git-send-email-gregkh@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 03/36] bsr: convert bsr_class to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:06 -0700
+Message-Id: <1374703539-9705-4-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,108 +22,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the video backlight lcd class
-code to use the correct field.
+should be used instead.  This converts the bsr bsr_class code to use
+the correct field.
 
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ drivers/char/bsr.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
 
-Richard, feel free to take this through your tree, or ACK it and I can
-take it through mine.
-
- drivers/video/backlight/lcd.c | 26 +++++++++++++++-----------
- 1 file changed, 15 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/video/backlight/lcd.c b/drivers/video/backlight/lcd.c
-index 41964a71..93cf15ef 100644
---- a/drivers/video/backlight/lcd.c
-+++ b/drivers/video/backlight/lcd.c
-@@ -89,7 +89,7 @@ static inline void lcd_unregister_fb(struct lcd_device *ld)
+diff --git a/drivers/char/bsr.c b/drivers/char/bsr.c
+index 97467053..0671e45d 100644
+--- a/drivers/char/bsr.c
++++ b/drivers/char/bsr.c
+@@ -95,6 +95,7 @@ bsr_size_show(struct device *dev, struct device_attribute *attr, char *buf)
+ 	struct bsr_dev *bsr_dev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", bsr_dev->bsr_bytes);
  }
- #endif /* CONFIG_FB */
++static DEVICE_ATTR_RO(bsr_size);
  
--static ssize_t lcd_show_power(struct device *dev, struct device_attribute *attr,
-+static ssize_t lcd_power_show(struct device *dev, struct device_attribute *attr,
- 		char *buf)
+ static ssize_t
+ bsr_stride_show(struct device *dev, struct device_attribute *attr, char *buf)
+@@ -102,20 +103,23 @@ bsr_stride_show(struct device *dev, struct device_attribute *attr, char *buf)
+ 	struct bsr_dev *bsr_dev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", bsr_dev->bsr_stride);
+ }
++static DEVICE_ATTR_RO(bsr_stride);
+ 
+ static ssize_t
+-bsr_len_show(struct device *dev, struct device_attribute *attr, char *buf)
++bsr_length_show(struct device *dev, struct device_attribute *attr, char *buf)
  {
- 	int rc;
-@@ -105,7 +105,7 @@ static ssize_t lcd_show_power(struct device *dev, struct device_attribute *attr,
- 	return rc;
+ 	struct bsr_dev *bsr_dev = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%llu\n", bsr_dev->bsr_len);
  }
++static DEVICE_ATTR_RO(bsr_length);
  
--static ssize_t lcd_store_power(struct device *dev,
-+static ssize_t lcd_power_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	int rc;
-@@ -128,8 +128,9 @@ static ssize_t lcd_store_power(struct device *dev,
- 
- 	return rc;
- }
-+static DEVICE_ATTR_RW(lcd_power);
- 
--static ssize_t lcd_show_contrast(struct device *dev,
-+static ssize_t contrast_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	int rc = -ENXIO;
-@@ -143,7 +144,7 @@ static ssize_t lcd_show_contrast(struct device *dev,
- 	return rc;
- }
- 
--static ssize_t lcd_store_contrast(struct device *dev,
-+static ssize_t contrast_store(struct device *dev,
- 		struct device_attribute *attr, const char *buf, size_t count)
- {
- 	int rc;
-@@ -166,14 +167,16 @@ static ssize_t lcd_store_contrast(struct device *dev,
- 
- 	return rc;
- }
-+static DEVICE_ATTR_RW(contrast);
- 
--static ssize_t lcd_show_max_contrast(struct device *dev,
-+static ssize_t max_contrast_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct lcd_device *ld = to_lcd_device(dev);
- 
- 	return sprintf(buf, "%d\n", ld->props.max_contrast);
- }
-+static DEVICE_ATTR_RO(max_contrast);
- 
- static struct class *lcd_class;
- 
-@@ -183,12 +186,13 @@ static void lcd_device_release(struct device *dev)
- 	kfree(ld);
- }
- 
--static struct device_attribute lcd_device_attributes[] = {
--	__ATTR(lcd_power, 0644, lcd_show_power, lcd_store_power),
--	__ATTR(contrast, 0644, lcd_show_contrast, lcd_store_contrast),
--	__ATTR(max_contrast, 0444, lcd_show_max_contrast, NULL),
--	__ATTR_NULL,
-+static struct attribute *lcd_device_attrs[] = {
-+	&dev_attr_lcd_power.attr,
-+	&dev_attr_contrast.attr,
-+	&dev_attr_max_contrast.attr,
+-static struct device_attribute bsr_dev_attrs[] = {
+-	__ATTR(bsr_size, S_IRUGO, bsr_size_show, NULL),
+-	__ATTR(bsr_stride, S_IRUGO, bsr_stride_show, NULL),
+-	__ATTR(bsr_length, S_IRUGO, bsr_len_show, NULL),
+-	__ATTR_NULL
++static struct attribute *bsr_dev_attrs[] = {
++	&dev_attr_bsr_size.attr,
++	&dev_attr_bsr_stride.attr,
++	&dev_attr_bsr_length.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(lcd_device);
++ATTRIBUTE_GROUPS(bsr_dev);
  
- /**
-  * lcd_device_register - register a new object of lcd_device class.
-@@ -344,7 +348,7 @@ static int __init lcd_class_init(void)
- 		return PTR_ERR(lcd_class);
+ static int bsr_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+@@ -308,7 +312,7 @@ static int __init bsr_init(void)
+ 		ret = PTR_ERR(bsr_class);
+ 		goto out_err_1;
  	}
+-	bsr_class->dev_attrs = bsr_dev_attrs;
++	bsr_class->dev_groups = bsr_dev_groups;
  
--	lcd_class->dev_attrs = lcd_device_attributes;
-+	lcd_class->dev_groups = lcd_device_groups;
- 	return 0;
- }
- 
+ 	ret = alloc_chrdev_region(&bsr_dev, 0, BSR_MAX_DEVS, "bsr");
+ 	bsr_major = MAJOR(bsr_dev);
 -- 
 1.8.3.rc0.20.gb99dd2e
 
