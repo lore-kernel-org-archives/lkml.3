@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab3GXWGI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55320 "EHLO
+	id S1754508Ab3GXWLH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:11:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55411 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab3GXWFr (ORCPT
+	with ESMTP id S1753966Ab3GXWGJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:47 -0400
+	Wed, 24 Jul 2013 18:06:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Williams <djbw@fb.com>, Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH 05/36] dma: convert dma_devclass to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:08 -0700
-Message-Id: <1374703539-9705-6-git-send-email-gregkh@linuxfoundation.org>
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 33/36] net: rfkill: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:36 -0700
+Message-Id: <1374703539-9705-34-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,89 +24,204 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the dma dma_devclass code to use
-the correct field.
+should be used instead.  This converts the rfkill class code to use the
+correct field.
 
-Cc: Dan Williams <djbw@fb.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: John W. Linville <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-Dan and Vinod, feel free to apply this to your trees, or ACK it and I can take
-it through mine.
+Johnannes, feel free to take this through your tree, or ACK it and I can
+take it through mine.
 
- drivers/dma/dmaengine.c | 26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ net/rfkill/core.c | 90 +++++++++++++++++++++++++------------------------------
+ 1 file changed, 41 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index 9e56745f..99af4db5 100644
---- a/drivers/dma/dmaengine.c
-+++ b/drivers/dma/dmaengine.c
-@@ -87,7 +87,8 @@ static struct dma_chan *dev_to_dma_chan(struct device *dev)
- 	return chan_dev->chan;
+diff --git a/net/rfkill/core.c b/net/rfkill/core.c
+index 1cec5e4f..1bacc107 100644
+--- a/net/rfkill/core.c
++++ b/net/rfkill/core.c
+@@ -576,14 +576,14 @@ void rfkill_set_states(struct rfkill *rfkill, bool sw, bool hw)
  }
+ EXPORT_SYMBOL(rfkill_set_states);
  
--static ssize_t show_memcpy_count(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t memcpy_count_show(struct device *dev,
-+				 struct device_attribute *attr, char *buf)
+-static ssize_t rfkill_name_show(struct device *dev,
+-				struct device_attribute *attr,
+-				char *buf)
++static ssize_t name_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
  {
- 	struct dma_chan *chan;
- 	unsigned long count = 0;
-@@ -106,9 +107,10 @@ static ssize_t show_memcpy_count(struct device *dev, struct device_attribute *at
+ 	struct rfkill *rfkill = to_rfkill(dev);
  
- 	return err;
+ 	return sprintf(buf, "%s\n", rfkill->name);
  }
-+static DEVICE_ATTR_RO(memcpy_count);
++static DEVICE_ATTR_RO(name);
  
--static ssize_t show_bytes_transferred(struct device *dev, struct device_attribute *attr,
--				      char *buf)
-+static ssize_t bytes_transferred_show(struct device *dev,
-+				      struct device_attribute *attr, char *buf)
+ static const char *rfkill_get_type_str(enum rfkill_type type)
  {
- 	struct dma_chan *chan;
- 	unsigned long count = 0;
-@@ -127,8 +129,10 @@ static ssize_t show_bytes_transferred(struct device *dev, struct device_attribut
- 
- 	return err;
+@@ -611,54 +611,52 @@ static const char *rfkill_get_type_str(enum rfkill_type type)
+ 	}
  }
-+static DEVICE_ATTR_RO(bytes_transferred);
  
--static ssize_t show_in_use(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t in_use_show(struct device *dev, struct device_attribute *attr,
-+			   char *buf)
+-static ssize_t rfkill_type_show(struct device *dev,
+-				struct device_attribute *attr,
+-				char *buf)
++static ssize_t type_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
  {
- 	struct dma_chan *chan;
- 	int err;
-@@ -143,13 +147,15 @@ static ssize_t show_in_use(struct device *dev, struct device_attribute *attr, ch
+ 	struct rfkill *rfkill = to_rfkill(dev);
  
- 	return err;
+ 	return sprintf(buf, "%s\n", rfkill_get_type_str(rfkill->type));
  }
-+static DEVICE_ATTR_RO(in_use);
++static DEVICE_ATTR_RO(type);
  
--static struct device_attribute dma_attrs[] = {
--	__ATTR(memcpy_count, S_IRUGO, show_memcpy_count, NULL),
--	__ATTR(bytes_transferred, S_IRUGO, show_bytes_transferred, NULL),
--	__ATTR(in_use, S_IRUGO, show_in_use, NULL),
+-static ssize_t rfkill_idx_show(struct device *dev,
+-			       struct device_attribute *attr,
+-			       char *buf)
++static ssize_t index_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 
+ 	return sprintf(buf, "%d\n", rfkill->idx);
+ }
++static DEVICE_ATTR_RO(index);
+ 
+-static ssize_t rfkill_persistent_show(struct device *dev,
+-			       struct device_attribute *attr,
+-			       char *buf)
++static ssize_t persistent_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 
+ 	return sprintf(buf, "%d\n", rfkill->persistent);
+ }
++static DEVICE_ATTR_RO(persistent);
+ 
+-static ssize_t rfkill_hard_show(struct device *dev,
+-				 struct device_attribute *attr,
+-				 char *buf)
++static ssize_t hard_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 
+ 	return sprintf(buf, "%d\n", (rfkill->state & RFKILL_BLOCK_HW) ? 1 : 0 );
+ }
++static DEVICE_ATTR_RO(hard);
+ 
+-static ssize_t rfkill_soft_show(struct device *dev,
+-				 struct device_attribute *attr,
+-				 char *buf)
++static ssize_t soft_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 
+ 	return sprintf(buf, "%d\n", (rfkill->state & RFKILL_BLOCK_SW) ? 1 : 0 );
+ }
+ 
+-static ssize_t rfkill_soft_store(struct device *dev,
+-				  struct device_attribute *attr,
+-				  const char *buf, size_t count)
++static ssize_t soft_store(struct device *dev, struct device_attribute *attr,
++			  const char *buf, size_t count)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 	unsigned long state;
+@@ -680,6 +678,7 @@ static ssize_t rfkill_soft_store(struct device *dev,
+ 
+ 	return count;
+ }
++static DEVICE_ATTR_RW(soft);
+ 
+ static u8 user_state_from_blocked(unsigned long state)
+ {
+@@ -691,18 +690,16 @@ static u8 user_state_from_blocked(unsigned long state)
+ 	return RFKILL_USER_STATE_UNBLOCKED;
+ }
+ 
+-static ssize_t rfkill_state_show(struct device *dev,
+-				 struct device_attribute *attr,
+-				 char *buf)
++static ssize_t state_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 
+ 	return sprintf(buf, "%d\n", user_state_from_blocked(rfkill->state));
+ }
+ 
+-static ssize_t rfkill_state_store(struct device *dev,
+-				  struct device_attribute *attr,
+-				  const char *buf, size_t count)
++static ssize_t state_store(struct device *dev, struct device_attribute *attr,
++			   const char *buf, size_t count)
+ {
+ 	struct rfkill *rfkill = to_rfkill(dev);
+ 	unsigned long state;
+@@ -725,32 +722,27 @@ static ssize_t rfkill_state_store(struct device *dev,
+ 
+ 	return count;
+ }
++static DEVICE_ATTR_RW(state);
+ 
+-static ssize_t rfkill_claim_show(struct device *dev,
+-				 struct device_attribute *attr,
+-				 char *buf)
++static ssize_t claim_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
+ {
+ 	return sprintf(buf, "%d\n", 0);
+ }
+-
+-static ssize_t rfkill_claim_store(struct device *dev,
+-				  struct device_attribute *attr,
+-				  const char *buf, size_t count)
+-{
+-	return -EOPNOTSUPP;
+-}
+-
+-static struct device_attribute rfkill_dev_attrs[] = {
+-	__ATTR(name, S_IRUGO, rfkill_name_show, NULL),
+-	__ATTR(type, S_IRUGO, rfkill_type_show, NULL),
+-	__ATTR(index, S_IRUGO, rfkill_idx_show, NULL),
+-	__ATTR(persistent, S_IRUGO, rfkill_persistent_show, NULL),
+-	__ATTR(state, S_IRUGO|S_IWUSR, rfkill_state_show, rfkill_state_store),
+-	__ATTR(claim, S_IRUGO|S_IWUSR, rfkill_claim_show, rfkill_claim_store),
+-	__ATTR(soft, S_IRUGO|S_IWUSR, rfkill_soft_show, rfkill_soft_store),
+-	__ATTR(hard, S_IRUGO, rfkill_hard_show, NULL),
 -	__ATTR_NULL
-+static struct attribute *dma_dev_attrs[] = {
-+	&dev_attr_memcpy_count.attr,
-+	&dev_attr_bytes_transferred.attr,
-+	&dev_attr_in_use.attr,
++static DEVICE_ATTR_RO(claim);
++
++static struct attribute *rfkill_dev_attrs[] = {
++	&dev_attr_name.attr,
++	&dev_attr_type.attr,
++	&dev_attr_index.attr,
++	&dev_attr_persistent.attr,
++	&dev_attr_state.attr,
++	&dev_attr_claim.attr,
++	&dev_attr_soft.attr,
++	&dev_attr_hard.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(dma_dev);
++ATTRIBUTE_GROUPS(rfkill_dev);
  
- static void chan_dev_release(struct device *dev)
+ static void rfkill_release(struct device *dev)
  {
-@@ -167,7 +173,7 @@ static void chan_dev_release(struct device *dev)
- 
- static struct class dma_devclass = {
- 	.name		= "dma",
--	.dev_attrs	= dma_attrs,
-+	.dev_groups	= dma_dev_groups,
- 	.dev_release	= chan_dev_release,
- };
- 
+@@ -830,7 +822,7 @@ static int rfkill_resume(struct device *dev)
+ static struct class rfkill_class = {
+ 	.name		= "rfkill",
+ 	.dev_release	= rfkill_release,
+-	.dev_attrs	= rfkill_dev_attrs,
++	.dev_groups	= rfkill_dev_groups,
+ 	.dev_uevent	= rfkill_dev_uevent,
+ 	.suspend	= rfkill_suspend,
+ 	.resume		= rfkill_resume,
 -- 
 1.8.3.rc0.20.gb99dd2e
 
