@@ -1,278 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab3GXGYd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:24:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:39881 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751443Ab3GXGYb convert rfc822-to-8bit (ORCPT
+	id S1752094Ab3GXGZv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:25:51 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:35245 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab3GXGZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:24:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,733,1367996400"; 
-   d="scan'208";a="375073793"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Ben Guthro <Benjamin.Guthro@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "Moore, Robert" <robert.moore@intel.com>
-Subject: RE: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
- hardware sleep path
-Thread-Topic: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
- reduced hardware sleep path
-Thread-Index: AQHOcnac189PXIyTT0GA11YOlMneHJlQ7d+w///Zo4CAIr75sA==
-Date: Wed, 24 Jul 2013 06:24:27 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com>
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
- <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
- <1AE640813FDE7649BE1B193DEA596E880241B363@SHSMSX101.ccr.corp.intel.com>
- <51D2BCB7.5040105@citrix.com>
-In-Reply-To: <51D2BCB7.5040105@citrix.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Jul 2013 02:25:49 -0400
+Date: Wed, 24 Jul 2013 08:25:33 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 05/13] tile: support PTP using the tilegx mPIPE (IEEE
+ 1588)
+Message-ID: <20130724062533.GA5163@netboy>
+References: <cover.1374609948.git.cmetcalf@tilera.com>
+ <77f753af79722f39c5fa77cd35adefdd1634e5d5.1374609949.git.cmetcalf@tilera.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <77f753af79722f39c5fa77cd35adefdd1634e5d5.1374609949.git.cmetcalf@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Chris,
 
-Sorry for the delayed response.
+This mail is a duplicate to you. I left off the CCs by mistake.
 
-> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
-> Sent: Tuesday, July 02, 2013 7:43 PM
-> 
-> 
-> On 07/02/2013 02:19 AM, Zheng, Lv wrote:
-> > Thanks for your efforts!
-> >
-> > I wonder if it is possible to remove the argument - "u8 extended" and convert
-> "pm1a_control, pm1b_control" into some u8 values that are equivalent to
-> "acpi_gbl_sleep_type_a, acpi_gbl_sleep_type_b" in the legacy sleep path.
-> > It can also simplify Xen codes.
-> 
-> Thanks for your time to review this.
-> 
-> I'm not sure that this simplifies things. I think that, in fact, it would make them
-> quite a bit more complicated, but perhaps I misunderstand.
-> 
-> Is it not preferred to use the reduced hardware sleep, over the old method?
-> While these register definitions may be equivalent below, doing the translation
-> in linux, only to translate them back again at a lower layer seems unnecessary.
-> 
+On Tue, Jul 23, 2013 at 04:05:48PM -0400, Chris Metcalf wrote:
 
-Yes, it would require tboot layer to be able to be aware of how such fields locate in the PM registers.
-So I think you can pass the register address of the field and the field name/value pair to the tboot, this could simplify things, no lower layer effort will be needed.
-Please don't worry about the case that a register field could be split into PM1a and PM1b, it could be a hardware design issue.
-IMO, one field should always be in one register, either PM1a or PM1b.
-Or there could be hardware issues cannot be addressed by the ACPICA architecture (something like natural atomicity).
-But maybe I'm wrong.
+> diff --git a/arch/tile/include/gxio/mpipe.h b/arch/tile/include/gxio/mpipe.h
+> index b74f470..57f5ca2 100644
+> --- a/arch/tile/include/gxio/mpipe.h
+> +++ b/arch/tile/include/gxio/mpipe.h
+> @@ -1733,4 +1733,17 @@ extern int gxio_mpipe_set_timestamp(gxio_mpipe_context_t *context,
+>  extern int gxio_mpipe_adjust_timestamp(gxio_mpipe_context_t *context,
+>  				       int64_t delta);
+>  
+> +/* Adjust the mPIPE timestamp clock frequency.
+> + *
+> + * @param context An initialized mPIPE context.
+> + * @param ppb A 32-bits signed PPB(Parts Per Billion) value to adjust.
+> + * The absolute value of ppb must be less than or equal to 1000000000,
+> + * and should be larger then 30000, otherwise just ignored because of
+> + * the clock precision restriction.
 
-Thanks and best regards
--Lv
+30 ppm? That is not too good.
 
-> The hypervisor knows how to deal with both the reduced hardware sleep as
-> well as the legacy sleep path - it merely need to distinguish these two paths,
-> when performing the hypercall.
-> 
-> Since there are two paths through the higher level ACPICA code - that in
-> hwsleep.c, and hwesleep.c - there needs to be some distinction between the
-> two paths, when calling through to the lower level
-> acpi_os_prepare_sleep() call.
-> 
-> An alternate method would be to create another interface named
-> acpi_os_prepare_esleep() which would do the equivalent of this patch series,
-> with an "extended" parameter hidden from upper level interfaces.
-> 
-> This, however, would also add another function to include/acpi/acpiosxf.h -
-> which, I thought was undesirable, in the impression that I got from Bob Moore,
-> and Rafael Wysocki (though, please correct me on this point, if I have
-> misunderstood)
-> 
-> Best Regards
-> 
-> Ben
-> 
-> >
-> > As in ACPI specification, the bit definitions between the legacy sleep registers
-> and the extended sleep registers are equivalent.
-> >
-> > The legacy sleep register definition:
-> > Table 4-16 PM1 Status Registers Fixed Hardware Feature Status Bits -
-> > WAK_STS(bit 15) Table 4-18 PM1 Control Registers Fixed Hardware
-> > Feature Control Bits - SLP_TYPx (bit 10-12), SLP_EN (bit 13)
-> >
-> > The extended sleep register definition:
-> > Table 4-24 Sleep Control Register - SLP_TYPx (3 bits from offset 2), SLP_EN (1
-> bit from offset 5), here 10-8 = 2, and 13-8 = 5, this definition is equivalent to
-> Table 4-18.
-> > Table 4-25 Sleep Status Register - WAK_STS (1 bit 7), 15-8 = 7, this definition is
-> equivalent to Table 4-16.
-> >
-> > Thanks and best regards
-> > -Lv
-> >
-> >> -----Original Message-----
-> >> From: linux-acpi-owner@vger.kernel.org
-> >> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Ben Guthro
-> >> Sent: Wednesday, June 26, 2013 10:06 PM
-> >> To: Konrad Rzeszutek Wilk; Jan Beulich; Rafaell J . Wysocki;
-> >> linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org;
-> >> xen-devel@lists.xen.org
-> >> Cc: Ben Guthro; Moore, Robert
-> >> Subject: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
-> >> reduced hardware sleep path
-> >>
-> >> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel
-> >> with reduced hardware sleep support, and the two changes didn't get
-> >> synchronized: The new code doesn't call the hook function (if so
-> >> requested). Fix this, requiring a parameter to be added to the hook
-> >> function to distinguish "extended" from "legacy" sleep.
-> >>
-> >> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> >> Cc: Bob Moore <robert.moore@intel.com>
-> >> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
-> >> Cc: linux-acpi@vger.kernel.org
-> >> ---
-> >>   drivers/acpi/acpica/hwesleep.c |    8 ++++++++
-> >>   drivers/acpi/acpica/hwsleep.c  |    2 +-
-> >>   drivers/acpi/osl.c             |   16 ++++++++--------
-> >>   include/linux/acpi.h           |   10 +++++-----
-> >>   4 files changed, 22 insertions(+), 14 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/acpica/hwesleep.c
-> >> b/drivers/acpi/acpica/hwesleep.c index 5e5f762..6834dd7 100644
-> >> --- a/drivers/acpi/acpica/hwesleep.c
-> >> +++ b/drivers/acpi/acpica/hwesleep.c
-> >> @@ -43,6 +43,7 @@
-> >>    */
-> >>
-> >>   #include <acpi/acpi.h>
-> >> +#include <linux/acpi.h>
-> >>   #include "accommon.h"
-> >>
-> >>   #define _COMPONENT          ACPI_HARDWARE
-> >> @@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8
-> >> sleep_state)
-> >>
-> >>   	ACPI_FLUSH_CPU_CACHE();
-> >>
-> >> +	status = acpi_os_prepare_sleep(sleep_state, acpi_gbl_sleep_type_a,
-> >> +				       acpi_gbl_sleep_type_b, true);
-> >> +	if (ACPI_SKIP(status))
-> >> +		return_ACPI_STATUS(AE_OK);
-> >> +	if (ACPI_FAILURE(status))
-> >> +		return_ACPI_STATUS(status);
-> >> +
-> >>   	/*
-> >>   	 * Set the SLP_TYP and SLP_EN bits.
-> >>   	 *
-> >> diff --git a/drivers/acpi/acpica/hwsleep.c
-> >> b/drivers/acpi/acpica/hwsleep.c index e3828cc..a93c299 100644
-> >> --- a/drivers/acpi/acpica/hwsleep.c
-> >> +++ b/drivers/acpi/acpica/hwsleep.c
-> >> @@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
-> >>   	ACPI_FLUSH_CPU_CACHE();
-> >>
-> >>   	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
-> >> -				       pm1b_control);
-> >> +				       pm1b_control, false);
-> >>   	if (ACPI_SKIP(status))
-> >>   		return_ACPI_STATUS(AE_OK);
-> >>   	if (ACPI_FAILURE(status))
-> >> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
-> >> e721863..3fc2801 100644
-> >> --- a/drivers/acpi/osl.c
-> >> +++ b/drivers/acpi/osl.c
-> >> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
-> >>   extern char line_buf[80];
-> >>   #endif				/*ENABLE_DEBUGGER */
-> >>
-> >> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
-> >> -				      u32 pm1b_ctrl);
-> >> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a, u32
-> val_b,
-> >> +				      u8 extended);
-> >>
-> >>   static acpi_osd_handler acpi_irq_handler;
-> >>   static void *acpi_irq_context;
-> >> @@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
-> >>   	return AE_OK;
-> >>   }
-> >>
-> >> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
-> >> -				  u32 pm1b_control)
-> >> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-> >> +				  u8 extended)
-> >>   {
-> >>   	int rc = 0;
-> >>   	if (__acpi_os_prepare_sleep)
-> >> -		rc = __acpi_os_prepare_sleep(sleep_state,
-> >> -					     pm1a_control, pm1b_control);
-> >> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
-> >> +					     extended);
-> >>   	if (rc < 0)
-> >>   		return AE_ERROR;
-> >>   	else if (rc > 0)
-> >> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
-> >> sleep_state,
-> >> u32 pm1a_control,
-> >>   	return AE_OK;
-> >>   }
-> >>
-> >> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
-> >> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
-> >> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-> >> +					   u32 val_b, u8 extended))
-> >>   {
-> >>   	__acpi_os_prepare_sleep = func;
-> >>   }
-> >> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
-> >> 17b5b59..de99022 100644
-> >> --- a/include/linux/acpi.h
-> >> +++ b/include/linux/acpi.h
-> >> @@ -477,11 +477,11 @@ static inline bool
-> >> acpi_driver_match_device(struct device *dev,
-> >>   #endif	/* !CONFIG_ACPI */
-> >>
-> >>   #ifdef CONFIG_ACPI
-> >> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
-> >> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
-> >> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32 val_a,
-> >> +					   u32 val_b, u8 extended));
-> >>
-> >> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
-> >> -				  u32 pm1a_control, u32 pm1b_control);
-> >> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32 val_b,
-> >> +				  u8 extended);
-> >>   #ifdef CONFIG_X86
-> >>   void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
-> >>   #else
-> >> @@ -491,7 +491,7 @@ static inline void
-> >> arch_reserve_mem_area(acpi_physical_address addr,
-> >>   }
-> >>   #endif /* CONFIG_X86 */
-> >>   #else
-> >> -#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { }
-> >> while
-> >> (0)
-> >> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
-> >> +while (0)
-> >>   #endif
-> >>
-> >>   #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
-> >> --
-> >> 1.7.9.5
-> >>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-acpi"
-> >> in the body of a message to majordomo@vger.kernel.org More majordomo
-> >> info at  http://vger.kernel.org/majordomo-info.html
+What do you mean by "should be larger"? The caller (from user space)
+has no way to know about this limitation.
+
+> + * @return If the call was successful, zero; otherwise, a negative error
+> + *  code.
+> + */
+> +extern int gxio_mpipe_adjust_timestamp_freq(gxio_mpipe_context_t *context,
+> +					    int32_t ppb);
+> +
+>  #endif /* !_GXIO_MPIPE_H_ */
+
+...
+
+> diff --git a/drivers/net/ethernet/tile/tilegx.c b/drivers/net/ethernet/tile/tilegx.c
+> index f3c2d03..3d4406c 100644
+> --- a/drivers/net/ethernet/tile/tilegx.c
+> +++ b/drivers/net/ethernet/tile/tilegx.c
+
+...
+
+> @@ -1284,6 +1325,12 @@ static int tile_net_stop(struct net_device *dev)
+>  	return 0;
+>  }
+>  
+> +gxio_mpipe_context_t *get_mpipe_context(int index)
+> +{
+> +	return ingress_irq < 0 ? NULL : &context;
+
+So having a PHC depends on this IRQ having been initialized.
+Why not just register the PHC in the same place?
+
+> +}
+> +EXPORT_SYMBOL_GPL(get_mpipe_context);
+> +
+>  /* Determine the VA for a fragment. */
+>  static inline void *tile_net_frag_buf(skb_frag_t *f)
+>  {
+
+...
+
+> @@ -1727,6 +1777,12 @@ static void tile_net_tx_timeout(struct net_device *dev)
+>  /* Ioctl commands. */
+>  static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+>  {
+> +#ifdef CONFIG_PTP_1588_CLOCK_TILEGX
+> +	if (cmd == SIOCSHWTSTAMP) {
+> +		/* Hardware timestamping was enabled by default. */
+> +		return 0;
+
+This won't do. You need to update tx_type and rx_filter to reflect the
+actual settings.
+
+> +	}
+> +#endif
+>  	return -EOPNOTSUPP;
+>  }
+>  
+
+> diff --git a/drivers/net/ethernet/tile/tilegx_ptp.c b/drivers/net/ethernet/tile/tilegx_ptp.c
+> new file mode 100644
+> index 0000000..a188463
+> --- /dev/null
+> +++ b/drivers/net/ethernet/tile/tilegx_ptp.c
+> @@ -0,0 +1,202 @@
+> +/*
+> + * PTP 1588 clock using the TILE-Gx.
+> + *
+> + * Copyright 2013 Tilera Corporation. All Rights Reserved.
+> + *
+> + *   This program is free software; you can redistribute it and/or
+> + *   modify it under the terms of the GNU General Public License
+> + *   as published by the Free Software Foundation, version 2.
+> + *
+> + *   This program is distributed in the hope that it will be useful, but
+> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + *   NON INFRINGEMENT.  See the GNU General Public License for
+> + *   more details.
+> + *
+> + * This source code is derived from ptp_ixp46x.c wrote by Richard Cochran.
+                                                    ^^^^^^^^
+"written by"
+
+> + */
+> +
+> +#include <linux/device.h>
+> +#include <linux/err.h>
+> +#include <linux/gpio.h>
+> +#include <linux/init.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/ptp_clock_kernel.h>
+> +
+> +#include <gxio/mpipe.h>
+> +#include <gxio/iorpc_mpipe.h>
+> +
+> +#define GBE_LINK_NR		4
+> +
+> +/* nanoseconds will be incremented each clock cycle. */
+> +#define GBE_TIMER_INCREMENT	8
+> +
+> +
+> +MODULE_AUTHOR("Tilera Corporation");
+> +MODULE_DESCRIPTION("PTP clock using the TILE-Gx");
+> +MODULE_LICENSE("GPL");
+
+No need to make this a module at all. Just make the code conditionally
+compiled, and register the clock along with your ingress_irq.
+
+> +
+> +
+> +struct mpipe_clock {
+> +	struct ptp_clock *ptp_clock;
+> +	gxio_mpipe_context_t *context;
+> +	struct ptp_clock_info caps;
+> +	struct mutex lock;
+> +};
+> +
+> +static struct mpipe_clock mpipe_clock;
+> +
+> +extern gxio_mpipe_context_t *get_mpipe_context(int index);
+> +
+> +/*
+> + * Check if the context of mpipe device is valid.
+> + */
+
+This goes away with proper PHC registration as mentioned before.
+
+> +static inline int mpipe_context_check(struct mpipe_clock *clock)
+> +{
+> +	if (!clock->context) {
+> +		clock->context = get_mpipe_context(0);
+> +		if (!clock->context) {
+> +			pr_debug("Invalid mPIPE context.\n");
+> +			return -EIO;
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +
+> +/*
+> + * PTP clock operations.
+> + */
+> +
+> +static int ptp_mpipe_adjfreq(struct ptp_clock_info *ptp, s32 ppb)
+> +{
+> +	int ret = 0;
+> +	struct mpipe_clock *clock = container_of(ptp, struct mpipe_clock, caps);
+> +
+> +	mutex_lock(&clock->lock);
+> +	if (mpipe_context_check(clock)) {
+> +		mutex_unlock(&clock->lock);
+> +		return -EIO;
+> +	}
+
+This icky code block also goes away (in each method).
+
+> +
+> +	if (gxio_mpipe_adjust_timestamp_freq(clock->context, ppb))
+> +		ret = -EINVAL;
+> +
+> +	mutex_unlock(&clock->lock);
+> +	return ret;
+> +}
+
+...
+
+> +static struct ptp_clock_info ptp_mpipe_caps = {
+> +	.owner		= THIS_MODULE,
+> +	.name		= "mPIPE ptp timer",
+> +	.max_adj	= 512000,
+
+But before, you said 10^9 ppb?
+
+> +	.n_ext_ts	= 0,
+> +	.pps		= 0,
+> +	.adjfreq	= ptp_mpipe_adjfreq,
+> +	.adjtime	= ptp_mpipe_adjtime,
+> +	.gettime	= ptp_mpipe_gettime,
+> +	.settime	= ptp_mpipe_settime,
+> +};
+
+Thanks,
+Richard
