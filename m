@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab3GXHXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 03:23:14 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:42439 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751828Ab3GXHXM (ORCPT
+	id S1751417Ab3GXHkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 03:40:20 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:60749 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3GXHkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 03:23:12 -0400
-Date: Wed, 24 Jul 2013 17:23:07 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Fixes for 3.11
-Message-ID: <20130724072307.GA31136@gondor.apana.org.au>
-References: <20100903060055.GA28915@gondor.apana.org.au>
- <20100903110722.GA31826@gondor.apana.org.au>
- <20101215115035.GA25248@gondor.apana.org.au>
- <20110216053911.GA10999@gondor.apana.org.au>
- <20110328071322.GA6569@gondor.apana.org.au>
- <20110629235153.GA16559@gondor.apana.org.au>
- <20120126024342.GA12492@gondor.apana.org.au>
- <20120823083242.GA23102@gondor.apana.org.au>
- <20121109093005.GA25632@gondor.apana.org.au>
- <20130328082841.GA7425@gondor.apana.org.au>
+	Wed, 24 Jul 2013 03:40:18 -0400
+Date: Wed, 24 Jul 2013 03:39:49 -0400
+From: Rich Felker <dalias@aerifal.cx>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Michal Simek <michal.simek@xilinx.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>, dholsgrove@xilinx.com,
+        Al Viro <viro@ZenIV.linux.org.uk>, microblaze-uclinux@itee.uq.edu.au,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [microblaze-linux] [RESEND PATCH] microblaze: Fix clone syscall
+Message-ID: <20130724073948.GS3249@brightrain.aerifal.cx>
+References: <080727f78ba62f457320b766234f27eff248fa67.1374644031.git.michal.simek@xilinx.com>
+ <20130724055518.GQ3249@brightrain.aerifal.cx>
+ <51EF78BB.8000503@monstr.eu>
+ <20130724065957.GR3249@brightrain.aerifal.cx>
+ <51EF7F33.8020305@monstr.eu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130328082841.GA7425@gondor.apana.org.au>
+In-Reply-To: <51EF7F33.8020305@monstr.eu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Wed, Jul 24, 2013 at 09:16:03AM +0200, Michal Simek wrote:
+> BTW: Where to get musl package
 
-This push fixes a memory corruption issue in caam, as well as
-reverting the new optimised crct10dif implementation as it breaks
-boot on initrd systems.
+Source is available from http://www.musl-libc.org/. We also have cross
+compilers and binaries for a number of archs here:
 
-Hopefully crct10dif will be reinstated once the supporting code
-is added so that it doesn't break boot.
+  https://bitbucket.org/GregorR/musl-cross
 
-Please pull from
+However, microblaze was not included since the support in the upstream
+GNU packages seemed to be broken/unusable. If this has changed, please
+let me know. I'd really like to get microblaze support added added to
+the cross-compiler builds.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+> and are there any tests we should regularly run?
 
-or
+We have a libc-test package under development here:
 
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+  http://nsz.repo.hu/git/?p=libc-test
 
+There's nothing musl-specific about the tests; they can also be run
+against glibc, and presumably uClibc too. It's still a bit
+experimental now, and still pulling in tests we had in various
+non-unified test modules into a proper test framework, but it may be
+useful.
 
-Herbert Xu (1):
-      Revert "crypto: crct10dif - Wrap crc_t10dif function all to use crypto transform framework"
-
-Vakul Garg (1):
-      crypto: caam - Fixed the memory out of bound overwrite issue
-
- arch/x86/crypto/Makefile                |    2 -
- arch/x86/crypto/crct10dif-pcl-asm_64.S  |  643 -------------------------------
- arch/x86/crypto/crct10dif-pclmul_glue.c |  151 --------
- crypto/Kconfig                          |   19 -
- crypto/Makefile                         |    1 -
- crypto/crct10dif.c                      |  178 ---------
- crypto/tcrypt.c                         |    8 -
- crypto/testmgr.c                        |   10 -
- crypto/testmgr.h                        |   33 --
- drivers/crypto/caam/caamhash.c          |    2 +-
- include/linux/crc-t10dif.h              |    4 -
- lib/Kconfig                             |    2 -
- lib/crc-t10dif.c                        |   73 ++--
- 13 files changed, 44 insertions(+), 1082 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Rich
