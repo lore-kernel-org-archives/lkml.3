@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab3GXQON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:14:13 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:43727 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3GXQOM (ORCPT
+	id S1754002Ab3GXQRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:17:33 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:52701 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab3GXQRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:14:12 -0400
-Date: Wed, 24 Jul 2013 12:14:07 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Li Zefan <lizefan@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v2 0/8] memcg, cgroup: kill css_id
-Message-ID: <20130724161407.GD20377@mtj.dyndns.org>
-References: <51EFA554.6080801@huawei.com>
- <20130724143214.GL2540@dhcp22.suse.cz>
+	Wed, 24 Jul 2013 12:17:32 -0400
+Message-ID: <51EFFE1B.3050909@tilera.com>
+Date: Wed, 24 Jul 2013 12:17:31 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130724143214.GL2540@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Cochran <richardcochran@gmail.com>
+CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: [PATCH 05/13] tile: support PTP using the tilegx mPIPE (IEEE
+ 1588)
+References: <cover.1374609948.git.cmetcalf@tilera.com> <77f753af79722f39c5fa77cd35adefdd1634e5d5.1374609949.git.cmetcalf@tilera.com> <20130724062900.GB5163@netboy>
+In-Reply-To: <20130724062900.GB5163@netboy>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 04:32:14PM +0200, Michal Hocko wrote:
-> On Wed 24-07-13 17:58:44, Li Zefan wrote:
-> > This patchset converts memcg to use cgroup->id, and then we can remove
-> > cgroup css_id.
-> > 
-> > As we've removed memcg's own refcnt, converting memcg to use cgroup->id
-> > is very straight-forward.
-> > 
-> > The patchset is based on Tejun's cgroup tree.
-> 
-> Does it depend on any particular patches? I am asking because I would
-> need to cherry pick those and apply them into my -mm git tree before
-> these.
+On 7/24/2013 2:29 AM, Richard Cochran wrote:
+> On Tue, Jul 23, 2013 at 04:05:48PM -0400, Chris Metcalf wrote:
+>
+>> diff --git a/drivers/ptp/Kconfig b/drivers/ptp/Kconfig
+>> index 5be73ba..255ed1a 100644
+>> --- a/drivers/ptp/Kconfig
+>> +++ b/drivers/ptp/Kconfig
+>> @@ -87,4 +87,14 @@ config PTP_1588_CLOCK_PCH
+>>  	  To compile this driver as a module, choose M here: the module
+>>  	  will be called ptp_pch.
+>>  
+>> +config PTP_1588_CLOCK_TILEGX
+>> +        tristate "Tilera TILE-Gx mPIPE as PTP clock"
+>> +        select PTP_1588_CLOCK
+>> +        depends on TILEGX
+>> +        help
+>> +          This driver adds support for using the mPIPE as a PTP
+>> +          clock. This clock is only useful if your PTP programs are
+>> +          getting hardware time stamps on the PTP Ethernet packets
+>> +          using the SO_TIMESTAMPING API.
+>> +
+> Is this feature available on every TILEGX hardware variant?
+> If not, then there needs to be some provision for that.
 
-I'll set up a branch with the prep cgroup patches bsaed on top of
-v3.10 which you can pull into your tree (let's please not cherry-pick)
-and the memcg part and actual css_id removal can be carried through
--mm.
+It is.
 
-Thanks.
+> Also, this option should probably appear under the main MAC option.
+
+By that I assume you mean in drivers/net/ethernet/tile/Kconfig?  I will do that.
+
+Thanks!
 
 -- 
-tejun
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
