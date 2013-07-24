@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab3GXOQq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:16:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45765 "EHLO
+	id S1753212Ab3GXOQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:16:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45867 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752353Ab3GXOGs (ORCPT
+	by vger.kernel.org with ESMTP id S1752374Ab3GXOGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:48 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ingo Molnar" <mingo@kernel.org>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Vince Weaver" <vincent.weaver@maine.edu>,
-        "Oleg Nesterov" <oleg@redhat.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Mathias Nyman" <mathias.nyman@linux.intel.com>,
+        "John Youn" <johnyoun@synopsys.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.874013700@decadent.org.uk>
+Message-ID: <lsq.1374674565.77201864@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [29/85] hw_breakpoint: Use cpu_possible_mask in {reserve,release}_bp_slot()
+Subject: [25/85] xhci: check for failed dma pool allocation
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,53 +34,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit c790b0ad23f427c7522ffed264706238c57c007e upstream.
+commit 025f880cb2e4d7218d0422d4b07bea1a68959c38 upstream.
 
-fetch_bp_busy_slots() and toggle_bp_slot() use
-for_each_online_cpu(), this is obviously wrong wrt cpu_up() or
-cpu_down(), we can over/under account the per-cpu numbers.
+Fail and free the container context in case dma_pool_alloc() can't allocate
+the raw context data part of it
 
-For example:
+This patch should be backported to kernels as old as 2.6.31, that
+contain the commit d115b04818e57bdbc7ccde4d0660b15e33013dc8 "USB: xhci:
+Support for 64-byte contexts".
 
-	# echo 0 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10 -p 1 &
-	# echo 1 >> /sys/devices/system/cpu/cpu1/online
-	# perf record -e mem:0x10,mem:0x10,mem:0x10,mem:0x10 -C1 -a &
-	# taskset -p 0x2 1
-
-triggers the same WARN_ONCE("Can't find any breakpoint slot") in
-arch_install_hw_breakpoint().
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-Link: http://lkml.kernel.org/r/20130620155009.GA6327@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: John Youn <johnyoun@synopsys.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/events/hw_breakpoint.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-mem.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -147,7 +147,7 @@ fetch_bp_busy_slots(struct bp_busy_slots
- 		return;
- 	}
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -271,6 +271,10 @@ static struct xhci_container_ctx *xhci_a
+ 		ctx->size += CTX_SIZE(xhci->hcc_params);
  
--	for_each_online_cpu(cpu) {
-+	for_each_possible_cpu(cpu) {
- 		unsigned int nr;
- 
- 		nr = per_cpu(nr_cpu_bp_pinned[type], cpu);
-@@ -233,7 +233,7 @@ toggle_bp_slot(struct perf_event *bp, bo
- 	if (cpu >= 0) {
- 		toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	} else {
--		for_each_online_cpu(cpu)
-+		for_each_possible_cpu(cpu)
- 			toggle_bp_task_slot(bp, cpu, enable, type, weight);
- 	}
- 
+ 	ctx->bytes = dma_pool_alloc(xhci->device_pool, flags, &ctx->dma);
++	if (!ctx->bytes) {
++		kfree(ctx);
++		return NULL;
++	}
+ 	memset(ctx->bytes, 0, ctx->size);
+ 	return ctx;
+ }
 
