@@ -1,117 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752917Ab3GXOos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:44:48 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:33542 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab3GXOoq (ORCPT
+	id S1752691Ab3GXOp7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:45:59 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:42649 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab3GXOp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:44:46 -0400
+	Wed, 24 Jul 2013 10:45:58 -0400
+Date: Wed, 24 Jul 2013 10:45:32 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Youquan Song <youquan.song@intel.com>, Gleb Natapov <gleb@redhat.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
+Message-ID: <20130724144532.GJ2518@phenom.dumpdata.com>
+References: <1373592159-459-1-git-send-email-youquan.song@intel.com>
+ <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130724135610.GG30777@pd.tnic>
-References: <20130723135853.579c3cd5@googlemail.com>
-	<20130723151552.GF8497@pd.tnic>
-	<CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-	<20130724135610.GG30777@pd.tnic>
-Date: Wed, 24 Jul 2013 16:44:45 +0200
-Message-ID: <CAPVoSvShyTo7ukAu42tJAn29Tt0HtDxGBNDXtvffiioOz5AXmA@mail.gmail.com>
-Subject: Re: [PATCH]Fix early microcode loading on AMD
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 3:56 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
->> >> * Save the amd_bsp_mpb on apply, not on load. Otherwise someone could
->> >> later load an older microcode file that would overwrite amd_bsp_mpb,
->> >> but would not be applied to the CPUs
->> >
->> > See the patch id check in apply_ucode_in_initrd()?
->> >
->> >         if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
->>
->> I meant with "load" load_microcode_amd() not the loading of the
->> microcode into the CPU.
->>
->> 1.: load microcode rev X into CPU (early or normal is not important)
->> 2.: get older microcode file that only contains rev Y with Y<X
->> 3.: trigger load_microcode_amd() with a corrupt file: This will call
->> cleanup() and empty pcache.
->
-> Ok, that's actually a good catch. So I wonder: why in hell would we
-> flush the pcache if some of the blobs we're loading are corrupted. So
-> what?! Jacob, what were you thinking - I'd be very interested to know
-> what the idea behind this was.
->
-> So, just to refresh everybody: the idea of the pcache is to keep all
-> patches for the current family in memory so that we can support all
-> sorts of hotplug and cpu mixed stepping diddling.
-
-Then it would probably be the best to kill free_cache() completely.
-Which would mean cleanup() should also go.
-Which will make unloading microcode_amd.ko impossible.
-But that is probably a good idea anyway: If you unload the module
-there is no way to keep pcache.
-
-But I still have another way to kill you: free_equiv_cpu_table()
-Without that table find_patch() can't work and will not return the
-correct information.
-
-And that can be triggered by:
-* start of load_microcode_amd(): If you reach that function (Only
-UCODE_MAGIC needs to be in the file) that table is dead.
-* __load_microcode_amd(): If the file only contains the table but no
-patches ("invalid type field in container file section header\n")
-
->> 4.: trigger load_microcode_amd() with the older file:
->>  * this will now load rev Y into pcache
->>  * rev Y will be returned by find_patch and copied into amd_bsp_mpb
->>  * any try to apply rev Y will be skipped in apply_microcode_amd()
->>
->> So now the CPU still correctly has rev X, but amd_bsp_mpb will contain
->> the wrong rev Y.
->
-> Right, so this shouldn't happen - what should happen is, pcache would
-> hold both X and Y and find_patch would automatically give you the right
-> one.
->
-> And this is guaranteed since we keep the patches in a sorted linked list
-> by ->patch_id which is guaranteed to be increasing.
->
-> So actually load_microcode_amd() shouldn't be doing cleanup() but simply
-> return ret upwards.
-
-But it already called free_equiv_cpu_table() and so pcache is inaccessible.
-
-And I don't think just preserving equiv_cpu_table for restoring in the
-error case will be the right solution: If the new firmware file
-contains a new table with fewer entries (or different entries!) some
-of the patches in pcache might become inaccessible.
-
->> That copying already in load_microcode also is suspicious if someone
->> would only load the microcode but not apply it. But I did not find
->> a codepath in arch/x86/kernel/microcode_core.c to load it without a
->> followup apply.
->
-> Yeah, we always load and apply.
->
-> So now back to the original problem - load_microcode_amd() shouldn't
-> clear the pcache and, in that case, a subsequent find_patch() would
-> always give the right patch.
-
-Not if equiv_cpu_table got mangled.
-So should install_equiv_cpu_table() be turned into
-add_to_equiv_cpu_table() or should pcache save all cpu_sig with each
-patch, so that find_patch() no longer needs equiv_cpu_table?
-I suspect saving that in struct ucode_patch might be better, to
-prevent changes in equiv_id <-> cpu_sig mapping to make a patch
-inaccessible.
-
-Torsten
+On Tue, Jul 23, 2013 at 09:24:45PM -0700, Yinghai Lu wrote:
+> On Thu, Jul 11, 2013 at 6:22 PM, Youquan Song <youquan.song@intel.com> wrote:
+> > x2APIC extends APICID from 8 bits to 32 bits, but the device interrupt routed
+> > from IOAPIC or delivered in MSI mode will keep 8 bits destination APICID.
+> > In order to support x2APIC, the VT-d interrupt remapping is introduced to
+> > translate the destination APICID to 32 bits in x2APIC mode and keep the device
+> > compatible in this way.
+> >
+> > x2APIC support both logical and physical mode in destination mode.
+> > In logical destination mode, the 32 bits Logical APICID has 2 sub-fields:
+> >  16 bits cluster ID and 16 bits logical ID within the cluster and it is
+> > required VT-d interrupt remapping in x2APIC cluster mode.
+> > In physical destination mode, the 8 bits physical id is compatible with 32
+> > bits physical id when CPU number < 256.
+> > When interrupt remapping initialization fail on platform with CPU number < 256,
+> > current kernel only enables x2APIC physical mode in virutalization environment,
+                                                        ^^^^^^^^^^^^^^-virtualization
+> > while we also can enable x2APIC physcial mode in native kernel this situation,
+                                    ^^^^^^^ physical
+> > and the device interrupt will use 8 bits destination APICID in physical mode
+> > and be compatible with x2APIC physical when < 256 CPUs.
+> >
+> > So we can benefit from x2APIC vs xAPIC MMIO:
+> >  - x2APIC MSR read/write is faster than xAPIC mmio
+> >  - x2APIC only ICR write to deliver interrupt without polling ICR deliver
+> >    status bit and xAPIC need poll to read ICR deliver status bit.
+> >  - x2APIC 64 bits ICR access instead of xAPIC two 32 bits access.
+> >
+> > Signed-off-by: Youquan Song <youquan.song@intel.com>
+> > ---
+> >  arch/x86/kernel/apic/apic.c |    7 ++-----
+> >  1 files changed, 2 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> > index 904611b..51a065a 100644
+> > --- a/arch/x86/kernel/apic/apic.c
+> > +++ b/arch/x86/kernel/apic/apic.c
+> > @@ -1603,11 +1603,8 @@ void __init enable_IR_x2apic(void)
+> >                 goto skip_x2apic;
+> >
+> >         if (ret < 0) {
+> > -               /* IR is required if there is APIC ID > 255 even when running
+> > -                * under KVM
+> > -                */
+> > -               if (max_physical_apicid > 255 ||
+> > -                   !hypervisor_x2apic_available()) {
+> > +               /* IR is required if there is APIC ID > 255 */
+> > +               if (max_physical_apicid > 255) {
+> >                         if (x2apic_preenabled)
+> >                                 disable_x2apic();
+> >                         goto skip_x2apic;
+> 
+> Those are kvm and xen related.
+> 
+> Add more Cc.
+> 
+> Yinghai
