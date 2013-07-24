@@ -1,100 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab3GXDT5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:19:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52796 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751215Ab3GXDT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:19:56 -0400
-Message-ID: <51EF47BC.4090107@redhat.com>
-Date: Wed, 24 Jul 2013 11:19:24 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751401Ab3GXDXW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:23:22 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21927 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750780Ab3GXDXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 23:23:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqkIACpI71F5LPxH/2dsb2JhbABbgwaDJbkmhTmBExd0giQBAQU6HCMQCAMYCSUPBSUDIROID7gjFo4vgTUHhAADl16RToMmKoEs
+Date: Wed, 24 Jul 2013 13:22:54 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.11-rc2
+Message-ID: <20130724032254.GM19986@dastard>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+ <20130722012517.GD11674@dastard>
+ <20130722040601.GK4165@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Basil Gor <basil.gor@gmail.com>
-Subject: Re: [PATCH net-next] tuntap: hardware vlan tx support
-References: <1374563748-38821-1-git-send-email-jasowang@redhat.com> <51EE7341.4060404@cogentembedded.com>
-In-Reply-To: <51EE7341.4060404@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130722040601.GK4165@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 08:12 PM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 23-07-2013 11:15, Jason Wang wrote:
->
->> Inspired by commit f09e2249c4f5c7c13261ec73f5a7807076af0c8e (macvtap:
->> restore
->> vlan header on user read). This patch adds hardware vlan tx support for
->> tuntap. This is done by copying vlan header directly into userspace in
->> tun_put_user() instead of doing it through __vlan_put_tag() in
->> dev_hard_start_xmit(). This eliminates one unnecessary memove in
->
->    s/memove/memmove/?
->
+On Mon, Jul 22, 2013 at 05:06:01AM +0100, Al Viro wrote:
+> On Mon, Jul 22, 2013 at 11:25:17AM +1000, Dave Chinner wrote:
+> 
+> > I'll just point out that it can make the whole thing worse, too.
+> > For example, for ext3/4, the tmpfile being created has to be added
+> > to the orphan inode list which is protected by a filesystem global
+> > mutex. Hence scalability of O_TMPFILE is massively limited on
+> > ext3/ext4 due to architectural issues within ext3/4. Other
+> > filesystems will be more efficient, but because they have more
+> > scalable/complex orphan inode handling it's going to take longer to
+> > implement O_TMPFILE support for them....
+> 
+> Um...  You do realize that the same architectural issues there will
+> create exactly the same serialization when you are unlinking the
+> sucker?  I.e. with the "pick the name, create and open, unlink" sequence
+> ext[34] will insert that inode into the same orphan list, creating
+> the same contention...
 
-Yes.
->> vlan_insert_tag() for 802.1ad and 802.1q traffic.
->
->> pktgen test shows about 20% improvement for 802.1q traffic:
->
->> Before:
->>    662149pps 317Mb/sec (317831520bps) errors: 0
->> After:
->>    801033pps 384Mb/sec (384495840bps) errors: 0
->
->> Cc: Basil Gor <basil.gor@gmail.com>
->> Cc: Michael S. Tsirkin <mst@redhat.com>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>   drivers/net/tun.c |   39 +++++++++++++++++++++++++++++++++++----
->>   1 files changed, 35 insertions(+), 4 deletions(-)
->
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index a72d141..66e265d 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
-> [...]
->> @@ -1328,11 +1330,39 @@ static ssize_t tun_put_user(struct tun_struct
->> *tun,
->>           total += tun->vnet_hdr_sz;
->>       }
->>
->> -    len = min_t(int, skb->len, len);
->> +    if (!vlan_tx_tag_present(skb))
->> +        len = min_t(int, skb->len, len);
->> +    else {
->
->    According to Documentation/CodingStyle chapter 3, both arms of an
-> *if* statement should have {} if one arm has it.
->
+Yup.
 
-Right.
->> +        int copy, ret;
->> +        struct {
->> +            __be16 h_vlan_proto;
->> +            __be16 h_vlan_TCI;
->> +        } veth;
->
->    Empty line wouldn't hurt here, after declarations...
->
+But that is assuming that the unlink of the tmpfile happens
+immediately after the open() and that's not necessarily the case for
+all users of tmp files that might get converted to use O_TMPFILE,
+and so a saying it is more efficient than traditional tmpfiles is
+not necessarily correct.
 
-Ok
->> +        veth.h_vlan_proto = skb->vlan_proto;
->> +        veth.h_vlan_TCI = htons(vlan_tx_tag_get(skb));
-> [...]
->
-> WBR, Sergei
->
+Let's set expectations appropriately at the start, rather than have
+people complain a year down the track that O_TMPFILE causes them
+performance problems because they don't understand the limitations
+of the implementations underlying it......
 
-Thanks, will correct them.
-> -- 
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
