@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab3GXOp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:45:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:42649 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3GXOp6 (ORCPT
+	id S1752590Ab3GXOrt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:47:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40990 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3GXOrr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:45:58 -0400
-Date: Wed, 24 Jul 2013 10:45:32 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Youquan Song <youquan.song@intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130724144532.GJ2518@phenom.dumpdata.com>
-References: <1373592159-459-1-git-send-email-youquan.song@intel.com>
- <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
+	Wed, 24 Jul 2013 10:47:47 -0400
+Date: Wed, 24 Jul 2013 15:47:23 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20130724144723.GK9858@sirena.org.uk>
+References: <1373963679.27956.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gsknP8gbNnI51S+b"
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
+In-Reply-To: <1373963679.27956.2.camel@phoenix>
+X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH RFT] regulator: as3711: Convert to use linear ranges
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 09:24:45PM -0700, Yinghai Lu wrote:
-> On Thu, Jul 11, 2013 at 6:22 PM, Youquan Song <youquan.song@intel.com> wrote:
-> > x2APIC extends APICID from 8 bits to 32 bits, but the device interrupt routed
-> > from IOAPIC or delivered in MSI mode will keep 8 bits destination APICID.
-> > In order to support x2APIC, the VT-d interrupt remapping is introduced to
-> > translate the destination APICID to 32 bits in x2APIC mode and keep the device
-> > compatible in this way.
-> >
-> > x2APIC support both logical and physical mode in destination mode.
-> > In logical destination mode, the 32 bits Logical APICID has 2 sub-fields:
-> >  16 bits cluster ID and 16 bits logical ID within the cluster and it is
-> > required VT-d interrupt remapping in x2APIC cluster mode.
-> > In physical destination mode, the 8 bits physical id is compatible with 32
-> > bits physical id when CPU number < 256.
-> > When interrupt remapping initialization fail on platform with CPU number < 256,
-> > current kernel only enables x2APIC physical mode in virutalization environment,
-                                                        ^^^^^^^^^^^^^^-virtualization
-> > while we also can enable x2APIC physcial mode in native kernel this situation,
-                                    ^^^^^^^ physical
-> > and the device interrupt will use 8 bits destination APICID in physical mode
-> > and be compatible with x2APIC physical when < 256 CPUs.
-> >
-> > So we can benefit from x2APIC vs xAPIC MMIO:
-> >  - x2APIC MSR read/write is faster than xAPIC mmio
-> >  - x2APIC only ICR write to deliver interrupt without polling ICR deliver
-> >    status bit and xAPIC need poll to read ICR deliver status bit.
-> >  - x2APIC 64 bits ICR access instead of xAPIC two 32 bits access.
-> >
-> > Signed-off-by: Youquan Song <youquan.song@intel.com>
-> > ---
-> >  arch/x86/kernel/apic/apic.c |    7 ++-----
-> >  1 files changed, 2 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> > index 904611b..51a065a 100644
-> > --- a/arch/x86/kernel/apic/apic.c
-> > +++ b/arch/x86/kernel/apic/apic.c
-> > @@ -1603,11 +1603,8 @@ void __init enable_IR_x2apic(void)
-> >                 goto skip_x2apic;
-> >
-> >         if (ret < 0) {
-> > -               /* IR is required if there is APIC ID > 255 even when running
-> > -                * under KVM
-> > -                */
-> > -               if (max_physical_apicid > 255 ||
-> > -                   !hypervisor_x2apic_available()) {
-> > +               /* IR is required if there is APIC ID > 255 */
-> > +               if (max_physical_apicid > 255) {
-> >                         if (x2apic_preenabled)
-> >                                 disable_x2apic();
-> >                         goto skip_x2apic;
-> 
-> Those are kvm and xen related.
-> 
-> Add more Cc.
-> 
-> Yinghai
+
+--gsknP8gbNnI51S+b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Tue, Jul 16, 2013 at 04:34:39PM +0800, Axel Lin wrote:
+> The SD, ALDO, and DLDO vlotage tables are composed of linear ranges.
+> This patch converts as3711 to use newly introduced helpers for multiple
+> linear ranges.
+
+Applied, thanks.
+
+--gsknP8gbNnI51S+b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7+j4AAoJELSic+t+oim98+0P/2o7fd/Yn7a9a3oUksbwP0Ry
+i5GQEa3zBoTglPCP3vsjGg2PhaPcsJgV9/jaZ2YiUn/B4KgNaiQPARF7NP+tPcJM
+9H9J/GnQq2wv87ejbZ5Zi9DxQY52LuU3W+6CnKlxFSB1zGOJiyv9h8j1DxOYFTYQ
+fW4xrQMdtGaK89Ni8c6l/aDw4daj1QItPb49joiEph1X0iXI9yc1aiG+IL1QCZ17
+ooIRSbUegkpr6KwwN5ql4P4BXhacN7vP5ha/YLMwzDFF20yjdNgKOnNVzVTBCCiV
+KMw+yV/8a06x8znJlcbQC+9m66L2/daAAjhz1P2atE8xJTfMR0moViq4YSsQWIJM
+ZuDIaACynUVNIoJU6GsSolVMbaIdlZ0DlWtUhoPPTGE8rxzBj7tu5fijyri8XYYA
+t057tU39AM/zicGBlJR9a3GVTjML4qC2c9TSiZLFKfZ/aif8qtRQS145i+TuVUBM
+uTYBBRCnPbQyXCiiEScxcoAAvnCzQrSddnsu7s1mo/BjXQleCCcBnfW9b44HV/4F
+Cpc3YfOW6bs7WMB0Mv5IudU8eBckkNs5TfEJMf24wXiWXoZ+ueilhjX/E0znwt1X
+7bumHPpjyPYqcvaZESm9ggQmJqEwvuxFr9fueyusr0tDQ+j7JMM2QIzgg1WsxWoq
+HhQcxTSF+G4HjHC8GYpJ
+=BKNN
+-----END PGP SIGNATURE-----
+
+--gsknP8gbNnI51S+b--
