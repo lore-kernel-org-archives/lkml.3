@@ -1,59 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754Ab3GXL4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 07:56:06 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:37618 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751400Ab3GXL4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 07:56:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Aaron Lu <aaron.lwe@gmail.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight)
-Date: Wed, 24 Jul 2013 14:06:01 +0200
-Message-ID: <1473791.TcyyldNxDN@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1374650350.1824.2.camel@ThinkPad-X230.localdomain>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <CAAG0J98G64DGvtA3HtY7B2-rvOordrzam+jjy=kjgLTW0WPgew@mail.gmail.com> <1374650350.1824.2.camel@ThinkPad-X230.localdomain>
+	id S1751551Ab3GXL7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 07:59:44 -0400
+Received: from forward13.mail.yandex.net ([95.108.130.120]:48273 "EHLO
+	forward13.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab3GXL7n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 07:59:43 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] sched/rt: Fix pull_rt_task() skips not overloaded rqs
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Message-Id: <669251374667179@web8f.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 24 Jul 2013 15:59:39 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 24, 2013 11:19:10 AM Igor Gnatenko wrote:
-> On Wed, 2013-07-24 at 07:49 +0100, James Hogan wrote:
-> > On 24 July 2013 01:05, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > I'd like to collect some information on the systems having problems with those
-> > > two commits (to see if they are similar somehow).
-> > >
-> > > It seems that one common symptom is that brightness cannot be controlled
-> > > through function keys.  Is that correct for all of you?  If so, did you try
-> > > any other way to control brightness, like a GUI-based?
-> > 
-> > For me both the Fn keys and the gui slider (kde) now control
-> > /sys/class/backlight/intel_backlight/brightness (which has no effect).
-> > Previously they both controlled the acpi one (that on -rc2 doesn't
-> > exist).
-> I think this problem in i915 drivers.
-> Rafael, Mathew, Aaron, fix me please
+The main patch profit is deletion of the following check
+at the beginning of pull_rt_task():
 
-Yes, it is my impression too.
+	if (likely(!rt_overloaded(this_rq)))
+		return 0;
 
-Thanks,
-Rafael
+This check makes pull_rt_task() nearly useless, because
+it kills all cases like "last RT task has just gone away".
+The check is better suitable for push_rt_task().
 
+So, kill the check, now unusable rt_overloaded() and rto_count.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Move root_domain's refcount to the bottom of the structure
+to keep its fields aligned.
+
+Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/sched/rt.c    |   19 -------------------
+ kernel/sched/sched.h |    3 +--
+ 2 files changed, 1 insertions(+), 21 deletions(-)
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index 01970c8..cf297a7 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -229,26 +229,12 @@ int alloc_rt_sched_group(struct task_group *tg, struct task_group *parent)
+ 
+ #ifdef CONFIG_SMP
+ 
+-static inline int rt_overloaded(struct rq *rq)
+-{
+-	return atomic_read(&rq->rd->rto_count);
+-}
+-
+ static inline void rt_set_overload(struct rq *rq)
+ {
+ 	if (!rq->online)
+ 		return;
+ 
+ 	cpumask_set_cpu(rq->cpu, rq->rd->rto_mask);
+-	/*
+-	 * Make sure the mask is visible before we set
+-	 * the overload count. That is checked to determine
+-	 * if we should look at the mask. It would be a shame
+-	 * if we looked at the mask, but the mask was not
+-	 * updated yet.
+-	 */
+-	wmb();
+-	atomic_inc(&rq->rd->rto_count);
+ }
+ 
+ static inline void rt_clear_overload(struct rq *rq)
+@@ -256,8 +242,6 @@ static inline void rt_clear_overload(struct rq *rq)
+ 	if (!rq->online)
+ 		return;
+ 
+-	/* the order here really doesn't matter */
+-	atomic_dec(&rq->rd->rto_count);
+ 	cpumask_clear_cpu(rq->cpu, rq->rd->rto_mask);
+ }
+ 
+@@ -1627,9 +1611,6 @@ static int pull_rt_task(struct rq *this_rq)
+ 	struct task_struct *p;
+ 	struct rq *src_rq;
+ 
+-	if (likely(!rt_overloaded(this_rq)))
+-		return 0;
+-
+ 	for_each_cpu(cpu, this_rq->rd->rto_mask) {
+ 		if (this_cpu == cpu)
+ 			continue;
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 4c1cb80..1f36afb 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -374,8 +374,6 @@ struct rt_rq {
+  *
+  */
+ struct root_domain {
+-	atomic_t refcount;
+-	atomic_t rto_count;
+ 	struct rcu_head rcu;
+ 	cpumask_var_t span;
+ 	cpumask_var_t online;
+@@ -386,6 +384,7 @@ struct root_domain {
+ 	 */
+ 	cpumask_var_t rto_mask;
+ 	struct cpupri cpupri;
++	atomic_t refcount;
+ };
+ 
+ extern struct root_domain def_root_domain;
