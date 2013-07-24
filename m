@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125Ab3GXEhz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 00:37:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16139 "EHLO mx1.redhat.com"
+	id S1751206Ab3GXEmJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 00:42:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750792Ab3GXEhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 00:37:54 -0400
-Message-ID: <51EF59FB.8040207@redhat.com>
-Date: Wed, 24 Jul 2013 12:37:15 +0800
+	id S1750865Ab3GXEmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 00:42:07 -0400
+Message-ID: <51EF5B00.7040109@redhat.com>
+Date: Wed, 24 Jul 2013 12:41:36 +0800
 From: Jason Wang <jasowang@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: KY Srinivasan <kys@microsoft.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "x86@kernel.org" <x86@kernel.org>, "gleb@redhat.com" <gleb@redhat.com>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
-References: <1374572465-15278-1-git-send-email-jasowang@redhat.com> <1374572465-15278-4-git-send-email-jasowang@redhat.com> <bd93bc49300a4d99996cc4f57c19a008@SN2PR03MB061.namprd03.prod.outlook.com> <51EE97BD.4050402@zytor.com>
-In-Reply-To: <51EE97BD.4050402@zytor.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Basil Gor <basil.gor@gmail.com>
+Subject: Re: [PATCH net-next] tuntap: hardware vlan tx support
+References: <1374563748-38821-1-git-send-email-jasowang@redhat.com> <20130723081727.69766d27@nehalam.linuxnetplumber.net>
+In-Reply-To: <20130723081727.69766d27@nehalam.linuxnetplumber.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 10:48 PM, H. Peter Anvin wrote:
-> On 07/23/2013 06:55 AM, KY Srinivasan wrote:
->> This strategy of hypervisor detection based on some detection order IMHO is not
->> a robust detection strategy. The current scheme works since the only hypervisor emulated
->> (by other hypervisors happens to be Hyper-V). What if this were to change.
->>
-> One strategy would be to pick the *last* one in the CPUID list, since
-> the ones before it are logically the one(s) being emulated...
+On 07/23/2013 11:17 PM, Stephen Hemminger wrote:
+> On Tue, 23 Jul 2013 15:15:48 +0800
+> Jason Wang <jasowang@redhat.com> wrote:
 >
-> 	-hpa
+>> Inspired by commit f09e2249c4f5c7c13261ec73f5a7807076af0c8e (macvtap: restore
+>> vlan header on user read). This patch adds hardware vlan tx support for
+>> tuntap. This is done by copying vlan header directly into userspace in
+>> tun_put_user() instead of doing it through __vlan_put_tag() in
+>> dev_hard_start_xmit(). This eliminates one unnecessary memove in
+>> vlan_insert_tag() for 802.1ad and 802.1q traffic.
+>>
+>> pktgen test shows about 20% improvement for 802.1q traffic:
+>>
+>> Before:
+>>   662149pps 317Mb/sec (317831520bps) errors: 0
+>> After:
+>>   801033pps 384Mb/sec (384495840bps) errors: 0
+>>
+>> Cc: Basil Gor <basil.gor@gmail.com>
+>> Cc: Michael S. Tsirkin <mst@redhat.com>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>
+> You need to make this configurable by some mechanism, since otherwise
+> it will break applications that expect current VLAN behavior
+> --
 >
 
-How about simply does a reverse loop from 0x40010000 to 0x40010000?
+Didn't see any breakage. Vlan id will always exist in the userspace buffer.
