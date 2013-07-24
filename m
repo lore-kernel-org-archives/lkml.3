@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753502Ab3GXWlc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:41:32 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57234 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab3GXWl3 (ORCPT
+	id S1753415Ab3GXWnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:43:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55854 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab3GXWnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:41:29 -0400
-Date: Wed, 24 Jul 2013 15:41:26 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-gpio@vger.kernel.org
-Subject: Re: [PATCH 0/3] MSM gpio fixes
-Message-ID: <20130724224126.GA27678@codeaurora.org>
-References: <1374178035-19943-1-git-send-email-davidb@codeaurora.org>
- <CACRpkdbOO8fFEx+PxsdJ9F1dqD6V4_RPZThvTufo9+XhhyuHOg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <CACRpkdbOO8fFEx+PxsdJ9F1dqD6V4_RPZThvTufo9+XhhyuHOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 18:43:04 -0400
+Date: Wed, 24 Jul 2013 15:43:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alexey Kardashevskiy <aik@ozlabs.ru>
+Cc: linuxppc-dev@lists.ozlabs.org, David Gibson <david@gibson.dropbear.id.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Alexander Graf <agraf@suse.de>,
+        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linux-mm@kvack.org, Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH 04/10] powerpc: Prepare to support kernel handling of
+ IOMMU map/unmap
+Message-Id: <20130724154301.2af75867c51870fc0c32819b@linux-foundation.org>
+In-Reply-To: <51EDE903.6010608@ozlabs.ru>
+References: <1373936045-22653-1-git-send-email-aik@ozlabs.ru>
+	<1373936045-22653-5-git-send-email-aik@ozlabs.ru>
+	<51EDE903.6010608@ozlabs.ru>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 20, 2013 at 10:54:42PM +0200, Linus Walleij wrote:
->On Thu, Jul 18, 2013 at 10:07 PM, David Brown <davidb@codeaurora.org> wrote:
->
->> Rohit sent these three fixes out on June 18.  I still need a
->> devicetree ack for the first patch, and would like these to get pulled
->> in for v3.11
->>
->> Rohit Vaswani (3):
->>   ARM: msm: dts: Fix the gpio register address for msm8960
->>   drivers: gpio: msm: Fix the error condition for reading ngpio
->
->OK for these two...
->
->>   ARM: msm: Consolidate gpiomux for older architectures
->
->This does not look like a fix? Surely this can wait for v3.12?
+On Tue, 23 Jul 2013 12:22:59 +1000 Alexey Kardashevskiy <aik@ozlabs.ru> wrote:
 
-It fixes compilation.  But, it could also wait for v3.12.
+> Ping, anyone, please?
 
-David
+ew, you top-posted.
 
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> Ben needs ack from any of MM people before proceeding with this patch. Thanks!
+
+For what?  The three lines of comment in page-flags.h?   ack :)
+
+Manipulating page->_count directly is considered poor form.  Don't
+blame us if we break your code ;)
+
+Actually, the manipulation in realmode_get_page() duplicates the
+existing get_page_unless_zero() and the one in realmode_put_page()
+could perhaps be placed in mm.h with a suitable name and some
+documentation.  That would improve your form and might protect the code
+from getting broken later on.
+
