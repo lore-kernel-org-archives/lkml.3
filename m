@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751401Ab3GXDXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:23:22 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:21927 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750780Ab3GXDXV (ORCPT
+	id S1751503Ab3GXD0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:26:43 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34831 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab3GXD0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:23:21 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqkIACpI71F5LPxH/2dsb2JhbABbgwaDJbkmhTmBExd0giQBAQU6HCMQCAMYCSUPBSUDIROID7gjFo4vgTUHhAADl16RToMmKoEs
-Date: Wed, 24 Jul 2013 13:22:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.11-rc2
-Message-ID: <20130724032254.GM19986@dastard>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
- <20130722012517.GD11674@dastard>
- <20130722040601.GK4165@ZenIV.linux.org.uk>
+	Tue, 23 Jul 2013 23:26:41 -0400
+Message-ID: <51EF4969.4050807@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 11:26:33 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130722040601.GK4165@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rakib Mullick <rakib.mullick@gmail.com>
+CC: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
+ building sched domain.
+References: <1374601332.9192.0.camel@localhost.localdomain>
+In-Reply-To: <1374601332.9192.0.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072403-3864-0000-0000-0000093A4A5B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 22, 2013 at 05:06:01AM +0100, Al Viro wrote:
-> On Mon, Jul 22, 2013 at 11:25:17AM +1000, Dave Chinner wrote:
+Hi, Rakib
+
+On 07/24/2013 01:42 AM, Rakib Mullick wrote:
+> Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
+> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
+> domain and update only at the times of building schedule domains.
 > 
-> > I'll just point out that it can make the whole thing worse, too.
-> > For example, for ext3/4, the tmpfile being created has to be added
-> > to the orphan inode list which is protected by a filesystem global
-> > mutex. Hence scalability of O_TMPFILE is massively limited on
-> > ext3/ext4 due to architectural issues within ext3/4. Other
-> > filesystems will be more efficient, but because they have more
-> > scalable/complex orphan inode handling it's going to take longer to
-> > implement O_TMPFILE support for them....
+> 	partition_sched_domains()
+> 		detach_destroy_domain()
+> 			cpu_attach_domain()
+> 				update_top_cache_domain()
+
+IMHO, cpu_attach_domain() and update_top_cache_domain() should be
+paired, below patch will open a window which 'rq->sd == NULL' while
+'sd_llc != NULL', isn't it?
+
+I don't think we have the promise that before we rebuild the stuff
+correctly, no one will utilize 'sd_llc'...
+
+Further more, what will happen if the old sd was freed after next rcu
+work cycle while 'sd_llc' still hold the reference for some victims?
+
+Thus I do suggest we leave the things untouched since the benefit we get
+is too less, not worth the risk...
+
+Regards,
+Michael Wang
+
+> 		build_sched_domains()
+> 			cpu_attach_domain()
+> 				update_top_cache_domain()
 > 
-> Um...  You do realize that the same architectural issues there will
-> create exactly the same serialization when you are unlinking the
-> sucker?  I.e. with the "pick the name, create and open, unlink" sequence
-> ext[34] will insert that inode into the same orphan list, creating
-> the same contention...
+> Changes since v1: use sd to determine when to skip, courtesy PeterZ
+> 
+> Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
+> ---
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index b7c32cb..387fb66 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -5138,7 +5138,8 @@ cpu_attach_domain(struct sched_domain *sd, struct root_domain *rd, int cpu)
+>  	rcu_assign_pointer(rq->sd, sd);
+>  	destroy_sched_domains(tmp, cpu);
+> 
+> -	update_top_cache_domain(cpu);
+> +	if (sd)
+> +		update_top_cache_domain(cpu);
+>  }
+> 
+>  /* cpus with isolated domains */
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Yup.
-
-But that is assuming that the unlink of the tmpfile happens
-immediately after the open() and that's not necessarily the case for
-all users of tmp files that might get converted to use O_TMPFILE,
-and so a saying it is more efficient than traditional tmpfiles is
-not necessarily correct.
-
-Let's set expectations appropriately at the start, rather than have
-people complain a year down the track that O_TMPFILE causes them
-performance problems because they don't understand the limitations
-of the implementations underlying it......
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
