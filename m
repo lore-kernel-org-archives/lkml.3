@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753643Ab3GXOUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:20:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45891 "EHLO
+	id S1753669Ab3GXOUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:20:06 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45912 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752433Ab3GXOGp (ORCPT
+	by vger.kernel.org with ESMTP id S1752465Ab3GXOGp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:45 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Jed Davis" <jld@mozilla.com>
+CC: akpm@linux-foundation.org, "Sunil Mushran" <sunil.mushran@gmail.com>,
+        "Joel Becker" <jlbec@evilplan.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Mark Fasheh" <mfasheh@suse.com>, "Jie Liu" <jeff.liu@oracle.com>,
+        "Junxiao Bi" <junxiao.bi@oracle.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.482089959@decadent.org.uk>
+Message-ID: <lsq.1374674565.134867544@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [34/85] ARM: 7765/1: perf: Record the user-mode PC in the call chain.
+Subject: [66/85] ocfs2: xattr: fix inlined xattr reflink
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,33 +34,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jed Davis <jld@mozilla.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit c5f927a6f62196226915f12194c9d0df4e2210d7 upstream.
+commit ef962df057aaafd714f5c22ba3de1be459571fdf upstream.
 
-With this change, we no longer lose the innermost entry in the user-mode
-part of the call chain.  See also the x86 port, which includes the ip.
+Inlined xattr shared free space of inode block with inlined data or data
+extent record, so the size of the later two should be adjusted when
+inlined xattr is enabled.  See ocfs2_xattr_ibody_init().  But this isn't
+done well when reflink.  For inode with inlined data, its max inlined
+data size is adjusted in ocfs2_duplicate_inline_data(), no problem.  But
+for inode with data extent record, its record count isn't adjusted.  Fix
+it, or data extent record and inlined xattr may overwrite each other,
+then cause data corruption or xattr failure.
 
-It's possible to partially work around this problem by post-processing
-the data to use the PERF_SAMPLE_IP value, but this works only if the CPU
-wasn't in the kernel when the sample was taken.
+One panic caused by this bug in our test environment is the following:
 
-Signed-off-by: Jed Davis <jld@mozilla.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+  kernel BUG at fs/ocfs2/xattr.c:1435!
+  invalid opcode: 0000 [#1] SMP
+  Pid: 10871, comm: multi_reflink_t Not tainted 2.6.39-300.17.1.el5uek #1
+  RIP: ocfs2_xa_offset_pointer+0x17/0x20 [ocfs2]
+  RSP: e02b:ffff88007a587948  EFLAGS: 00010283
+  RAX: 0000000000000000 RBX: 0000000000000010 RCX: 00000000000051e4
+  RDX: ffff880057092060 RSI: 0000000000000f80 RDI: ffff88007a587a68
+  RBP: ffff88007a587948 R08: 00000000000062f4 R09: 0000000000000000
+  R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000010
+  R13: ffff88007a587a68 R14: 0000000000000001 R15: ffff88007a587c68
+  FS:  00007fccff7f06e0(0000) GS:ffff88007fc00000(0000) knlGS:0000000000000000
+  CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 00000000015cf000 CR3: 000000007aa76000 CR4: 0000000000000660
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process multi_reflink_t
+  Call Trace:
+    ocfs2_xa_reuse_entry+0x60/0x280 [ocfs2]
+    ocfs2_xa_prepare_entry+0x17e/0x2a0 [ocfs2]
+    ocfs2_xa_set+0xcc/0x250 [ocfs2]
+    ocfs2_xattr_ibody_set+0x98/0x230 [ocfs2]
+    __ocfs2_xattr_set_handle+0x4f/0x700 [ocfs2]
+    ocfs2_xattr_set+0x6c6/0x890 [ocfs2]
+    ocfs2_xattr_user_set+0x46/0x50 [ocfs2]
+    generic_setxattr+0x70/0x90
+    __vfs_setxattr_noperm+0x80/0x1a0
+    vfs_setxattr+0xa9/0xb0
+    setxattr+0xc3/0x120
+    sys_fsetxattr+0xa8/0xd0
+    system_call_fastpath+0x16/0x1b
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/kernel/perf_event.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/xattr.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -795,6 +795,7 @@ perf_callchain_user(struct perf_callchai
- 	struct frame_tail __user *tail;
+--- a/fs/ocfs2/xattr.c
++++ b/fs/ocfs2/xattr.c
+@@ -6499,6 +6499,16 @@ static int ocfs2_reflink_xattr_inline(st
+ 	}
  
- 
-+	perf_callchain_store(entry, regs->ARM_pc);
- 	tail = (struct frame_tail __user *)regs->ARM_fp - 1;
- 
- 	while ((entry->nr < PERF_MAX_STACK_DEPTH) &&
+ 	new_oi = OCFS2_I(args->new_inode);
++	/*
++	 * Adjust extent record count to reserve space for extended attribute.
++	 * Inline data count had been adjusted in ocfs2_duplicate_inline_data().
++	 */
++	if (!(new_oi->ip_dyn_features & OCFS2_INLINE_DATA_FL) &&
++	    !(ocfs2_inode_is_fast_symlink(args->new_inode))) {
++		struct ocfs2_extent_list *el = &new_di->id2.i_list;
++		le16_add_cpu(&el->l_count, -(inline_size /
++					sizeof(struct ocfs2_extent_rec)));
++	}
+ 	spin_lock(&new_oi->ip_lock);
+ 	new_oi->ip_dyn_features |= OCFS2_HAS_XATTR_FL | OCFS2_INLINE_XATTR_FL;
+ 	new_di->i_dyn_features = cpu_to_le16(new_oi->ip_dyn_features);
 
