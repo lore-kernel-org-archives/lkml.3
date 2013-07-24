@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab3GXUyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:54:41 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52737 "EHLO
+	id S1753672Ab3GXUym (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:54:42 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52742 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752938Ab3GXUyh (ORCPT
+	with ESMTP id S1753172Ab3GXUyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 16:54:37 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
-Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 1/9] ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
-Date: Wed, 24 Jul 2013 13:54:26 -0700
-Message-Id: <1374699274-18388-2-git-send-email-sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 2/9] ARM: msm: Don't compile __msm_ioremap_caller() unless used
+Date: Wed, 24 Jul 2013 13:54:27 -0700
+Message-Id: <1374699274-18388-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
 References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
@@ -21,31 +21,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rohit Vaswani <rvaswani@codeaurora.org>
+This function is only used on MSM7x00A so only compile the
+function if the build includes support for that platform.
 
-MSM_TLMM_BASE is currently not mapped by 8x60. Remove it.
-
-Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h | 4 ----
- 1 file changed, 4 deletions(-)
+ arch/arm/mach-msm/io.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 75a7b62..4f57b43 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -35,10 +35,6 @@
-  *
-  */
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 3dc04cc..4a1a222 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -168,6 +168,7 @@ void __init msm_map_msm7x30_io(void)
+ }
+ #endif /* CONFIG_ARCH_MSM7X30 */
  
--#define MSM_TLMM_BASE		IOMEM(0xF0004000)
--#define MSM_TLMM_PHYS		0x00800000
--#define MSM_TLMM_SIZE		SZ_16K
--
- #define MSM8X60_TMR_PHYS	0x02000000
- #define MSM8X60_TMR_SIZE	SZ_4K
++#ifdef CONFIG_ARCH_MSM7X00A
+ void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
+ 				   unsigned int mtype, void *caller)
+ {
+@@ -182,3 +183,4 @@ void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
  
+ 	return __arm_ioremap_caller(phys_addr, size, mtype, caller);
+ }
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
