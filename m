@@ -1,98 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3GXXMN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 19:12:13 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54457 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752775Ab3GXXMM (ORCPT
+	id S1754253Ab3GXXMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 19:12:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56073 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754115Ab3GXXMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 19:12:12 -0400
-Message-ID: <51F05F49.60609@hurleysoftware.com>
-Date: Wed, 24 Jul 2013 19:12:09 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Dean Jenkins <Dean_Jenkins@mentor.com>
-CC: Andre Naujoks <nautsch2@gmail.com>, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 1/5] Bluetooth: Add RFCOMM TTY write return error codes
-References: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com> <1372779094-11730-2-git-send-email-Dean_Jenkins@mentor.com>
-In-Reply-To: <1372779094-11730-2-git-send-email-Dean_Jenkins@mentor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Wed, 24 Jul 2013 19:12:24 -0400
+Date: Wed, 24 Jul 2013 16:12:22 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gustavo Padovan <gustavo@padovan.org>
+Cc: linux-kernel@vger.kernel.org,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        channing <chao.bi@intel.com>, Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: [PATCH] ti-st: fix NULL dereference on protocol type check
+Message-Id: <20130724161222.f87f698d991594f5c94e455f@linux-foundation.org>
+In-Reply-To: <1374589774-450-1-git-send-email-gustavo@padovan.org>
+References: <1374589774-450-1-git-send-email-gustavo@padovan.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 11:31 AM, Dean Jenkins wrote:
-> It appears that rfcomm_tty_write() does not check that the
-> passed in TTY device_data is not NULL and also does not check
-> that the RFCOMM DLC serial data link pointer is not NULL.
->
-> A kernel crash was observed whilst SLIP was bound to /dev/rfcomm0
-> but the /dev/rfcomm0 had subsequently disconnected. Unfortunately,
-> SLIP attempted to write to the now non-existant RFCOMM TTY device
-> which caused a NULL pointer dereference because the device_data
-> no longer existed.
->
-> Therefore, add NULL pointer checks for the dev and dlc pointers
-> and output kernel error debug to show that NULL had been detected.
+On Tue, 23 Jul 2013 15:29:31 +0100 Gustavo Padovan <gustavo@padovan.org> wrote:
 
-Dean,
-
-Sorry, I didn't see these until just now.
-
-> Signed-off-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+> From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+> 
+> If the type we receive is greater than ST_MAX_CHANNELS we can't rely on
+> type as vector index since we would be accessing unknown memory when we use the type
+> as index.
+> 
+>  Unable to handle kernel NULL pointer dereference at virtual address 0000001b
+>  pgd = c0004000
+>  [0000001b] *pgd=00000000
+>  Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+>  Modules linked in: btwilink wl12xx wlcore mac80211 cfg80211 rfcomm bnep bluo
+>  CPU: 0    Tainted: G        W     (3.4.0+ #15)
+>  PC is at st_int_recv+0x278/0x344
+>  LR is at get_parent_ip+0x14/0x30
+>  pc : [<c03b01a8>]    lr : [<c007273c>]    psr: 200f0193
+>  sp : dc631ed0  ip : e3e21c24  fp : dc631f04
+>  r10: 00000000  r9 : 600f0113  r8 : 0000003f
+>  r7 : e3e21b14  r6 : 00000067  r5 : e2e49c1c  r4 : e3e21a80
+>  r3 : 00000001  r2 : 00000001  r1 : 00000001  r0 : 600f0113
+>  Flags: nzCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+>  Control: 10c5387d  Table: 9c50004a  DAC: 00000015
+> 
+> Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 > ---
->   net/bluetooth/rfcomm/tty.c | 14 +++++++++++++-
->   1 file changed, 13 insertions(+), 1 deletion(-)
->
-> diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
-> index b6e44ad..56d28d1 100644
-> --- a/net/bluetooth/rfcomm/tty.c
-> +++ b/net/bluetooth/rfcomm/tty.c
-> @@ -761,12 +761,24 @@ static void rfcomm_tty_close(struct tty_struct *tty, struct file *filp)
->   static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
->   {
->   	struct rfcomm_dev *dev = (struct rfcomm_dev *) tty->driver_data;
-> -	struct rfcomm_dlc *dlc = dev->dlc;
-> +	struct rfcomm_dlc *dlc;
->   	struct sk_buff *skb;
->   	int err = 0, sent = 0, size;
->
->   	BT_DBG("tty %p count %d", tty, count);
->
-> +	if (!dev) {
-> +		BT_ERR("RFCOMM TTY device data structure does not exist");
-> +		return -ENODEV;
-> +	}
-> +
-> +	dlc = dev->dlc;
-> +
-> +	if (!dlc) {
-> +		BT_ERR("RFCOMM serial data link does not exist");
-> +		return -ENOLINK;
-> +	}
-> +
+>  drivers/misc/ti-st/st_core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
+> index 0a14280..8e64eb1 100644
+> --- a/drivers/misc/ti-st/st_core.c
+> +++ b/drivers/misc/ti-st/st_core.c
+> @@ -343,7 +343,7 @@ void st_int_recv(void *disc_data,
+>  			/* Unknow packet? */
+>  		default:
+>  			type = *ptr;
+> -			if (st_gdata->list[type] == NULL) {
+> +			if (type >= ST_MAX_CHANNELS || st_gdata->list[type] == NULL) {
+>  				pr_err("chip/interface misbehavior dropping"
+>  					" frame starting with 0x%02x", type);
+>  				goto done;
 
-A number of bugs in rfcomm contributed to the crash you observed.
-Several other reporters have also noted crashes stemming from
-device disconnect. The rfcomm device must not disappear while a tty
-is in-use.
+This would be a bug in the calling code, would it not?
 
-Fixes for these are in-progress in a patch series by Gianluca Anzolin
-on linux-bluetooth ML.
-
-Also, for the future, kernel bluetooth patches go to:
-   Gustavo Padovan <gustavo@padovan.org>
-with cc's to:
-   Johan Hedberg <johan.hedberg@gmail.com>
-   Marcel Holtmann <marcel@holtmann.org>
-   linux-bluetooth@vger.kernel.org
-
-Regards,
-Peter Hurley
-
+How did this come about?
