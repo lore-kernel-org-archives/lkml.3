@@ -1,88 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3GXPBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:01:06 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:59287 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab3GXPBE (ORCPT
+	id S1753913Ab3GXPBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:01:41 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:55792 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab3GXPBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:01:04 -0400
+	Wed, 24 Jul 2013 11:01:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130719210430.GA31481@polaris.bitmath.org>
-References: <1373620101-16113-1-git-send-email-benjamin.tissoires@redhat.com>
-	<20130718192416.GA526@polaris.bitmath.org>
-	<CAN+gG=G6jw0BkJejZ=Rb+Vzzey1=JdqiiYmMonwjt9G1R779Tg@mail.gmail.com>
-	<20130719210430.GA31481@polaris.bitmath.org>
-Date: Wed, 24 Jul 2013 17:01:01 +0200
-Message-ID: <CAN+gG=EqFZ3-Grx-F+5Bu7gVfm-0psPxE=84-fff8_Hgh=68jg@mail.gmail.com>
-Subject: Re: [PATCH] HID: multitouch: do not init reports for multitouch devices
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        linux-input <linux-input@vger.kernel.org>,
+In-Reply-To: <20130724141927.GI30777@pd.tnic>
+References: <20130723135853.579c3cd5@googlemail.com>
+	<20130723151552.GF8497@pd.tnic>
+	<CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
+	<20130724141927.GI30777@pd.tnic>
+Date: Wed, 24 Jul 2013 17:01:39 +0200
+Message-ID: <CAPVoSvRfo7jePJ-NK444s9XwZK96xpf5w=vwQ9xRMp8oH-rVig@mail.gmail.com>
+Subject: Re: [PATCH]Fix early microcode loading on AMD
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
-
-On Fri, Jul 19, 2013 at 11:04 PM,  <rydberg@euromail.se> wrote:
-> Hi Benjamin,
->
->> >> Some multitouch screens do not like to be polled for input reports.
->> >> However, the Win8 spec says that all touches should be sent during
->> >> each report, making the initialization of reports unnecessary.
->> >> The Win7 spec is less precise, but we can safely assume that when
->> >> the module is loaded (at boot), no one is touching the screen.
->> >>
->> >> Add the quirk HID_QUIRK_NO_INIT_REPORTS so that we do not have to
->> >> introduce a quirk for each problematic device.
+On Wed, Jul 24, 2013 at 4:19 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
+>> > The other problem I see is not updating c->microcode since it is going
+>> > to be overwritten by smp_store_cpu_info, which is unfortunate.
 >> >
->> > I assume you have tested thoroughly for regressions? How about odd
->> > eGalax devices, for instance? Changes affecting existing hardware
->> > makes me nervous. Is it so bad to add this quirk on a per-device
->> > basis? Or perhaps turned on by default for win8 devices only?
+>> > And I don't see where Intel are updating that cpuinfo_x86.microcode
+>> > field on early load too.
+>> >
+>> > So, AFAICT, c->microcode would remain unset when we only do early
+>> > microcode load. But that is something we should fix as a later patch.
 >>
->> Aargh, I forgot the eGalax... (I don't have it anymore on my desk). I
->> was pretty confident because Win [7-8] is not doing any quirks for the
->> multitouch devices, and I had in mind that it did not asked for the
->> reports at startup (at least, I am sure about it for HID/I2C). I'm not
->> sure win 8 devices is a sufficient denominator, because this init
->> sequence is not mentioned anywhere in the Win 8 spec. It's true that
->> we are going to see fewer Win 7 devices, but I would say it's the
->> exact same problem for win 7 and 8. Moreover, asking this for Win 8
->> devices only will forces us to detect it in core before hid-multitouch
->> is loaded because the init reports is called before the parsing.
+>> I don't see a problem with that staying unset.
+>> apply_microcode_amd() directly reads the rev from
+>> MSR_AMD64_PATCH_LEVEL so it does not depend on that being correct.
+>> And smp_store_(boot)_cpu_info will also read the current rev directly
+>> from the CPU to fill ->microcode.
 >
-> We already branch on report specifics in hid_add_device(). Adding win8
-> detection there is more or less what it was built for.
+> We need to store the actual microcode revision to c->microcode for
+> /proc/cpuinfo and MCE.
 
-right. So I will send a following series to detect win8 multitouch
-device in core.
+init_amd() will fill that field. (You could alway compile with
+CONFIG_MICROCODE_AMD=n and that field would still need filling)
+And as that will get called before smp_store_(boo)_cpu_info()
+everything should be fine.
 
+>> > So I think you should switch load_ucode_amd_ap to __apply_microcode_amd:
+>> >
+>> >         p = find_patch()
+>> >
+>> >         __apply_microcode_amd(p->mc_data);
+>> >
+>> > which should take care of the issue you're seeing, IMHO.
+>>
+>> The issue I'm seeing is that collect_cpu_info_amd_early() fills c->x86
+>> but not c->x86_vendor.
+>> Which breaks cpu_has_amd_erratum() and then Erratum 400 breaks the boot.
+>>
+>> I did not really want to switch from apply_microcode_amd() to
+>> __apply_microcode_amd() because then I would lose the check if the new
+>> microcode is really an upgrade.
 >
->> If I capture the Win 7 & Win 8 initialization events and I observe
->> that they do not retrieve the reports, will it be sufficient as a
->> guarantee to include this patch even if it is not widely tested under
->> Linux?
+> Well, if the BSP has already loaded the pcache, there's no need for
+> the AP to parse and load the same microcode blobs file for the initrd,
+> right?
 
-Actually, the current quirk is not imitating Windows behavior. Windows
-does not retrieve the input reports, but only the feature reports.
-This scheme is also useful for us as the feature_mapping() callback
-makes use of the ->value, and if we do not retrieve the feature
-report, the field is left uninitialized.
+loading != applying.
 
-I will also add an other quirk to retrieve only the features at init.
+load_ucode_amd_ap() should probably called apply_ucode_amd_ap()
+because that is primarily for applying the microcode.
+That it also loads it (but really only once thanks to ucode_loaded) is
+only because nobody else has run yet.
 
+That whole place is hairy: Because on 32bit that seems to run much
+earlier the 64 and 32 cases are very different.
+64bit can and will use pcache/apply_microcode_amd() for the non BSP
+CPUs, but on 32 bit everything directly applys the patches from initrd
+memory into the CPUs be directly calling __apply_microcode_amd(). And
+so bypassing pcache.
+
+See comment above the 32bit version of load_ucode_amd_ap():
+/*
+ * On 32-bit, since AP's early load occurs before paging is turned on, we
+ * cannot traverse cpu_equiv_table and pcache in kernel heap memory. So during
+ * cold boot, AP will apply_ucode_in_initrd() just like the BSP. During
+ * save_microcode_in_initrd_amd() BSP's patch is copied to amd_bsp_mpb, which
+ * is used upon resume from suspend.
+ */
+
+As written in the other email: I'm currently trying to see if I can
+kill amd_bsp_mpb...
+
+>> >> * load_ucode_ap(): Quick exit for !cpu, because without load_microcode_amd()
+>> >> getting called apply_microcode_amd() can't do anything. Exit, if no microcode
+>> >> could be loaded.
+>> >
+>> > This could probably be a WARN_ON(!cpu) to catch errors...
+>>
+>> No, load_ucode_ap() will be called for cpu == 0.
 >
-> We already have the usbhid quirks to handle odd cases, and we can add
-> all sorts of generic detection during device add, so there really is
-> no reason to risk regressions at all, is there?
+> This needs fixing IMO...
 
-Ok, so let's go for another patch series.. :)
+Can't answer that. I have only seen that it is called for cpu == 0 and
+that there is no special case für CPU#0 in all the places that call
+load_ucode_ap()...
 
-Cheers,
-Benjamin
+> Btw, thanks for looking at this and asking critical questions!
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
