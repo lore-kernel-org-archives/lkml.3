@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab3GXK5E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 06:57:04 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:46716 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab3GXK5C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 06:57:02 -0400
+	id S1751473Ab3GXLFN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 07:05:13 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:37660 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751215Ab3GXLFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 07:05:11 -0400
+X-IronPort-AV: E=Sophos;i="4.89,734,1367971200"; 
+   d="scan'208";a="38946239"
+Date: Wed, 24 Jul 2013 12:05:05 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <ian.campbell@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        <xen-devel@lists.xensource.com>, <alex@alex.org.uk>,
+        <dcrisan@flexiant.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out
+ pages
+In-Reply-To: <20130723190521.GA7073@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com> <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com> <1374602409.6623.138.camel@hastur.hellion.org.uk> <20130723190521.GA7073@phenom.dumpdata.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <51EF773F.40903@gmail.com>
-References: <CADDKRnBRyJZCoy3G53b6tY7J21XZp5bGn7nJi87WUgEGhSuT_w@mail.gmail.com>
-	<51EF773F.40903@gmail.com>
-Date: Wed, 24 Jul 2013 12:57:01 +0200
-Message-ID: <CADDKRnDNoqYCzS_gKHhKvymEgtRVoptmeYDHf3ujSAYe5KpVGw@mail.gmail.com>
-Subject: Re: [v3.11-rc2] regression: brightness always on maximum.
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Aaron Lu <aaron.lwe@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        rafael.j.wysocki@intel.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/24 Aaron Lu <aaron.lwe@gmail.com>:
-> On 07/23/2013 03:52 PM, Jörg Otte wrote:
->> The brightness of my laptop is always on maximum and can't be scaled
->> down.
->> Brightness control via function keys was always working on this
->> laptop, so this is a regression in v3.11-rc2.
->
-> Please list /sys/class/backlight.
+On Tue, 23 Jul 2013, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
+> > On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
+> > > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
+> > > +				    unsigned long action, void *hcpu)
+> > > +{
+> > > +	int cpu = (long)hcpu;
+> > > +	switch (action) {
+> > > +	case CPU_UP_PREPARE:
+> > > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
+> > > +			break;
+> > 
+> > Thinking about this a bit more -- do we know what happens to the per-cpu
+> > area for a CPU which is unplugged and then reintroduced? Is it preserved
+> > or is it reset?
+> > 
+> > If it is reset then this gets more complicated :-( We might be able to
+> > use the core mm page reference count, so that when the last reference is
+> > removed the page is automatically reclaimed. We can obviously take a
+> > reference whenever we add a mapping of the trade page, but I'm not sure
+> > we are always on the path which removes such mappings... Even then you
+> > could waste pages for some potentially large amount of time each time
+> > you replug a VCPU.
+> > 
+> > Urg, I really hope the per-cpu area is preserved!
+> 
+> It is. During bootup time you see this:
+> 
+> [    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
+> [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
+> 
+> which means that all of the per_CPU are shrunk down to 128 (from 
+> CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
+> 
+> You might have to clear it when the vCPU comes back up though - otherwise you
+> will have garbage.
 
-# cd /sys/class
-# find backlight -name "*"
-backlight
-backlight/intel_backlight
-# cd backlight/intel_backlight
-# ls
-actual_brightness  bl_power  brightness  device  max_brightness  power
- subsystem  type  uevent
-# cat actual_brightness
-0
-# cat max_brightness
-4882
-
-actual_brightness is 0, but brightness is on maximum!
-
->
-> If there is a intel_backlight, please try to adjust brightness level
-> through brightness file like this:
-> # echo XXX > /sys/class/backlight/intel_backlight/brightness
-> Does it work?
-
-no, it doesn't have any visible effect.
-
-
-Thanks, Jörg
+I don't see anything in the hotplug code that would modify the value of
+the per_cpu area of offline cpus.
