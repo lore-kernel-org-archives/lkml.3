@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3GXU4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:56:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52748 "EHLO
+	id S1753824Ab3GXU4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:56:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52756 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753211Ab3GXUyi (ORCPT
+	with ESMTP id S1753253Ab3GXUyi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 16:54:38 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: David Brown <davidb@codeaurora.org>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
-Date: Wed, 24 Jul 2013 13:54:28 -0700
-Message-Id: <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v2 4/9] ARM: msm: Remove TMR and TMR0 static mappings
+Date: Wed, 24 Jul 2013 13:54:29 -0700
+Message-Id: <1374699274-18388-5-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
 References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
@@ -21,160 +21,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more step to allowing MSM to participate in the
-multi-platform defconfig.
+Nobody is using these mappings so just drop them. of_iomap() in
+the timer driver will take care of it for us. Doing this allows
+us to remove the 8x60 and 8960 iomap files completely.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/Kconfig.debug                             |  9 +++-
- .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
- arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
- arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
- arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
- arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
- arch/arm/mach-msm/io.c                             | 40 +++++++-------
- 7 files changed, 58 insertions(+), 108 deletions(-)
- rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
- delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
+ arch/arm/mach-msm/board-dt-8660.c               |  2 +-
+ arch/arm/mach-msm/board-dt-8960.c               |  2 +-
+ arch/arm/mach-msm/common.h                      |  2 --
+ arch/arm/mach-msm/include/mach/msm_iomap-8960.h | 41 -----------------------
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h | 44 -------------------------
+ arch/arm/mach-msm/include/mach/msm_iomap.h      |  5 ---
+ arch/arm/mach-msm/io.c                          | 26 ---------------
+ 7 files changed, 2 insertions(+), 120 deletions(-)
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8960.h
+ delete mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
 
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index e401a76..4a62a8d 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -777,6 +777,11 @@ config DEBUG_LL_INCLUDE
- 				 DEBUG_IMX6SL_UART
- 	default "debug/keystone.S" if DEBUG_KEYSTONE_UART0 || \
- 				      DEBUG_KEYSTONE_UART1
-+	default "debug/msm.S" if DEBUG_MSM_UART1 || \
-+				 DEBUG_MSM_UART2 || \
-+				 DEBUG_MSM_UART3 || \
-+				 DEBUG_MSM8660_UART || \
-+				 DEBUG_MSM8960_UART
- 	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
- 				   DEBUG_MVEBU_UART_ALTERNATE
- 	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
-@@ -804,13 +809,13 @@ config DEBUG_LL_INCLUDE
+diff --git a/arch/arm/mach-msm/board-dt-8660.c b/arch/arm/mach-msm/board-dt-8660.c
+index 492f5cd..f1d9c82 100644
+--- a/arch/arm/mach-msm/board-dt-8660.c
++++ b/arch/arm/mach-msm/board-dt-8660.c
+@@ -15,6 +15,7 @@
+ #include <linux/of_platform.h>
  
- config DEBUG_UNCOMPRESS
- 	bool
--	default y if ARCH_MULTIPLATFORM && DEBUG_LL && \
-+	default y if (ARCH_MULTIPLATFORM || ARCH_MSM) && DEBUG_LL && \
- 		     !DEBUG_OMAP2PLUS_UART && \
- 		     !DEBUG_TEGRA_UART
+ #include <asm/mach/arch.h>
++#include <asm/mach/map.h>
  
- config UNCOMPRESS_INCLUDE
- 	string
--	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
-+	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || ARCH_MSM
- 	default "mach/uncompress.h"
+ #include <mach/board.h>
+ #include "common.h"
+@@ -42,7 +43,6 @@ static const char *msm8x60_fluid_match[] __initdata = {
  
- config EARLY_PRINTK
-diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/include/debug/msm.S
-similarity index 61%
-rename from arch/arm/mach-msm/include/mach/debug-macro.S
-rename to arch/arm/include/debug/msm.S
-index 0e05f88..9166e1b 100644
---- a/arch/arm/mach-msm/include/mach/debug-macro.S
-+++ b/arch/arm/include/debug/msm.S
-@@ -15,8 +15,36 @@
-  *
-  */
+ DT_MACHINE_START(MSM_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.smp = smp_ops(msm_smp_ops),
+-	.map_io = msm_map_msm8x60_io,
+ 	.init_machine = msm8x60_dt_init,
+ 	.init_late = msm8x60_init_late,
+ 	.init_time	= msm_dt_timer_init,
+diff --git a/arch/arm/mach-msm/board-dt-8960.c b/arch/arm/mach-msm/board-dt-8960.c
+index bb55309..f930eaf 100644
+--- a/arch/arm/mach-msm/board-dt-8960.c
++++ b/arch/arm/mach-msm/board-dt-8960.c
+@@ -14,6 +14,7 @@
+ #include <linux/of_platform.h>
  
--#include <mach/hardware.h>
--#include <mach/msm_iomap.h>
-+#if defined(CONFIG_ARCH_MSM7X00A) || defined(CONFIG_ARCH_QSD8X50)
-+#define MSM_UART1_PHYS        0xA9A00000
-+#define MSM_UART2_PHYS        0xA9B00000
-+#define MSM_UART3_PHYS        0xA9C00000
-+#elif defined(CONFIG_ARCH_MSM7X30)
-+#define MSM_UART1_PHYS        0xACA00000
-+#define MSM_UART2_PHYS        0xACB00000
-+#define MSM_UART3_PHYS        0xACC00000
-+#endif
-+
-+#if defined(CONFIG_DEBUG_MSM_UART1)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART2)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
-+#elif defined(CONFIG_DEBUG_MSM_UART3)
-+#define MSM_DEBUG_UART_BASE	0xE1000000
-+#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
-+#endif
-+
-+#ifdef CONFIG_DEBUG_MSM8660_UART
-+#define MSM_DEBUG_UART_BASE	0xF0040000
-+#define MSM_DEBUG_UART_PHYS	0x19C40000
-+#endif
-+
-+#ifdef CONFIG_DEBUG_MSM8960_UART
-+#define MSM_DEBUG_UART_BASE	0xF0040000
-+#define MSM_DEBUG_UART_PHYS	0x16440000
-+#endif
+ #include <asm/mach/arch.h>
++#include <asm/mach/map.h>
  
- 	.macro	addruart, rp, rv, tmp
- #ifdef MSM_DEBUG_UART_PHYS
+ #include "common.h"
+ 
+@@ -29,7 +30,6 @@ static const char * const msm8960_dt_match[] __initconst = {
+ 
+ DT_MACHINE_START(MSM8960_DT, "Qualcomm MSM (Flattened Device Tree)")
+ 	.smp = smp_ops(msm_smp_ops),
+-	.map_io = msm_map_msm8960_io,
+ 	.init_time	= msm_dt_timer_init,
+ 	.init_machine = msm_dt_init,
+ 	.dt_compat = msm8960_dt_match,
+diff --git a/arch/arm/mach-msm/common.h b/arch/arm/mach-msm/common.h
+index 421cf77..569bd16 100644
+--- a/arch/arm/mach-msm/common.h
++++ b/arch/arm/mach-msm/common.h
+@@ -19,8 +19,6 @@ extern void qsd8x50_timer_init(void);
+ 
+ extern void msm_map_common_io(void);
+ extern void msm_map_msm7x30_io(void);
+-extern void msm_map_msm8x60_io(void);
+-extern void msm_map_msm8960_io(void);
+ extern void msm_map_qsd8x50_io(void);
+ 
+ extern void __iomem *__msm_ioremap_caller(phys_addr_t phys_addr, size_t size,
 diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-index 7bca8d7..396958b 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
-@@ -38,9 +38,4 @@
- #define MSM8960_TMR0_PHYS	0x0208A000
- #define MSM8960_TMR0_SIZE	SZ_4K
- 
--#ifdef CONFIG_DEBUG_MSM8960_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x16440000
--#endif
--
- #endif
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-index 4f57b43..dede6aa 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
-@@ -41,9 +41,4 @@
- #define MSM8X60_TMR0_PHYS	0x02040000
- #define MSM8X60_TMR0_SIZE	SZ_4K
- 
--#ifdef CONFIG_DEBUG_MSM8660_UART
--#define MSM_DEBUG_UART_BASE	0xF0040000
--#define MSM_DEBUG_UART_PHYS	0x19C40000
--#endif
--
- #endif
-diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
-index c56e81f..0b36c42 100644
---- a/arch/arm/mach-msm/include/mach/msm_iomap.h
-+++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
-@@ -48,18 +48,6 @@
- #include "msm_iomap-8x60.h"
- #include "msm_iomap-8960.h"
- 
--#define MSM_DEBUG_UART_SIZE	SZ_4K
--#if defined(CONFIG_DEBUG_MSM_UART1)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART1_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART2)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART2_PHYS
--#elif defined(CONFIG_DEBUG_MSM_UART3)
--#define MSM_DEBUG_UART_BASE	0xE1000000
--#define MSM_DEBUG_UART_PHYS	MSM_UART3_PHYS
--#endif
--
- /* Virtual addresses shared across all MSM targets. */
- #define MSM_CSR_BASE		IOMEM(0xE0001000)
- #define MSM_TMR_BASE		IOMEM(0xF0200000)
-diff --git a/arch/arm/mach-msm/include/mach/uncompress.h b/arch/arm/mach-msm/include/mach/uncompress.h
 deleted file mode 100644
-index 9432487..0000000
---- a/arch/arm/mach-msm/include/mach/uncompress.h
+index 396958b..0000000
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8960.h
 +++ /dev/null
-@@ -1,63 +0,0 @@
+@@ -1,41 +0,0 @@
 -/*
 - * Copyright (C) 2007 Google, Inc.
-- * Copyright (c) 2011, Code Aurora Forum. All rights reserved.
+- * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
+- * Author: Brian Swetland <swetland@google.com>
 - *
 - * This software is licensed under the terms of the GNU General Public
 - * License version 2, as published by the Free Software Foundation, and
@@ -185,172 +111,138 @@ index 9432487..0000000
 - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 - * GNU General Public License for more details.
 - *
+- *
+- * The MSM peripherals are spread all over across 768MB of physical
+- * space, which makes just having a simple IO_ADDRESS macro to slide
+- * them into the right virtual location rough.  Instead, we will
+- * provide a master phys->virt mapping for peripherals here.
+- *
 - */
 -
--#ifndef __ASM_ARCH_MSM_UNCOMPRESS_H
--#define __ASM_ARCH_MSM_UNCOMPRESS_H
+-#ifndef __ASM_ARCH_MSM_IOMAP_8960_H
+-#define __ASM_ARCH_MSM_IOMAP_8960_H
 -
--#include <asm/barrier.h>
--#include <asm/processor.h>
--#include <mach/msm_iomap.h>
+-/* Physical base address and size of peripherals.
+- * Ordered by the virtual base addresses they will be mapped at.
+- *
+- * If you add or remove entries here, you'll want to edit the
+- * msm_io_desc array in arch/arm/mach-msm/io.c to reflect your
+- * changes.
+- *
+- */
 -
--#define UART_CSR      (*(volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x08))
--#define UART_TF       (*(volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x0c))
+-#define MSM8960_TMR_PHYS	0x0200A000
+-#define MSM8960_TMR_SIZE	SZ_4K
 -
--#define UART_DM_SR    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x08)))
--#define UART_DM_CR    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x10)))
--#define UART_DM_ISR   (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x14)))
--#define UART_DM_NCHAR (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x40)))
--#define UART_DM_TF    (*((volatile uint32_t *)(MSM_DEBUG_UART_PHYS + 0x70)))
--
--static void putc(int c)
--{
--#if defined(MSM_DEBUG_UART_PHYS)
--#ifdef CONFIG_MSM_HAS_DEBUG_UART_HS
--	/*
--	 * Wait for TX_READY to be set; but skip it if we have a
--	 * TX underrun.
--	 */
--	if (!(UART_DM_SR & 0x08))
--		while (!(UART_DM_ISR & 0x80))
--			cpu_relax();
--
--	UART_DM_CR = 0x300;
--	UART_DM_NCHAR = 0x1;
--	UART_DM_TF = c;
--#else
--	while (!(UART_CSR & 0x04))
--		cpu_relax();
--	UART_TF = c;
--#endif
--#endif
--}
--
--static inline void flush(void)
--{
--}
--
--static inline void arch_decomp_setup(void)
--{
--}
+-#define MSM8960_TMR0_PHYS	0x0208A000
+-#define MSM8960_TMR0_SIZE	SZ_4K
 -
 -#endif
-diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
-index 4a1a222..66acb98 100644
---- a/arch/arm/mach-msm/io.c
-+++ b/arch/arm/mach-msm/io.c
-@@ -52,26 +52,38 @@ static struct map_desc msm_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE_TYPE(GPIO1, MSM7X00, MT_DEVICE_NONSHARED),
- 	MSM_CHIP_DEVICE_TYPE(GPIO2, MSM7X00, MT_DEVICE_NONSHARED),
- 	MSM_DEVICE_TYPE(CLK_CTL, MT_DEVICE_NONSHARED),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE_TYPE(DEBUG_UART, MT_DEVICE_NONSHARED),
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+deleted file mode 100644
+index dede6aa..0000000
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ /dev/null
+@@ -1,44 +0,0 @@
+-/*
+- * Copyright (C) 2007 Google, Inc.
+- * Copyright (c) 2008-2011, Code Aurora Forum. All rights reserved.
+- * Author: Brian Swetland <swetland@google.com>
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- *
+- * The MSM peripherals are spread all over across 768MB of physical
+- * space, which makes just having a simple IO_ADDRESS macro to slide
+- * them into the right virtual location rough.  Instead, we will
+- * provide a master phys->virt mapping for peripherals here.
+- *
+- */
+-
+-#ifndef __ASM_ARCH_MSM_IOMAP_8X60_H
+-#define __ASM_ARCH_MSM_IOMAP_8X60_H
+-
+-/* Physical base address and size of peripherals.
+- * Ordered by the virtual base addresses they will be mapped at.
+- *
+- * MSM_VIC_BASE must be an value that can be loaded via a "mov"
+- * instruction, otherwise entry-macro.S will not compile.
+- *
+- * If you add or remove entries here, you'll want to edit the
+- * msm_io_desc array in arch/arm/mach-msm/io.c to reflect your
+- * changes.
+- *
+- */
+-
+-#define MSM8X60_TMR_PHYS	0x02000000
+-#define MSM8X60_TMR_SIZE	SZ_4K
+-
+-#define MSM8X60_TMR0_PHYS	0x02040000
+-#define MSM8X60_TMR0_SIZE	SZ_4K
+-
 -#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
- 		.length =   MSM_SHARED_RAM_SIZE,
- 		.type =     MT_DEVICE,
- 	},
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+		defined(CONFIG_DEBUG_MSM_UART3)
-+	{
-+		/* virtual and pfn filled in by debug_ll_addr() */
-+		.length = SZ_4K,
-+		.type = MT_DEVICE_NONSHARED,
-+	}
-+#endif
- };
- 
- void __init msm_map_common_io(void)
- {
-+	size_t size = ARRAY_SIZE(msm_io_desc);
-+
- 	/* Make sure the peripheral register window is closed, since
- 	 * we will use PTE flags (TEX[1]=1,B=0,C=1) to determine which
- 	 * pages are peripheral interface or not.
- 	 */
- 	asm("mcr p15, 0, %0, c15, c2, 4" : : "r" (0));
--	iotable_init(msm_io_desc, ARRAY_SIZE(msm_io_desc));
-+#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
-+		defined(CONFIG_DEBUG_MSM_UART3)
-+	debug_ll_addr(&msm_io_desc[size - 1].pfn,
-+		      &msm_io_desc[size - 1].virtual);
-+	msm_io_desc[size - 1].pfn = __phys_to_pfn(msm_io_desc[size - 1].pfn);
-+#endif
-+	iotable_init(msm_io_desc, size);
- }
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap.h b/arch/arm/mach-msm/include/mach/msm_iomap.h
+index 0b36c42..0e4f491 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap.h
+@@ -45,13 +45,8 @@
+ #include "msm_iomap-7x00.h"
  #endif
  
-@@ -87,10 +99,6 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
- 	MSM_DEVICE(SCPLL),
- 	MSM_DEVICE(AD5),
- 	MSM_DEVICE(MDC),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
--#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
-@@ -101,6 +109,7 @@ static struct map_desc qsd8x50_io_desc[] __initdata = {
+-#include "msm_iomap-8x60.h"
+-#include "msm_iomap-8960.h"
+-
+ /* Virtual addresses shared across all MSM targets. */
+ #define MSM_CSR_BASE		IOMEM(0xE0001000)
+-#define MSM_TMR_BASE		IOMEM(0xF0200000)
+-#define MSM_TMR0_BASE		IOMEM(0xF0201000)
+ #define MSM_GPIO1_BASE		IOMEM(0xE0003000)
+ #define MSM_GPIO2_BASE		IOMEM(0xE0004000)
  
- void __init msm_map_qsd8x50_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(qsd8x50_io_desc, ARRAY_SIZE(qsd8x50_io_desc));
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index 66acb98..c632c87 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -114,32 +114,6 @@ void __init msm_map_qsd8x50_io(void)
  }
  #endif /* CONFIG_ARCH_QSD8X50 */
-@@ -109,13 +118,11 @@ void __init msm_map_qsd8x50_io(void)
- static struct map_desc msm8x60_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE(TMR, MSM8X60),
- 	MSM_CHIP_DEVICE(TMR0, MSM8X60),
--#ifdef CONFIG_DEBUG_MSM8660_UART
--	MSM_DEVICE(DEBUG_UART),
--#endif
- };
  
- void __init msm_map_msm8x60_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm8x60_io_desc, ARRAY_SIZE(msm8x60_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM8X60 */
-@@ -124,13 +131,11 @@ void __init msm_map_msm8x60_io(void)
- static struct map_desc msm8960_io_desc[] __initdata = {
- 	MSM_CHIP_DEVICE(TMR, MSM8960),
- 	MSM_CHIP_DEVICE(TMR0, MSM8960),
--#ifdef CONFIG_DEBUG_MSM8960_UART
--	MSM_DEVICE(DEBUG_UART),
--#endif
- };
- 
- void __init msm_map_msm8960_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm8960_io_desc, ARRAY_SIZE(msm8960_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM8960 */
-@@ -150,10 +155,6 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
- 	MSM_DEVICE(SAW),
- 	MSM_DEVICE(GCC),
- 	MSM_DEVICE(TCSR),
--#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
--	defined(CONFIG_DEBUG_MSM_UART3)
--	MSM_DEVICE(DEBUG_UART),
--#endif
- 	{
- 		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
- 		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
-@@ -164,6 +165,7 @@ static struct map_desc msm7x30_io_desc[] __initdata = {
- 
- void __init msm_map_msm7x30_io(void)
- {
-+	debug_ll_io_init();
- 	iotable_init(msm7x30_io_desc, ARRAY_SIZE(msm7x30_io_desc));
- }
- #endif /* CONFIG_ARCH_MSM7X30 */
+-#ifdef CONFIG_ARCH_MSM8X60
+-static struct map_desc msm8x60_io_desc[] __initdata = {
+-	MSM_CHIP_DEVICE(TMR, MSM8X60),
+-	MSM_CHIP_DEVICE(TMR0, MSM8X60),
+-};
+-
+-void __init msm_map_msm8x60_io(void)
+-{
+-	debug_ll_io_init();
+-	iotable_init(msm8x60_io_desc, ARRAY_SIZE(msm8x60_io_desc));
+-}
+-#endif /* CONFIG_ARCH_MSM8X60 */
+-
+-#ifdef CONFIG_ARCH_MSM8960
+-static struct map_desc msm8960_io_desc[] __initdata = {
+-	MSM_CHIP_DEVICE(TMR, MSM8960),
+-	MSM_CHIP_DEVICE(TMR0, MSM8960),
+-};
+-
+-void __init msm_map_msm8960_io(void)
+-{
+-	debug_ll_io_init();
+-	iotable_init(msm8960_io_desc, ARRAY_SIZE(msm8960_io_desc));
+-}
+-#endif /* CONFIG_ARCH_MSM8960 */
+-
+ #ifdef CONFIG_ARCH_MSM7X30
+ static struct map_desc msm7x30_io_desc[] __initdata = {
+ 	MSM_DEVICE(VIC),
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
