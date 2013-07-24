@@ -1,87 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3GYEQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:16:12 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:48687 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab3GYEPL (ORCPT
+	id S1754183Ab3GYEQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:16:06 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:53745 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641Ab3GYEPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:15:11 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control its IRQ domain ?
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-kernel@vger.kernel.org
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-In-Reply-To: <1624911.6TtmtVmU1T@avalon>
-References: <1624911.6TtmtVmU1T@avalon>
-Date: Wed, 24 Jul 2013 21:24:46 +0100
-Message-Id: <20130724202446.6CAF23E1313@localhost>
+	Thu, 25 Jul 2013 00:15:09 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: The future of DT binding maintainership
+To: Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Jon Loeliger <jdl@jdl.com>, "Chaiken, Alison" <Alison_Chaiken@mentor.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+In-Reply-To: <51EEA75E.3050008@wwwdotorg.org>
+References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com> <1925583.R0td2pS6as@flatron> <E1V1Nkn-00072x-Df@jdl.com> <1687020.5ErE9ecltl@flatron> <51EEA75E.3050008@wwwdotorg.org>
+Date: Wed, 24 Jul 2013 21:28:47 +0100
+Message-Id: <20130724202847.2BD753E14AB@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Jul 2013 01:21:44 +0200, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
-> Hello,
+On Tue, 23 Jul 2013 08:55:10 -0700, Stephen Warren <swarren@wwwdotorg.org> wrote:
+> On 07/22/2013 02:57 PM, Tomasz Figa wrote:
+> > On Monday 22 of July 2013 16:34:49 Jon Loeliger wrote:
 > 
-> I'm running into an issue on several Renesas SoC with IRQ domains and GPIOs.
+> >>> My idea is to implement compile time verification in dtc, so I guess it
+> >>> will be more like the latter. Since dts is what dtc can already parse,
+> >>> my plan is to keep the schemas in spirit to dts, just
+> >>> modifying/extending it to allow specifying bindings with them, rather
+> >>> than static values.
 > 
-> On sh73a0, r8a73a4 and r8a7740, GPIOs and external interrupts are handled by 
-> two separate IP cores, namely the PFC (Pin Function Controller) and INTC 
-> (Interrupt Controller). The former is handled by the sh-pfc driver 
-> (drivers/pinctrl/sh-pfc) and the later by the irq-renesas-intc-irqpin driver 
-> (drivers/irqchip), referred to below as the irqpin driver.
+> > Things start to become fun when you get to bindings like regulators or 
+> > clocks, when part of the binding is defined on generic level (-supply, 
+> > clocks, clock-names properties) and remaining part is specific to device 
+> > (XXX in XXX-supply, count and order of clocks and clock-names, strings 
+> > allowed in clock-names property). This kind of inheritance is likely to be 
+> > the biggest troublemaker.
 > 
-> The sh73a0, for instance, has 32 external interrupt lines that are multiplexed 
-> on pins usable as GPIOs. Both the GPIO and external interrupt functions are 
-> usable at the same time, which allows reading the state of the interrupt 
-> lines.
-> 
-> These external interrupts are for MMC/SD support, among other devices. In this 
-> specific case the MMC/SD Card Detect signal is wired to one of the external 
-> interrupt signals, and the corresponding GPIO is passed to the MMC/SD 
-> controller driver. Depending on other configuration parameters the driver can 
-> then either poll the Card Detect signal, or register an interrupt handler to 
-> detect changes in the signal state. This features is implemented by the MMC/SD 
-> core, which call gpio_to_irq() on the GPIO to retrieve the corresponding IRQ 
-> number.
-> 
-> On non-DT systems the external IRQs are statically mapped at a known offset. 
-> The sh-pfc driver, to implement the gpio_to_irq() function (through its 
-> gpiochip .to_irq() handler), simply searches a SoC-specific lookup table for 
-> the fixed IRQ number associated with a given GPIO.
-> 
-> However, on DT systems, IRQs are mapped dynamically on demand. The irqpin 
-> driver registers a simple IRQ domain, and the irq_create_mapping() function 
-> can then be used to map a given IRQ, specified as an offset in the domain. 
-> This is where the problem appears, as the irqchip .to_irq() function is 
-> implemented in the sh-pfc driver, which doesn't have access to the IRQ domain 
-> registered by the irqpin driver.
-> 
-> I could hack around this by exporting a function in the irqpin driver that 
-> would map an IRQ, and call that function from the sh-pfc driver. I'd rather 
-> avoid that solution as it would add a direct dependency between the two 
-> drivers.
+> It's good you mentioned inheritance here. I believe that's one of the
+> key things. For example, the Tegra GPIO controller's binding is-a
+> GPIO-controller, and is-an interrupt-controller, and I imagine any
+> successful DT schema definition would very explicitly include that
+> information. Likewise, other nodes may be is-a GPIO-client (many times,
+> each parameterized with the property name that defines which GPIO you're
+> talking abot), and also may be is-an interrupt-client (with a similar
+> comment), etc.
 
-Well, the gpio controller really does need to know what irq is
-associated with a GPIO line. If the gpio controller driver doesn't have
-direct access to that information, then it needs to have a hook to set
-it up.
++1
 
-In the past, I've seen gpio controllers have an interrupts property
-specifying which interrupts it is connected to and can use for GPIO
-events. That seems like a resonable scenario in this regard, but if
-GPIOS are 1:1 mapped to irqs, then it means a lot of interrupt entries
-need to appear in the GPIO node. The other option is to add a hook
-directly to the gpio driver so that it knows to use a specific irq
-controller; but that feels wrong. Thought it may be a bit verbose, the
-addition of an interrupts property to the GPIO controller node is
-probably what is wanted.
-
-There has also been a trend to make gpio controllers also interrupt
-controllers if they support being used directly as irq inputs, but that
-doesn't really help your problem.  :-)
-
-g.
