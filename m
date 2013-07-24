@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab3GXFMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 01:12:54 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:48108 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865Ab3GXFMw (ORCPT
+	id S1751286Ab3GXF25 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 01:28:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45390 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab3GXF2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 01:12:52 -0400
+	Wed, 24 Jul 2013 01:28:55 -0400
+Date: Tue, 23 Jul 2013 22:30:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [ 07/11] MAINTAINERS: add stable_kernel_rules.txt to stable
+ maintainer information
+Message-ID: <20130724053007.GA13089@kroah.com>
+References: <20130711220545.542911892@linuxfoundation.org>
+ <20130711220546.392644563@linuxfoundation.org>
+ <1374642569.18653.27.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <1374600682-19376-1-git-send-email-tobetter@gmail.com>
-References: <1374600682-19376-1-git-send-email-tobetter@gmail.com>
-Date: Wed, 24 Jul 2013 10:42:51 +0530
-Message-ID: <CAK9yfHw98L-FUtX7v32FyE4UN308uYpJXx8oxDuYgYZk1uUp_A@mail.gmail.com>
-Subject: Re: [PATCH] ARM: dts: Add USBPHY nodes to Exynos4x12
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374642569.18653.27.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dongjin,
+On Wed, Jul 24, 2013 at 06:09:29AM +0100, Ben Hutchings wrote:
+> On Thu, 2013-07-11 at 15:11 -0700, Greg Kroah-Hartman wrote:
+> > 3.4-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > 
+> > commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
+> > 
+> > This hopefully will help point developers to the proper way that patches
+> > should be submitted for inclusion in the stable kernel releases.
+> [...]
+> 
+> I've queued this up for 3.2.  And, since there was fuzz, I also picked
+> your email address update (commit 879a5a001b62).
 
-On 23 July 2013 23:01, Dongjin Kim <tobetter@gmail.com> wrote:
-> This patch adds device nodes for USBPHY to Exynos4x12.
->
-> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
-> ---
->  arch/arm/boot/dts/exynos4x12.dtsi |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/exynos4x12.dtsi b/arch/arm/boot/dts/exynos4x12.dtsi
-> index 01da194..9c3335b 100644
-> --- a/arch/arm/boot/dts/exynos4x12.dtsi
-> +++ b/arch/arm/boot/dts/exynos4x12.dtsi
-> @@ -73,4 +73,22 @@
->                 clock-names = "sclk_fimg2d", "fimg2d";
->                 status = "disabled";
->         };
-> +
-> +       usbphy@125B00000 {
+Thanks for that.
 
-Extra 0 above.
-
-> +               #address-cells = <1>;
-> +               #size-cells = <1>;
-> +               compatible = "samsung,exynos4x12-usb2phy";
-> +               reg = <0x125B0000 0x100>;
-> +               ranges;
-> +
-> +               clocks = <&clock 2>, <&clock 305>;
-> +               clock-names = "xusbxti", "otg";
-> +               status = "disabled";
-> +
-> +               usbphy-sys {
-> +                       /* USB device and host PHY_CONTROL registers */
-> +                       reg = <0x10020704 0xc>,
-> +                             <0x1001021c 0x4>;
-> +               };
-> +       };
->  };
-
-Please add this node after tmu node (satisfies alphabetical order as
-well as increasing address value)
-
-
--- 
-With warm regards,
-Sachin
+greg k-h
