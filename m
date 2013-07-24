@@ -1,68 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab3GXRYn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:24:43 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:42987 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3GXRYk (ORCPT
+	id S1752495Ab3GXR15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:27:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:21852 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751605Ab3GXR14 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:24:40 -0400
+	Wed, 24 Jul 2013 13:27:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
+   d="scan'208";a="375391590"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peng Tao <bergwolf@gmail.com>, Peng Tao <tao.peng@emc.com>
+Subject: Re: [PATCH 8/8] staging/lustre: fix errno translate code on non-x86
+Thread-Topic: [PATCH 8/8] staging/lustre: fix errno translate code on non-x86
+Thread-Index: AQHOiEkCknSzAeBGAEabiy67v4W+45l0JnEA
+Date: Wed, 24 Jul 2013 17:27:53 +0000
+Message-ID: <CE156A09.575CF%andreas.dilger@intel.com>
+In-Reply-To: <1374654692-13237-9-git-send-email-mail-agent-noreply@emc.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.252.141.148]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <2AA5850763BF9D47A0513573B44718C1@intel.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1374686174.3356.135.camel@gandalf.local.home>
-References: <20130723220418.532514378@linuxfoundation.org>
-	<CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
-	<B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
-	<20130724145506.GC15095@kroah.com>
-	<CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
-	<1374686174.3356.135.camel@gandalf.local.home>
-Date: Wed, 24 Jul 2013 10:24:39 -0700
-X-Google-Sender-Auth: se91wa8o9XPEI3lJ_GYQHerzpEY
-Message-ID: <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
-Subject: Re: [ 000/103] 3.10.3-stable review
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
-	<gregkh@linuxfoundation.org>,
-        Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:16 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+On 2013/07/24 2:31 AM, "mail-agent-noreply@emc.com"
+<mail-agent-noreply@emc.com> wrote:
+
+>From: Peng Tao <bergwolf@gmail.com>
 >
-> I don't know why "git apply" doesn't do it by default. Why would you
-> want to apply a patch without having git track new files?
+>On non-x86 we will build with Lustre's errno translate code but
+>it has a few issues that break build on non-x86 platforms.
 
-There's a few reasons for the behavior:
+Tao
+if the build is broken, wouldn't it make sense either to merge this patch
+into
+the original or land it earlier in the series to minimize/eliminate the
+window
+of un-bisectability?
 
- - it turns out that for most simple patches, you don't want to add
-them to the index, and you want to stage them separately. Doing a "git
-apply", you'd normally expect the end result to not be staged, so that
-it shows up in "git diff", and then you can do your normal "git add"
-or "git commit -a" or whatever. Yes, this means that you need to know
-about new files, but the expected use is *not* to apply a patch
-blindly and then not even care about the index.
+Cheers, Andreas
 
- - "git apply" is actually also designed to be a *replacement* for
-"patch". In particular, you can use it outside a git repository,
-exactly like you'd use the standard "patch" program. Except unlike the
-standard "patch" program, "git apply" doesn't accept fuzz by default
-(which to me is a huge deal - I hate how "patch" tries to apply stuff
-that clearly isn't valid any more) and also knows about things like
-file modes and renames etc.
+PS - this is a bug introduced during porting to the upstream kernel, it
+does
+     not exist in Lustre master branch.
 
-That second part is something not enough people use, and when I make
-patches and tar-balls I still generate the old-style non-rename
-patches etc for that reason. But basically the command is designed to
-also be used in non-git environments, so the "standard usage" is very
-much not the "involve git details" behavior.
+>Cc: Andreas Dilger <andreas.dilger@intel.com>
+>Signed-off-by: Peng Tao <tao.peng@emc.com>
+>---
+> drivers/staging/lustre/lustre/ptlrpc/Makefile |    2 +-
+> drivers/staging/lustre/lustre/ptlrpc/errno.c  |    4 +---
+> 2 files changed, 2 insertions(+), 4 deletions(-)
+>
+>diff --git a/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>b/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>index a379558..6d78b80 100644
+>--- a/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>+++ b/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>@@ -16,7 +16,7 @@ ptlrpc_objs += sec.o sec_bulk.o sec_gc.o sec_config.o
+>sec_lproc.o
+> ptlrpc_objs += sec_null.o sec_plain.o nrs.o nrs_fifo.o
+> 
+> ptlrpc-y := $(ldlm_objs) $(ptlrpc_objs)
+>-ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.c
+>+ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.o
+> 
+> obj-$(CONFIG_PTLRPC_GSS) += gss/
+> 
+>diff --git a/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>b/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>index 46e259e..1c10063 100644
+>--- a/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>+++ b/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>@@ -25,7 +25,7 @@
+>  * Copyright (c) 2013, Intel Corporation.
+>  */
+> 
+>-#include <libcfs/libcfs.h>
+>+#include <linux/libcfs/libcfs.h>
+> #include <lustre/lustre_errno.h>
+> 
+> /*
+>@@ -184,7 +184,6 @@ static int lustre_errno_hton_mapping[] = {
+> 	[EBADTYPE]		= LUSTRE_EBADTYPE,
+> 	[EJUKEBOX]		= LUSTRE_EJUKEBOX,
+> 	[EIOCBQUEUED]		= LUSTRE_EIOCBQUEUED,
+>-	[EIOCBRETRY]		= LUSTRE_EIOCBRETRY
+> };
+> 
+> static int lustre_errno_ntoh_mapping[] = {
+>@@ -331,7 +330,6 @@ static int lustre_errno_ntoh_mapping[] = {
+> 	[LUSTRE_EBADTYPE]		= EBADTYPE,
+> 	[LUSTRE_EJUKEBOX]		= EJUKEBOX,
+> 	[LUSTRE_EIOCBQUEUED]		= EIOCBQUEUED,
+>-	[LUSTRE_EIOCBRETRY]		= EIOCBRETRY
+> };
+> 
+> unsigned int lustre_errno_hton(unsigned int h)
+>-- 
+>1.7.1
+>
+>
 
-Most "true git" workflows end up using "git am" (or, better yet, "git
-pull" etc) to apply patches, which obviously not only does the --index
-thing, but also applies the changelog etc.
 
-            Linus
+Cheers, Andreas
+-- 
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
+
