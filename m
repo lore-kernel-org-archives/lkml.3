@@ -1,105 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447Ab3GXIYB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:24:01 -0400
-Received: from smtp-out-124.synserver.de ([212.40.185.124]:1075 "EHLO
-	smtp-out-124.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab3GXIX6 (ORCPT
+	id S1752639Ab3GXIYZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:24:25 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:39348 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab3GXIYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:23:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 30104
-Message-ID: <51EF8F4E.8080806@metafoo.de>
-Date: Wed, 24 Jul 2013 10:24:46 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Wed, 24 Jul 2013 04:24:10 -0400
+Message-ID: <51EF8F27.3030003@monstr.eu>
+Date: Wed, 24 Jul 2013 10:24:07 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: joelf@ti.com
-CC: Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rajendra Nayak <rnayak@ti.com>, Lokesh Vutla <lokeshvutla@ti.com>,
-        Balaji TK <balajitk@ti.com>, Matt Porter <matt@ohporter.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
-References: <1374597804-3961-1-git-send-email-joelf@ti.com> <51EF8A52.90902@metafoo.de> <51EF8C2B.2030409@ti.com>
-In-Reply-To: <51EF8C2B.2030409@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Michal Simek'" <michal.simek@xilinx.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Stepan Moskovchenko'" <stepanm@codeaurora.org>
+Subject: Re: [PATCH] video: xilinxfb: Fix compilation warning
+References: <ed64cda456be840147ae1f04bec6a99733f41c24.1374643896.git.michal.simek@xilinx.com> <007401ce8833$22ce0600$686a1200$@samsung.com> <51EF7FBD.8070103@monstr.eu> <51EF8530.90809@monstr.eu> <003a01ce8845$06df46e0$149dd4a0$@samsung.com>
+In-Reply-To: <003a01ce8845$06df46e0$149dd4a0$@samsung.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="----enig2QDRAPUBGUELBNSXXTFCF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 10:11 AM, Joel Fernandes wrote:
-> On 07/24/2013 03:03 AM, Lars-Peter Clausen wrote:
->> On 07/23/2013 06:43 PM, Joel Fernandes wrote:
->>> Implement device_slave_caps(). EDMA has a limited number of slots.
->>> Slave drivers such as omap_hsmmc will query the driver to make
->>> sure they don't pass in more than these many scatter segments.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+------enig2QDRAPUBGUELBNSXXTFCF
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 07/24/2013 10:08 AM, Jingoo Han wrote:
+> On Wednesday, July 24, 2013 4:42 PM, Michal Simek wrote:
+>> On 07/24/2013 09:18 AM, Michal Simek wrote:
+>>> On 07/24/2013 08:00 AM, Jingoo Han wrote:
+>>>> On Wednesday, July 24, 2013 2:32 PM, Michal Simek wrote:
+>>>>>
+>>>>> regs_phys is phys_addr_t (u32 or u64).
+>>>>> Lets retype it to u64.
+>>>>>
+>>>>> Fixes compilation warning introduced by:
+>>>>> video: xilinxfb: Use drvdata->regs_phys instead of physaddr
+>>>>> (sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
+>>>>
+>>>> CC'ed Stepan Moskovchenko
+>>>>
+>>>>
+>>>> phys_addr_t is defined as below:
+>>>>
+>>>> #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>>>> typedef u64 phys_addr_t;
+>>>> #else
+>>>> typedef u32 phys_addr_t;
+>>>> #endif
+>>>>
+>>>> According to 'Documentation/printk-formats.txt',
+>>>> Physical addresses:
+>>>>        %pa     0x01234567 or 0x0123456789abcdef
+>>>>        For printing a phys_addr_t type (and its derivatives, such as=
+
+>>>>        resource_size_t) which can vary based on build options, regar=
+dless of
+>>>>        the width of the CPU data path. Passed by reference.
+>>>>
+>>>> Thus, '%pa' option looks proper, instead of casting (unsigned long l=
+ong).
+>>>>
+>>>> 		dev_dbg(dev, "regs: phys=3D%pa, virt=3D%p\n", drvdata->regs_phys,
+>>>> 					drvdata->regs);
+>>>>
 >>>
->>> Signed-off-by: Joel Fernandes <joelf@ti.com>
->>> ---
->>> Vinod, or Dan- If this patch looks ok, can you please merge in for
->>> -rc cycle? This patch is required to fix MMC support on AM33xx. This
->>> patch is blocking 3 other patches which fix various MMC things. Thanks!
->>>
->>> Notes:
->>> (1) this approach is temporary and only for -rc cycle to fix MMC on
->>> AM335x. It will be replace by the RFC series in future kernels:
->>> http://www.spinics.net/lists/arm-kernel/msg260094.html
->>>
->>> (2) Patch depends Vinod's patch at:
->>> http://permalink.gmane.org/gmane.linux.kernel/1525112
->>>
->>>  drivers/dma/edma.c |    9 +++++++++
->>>  1 file changed, 9 insertions(+)
->>>
->>> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
->>> index 7222cbe..81d5429 100644
->>> --- a/drivers/dma/edma.c
->>> +++ b/drivers/dma/edma.c
->>> @@ -517,6 +517,14 @@ static void edma_issue_pending(struct dma_chan *chan)
->>>  	spin_unlock_irqrestore(&echan->vchan.lock, flags);
->>>  }
->>>  
->>> +static inline int edma_slave_caps(struct dma_chan *chan,
->>> +	struct dma_slave_caps *caps)
->>> +{
->>> +	caps->max_sg_nr = MAX_NR_SG;
+>>> Ah. Wasn't aware about that.
+>>> Will retest.
 >>
->> Hm, what about the other fields?
+>> On ppc44x_defconfig
 >>
-> 
-> Other fields are unused, the max segment size is supposed to be
-> calculated "given" the address width and burst size. Since these
-> can't be provided to get_caps, I have left it out for now.
-> See: https://lkml.org/lkml/2013/3/6/464
+>> $ powerpc-unknown-linux-gnu-gcc --version
+>> powerpc-unknown-linux-gnu-gcc (crosstool-NG-svn_unknown@20110406.10474=
+5) 4.3.2
+>>
+>> This fix
+>> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+>> index 79175a6..a9a1167 100644
+>> --- a/drivers/video/xilinxfb.c
+>> +++ b/drivers/video/xilinxfb.c
+>> @@ -341,12 +341,12 @@ static int xilinxfb_assign(struct platform_devic=
+e *pdev,
+>>
+>>         if (drvdata->flags & BUS_ACCESS_FLAG) {
+>>                 /* Put a banner in the log (for DEBUG) */
+>> -               dev_dbg(dev, "regs: phys=3D%llx, virt=3D%p\n",
+>> -                       (unsigned long long)drvdata->regs_phys, drvdat=
+a->regs);
+>> +               dev_dbg(dev, "regs: phys=3D%pa, virt=3D%p\n",
+>> +                       drvdata->regs_phys, drvdata->regs);
+>>         }
+>>         /* Put a banner in the log (for DEBUG) */
+>> -       dev_dbg(dev, "fb: phys=3D%llx, virt=3D%p, size=3D%x\n",
+>> -               (unsigned long long)drvdata->fb_phys, drvdata->fb_virt=
+, fbsize);
+>> +       dev_dbg(dev, "fb: phys=3D%pa, virt=3D%p, size=3D%x\n",
+>> +               drvdata->fb_phys, drvdata->fb_virt, fbsize);
+>>
+>=20
+> Hi Michal Simek,
+>=20
+> Just now, I tested that the same problem happens on ARM config.
+> Also, I solved it by adding '&' operator.
+>=20
+> '&' operator is necessary as below:
+>=20
+>         dev_dbg(dev, "regs: phys=3D%pa, virt=3D%p\n",
+>                  &drvdata->regs_phys, drvdata->regs);
+>                 ^^^
+>=20
+>         dev_dbg(dev, "fb: phys=3D%pa, virt=3D%p, size=3D%x\n",
+>                 &drvdata->fb_phys, drvdata->fb_virt, fbsize);
+>                ^^^
 
-The PL330 driver is similar in this regard, the maximum segment size also
-depends on address width and burst width. What I did for the get_slave_caps
-implementation is to set it to the minimum maximum size. E.g. in you case
-that should be SZ_64K - 1 (burstsize and addrwidth both set to 1).
+ok.
 
-> 
-> Even if it did, the "segment size" itself is unused in the MMC driver
-> that this is supposed to fix, unlike the "number of segments" which I'm
-> populating above.
-> 
+The truth is as I said there are just 5 files in the whole kernel
+which are using %pa and if %pa is right way to go we should
+probably fix all off them.
 
-E.g. for ALSA we'll need to know the max segment size, so I think it doesn't
-hurt add this in this patch as well.
+Thanks,
+Michal
 
-And you should also initialize all the other fields, even though if there
-are no users yet. It will be really painful to write generic drivers using
-the dmaengine API if none of the dmaengine drivers actually initializes the
-caps struct properly.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-- Lars
+
+
+------enig2QDRAPUBGUELBNSXXTFCF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHvjycACgkQykllyylKDCFvWwCbBY0OLBcU/eG4xy2tc/Y/BIXc
+RGsAn0TW5z9bn7LLKVYTxKDyXsXDazkZ
+=t2Y0
+-----END PGP SIGNATURE-----
+
+------enig2QDRAPUBGUELBNSXXTFCF--
