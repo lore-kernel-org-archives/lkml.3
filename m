@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab3GXWL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:11:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55403 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab3GXWGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752640Ab3GXWGH (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 24 Jul 2013 18:06:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55316 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752844Ab3GXWFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:05:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, netdev@vger.kernel.org
-Subject: [PATCH 31/36] net: ieee802154: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:34 -0700
-Message-Id: <1374703539-9705-32-git-send-email-gregkh@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 04/36] tile: srom: convert srom_class to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:07 -0700
+Message-Id: <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -23,70 +22,77 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the ieee802154 class code to use
+should be used instead.  This converts the tile srom_class code to use
 the correct field.
 
-Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: netdev@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
+ drivers/char/tile-srom.c | 28 ++++++++++++++++------------
+ 1 file changed, 16 insertions(+), 12 deletions(-)
 
-netdev@ maintainers, feel free to take this through your tree, or ACK it
-and I can take it through mine.
-
- net/ieee802154/wpan-class.c | 23 +++++++++++++----------
- 1 file changed, 13 insertions(+), 10 deletions(-)
-
-diff --git a/net/ieee802154/wpan-class.c b/net/ieee802154/wpan-class.c
-index 13571eae..ef56ab5b 100644
---- a/net/ieee802154/wpan-class.c
-+++ b/net/ieee802154/wpan-class.c
-@@ -36,7 +36,8 @@ static ssize_t name ## _show(struct device *dev,			\
- 	ret = snprintf(buf, PAGE_SIZE, format_string "\n", args);	\
- 	mutex_unlock(&phy->pib_lock);					\
- 	return ret;							\
--}
-+}									\
-+static DEVICE_ATTR_RO(name);
- 
- #define MASTER_SHOW(field, format_string)				\
- 	MASTER_SHOW_COMPLEX(field, format_string, phy->field)
-@@ -66,15 +67,17 @@ static ssize_t channels_supported_show(struct device *dev,
- 	mutex_unlock(&phy->pib_lock);
- 	return len;
+diff --git a/drivers/char/tile-srom.c b/drivers/char/tile-srom.c
+index 7faeb1cd..344e97b9 100644
+--- a/drivers/char/tile-srom.c
++++ b/drivers/char/tile-srom.c
+@@ -279,33 +279,37 @@ loff_t srom_llseek(struct file *file, loff_t offset, int origin)
+ 	return fixed_size_llseek(file, offset, origin, srom->total_size);
  }
--
--static struct device_attribute pmib_attrs[] = {
--	__ATTR_RO(current_channel),
--	__ATTR_RO(current_page),
--	__ATTR_RO(channels_supported),
--	__ATTR_RO(transmit_power),
--	__ATTR_RO(cca_mode),
--	{},
-+static DEVICE_ATTR_RO(channels_supported);
-+
-+static struct attribute *pmib_attrs[] = {
-+	&dev_attr_current_channel.attr,
-+	&dev_attr_current_page.attr,
-+	&dev_attr_channels_supported.attr,
-+	&dev_attr_transmit_power.attr,
-+	&dev_attr_cca_mode.attr,
+ 
+-static ssize_t total_show(struct device *dev,
+-			  struct device_attribute *attr, char *buf)
++static ssize_t total_size_show(struct device *dev,
++			       struct device_attribute *attr, char *buf)
+ {
+ 	struct srom_dev *srom = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", srom->total_size);
+ }
++static DEVICE_ATTR_RO(total_size);
+ 
+-static ssize_t sector_show(struct device *dev,
+-			   struct device_attribute *attr, char *buf)
++static ssize_t sector_size_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
+ {
+ 	struct srom_dev *srom = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", srom->sector_size);
+ }
++static DEVICE_ATTR_RO(sector_size);
+ 
+-static ssize_t page_show(struct device *dev,
+-			 struct device_attribute *attr, char *buf)
++static ssize_t page_size_show(struct device *dev,
++			      struct device_attribute *attr, char *buf)
+ {
+ 	struct srom_dev *srom = dev_get_drvdata(dev);
+ 	return sprintf(buf, "%u\n", srom->page_size);
+ }
++static DEVICE_ATTR_RO(page_size);
+ 
+-static struct device_attribute srom_dev_attrs[] = {
+-	__ATTR(total_size, S_IRUGO, total_show, NULL),
+-	__ATTR(sector_size, S_IRUGO, sector_show, NULL),
+-	__ATTR(page_size, S_IRUGO, page_show, NULL),
+-	__ATTR_NULL
++static struct attribute srom_dev_attrs[] = {
++	&dev_attr_total_size.attr,
++	&dev_attr_sector_size.attr,
++	&dev_attr_page_size.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(pmib);
++ATTRIBUTE_GROUPS(srom_dev);
  
- static void wpan_phy_release(struct device *d)
+ static char *srom_devnode(struct device *dev, umode_t *mode)
  {
-@@ -85,7 +88,7 @@ static void wpan_phy_release(struct device *d)
- static struct class wpan_phy_class = {
- 	.name = "ieee802154",
- 	.dev_release = wpan_phy_release,
--	.dev_attrs = pmib_attrs,
-+	.dev_groups = pmib_groups,
- };
+@@ -418,7 +422,7 @@ static int srom_init(void)
+ 		result = PTR_ERR(srom_class);
+ 		goto fail_cdev;
+ 	}
+-	srom_class->dev_attrs = srom_dev_attrs;
++	srom_class->dev_groups = srom_dev_groups;
+ 	srom_class->devnode = srom_devnode;
  
- static DEFINE_MUTEX(wpan_phy_mutex);
+ 	/* Do per-partition initialization */
 -- 
 1.8.3.rc0.20.gb99dd2e
 
