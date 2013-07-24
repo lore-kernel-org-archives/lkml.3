@@ -1,39 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718Ab3GXTpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:45:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34414 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752116Ab3GXTpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:45:06 -0400
-Date: Wed, 24 Jul 2013 12:45:04 -0700 (PDT)
-Message-Id: <20130724.124504.1663757440011643606.davem@davemloft.net>
-To: luis.henriques@canonical.com
-Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, shangw@linux.vnet.ibm.com
-Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <87zjtbzz8j.fsf@canonical.com>
-References: <lsq.1374674565.832521875@decadent.org.uk>
-	<87zjtbzz8j.fsf@canonical.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Wed, 24 Jul 2013 12:45:05 -0700 (PDT)
+	id S1753829Ab3GXTrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:47:37 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:28996
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753029Ab3GXTrf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 15:47:35 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC102.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zzbb2dI98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275dh1de097hz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT001.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(24454002)(479174003)(377454003)(199002)(189002)(13464003)(51704005)(76786001)(46102001)(76576001)(76796001)(74502001)(79102001)(47446002)(47736001)(33646001)(74662001)(81542001)(16406001)(49866001)(56816003)(81342001)(4396001)(83072001)(74316001)(74366001)(51856001)(83322001)(19580405001)(76482001)(77982001)(59766001)(54356001)(63696002)(19580395003)(69226001)(53806001)(77096001)(31966008)(50986001)(56776001)(65816001)(54316002)(47976001)(74876001)(80022001)(74706001)(66066001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB050;H:BLUPR03MB050.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Dave Hansen <dave@sr71.net>
+CC: Dave Hansen <dave.hansen@intel.com>, Michal Hocko <mhocko@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>
+Subject: RE: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+Thread-Topic: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+Thread-Index: AQHOhLBUexA6H+ozR02R0nup8ZuRHJlwpwQAgAGspICAABWHgIAABmSQgAACj4CAAA/eQIABjleAgAArP0A=
+Date: Wed, 24 Jul 2013 19:45:12 +0000
+Message-ID: <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
+ <20130722123716.GB24400@dhcp22.suse.cz>
+ <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EEA11D.4030007@intel.com>
+ <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EEA89F.9070309@intel.com>
+ <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51F00415.8070104@sr71.net>
+In-Reply-To: <51F00415.8070104@sr71.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.119.57]
+x-forefront-prvs: 0917DFAC67
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OrganizationHeadersPreserved: BLUPR03MB050.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VRFY.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%SR71.NET$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%INTEL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC102.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC102.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis Henriques <luis.henriques@canonical.com>
-Date: Wed, 24 Jul 2013 17:42:04 +0100
 
-> I believe you didn't want to have these two invocations to the
-> pci_channel_offline() function.  i guess you wanted to have one of
-> these moved to the other branch of the 'if' statement.
+
+> -----Original Message-----
+> From: Dave Hansen [mailto:dave@sr71.net]
+> Sent: Wednesday, July 24, 2013 12:43 PM
+> To: KY Srinivasan
+> Cc: Dave Hansen; Michal Hocko; gregkh@linuxfoundation.org; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; andi@firstfloor.org; akpm@linux-foundation.org; linux-
+> mm@kvack.org; kamezawa.hiroyuki@gmail.com; hannes@cmpxchg.org;
+> yinghan@google.com; jasowang@redhat.com; kay@vrfy.org
+> Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+> memory blocks
 > 
-> [ btw, I've just replied to an email by David S. Miller about his
->   backport to 3.4 (and 3.2) of this commit. ]
+> On 07/23/2013 10:21 AM, KY Srinivasan wrote:
+> >> You have allocated some large, physically contiguous areas of memory
+> >> under heavy pressure.  But you also contend that there is too much
+> >> memory pressure to run a small userspace helper.  Under heavy memory
+> >> pressure, I'd expect large, kernel allocations to fail much more often
+> >> than running a small userspace helper.
+> >
+> > I am only reporting what I am seeing. Broadly, I have two main failure
+> conditions to
+> > deal with: (a) resource related failure (add_memory() returning -ENOMEM)
+> and (b) not being
+> > able to online a segment that has been successfully hot-added. I have seen
+> both these failures
+> > under high memory pressure. By supporting "in context" onlining, we can
+> eliminate one failure
+> > case. Our inability to online is not a recoverable failure from the host's point of
+> view - the memory
+> > is committed to the guest (since hot add succeeded) but is not usable since it is
+> not onlined.
+> 
+> Could you please precisely report on what you are seeing in detail?
+> Where are the -ENOMEMs coming from?  Which allocation site?  Are you
+> seeing OOMs or page allocation failure messages on the console?
 
-Yes, indeed, both of these backports were done incorrectly.
+The ENOMEM failure I see from the call to hot add memory - the call to
+add_memory(). Usually I don't see any OOM messages on the console.
+
+> 
+> The operation was split up in to two parts for good reason.  It's
+> actually for your _precise_ use case.
+
+I agree and without this split, I could not implement the balloon driver with
+hot-add.
+
+> 
+> A system under memory pressure is going to have troubles doing a
+> hot-add.  You need memory to add memory.  Of the two operations ("add"
+> and "online"), "add" is the one vastly more likely to fail.  It has to
+> allocate several large swaths of contiguous physical memory.  For that
+> reason, the system was designed so that you could "add" and "online"
+> separately.  The intention was that you could "add" far in advance and
+> then "online" under memory pressure, with the "online" having *VASTLY*
+> smaller memory requirements and being much more likely to succeed.
+> 
+> You're lumping the "allocate several large swaths of contiguous physical
+> memory" failures in to the same class as "run a small userspace helper".
+>  They are _really_ different problems.  Both prone to allocation
+> failures for sure, but _very_ separate problems.  Please don't conflate
+> them.
+
+I don't think I am conflating these two issues; I am sorry if I gave that 
+impression. All I am saying is that I see two classes of failures: (a) Our
+inability to allocate memory to manage the memory that is being hot added
+and (b) Our inability to bring the hot added memory online within a reasonable
+amount of time. I am not sure the cause for (b) and I was just speculating that
+this could be memory related. What is interesting is that I have seen failure related
+to our inability to online the memory after having succeeded in hot adding the
+memory.
+ 
+> 
+> >> It _sounds_ like you really want to be able to have the host retry the
+> >> operation if it fails, and you return success/failure from inside the
+> >> kernel.  It's hard for you to tell if running the userspace helper
+> >> failed, so your solution is to move what what previously done in
+> >> userspace in to the kernel so that you can more easily tell if it failed
+> >> or succeeded.
+> >>
+> >> Is that right?
+> >
+> > No; I am able to get the proper error code for recoverable failures (hot add
+> failures
+> > because of lack of memory). By doing what I am proposing here, we can avoid
+> one class
+> > of failures completely and I think this is what resulted in a better "hot add"
+> experience in the
+> > guest.
+> 
+> I think you're taking a huge leap here: "We could not online memory,
+> thus we must take userspace out of the loop."
+> 
+> You might be right.  There might be only one way out of this situation.
+>  But you need to provide a little more supporting evidence before we all
+> arrive at the same conclusion.
+
+I am not even suggesting that. All I am saying is that there should be a mechanism
+for "in context" onlining of memory in addition to the existing sysfs mechanism
+for bringing memory online from a kernel context. Hyper-V balloon driver
+can certainly use this functionality. I should be sending out the patches for this
+shortly.
+> 
+> BTW, it doesn't _require_ udev.  There could easily be another listener
+> for hotplug events.
+
+Agreed; but structurally it is identical to having a udev rule.
+
+Regards,
+
+K. Y
+
+
+
