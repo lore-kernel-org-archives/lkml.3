@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221Ab3GXWGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55329 "EHLO
+	id S1754146Ab3GXWGM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55326 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752879Ab3GXWFu (ORCPT
+	with ESMTP id S1752871Ab3GXWFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:50 -0400
+	Wed, 24 Jul 2013 18:05:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 08/36] HID: roccat: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:11 -0700
-Message-Id: <1374703539-9705-9-git-send-email-gregkh@linuxfoundation.org>
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCH 07/36] extcon: convert extcon_class to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:10 -0700
+Message-Id: <1374703539-9705-8-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,426 +23,65 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the roccat class code to use the
+should be used instead.  This converts the extcon_class code to use the
 correct field.
 
-Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
-
-Jiri, feel free to apply this to your tree, or ACK it and I can take it
+MyungJoo, feel free to apply this to your tree, or ACK it and I can take it
 through mine.
 
- drivers/hid/hid-roccat-arvo.c     | 25 ++++++++++++++-----------
- drivers/hid/hid-roccat-isku.c     | 13 +++++++------
- drivers/hid/hid-roccat-kone.c     | 30 ++++++++++++++++++------------
- drivers/hid/hid-roccat-koneplus.c | 28 ++++++++++++++++------------
- drivers/hid/hid-roccat-kovaplus.c | 33 +++++++++++++++++++--------------
- drivers/hid/hid-roccat-pyra.c     | 24 ++++++++++++++----------
- 6 files changed, 88 insertions(+), 65 deletions(-)
+ drivers/extcon/extcon-class.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hid/hid-roccat-arvo.c b/drivers/hid/hid-roccat-arvo.c
-index 327f9b8e..98bb89e0 100644
---- a/drivers/hid/hid-roccat-arvo.c
-+++ b/drivers/hid/hid-roccat-arvo.c
-@@ -75,6 +75,8 @@ static ssize_t arvo_sysfs_set_mode_key(struct device *dev,
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index 18ccadef..022ca369 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -148,6 +148,7 @@ static ssize_t state_store(struct device *dev, struct device_attribute *attr,
  
- 	return size;
+ 	return count;
  }
-+static DEVICE_ATTR(mode_key, 0660,
-+		   arvo_sysfs_show_mode_key, arvo_sysfs_set_mode_key);
++static DEVICE_ATTR_RW(state);
  
- static ssize_t arvo_sysfs_show_key_mask(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -123,6 +125,8 @@ static ssize_t arvo_sysfs_set_key_mask(struct device *dev,
+ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
+ 		char *buf)
+@@ -163,6 +164,7 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
  
- 	return size;
+ 	return sprintf(buf, "%s\n", dev_name(edev->dev));
  }
-+static DEVICE_ATTR(key_mask, 0660,
-+		   arvo_sysfs_show_key_mask, arvo_sysfs_set_key_mask);
++static DEVICE_ATTR_RO(name);
  
- /* retval is 1-5 on success, < 0 on error */
- static int arvo_get_actual_profile(struct usb_device *usb_dev)
-@@ -179,6 +183,9 @@ static ssize_t arvo_sysfs_set_actual_profile(struct device *dev,
- 	mutex_unlock(&arvo->arvo_lock);
- 	return retval;
+ static ssize_t cable_name_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+@@ -527,11 +529,12 @@ int extcon_unregister_notifier(struct extcon_dev *edev,
  }
-+static DEVICE_ATTR(actual_profile, 0660,
-+		   arvo_sysfs_show_actual_profile,
-+		   arvo_sysfs_set_actual_profile);
+ EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
  
- static ssize_t arvo_sysfs_write(struct file *fp,
- 		struct kobject *kobj, void const *buf,
-@@ -239,17 +246,13 @@ static ssize_t arvo_sysfs_read_info(struct file *fp,
- 			sizeof(struct arvo_info), ARVO_COMMAND_INFO);
- }
- 
--
--static struct device_attribute arvo_attributes[] = {
--	__ATTR(mode_key, 0660,
--			arvo_sysfs_show_mode_key, arvo_sysfs_set_mode_key),
--	__ATTR(key_mask, 0660,
--			arvo_sysfs_show_key_mask, arvo_sysfs_set_key_mask),
--	__ATTR(actual_profile, 0660,
--			arvo_sysfs_show_actual_profile,
--			arvo_sysfs_set_actual_profile),
--	__ATTR_NULL
-+static struct attribute *arvo_attrs[] = {
-+	&dev_attr_mode_key.attr,
-+	&dev_attr_key_mask.attr,
-+	&dev_attr_actual_profile.attr,
+-static struct device_attribute extcon_attrs[] = {
+-	__ATTR(state, S_IRUGO | S_IWUSR, state_show, state_store),
+-	__ATTR_RO(name),
+-	__ATTR_NULL,
++static struct attribute *extcon_attrs[] = {
++	&dev_attr_state.attr,
++	&dev_attr_name.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(arvo);
++ATTRIBUTE_GROUPS(extcon);
  
- static struct bin_attribute arvo_bin_attributes[] = {
- 	{
-@@ -430,7 +433,7 @@ static int __init arvo_init(void)
- 	arvo_class = class_create(THIS_MODULE, "arvo");
- 	if (IS_ERR(arvo_class))
- 		return PTR_ERR(arvo_class);
--	arvo_class->dev_attrs = arvo_attributes;
-+	arvo_class->dev_groups = arvo_groups;
- 	arvo_class->dev_bin_attrs = arvo_bin_attributes;
+ static int create_extcon_class(void)
+ {
+@@ -539,7 +542,7 @@ static int create_extcon_class(void)
+ 		extcon_class = class_create(THIS_MODULE, "extcon");
+ 		if (IS_ERR(extcon_class))
+ 			return PTR_ERR(extcon_class);
+-		extcon_class->dev_attrs = extcon_attrs;
++		extcon_class->dev_groups = extcon_groups;
  
- 	retval = hid_register_driver(&arvo_driver);
-diff --git a/drivers/hid/hid-roccat-isku.c b/drivers/hid/hid-roccat-isku.c
-index 8023751d..3983dec0 100644
---- a/drivers/hid/hid-roccat-isku.c
-+++ b/drivers/hid/hid-roccat-isku.c
-@@ -109,13 +109,14 @@ static ssize_t isku_sysfs_set_actual_profile(struct device *dev,
- 
- 	return size;
- }
-+static DEVICE_ATTR(actual_profile, 0660, isku_sysfs_show_actual_profile,
-+		   isku_sysfs_set_actual_profile);
- 
--static struct device_attribute isku_attributes[] = {
--	__ATTR(actual_profile, 0660,
--			isku_sysfs_show_actual_profile,
--			isku_sysfs_set_actual_profile),
--	__ATTR_NULL
-+static struct attribute *isku_attrs[] = {
-+	&dev_attr_actual_profile.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(isku);
- 
- static ssize_t isku_sysfs_read(struct file *fp, struct kobject *kobj,
- 		char *buf, loff_t off, size_t count,
-@@ -427,7 +428,7 @@ static int __init isku_init(void)
- 	isku_class = class_create(THIS_MODULE, "isku");
- 	if (IS_ERR(isku_class))
- 		return PTR_ERR(isku_class);
--	isku_class->dev_attrs = isku_attributes;
-+	isku_class->dev_groups = isku_groups;
- 	isku_class->dev_bin_attrs = isku_bin_attributes;
- 
- 	retval = hid_register_driver(&isku_driver);
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index 7fae0707..d3626733 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -386,6 +386,7 @@ static ssize_t kone_sysfs_show_actual_profile(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kone->actual_profile);
- }
-+static DEVICE_ATTR(actual_profile, 0440, kone_sysfs_show_actual_profile, NULL);
- 
- static ssize_t kone_sysfs_show_actual_dpi(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -394,6 +395,7 @@ static ssize_t kone_sysfs_show_actual_dpi(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kone->actual_dpi);
- }
-+static DEVICE_ATTR(actual_dpi, 0440, kone_sysfs_show_actual_dpi, NULL);
- 
- /* weight is read each time, since we don't get informed when it's changed */
- static ssize_t kone_sysfs_show_weight(struct device *dev,
-@@ -416,6 +418,7 @@ static ssize_t kone_sysfs_show_weight(struct device *dev,
- 		return retval;
- 	return snprintf(buf, PAGE_SIZE, "%d\n", weight);
- }
-+static DEVICE_ATTR(weight, 0440, kone_sysfs_show_weight, NULL);
- 
- static ssize_t kone_sysfs_show_firmware_version(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -424,6 +427,8 @@ static ssize_t kone_sysfs_show_firmware_version(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kone->firmware_version);
- }
-+static DEVICE_ATTR(firmware_version, 0440, kone_sysfs_show_firmware_version,
-+		   NULL);
- 
- static ssize_t kone_sysfs_show_tcu(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -524,6 +529,7 @@ exit_unlock:
- 	mutex_unlock(&kone->kone_lock);
- 	return retval;
- }
-+static DEVICE_ATTR(tcu, 0660, kone_sysfs_show_tcu, kone_sysfs_set_tcu);
- 
- static ssize_t kone_sysfs_show_startup_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -570,15 +576,17 @@ static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
- 	mutex_unlock(&kone->kone_lock);
- 	return size;
- }
-+static DEVICE_ATTR(startup_profile, 0660, kone_sysfs_show_startup_profile,
-+		   kone_sysfs_set_startup_profile);
- 
--static struct device_attribute kone_attributes[] = {
-+static struct attribute *kone_attrs[] = {
- 	/*
- 	 * Read actual dpi settings.
- 	 * Returns raw value for further processing. Refer to enum
- 	 * kone_polling_rates to get real value.
- 	 */
--	__ATTR(actual_dpi, 0440, kone_sysfs_show_actual_dpi, NULL),
--	__ATTR(actual_profile, 0440, kone_sysfs_show_actual_profile, NULL),
-+	&dev_attr_actual_dpi.attr,
-+	&dev_attr_actual_profile.attr,
- 
- 	/*
- 	 * The mouse can be equipped with one of four supplied weights from 5
-@@ -587,7 +595,7 @@ static struct device_attribute kone_attributes[] = {
- 	 * by software. Refer to enum kone_weights to get corresponding real
- 	 * weight.
- 	 */
--	__ATTR(weight, 0440, kone_sysfs_show_weight, NULL),
-+	&dev_attr_weight.attr,
- 
- 	/*
- 	 * Prints firmware version stored in mouse as integer.
-@@ -595,22 +603,20 @@ static struct device_attribute kone_attributes[] = {
- 	 * to get the real version number the decimal point has to be shifted 2
- 	 * positions to the left. E.g. a value of 138 means 1.38.
- 	 */
--	__ATTR(firmware_version, 0440,
--			kone_sysfs_show_firmware_version, NULL),
-+	&dev_attr_firmware_version.attr,
- 
- 	/*
- 	 * Prints state of Tracking Control Unit as number where 0 = off and
- 	 * 1 = on. Writing 0 deactivates tcu and writing 1 calibrates and
- 	 * activates the tcu
- 	 */
--	__ATTR(tcu, 0660, kone_sysfs_show_tcu, kone_sysfs_set_tcu),
-+	&dev_attr_tcu.attr,
- 
- 	/* Prints and takes the number of the profile the mouse starts with */
--	__ATTR(startup_profile, 0660,
--			kone_sysfs_show_startup_profile,
--			kone_sysfs_set_startup_profile),
--	__ATTR_NULL
-+	&dev_attr_startup_profile.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(kone);
- 
- static struct bin_attribute kone_bin_attributes[] = {
- 	{
-@@ -891,7 +897,7 @@ static int __init kone_init(void)
- 	kone_class = class_create(THIS_MODULE, "kone");
- 	if (IS_ERR(kone_class))
- 		return PTR_ERR(kone_class);
--	kone_class->dev_attrs = kone_attributes;
-+	kone_class->dev_groups = kone_groups;
- 	kone_class->dev_bin_attrs = kone_bin_attributes;
- 
- 	retval = hid_register_driver(&kone_driver);
-diff --git a/drivers/hid/hid-roccat-koneplus.c b/drivers/hid/hid-roccat-koneplus.c
-index 6a48fa3c..11906b4b 100644
---- a/drivers/hid/hid-roccat-koneplus.c
-+++ b/drivers/hid/hid-roccat-koneplus.c
-@@ -274,6 +274,12 @@ static ssize_t koneplus_sysfs_set_actual_profile(struct device *dev,
- 
- 	return size;
- }
-+static DEVICE_ATTR(actual_profile, 0660,
-+		   koneplus_sysfs_show_actual_profile,
-+		   koneplus_sysfs_set_actual_profile);
-+static DEVICE_ATTR(startup_profile, 0660,
-+		   koneplus_sysfs_show_actual_profile,
-+		   koneplus_sysfs_set_actual_profile);
- 
- static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -293,18 +299,16 @@ static ssize_t koneplus_sysfs_show_firmware_version(struct device *dev,
- 
- 	return snprintf(buf, PAGE_SIZE, "%d\n", info.firmware_version);
- }
--
--static struct device_attribute koneplus_attributes[] = {
--	__ATTR(actual_profile, 0660,
--			koneplus_sysfs_show_actual_profile,
--			koneplus_sysfs_set_actual_profile),
--	__ATTR(startup_profile, 0660,
--			koneplus_sysfs_show_actual_profile,
--			koneplus_sysfs_set_actual_profile),
--	__ATTR(firmware_version, 0440,
--			koneplus_sysfs_show_firmware_version, NULL),
--	__ATTR_NULL
-+static DEVICE_ATTR(firmware_version, 0440,
-+		   koneplus_sysfs_show_firmware_version, NULL);
-+
-+static struct attribute *koneplus_attrs[] = {
-+	&dev_attr_actual_profile.attr,
-+	&dev_attr_startup_profile.attr,
-+	&dev_attr_firmware_version.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(koneplus);
- 
- static struct bin_attribute koneplus_bin_attributes[] = {
- 	KONEPLUS_BIN_ATTRIBUTE_W(control, CONTROL),
-@@ -572,7 +576,7 @@ static int __init koneplus_init(void)
- 	koneplus_class = class_create(THIS_MODULE, "koneplus");
- 	if (IS_ERR(koneplus_class))
- 		return PTR_ERR(koneplus_class);
--	koneplus_class->dev_attrs = koneplus_attributes;
-+	koneplus_class->dev_groups = koneplus_groups;
- 	koneplus_class->dev_bin_attrs = koneplus_bin_attributes;
- 
- 	retval = hid_register_driver(&koneplus_driver);
-diff --git a/drivers/hid/hid-roccat-kovaplus.c b/drivers/hid/hid-roccat-kovaplus.c
-index b8b37789..ae630221 100644
---- a/drivers/hid/hid-roccat-kovaplus.c
-+++ b/drivers/hid/hid-roccat-kovaplus.c
-@@ -310,6 +310,9 @@ static ssize_t kovaplus_sysfs_set_actual_profile(struct device *dev,
- 
- 	return size;
- }
-+static DEVICE_ATTR(actual_profile, 0660,
-+		   kovaplus_sysfs_show_actual_profile,
-+		   kovaplus_sysfs_set_actual_profile);
- 
- static ssize_t kovaplus_sysfs_show_actual_cpi(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -318,6 +321,7 @@ static ssize_t kovaplus_sysfs_show_actual_cpi(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kovaplus->actual_cpi);
- }
-+static DEVICE_ATTR(actual_cpi, 0440, kovaplus_sysfs_show_actual_cpi, NULL);
- 
- static ssize_t kovaplus_sysfs_show_actual_sensitivity_x(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -326,6 +330,8 @@ static ssize_t kovaplus_sysfs_show_actual_sensitivity_x(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kovaplus->actual_x_sensitivity);
- }
-+static DEVICE_ATTR(actual_sensitivity_x, 0440,
-+		   kovaplus_sysfs_show_actual_sensitivity_x, NULL);
- 
- static ssize_t kovaplus_sysfs_show_actual_sensitivity_y(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -334,6 +340,8 @@ static ssize_t kovaplus_sysfs_show_actual_sensitivity_y(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", kovaplus->actual_y_sensitivity);
- }
-+static DEVICE_ATTR(actual_sensitivity_y, 0440,
-+		   kovaplus_sysfs_show_actual_sensitivity_y, NULL);
- 
- static ssize_t kovaplus_sysfs_show_firmware_version(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -353,21 +361,18 @@ static ssize_t kovaplus_sysfs_show_firmware_version(struct device *dev,
- 
- 	return snprintf(buf, PAGE_SIZE, "%d\n", info.firmware_version);
- }
-+static DEVICE_ATTR(firmware_version, 0440,
-+		   kovaplus_sysfs_show_firmware_version, NULL);
- 
--static struct device_attribute kovaplus_attributes[] = {
--	__ATTR(actual_cpi, 0440,
--		kovaplus_sysfs_show_actual_cpi, NULL),
--	__ATTR(firmware_version, 0440,
--		kovaplus_sysfs_show_firmware_version, NULL),
--	__ATTR(actual_profile, 0660,
--		kovaplus_sysfs_show_actual_profile,
--		kovaplus_sysfs_set_actual_profile),
--	__ATTR(actual_sensitivity_x, 0440,
--		kovaplus_sysfs_show_actual_sensitivity_x, NULL),
--	__ATTR(actual_sensitivity_y, 0440,
--		kovaplus_sysfs_show_actual_sensitivity_y, NULL),
--	__ATTR_NULL
-+static struct attribute *kovaplus_attrs[] = {
-+	&dev_attr_actual_cpi.attr,
-+	&dev_attr_firmware_version.attr,
-+	&dev_attr_actual_profile.attr,
-+	&dev_attr_actual_sensitivity_x.attr,
-+	&dev_attr_actual_sensitivity_y.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(kovaplus);
- 
- static struct bin_attribute kovaplus_bin_attributes[] = {
- 	KOVAPLUS_BIN_ATTRIBUTE_W(control, CONTROL),
-@@ -662,7 +667,7 @@ static int __init kovaplus_init(void)
- 	kovaplus_class = class_create(THIS_MODULE, "kovaplus");
- 	if (IS_ERR(kovaplus_class))
- 		return PTR_ERR(kovaplus_class);
--	kovaplus_class->dev_attrs = kovaplus_attributes;
-+	kovaplus_class->dev_groups = kovaplus_groups;
- 	kovaplus_class->dev_bin_attrs = kovaplus_bin_attributes;
- 
- 	retval = hid_register_driver(&kovaplus_driver);
-diff --git a/drivers/hid/hid-roccat-pyra.c b/drivers/hid/hid-roccat-pyra.c
-index d4f1e3be..7960d507 100644
---- a/drivers/hid/hid-roccat-pyra.c
-+++ b/drivers/hid/hid-roccat-pyra.c
-@@ -266,6 +266,7 @@ static ssize_t pyra_sysfs_show_actual_cpi(struct device *dev,
- 			hid_get_drvdata(dev_get_drvdata(dev->parent->parent));
- 	return snprintf(buf, PAGE_SIZE, "%d\n", pyra->actual_cpi);
- }
-+static DEVICE_ATTR(actual_cpi, 0440, pyra_sysfs_show_actual_cpi, NULL);
- 
- static ssize_t pyra_sysfs_show_actual_profile(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -282,6 +283,8 @@ static ssize_t pyra_sysfs_show_actual_profile(struct device *dev,
- 
- 	return snprintf(buf, PAGE_SIZE, "%d\n", settings.startup_profile);
- }
-+static DEVICE_ATTR(actual_profile, 0440, pyra_sysfs_show_actual_profile, NULL);
-+static DEVICE_ATTR(startup_profile, 0440, pyra_sysfs_show_actual_profile, NULL);
- 
- static ssize_t pyra_sysfs_show_firmware_version(struct device *dev,
- 		struct device_attribute *attr, char *buf)
-@@ -301,16 +304,17 @@ static ssize_t pyra_sysfs_show_firmware_version(struct device *dev,
- 
- 	return snprintf(buf, PAGE_SIZE, "%d\n", info.firmware_version);
- }
--
--static struct device_attribute pyra_attributes[] = {
--	__ATTR(actual_cpi, 0440, pyra_sysfs_show_actual_cpi, NULL),
--	__ATTR(actual_profile, 0440, pyra_sysfs_show_actual_profile, NULL),
--	__ATTR(firmware_version, 0440,
--			pyra_sysfs_show_firmware_version, NULL),
--	__ATTR(startup_profile, 0440,
--			pyra_sysfs_show_actual_profile, NULL),
--	__ATTR_NULL
-+static DEVICE_ATTR(firmware_version, 0440, pyra_sysfs_show_firmware_version,
-+		   NULL);
-+
-+static struct attribute *pyra_attrs[] = {
-+	&dev_attr_actual_cpi.attr,
-+	&dev_attr_actual_profile.attr,
-+	&dev_attr_firmware_version.attr,
-+	&dev_attr_startup_profile.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(pyra);
- 
- static struct bin_attribute pyra_bin_attributes[] = {
- 	PYRA_BIN_ATTRIBUTE_W(control, CONTROL),
-@@ -600,7 +604,7 @@ static int __init pyra_init(void)
- 	pyra_class = class_create(THIS_MODULE, "pyra");
- 	if (IS_ERR(pyra_class))
- 		return PTR_ERR(pyra_class);
--	pyra_class->dev_attrs = pyra_attributes;
-+	pyra_class->dev_groups = pyra_groups;
- 	pyra_class->dev_bin_attrs = pyra_bin_attributes;
- 
- 	retval = hid_register_driver(&pyra_driver);
+ #if defined(CONFIG_ANDROID)
+ 		switch_class = class_compat_register("switch");
 -- 
 1.8.3.rc0.20.gb99dd2e
 
