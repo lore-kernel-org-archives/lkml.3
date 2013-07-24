@@ -1,157 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751287Ab3GXLwV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 07:52:21 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:41557 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959Ab3GXLwT (ORCPT
+	id S1751522Ab3GXLxO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 07:53:14 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:59366 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901Ab3GXLxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 07:52:19 -0400
-Date: Wed, 24 Jul 2013 12:52:12 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Kevin Hilman <khilman@linaro.org>,
-        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
-        Ruslan Bilovol <ruslan.bilovol@ti.com>, linux-kernel@vger.kernel.org,
-        Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-Subject: Re: [PATCH 4/4] mfd: twl6030-irq: Add interrupt mapping table for
- the twl6032
-Message-ID: <20130724115212.GJ26801@laptop>
-References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com>
- <1374595624-15054-5-git-send-email-grygorii.strashko@ti.com>
+	Wed, 24 Jul 2013 07:53:10 -0400
+Message-ID: <51EFC1D4.9060800@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 17:30:20 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374595624-15054-5-git-send-email-grygorii.strashko@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com>
+In-Reply-To: <20130724103907.GF16400@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072411-3864-0000-0000-0000093C2BA3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Jul 2013, Grygorii Strashko wrote:
+On 07/24/2013 04:09 PM, Gleb Natapov wrote:
+> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+>> [...]
+>>>> +
+>>>> +	/*
+>>>> +	 * halt until it's our turn and kicked. Note that we do safe halt
+>>>> +	 * for irq enabled case to avoid hang when lock info is overwritten
+>>>> +	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
+>>>> +	 */
+>>>> +	if (arch_irqs_disabled_flags(flags))
+>>>> +		halt();
+>>>> +	else
+>>>> +		safe_halt();
+>>>> +
+>>>> +out:
+>>> So here now interrupts can be either disabled or enabled. Previous
+>>> version disabled interrupts here, so are we sure it is safe to have them
+>>> enabled at this point? I do not see any problem yet, will keep thinking.
+>>
+>> If we enable interrupt here, then
+>>
+>>
+>>>> +	cpumask_clear_cpu(cpu, &waiting_cpus);
+>>
+>> and if we start serving lock for an interrupt that came here,
+>> cpumask clear and w->lock=null may not happen atomically.
+>> if irq spinlock does not take slow path we would have non null value
+>> for lock, but with no information in waitingcpu.
+>>
+>> I am still thinking what would be problem with that.
+>>
+> Exactly, for kicker waiting_cpus and w->lock updates are
+> non atomic anyway.
+>
+>>>> +	w->lock = NULL;
+>>>> +	local_irq_restore(flags);
+>>>> +	spin_time_accum_blocked(start);
+>>>> +}
+>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+>>>> +
+>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+>>>> +{
+>>>> +	int cpu;
+>>>> +
+>>>> +	add_stats(RELEASED_SLOW, 1);
+>>>> +	for_each_cpu(cpu, &waiting_cpus) {
+>>>> +		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+>>>> +		if (ACCESS_ONCE(w->lock) == lock &&
+>>>> +		    ACCESS_ONCE(w->want) == ticket) {
+>>>> +			add_stats(RELEASED_SLOW_KICKED, 1);
+>>>> +			kvm_kick_cpu(cpu);
+>>> What about using NMI to wake sleepers? I think it was discussed, but
+>>> forgot why it was dismissed.
+>>
+>> I think I have missed that discussion. 'll go back and check. so
+>> what is the idea here? we can easily wake up the halted vcpus that
+>> have interrupt disabled?
+> We can of course. IIRC the objection was that NMI handling path is very
+> fragile and handling NMI on each wakeup will be more expensive then
+> waking up a guest without injecting an event, but it is still interesting
+> to see the numbers.
+>
 
-> From: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-> 
-> This patch adds interrupt mapping table for the twl6032.
+Haam, now I remember, We had tried request based mechanism. (new
+request like REQ_UNHALT) and process that. It had worked, but had some
+complex hacks in vcpu_enter_guest to avoid guest hang in case of
+request cleared.  So had left it there..
 
-Repeating the $SUBJECT line is never helpful.
+https://lkml.org/lkml/2012/4/30/67
 
-> Signed-off-by: Oleksandr Dmytryshyn <oleksandr.dmytryshyn@ti.com>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> ---
->  drivers/mfd/twl6030-irq.c |   49 ++++++++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 48 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-> index 89f130b..e4df87f 100644
-> --- a/drivers/mfd/twl6030-irq.c
-> +++ b/drivers/mfd/twl6030-irq.c
-> @@ -41,6 +41,7 @@
->  #include <linux/suspend.h>
->  #include <linux/of.h>
->  #include <linux/irqdomain.h>
-> +#include <linux/of_device.h>
->  
->  #include "twl-core.h"
->  
-> @@ -84,6 +85,36 @@ static int twl6030_interrupt_mapping[24] = {
->  	CHARGERFAULT_INTR_OFFSET,	/* Bit 22	INT_CHRG	*/
->  	RSV_INTR_OFFSET,	/* Bit 23	Reserved		*/
->  };
-> +
-> +static int twl6032_interrupt_mapping[24] = {
-> +	PWR_INTR_OFFSET,	/* Bit 0	PWRON			*/
-> +	PWR_INTR_OFFSET,	/* Bit 1	RPWRON			*/
-> +	PWR_INTR_OFFSET,	/* Bit 2	SYS_VLOW		*/
-> +	RTC_INTR_OFFSET,	/* Bit 3	RTC_ALARM		*/
-> +	RTC_INTR_OFFSET,	/* Bit 4	RTC_PERIOD		*/
-> +	HOTDIE_INTR_OFFSET,	/* Bit 5	HOT_DIE			*/
-> +	SMPSLDO_INTR_OFFSET,	/* Bit 6	VXXX_SHORT		*/
-> +	PWR_INTR_OFFSET,	/* Bit 7	SPDURATION		*/
-> +
-> +	PWR_INTR_OFFSET,	/* Bit 8	WATCHDOG		*/
-> +	BATDETECT_INTR_OFFSET,	/* Bit 9	BAT			*/
-> +	SIMDETECT_INTR_OFFSET,	/* Bit 10	SIM			*/
-> +	MMCDETECT_INTR_OFFSET,	/* Bit 11	MMC			*/
-> +	MADC_INTR_OFFSET,	/* Bit 12	GPADC_RT_EOC		*/
-> +	MADC_INTR_OFFSET,	/* Bit 13	GPADC_SW_EOC		*/
-> +	GASGAUGE_INTR_OFFSET,	/* Bit 14	CC_EOC			*/
-> +	GASGAUGE_INTR_OFFSET,	/* Bit 15	CC_AUTOCAL		*/
-> +
-> +	USBOTG_INTR_OFFSET,	/* Bit 16	ID_WKUP			*/
-> +	USBOTG_INTR_OFFSET,	/* Bit 17	VBUS_WKUP		*/
-> +	USBOTG_INTR_OFFSET,	/* Bit 18	ID			*/
-> +	USB_PRES_INTR_OFFSET,	/* Bit 19	VBUS			*/
-> +	CHARGER_INTR_OFFSET,	/* Bit 20	CHRG_CTRL		*/
-> +	CHARGERFAULT_INTR_OFFSET,	/* Bit 21	EXT_CHRG	*/
-> +	CHARGERFAULT_INTR_OFFSET,	/* Bit 22	INT_CHRG	*/
+But I do not remember performance impact though.
 
-OCD failure. ;)
-
-NB: Kidding, you don't have to do anything about this.
-
-> +	RSV_INTR_OFFSET,	/* Bit 23	Reserved		*/
-> +};
-> +
->  /*----------------------------------------------------------------------*/
->  
->  static unsigned twl6030_irq_base;
-> @@ -91,6 +122,7 @@ static int twl_irq;
->  static bool twl_irq_wake_enabled;
->  
->  static atomic_t twl6030_wakeirqs = ATOMIC_INIT(0);
-> +static const int *irq_mapping_tbl;
-
-What I'd actually like to see is the creation of 'struct twl6030' to
-keep all your goodies in; irq_domain, irq_mapping_tbl etc and for you
-to pass that around instead of creating more global variables e.g. via
-request_threaded_irq(..., void *dev_id) to access the aforementioned
-information.
-
->  static int twl6030_irq_pm_notifier(struct notifier_block *notifier,
->  				   unsigned long pm_event, void *unused)
-> @@ -164,7 +196,7 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
->  		if (sts.int_sts & 0x1) {
->  			int module_irq =
->  				irq_find_mapping(irq_domain,
-> -						 twl6030_interrupt_mapping[i]);
-> +						 irq_mapping_tbl[i]);
->  			if (module_irq)
->  				handle_nested_irq(module_irq);
->  			else
-> @@ -339,6 +371,12 @@ static struct irq_domain_ops twl6030_irq_domain_ops = {
->  	.xlate	= irq_domain_xlate_onetwocell,
->  };
->  
-> +static const struct of_device_id twl6030_of_match[] = {
-> +	{.compatible = "ti,twl6030", &twl6030_interrupt_mapping},
-> +	{.compatible = "ti,twl6032", &twl6032_interrupt_mapping},
-> +	{ },
-> +};
-> +
->  int twl6030_init_irq(struct device *dev, int irq_num)
->  {
->  	struct			device_node *node = dev->of_node;
-> @@ -346,6 +384,15 @@ int twl6030_init_irq(struct device *dev, int irq_num)
->  	int			status;
->  	u8			mask[3];
->  	struct irq_domain	*irq_domain;
-> +	const struct of_device_id *of_id;
-> +
-> +	of_id = of_match_device(twl6030_of_match, dev);
-> +	if (!of_id || !of_id->data) {
-> +		dev_err(dev, "Unknown TWL device model\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	irq_mapping_tbl = of_id->data;
->  
->  	nr_irqs = TWL6030_NR_IRQS;
->  
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
