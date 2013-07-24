@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab3GXOXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:23:41 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45749 "EHLO
+	id S1753942Ab3GXOYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:24:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45708 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752067Ab3GXOGl (ORCPT
+	by vger.kernel.org with ESMTP id S1752015Ab3GXOGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:41 -0400
+	Wed, 24 Jul 2013 10:06:40 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Li Jinyue" <lijinyue@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Zefan Li" <lizefan@huawei.com>
+CC: akpm@linux-foundation.org, "Shane Huang" <shane.huang@amd.com>,
+        "Tejun Heo" <tj@kernel.org>, "Yu Liu" <liuyu.ac@gmail.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.410268832@decadent.org.uk>
+Message-ID: <lsq.1374674565.543884115@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [48/85] dlci: validate the net device in dlci_del()
+Subject: [13/85] ahci: remove pmp link online check in FBS EH
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,65 +31,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zefan Li <lizefan@huawei.com>
+From: Shane Huang <shane.huang@amd.com>
 
-commit 578a1310f2592ba90c5674bca21c1dbd1adf3f0a upstream.
+commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
 
-We triggered an oops while running trinity with 3.4 kernel:
+ata_link_online() check in ahci_error_intr() is unnecessary, it should
+be removed otherwise may lead to lockup with FBS enabled PMP.
+http://marc.info/?l=linux-ide&m=137050421603272&w=2
 
-BUG: unable to handle kernel paging request at 0000000100000d07
-IP: [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-PGD 640c0d067 PUD 0
-Oops: 0000 [#1] PREEMPT SMP
-CPU 3
-...
-Pid: 7302, comm: trinity-child3 Not tainted 3.4.24.09+ 40 Huawei Technologies Co., Ltd. Tecal RH2285          /BC11BTSA
-RIP: 0010:[<ffffffffa0109738>]  [<ffffffffa0109738>] dlci_ioctl+0xd8/0x2d4 [dlci]
-...
-Call Trace:
-  [<ffffffff8137c5c3>] sock_ioctl+0x153/0x280
-  [<ffffffff81195494>] do_vfs_ioctl+0xa4/0x5e0
-  [<ffffffff8118354a>] ? fget_light+0x3ea/0x490
-  [<ffffffff81195a1f>] sys_ioctl+0x4f/0x80
-  [<ffffffff81478b69>] system_call_fastpath+0x16/0x1b
-...
-
-It's because the net device is not a dlci device.
-
-Reported-by: Li Jinyue <lijinyue@huawei.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Yu Liu <liuyu.ac@gmail.com>
+Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wan/dlci.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/ata/libahci.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -385,6 +385,7 @@ static int dlci_del(struct dlci_add *dlc
- 	struct frad_local	*flp;
- 	struct net_device	*master, *slave;
- 	int			err;
-+	bool			found = false;
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -1541,8 +1541,7 @@ static void ahci_error_intr(struct ata_p
+ 		u32 fbs = readl(port_mmio + PORT_FBS);
+ 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
  
- 	rtnl_lock();
- 
-@@ -394,6 +395,17 @@ static int dlci_del(struct dlci_add *dlc
- 		err = -ENODEV;
- 		goto out;
- 	}
-+
-+	list_for_each_entry(dlp, &dlci_devs, list) {
-+		if (dlp->master == master) {
-+			found = true;
-+			break;
-+		}
-+	}
-+	if (!found) {
-+		err = -ENODEV;
-+		goto out;
-+	}
- 
- 	if (netif_running(master)) {
- 		err = -EBUSY;
+-		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
+-		    ata_link_online(&ap->pmp_link[pmp])) {
++		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
+ 			link = &ap->pmp_link[pmp];
+ 			fbs_need_dec = true;
+ 		}
 
