@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab3GXIAN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:00:13 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:33975 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab3GXIAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:00:12 -0400
-Date: Wed, 24 Jul 2013 10:00:06 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] x86, AMD: fix error path in apply_microcode_amd()
-Message-ID: <20130724080006.GC30777@pd.tnic>
-References: <20130723225823.2e4e7588@googlemail.com>
+	id S1752077Ab3GXIBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:01:37 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:35477 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab3GXIBg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 04:01:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130723225823.2e4e7588@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51EF4969.4050807@linux.vnet.ibm.com>
+References: <1374601332.9192.0.camel@localhost.localdomain>
+	<51EF4969.4050807@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 14:01:35 +0600
+Message-ID: <CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
+ building sched domain.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 10:58:23PM +0200, Torsten Kaiser wrote:
-> Return -1 (like Intels apply_microcode) when the loading fails, also
-> do not set the active microcode level on failure.
-> 
-> Signed-off-by: Torsten Kaiser <just.for.lkml@googlemail.com>
+On Wed, Jul 24, 2013 at 9:26 AM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> Hi, Rakib
+>
+> On 07/24/2013 01:42 AM, Rakib Mullick wrote:
+>> Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
+>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
+>> domain and update only at the times of building schedule domains.
+>>
+>>       partition_sched_domains()
+>>               detach_destroy_domain()
+>>                       cpu_attach_domain()
+>>                               update_top_cache_domain()
+>
+> IMHO, cpu_attach_domain() and update_top_cache_domain() should be
+> paired, below patch will open a window which 'rq->sd == NULL' while
+> 'sd_llc != NULL', isn't it?
+>
+> I don't think we have the promise that before we rebuild the stuff
+> correctly, no one will utilize 'sd_llc'...
+>
+I never said it. My point is different.  partition_sched_domain works as -
 
-Acked-by: Borislav Petkov <bp@suse.de>
+	- destroying existing schedule domain (if previous domain and new
+domain aren't same)
+	- building new partition
 
-@hpa: this is a fix for a76096a6571d5 which went in during this merge
-window so queue it for tip-urgent please.
+while doing the first it needs to detach all the cpus on that domain.
+By detaching what it does,
+it fall backs to it's root default domain. In this context (which i've
+proposed to skip), by means
+of updating top cache domain it takes the highest flag domain to setup
+it's sd_llc_id or cpu itself.
 
--- 
-Regards/Gruss,
-    Boris.
+Whatever done above gets overwritten (updating top cache domain),
+while building new partition.
+Then, why we did that before? Hope you understand my point.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Rakib.
