@@ -1,125 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3GXQsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:48:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52182 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753662Ab3GXQsR (ORCPT
+	id S1754838Ab3GXQs3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:48:29 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56657 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3GXQs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:48:17 -0400
-Date: Wed, 24 Jul 2013 09:48:16 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: devel@driverdev.osuosl.org, konrad.wilk@oracle.com,
-        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>,
-        Piotr Sarna <p.sarna@partner.samsung.com>,
-        linux-kernel@vger.kernel.org, Michal Hocko <mhocko@suse.cz>,
-        bob.liu@oracle.com, Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH] zcache: fix "zcache=" kernel parameter
-Message-ID: <20130724164816.GA4050@kroah.com>
-References: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
- <20130724150627.GF15095@kroah.com>
- <1940908.YDS0uX8aZx@amdc1032>
- <5294696.DFxsrtntLy@amdc1032>
+	Wed, 24 Jul 2013 12:48:26 -0400
+Message-ID: <51F00530.9090703@ti.com>
+Date: Wed, 24 Jul 2013 11:47:44 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5294696.DFxsrtntLy@amdc1032>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Sricharan R <r.sricharan@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com>
+In-Reply-To: <51F0031B.1050307@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 05:50:29PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> 
-> On Wednesday, July 24, 2013 05:39:20 PM Bartlomiej Zolnierkiewicz wrote:
-> > 
-> > On Wednesday, July 24, 2013 08:06:27 AM Greg KH wrote:
-> > > On Wed, Jul 24, 2013 at 01:54:56PM +0200, Bartlomiej Zolnierkiewicz wrote:
-> > > > 
-> > > > On Wednesday, July 24, 2013 01:41:57 PM Michal Hocko wrote:
-> > > > > On Wed 24-07-13 12:32:32, Bartlomiej Zolnierkiewicz wrote:
-> > > > > > 
-> > > > > > Hi,
-> > > > > > 
-> > > > > > On Wednesday, July 24, 2013 12:04:41 PM Michal Hocko wrote:
-> > > > > > > On Wed 24-07-13 12:02:35, Michal Hocko wrote:
-> > > > > > > > I have posted a similar fix quite some time ago and I guess Greg should
-> > > > > > > > already have it.
-> > > > > > > 
-> > > > > > > For reference https://lkml.org/lkml/2013/6/26/410
-> > > > > > 
-> > > > > > There was a reply from Greg:
-> > > > > > 
-> > > > > > 	https://lkml.org/lkml/2013/6/26/410
-> > > > > 
-> > > > > I guess you meant https://lkml.org/lkml/2013/6/26/569
-> > > > 
-> > > > Uh, yes.
-> > > > 
-> > > > > > and it seems that Greg's request has not been fullfilled.
-> > > > > 
-> > > > > Bob Liu has resent the patch (I cannot find the email in the archive).
-> > > > 
-> > > > Indeed, I've found it here:
-> > > > 
-> > > > http://comments.gmane.org/gmane.linux.kernel.mm/102484
-> > > > 
-> > > > > > Anyway Piotr's patch seems to be more complete:
-> > > > > > - it also fixes case in which invalid "zcache=" option is given (returns
-> > > > > >   an error value 1 while with your patch the code still erronously retuns 0)
-> > > > > > - it prints information about compressor type being used when "zcache="
-> > > > > >   option is used (your patch skips it due to addition of "goto out_alloc")
-> > > > > 
-> > > > > I do not care which one will make it I just pointed out that there is
-> > > > > another patch dealing with the same and it is a question how far that
-> > > > > one went.
-> > > > 
-> > > > OK.
-> > > > 
-> > > > Greg, could you please pick Piotr's patch?
-> > > 
-> > > Wait, I'm going to take the first one I got, from Michal, as that's the
-> > > original author here, not Piotr...
-> > > 
-> > > confused, and really grumpy about the whole zcache mess...
-> > 
-> > Just get the second one (from Piotr) as it is more complete (it fixes
-> > also problem with invalid data being given to "zcache=" option or chosen
-> > compressor not being supported by Crypto API).
-> > 
-> > I feel a bit sad that this newer patch makes Michal's one obsolete but
-> > I don't have a good idea how to resolve it in other way while sticking to
-> > "chose the best technical solution" principle. :(
-> > 
-> > Oh, wait. I updated patch (attached below) to give Michal & Cristian some
-> > credit (also added Konrad's Acked-by while at it). I hope that this is
-> > an acceptable solution.
-> 
-> Michal/Cristian, are you fine with that?  Could you please Ack this patch?
->  
-> > Best regards,
-> > --
-> > Bartlomiej Zolnierkiewicz
-> > Samsung R&D Institute Poland
-> > Samsung Electronics
-> > 
-> > 
-> > From: Piotr Sarna <p.sarna@partner.samsung.com>
-> > Subject: [PATCH] zcache: fix "zcache=" kernel parameter
-> 
-> ...
-> 
-> This time with fixed Bob's email address and better link to an old
-> patch. Sorry for that.
-> 
-> From: Piotr Sarna <p.sarna@partner.samsung.com>
-> Subject: [PATCH] zcache: fix "zcache=" kernel parameter
+On 07/24/2013 11:38 AM, Santosh Shilimkar wrote:
+> On Wednesday 24 July 2013 12:08 PM, Nishanth Menon wrote:
+>> That said, maybe a intermediate pinctrl approach might be more pragmatic and less theoretically flexible.
+>> an option might be to "statically allocate" default number of interrupts to a domain - example:
+>> * GIC IRQ 72->78 allotted to UARTs
+>> * pinctrl mapping provided for those but only 6 can be used (rest are marked status="disabled" as default) at any given time (choice of pinctrl option determines GIC interrupt line to use)
+>> * All modules will have a pinctrl definition to have a mapping - to avoid bootloader overriding default cross bar setting in ways un-expected by kernel.
+>>
+>> Does that sound fair trade off?
+> This sounds better. That way we can get all the devices in the DT at least.
 
-Now, can you resend it in a format that doesn't require me to hand-edit
-the patch?  As I deal with thousands of patches every kernel release, I
-can't clean up the mess by hand and expect to stay sane...
+Fair enough - if Linus and Tony are still ok with this approach to the 
+problem, seeing a patch series with the effect would be beneficial.
 
-thanks,
-
-greg k-h
+-- 
+Regards,
+Nishanth Menon
