@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab3GXEYr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 00:24:47 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:64709 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab3GXEYq (ORCPT
+	id S1750917Ab3GXEen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 00:34:43 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44661 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750743Ab3GXEel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 00:24:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <1373592159-459-1-git-send-email-youquan.song@intel.com>
-References: <1373592159-459-1-git-send-email-youquan.song@intel.com>
-Date: Tue, 23 Jul 2013 21:24:45 -0700
-X-Google-Sender-Auth: ZJ9DTUXBzaSRSgROjBfYt-gWR8A
-Message-ID: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-From: Yinghai Lu <yinghai@kernel.org>
-To: Youquan Song <youquan.song@intel.com>, Gleb Natapov <gleb@redhat.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Jul 2013 00:34:41 -0400
+Message-ID: <1374640475.18653.16.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: request for stable inclusion
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, stable@vger.kernel.org,
+        Liang Li <liang.li@windriver.com>, Li Zefan <lizefan@huawei.com>
+Date: Wed, 24 Jul 2013 05:34:35 +0100
+In-Reply-To: <51CD518B.2050106@huawei.com>
+References: <51CD518B.2050106@huawei.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-arsbCk4Iqh15r2Ffq/+8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 11, 2013 at 6:22 PM, Youquan Song <youquan.song@intel.com> wrote:
-> x2APIC extends APICID from 8 bits to 32 bits, but the device interrupt routed
-> from IOAPIC or delivered in MSI mode will keep 8 bits destination APICID.
-> In order to support x2APIC, the VT-d interrupt remapping is introduced to
-> translate the destination APICID to 32 bits in x2APIC mode and keep the device
-> compatible in this way.
->
-> x2APIC support both logical and physical mode in destination mode.
-> In logical destination mode, the 32 bits Logical APICID has 2 sub-fields:
->  16 bits cluster ID and 16 bits logical ID within the cluster and it is
-> required VT-d interrupt remapping in x2APIC cluster mode.
-> In physical destination mode, the 8 bits physical id is compatible with 32
-> bits physical id when CPU number < 256.
-> When interrupt remapping initialization fail on platform with CPU number < 256,
-> current kernel only enables x2APIC physical mode in virutalization environment,
-> while we also can enable x2APIC physcial mode in native kernel this situation,
-> and the device interrupt will use 8 bits destination APICID in physical mode
-> and be compatible with x2APIC physical when < 256 CPUs.
->
-> So we can benefit from x2APIC vs xAPIC MMIO:
->  - x2APIC MSR read/write is faster than xAPIC mmio
->  - x2APIC only ICR write to deliver interrupt without polling ICR deliver
->    status bit and xAPIC need poll to read ICR deliver status bit.
->  - x2APIC 64 bits ICR access instead of xAPIC two 32 bits access.
->
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
-> ---
->  arch/x86/kernel/apic/apic.c |    7 ++-----
->  1 files changed, 2 insertions(+), 5 deletions(-)
->
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index 904611b..51a065a 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -1603,11 +1603,8 @@ void __init enable_IR_x2apic(void)
->                 goto skip_x2apic;
->
->         if (ret < 0) {
-> -               /* IR is required if there is APIC ID > 255 even when running
-> -                * under KVM
-> -                */
-> -               if (max_physical_apicid > 255 ||
-> -                   !hypervisor_x2apic_available()) {
-> +               /* IR is required if there is APIC ID > 255 */
-> +               if (max_physical_apicid > 255) {
->                         if (x2apic_preenabled)
->                                 disable_x2apic();
->                         goto skip_x2apic;
 
-Those are kvm and xen related.
+--=-arsbCk4Iqh15r2Ffq/+8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Add more Cc.
+On Fri, 2013-06-28 at 17:04 +0800, Yijing Wang wrote:
+> Hi Greg, Jiri or Liang Li
+>=20
+> 384e301e3519599b000c1a2ecd938b533fc15d85
+> pch_uart: fix a deadlock when pch_uart as console
+>=20
+> This looks applicable to stable-3.4, and it
+> was built successful for me. What do you think?
 
-Yinghai
+I've queued this up for 3.2 as well, thanks.
+
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-arsbCk4Iqh15r2Ffq/+8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUe9ZW+e/yOyVhhEJAQpspg//UdXL76i6pXD2iae4kyFKQLc1XXqE5Wgf
+ESsw80FyAbKYO1vadtgEknPMBqSkI5wO3V6251h4i0duqGKYCb9r0OPTtVTudYn8
+bBe/EEJhHjxMAcuqMTtJ/4v/8iP39haq4Vz/I2evs1cl7Zbx7df3ueeIbJ6CKA2h
+doqWfwbCIzRfKBW6heWHEuCe+iU02DsBHCmisABH30+3g/dBqTOyDqcuoHtSkfcN
+f2kNf28EDSsbyHK1QM6VtB39p88PmAQ+rF9/4gls58yHbn5j6DwV4WjWVjqQ0xmE
+Q5zLRhEIADcAVLI5v++RaA/0pYnjHpzDUAHVd/iJJWkcd+a56bqaNrtfDHL2X47n
+2FyamEFvZJ6B2hRzyiswi+wEMpSD8m8dAPwBsPDgPM0HzjHlSprbmVi89YlupjVv
+s+zp9lpL4f4rzTOBx/1f1ePc4VYthgkaN6B0u1Ikz5kGVtcDtzcXK3rLBx5oVxlf
+NF61F+ND3Fo2K4fMqNoWPPwswwt0+Oh5tfH3DZ8DklH2zKIPJuB2MytjbBfvypV+
+IfJcM/gY2HXhBhdL22C6qnYWbZufSHlTcFPvotkeGmPIP2Cjk/B3et9jCrOfL8Kq
+2XY2mzEGTmDj1p59U8rAvG8adquFMq36uS5ceOs6lkz3PbsmMqDcqvTiK5BVmPlf
+EjI2H3isjjk=
+=tLJO
+-----END PGP SIGNATURE-----
+
+--=-arsbCk4Iqh15r2Ffq/+8--
