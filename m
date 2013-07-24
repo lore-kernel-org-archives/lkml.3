@@ -1,130 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934442Ab3GXASR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:18:17 -0400
-Received: from mail-ob0-f194.google.com ([209.85.214.194]:44033 "EHLO
-	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3GXASM (ORCPT
+	id S1753140Ab3GXAVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:21:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46778 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab3GXAVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:18:12 -0400
-Message-ID: <51EF1D38.60503@gmail.com>
-Date: Wed, 24 Jul 2013 08:18:00 +0800
-From: Hush Bensen <hush.bensen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        dave@sr71.net, kosaki.motohiro@gmail.com,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>  <20130722083721.GC25976@gmail.com>  <1374513120.16322.21.camel@misato.fc.hp.com>  <20130723080101.GB15255@gmail.com> <1374612301.16322.136.camel@misato.fc.hp.com>
-In-Reply-To: <1374612301.16322.136.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 23 Jul 2013 20:21:36 -0400
+Date: Wed, 24 Jul 2013 10:21:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mark Brown <broonie@kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: status of various trees
+Message-Id: <20130724102123.6d1156925959e56640c23468@canb.auug.org.au>
+In-Reply-To: <CACxGe6tjrFG1aLc9Scmmuunjb9hTm5vyH6LqXiys8484YY=Zzw@mail.gmail.com>
+References: <20130723095513.19b9638ab4a19157e9834dcf@canb.auug.org.au>
+	<CACxGe6tjrFG1aLc9Scmmuunjb9hTm5vyH6LqXiys8484YY=Zzw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__24_Jul_2013_10_21_23_+1000_.dPdQWpNIUeEw98m"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 04:45 AM, Toshi Kani wrote:
-> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
->> * Toshi Kani <toshi.kani@hp.com> wrote:
->>
->>>> Could we please also fix it to never crash the kernel, even if stupid
->>>> ranges are provided?
->>> Yes, this probe interface can be enhanced to verify the firmware
->>> information before adding a given memory address.  However, such change
->>> would interfere its test use of "fake" hotplug, which is only the known
->>> use-case of this interface on x86.
->> Not crashing the kernel is not a novel concept even for test interfaces...
-> Agreed.
->
->> Where does the possible crash come from - from using invalid RAM ranges,
->> right? I.e. on x86 to fix the crash we need to check the RAM is present in
->> the e820 maps, is marked RAM there, and is not already registered with the
->> kernel, or so?
-> Yes, the crash comes from using invalid RAM ranges.  How to check if the
-> RAM is present is different if the system supports hotplug or not.
+--Signature=_Wed__24_Jul_2013_10_21_23_+1000_.dPdQWpNIUeEw98m
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Could you explain different methods to check the RAM is present if the 
-system supports hotplkug or not?
+Hi Grant,
 
+On Tue, 23 Jul 2013 13:38:45 +0100 Grant Likely <grant.likely@secretlab.ca>=
+ wrote:
 >
->>> In order to verify if a given memory address is enabled at run-time (as
->>> opposed to boot-time), we need to check with ACPI memory device objects
->>> on x86.  However, system vendors tend to not implement memory device
->>> objects unless their systems support memory hotplug.  Dave Hansen is
->>> using this interface for his testing as a way to fake a hotplug event on
->>> a system that does not support memory hotplug.
->> All vendors implement e820 maps for the memory present at boot time.
-> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
-> new memory added.  Here is a quote from ACPI spec.
->
-> ===
-> 15.1 INT 15H, E820H - Query System Address Map
->   :
-> The memory map conveyed by this interface is not required to reflect any
-> changes in available physical memory that have occurred after the BIOS
-> has initially passed control to the operating system. For example, if
-> memory is added dynamically, this interface is not required to reflect
-> the new system memory configuration.
-> ===
->
-> By definition, the "probe" interface is used for the kernel to recognize
-> a new memory added at run-time.  So, it should check ACPI memory device
-> objects (which represents run-time state) for the verification.  On x86,
-> however, ACPI also sends a hotplug event to the kernel, which triggers
-> the kernel to recognize the new physical memory properly.  Hence, users
-> do not need this "probe" interface.
->
->> How is the testing done by Dave Hansen? If it's done by booting with less
->> RAM than available (via say the mem=1g boot parameter), and then
->> hot-adding some of the missing RAM, then this could be made safe via the
->> e820 maps and by consultig the physical memory maps (to avoid double
->> registry), right?
-> If we focus on this test scenario on a system that does not support
-> hotplug, yes, I agree that we can check with e820 since it is safe to
-> assume that the system has no change after boot.  IOW, it is unsafe to
-> check with e820 if the system supports hotplug, but there is no use in
-> this interface for testing if the system supports hotplug.  So, this may
-> be a good idea.
->
-> Dave, is this how you are testing?  Do you always specify a valid memory
-> address for your testing?
->
->> How does the hotplug event based approach solve double adds? Relies on the
->> hardware not sending a hot-add event twice for the same memory area or for
->> an invalid memory area, or does it include fail-safes and double checks as
->> well to avoid double adds and adding invalid memory? If yes then that
->> could be utilized here as well.
-> In high-level, here is how ACPI memory hotplug works:
->
-> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
-> hot-added.
-> 2. The kernel is notified, and verifies if the new memory device object
-> has not been attached by any handler yet.
-> 3. The memory handler is called, and obtains a new memory range from the
-> ACPI memory device object.
-> 4. The memory handler calls add_memory() with the new address range.
->
-> The above step 1-4 proceeds automatically within the kernel.  No user
-> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
-> and step 3 gets a valid address range from the firmware directly.  Step
-> 4 is basically the same as the "probe" interface, but with all the
-> verification up front, this step is safe.
+> On Tue, Jul 23, 2013 at 12:55 AM, Stephen Rothwell <sfr@canb.auug.org.au>=
+ wrote:
+> >
+> > Currently linux-next has the following gpio trees:
+> >
+> > gpio-current    git://git.secretlab.ca/git/linux-2.6#gpio/merge
+> > gpio            git://git.secretlab.ca/git/linux-2.6#gpio/next
+> > gpio-lw         git://git.kernel.org/pub/scm/linux/kernel/git/linusw/li=
+nux-gpio.git#for-next
+> >
+> > Given commit a0062d4e3a0a ("MAINTAINERS: Remove Grant Likely") in the
+> > devicetree-current tree today, should I remove the first two and rename
+> > the third to be just "gpio"?  (And does Linus have an alternative
+> > "current" tree?)
+> >
+> > I also have the irqdomain tree:
+> >
+> > irqdomain       git://git.secretlab.ca/git/linux-2.6.git#irqdomain/next
+> >
+> > Should I remove that?  And is there going to be an alternative?
+> >
+> > And for spi, I have:
+> >
+> > spi             git://git.secretlab.ca/git/linux-2.6#spi/next
+> > spi-mb          git://git.kernel.org/pub/scm/linux/kernel/git/broonie/s=
+pi.git#for-next
+> >
+> > again, should I remove the first and rename the second?
+>=20
+> Yes on all of the above. Thanks.
 
-This is hot-added part, could you also explain how ACPI memory hotplug 
-works for hot-remove?
+OK, I have done all that.  I also removed the irqdomain-current and
+spi-current trees.
 
->
-> Thanks,
-> -Toshi
->
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+So the trees I have left that you are responsible for are:
 
+devicetree-current	git://git.secretlab.ca/git/linux-2.6#devicetree/merge
+devicetree		git://git.secretlab.ca/git/linux-2.6#devicetree/next
+arm-dt			git://git.secretlab.ca/git/linux-2.6#devicetree/arm-next
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__24_Jul_2013_10_21_23_+1000_.dPdQWpNIUeEw98m
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR7x4HAAoJEECxmPOUX5FE5XcP/3K9+FhqjhuVVbCqtojCUJWl
+0r5bSnQDzeU6CstEttGb5L1q8UGVxw6uxA/dyrqJhTXHN85FtqDt0JU8ETCM5Pxp
+ktPIhlYhdiGRwWVCr9qxUqgxwhLmzPqxA58FKWLpVq72ibQYHMvn00oFzT2qTcQ7
+uwQEeHj/eI3b+CxKsVxyvGag2bqXxNiJXoSBaaILEltAGanaWC1NMgu8mH3sXPuU
+ds0sNZUZ+Yi4arC1LVZL5zN/7ad6KEwtNWA7R3x08fM4VaiPgYMQK1MUlZ4TkrkJ
+pH4UXQAvLxD/uBpiAdhlX6d/G/UQBRbiNKxlvRCBeOM29s0Bbd1fcilIHnnu65qv
+0rnqYVaXdYjYPYDlYJ/7COfumJibLJgOLzWNacyHd3I2KX0YqYbtvBPoaA5f6dDp
+qorQha4jl6zaDkVSW5kVPa9Ogq0g2raBWCYnJJWkENJ51pSJfyhfxF4xH6FOhotj
+/xt5quhdKWRanI8mFIt+xTcywx+xCb51gLhfT7ZRrwFYjqzf6WaL0AQZXNnDrxLn
+cfnl9qctDWZeEOA8zJlhrUPdyM+pDAi1b+XAxbikLdErsXvjub8yKv8JExINCLuR
+WdENrBqFkMS9a3qUKce3lbl37jtmzBwquJszrxXWyIuRgogFhupU1nqcXN7p4CJZ
+i5v/9ZKbJpMltzh4pOd3
+=IF66
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__24_Jul_2013_10_21_23_+1000_.dPdQWpNIUeEw98m--
