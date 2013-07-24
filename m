@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3GXQuO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:50:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16675 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754910Ab3GXQuL (ORCPT
+	id S1754850Ab3GXQ7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:59:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45768 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab3GXQ7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:50:11 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=QIZFyTDxVIcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WKn5AdJQQDgA:10 a=18wTAqcYOaM2zRuaw_EA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374684607.3356.132.camel@gandalf.local.home>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
-From: Steven Rostedt <rostedt@goodmis.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, Chris Ball <cjb@laptop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>
-Date: Wed, 24 Jul 2013 12:50:07 -0400
-In-Reply-To: <1374682997.7382.8.camel@dabdike>
-References: <1373944014.17876.255.camel@gandalf.local.home>
-	 <51E4BFA9.1030600@zytor.com>
-	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
-	 <1373991399.6458.6.camel@gandalf.local.home>
-	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
-	 <51E59F79.1040903@zytor.com>
-	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
-	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
-	 <20130717144043.GA16513@xanatos>
-	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
-	 <20130719120841.GH26716@gmail.com>
-	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
-	 <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
-	 <CAMP44s2J2zESnYYwEtN-Q2_4ft_M8UpdLxZavtK5q2fZcFa=SQ@mail.gmail.com>
-	 <1EC23D2B9975384993D85B5DB93AAE8861AA8D@sisaex01sj>
-	 <CAMP44s1w0dfv7peUU3DnHLujf5rtyK6xfCpcWRJhMTMvFHcjug@mail.gmail.com>
-	 <1374629194.2290.77.camel@dabdike>
-	 <1374629880.3356.130.camel@gandalf.local.home>
-	 <1374682997.7382.8.camel@dabdike>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Wed, 24 Jul 2013 12:59:08 -0400
+Message-ID: <51F0079D.8060300@infradead.org>
+Date: Wed, 24 Jul 2013 09:58:05 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Rob Landley <rob@landley.net>, Aaro Koskinen <aaro.koskinen@iki.fi>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that hasn't
+ changed
+References: <20130723225715.GD31864@blackmetal.musicnaut.iki.fi> <1374621001.3031.1@driftwood> <CAP=VYLqvxctQCmTqrdhtgrc1Fr1bfFGG-xn1RA68vUW6yWyG6w@mail.gmail.com>
+In-Reply-To: <CAP=VYLqvxctQCmTqrdhtgrc1Fr1bfFGG-xn1RA68vUW6yWyG6w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 09:23 -0700, James Bottomley wrote:
-> On Tue, 2013-07-23 at 21:38 -0400, Steven Rostedt wrote:
-> > On Tue, 2013-07-23 at 18:26 -0700, James Bottomley wrote:
-> > 
-> > > I think it's not in the original fallacies because they come from Greek
-> > > rhetoric and the Greeks believed dialectic: the taking opposite
-> > > positions and arguing them thoroughly.  It's only with the advent of
-> > > Western European political systems that we're conditioned to seek
-> > > compromise without rigorous examination.  This actually makes argument
-> > > to moderation one of the most effective rhetorical tools in use today
-> > > for discrediting an opponent's argument without actually addressing it.
-> > 
-> > What? Really? You mean the truth doesn't lie in the middle between
-> > evolution and creationism?
+On 07/23/13 17:32, Paul Gortmaker wrote:
+> On Tue, Jul 23, 2013 at 7:10 PM, Rob Landley <rob@landley.net> wrote:
+>> On 07/23/2013 05:57:15 PM, Aaro Koskinen wrote:
+>>>
+>>> Hi,
+>>>
+>>> On Sun, Jul 21, 2013 at 01:12:55AM -0400, Paul Gortmaker wrote:
+>>>> Looking at the bigger picture, the need for this file has simply
+>>>> passed.  It was trying to detail required versions of userspace
+>>>> packages, in order to cater to hand-crafted systems.  But now the
+>>>> majority of users get their userspace all at once from some kind
+>>>> of distro, and we are probably a lot more serious about avoiding
+>>>> breaking userspace than we were a dozen years ago.
+>>
+>>
+>> You're right, there's no such thing as "embedded linux", nobody creates
+>> their own hand-crafted systems, or assembles cross-compiling environments to
+>> target hardware other than x86. That's crazy talk.
 > 
-> Well, you jest, but actually Intelligent Design is usually presented as
-> a false compromise between the "extremes" of evolution and creationism.
-> If you listen to it's proponents, the rhetorical device they use to
-> argue for legitimacy is precisely an argument to moderation.
+> Aside from the obvious sarcasm, what are you trying to say here?   The above
+> seems like a classic strawman argument to me, since _none_ of the above are
+> things that I have said or implied.   And if pressed, I can give many counter
+> examples to drive that point home.  Do I really need to?
+> 
+>>
+>>> Is there any file describing the needed tools (and minimum versions) to
+>>> _build_ the kernel? I agree that trying to describe such for the run-time
+>>> userspace does not belong to the kernel tree, but the required/supported
+>>> versions of build tools should be still maybe documented...
+>>
+>>
+>> Documentation/changes _is_ the file that describes the kernel's build-time
+>> prerequisites. It hasn't changed in a while because we've been maintaining
+>> backwards compatability, especially for several non-x86 targets where it's
+>> fiddly to get newer toolchain versions.
+> 
+> See the mail from hpa --- what may be the "latest" for some less common
+> arch may also be simply too old for another arch.  Hence this kind of stuff
+> needs to be in an arch specific file, let alone not in a mis-named "Changes"
+> file.
+> 
+>>
+>> (Personally I use the last GPLv2 releases of each package, so gcc 4.2.1,
+>> binutils 2.17, make 3.81, and busybox.)
+> 
+> And this works on every arch that linux supports?
+> 
+>>
+>> I agree squashfs and such aren't build time prerequisites. It might make
+>> more sense to move some of these to menuconfig text for the appropriate
+>> option. But that's not the same as not documenting it at all, and "this
+>> document has been true for a long time and remains true, therefore we must
+>> discard it" strikes me as a really weird document retention criteria.
+> 
+> Again, a strawman.  You suggest I said the above with your "this document..."
+> quote, but I never said anything like that, and it totally mis-represents why I
+> suggested we should remove it.
+> 
+> Lets move forward from here and not descend into arguing over details.
+> 
+> To that end, if we create a required-packages.txt that covers the generic
+> stuff like "make" version, and then the arch specific stuff (in arch specific
+> files) for key stuff like gcc version, and gas version, etc, would you not
+> see that as an improvement over what is currently in the mis-named and
+> largely abandoned Changes file?
 
-Exactly, which is why I used that as an example. And also, just to kick
-the hornet's nest.
+Yes, a list of required packages with their locations (URLs) and other
+metadata would be both Good and Sufficient IMO.
 
--- Steve
+Thanks.
 
 
+-- 
+~Randy
