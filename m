@@ -1,162 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab3GXPcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:32:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10128 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753597Ab3GXP3S (ORCPT
+	id S1752479Ab3GXPhr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:37:47 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:57970 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3GXPhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:29:18 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=k71SoW5_zc8A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DIHYiQyPUlYA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=drOt6m5kAAAA:8 a=wSzaHhsv_aiVKQLHw7gA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=BRY4mSIIaSdLBmaB:21 a=YpQHuCDuk1aOtm8n:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130724152916.046675378@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Wed, 24 Jul 2013 11:27:07 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 1/9] tracing: Introduce trace_create_cpu_file() and tracing_get_cpu()
-References: <20130724152706.535638468@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Introduce-trace_create_cpu_file-and-tracing_.patch
+	Wed, 24 Jul 2013 11:37:45 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374679746-12566-2-git-send-email-benjamin.tissoires@redhat.com>
+References: <1374679746-12566-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1374679746-12566-2-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 24 Jul 2013 18:37:45 +0300
+Message-ID: <CAHp75Vcr1MP7eeKHK3pwh49R5Yy0-guQHBJjZ+WXyiR5MT+ZBg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] HID: trivial devm conversion for special hid drivers
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Wed, Jul 24, 2013 at 6:29 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> It is safe to use devres allocation within the hid subsystem:
+> - the devres release is called _after_ the call to .remove(), meaning
+>   that no freed pointers will exists while removing the device
+> - if a .probe() fails, devres releases all the allocated ressources
+>   before going to the next driver: there will not be ghost ressources
+>   attached to a hid device if several drivers are probed.
+>
+> Given that, we can clean up a little some of the HID drivers. These ones
+> are trivial:
+> - there is only one kzalloc in the driver
+> - the .remove() callback contains only one kfree on top of hid_hw_stop()
+> - the error path in the probe is easy enough to be manually checked
 
-Every "file_operations" used by tracing_init_debugfs_percpu is buggy.
-f_op->open/etc does:
+Thanks for the patch! I'm sorry I didn't find time to do what I was
+talking about last time.
 
-	1. struct trace_cpu *tc = inode->i_private;
-	   struct trace_array *tr = tc->tr;
+Few comments below.
 
-	2. trace_array_get(tr) or fail;
+> --- a/drivers/hid/hid-a4tech.c
+> +++ b/drivers/hid/hid-a4tech.c
 
-	3. do_something(tc);
+> @@ -104,29 +103,16 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+> -       if (ret) {
+> +       if (ret)
+>                 hid_err(hdev, "hw start failed\n");
+> -               goto err_free;
+> -       }
+>
+> -       return 0;
 
-But tc (and tr) can be already freed before trace_array_get() is called.
-And it doesn't matter whether this file is per-cpu or it was created by
-init_tracer_debugfs(), free_percpu() or kfree() are equally bad.
+Isn't it better to leave explicit return 0? I think it would be fool
+proof in case someone wants to add anything in the middle.
 
-Note that even 1. is not safe, the freed memory can be unmapped. But even
-if it was safe trace_array_get() can wrongly succeed if we also race with
-the next new_instance_create() which can re-allocate the same tr, or tc
-was overwritten and ->tr points to the valid tr. In this case 3. uses the
-freed/reused memory.
+> -err_free:
+> -       kfree(a4);
+>         return ret;
+>  }
 
-Add the new trivial helper, trace_create_cpu_file() which simply calls
-trace_create_file() and encodes "cpu" in "struct inode". Another helper,
-tracing_get_cpu() will be used to read cpu_nr-or-RING_BUFFER_ALL_CPUS.
+> -static void a4_remove(struct hid_device *hdev)
+> -{
+> -       struct a4tech_sc *a4 = hid_get_drvdata(hdev);
+> -
+> -       hid_hw_stop(hdev);
 
-The patch abuses ->i_cdev to encode the number, it is never used unless
-the file is S_ISCHR(). But we could use something else, say, i_bytes or
-even ->d_fsdata. In any case this hack is hidden inside these 2 helpers,
-it would be trivial to change them if needed.
+Is it safe to remove this call?
+This question is the same for all patched drivers.
 
-This patch only changes tracing_init_debugfs_percpu() to use the new
-trace_create_cpu_file(), the next patches will change file_operations.
-
-Note: tracing_get_cpu(inode) is always safe but you can't trust the
-result unless trace_array_get() was called, without trace_types_lock
-which acts as a barrier it can wrongly return RING_BUFFER_ALL_CPUS.
-
-Link: http://lkml.kernel.org/r/20130723152554.GA23710@redhat.com
-
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |   50 ++++++++++++++++++++++++++++++++++++--------------
- 1 file changed, 36 insertions(+), 14 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 3f24777..cfff63c 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -2843,6 +2843,17 @@ static int s_show(struct seq_file *m, void *v)
- 	return 0;
- }
- 
-+/*
-+ * Should be used after trace_array_get(), trace_types_lock
-+ * ensures that i_cdev was already initialized.
-+ */
-+static inline int tracing_get_cpu(struct inode *inode)
-+{
-+	if (inode->i_cdev) /* See trace_create_cpu_file() */
-+		return (long)inode->i_cdev - 1;
-+	return RING_BUFFER_ALL_CPUS;
-+}
-+
- static const struct seq_operations tracer_seq_ops = {
- 	.start		= s_start,
- 	.next		= s_next,
-@@ -5529,6 +5540,17 @@ static struct dentry *tracing_dentry_percpu(struct trace_array *tr, int cpu)
- 	return tr->percpu_dir;
- }
- 
-+static struct dentry *
-+trace_create_cpu_file(const char *name, umode_t mode, struct dentry *parent,
-+		      void *data, long cpu, const struct file_operations *fops)
-+{
-+	struct dentry *ret = trace_create_file(name, mode, parent, data, fops);
-+
-+	if (ret) /* See tracing_get_cpu() */
-+		ret->d_inode->i_cdev = (void *)(cpu + 1);
-+	return ret;
-+}
-+
- static void
- tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- {
-@@ -5548,28 +5570,28 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- 	}
- 
- 	/* per cpu trace_pipe */
--	trace_create_file("trace_pipe", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_pipe_fops);
-+	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_pipe_fops);
- 
- 	/* per cpu trace */
--	trace_create_file("trace", 0644, d_cpu,
--			(void *)&data->trace_cpu, &tracing_fops);
-+	trace_create_cpu_file("trace", 0644, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_fops);
- 
--	trace_create_file("trace_pipe_raw", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_buffers_fops);
-+	trace_create_cpu_file("trace_pipe_raw", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_buffers_fops);
- 
--	trace_create_file("stats", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_stats_fops);
-+	trace_create_cpu_file("stats", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_stats_fops);
- 
--	trace_create_file("buffer_size_kb", 0444, d_cpu,
--			(void *)&data->trace_cpu, &tracing_entries_fops);
-+	trace_create_cpu_file("buffer_size_kb", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &tracing_entries_fops);
- 
- #ifdef CONFIG_TRACER_SNAPSHOT
--	trace_create_file("snapshot", 0644, d_cpu,
--			  (void *)&data->trace_cpu, &snapshot_fops);
-+	trace_create_cpu_file("snapshot", 0644, d_cpu,
-+				&data->trace_cpu, cpu, &snapshot_fops);
- 
--	trace_create_file("snapshot_raw", 0444, d_cpu,
--			(void *)&data->trace_cpu, &snapshot_raw_fops);
-+	trace_create_cpu_file("snapshot_raw", 0444, d_cpu,
-+				&data->trace_cpu, cpu, &snapshot_raw_fops);
- #endif
- }
- 
 -- 
-1.7.10.4
-
-
+With Best Regards,
+Andy Shevchenko
