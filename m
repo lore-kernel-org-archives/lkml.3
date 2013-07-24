@@ -1,76 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3GXSqF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:46:05 -0400
-Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:55237 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752024Ab3GXSqB (ORCPT
+	id S1753406Ab3GXSrT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:47:19 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:49326 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826Ab3GXSrR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:46:01 -0400
-Date: Wed, 24 Jul 2013 14:47:03 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Andi Kleen <andi@firstfloor.org>
-cc: Andi Kleen <ak@linux.intel.com>, acme@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-In-Reply-To: <20130723225150.GT6123@two.firstfloor.org>
-Message-ID: <alpine.DEB.2.02.1307241433380.8230@pianoman.cluster.toy>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
- <20130723225150.GT6123@two.firstfloor.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 24 Jul 2013 14:47:17 -0400
+Message-ID: <51F02129.8010506@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 13:47:05 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020209.51F020E9.007A,ss=1,re=0.000,fgs=0
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 8/8] Remove no longer needed powerpc memory node update handler
+References: <51F01E06.6090800@linux.vnet.ibm.com>
+In-Reply-To: <51F01E06.6090800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072418-4790-0000-0000-0000097208C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Jul 2013, Andi Kleen wrote:
+Remove the update_node handler for powerpc/pseries.
 
-> On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
-> > 
+Now that we can do memory dlpar in the kernel we no longer need the of
+update node notifier to update the ibm,dynamic-memory property of the
+ibm,dynamic-reconfiguration-memory node. This work is now handled by
+the memory notification handlers for powerpc/pseries.
 
-> So format/precise would be 
-> 
-> flags:15-16
-> 
-> on little endian. Looks good?
+This patch also conditionally registers the handler for of node remove
+if we are not using the ibm,dynamic-reconfiguration-memory device tree
+layout. That handler is only needed for handling memory@XXX nodes
+in the device tree.
 
-I'd prefer if it were
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   60 +++---------------------
+ 1 file changed, 8 insertions(+), 52 deletions(-)
 
-  precise_ip:0-1
+Index: linux/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux.orig/arch/powerpc/platforms/pseries/hotplug-memory.c
++++ linux/arch/powerpc/platforms/pseries/hotplug-memory.c
+@@ -166,67 +166,15 @@ static inline int pseries_remove_memory(
+ }
+ #endif /* CONFIG_MEMORY_HOTREMOVE */
+ 
+-static int pseries_update_drconf_memory(struct of_prop_reconfig *pr)
+-{
+-	struct of_drconf_cell *new_drmem, *old_drmem;
+-	unsigned long memblock_size;
+-	u32 entries;
+-	u32 *p;
+-	int i, rc = -EINVAL;
+-
+-	memblock_size = get_memblock_size();
+-	if (!memblock_size)
+-		return -EINVAL;
+-
+-	p = (u32 *)of_get_property(pr->dn, "ibm,dynamic-memory", NULL);
+-	if (!p)
+-		return -EINVAL;
+-
+-	/* The first int of the property is the number of lmb's described
+-	 * by the property. This is followed by an array of of_drconf_cell
+-	 * entries. Get the niumber of entries and skip to the array of
+-	 * of_drconf_cell's.
+-	 */
+-	entries = *p++;
+-	old_drmem = (struct of_drconf_cell *)p;
+-
+-	p = (u32 *)pr->prop->value;
+-	p++;
+-	new_drmem = (struct of_drconf_cell *)p;
+-
+-	for (i = 0; i < entries; i++) {
+-		if ((old_drmem[i].flags & DRCONF_MEM_ASSIGNED) &&
+-		    (!(new_drmem[i].flags & DRCONF_MEM_ASSIGNED))) {
+-			rc = pseries_remove_memblock(old_drmem[i].base_addr,
+-						     memblock_size);
+-			break;
+-		} else if ((!(old_drmem[i].flags & DRCONF_MEM_ASSIGNED)) &&
+-			   (new_drmem[i].flags & DRCONF_MEM_ASSIGNED)) {
+-			rc = memblock_add(old_drmem[i].base_addr,
+-					  memblock_size);
+-			rc = (rc < 0) ? -EINVAL : 0;
+-			break;
+-		}
+-	}
+-
+-	return rc;
+-}
+-
+ static int pseries_memory_notifier(struct notifier_block *nb,
+ 				   unsigned long action, void *node)
+ {
+-	struct of_prop_reconfig *pr;
+ 	int err = 0;
+ 
+ 	switch (action) {
+ 	case OF_RECONFIG_DETACH_NODE:
+ 		err = pseries_remove_memory(node);
+ 		break;
+-	case OF_RECONFIG_UPDATE_PROPERTY:
+-		pr = (struct of_prop_reconfig *)node;
+-		if (!strcmp(pr->prop->name, "ibm,dynamic-memory"))
+-			err = pseries_update_drconf_memory(pr);
+-		break;
+ 	}
+ 	return notifier_from_errno(err);
+ }
+@@ -237,6 +185,14 @@ static struct notifier_block pseries_mem
+ 
+ static int __init pseries_memory_hotplug_init(void)
+ {
++	struct device_node *dn;
++
++	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (dn) {
++		of_node_put(dn);
++		return 0;
++	}
++
+ 	if (firmware_has_feature(FW_FEATURE_LPAR))
+ 		of_reconfig_notifier_register(&pseries_mem_nb);
+ 
 
-as the code you use to set the value looks like 
-   attr->precise_ip=2;
-I don't think you can even set bits 15-16 of flags directly, can you?
 
-Althought having to have a parser being able to parse the names of all 50+
-perf_event->attr arguments, then parse hex/decimal strings from another
-file in sysfs, then trying to map that to binary fields in a complicated
-structure that is then passed to a syscall gets a bit stupid at some 
-point; this is one of the silliest interfaces I've had to deal with and 
-I've done low-level X11 programming before.
-
-Ideally we could do something sane, such as maybe having the event 
-descriptions in a library in userspace where it belongs but it's a bit
-late to close the barn door now.
-
-> > I'm a bit grumpy about this because I just finished fixing the fallout 
-> > from your last time breaking the ABI a few weeks ago when your broken code 
-> > started dumping non-hex fields into the sysfs event strings.  I've learned 
-> 
-> Not sure what you're talking about?
-
-I'm pretty sure it was one of your patches that added the new memory stuff 
-which had "ldlat=1" in one of the events, and that was not a hex value 
-prefixed by 0x as specified in the ABI documentation and thus broke
-various parsers.
-
-By the time I caught this the perf_event maintainers declared it was too 
-late to do anything about it.
-
-Vince
