@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab3GXQ0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:26:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51849 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289Ab3GXQ0G (ORCPT
+	id S1754421Ab3GXQ1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:27:22 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:46155 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752101Ab3GXQ1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:26:06 -0400
-Date: Wed, 24 Jul 2013 09:26:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
-Subject: Re: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Message-ID: <20130724162605.GA9700@kroah.com>
-References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
- <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
- <20130724160008.GA17083@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
+	Wed, 24 Jul 2013 12:27:19 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAHtARFFWaMGfutTS4h3hrV8KDOf=gtk3Z3uOUQzoOAERoG1TPg@mail.gmail.com>
+References: <20130709203927.31676.35169.stgit@amt.stowe>
+	<1373404695.18560.17.camel@dabdike>
+	<CAHtARFHbEz8UQUjh5cPSFYDxqW93EmFz7aiQ=91hfkDj0fCWdQ@mail.gmail.com>
+	<1373436657.7970.1.camel@dabdike>
+	<CAHtARFFWaMGfutTS4h3hrV8KDOf=gtk3Z3uOUQzoOAERoG1TPg@mail.gmail.com>
+Date: Wed, 24 Jul 2013 10:27:18 -0600
+Message-ID: <CAL-B5D3qmf-iAZu2S7vF0vwYeBnSpwruQMm4O2nizi-TLXd8_w@mail.gmail.com>
+Subject: Re: [PATCH 0/3] [SCSI] megaraid: Remove local (struct pci_dev) pdev's
+From: Myron Stowe <myron.stowe@gmail.com>
+To: adam radford <aradford@gmail.com>
+Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Neela Syam Kolli <megaraidlinux@lsi.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-pci <linux-pci@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 04:20:32PM +0000, Winkler, Tomas wrote:
-> 
-> 
-> > >  int mei_register(struct mei_device *dev)  {
-> > > +	struct device *device = &dev->pdev->dev;
-> > >  	int ret;
-> > > -	mei_misc_device.parent = &dev->pdev->dev;
-> > > +
-> > > +	mei_misc_device.parent = device;
-> > >  	ret = misc_register(&mei_misc_device);
-> > >  	if (ret)
-> > >  		return ret;
-> > >
-> > > +	ret = sysfs_create_group(&device->kobj, &mei_attr_group);
-> > > +	if (ret)
-> > > +		return ret;
-> > 
-> 
-> > And you just lost the race with userspace (you told it you had a device, it
-> > went and scanned your attributes and saved them, then you registered
-> > more...)
-> > 
-> > Please use the dev_groups field for your class to properly have the driver
-> > core register these before userspace is told about the device, that's the
-> > correct way to do this.
-> 
-> Just to make sure, is this what you're suggesting ?
-> 
-> device->groups = mei_attr_groups
-> mei_misc_device.parent = device;
-> ret = misc_register(&mei_misc_device);
+Well???  I responded yesterday but I still don't see it on the list so
+at the expense of some getting a double response I'll try again ...
 
-Yes, that should work.  If not, please let me know, the code underwent
-some changes in 3.11-rc2.
+On Mon, Jul 22, 2013 at 6:27 PM, adam radford <aradford@gmail.com> wrote:
+> On Tue, Jul 9, 2013 at 11:10 PM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+>> On Tue, 2013-07-09 at 15:12 -0700, adam radford wrote:
+>>> On Tue, Jul 9, 2013 at 2:18 PM, James Bottomley
+>>> > Adam, you do drive by coding on this for LSI ... ack or reject, please.
+>>
+>>> I have just now located my box of MegaRAID Parallel SCSI controllers.
+>>> I will review and test the patch series from Myron and respond by next Monday.
+>>
+>> Thanks,
+>>
+>> James
+>>
+>>
+>
+> Unfortunately my box of MegaRAID Parallel SCSI controllers only
+> contains only cards intended for megaraid_mbox.c (I tested all 20 of
+> them),
+>
+> and does not contain any of the following really old Symbios based
+> megaraid cards:
+>
+> static struct pci_device_id megaraid_pci_tbl[] = {
+>         {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID,
+>                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+>         {PCI_VENDOR_ID_AMI, PCI_DEVICE_ID_AMI_MEGARAID2,
+>                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+>         {PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_AMI_MEGARAID3,
+>                 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+>         {0,}
+> };
+>
+> which I had located previously before the company headquarters moved.
+>  I cannot currently locate any of the above 3 controllers anywhere at
+> LSI headquarters after an exhaustive search, so I cannot test the
+> patches to megaraid.c from Myron @ RedHat.
+Adam:
 
-thanks,
+Thanks for looking/trying.
+>
+> Myron, do you actually have the hardware and have you tested the
+> patches yourself ?
 
-greg k-h
+No, the closest to the above that I have access to is a NEC platform
+with a PCI_VENDOR_ID_NCR vendor's PCI_DEVICE_ID_AMI_MEGARAID3 device.
+
+I stumbled onto the issue because I want to get rid of the driver's use
+of 'struct pci_dev'.  It seems, from my looking, to be the only driver
+that keeps local copies of such, and upon further investigation I
+noticed that the intended use of the local copies is flawed to the point
+that keeping them makes no sense (which further supported my desire to
+get rid of them).
+
+Myron
+
+>
+> -Adam
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
