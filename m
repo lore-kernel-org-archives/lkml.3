@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab3GXOYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:24:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45708 "EHLO
+	id S1753914Ab3GXOYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:24:35 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45807 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752015Ab3GXOGk (ORCPT
+	by vger.kernel.org with ESMTP id S1752187Ab3GXOGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:40 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Shane Huang" <shane.huang@amd.com>,
-        "Tejun Heo" <tj@kernel.org>, "Yu Liu" <liuyu.ac@gmail.com>
+CC: akpm@linux-foundation.org, "Tejun Heo" <tj@kernel.org>,
+        "Seth Heasley" <seth.heasley@intel.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.543884115@decadent.org.uk>
+Message-ID: <lsq.1374674565.751177950@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [13/85] ahci: remove pmp link online check in FBS EH
+Subject: [30/85] ata_piix: IDE-mode SATA patch for Intel Coleto Creek
+ DeviceIDs
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,32 +32,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Shane Huang <shane.huang@amd.com>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 912b9ac683b112615d5605686f1dc086402ce9f7 upstream.
+commit c7e8695bfa0611b39493a9dfe8bab9f63f9809bd upstream.
 
-ata_link_online() check in ahci_error_intr() is unnecessary, it should
-be removed otherwise may lead to lockup with FBS enabled PMP.
-http://marc.info/?l=linux-ide&m=137050421603272&w=2
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
 
-Reported-by: Yu Liu <liuyu.ac@gmail.com>
-Signed-off-by: Shane Huang <shane.huang@amd.com>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libahci.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/ata/ata_piix.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -1541,8 +1541,7 @@ static void ahci_error_intr(struct ata_p
- 		u32 fbs = readl(port_mmio + PORT_FBS);
- 		int pmp = fbs >> PORT_FBS_DWE_OFFSET;
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -360,6 +360,8 @@ static const struct pci_device_id piix_p
+ 	/* SATA Controller IDE (BayTrail) */
+ 	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++	/* SATA Controller IDE (Coleto Creek) */
++	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
  
--		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links) &&
--		    ata_link_online(&ap->pmp_link[pmp])) {
-+		if ((fbs & PORT_FBS_SDE) && (pmp < ap->nr_pmp_links)) {
- 			link = &ap->pmp_link[pmp];
- 			fbs_need_dec = true;
- 		}
+ 	{ }	/* terminate list */
+ };
 
