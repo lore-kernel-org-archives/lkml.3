@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3GXOWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:22:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45741 "EHLO
+	id S1753691Ab3GXOWq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:22:46 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45756 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751951Ab3GXOGn (ORCPT
+	by vger.kernel.org with ESMTP id S1752153Ab3GXOGn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:43 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Ric Wheeler" <rwheeler@redhat.com>,
+CC: akpm@linux-foundation.org, "Steffen Maier" <maier@linux.vnet.ibm.com>,
         "James Bottomley" <JBottomley@Parallels.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.70752827@decadent.org.uk>
+Message-ID: <lsq.1374674565.624631022@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [43/85] [SCSI] sd: fix array cache flushing bug causing
- performance problems
+Subject: [05/85] [SCSI] zfcp: status read buffers on first adapter open
+ with link down
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,100 +32,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <JBottomley@Parallels.com>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 39c60a0948cc06139e2fbfe084f83cb7e7deae3b upstream.
+commit 9edf7d75ee5f21663a0183d21f702682d0ef132f upstream.
 
-Some arrays synchronize their full non volatile cache when the sd driver sends
-a SYNCHRONIZE CACHE command.  Unfortunately, they can have Terrabytes of this
-and we send a SYNCHRONIZE CACHE for every barrier if an array reports it has a
-writeback cache.  This leads to massive slowdowns on journalled filesystems.
+Commit 64deb6efdc5504ce97b5c1c6f281fffbc150bd93
+"[SCSI] zfcp: Use status_read_buf_num provided by FCP channel"
+started using a value returned by the channel but only evaluated the value
+if the fabric link is up.
+Commit 8d88cf3f3b9af4713642caeb221b6d6a42019001
+"[SCSI] zfcp: Update status read mempool"
+introduced mempool resizings based on the above value.
+On setting an FCP device online for the very first time since boot, a new
+zeroed adapter object is allocated. If the link is down, the number of
+status read requests remains zero. Since just the config data exchange is
+incomplete, we proceed with adapter open recovery. However, we
+unconditionally call mempool_resize with adapter->stat_read_buf_num == 0 in
+this case.
 
-The fix is to allow userspace to turn off the writeback cache setting as a
-temporary measure (i.e. without doing the MODE SELECT to write it back to the
-device), so even though the device reported it has a writeback cache, the
-user, knowing that the cache is non volatile and all they care about is
-filesystem correctness, can turn that bit off in the kernel and avoid the
-performance ruinous (and safety irrelevant) SYNCHRONIZE CACHE commands.
+This causes a kernel message "kernel BUG at mm/mempool.c:131!" in process
+"zfcperp<FCP-device-bus-ID>" with last function mempool_resize in Krnl PSW
+and zfcp_erp_thread in the Call Trace.
 
-The way you do this is add a 'temporary' prefix when performing the usual
-cache setting operations, so
+Don't evaluate channel values which are invalid on link down. The number of
+status read requests is always valid, evaluated, and set to a positive
+minimum greater than zero. The adapter open recovery can proceed and the
+channel has status read buffers to inform us on a future link up event.
+While we are not aware of any other code path that could result in mempool
+resize attempts of size zero, we still also initialize the number of status
+read buffers to be posted to a static minimum number on adapter object
+allocation.
 
-echo temporary write through > /sys/class/scsi_disk/<disk>/cache_type
-
-Reported-by: Ric Wheeler <rwheeler@redhat.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[bwh: Backported to 3.2:
+ - Copyright notice changed slightly
+ - Don't use zfcp_fsf_convert_portspeed()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/sd.c | 20 ++++++++++++++++++++
- drivers/scsi/sd.h |  1 +
- 2 files changed, 21 insertions(+)
+ drivers/s390/scsi/zfcp_aux.c |  5 ++++-
+ drivers/s390/scsi/zfcp_fsf.c | 23 ++++++++++++++++-------
+ 2 files changed, 20 insertions(+), 8 deletions(-)
 
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -138,6 +138,7 @@ sd_store_cache_type(struct device *dev,
- 	char *buffer_data;
- 	struct scsi_mode_data data;
- 	struct scsi_sense_hdr sshdr;
-+	const char *temp = "temporary ";
- 	int len;
+--- a/drivers/s390/scsi/zfcp_aux.c
++++ b/drivers/s390/scsi/zfcp_aux.c
+@@ -3,7 +3,7 @@
+  *
+  * Module interface and handling of zfcp data structures.
+  *
+- * Copyright IBM Corporation 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
  
- 	if (sdp->type != TYPE_DISK)
-@@ -146,6 +147,13 @@ sd_store_cache_type(struct device *dev,
- 		 * it's not worth the risk */
- 		return -EINVAL;
+ /*
+@@ -23,6 +23,7 @@
+  *            Christof Schmitt
+  *            Martin Petermann
+  *            Sven Schuetz
++ *            Steffen Maier
+  */
  
-+	if (strncmp(buf, temp, sizeof(temp) - 1) == 0) {
-+		buf += sizeof(temp) - 1;
-+		sdkp->cache_override = 1;
-+	} else {
-+		sdkp->cache_override = 0;
-+	}
-+
- 	for (i = 0; i < ARRAY_SIZE(sd_cache_types); i++) {
- 		len = strlen(sd_cache_types[i]);
- 		if (strncmp(sd_cache_types[i], buf, len) == 0 &&
-@@ -158,6 +166,13 @@ sd_store_cache_type(struct device *dev,
- 		return -EINVAL;
- 	rcd = ct & 0x01 ? 1 : 0;
- 	wce = ct & 0x02 ? 1 : 0;
-+
-+	if (sdkp->cache_override) {
-+		sdkp->WCE = wce;
-+		sdkp->RCD = rcd;
-+		return count;
-+	}
-+
- 	if (scsi_mode_sense(sdp, 0x08, 8, buffer, sizeof(buffer), SD_TIMEOUT,
- 			    SD_MAX_RETRIES, &data, NULL))
- 		return -EINVAL;
-@@ -2037,6 +2052,10 @@ sd_read_cache_type(struct scsi_disk *sdk
- 	int old_rcd = sdkp->RCD;
- 	int old_dpofua = sdkp->DPOFUA;
+ #define KMSG_COMPONENT "zfcp"
+@@ -415,6 +416,8 @@ struct zfcp_adapter *zfcp_adapter_enqueu
+ 	adapter->dma_parms.max_segment_size = ZFCP_QDIO_SBALE_LEN;
+ 	adapter->ccw_device->dev.dma_parms = &adapter->dma_parms;
  
++	adapter->stat_read_buf_num = FSF_STATUS_READS_RECOM;
 +
-+	if (sdkp->cache_override)
-+		return;
+ 	if (!zfcp_scsi_adapter_register(adapter))
+ 		return adapter;
+ 
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -3,7 +3,7 @@
+  *
+  * Implementation of FSF commands.
+  *
+- * Copyright IBM Corporation 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
+ 
+ #define KMSG_COMPONENT "zfcp"
+@@ -455,11 +455,8 @@ static int zfcp_fsf_exchange_config_eval
+ 
+ 	fc_host_port_name(shost) = nsp->fl_wwpn;
+ 	fc_host_node_name(shost) = nsp->fl_wwnn;
+-	fc_host_port_id(shost) = ntoh24(bottom->s_id);
+-	fc_host_speed(shost) = bottom->fc_link_speed;
+ 	fc_host_supported_classes(shost) = FC_COS_CLASS2 | FC_COS_CLASS3;
+ 
+-	adapter->hydra_version = bottom->adapter_type;
+ 	adapter->timer_ticks = bottom->timer_interval & ZFCP_FSF_TIMER_INT_MASK;
+ 	adapter->stat_read_buf_num = max(bottom->status_read_buf_num,
+ 					 (u16)FSF_STATUS_READS_RECOM);
+@@ -467,6 +464,18 @@ static int zfcp_fsf_exchange_config_eval
+ 	if (fc_host_permanent_port_name(shost) == -1)
+ 		fc_host_permanent_port_name(shost) = fc_host_port_name(shost);
+ 
++	zfcp_scsi_set_prot(adapter);
 +
- 	first_len = 4;
- 	if (sdp->skip_ms_page_8) {
- 		if (sdp->type == TYPE_RBC)
-@@ -2518,6 +2537,7 @@ static void sd_probe_async(void *data, a
- 	sdkp->capacity = 0;
- 	sdkp->media_present = 1;
- 	sdkp->write_prot = 0;
-+	sdkp->cache_override = 0;
- 	sdkp->WCE = 0;
- 	sdkp->RCD = 0;
- 	sdkp->ATO = 0;
---- a/drivers/scsi/sd.h
-+++ b/drivers/scsi/sd.h
-@@ -64,6 +64,7 @@ struct scsi_disk {
- 	u8		protection_type;/* Data Integrity Field */
- 	u8		provisioning_mode;
- 	unsigned	ATO : 1;	/* state of disk ATO bit */
-+	unsigned	cache_override : 1; /* temp override of WCE,RCD */
- 	unsigned	WCE : 1;	/* state of disk WCE bit */
- 	unsigned	RCD : 1;	/* state of disk RCD bit, unused */
- 	unsigned	DPOFUA : 1;	/* state of disk DPOFUA bit */
++	/* no error return above here, otherwise must fix call chains */
++	/* do not evaluate invalid fields */
++	if (req->qtcb->header.fsf_status == FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE)
++		return 0;
++
++	fc_host_port_id(shost) = ntoh24(bottom->s_id);
++	fc_host_speed(shost) = bottom->fc_link_speed;
++
++	adapter->hydra_version = bottom->adapter_type;
++
+ 	switch (bottom->fc_topology) {
+ 	case FSF_TOPO_P2P:
+ 		adapter->peer_d_id = ntoh24(bottom->peer_d_id);
+@@ -488,8 +497,6 @@ static int zfcp_fsf_exchange_config_eval
+ 		return -EIO;
+ 	}
+ 
+-	zfcp_scsi_set_prot(adapter);
+-
+ 	return 0;
+ }
+ 
+@@ -540,6 +547,8 @@ static void zfcp_fsf_exchange_config_dat
+ 				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
++		if (zfcp_fsf_exchange_config_evaluate(req))
++			return;
+ 		break;
+ 	default:
+ 		zfcp_erp_adapter_shutdown(adapter, 0, "fsecdh3");
 
