@@ -1,43 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab3GXAex (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:34:53 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:45992 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758186Ab3GXAew (ORCPT
+	id S1758225Ab3GXAjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:39:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43177 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab3GXAjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:34:52 -0400
-Date: Wed, 24 Jul 2013 03:34:39 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Rob Landley <rob@landley.net>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation/Changes: phase out Changes file that
- hasn't changed
-Message-ID: <20130724003439.GE31864@blackmetal.musicnaut.iki.fi>
-References: <20130723225715.GD31864@blackmetal.musicnaut.iki.fi>
- <1374621001.3031.1@driftwood>
+	Tue, 23 Jul 2013 20:39:47 -0400
+Date: Tue, 23 Jul 2013 17:40:58 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Matt Wilson <msw@amazon.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, xen-devel@lists.xensource.com,
+        Daniel Kiper <daniel.kiper@oracle.com>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Brandon Philips <brandon@ifup.org>
+Subject: Re: [Xen-devel] is kexec on Xen domU possible?
+Message-ID: <20130724004058.GA20327@kroah.com>
+References: <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
+ <20130719151243.GA15488@kroah.com>
+ <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
+ <20130719191449.GA1882@kroah.com>
+ <51E9A85D.2060206@zytor.com>
+ <20130722170307.GB14451@debian70-amd64.local.net-space.pl>
+ <87wqoise9d.fsf@xmission.com>
+ <51ED78EE.9020903@zytor.com>
+ <20130722183315.GA29273@kroah.com>
+ <20130724002235.GA15047@u109add4315675089e695.ant.amazon.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374621001.3031.1@driftwood>
+In-Reply-To: <20130724002235.GA15047@u109add4315675089e695.ant.amazon.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, Jul 23, 2013 at 06:10:01PM -0500, Rob Landley wrote:
-> On 07/23/2013 05:57:15 PM, Aaro Koskinen wrote:
-> >Is there any file describing the needed tools (and minimum versions) to
-> >_build_ the kernel? I agree that trying to describe such for the run-time
-> >userspace does not belong to the kernel tree, but the required/supported
-> >versions of build tools should be still maybe documented...
+On Tue, Jul 23, 2013 at 05:22:36PM -0700, Matt Wilson wrote:
+> On Mon, Jul 22, 2013 at 11:33:15AM -0700, Greg KH wrote:
+> > On Mon, Jul 22, 2013 at 11:24:46AM -0700, H. Peter Anvin wrote:
+> > > On 07/22/2013 10:20 AM, Eric W. Biederman wrote:
+> > > >>>
+> > > >>> Also, in any virtualized environment the hypervisor can do a better job
+> > > >>> for things like kdump, simply because it can provide two things that are
+> > > >>> otherwise hard to do:
+> > > >>>
+> > > >>> 1. a known-good system state;
+> > > >>> 2. a known-clean kdump image.
+> > > >>>
+> > > >>> As such, I do encourage the virtualization people to (also) develop
+> > > >>> hypervisor-*aware* solutions for these kinds of things.
+> > > >>
+> > > >> In general I agree but if you could not change hypervisor
+> > > >> and/or dom0 (e.g. you are using cloud providers which are
+> > > >> stick to old versions of Xen) then you have no choice.
+> > > > 
+> > > > Which tends to be where kexec on panic comes in most cases.  Getting
+> > > > platform vendors to do something sane tends to be a multi-year political
+> > > > effort of dubious worth while just solving the problem locally actually
+> > > > gets the problem solved for those who care.
+> > > > 
+> > > 
+> > > It should not be a "one or the other" issue.
+> > 
+> > I don't care about kdump, I care about kexec on domU for people who are
+> > running on cloud providers with old versions of Xen so that they can
+> > control what kernel they can boot, when they want to boot it.  If kdump
+> > works as well, that's just a bonus, but it's down on the list of things
+> > for me to be concerned about.
 > 
-> Documentation/changes _is_ the file that describes the kernel's
-> build-time prerequisites.
+> Many Xen-based cloud providers provide a mechanism for users to boot
+> the kernels they want. For example you can use PV-GRUB on EC2
+> instances to boot a kernel that is stored within an AMI.
+> 
+> For more info:
+>   http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedkernels.html
 
-So, in that case the file should not be deleted.
+Yes, that's quite true, but some don't, or they make it difficult to do
+so.  Using kexec also allows you to "be the bootloader" and decide on
+_which_ kernel you want to boot, independant of what cloud provider you
+use, something that lots of people want in their quest to not dependant
+on any one company.
 
-A.
+thanks,
+
+greg k-h
