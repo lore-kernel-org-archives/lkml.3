@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab3GXSwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:52:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36494 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753094Ab3GXSwe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:52:34 -0400
-Message-ID: <51F0223E.4050008@ti.com>
-Date: Wed, 24 Jul 2013 13:51:42 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753775Ab3GXSwq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:52:46 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60732 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753045Ab3GXSwo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 14:52:44 -0400
+Message-ID: <51F02273.1050308@parallels.com>
+Date: Wed, 24 Jul 2013 22:52:35 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Sricharan R <r.sricharan@ti.com>
-CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        ext Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] misc: Add crossbar driver
-References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com> <51EFFBE1.4090505@ti.com> <51F0031B.1050307@ti.com> <51F00530.9090703@ti.com> <51F02069.3050207@ti.com>
-In-Reply-To: <51F02069.3050207@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
+References: <20130724160826.GD24851@moon>
+In-Reply-To: <20130724160826.GD24851@moon>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 01:43 PM, Sricharan R wrote:
-> On Wednesday 24 July 2013 10:17 PM, Nishanth Menon wrote:
->> On 07/24/2013 11:38 AM, Santosh Shilimkar wrote:
->>> On Wednesday 24 July 2013 12:08 PM, Nishanth Menon wrote:
->>>> That said, maybe a intermediate pinctrl approach might be more pragmatic and less theoretically flexible.
->>>> an option might be to "statically allocate" default number of interrupts to a domain - example:
->>>> * GIC IRQ 72->78 allotted to UARTs
->>>> * pinctrl mapping provided for those but only 6 can be used (rest are marked status="disabled" as default) at any given time (choice of pinctrl option determines GIC interrupt line to use)
->>>> * All modules will have a pinctrl definition to have a mapping - to avoid bootloader overriding default cross bar setting in ways un-expected by kernel.
->>>>
->>>> Does that sound fair trade off?
->>> This sounds better. That way we can get all the devices in the DT at least.
->>
->> Fair enough - if Linus and Tony are still ok with this approach to the problem, seeing a patch series with the effect would be beneficial.
->>
->   Ok, i will use this idea of certain number interrupts to groups.
-> Yes on DRA7XX, we have about 160 gic lines and 320 irq crossbar device inputs contending for it.
-> 1:2 and fully arbitrary.  But will we be really exhausting them ?
->
-Depends on how we allocate :). The default arbitary allocation can be 
-made more logical in your series ofcourse :).
+On 07/24/2013 08:08 PM, Cyrill Gorcunov wrote:
+> Andy Lutomirski reported that in case if a page with _PAGE_SOFT_DIRTY
+> bit set get swapped out, the bit is getting lost and no longer
+> available when pte read back.
+> 
+> To resolve this we introduce _PTE_SWP_SOFT_DIRTY bit which is
+> saved in pte entry for the page being swapped out. When such page
+> is to be read back from a swap cache we check for bit presence
+> and if it's there we clear it and restore the former _PAGE_SOFT_DIRTY
+> bit back.
+> 
+> One of the problem was to find a place in pte entry where we can
+> save the _PTE_SWP_SOFT_DIRTY bit while page is in swap. The
+> _PAGE_PSE was chosen for that, it doesn't intersect with swap
+> entry format stored in pte.
+> 
+> Reported-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
 
-
--- 
-Regards,
-Nishanth Menon
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
