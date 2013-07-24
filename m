@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab3GXT3i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:29:38 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:38329 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753600Ab3GXT3g convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:29:36 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: * =?ISO-8859-1?Q?SAM=CD?= * <miaousami@hotmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Aaron Lu <aaron.lu@intel.com>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Subject: Re: Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-Date: Wed, 24 Jul 2013 21:39:38 +0200
-Message-ID: <17420057.BAULu67LQ3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl>
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl>
+	id S1754037Ab3GXTaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:30:15 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:35603
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752364Ab3GXTaN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 15:30:13 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
+Date: Wed, 24 Jul 2013 14:30:07 -0500
+From: Scott Wood <scottwood@freescale.com>
+Subject: Re: [PATCH v5 3/4] DMA: Freescale: update driver to support
+ 8-channel DMA engine
+To: <hongbo.zhang@freescale.com>
+CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+References: <1374646870-5162-1-git-send-email-hongbo.zhang@freescale.com>
+	<1374646870-5162-4-git-send-email-hongbo.zhang@freescale.com>
+In-Reply-To: <1374646870-5162-4-git-send-email-hongbo.zhang@freescale.com>
+	(from hongbo.zhang@freescale.com on Wed Jul 24 01:21:08 2013)
+X-Mailer: Balsa 2.4.12
+Message-ID: <1374694207.15592.62@snotra>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 24, 2013 08:43:00 PM * SAMÍ * wrote:
-> Hi,
+On 07/24/2013 01:21:08 AM, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
 > 
-> it seems a lot of people are complaining about the backlight pull 
-> request of RC2.
+> This patch adds support to 8-channel DMA engine, thus the driver  
+> works for both
+> the new 8-channel and the legacy 4-channel DMA engines.
 > 
-> This is to tell you how it saved my life:
-> - Changing brightness from Fn keys does work
-> - Writing to /sys/class/backlight/intel_backlight/brightness does work
-> - Changing brightness from gnome brightness settings does work
-> --> It seems everything is now working (it wasn't before).
-> --> I appreciate your patch and I am going to be sad if you revert it :-)
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> ---
+>  drivers/dma/Kconfig  |    9 +++++----
+>  drivers/dma/fsldma.c |    9 ++++++---
+>  drivers/dma/fsldma.h |    2 +-
+>  3 files changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
+> index 6825957..1b78272 100644
+> --- a/drivers/dma/Kconfig
+> +++ b/drivers/dma/Kconfig
+> @@ -89,14 +89,15 @@ config AT_HDMAC
+>  	  Support the Atmel AHB DMA controller.
+> 
+>  config FSL_DMA
+> -	tristate "Freescale Elo and Elo Plus DMA support"
+> +	tristate "Freescale Elo series DMA support"
+>  	depends on FSL_SOC
+>  	select DMA_ENGINE
+>  	select ASYNC_TX_ENABLE_CHANNEL_SWITCH
+>  	---help---
+> -	  Enable support for the Freescale Elo and Elo Plus DMA  
+> controllers.
+> -	  The Elo is the DMA controller on some 82xx and 83xx parts,  
+> and the
+> -	  Elo Plus is the DMA controller on 85xx and 86xx parts.
+> +	  Enable support for the Freescale Elo series DMA controllers.
+> +	  The Elo is the DMA controller on some mpc82xx and mpc83xx  
+> parts, the
+> +	  EloPlus is on mpc85xx and mpc86xx and Pxxx parts, and the  
+> Elo3 is on
+> +	  some Txxx and Bxxx parts. Look up user manuals for details  
+> anyway.
 
-Well, there seems to be a number of people who'll be equally unhappy if I don't
-do that.  Unfortunately for you, things work for them without that patch.
+The user manuals do not use the "elo" terminology.  I also don't  
+understand the tone you're trying to convey with "anyway".
 
-The source of the problem seems to be that the i915's backlight support doesn't
-work for all those people, although it should work anyway in principle.  So to
-me the way to go seems to be to revert the patch for now, fix the i915
-backlight interface for them and try to apply it again when we're more
-confident about the i915 backlight.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+-Scott
