@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751419Ab3GXLxM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 07:53:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46215 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751008Ab3GXLxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 07:53:09 -0400
-Message-ID: <51EFBFCC.9060302@ti.com>
-Date: Wed, 24 Jul 2013 14:51:40 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751481Ab3GXLyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 07:54:22 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:44200 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab3GXLyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 07:54:19 -0400
+Date: Wed, 24 Jul 2013 12:54:13 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Kevin Hilman <khilman@linaro.org>,
+        Graeme Gregory <gg@slimlogic.co.uk>, linux-omap@vger.kernel.org,
+        Ruslan Bilovol <ruslan.bilovol@ti.com>, linux-kernel@vger.kernel.org,
+        Naga Venkata Srikanth V <vnv.srikanth@samsung.com>,
+        Oleg_Kosheliev <oleg.kosheliev@ti.com>
+Subject: Re: [PATCH 1/4] mfd: twl6030-irq: migrate to IRQ threaded handler
+Message-ID: <20130724115413.GK26801@laptop>
+References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com>
+ <1374595624-15054-2-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
-To: Graeme Gregory <gg@slimlogic.co.uk>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Kevin Hilman <khilman@linaro.org>, <linux-omap@vger.kernel.org>,
-        Ruslan Bilovol <ruslan.bilovol@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] mfd: twl6030-irq: add error check when IRQs are masked
- initially
-References: <1374595624-15054-1-git-send-email-grygorii.strashko@ti.com> <1374595624-15054-3-git-send-email-grygorii.strashko@ti.com> <51EEC69F.9000006@slimlogic.co.uk>
-In-Reply-To: <51EEC69F.9000006@slimlogic.co.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1374595624-15054-2-git-send-email-grygorii.strashko@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 09:08 PM, Graeme Gregory wrote:
-> On 23/07/13 17:07, Grygorii Strashko wrote:
->> Add a missed check for errors when TWL IRQs are masked
->> initially on probe and report an error in case of failure.
->>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> ---
->>   drivers/mfd/twl6030-irq.c |   13 +++++++++----
->>   1 file changed, 9 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
->> index b6030d9..790cc28 100644
->> --- a/drivers/mfd/twl6030-irq.c
->> +++ b/drivers/mfd/twl6030-irq.c
->> @@ -313,7 +313,7 @@ int twl6030_init_irq(struct device *dev, int irq_num)
->>   	struct			device_node *node = dev->of_node;
->>   	int			nr_irqs, irq_base, irq_end;
->>   	static struct irq_chip  twl6030_irq_chip;
->> -	int			status = 0;
->> +	int			status;
->>   	int			i;
->>   	u8			mask[3];
->>
->> @@ -335,11 +335,16 @@ int twl6030_init_irq(struct device *dev, int irq_num)
->>   	mask[2] = 0xFF;
->>
->>   	/* mask all int lines */
->> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_LINE_A, 3);
->> +	status = twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_LINE_A, 3);
->>   	/* mask all int sts */
->> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_STS_A, 3);
->> +	status |= twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_MSK_STS_A, 3);
->>   	/* clear INT_STS_A,B,C */
->> -	twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_STS_A, 3);
->> +	status |= twl_i2c_write(TWL_MODULE_PIH, &mask[0], REG_INT_STS_A, 3);
->> +
-> You can save two i2c writes here for slightly faster initialisation,
-> only one of the REG_INT_STS_A registers needs to be written to clear
-> them all. As per the irq handling routine comment.
+On Tue, 23 Jul 2013, Grygorii Strashko wrote:
 
-Good point. thanks
+> From: Naga Venkata Srikanth V <vnv.srikanth@samsung.com>
+> 
+> 1) Removed request_irq() and replaced it with request_threaded_irq().
+> 
+> 2) Removed generic_handle_irq() and replaced it with
+> handle_nested_irq().
+>   Handling of these interrupts is nested, as we are handling an
+> interrupt (for e.g rtc, mmc1) when we are still servicing TWL irq.
+> 
+> 3) Removed I2C read-retry logic for the case when twl_i2c_read() is
+> failed inside IRQ handler - there is no sense to do that, so just report
+> an error and return.
+> 
+> Signed-off-by: Naga Venkata Srikanth V <vnv.srikanth@samsung.com>
+> Signed-off-by: Oleg_Kosheliev <oleg.kosheliev@ti.com>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> ---
+>  drivers/mfd/twl6030-irq.c |  146 +++++++++++++++------------------------------
+>  1 file changed, 49 insertions(+), 97 deletions(-)
+> 
+> diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
 
->> +	if (status < 0) {
->> +		dev_err(dev, "I2C err writing TWL_MODULE_PIH: %d\n", status);
->> +		return status;
->> +	}
->>
->>   	twl6030_irq_base = irq_base;
->>
->
-> Graeme
->
+<snip>
 
-Regards,
-- grygorii
+> +	status = request_threaded_irq(irq_num, NULL, twl6030_irq_thread,
+> +				      IRQF_ONESHOT, "TWL6030-PIH", NULL);
+
+Oh, and please use managed resources for this: devm_*
+
+>  	if (status < 0) {
+>  		dev_err(dev, "could not claim irq %d: %d\n", irq_num, status);
+>  		goto fail_irq;
+>  	}
+>  
+
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
