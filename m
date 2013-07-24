@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab3GXOZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:25:43 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45833 "EHLO
+	id S1753952Ab3GXO07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:26:59 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45795 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751255Ab3GXOGj (ORCPT
+	by vger.kernel.org with ESMTP id S1751605Ab3GXOGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:39 -0400
+	Wed, 24 Jul 2013 10:06:38 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Jaganath Kanakkassery" <jaganath.k@samsung.com>,
-        "Johan Hedberg" <johan.hedberg@intel.com>,
-        "Chan-Yeol Park" <chanyeol.park@samsung.com>,
-        "Gustavo Padovan" <gustavo.padovan@collabora.co.uk>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.189355690@decadent.org.uk>
+Message-ID: <lsq.1374674565.344045964@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [32/85] Bluetooth: Fix invalid length check in l2cap_information_rsp()
+Subject: [83/85] ext4: fix data offset overflow in ext4_xattr_fiemap() on
+ 32-bit archs
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,46 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jaganath Kanakkassery <jaganath.k@samsung.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 3f6fa3d489e127ca5a5b298eabac3ff5dbe0e112 upstream.
+commit a60697f411eb365fb09e639e6f183fe33d1eb796 upstream.
 
-The length check is invalid since the length varies with type of
-info response.
+On 32-bit architectures with 32-bit sector_t computation of data offset
+in ext4_xattr_fiemap() can overflow resulting in reporting bogus data
+location. Fix the problem by typing block number to proper type before
+shifting.
 
-This was introduced by the commit cb3b3152b2f5939d67005cff841a1ca748b19888
-
-Because of this, l2cap info rsp is not handled and command reject is sent.
-
-> ACL data: handle 11 flags 0x02 dlen 16
-        L2CAP(s): Info rsp: type 2 result 0
-          Extended feature mask 0x00b8
-            Enhanced Retransmission mode
-            Streaming mode
-            FCS Option
-            Fixed Channels
-< ACL data: handle 11 flags 0x00 dlen 10
-        L2CAP(s): Command rej: reason 0
-          Command not understood
-
-Signed-off-by: Jaganath Kanakkassery <jaganath.k@samsung.com>
-Signed-off-by: Chan-Yeol Park <chanyeol.park@samsung.com>
-Acked-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/l2cap_core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ext4/extents.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -2868,7 +2868,7 @@ static inline int l2cap_information_rsp(
- 	struct l2cap_info_rsp *rsp = (struct l2cap_info_rsp *) data;
- 	u16 type, result;
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -4801,7 +4801,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		error = ext4_get_inode_loc(inode, &iloc);
+ 		if (error)
+ 			return error;
+-		physical = iloc.bh->b_blocknr << blockbits;
++		physical = (__u64)iloc.bh->b_blocknr << blockbits;
+ 		offset = EXT4_GOOD_OLD_INODE_SIZE +
+ 				EXT4_I(inode)->i_extra_isize;
+ 		physical += offset;
+@@ -4809,7 +4809,7 @@ static int ext4_xattr_fiemap(struct inod
+ 		flags |= FIEMAP_EXTENT_DATA_INLINE;
+ 		brelse(iloc.bh);
+ 	} else { /* external block */
+-		physical = EXT4_I(inode)->i_file_acl << blockbits;
++		physical = (__u64)EXT4_I(inode)->i_file_acl << blockbits;
+ 		length = inode->i_sb->s_blocksize;
+ 	}
  
--	if (cmd_len != sizeof(*rsp))
-+	if (cmd_len < sizeof(*rsp))
- 		return -EPROTO;
- 
- 	type   = __le16_to_cpu(rsp->type);
 
