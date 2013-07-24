@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab3GXG0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:26:32 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5140 "EHLO mga03.intel.com"
+	id S1752140Ab3GXG1U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:27:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24194 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751695Ab3GXG0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:26:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,733,1367996400"; 
-   d="asc'?scan'208";a="272416943"
-Date: Wed, 24 Jul 2013 02:16:26 -0400
-From: Chen Gong <gong.chen@linux.intel.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Subject: Re: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-Message-ID: <20130724061626.GA18995@gchen.bj.intel.com>
-Mail-Followup-To: Tony Luck <tony.luck@gmail.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Borislav Petkov <bp@suse.de>,
-	"Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-References: <0104420@agluck-desk.sc.intel.com>
- <CA+8MBbLkWZKwG40XMXCV75Vr=6pKq9rijRamt7=qALhc72SCTQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7AUc2qLy4jB3hD7Z"
+	id S1751826Ab3GXG1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 02:27:19 -0400
+Date: Wed, 24 Jul 2013 02:26:50 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Message-ID: <1374647210-ac6q11s5-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <51ef6fd0.1019310a.5683.345bSMTPIN_ADDED_BROKEN@mx.google.com>
+References: <1374183272-10153-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1374183272-10153-8-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <51ef6fd0.1019310a.5683.345bSMTPIN_ADDED_BROKEN@mx.google.com>
+Subject: Re: [PATCH 7/8] memory-hotplug: enable memory hotplug to handle
+ hugepage
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <CA+8MBbLkWZKwG40XMXCV75Vr=6pKq9rijRamt7=qALhc72SCTQ@mail.gmail.com>
-X-PGP-Key-ID: A43922C7
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <51ef6fd0.1019310a.5683.345bSMTPIN_ADDED_BROKEN@mx.google.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 24, 2013 at 02:10:07PM +0800, Wanpeng Li wrote:
+...
+> >diff --git v3.11-rc1.orig/mm/page_isolation.c v3.11-rc1/mm/page_isolation.c
+> >index 383bdbb..cf48ef6 100644
+> >--- v3.11-rc1.orig/mm/page_isolation.c
+> >+++ v3.11-rc1/mm/page_isolation.c
+> >@@ -6,6 +6,7 @@
+> > #include <linux/page-isolation.h>
+> > #include <linux/pageblock-flags.h>
+> > #include <linux/memory.h>
+> >+#include <linux/hugetlb.h>
+> > #include "internal.h"
+> >
+> > int set_migratetype_isolate(struct page *page, bool skip_hwpoisoned_pages)
+> >@@ -252,6 +253,10 @@ struct page *alloc_migrate_target(struct page *page, unsigned long private,
+> > {
+> > 	gfp_t gfp_mask = GFP_USER | __GFP_MOVABLE;
+> >
+> >+	if (PageHuge(page))
+> >+		return alloc_huge_page_node(page_hstate(compound_head(page)),
+> >+					    numa_node_id());
+> >+
+> 
+> Why specify current node? Maybe current node is under remove.
 
---7AUc2qLy4jB3hD7Z
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Yes. One difficulty is that this function doesn't have vma and we can't
+rely on mempolicy for node choice. I think that simply choosing the next
+node by incrementing node id can be a work around, though it's not the
+best solution.
 
-On Tue, Jul 23, 2013 at 03:51:14PM -0700, Tony Luck wrote:
-> Date: Tue, 23 Jul 2013 15:51:14 -0700
-> From: Tony Luck <tony.luck@gmail.com>
-> To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-> Cc: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
->  "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-> Subject: Re: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
->  parsing 'UC' errors.
->=20
-> Gah ... there is another bug in that unaffected thread entry.  The check =
-for
-> MCG_STATUS should be for RIPV=3D1 *and* EIPV=3D0
->=20
-
-I set "MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)" becase
-I want it to cover Non-Affected Logical Processors (1,0)
-and Affected Logical Processor/Recoverable continuable (1,1).
-
-I think both of them are continuable so they should be as
-*KEEP*.
-
-> gmail will mess this patch up ... but should still be readable.
->=20
-> -Tony
->=20
-> ---
->=20
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> b/arch/x86/kernel/cpu/mcheck/mce-severity
-> index 7f6ab4e..48f0fd2 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-> @@ -112,7 +112,7 @@ static struct severity {
->         MCESEV(
->                 KEEP, "Action required but unaffected thread is continuab=
-le",
->                 SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR,
-> MCI_UC_SAR|MCI_ADDR),
-> -               MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
-> +               MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, MCG_STATUS_RIPV)
->                 ),
->         MCESEV(
->                 AR, "Action required: data load error in a user process",
-
---7AUc2qLy4jB3hD7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR73E6AAoJEI01n1+kOSLH+boP/iqNZhALD2LFFKeaeNn7ZRst
-1b7fWeOClGDZu56NqpNcuKr7ZyWBuhe4CjLDprDwMKAWrHKmSNH/2FeG5t2kf51W
-7Oxg/R104ZtYkbs/izfcxaKRcUN84Tb05wcQjWSN/Axi1IsGiAmGGllrhscAJGvK
-nRju4FlsrBvtLZzmQB9DRqR5Sin7ej4laikq4BRLI28VimxnICGlgL6MoQJQ7IfS
-1/ZQRjXjEPsdoZYaEjoEbPHVgg5NlO7PGdqAXFIaaFMLdI/asxUkym0YSmqbko+Z
-yzJK3IukxQdOWAecM0Dxs9mNTuB6AguiKDPoIQcNyBS2uT4ayk731X+5eNFfk6rW
-8QiuxH98fJPY4zwNffGD228g71PrfEGvV8mrDZGcKwTI9FKuX4JvDIZ2RDsXlSOt
-7+ZO0e3JpVrVudZQ9r+r5s/aZDZtFi4VrNLIfgqKHannolmx0dxTUu5Di2nb5FZD
-hWNN8G5pjxAKnxt11ELQDmu86s2QZDHZUcKc4XXsZLe2MxEVV4L/Z1vznxQ1ulXP
-DE7FnYTSMcIqnjv3bWf1gIAHdvUBuB2ykemUHz+LdcJmumGkG4z530HNrq68eZ64
-YZCZiHAdku8cMFJ7iSc/1j355BY6HVt7c1BmvgYWmS0tJi2xB4g+GWTThS1w1mHq
-3qvoLDBtb8YS3ndderh2
-=7Afw
------END PGP SIGNATURE-----
-
---7AUc2qLy4jB3hD7Z--
+Thanks,
+Naoya Horiguchi
