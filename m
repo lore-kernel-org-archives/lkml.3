@@ -1,91 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab3GXRVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:21:50 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:53776 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751255Ab3GXRUf (ORCPT
+	id S1752692Ab3GXRWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:22:21 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:60409 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab3GXRU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:20:35 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Sebastien Buisson <sebastien.buisson@bull.net>,
-        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-RESEND 4/8] staging/lustre/llite: fix 'data race condition' issues of lli_flags
-Date: Thu, 25 Jul 2013 01:17:27 +0800
-Message-Id: <1374686251-3152-5-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374686251-3152-1-git-send-email-bergwolf@gmail.com>
-References: <1374686251-3152-1-git-send-email-bergwolf@gmail.com>
+	Wed, 24 Jul 2013 13:20:27 -0400
+Message-ID: <51F00CD8.9000601@wwwdotorg.org>
+Date: Wed, 24 Jul 2013 10:20:24 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Rhyland Klein <rklein@nvidia.com>
+CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] regulator: palmas: fix pdata ptr not be updated after
+ it has been allocated
+References: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
+In-Reply-To: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sebastien Buisson <sebastien.buisson@bull.net>
+On 07/24/2013 09:28 AM, Rhyland Klein wrote:
+> The pmic platform data wasn't updated to dev.platform_data after it had
+> been allocated. That can cause the driver crash when using it.
+> This patch fixes the issue.
+> 
+> We need to update the pdata pointer at the end of probe because if
+> probe should fail for some reason, for instance if an in-supply
+> isn't ready yet, then probe will defer. However, the pdata is allocated
+> with devm, and so is freed when probe is deferred.
 
-Fix 'data race condition' defects found by Coverity version
-6.5.0:
-Data race condition (MISSING_LOCK)
-Accessing variable without holding lock. Elsewhere,
-this variable is accessed with lock held.
+This looks wrong. If the module is removed and re-probed, then the pdata
+pointer will still be set to a stale (free'd) value and hence not
+re-allocated, but it will still be used.
 
-lli->lli_flags need to be protected by lli->lli_lock.
-
-Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2744
-Lustre-change: http://review.whamcloud.com/6571
-Signed-off-by: Sebastien Buisson <sebastien.buisson@bull.net>
-Reviewed-by: Fan Yong <fan.yong@intel.com>
-Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
-Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
-Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
----
- drivers/staging/lustre/lustre/llite/llite_lib.c |    4 ++++
- drivers/staging/lustre/lustre/llite/namei.c     |    5 ++++-
- 2 files changed, 8 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/lustre/lustre/llite/llite_lib.c b/drivers/staging/lustre/lustre/llite/llite_lib.c
-index d7d87b1..36a07fa 100644
---- a/drivers/staging/lustre/lustre/llite/llite_lib.c
-+++ b/drivers/staging/lustre/lustre/llite/llite_lib.c
-@@ -1190,7 +1190,9 @@ void ll_clear_inode(struct inode *inode)
- 		LASSERT(lli->lli_opendir_pid == 0);
- 	}
- 
-+	spin_lock(&lli->lli_lock);
- 	ll_i2info(inode)->lli_flags &= ~LLIF_MDS_SIZE_LOCK;
-+	spin_unlock(&lli->lli_lock);
- 	md_null_inode(sbi->ll_md_exp, ll_inode2fid(inode));
- 
- 	LASSERT(!lli->lli_open_fd_write_count);
-@@ -1757,7 +1759,9 @@ void ll_update_inode(struct inode *inode, struct lustre_md *md)
- 					/* Use old size assignment to avoid
- 					 * deadlock bz14138 & bz14326 */
- 					i_size_write(inode, body->size);
-+					spin_lock(&lli->lli_lock);
- 					lli->lli_flags |= LLIF_MDS_SIZE_LOCK;
-+					spin_unlock(&lli->lli_lock);
- 				}
- 				ldlm_lock_decref(&lockh, mode);
- 			}
-diff --git a/drivers/staging/lustre/lustre/llite/namei.c b/drivers/staging/lustre/lustre/llite/namei.c
-index 8e948a7..333e55f 100644
---- a/drivers/staging/lustre/lustre/llite/namei.c
-+++ b/drivers/staging/lustre/lustre/llite/namei.c
-@@ -275,8 +275,11 @@ int ll_md_blocking_ast(struct ldlm_lock *lock, struct ldlm_lock_desc *desc,
- 				CDEBUG(D_INODE, "invaliding layout %d.\n", rc);
- 		}
- 
--		if (bits & MDS_INODELOCK_UPDATE)
-+		if (bits & MDS_INODELOCK_UPDATE) {
-+			spin_lock(&lli->lli_lock);
- 			lli->lli_flags &= ~LLIF_MDS_SIZE_LOCK;
-+			spin_unlock(&lli->lli_lock);
-+		}
- 
- 		if (S_ISDIR(inode->i_mode) &&
- 		     (bits & MDS_INODELOCK_UPDATE)) {
--- 
-1.7.1
-
+This function shouldn't save the pdata in dev.platform_data, but rather
+some data structure that has the same scope as probe()..remove(), for
+example as a field in the drvdata struct, as set by dev_set_drvdata().
