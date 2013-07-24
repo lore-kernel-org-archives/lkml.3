@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055Ab3GXRJe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:09:34 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:35778 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GXRJd (ORCPT
+	id S1751863Ab3GXROV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:14:21 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54830 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991Ab3GXROT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:09:33 -0400
-X-IronPort-AV: E=Sophos;i="4.89,736,1367971200"; 
-   d="scan'208";a="37157308"
-Message-ID: <51F00A4A.5060005@citrix.com>
-Date: Wed, 24 Jul 2013 18:09:30 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Wed, 24 Jul 2013 13:14:19 -0400
+Date: Wed, 24 Jul 2013 22:43:47 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+Message-ID: <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
 MIME-Version: 1.0
-To: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-CC: <konrad.wilk@oracle.com>, <tpmdd-devel@lists.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>, <leosilva@linux.vnet.ibm.com>,
-        <shpedoikal@gmail.com>, <xen-devel@lists.xen.org>, <mail@srajiv.net>,
-        <adlai@linux.vnet.ibm.com>, <tpmdd@sirrix.com>, <PeterHuewe@gmx.de>
-Subject: Re: [PATCH v4] drivers/tpm: add xen tpmfront interface
-References: <1372714468-28120-1-git-send-email-dgdegra@tycho.nsa.gov> <51ED4D4A.3060705@citrix.com> <51ED5BD2.7080601@tycho.nsa.gov>
-In-Reply-To: <51ED5BD2.7080601@tycho.nsa.gov>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.76]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374526866-6813-1-git-send-email-bp@alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072417-5490-0000-0000-000003E0DF85
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/07/13 17:20, Daniel De Graaf wrote:
-> On 07/22/2013 11:18 AM, David Vrabel wrote:
->> On 01/07/13 22:34, Daniel De Graaf wrote:
->>> This is a complete rewrite of the Xen TPM frontend driver, taking
->>> advantage of a simplified frontend/backend interface and adding support
->>> for cancellation and timeouts.  The backend for this driver is provided
->>> by a vTPM stub domain using the interface in Xen 4.3.
->> [...]
->>> --- /dev/null
->>> +++ b/Documentation/xen-tpmfront.txt
->>
->> Suggest putting this in Documentation/tpm/.
+On 2013/07/22 11:01PM, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
 > 
-> OK.
+> [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x        c7f00000> for ERST.
 > 
->>> --- /dev/null
->>> +++ b/drivers/char/tpm/xen-tpmfront.c
->> [...]
->>> +static void backend_changed(struct xenbus_device *dev,
->>> +        enum xenbus_state backend_state)
->>> +{
->>> +    int val;
->>
->> Hrm. I don't like how every front/back pair invents their own variation
->> of the state machine.
->>
->> Please document the front and back state machines in
->> xen/include/public/io/tpmif.h (and the correspoding copy in Linux).
+> This needs to have leading zeroes. Make it so.
 > 
-> Is there a standard state machine that would allow devices to avoid
-> inventing their own?
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> Cc: Anton Vorontsov <anton@enomsg.org>
+> Cc: Colin Cross <ccross@android.com>
+> Cc: Kees Cook <keescook@chromium.org>
+> Cc: Tony Luck <tony.luck@intel.com>
+> Cc: Len Brown <lenb@kernel.org>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-acpi@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/acpi/apei/erst.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
+> index 88d0b0f9f92b..1126afeb7e22 100644
+> --- a/drivers/acpi/apei/erst.c
+> +++ b/drivers/acpi/apei/erst.c
+> @@ -1168,7 +1168,7 @@ static int __init erst_init(void)
+>  	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
+>  	if (!r) {
+>  		pr_err(ERST_PFX
+> -		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
+> +		"Can not request iomem region <0x%016llx-0x%016llx> for ERST.\n",
+>  		(unsigned long long)erst_erange.base,
+>  		(unsigned long long)erst_erange.base + erst_erange.size);
+>  		rc = -EIO;
 
-That would be nice wouldn't it?  But, no, there isn't one -- even
-netfront and blkfront are different.
+Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
 
-> Otherwise, this is what I plan to add to the header:
-> /*
->  * Xenbus state machine
->  *
->  * Device open:
->  *   1. Both ends start in XenbusStateInitialising
->  *   2. Backend transitions to InitWait (frontend does not wait on this
-> step)
->  *   3. Frontend populates ring-ref, event-channel, feature-protocol-v2
->  *   4. Frontend transitions to Initialised
->  *   5. Backend maps grant and event channel, verifies feature-protocol-v2
->  *   6. Backend transitions to Connected
->  *   7. Frontend verifies feature-protocol-v2, transitions to Connected
->  *
->  * Device close:
->  *   1. State is changed to XenbusStateClosing
->  *   2. Frontend transitions to Closed
->  *   3. Backend unmaps grant and event, changes state to InitWait
->  */
+While looking at this, I noticed that we seem to be using varying field
+widths in our APEI code:
+- einj.c has two instances using %#010llx.
+- apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
 
-That's good, thanks.
+Not sure if these are intentional and those fields truly aren't 64-bit
+(as suggested by the usage of long long int).
 
-David
+
+Regards,
+Naveen
+
+> -- 
+> 1.8.3
+> 
+
