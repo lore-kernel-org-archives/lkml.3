@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab3GXWem (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:34:42 -0400
-Received: from ozlabs.org ([203.10.76.45]:41476 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752418Ab3GXWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:34:41 -0400
-Date: Thu, 25 Jul 2013 08:34:27 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Scott Wood <scottwood@freescale.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Neil Horman <nhorman@tuxdriver.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
- issues
-Message-ID: <20130725083427.56e36010@kryten>
-In-Reply-To: <1374274770.5357.33@snotra>
-References: <20130718140045.6794ecd5@kryten>
-	<1374274770.5357.33@snotra>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+	id S1753211Ab3GXWl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:41:28 -0400
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:55063 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752699Ab3GXWl1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:41:27 -0400
+Message-ID: <1374705685.29835.15.camel@x61.thuisdomein>
+Subject: Re: [PATCH 4/5] SLIP: Add error message for xleft non-zero
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dean Jenkins <Dean_Jenkins@mentor.com>, Andre Naujoks <nautsch2@gmail.com>,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Date: Thu, 25 Jul 2013 00:41:25 +0200
+In-Reply-To: <20130724221849.GD21709@kroah.com>
+References: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com>
+	 <1372779094-11730-5-git-send-email-Dean_Jenkins@mentor.com>
+	 <20130724221849.GD21709@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jul 2013 22:41:26.0881 (UTC) FILETIME=[EE9DDD10:01CE88BE]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Hi Scott,
-
-> I'm not really sure what it's supposed to look like when "perf  
-> annotate" works.  It spits a bunch of unreadable[1]
-> dark-blue-on-black assembly code at me, all with "0.00 :" in the left
-> column.
+On Wed, 2013-07-24 at 15:18 -0700, Greg Kroah-Hartman wrote:
+> On Tue, Jul 02, 2013 at 04:31:33PM +0100, Dean Jenkins wrote:
+> > Add a printk to show when xleft is non-zero in sl_encaps.
+> > 
+> > The idea is to see whether a previous SLIP frame failed to be
+> > fully transmitted.
+> > 
+> > Signed-off-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+> > ---
+> >  drivers/net/slip/slip.c | 4 ++++
+> >  1 file changed, 4 insertions(+)
+> > 
+> > diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
+> > index f7303e0..e2eff84 100644
+> > --- a/drivers/net/slip/slip.c
+> > +++ b/drivers/net/slip/slip.c
+> > @@ -395,6 +395,10 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
+> >  #endif
+> >  		count = slip_esc(p, sl->xbuff, len);
+> >  
+> > +	if (sl->xleft)
+> > +		printk(KERN_ERR "%s: ERROR: xleft is non-zero %d\n",
+> > +		       __func__, sl->xleft);
 > 
-> Oh, wait -- some lines have "100.00 : " on the left, in  
-> even-more-unreadable dark-red-on-black.
-> 
-> Apart from the annoying colors, is there anything specific I should
-> be looking for?  Some sort of error message, or output that actually
-> makes sense?
+> dev_err() perhaps?
 
-Thanks for testing! Ben, I think the patch is good to go.
+After looking at the commit explanation and the patch itself I wonder
+why this should be printed at error level. Especially since patch 3/5
+will set sl->xleft to zero immediately after.
 
-Anton
+So, dev_dbg() perhaps?
+
+And can't this be merged into 3/5?
+
+
+Paul Bolle  
+
