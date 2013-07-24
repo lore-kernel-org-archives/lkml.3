@@ -1,80 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3GXVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:03:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:50553 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab3GXVDY (ORCPT
+	id S1754206Ab3GXVDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:03:52 -0400
+Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:59121 "EHLO
+	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753629Ab3GXVDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:03:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jingoo Han <jg1.han@samsung.com>
-Subject: Re: [PATCH V3] pci: exynos: split into two parts such as Synopsys part and Exynos part
-Date: Wed, 24 Jul 2013 23:02:40 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Mohit KUMAR'" <Mohit.KUMAR@st.com>, "'Sean Cross'" <xobs@kosagi.com>,
-        "'Thierry Reding'" <thierry.reding@gmail.com>,
-        "'SRIKANTH TUMKUR SHIVANAND'" <ts.srikanth@samsung.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-References: <002801ce8376$a807dbf0$f81793d0$@samsung.com> <51EE22DF.6090902@ti.com> <001301ce8772$522dfc50$f689f4f0$@samsung.com>
-In-Reply-To: <001301ce8772$522dfc50$f689f4f0$@samsung.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 24 Jul 2013 17:03:49 -0400
+Message-ID: <1374699827.7083.1.camel@localhost>
+Subject: [RFC/PATCH 2/2] Add rudimentary transparent decompression support
+ to ext4
+From: Dhaval Giani <dgiani@mozilla.com>
+To: linux-kernel@vger.kernel.org
+Cc: tytso@mit.edu, tglek@mozilla.com, vdjeric@mozilla.com,
+        glandium@mozilla.com, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Date: Wed, 24 Jul 2013 17:03:47 -0400
+In-Reply-To: <cover.1374693578.git.dgiani@mozilla.com>
+References: <cover.1374693578.git.dgiani@mozilla.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201307242302.40934.arnd@arndb.de>
-X-Provags-ID: V02:K0:vGLy51xQ/+NGpp3Mi7iAFGIa6aLip4sr0Qyi/e1XGRA
- gLY+Px+PhUZ3M1DNSfil541/b5vC+UGUrbHLTUIE9EIjkFU9Kf
- sEAa1Yv64Bfyu/sb6vuTzmyClanpAzy1xjdoM010LWODTTzdxh
- 48dRv3/0rEbBwlgXUN/kmqsqHB7uNx6v/6mIET8Wyet6BwOdSJ
- f4+MiYD44W2Se5EBpXfeLRVmBln4ZIeE+oFlFuJg1BXoGyypu7
- yfYvqjBJRPvcdlP0MMoQs/4EoilBvu+vQgsVaOd+oM4jyfuW/A
- AWx0lk+4CM5rtytSFSP4P2Ze/gew8w4DgrVeA9JOdwDYgq0UX5
- MRze3C5uxEM2R6B3uVdE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 23 July 2013, Jingoo Han wrote:
-> > 
-> > Also I have one more query.
-> > In your dt binding, your pci address and cpu address is the same. But the pci
-> > address should start at 0x00000000 and end at 0xffffffff (for 32bit). Shouldn't
-> > the cpu address map to something within this range of pci address?
 
-The size is limited by the window available (e.g. 0x80000000-0x8FFFFFFF), it can
-never be the full 4GB on a 32 bit non-LPAE system. If you only care about memory
-space here (in practice you want at least also config space) that means you could
-either have an identity map
+Adds basic support for transparently reading compressed
+files in ext4.
 
-	<0x82000000 0 0x80000000 0x80000000 0 0x1fffffff>;
+Lots of issues in this patch
+1. It requires a fully read file from disk, no seeking allowed
+2. Compressed files give their compressed sizes and not uncompressed
+sizes. Therefore cat will return truncated data (since the buffer
+isn't big enough)
+3. It adds a new file operation. That will be *removed*.
+4. Doesn't mmap decompressed data
 
-or use bus address 0
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Vladan Djeric <vdjeric@mozilla.com>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Cc: Mike Hommey <glandium@mozilla.com>
+Signed-off-by: Dhaval Giani <dgiani@mozilla.com>
+---
+ fs/ext4/file.c     | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/read_write.c    |  3 +++
+ include/linux/fs.h |  1 +
+ 3 files changed, 70 insertions(+)
 
-	<0x82000000 0 0 0x80000000 0 0x1fffffff>;
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index b1b4d51..5c9db04 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -31,6 +31,9 @@
+ #include "xattr.h"
+ #include "acl.h"
+ 
++#include <linux/zlib.h>
++#include <linux/szip.h>
++
+ /*
+  * Called when an inode is released. Note that this is different
+  * from ext4_file_open: open gets called at every open, but release
+@@ -623,6 +626,68 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int whence)
+ 	return -EINVAL;
+ }
+ 
++static int ext4_is_file_compressed(struct file *file)
++{
++	struct inode *inode = file->f_mapping->host;
++	return ext4_test_inode_flag(inode, EXT4_INODE_COMPR);
++}
++
++static int _ext4_decompress(char __user *buf, int sz)
++{
++	/*
++	 * We can really cheat here since we have the full buffer already read
++	 * and made available
++	 */
++	struct szip_struct szip;
++	char *temp;
++	size_t uncom_size;
++
++	int ret = szip_init(&szip, buf);
++	if (ret) {
++		ret = -1;
++		goto out;
++	}
++
++	uncom_size = szip_uncompressed_size(&szip);
++	temp = kmalloc(uncom_size, GFP_NOFS);
++	if (!temp) {
++		ret = -2;
++		goto out;
++	}
++
++	ret = szip_decompress(&szip, temp, 0);
++	if (ret) {
++		ret = -3;
++		goto out_free;
++	}
++
++	sz = min_t(int, sz, uncom_size);
++
++	memset(buf, 0, sz);
++	memcpy(buf, temp, sz);
++out_free:
++	kfree(temp);
++
++out:
++	return ret;
++
++}
++
++int ext4_decompress(struct file *file, char __user *buf, size_t len)
++{
++	int ret = 0;
++
++	if (!ext4_is_file_compressed(file))
++		return 0;
++
++	ret = _ext4_decompress(buf, len);
++	if (ret) {
++		goto out;
++	}
++out:
++	return ret;
++}
++
+ const struct file_operations ext4_file_operations = {
+ 	.llseek		= ext4_llseek,
+ 	.read		= do_sync_read,
+@@ -640,6 +705,7 @@ const struct file_operations ext4_file_operations = {
+ 	.splice_read	= generic_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
+ 	.fallocate	= ext4_fallocate,
++	.decompress	= ext4_decompress,
+ };
+ 
+ const struct inode_operations ext4_file_inode_operations = {
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 2cefa41..44d2523 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -330,6 +330,7 @@ int rw_verify_area(int read_write, struct file *file, loff_t *ppos, size_t count
+ 	return count > MAX_RW_COUNT ? MAX_RW_COUNT : count;
+ }
+ 
++
+ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
+ {
+ 	struct iovec iov = { .iov_base = buf, .iov_len = len };
+@@ -345,6 +346,8 @@ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *pp
+ 	if (-EIOCBQUEUED == ret)
+ 		ret = wait_on_sync_kiocb(&kiocb);
+ 	*ppos = kiocb.ki_pos;
++	if (filp->f_op->decompress)
++		filp->f_op->decompress(filp, buf, len);
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 65c2be2..ce43e82 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1543,6 +1543,7 @@ struct file_operations {
+ 	long (*fallocate)(struct file *file, int mode, loff_t offset,
+ 			  loff_t len);
+ 	int (*show_fdinfo)(struct seq_file *m, struct file *f);
++	int (*decompress)(struct file *, char *, size_t);
+ };
+ 
+ struct inode_operations {
+-- 
+1.8.1.4
 
-but the length is always limited by the upstream bus.
 
-> Sorry, I cannot answer it exactly.
-> DT binding was confirmed by Arnd Bergmann.
-> He will answer it exactly.
-
-Normally you want the pci and cpu addresses to be the same, i.e. identity mapped.
-This simplifies PCI bus master DMA as it ensures that there is no aliasing between
-PCI memory space and RAM addresses visible to the host.
-
-If you know that there is never any RAM at CPU address 0, you can also make the
-PCI memory space be mapped from bus address 0, which has the advantage of allowing
-access to low PCI addresses, e.g. for legacy VGA output using the 0xa0000-0xbffff
-range, but it's less common. In particular on x86 there is always an identity
-mapping.
-
-The driver should be able to handle any mapping that can be described by the binding
-and is physically possible to be programmed into the translation windows.
-
-	Arnd
