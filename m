@@ -1,89 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab3GXTuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:50:00 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19583 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753149Ab3GXTt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:49:59 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18bgQnUqHDeDfihE7Qnmp0OpGt631yveu0=
-Date: Wed, 24 Jul 2013 15:49:40 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Andrew Lunn <andrew@lunn.ch>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [GIT PULL] clockevents/clocksource: Add Marvell Orion SoC timer
-Message-ID: <20130724194940.GD23879@titan.lakedaemon.net>
-References: <51B8D310.4050404@linaro.org>
- <51D9548B.9040907@gmail.com>
- <alpine.DEB.2.02.1307071508030.32106@ionos.tec.linutronix.de>
- <20130707144645.GA11908@titan.lakedaemon.net>
- <alpine.DEB.2.02.1307071723220.32106@ionos.tec.linutronix.de>
- <20130707235819.GB11908@titan.lakedaemon.net>
- <alpine.DEB.2.02.1307081041290.32106@ionos.tec.linutronix.de>
- <51E56CFD.9050508@linaro.org>
+	id S1753883Ab3GXTwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:52:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38368 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752775Ab3GXTwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 15:52:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>, Jiang Liu <liuj97@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: Re: [PATCH 0/30] ACPI / hotplug / PCI: Major rework + Thunderbolt workarounds
+Date: Wed, 24 Jul 2013 22:02:35 +0200
+Message-ID: <1393554.usuhpOuYgm@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAErSpo6z9CqCyLFbXpuJMtHHjLRNbo=gx87W_0_7TCHbvwrCRw@mail.gmail.com>
+References: <26431283.HJCKsss0rt@vostro.rjw.lan> <6958813.eThhpoh5QO@vostro.rjw.lan> <CAErSpo6z9CqCyLFbXpuJMtHHjLRNbo=gx87W_0_7TCHbvwrCRw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51E56CFD.9050508@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 05:55:41PM +0200, Daniel Lezcano wrote:
-> On 07/08/2013 10:45 AM, Thomas Gleixner wrote:
-> > On Sun, 7 Jul 2013, Jason Cooper wrote:
-> >> On Sun, Jul 07, 2013 at 05:30:31PM +0200, Thomas Gleixner wrote:
-> >> I don't mind delaying half of a series so the drivers/ portion can land
-> >> in mainline, and the rest can land in the next cycle.  But when things
-> >> don't go according to that plan, I'd like a little consideration /
-> >> flexibility about solving the problem.  Especially considering I'm
-> >> *trying* to do the right thing by pushing to appropriate maintainers
-> >> first.
-> >>
-> >> Of course, this is a moot point since, as you clarified above, this
-> >> dependency doesn't have the hazards typically associated with
-> >> out-of-tree dependencies.
-> > 
-> > There is a very simple procedure for stuff like this.
-> > 
-> > Series has parts which go through tree A and B and another larger part
-> > for tree C which depends on the A and B parts.
-> > 
-> > So ask the maintainers of A and B to apply this to separate branches,
-> > which are based on some commit in Linus tree. These branches can be
-> > pulled into C and C can apply the depending stuff on top.
-> > 
-> > Now the maintainers of A and B merge these branches into their main
-> > devel branch, can do further fixups and stuff on top. And the whole
-> > thing just works without glitches during the merge window.
-> > 
-> > We do this all the time.
+On Wednesday, July 24, 2013 10:06:01 AM Bjorn Helgaas wrote:
+> On Wed, Jul 24, 2013 at 6:58 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Tuesday, July 23, 2013 07:20:53 PM Yinghai Lu wrote:
+> >> On Tue, Jul 23, 2013 at 2:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >
+> > [...]
+> >
+> >> [  102.631369] pci_host_bridge pci0000:00: freeing pci_host_bridge info
+> >
+> > By the way this looks fishy:
+> >
+> >> [  102.633091] ACPI: Device does not support D3cold
 > 
-> Ok, I was about to send to both of you a PR with a common ancestor [1]
-> for this patch but finally this patch has been taken for timers/urgent.
-> 
-> I don't have to send the PR, right ?
-> 
-> timers/urgent will be merged into timers/core, correct ?
+> This and other printks in that function don't give any clue what
+> device is involved, even though we have an acpi_device pointer.  It'd
+> be nice to fix that, too.
 
-Sorry for the late reply.  I'm crawling out from under my backlog.  It
-appears
+As it turns out, I have that patch ready as well.  Appended for completeness.
 
-  0c1dcfd clocksource: Add Marvell Orion SoC timer
+Thanks,
+Rafael
 
-has made it into Linus' tree.  Ezequiel, you should be able to base your
-series on v3.11-rc[12] to pick this up.
 
-thx,
+---
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI / PM: Make messages in acpi_device_set_power() print device name
 
-Jason.
+Modify acpi_device_set_power() so that diagnostic messages printed by
+it to the kernel log always contain the name of the device to make it
+possible to identify the device if need be.  Also replace
+printk(KERN_WARNING ) with dev_warn() everywhere in that function.
+
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/device_pm.c |   22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+Index: linux-pm/drivers/acpi/device_pm.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/device_pm.c
++++ linux-pm/drivers/acpi/device_pm.c
+@@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
+ 	/* Make sure this is a valid target state */
+ 
+ 	if (state == device->power.state) {
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
++				  device->pnp.bus_id,
+ 				  acpi_power_state_string(state)));
+ 		return 0;
+ 	}
+ 
+ 	if (!device->power.states[state].flags.valid) {
+-		printk(KERN_WARNING PREFIX "Device does not support %s\n",
+-		       acpi_power_state_string(state));
++		dev_warn(&device->dev, "Power state %s not supported\n",
++			 acpi_power_state_string(state));
+ 		return -ENODEV;
+ 	}
+ 	if (device->parent && (state < device->parent->power.state)) {
+-		printk(KERN_WARNING PREFIX
+-			      "Cannot set device to a higher-powered"
+-			      " state than parent\n");
++		dev_warn(&device->dev, "Cannot transition to a higher-powered "
++			 "state than parent\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -192,8 +192,8 @@ int acpi_device_set_power(struct acpi_de
+ 
+ 	if (state < device->power.state && state != ACPI_STATE_D0
+ 	    && device->power.state >= ACPI_STATE_D3_HOT) {
+-		printk(KERN_WARNING PREFIX
+-			"Cannot transition to non-D0 state from D3\n");
++		dev_warn(&device->dev,
++			 "Cannot transition to non-D0 state from D3\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -220,10 +220,8 @@ int acpi_device_set_power(struct acpi_de
+ 
+  end:
+ 	if (result) {
+-		printk(KERN_WARNING PREFIX
+-			      "Device [%s] failed to transition to %s\n",
+-			      device->pnp.bus_id,
+-			      acpi_power_state_string(state));
++		dev_warn(&device->dev, "Failed to change power state to %s\n",
++			 acpi_power_state_string(state));
+ 	} else {
+ 		device->power.state = state;
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+
