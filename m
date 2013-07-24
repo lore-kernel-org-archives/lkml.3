@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753348Ab3GXOO0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:14:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45929 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752783Ab3GXOOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:14:22 -0400
-Date: Wed, 24 Jul 2013 16:14:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]Fix early microcode loading on AMD
-Message-ID: <20130724141414.GH30777@pd.tnic>
-References: <20130723135853.579c3cd5@googlemail.com>
- <20130723151552.GF8497@pd.tnic>
- <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753262Ab3GXOOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:14:16 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45862 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752380Ab3GXOGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:06:51 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Jens Axboe" <axboe@kernel.dk>,
+        "Jonathan Salwan" <jonathan.salwan@gmail.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>
+Date: Wed, 24 Jul 2013 15:02:45 +0100
+Message-ID: <lsq.1374674565.119657787@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [81/85] drivers/cdrom/cdrom.c: use kzalloc() for failing hardware
+In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
-> >> * Save the amd_bsp_mpb on every update. Otherwise someone could offline
-> >> the BSP, update the microcode and this would be lost on resume
-> >
-> > Huh, is amd_bsp_mpb going to disappear all of a sudden?
-> >
-> > And that doesn't matter because when we online the BSP later, it goes
-> > through the CPU hotplug notifier mc_cpu_callback. Or am I missing
-> > something?
-> 
-> Yeah, me correctly describing what I was meaning. ;-)
-> 
-> 1.: boot system, BIOS give microcode rev. X
-> 2.: offline the BSP
-> 3.: update microcode to rev. Y with Y > X
+3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-Right, with cleanup() removed, when you do that step, you go through
-load_microcode_amd() which adds the patch to the pcache with
-__load_microcode_amd() and a subsequent find_patch will give you Y which
-you memcpy to amd_bsp_mpb.
+------------------
 
-> Because the BSP is not online rev. Y will not be copied into amd_bsp_mpb
-> 4.: supend
-> 5.: resume, BIOS gives rev. X again
-> 6.: amd_bsp_mpb is empty -> rev. Y will not be reapplied.
-> 
-> >> * apply_ucode_in_initrd() now also needs to save amd_bsp_mbp, because
-> >> load_microcode_amd() its no longer doing this and its not using
-> >> apply_microcode_amd().
-> >> * extract common checks and initialisations from load_ucode_ap() and
-> >> load_microcode_amd() to load_microcode_amd_early(). The change from
-> >> cpu to x86family in load_microcode_amd() allows to drop the code messing
-> >> with cpu_data(cpu), with is wrong anyway because at that point the
-> >> per-cpu cpu_info is not yet setup. And these values would later be
-> >> overwritten by smp_store_boot_cpu_info() / smp_store_cpu_info().
-> >
-> > Right, so I was thinking about this. And the code is pretty nasty: we do a
-> > load_ucode_amd_ap() but we do add the ucode for the BSP:
-> >
-> >         if (load_microcode_amd(0, ucode, ucode_size) != UCODE_OK)
-> 
-> No, that code will not be reached for the BSP, because it is behind:
+From: Jonathan Salwan <jonathan.salwan@gmail.com>
 
-That's correct - load_ucode_amd_ap() is not supposed to load ucode on
-the BSP.
+commit 542db01579fbb7ea7d1f7bb9ddcef1559df660b2 upstream.
 
-> if (cpu && !ucode_loaded) {
-> The BSP has cpu == 0. Thats why I adding the following in my patch:
-> +       /* BSP via load_ucode_amd_bsp() */
-> +       if (!cpu)
-> +               return;
-> 
-> I don't understand if that is really correct, but that was the
-> original behavior, and I didn't feel competent enough to decree that
-> calling load_microcode_amd() for the BSP would be save.
-> (The code there is strange: There is a load_ucode_amd_bsp() but
-> load_ucode_amd_ap() will also be called for the BSP.
+In drivers/cdrom/cdrom.c mmc_ioctl_cdrom_read_data() allocates a memory
+area with kmalloc in line 2885.
 
-Yes, this is strange and this is the confusing issue.
+  2885         cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
+  2886         if (cgc->buffer == NULL)
+  2887                 return -ENOMEM;
 
-Here's how it should work: we want the BSP to load the microcode, put it
-in the pcache and also write it into amd_bsp_mpb. The 32-bit version of
-load_ucode_amd_ap() takes it and applies it because we run with paging
-off at the time.
+In line 2908 we can find the copy_to_user function:
 
-> And it seems the call to load_ucode_ap() for the BSP will come from a
-> very different place (via trap_init()) that the other CPUs.
-> And I did not even try to understand what X86_32 is doing...)
+  2908         if (!ret && copy_to_user(arg, cgc->buffer, blocksize))
 
-Yep. That question needs sorting too.
+The cgc->buffer is never cleaned and initialized before this function.
+If ret = 0 with the previous basic block, it's possible to display some
+memory bytes in kernel space from userspace.
 
--- 
-Regards/Gruss,
-    Boris.
+When we read a block from the disk it normally fills the ->buffer but if
+the drive is malfunctioning there is a chance that it would only be
+partially filled.  The result is an leak information to userspace.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/cdrom/cdrom.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -2885,7 +2885,7 @@ static noinline int mmc_ioctl_cdrom_read
+ 	if (lba < 0)
+ 		return -EINVAL;
+ 
+-	cgc->buffer = kmalloc(blocksize, GFP_KERNEL);
++	cgc->buffer = kzalloc(blocksize, GFP_KERNEL);
+ 	if (cgc->buffer == NULL)
+ 		return -ENOMEM;
+ 
+
