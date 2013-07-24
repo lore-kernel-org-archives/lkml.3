@@ -1,172 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752950Ab3GXSp5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:45:57 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:36781 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3GXSp4 (ORCPT
+	id S1753363Ab3GXSqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:46:05 -0400
+Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:55237 "EHLO
+	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752024Ab3GXSqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:45:56 -0400
-Message-ID: <51F020DB.3090909@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 13:45:47 -0500
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 14:46:01 -0400
+Date: Wed, 24 Jul 2013 14:47:03 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Andi Kleen <andi@firstfloor.org>
+cc: Andi Kleen <ak@linux.intel.com>, acme@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+In-Reply-To: <20130723225150.GT6123@two.firstfloor.org>
+Message-ID: <alpine.DEB.2.02.1307241433380.8230@pianoman.cluster.toy>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
+ <20130723225150.GT6123@two.firstfloor.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linuxppc-dev@lists.ozlabs.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 7/8]  Add memory hot add/remove notifier handlers for pwoerpc
-References: <51F01E06.6090800@linux.vnet.ibm.com>
-In-Reply-To: <51F01E06.6090800@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072418-3864-0000-0000-0000093DC4FF
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020209.51F020E9.007A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add memory hot add/remove notifier handlers for powerpc/pseries.
+On Wed, 24 Jul 2013, Andi Kleen wrote:
 
-This patch allows the powerpc/pseries platforms to perform memory DLPAR
-int the kernel. The handlers for add and remove do the work of
-acquiring/releasing the memory to firmware and updating the device tree.
+> On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
+> > 
 
-This is only used when memory is specified in the
-ibm,dynamic-reconfiguration-memory device tree node so the memory notifiers
-are registered contingent on its existence.
+> So format/precise would be 
+> 
+> flags:15-16
+> 
+> on little endian. Looks good?
 
-Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
----
- arch/powerpc/platforms/pseries/dlpar.c |  103 +++++++++++++++++++++++++++++++++
- 1 file changed, 103 insertions(+)
+I'd prefer if it were
 
-Index: linux/arch/powerpc/platforms/pseries/dlpar.c
-===================================================================
---- linux.orig/arch/powerpc/platforms/pseries/dlpar.c
-+++ linux/arch/powerpc/platforms/pseries/dlpar.c
-@@ -15,6 +15,7 @@
- #include <linux/notifier.h>
- #include <linux/spinlock.h>
- #include <linux/cpu.h>
-+#include <linux/memory.h>
- #include <linux/slab.h>
- #include <linux/of.h>
- #include "offline_states.h"
-@@ -531,11 +532,113 @@ out:
- 	return rc ? rc : count;
- }
- 
-+static struct of_drconf_cell *dlpar_get_drconf_cell(struct device_node *dn,
-+						    unsigned long phys_addr)
-+{
-+	struct of_drconf_cell *drmem;
-+	u32 entries;
-+	u32 *prop;
-+	int i;
-+
-+	prop = (u32 *)of_get_property(dn, "ibm,dynamic-memory", NULL);
-+	of_node_put(dn);
-+	if (!prop)
-+		return NULL;
-+
-+	entries = *prop++;
-+	drmem = (struct of_drconf_cell *)prop;
-+
-+	for (i = 0; i < entries; i++) {
-+		if (drmem[i].base_addr == phys_addr)
-+			return &drmem[i];
-+	}
-+
-+	return NULL;
-+}
-+
-+static int dlpar_mem_probe(unsigned long phys_addr)
-+{
-+	struct device_node *dn;
-+	struct of_drconf_cell *drmem;
-+	int rc;
-+
-+	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (!dn)
-+		return -EINVAL;
-+
-+	drmem = dlpar_get_drconf_cell(dn, phys_addr);
-+	of_node_put(dn);
-+
-+	if (!drmem)
-+		return -EINVAL;
-+
-+	if (drmem->flags & DRCONF_MEM_ASSIGNED)
-+		return 0;
-+
-+	drmem->flags |= DRCONF_MEM_ASSIGNED;
-+
-+	rc = dlpar_acquire_drc(drmem->drc_index);
-+	return rc;
-+}
-+
-+static int dlpar_mem_release(unsigned long phys_addr)
-+{
-+	struct device_node *dn;
-+	struct of_drconf_cell *drmem;
-+	int rc;
-+
-+	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (!dn)
-+		return -EINVAL;
-+
-+	drmem = dlpar_get_drconf_cell(dn, phys_addr);
-+	of_node_put(dn);
-+
-+	if (!drmem)
-+		return -EINVAL;
-+
-+	if (!drmem->flags & DRCONF_MEM_ASSIGNED)
-+		return 0;
-+
-+	drmem->flags &= ~DRCONF_MEM_ASSIGNED;
-+
-+	rc = dlpar_release_drc(drmem->drc_index);
-+	return rc;
-+}
-+
-+static int pseries_dlpar_mem_callback(struct notifier_block *nb,
-+				      unsigned long action, void *hp_arg)
-+{
-+	struct memory_notify *arg = hp_arg;
-+	unsigned long phys_addr = arg->start_pfn << PAGE_SHIFT;
-+	int rc = 0;
-+
-+
-+	switch (action) {
-+	case MEM_BEING_HOT_ADDED:
-+		rc = dlpar_mem_probe(phys_addr);
-+		break;
-+	case MEM_HOT_REMOVED:
-+		rc = dlpar_mem_release(phys_addr);
-+		break;
-+	}
-+
-+	return notifier_from_errno(rc);
-+}
-+
- static int __init pseries_dlpar_init(void)
- {
-+	struct device_node *dn;
-+
- 	ppc_md.cpu_probe = dlpar_cpu_probe;
- 	ppc_md.cpu_release = dlpar_cpu_release;
- 
-+	dn = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (dn) {
-+		hotplug_memory_notifier(pseries_dlpar_mem_callback, 0);
-+		of_node_put(dn);
-+	}
-+
- 	return 0;
- }
- machine_device_initcall(pseries, pseries_dlpar_init);
+  precise_ip:0-1
 
+as the code you use to set the value looks like 
+   attr->precise_ip=2;
+I don't think you can even set bits 15-16 of flags directly, can you?
 
+Althought having to have a parser being able to parse the names of all 50+
+perf_event->attr arguments, then parse hex/decimal strings from another
+file in sysfs, then trying to map that to binary fields in a complicated
+structure that is then passed to a syscall gets a bit stupid at some 
+point; this is one of the silliest interfaces I've had to deal with and 
+I've done low-level X11 programming before.
+
+Ideally we could do something sane, such as maybe having the event 
+descriptions in a library in userspace where it belongs but it's a bit
+late to close the barn door now.
+
+> > I'm a bit grumpy about this because I just finished fixing the fallout 
+> > from your last time breaking the ABI a few weeks ago when your broken code 
+> > started dumping non-hex fields into the sysfs event strings.  I've learned 
+> 
+> Not sure what you're talking about?
+
+I'm pretty sure it was one of your patches that added the new memory stuff 
+which had "ldlat=1" in one of the events, and that was not a hex value 
+prefixed by 0x as specified in the ABI documentation and thus broke
+various parsers.
+
+By the time I caught this the perf_event maintainers declared it was too 
+late to do anything about it.
+
+Vince
