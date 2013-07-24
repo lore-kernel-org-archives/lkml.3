@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab3GXONr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:13:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:44047 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab3GXONm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:13:42 -0400
-Date: Wed, 24 Jul 2013 07:13:34 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: spinlock lockup, rcu stalls etc.
-Message-ID: <20130724141334.GA3668@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130723162835.GA20430@redhat.com>
- <CA+55aFw9Vo_vugB63kbjh6=jPDoJZP47Nw+hEgMCxFPiExYn5w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752883Ab3GXOOT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:14:19 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45836 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752324Ab3GXOGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:06:51 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw9Vo_vugB63kbjh6=jPDoJZP47Nw+hEgMCxFPiExYn5w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072414-7182-0000-0000-000007D6BF70
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Tomasz Figa" <t.figa@samsung.com>,
+        "Vinod Koul" <vinod.koul@linux.intel.com>,
+        "Jassi Brar" <jassisinghbrar@gmail.com>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>
+Date: Wed, 24 Jul 2013 15:02:45 +0100
+Message-ID: <lsq.1374674565.583510047@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [65/85] drivers/dma/pl330.c: fix locking in pl330_free_chan_resources()
+In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 07:24:31PM -0700, Linus Torvalds wrote:
-> [ Added Thomas and Ingo due to that timer/nmi thing. ]
-> 
-> On Tue, Jul 23, 2013 at 9:28 AM, Dave Jones <davej@redhat.com> wrote:
-> > Woke up to a box that I could log into, but would hang as soon as I tried to
-> > do any disk IO.  This is what hit the logs before that.
-> >
-> > [28853.503179] hrtimer: interrupt took 4847 ns
-> 
-> Ugh. There's some nasty timer congestion there..
-> 
-> > [28932.599607] BUG: spinlock lockup suspected on CPU#0, trinity-child2/6990
-> > [28932.600419]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
-> 
-> So the current owner of the lock is cpu 1. The other CPU's agree:
-> 
-> > [28932.606666] BUG: spinlock lockup suspected on CPU#2, trinity-child2/6764
-> > [28932.606669]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
-> > [28932.617231] sending NMI to all CPUs:
-> > [28932.635092] BUG: spinlock lockup suspected on CPU#3, trinity-child3/6975
-> > [28932.635095]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
-> 
-> .. and their backtrace all points to them trying to take that
-> spinlock. So that is all consistent.
-> 
-> And here's cpu1, edited down a bit:
-> 
-> > [28932.777623] NMI backtrace for cpu 1
-> > [28932.777625] INFO: NMI handler (arch_trigger_all_cpu_backtrace_handler) took too long to run: 91.230 msecs
-> 
-> Whee. 91 msec? We have something going on there too. irq entry locks?
+3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-Not sure what the deal is with the other stuff, but the stacks are being
-dumped from NMI handlers, and maybe the console got backed up a bit,
-slowing down the dump.  -Might- account for the 91msec in an NMI handler.
+------------------
 
-							Thanx, Paul
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-> > [28932.779440] CPU: 1 PID: 6763 Comm: trinity-child1 Not tainted 3.11.0-rc2+ #54
-> > [28932.782283] RIP: 0010:[<ffffffff81710385>]  [<ffffffff81710385>] add_preempt_count+0x25/0xf0
-> > [28932.797761] Call Trace:
-> > [28932.798737]  <IRQ>
-> > [28932.799715]  [<ffffffff81320851>] delay_tsc+0x61/0xe0
-> > [28932.800693]  [<ffffffff81320789>] __const_udelay+0x29/0x30
-> > [28932.801674]  [<ffffffff810816d4>] __rcu_read_unlock+0x54/0xa0
-> > [28932.802657]  [<ffffffff810af531>] cpuacct_account_field+0xf1/0x200
-> > [28932.804613]  [<ffffffff8109e430>] account_system_time+0xb0/0x1b0
-> > [28932.805561]  [<ffffffff8109e565>] __vtime_account_system+0x35/0x40
-> > [28932.806506]  [<ffffffff8109e59d>] vtime_account_system.part.2+0x2d/0x50
-> > [28932.807445]  [<ffffffff8109e8e5>] vtime_account_irq_enter+0x55/0x80
-> > [28932.808365]  [<ffffffff8105f42f>] irq_enter+0x4f/0x90
-> > [28932.809269]  [<ffffffff81716a15>] smp_apic_timer_interrupt+0x35/0x60
-> > [28932.810156]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
-> > [28932.812756]  [<ffffffff8105f53d>] irq_exit+0xcd/0xe0
-> > [28932.813618]  [<ffffffff81716a25>] smp_apic_timer_interrupt+0x45/0x60
-> > [28932.814483]  [<ffffffff817156af>] apic_timer_interrupt+0x6f/0x80
-> > [28932.815345]  <EOI>
-> > [28932.816207]  [<ffffffff8170c6a0>] ? retint_restore_args+0xe/0xe
-> > [28932.817069]  [<ffffffff810c1275>] ? lock_acquired+0x105/0x3f0
-> > [28932.817924]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
-> > [28932.818767]  [<ffffffff8170b62c>] _raw_spin_lock+0x6c/0x80
-> > [28932.819616]  [<ffffffff811ec8e2>] ? sync_inodes_sb+0x1c2/0x2a0
-> > [28932.820468]  [<ffffffff811ec8e2>] sync_inodes_sb+0x1c2/0x2a0
-> > [28932.821310]  [<ffffffff81708c1f>] ? wait_for_completion+0xdf/0x110
-> > [28932.823819]  [<ffffffff811f2a49>] sync_inodes_one_sb+0x19/0x20
-> > [28932.824649]  [<ffffffff811c2b12>] iterate_supers+0xb2/0x110
-> > [28932.825477]  [<ffffffff811f2cb5>] sys_sync+0x35/0x90
-> > [28932.826300]  [<ffffffff81714c54>] tracesys+0xdd/0xe2
-> > [28932.827119]  [<ffffffffa0000000>] ? 0xffffffff9fffffff
-> 
-> .. and again, it actually looks like the time is not necessarily spent
-> inside the spinlock in sync_inodes_sb(), but in a timer interrupt that
-> just happened to go off during that. I wonder if this is the same
-> issue that caused that earlier hrtimer long delay.. I'm not
-> necessarily seeing 91 msecs worth, but..
-> 
-> You seem to have CONFIG_PROVE_RCU_DELAY enabled, which explains that
-> delay_tsc() call in there. I wonder how much things like that make it
-> worse. Together with the (crazy bad) back-off in __spin_lock_debug(),
-> there might be a *lot* of these delays.
-> 
-> That said, the fact that your machine is dead after all this implies
-> that there is something else wrong than just things being very slow.
-> But I suspect at least *part* of your problems may be due to these
-> kinds of debugging options that make things much much worse.
-> 
->               Linus
-> 
+commit da331ba8e9c5de72a27e50f71105395bba6eebe0 upstream.
+
+tasklet_kill() may sleep so call it before taking pch->lock.
+
+Fixes following lockup:
+
+  BUG: scheduling while atomic: cat/2383/0x00000002
+  Modules linked in:
+    unwind_backtrace+0x0/0xfc
+    __schedule_bug+0x4c/0x58
+    __schedule+0x690/0x6e0
+    sys_sched_yield+0x70/0x78
+    tasklet_kill+0x34/0x8c
+    pl330_free_chan_resources+0x24/0x88
+    dma_chan_put+0x4c/0x50
+  [...]
+  BUG: spinlock lockup suspected on CPU#0, swapper/0/0
+   lock: 0xe52aa04c, .magic: dead4ead, .owner: cat/2383, .owner_cpu: 1
+    unwind_backtrace+0x0/0xfc
+    do_raw_spin_lock+0x194/0x204
+    _raw_spin_lock_irqsave+0x20/0x28
+    pl330_tasklet+0x2c/0x5a8
+    tasklet_action+0xfc/0x114
+    __do_softirq+0xe4/0x19c
+    irq_exit+0x98/0x9c
+    handle_IPI+0x124/0x16c
+    gic_handle_irq+0x64/0x68
+    __irq_svc+0x40/0x70
+    cpuidle_wrap_enter+0x4c/0xa0
+    cpuidle_enter_state+0x18/0x68
+    cpuidle_idle_call+0xac/0xe0
+    cpu_idle+0xac/0xf0
+
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Vinod Koul <vinod.koul@linux.intel.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/dma/pl330.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -349,10 +349,10 @@ static void pl330_free_chan_resources(st
+ 	struct dma_pl330_chan *pch = to_pchan(chan);
+ 	unsigned long flags;
+ 
+-	spin_lock_irqsave(&pch->lock, flags);
+-
+ 	tasklet_kill(&pch->task);
+ 
++	spin_lock_irqsave(&pch->lock, flags);
++
+ 	pl330_release_channel(pch->pl330_chid);
+ 	pch->pl330_chid = NULL;
+ 
 
