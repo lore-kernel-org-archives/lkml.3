@@ -1,89 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752727Ab3GXIg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:36:27 -0400
-Received: from hop-nat-141.emc.com ([168.159.213.141]:32135 "EHLO
+	id S1752681Ab3GXIgT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:36:19 -0400
+Received: from hop-nat-141.emc.com ([168.159.213.141]:32024 "EHLO
 	mexforward.lss.emc.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750855Ab3GXIgY (ORCPT
+	with ESMTP id S1752650Ab3GXIgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:36:24 -0400
+	Wed, 24 Jul 2013 04:36:11 -0400
 From: mail-agent-noreply@emc.com
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peng Tao <bergwolf@gmail.com>,
-        Andreas Dilger <andreas.dilger@intel.com>, Peng Tao <tao.peng@emc.com>
-Subject: [PATCH 8/8] staging/lustre: fix errno translate code on non-x86
-Date: Wed, 24 Jul 2013 16:31:32 +0800
-Message-Id: <1374654692-13237-9-git-send-email-mail-agent-noreply@emc.com>
+        Sebastien Buisson <sebastien.buisson@bull.net>,
+        Peng Tao <tao.peng@emc.com>, Andreas Dilger <andreas.dilger@intel.com>
+Subject: [PATCH 3/8] staging/lustre: fix 'data race condition' issues in at_reset()
+Date: Wed, 24 Jul 2013 16:31:27 +0800
+Message-Id: <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1374654692-13237-8-git-send-email-mail-agent-noreply@emc.com>
+In-Reply-To: <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
 References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
  <1374654692-13237-2-git-send-email-mail-agent-noreply@emc.com>
  <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-5-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-6-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-8-git-send-email-mail-agent-noreply@emc.com>
 X-EMM-MHVC: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peng Tao <bergwolf@gmail.com>
+From: Sebastien Buisson <sebastien.buisson@bull.net>
 
-On non-x86 we will build with Lustre's errno translate code but
-it has a few issues that break build on non-x86 platforms.
+Fix 'data race condition' defects found by Coverity version
+6.5.0:
+Data race condition (MISSING_LOCK)
+Accessing variable without holding lock. Elsewhere,
+this variable is accessed with lock held.
 
-Cc: Andreas Dilger <andreas.dilger@intel.com>
+at_reset() needs to take at->at_lock before modifying its members.
+
+Intel-bug-id: https://jira.hpdd.intel.com/browse/LU-2744
+Lustre-change: http://review.whamcloud.com/6569
+Signed-off-by: Sebastien Buisson <sebastien.buisson@bull.net>
+Reviewed-by: Bob Glossman <bob.glossman@intel.com>
+Reviewed-by: Keith Mannthey <keith.mannthey@intel.com>
+Reviewed-by: Oleg Drokin <oleg.drokin@intel.com>
 Signed-off-by: Peng Tao <tao.peng@emc.com>
+Signed-off-by: Andreas Dilger <andreas.dilger@intel.com>
 ---
- drivers/staging/lustre/lustre/ptlrpc/Makefile |    2 +-
- drivers/staging/lustre/lustre/ptlrpc/errno.c  |    4 +---
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ .../staging/lustre/lustre/include/lustre_import.h  |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/Makefile b/drivers/staging/lustre/lustre/ptlrpc/Makefile
-index a379558..6d78b80 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/Makefile
-+++ b/drivers/staging/lustre/lustre/ptlrpc/Makefile
-@@ -16,7 +16,7 @@ ptlrpc_objs += sec.o sec_bulk.o sec_gc.o sec_config.o sec_lproc.o
- ptlrpc_objs += sec_null.o sec_plain.o nrs.o nrs_fifo.o
+diff --git a/drivers/staging/lustre/lustre/include/lustre_import.h b/drivers/staging/lustre/lustre/include/lustre_import.h
+index 3a5dd6a..67259eb 100644
+--- a/drivers/staging/lustre/lustre/include/lustre_import.h
++++ b/drivers/staging/lustre/lustre/include/lustre_import.h
+@@ -336,9 +336,11 @@ static inline unsigned int at_timeout2est(unsigned int val)
+ }
  
- ptlrpc-y := $(ldlm_objs) $(ptlrpc_objs)
--ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.c
-+ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.o
- 
- obj-$(CONFIG_PTLRPC_GSS) += gss/
- 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/errno.c b/drivers/staging/lustre/lustre/ptlrpc/errno.c
-index 46e259e..1c10063 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/errno.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/errno.c
-@@ -25,7 +25,7 @@
-  * Copyright (c) 2013, Intel Corporation.
-  */
- 
--#include <libcfs/libcfs.h>
-+#include <linux/libcfs/libcfs.h>
- #include <lustre/lustre_errno.h>
- 
- /*
-@@ -184,7 +184,6 @@ static int lustre_errno_hton_mapping[] = {
- 	[EBADTYPE]		= LUSTRE_EBADTYPE,
- 	[EJUKEBOX]		= LUSTRE_EJUKEBOX,
- 	[EIOCBQUEUED]		= LUSTRE_EIOCBQUEUED,
--	[EIOCBRETRY]		= LUSTRE_EIOCBRETRY
- };
- 
- static int lustre_errno_ntoh_mapping[] = {
-@@ -331,7 +330,6 @@ static int lustre_errno_ntoh_mapping[] = {
- 	[LUSTRE_EBADTYPE]		= EBADTYPE,
- 	[LUSTRE_EJUKEBOX]		= EJUKEBOX,
- 	[LUSTRE_EIOCBQUEUED]		= EIOCBQUEUED,
--	[LUSTRE_EIOCBRETRY]		= EIOCBRETRY
- };
- 
- unsigned int lustre_errno_hton(unsigned int h)
+ static inline void at_reset(struct adaptive_timeout *at, int val) {
++	spin_lock(&at->at_lock);
+ 	at->at_current = val;
+ 	at->at_worst_ever = val;
+ 	at->at_worst_time = cfs_time_current_sec();
++	spin_unlock(&at->at_lock);
+ }
+ static inline void at_init(struct adaptive_timeout *at, int val, int flags) {
+ 	memset(at, 0, sizeof(*at));
 -- 
 1.7.1
 
