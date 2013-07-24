@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867Ab3GXOXm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:23:42 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45739 "EHLO
+	id S1753887Ab3GXOXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:23:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45794 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751943Ab3GXOGl (ORCPT
+	by vger.kernel.org with ESMTP id S1752350Ab3GXOGl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:41 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Marcelo Tosatti" <mtosatti@redhat.com>,
-        "Dave Airlie" <airlied@redhat.com>
+CC: akpm@linux-foundation.org, "Theodore Ts'o" <tytso@mit.edu>,
+        "Al Viro" <viro@zeniv.linux.org.uk>,
+        "Al Viro" <viro@zeniv.linux.org.uk>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.881009677@decadent.org.uk>
+Message-ID: <lsq.1374674565.704800998@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [41/85] vgacon.c: add cond reschedule points in vgacon_do_font_op
+Subject: [57/85] ext3,ext4: don't mess with dir_file->f_pos in
+ htree_dirblock_to_tree()
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,76 +33,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-commit 7e6d72c15ff4cc0c27573901bb05f9eddbd71ed4 upstream.
+commit 64cb927371cd2ec43758d8a094a003d27bc3d0dc upstream.
 
-Booting a 64-vcpu KVM guest, with CONFIG_PREEMPT_VOLUNTARY,
-can result in a soft lockup:
+Both ext3 and ext4 htree_dirblock_to_tree() is just filling the
+in-core rbtree for use by call_filldir().  All updates of ->f_pos are
+done by the latter; bumping it here (on error) is obviously wrong - we
+might very well have it nowhere near the block we'd found an error in.
 
-BUG: soft lockup - CPU#41 stuck for 67s! [setfont:1505]
- RIP: 0010:[<ffffffff812c48da>]
-[<ffffffff812c48da>] vgacon_do_font_op.clone.0+0x1ba/0x550
-
-This is due to the 8192 (cmapsz) IO operations taking longer than expected
-due to lock contention in QEMU.
-
-Add conditional resched points in between writes allowing other tasks to
-execute.
-
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-[bwh: Backported to 3.2: add #include <linux/sched.h>, already present
- upstream]
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/video/console/vgacon.c | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ fs/ext3/namei.c | 7 ++-----
+ fs/ext4/namei.c | 7 ++-----
+ 2 files changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/video/console/vgacon.c
-+++ b/drivers/video/console/vgacon.c
-@@ -42,6 +42,7 @@
- #include <linux/kd.h>
- #include <linux/slab.h>
- #include <linux/vt_kern.h>
-+#include <linux/sched.h>
- #include <linux/selection.h>
- #include <linux/spinlock.h>
- #include <linux/ioport.h>
-@@ -1124,11 +1125,15 @@ static int vgacon_do_font_op(struct vgas
- 
- 	if (arg) {
- 		if (set)
--			for (i = 0; i < cmapsz; i++)
-+			for (i = 0; i < cmapsz; i++) {
- 				vga_writeb(arg[i], charmap + i);
-+				cond_resched();
-+			}
- 		else
--			for (i = 0; i < cmapsz; i++)
-+			for (i = 0; i < cmapsz; i++) {
- 				arg[i] = vga_readb(charmap + i);
-+				cond_resched();
-+			}
- 
- 		/*
- 		 * In 512-character mode, the character map is not contiguous if
-@@ -1139,11 +1144,15 @@ static int vgacon_do_font_op(struct vgas
- 			charmap += 2 * cmapsz;
- 			arg += cmapsz;
- 			if (set)
--				for (i = 0; i < cmapsz; i++)
-+				for (i = 0; i < cmapsz; i++) {
- 					vga_writeb(arg[i], charmap + i);
-+					cond_resched();
-+				}
- 			else
--				for (i = 0; i < cmapsz; i++)
-+				for (i = 0; i < cmapsz; i++) {
- 					arg[i] = vga_readb(charmap + i);
-+					cond_resched();
-+				}
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (!ext3_check_dir_entry("htree_dirblock_to_tree", dir, de, bh,
+ 					(block<<EXT3_BLOCK_SIZE_BITS(dir->i_sb))
+ 						+((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse (bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
  		}
- 	}
- 
+ 		ext3fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -585,11 +585,8 @@ static int htree_dirblock_to_tree(struct
+ 		if (ext4_check_dir_entry(dir, NULL, de, bh,
+ 				(block<<EXT4_BLOCK_SIZE_BITS(dir->i_sb))
+ 					 + ((char *)de - bh->b_data))) {
+-			/* On error, skip the f_pos to the next block. */
+-			dir_file->f_pos = (dir_file->f_pos |
+-					(dir->i_sb->s_blocksize - 1)) + 1;
+-			brelse(bh);
+-			return count;
++			/* silently ignore the rest of the block */
++			break;
+ 		}
+ 		ext4fs_dirhash(de->name, de->name_len, hinfo);
+ 		if ((hinfo->hash < start_hash) ||
 
