@@ -1,226 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab3GXQIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:08:31 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:54313 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab3GXQI3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:08:29 -0400
-Date: Wed, 24 Jul 2013 20:08:26 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Linux MM <linux-mm@kvack.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Andy Lutomirski <luto@amacapital.net>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH] mm: Save soft-dirty bits on swapped pages
-Message-ID: <20130724160826.GD24851@moon>
+	id S1754244Ab3GXQIs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:08:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57646 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754021Ab3GXQIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 12:08:45 -0400
+Message-ID: <51EFFBE1.4090505@ti.com>
+Date: Wed, 24 Jul 2013 11:08:01 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Sricharan R <r.sricharan@ti.com>, Linus Walleij <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        ext Tony Lindgren <tony@atomide.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Rajendra Nayak <rnayak@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 1/3] misc: Add crossbar driver
+References: <1374165830-6367-1-git-send-email-r.sricharan@ti.com> <1374165830-6367-2-git-send-email-r.sricharan@ti.com> <51E83A4F.5080904@ti.com> <CACRpkdY3nQaWimTwB-Zt-8+Q_KZr8a0rpB1SUQq=AuoG4bAYnQ@mail.gmail.com> <51ED2385.60108@ti.com> <51ED5C66.1010407@ti.com>
+In-Reply-To: <51ED5C66.1010407@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Lutomirski reported that in case if a page with _PAGE_SOFT_DIRTY
-bit set get swapped out, the bit is getting lost and no longer
-available when pte read back.
+On 07/22/2013 11:23 AM, Santosh Shilimkar wrote:
+> To summaries it again, what I understood from Sricharan's proposal,
+>
+> - Setup all the routing at cross-bar probe so that kernel continue to
+> work like normal IRQ controller with cross-bar scope vanishes once
+> the routing is done. Cross-bar does this before any of the devices
+> are created.
+> - Something similar needs to happen for DMA lines as well or for any
+> other event routing in future.
+> - Cross-bar callbacks for device drivers for error paths.
+> (Sricharan, you have to drop these because it doesn't bring any
+> functionality and rather can create a side effects of drivers
+> getting polluted.)
+Ack.
 
-To resolve this we introduce _PTE_SWP_SOFT_DIRTY bit which is
-saved in pte entry for the page being swapped out. When such page
-is to be read back from a swap cache we check for bit presence
-and if it's there we clear it and restore the former _PAGE_SOFT_DIRTY
-bit back.
+>
+> The concern raised on above was instead of fixing the routing at DT
+> statically, doing at the driver probes where the loop-up for IRQ or DMA
+> lines should happen in background transparently on drivers call of
+> request_irq/request_dma_channel etc with cross-bar number as
+> an input to it. Though it will be nice to have
+> such feature, it doesn't bring anything special and brings the
+> notion of these APIs which expect that you know what IRQ and DMA
+> lines you want while calling these.
+Unfortunately, we do have a constraint without allocating dynamic IRQs - 
+what IP instances should hwmod and dts contain?
 
-One of the problem was to find a place in pte entry where we can
-save the _PTE_SWP_SOFT_DIRTY bit while page is in swap. The
-_PAGE_PSE was chosen for that, it doesn't intersect with swap
-entry format stored in pte.
+If we go with current series of patches[1] [2] for DRA7 dts which 
+assumes default mapping, hence, uart7-10, GPTimers12-16 dont have 
+default irq - hence they dont exist in dts etc.
 
-Reported-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
----
-While I've intensively tested this patch on x86-64/32 I would
-really appreciate detailed review, to be sure I've not missed
-places where borrowing _PAGE_PSE bit for own needs doesn't
-cause any problems. Thanks!
+How would we like to support those with pinctrl approach?
 
- arch/x86/include/asm/pgtable.h       |   15 +++++++++++++++
- arch/x86/include/asm/pgtable_types.h |   13 +++++++++++++
- fs/proc/task_mmu.c                   |   23 +++++++++++++++++------
- include/linux/swapops.h              |    4 ++++
- mm/memory.c                          |    4 ++++
- mm/rmap.c                            |    6 +++++-
- 6 files changed, 58 insertions(+), 7 deletions(-)
+>
+> Note that mux inputs are pretty much fixed. Its his connection
+> to IRQ controller or DMA controller is what needs to be programmed.
+> So scope is pretty much limited. I felt this requirement is pretty
+> similar to pin-mux and hence thought of it as a viable option.
+>
+> Having said all of above, if there is a better alternative than
+> enhanced pin-mux we surely can do that.
+We could look at it as a signal mux problem as this thread suggests OR 
+look at it as interrupt distribution problem (which is how it looks like 
+at the face of it). That said, maybe a intermediate pinctrl approach 
+might be more pragmatic and less theoretically flexible.
+an option might be to "statically allocate" default number of interrupts 
+to a domain - example:
+* GIC IRQ 72->78 allotted to UARTs
+* pinctrl mapping provided for those but only 6 can be used (rest are 
+marked status="disabled" as default) at any given time (choice of 
+pinctrl option determines GIC interrupt line to use)
+* All modules will have a pinctrl definition to have a mapping - to 
+avoid bootloader overriding default cross bar setting in ways 
+un-expected by kernel.
 
-Index: linux-2.6.git/arch/x86/include/asm/pgtable.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable.h
-@@ -314,6 +314,21 @@ static inline pmd_t pmd_mksoft_dirty(pmd
- 	return pmd_set_flags(pmd, _PAGE_SOFT_DIRTY);
- }
- 
-+static inline pte_t pte_swp_mksoft_dirty(pte_t pte)
-+{
-+	return pte_set_flags(pte, _PAGE_SWP_SOFT_DIRTY);
-+}
-+
-+static inline int pte_swp_soft_dirty(pte_t pte)
-+{
-+	return pte_flags(pte) & _PAGE_SWP_SOFT_DIRTY;
-+}
-+
-+static inline pte_t pte_swp_clear_soft_dirty(pte_t pte)
-+{
-+	return pte_clear_flags(pte, _PAGE_SWP_SOFT_DIRTY);
-+}
-+
- /*
-  * Mask out unsupported bits in a present pgprot.  Non-present pgprots
-  * can use those bits for other purposes, so leave them be.
-Index: linux-2.6.git/arch/x86/include/asm/pgtable_types.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable_types.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable_types.h
-@@ -67,6 +67,19 @@
- #define _PAGE_SOFT_DIRTY	(_AT(pteval_t, 0))
- #endif
- 
-+/*
-+ * Tracking soft dirty bit when a page goes to a swap is tricky.
-+ * We need a bit which can be stored in pte _and_ not conflict
-+ * with swap entry format. On x86 bits 6 and 7 are *not* involved
-+ * into swap entry computation, but bit 6 is used for nonlinear
-+ * file mapping, so we borrow bit 7 for soft dirty tracking.
-+ */
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+#define _PAGE_SWP_SOFT_DIRTY	_PAGE_PSE
-+#else
-+#define _PAGE_SWP_SOFT_DIRTY	(_AT(pteval_t, 0))
-+#endif
-+
- #if defined(CONFIG_X86_64) || defined(CONFIG_X86_PAE)
- #define _PAGE_NX	(_AT(pteval_t, 1) << _PAGE_BIT_NX)
- #else
-Index: linux-2.6.git/fs/proc/task_mmu.c
-===================================================================
---- linux-2.6.git.orig/fs/proc/task_mmu.c
-+++ linux-2.6.git/fs/proc/task_mmu.c
-@@ -730,8 +730,14 @@ static inline void clear_soft_dirty(stru
- 	 * of how soft-dirty works.
- 	 */
- 	pte_t ptent = *pte;
--	ptent = pte_wrprotect(ptent);
--	ptent = pte_clear_flags(ptent, _PAGE_SOFT_DIRTY);
-+
-+	if (pte_present(ptent)) {
-+		ptent = pte_wrprotect(ptent);
-+		ptent = pte_clear_flags(ptent, _PAGE_SOFT_DIRTY);
-+	} else if (pte_swp_soft_dirty(ptent)) {
-+		ptent = pte_swp_clear_soft_dirty(ptent);
-+	}
-+
- 	set_pte_at(vma->vm_mm, addr, pte, ptent);
- #endif
- }
-@@ -752,14 +758,15 @@ static int clear_refs_pte_range(pmd_t *p
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
- 	for (; addr != end; pte++, addr += PAGE_SIZE) {
- 		ptent = *pte;
--		if (!pte_present(ptent))
--			continue;
- 
- 		if (cp->type == CLEAR_REFS_SOFT_DIRTY) {
- 			clear_soft_dirty(vma, addr, pte);
- 			continue;
- 		}
- 
-+		if (!pte_present(ptent))
-+			continue;
-+
- 		page = vm_normal_page(vma, addr, ptent);
- 		if (!page)
- 			continue;
-@@ -930,8 +937,12 @@ static void pte_to_pagemap_entry(pagemap
- 		flags = PM_PRESENT;
- 		page = vm_normal_page(vma, addr, pte);
- 	} else if (is_swap_pte(pte)) {
--		swp_entry_t entry = pte_to_swp_entry(pte);
--
-+		swp_entry_t entry;
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+		if (pte_swp_soft_dirty(pte))
-+			flags2 |= __PM_SOFT_DIRTY;
-+#endif
-+		entry = pte_to_swp_entry(pte);
- 		frame = swp_type(entry) |
- 			(swp_offset(entry) << MAX_SWAPFILES_SHIFT);
- 		flags = PM_SWAP;
-Index: linux-2.6.git/include/linux/swapops.h
-===================================================================
---- linux-2.6.git.orig/include/linux/swapops.h
-+++ linux-2.6.git/include/linux/swapops.h
-@@ -67,6 +67,10 @@ static inline swp_entry_t pte_to_swp_ent
- 	swp_entry_t arch_entry;
- 
- 	BUG_ON(pte_file(pte));
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+	if (pte_swp_soft_dirty(pte))
-+		pte = pte_swp_clear_soft_dirty(pte);
-+#endif
- 	arch_entry = __pte_to_swp_entry(pte);
- 	return swp_entry(__swp_type(arch_entry), __swp_offset(arch_entry));
- }
-Index: linux-2.6.git/mm/memory.c
-===================================================================
---- linux-2.6.git.orig/mm/memory.c
-+++ linux-2.6.git/mm/memory.c
-@@ -3115,6 +3115,10 @@ static int do_swap_page(struct mm_struct
- 		exclusive = 1;
- 	}
- 	flush_icache_page(vma, page);
-+#ifdef CONFIG_MEM_SOFT_DIRTY
-+	if (pte_swp_soft_dirty(orig_pte))
-+		pte = pte_mksoft_dirty(pte);
-+#endif
- 	set_pte_at(mm, address, page_table, pte);
- 	if (page == swapcache)
- 		do_page_add_anon_rmap(page, vma, address, exclusive);
-Index: linux-2.6.git/mm/rmap.c
-===================================================================
---- linux-2.6.git.orig/mm/rmap.c
-+++ linux-2.6.git/mm/rmap.c
-@@ -1236,6 +1236,7 @@ int try_to_unmap_one(struct page *page,
- 			   swp_entry_to_pte(make_hwpoison_entry(page)));
- 	} else if (PageAnon(page)) {
- 		swp_entry_t entry = { .val = page_private(page) };
-+		pte_t swp_pte;
- 
- 		if (PageSwapCache(page)) {
- 			/*
-@@ -1264,7 +1265,10 @@ int try_to_unmap_one(struct page *page,
- 			BUG_ON(TTU_ACTION(flags) != TTU_MIGRATION);
- 			entry = make_migration_entry(page, pte_write(pteval));
- 		}
--		set_pte_at(mm, address, pte, swp_entry_to_pte(entry));
-+		swp_pte = swp_entry_to_pte(entry);
-+		if (pte_soft_dirty(pteval))
-+			swp_pte = pte_swp_mksoft_dirty(swp_pte);
-+		set_pte_at(mm, address, pte, swp_pte);
- 		BUG_ON(pte_file(*pte));
- 	} else if (IS_ENABLED(CONFIG_MIGRATION) &&
- 		   (TTU_ACTION(flags) == TTU_MIGRATION)) {
+Does that sound fair trade off?
+
+[1] http://marc.info/?l=linux-omap&m=137335524702155&w=2
+[2] http://marc.info/?l=linux-omap&m=137335522802144&w=2
+-- 
+Regards,
+Nishanth Menon
