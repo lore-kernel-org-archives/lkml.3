@@ -1,56 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab3GXCcL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 22:32:11 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:49099 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901Ab3GXCcJ (ORCPT
+	id S1751313Ab3GXCoc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 22:44:32 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:56574 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab3GXCoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 22:32:09 -0400
+	Tue, 23 Jul 2013 22:44:30 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-b4-51ef3f8c73c5
+Date: Wed, 24 Jul 2013 11:44:28 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hugepage related lockdep trace.
+Message-ID: <20130724024428.GA14795@bbox>
+References: <20130717153223.GD27731@redhat.com>
+ <20130718000901.GA31972@blaptop>
+ <87hafrdatb.fsf@linux.vnet.ibm.com>
+ <20130719001303.GB23354@blaptop>
+ <20130723140120.GG8677@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CANEJEGtLavwdPdq_Qojz_x-DQ3KXfZp0vPYr6imKtNxN0Hf_2Q@mail.gmail.com>
-References: <1374518841.4990.26.camel@edumazet-glaptop>
-	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-	<1374559827.4990.143.camel@edumazet-glaptop>
-	<20130723.164656.1794159338719943519.davem@davemloft.net>
-	<CANEJEGtLavwdPdq_Qojz_x-DQ3KXfZp0vPYr6imKtNxN0Hf_2Q@mail.gmail.com>
-Date: Tue, 23 Jul 2013 19:32:08 -0700
-Message-ID: <CANEJEGv9G0SSUQOPqbqb_Fpcth7Qz2nkT_zOUQG=U2FH=g1_XA@mail.gmail.com>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Grant Grundler <grundler@google.com>
-To: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Ben Hutchings <bhutchings@solarflare.com>, oliver@neukum.org,
-        Freddy Xin <freddy@asix.com.tw>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723140120.GG8677@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 7:29 PM, Grant Grundler <grundler@google.com> wrote:
-> On Tue, Jul 23, 2013 at 4:46 PM, David Miller <davem@davemloft.net> wrote:
-> ...
->> A quick scan shows that smsc75xx, smsc95xx, and ax88179_178a all have
->> this problem.
->>
->> Instead of the patch starting this thread, I'd like to see one that
->> hits all three drivers and removes all SG and TSO features bits from
->> both the ->features _and_ ->hw_features settings.
->
-> Since you are asking to remove TSO, do you also want skb_linearize()
-> calls in ax88179_178a.c and smsc75xx.c removed as well?
+On Tue, Jul 23, 2013 at 04:01:20PM +0200, Michal Hocko wrote:
+> On Fri 19-07-13 09:13:03, Minchan Kim wrote:
+> > On Thu, Jul 18, 2013 at 11:12:24PM +0530, Aneesh Kumar K.V wrote:
+> [...]
+> > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > index 83aff0a..2cb1be3 100644
+> > > --- a/mm/hugetlb.c
+> > > +++ b/mm/hugetlb.c
+> > > @@ -3266,8 +3266,8 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> > >  		put_page(virt_to_page(spte));
+> > >  	spin_unlock(&mm->page_table_lock);
+> > >  out:
+> > > -	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> > >  	mutex_unlock(&mapping->i_mmap_mutex);
+> > > +	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> > >  	return pte;
+> > 
+> > I am blind on hugetlb but not sure it doesn't break eb48c071.
+> > Michal?
+> 
+> Well, it is some time since I debugged the race and all the details
+> vanished in the meantime. But this part of the changelog suggests that
+> this indeed breaks the fix:
+> "
+>     This patch addresses the issue by moving pmd_alloc into huge_pmd_share
+>     which guarantees that the shared pud is populated in the same critical
+>     section as pmd.  This also means that huge_pte_offset test in
+>     huge_pmd_share is serialized correctly now which in turn means that the
+>     success of the sharing will be higher as the racing tasks see the pud
+>     and pmd populated together.
+> "
+> 
+> Besides that I fail to see how moving pmd_alloc down changes anything.
+> Even if pmd_alloc triggered reclaim then we cannot trip over the same
+> i_mmap_mutex as hugetlb pages are not reclaimable because they are not
+> on the LRU.
 
-Nevermind...Eric already removed skb_linearize calls in his patch.
+I thought we could map some part of binary with normal page and other part
+of the one with MAP_HUGETLB so that a address space could have both normal
+page and HugeTLB page. Okay, it's impossible so HugeTLB pages are not on LRU.
+Then, above lockdep warning is totally false positive.
+Best solution is avoiding pmd_alloc with holding i_mmap_mutex but we need it
+to fix eb48c071 so how about this if we couldn't have a better idea?
 
-cheers,
-grant
 
->
-> Not part of the original patch - but based on this thread, Eric seems
-> to think calling skb_linearize isn't necessary or helpful either.
->
-> cheers,
-> grant
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 83aff0a..e7c3a15 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -3240,7 +3240,15 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+ 	if (!vma_shareable(vma, addr))
+ 		return (pte_t *)pmd_alloc(mm, pud, addr);
+ 
+-	mutex_lock(&mapping->i_mmap_mutex);
++	/*
++	 * It annotates to shut lockdep's warning up casued by i_mmap_mutex
++	 * Below pmd_alloc try to allocate memory with GFP_KERNEL while
++	 * holding i_mmap_mutex so that it could enter direct reclaim path
++	 * that rmap try to hold i_mmap_mutex again. But it's no problem
++	 * for hugetlb because pages on hugetlb never could live in LRU so
++	 * it's false positive. I hope someone fixes it with avoiding pmd_alloc
++        * with holding i_mmap_mutex rather than nesting annotation.
++	 */
++	mutex_lock_nested(&mapping->i_mmap_mutex, SINGLE_DEPTH_NESTING);
+ 	vma_interval_tree_foreach(svma, &mapping->i_mmap, idx, idx) {
+ 		if (svma == vma)
+ 			continue;
+
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
