@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852Ab3GXW0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:26:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55742 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751951Ab3GXW0l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:26:41 -0400
-Date: Wed, 24 Jul 2013 15:26:40 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: Re: [PATCH 22/36] staging: comedi: convert class code to use
- dev_groups
-Message-ID: <20130724222640.GA22336@kroah.com>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
- <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
- <ADE657CA350FB648AAC2C43247A983F0021DAC5C1F40@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F0021DAC5C1F40@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753022Ab3GXWem (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:34:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:41476 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752418Ab3GXWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:34:41 -0400
+Date: Thu, 25 Jul 2013 08:34:27 +1000
+From: Anton Blanchard <anton@samba.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Neil Horman <nhorman@tuxdriver.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
+ issues
+Message-ID: <20130725083427.56e36010@kryten>
+In-Reply-To: <1374274770.5357.33@snotra>
+References: <20130718140045.6794ecd5@kryten>
+	<1374274770.5357.33@snotra>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 05:11:25PM -0500, H Hartley Sweeten wrote:
-> On Wednesday, July 24, 2013 3:05 PM, Greg Kroah-Hartman wrote:
-> >
-> > The dev_attrs field of struct class is going away soon, dev_groups
-> > should be used instead.  This converts the comedi class code to use the
-> > correct field.
-> >
-> > Cc: Ian Abbott <abbotti@mev.co.uk>
-> > Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> >  drivers/staging/comedi/comedi_fops.c | 39 ++++++++++++++++++------------------
-> >  1 file changed, 20 insertions(+), 19 deletions(-)
-> 
-> Looks good to me. Not sure what my sign off should be so take your pick.
-> 
-> Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> 
-> Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-Thanks, I'll take both :)
+Hi Scott,
 
-greg k-h
+> I'm not really sure what it's supposed to look like when "perf  
+> annotate" works.  It spits a bunch of unreadable[1]
+> dark-blue-on-black assembly code at me, all with "0.00 :" in the left
+> column.
+> 
+> Oh, wait -- some lines have "100.00 : " on the left, in  
+> even-more-unreadable dark-red-on-black.
+> 
+> Apart from the annoying colors, is there anything specific I should
+> be looking for?  Some sort of error message, or output that actually
+> makes sense?
+
+Thanks for testing! Ben, I think the patch is good to go.
+
+Anton
