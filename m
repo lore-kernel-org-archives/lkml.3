@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab3GXRoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:44:10 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:36059 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3GXRoH (ORCPT
+	id S1752556Ab3GXRqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:46:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19829 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab3GXRqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:44:07 -0400
-MIME-Version: 1.0
-In-Reply-To: <CE156A09.575CF%andreas.dilger@intel.com>
-References: <1374654692-13237-9-git-send-email-mail-agent-noreply@emc.com> <CE156A09.575CF%andreas.dilger@intel.com>
-From: Peng Tao <bergwolf@gmail.com>
-Date: Thu, 25 Jul 2013 01:43:46 +0800
-Message-ID: <CA+a=Yy7G41W=j8=czozVORdbCXned+qQ2KknGzzHm3HvSu_uMA@mail.gmail.com>
-Subject: Re: [PATCH 8/8] staging/lustre: fix errno translate code on non-x86
-To: "Dilger, Andreas" <andreas.dilger@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 24 Jul 2013 13:46:05 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=X7p0W-CcHCoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=Ok3p364r5BlQo3MhLOIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374687963.3356.145.camel@gandalf.local.home>
+Subject: Re: [ 000/103] 3.10.3-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
+	<gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date: Wed, 24 Jul 2013 13:46:03 -0400
+In-Reply-To: <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
+References: <20130723220418.532514378@linuxfoundation.org>
+	 <CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
+	 <B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
+	 <20130724145506.GC15095@kroah.com>
+	 <CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
+	 <1374686174.3356.135.camel@gandalf.local.home>
+	 <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 1:27 AM, Dilger, Andreas
-<andreas.dilger@intel.com> wrote:
-> On 2013/07/24 2:31 AM, "mail-agent-noreply@emc.com"
-> <mail-agent-noreply@emc.com> wrote:
->
->>From: Peng Tao <bergwolf@gmail.com>
->>
->>On non-x86 we will build with Lustre's errno translate code but
->>it has a few issues that break build on non-x86 platforms.
->
-> Tao
-> if the build is broken, wouldn't it make sense either to merge this patch
-> into
-> the original or land it earlier in the series to minimize/eliminate the
-> window
-> of un-bisectability?
->
-The original one introduced the bug is already merged. See commit
-2d58de78b2f6c53688a154b02bae3ada19ed15a9 in Greg's staging-next
-(staging/lustre/ptlrpc: Translate between host and network errnos). So
-we need to fix it in a separate patch.
+On Wed, 2013-07-24 at 10:24 -0700, Linus Torvalds wrote:
+> On Wed, Jul 24, 2013 at 10:16 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >
+> > I don't know why "git apply" doesn't do it by default. Why would you
+> > want to apply a patch without having git track new files?
+> 
+> There's a few reasons for the behavior:
+> 
+>  - it turns out that for most simple patches, you don't want to add
+> them to the index, and you want to stage them separately. Doing a "git
+> apply", you'd normally expect the end result to not be staged, so that
+> it shows up in "git diff", and then you can do your normal "git add"
+> or "git commit -a" or whatever. Yes, this means that you need to know
+> about new files, but the expected use is *not* to apply a patch
+> blindly and then not even care about the index.
 
-And I agree with you that we need to put this one just before the
-Kconfig fixup so that we don't break bisectability.
+Heh, I usually still use the --index, and then just do "git diff HEAD"
+to check out what changed. If I don't like it, a "git reset --hard"
+fixes things.
 
-> Cheers, Andreas
->
-> PS - this is a bug introduced during porting to the upstream kernel, it
-> does
->      not exist in Lustre master branch.
->
-Lustre master also need fixing. EIOCBRETRY is removed in recent
-kernels. We'll need to backport that part of the patch to Intel tree.
+> 
+>  - "git apply" is actually also designed to be a *replacement* for
+> "patch". In particular, you can use it outside a git repository,
 
-Thanks,
-Tao
+OK, this makes more sense.
+
+> exactly like you'd use the standard "patch" program. Except unlike the
+> standard "patch" program, "git apply" doesn't accept fuzz by default
+> (which to me is a huge deal - I hate how "patch" tries to apply stuff
+> that clearly isn't valid any more) and also knows about things like
+> file modes and renames etc.
+
+I've learned to use -F0, but yeah, that's a pain.
+
+> 
+> That second part is something not enough people use, and when I make
+> patches and tar-balls I still generate the old-style non-rename
+> patches etc for that reason. But basically the command is designed to
+> also be used in non-git environments, so the "standard usage" is very
+> much not the "involve git details" behavior.
+
+I just find it funny to use git outside of a git environment. Perhaps
+"git apply" should have another name? "pit"?
+
+> 
+> Most "true git" workflows end up using "git am" (or, better yet, "git
+> pull" etc) to apply patches, which obviously not only does the --index
+> thing, but also applies the changelog etc.
+
+I'm still somewhat old school, and my workflow uses git + quilt a bit. I
+do a bunch of changes, then I do:
+
+git diff > foo.patch
+patch -p1 -R < foo.patch
+quilt import foo.patch
+rm foo.patch
+
+And save off those changes to another time. When I get back to the
+patch, I do:
+
+quilt push
+<make final fixes>
+quilt refresh
+quilt pop
+git apply --index < patches/foo.patch
+
+Sometimes I just leave off the pop and apply to do a git commit -a, but
+then when I do a quilt pop I need to do a "git reset --hard" to reset
+things. Having the patch in quilt gives me a nice record of what I did,
+instead of searching through git history.
+
+Note, I do know about git quiltimport, but my quilt queue contains lots
+of debug patches and things that are still pending (I modify the series
+file a lot). What would help is to add an option to git quiltimport that
+will limit the number of patches it imports.
+
+git quiltimport -c 1
+
+-- Steve
 
 
->>Cc: Andreas Dilger <andreas.dilger@intel.com>
->>Signed-off-by: Peng Tao <tao.peng@emc.com>
->>---
->> drivers/staging/lustre/lustre/ptlrpc/Makefile |    2 +-
->> drivers/staging/lustre/lustre/ptlrpc/errno.c  |    4 +---
->> 2 files changed, 2 insertions(+), 4 deletions(-)
->>
->>diff --git a/drivers/staging/lustre/lustre/ptlrpc/Makefile
->>b/drivers/staging/lustre/lustre/ptlrpc/Makefile
->>index a379558..6d78b80 100644
->>--- a/drivers/staging/lustre/lustre/ptlrpc/Makefile
->>+++ b/drivers/staging/lustre/lustre/ptlrpc/Makefile
->>@@ -16,7 +16,7 @@ ptlrpc_objs += sec.o sec_bulk.o sec_gc.o sec_config.o
->>sec_lproc.o
->> ptlrpc_objs += sec_null.o sec_plain.o nrs.o nrs_fifo.o
->>
->> ptlrpc-y := $(ldlm_objs) $(ptlrpc_objs)
->>-ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.c
->>+ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.o
->>
->> obj-$(CONFIG_PTLRPC_GSS) += gss/
->>
->>diff --git a/drivers/staging/lustre/lustre/ptlrpc/errno.c
->>b/drivers/staging/lustre/lustre/ptlrpc/errno.c
->>index 46e259e..1c10063 100644
->>--- a/drivers/staging/lustre/lustre/ptlrpc/errno.c
->>+++ b/drivers/staging/lustre/lustre/ptlrpc/errno.c
->>@@ -25,7 +25,7 @@
->>  * Copyright (c) 2013, Intel Corporation.
->>  */
->>
->>-#include <libcfs/libcfs.h>
->>+#include <linux/libcfs/libcfs.h>
->> #include <lustre/lustre_errno.h>
->>
->> /*
->>@@ -184,7 +184,6 @@ static int lustre_errno_hton_mapping[] = {
->>       [EBADTYPE]              = LUSTRE_EBADTYPE,
->>       [EJUKEBOX]              = LUSTRE_EJUKEBOX,
->>       [EIOCBQUEUED]           = LUSTRE_EIOCBQUEUED,
->>-      [EIOCBRETRY]            = LUSTRE_EIOCBRETRY
->> };
->>
->> static int lustre_errno_ntoh_mapping[] = {
->>@@ -331,7 +330,6 @@ static int lustre_errno_ntoh_mapping[] = {
->>       [LUSTRE_EBADTYPE]               = EBADTYPE,
->>       [LUSTRE_EJUKEBOX]               = EJUKEBOX,
->>       [LUSTRE_EIOCBQUEUED]            = EIOCBQUEUED,
->>-      [LUSTRE_EIOCBRETRY]             = EIOCBRETRY
->> };
->>
->> unsigned int lustre_errno_hton(unsigned int h)
->>--
->>1.7.1
->>
->>
->
->
-> Cheers, Andreas
-> --
-> Andreas Dilger
->
-> Lustre Software Architect
-> Intel High Performance Data Division
->
->
