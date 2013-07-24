@@ -1,92 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981Ab3GXN4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:56:19 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:42478 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902Ab3GXN4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:56:17 -0400
-Date: Wed, 24 Jul 2013 15:56:10 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]Fix early microcode loading on AMD
-Message-ID: <20130724135610.GG30777@pd.tnic>
-References: <20130723135853.579c3cd5@googlemail.com>
- <20130723151552.GF8497@pd.tnic>
- <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
+	id S1751539Ab3GXN5W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:57:22 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:64652 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3GXN5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 09:57:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAPVoSvR30mjRq8Kcp34akb6R1oTi4Y+z7CCO_8FWK5cGd-W61A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51EF919F.2000706@linux.vnet.ibm.com>
+References: <1374601332.9192.0.camel@localhost.localdomain>
+	<51EF4969.4050807@linux.vnet.ibm.com>
+	<CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com>
+	<51EF919F.2000706@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 19:57:19 +0600
+Message-ID: <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
+Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
+ building sched domain.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Michael Wang <wangyun@linux.vnet.ibm.com>
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 06:57:12PM +0200, Torsten Kaiser wrote:
-> >> * Save the amd_bsp_mpb on apply, not on load. Otherwise someone could
-> >> later load an older microcode file that would overwrite amd_bsp_mpb,
-> >> but would not be applied to the CPUs
-> >
-> > See the patch id check in apply_ucode_in_initrd()?
-> >
-> >         if (eq_id == mc->hdr.processor_rev_id && rev < mc->hdr.patch_id)
-> 
-> I meant with "load" load_microcode_amd() not the loading of the
-> microcode into the CPU.
-> 
-> 1.: load microcode rev X into CPU (early or normal is not important)
-> 2.: get older microcode file that only contains rev Y with Y<X
-> 3.: trigger load_microcode_amd() with a corrupt file: This will call
-> cleanup() and empty pcache.
+On Wed, Jul 24, 2013 at 2:34 PM, Michael Wang
+<wangyun@linux.vnet.ibm.com> wrote:
+> On 07/24/2013 04:01 PM, Rakib Mullick wrote:
+>> On Wed, Jul 24, 2013 at 9:26 AM, Michael Wang
+>> <wangyun@linux.vnet.ibm.com> wrote:
+>>> Hi, Rakib
+>>>
+>>> On 07/24/2013 01:42 AM, Rakib Mullick wrote:
+>>>> Currently, update_top_cache_domain() is called whenever schedule domain is built or destroyed. But, the following
+>>>> callpath shows that they're at the same callpath and can be avoided update_top_cache_domain() while destroying schedule
+>>>> domain and update only at the times of building schedule domains.
+>>>>
+>>>>       partition_sched_domains()
+>>>>               detach_destroy_domain()
+>>>>                       cpu_attach_domain()
+>>>>                               update_top_cache_domain()
+>>>
+>>> IMHO, cpu_attach_domain() and update_top_cache_domain() should be
+>>> paired, below patch will open a window which 'rq->sd == NULL' while
+>>> 'sd_llc != NULL', isn't it?
+>>>
+>>> I don't think we have the promise that before we rebuild the stuff
+>>> correctly, no one will utilize 'sd_llc'...
+>>>
+>> I never said it. My point is different.  partition_sched_domain works as -
+>>
+>>       - destroying existing schedule domain (if previous domain and new
+>> domain aren't same)
+>>       - building new partition
+>>
+>> while doing the first it needs to detach all the cpus on that domain.
+>> By detaching what it does,
+>> it fall backs to it's root default domain. In this context (which i've
+>> proposed to skip), by means
+>> of updating top cache domain it takes the highest flag domain to setup
+>> it's sd_llc_id or cpu itself.
+>>
+>> Whatever done above gets overwritten (updating top cache domain),
+>> while building new partition.
+>> Then, why we did that before? Hope you understand my point.
+>
+> I think you missed this in PeterZ's suggestion:
+>
+> -               cpu_attach_domain(NULL, &def_root_domain, i);
+>
+> With this change, it will be safe since you will still get an un-freed
+> sd, although it's an old one.
+>
+I never meant it and clearly I missed it. If you remove
+cpu_attach_domain(), then detach_destroy_domain() becomes meaningless.
+And I don't have any intent to remove cpu_attach_domain from
+detach_destroy_domain() at all.
 
-Ok, that's actually a good catch. So I wonder: why in hell would we
-flush the pcache if some of the blobs we're loading are corrupted. So
-what?! Jacob, what were you thinking - I'd be very interested to know
-what the idea behind this was.
+> But your patch will run the risk to get a freed sd, since you make
+> 'sd_llc' wrong for a period of time (between destroy and rebuild) IMO.
+>
+Building 'sd_llc' depends on schedule domain. If you don't have sd,
+sd_llc will point to NULL and sd_llc_id is
+the CPU itself. Since, we're  trying to re-construing so for this time
+being it doesn't matter, cause we're building
+it again. Now, please just note what you're saying, on last thread
+you've said -
 
-So, just to refresh everybody: the idea of the pcache is to keep all
-patches for the current family in memory so that we can support all
-sorts of hotplug and cpu mixed stepping diddling.
+       "I don't think we have the promise that before we rebuild the stuff
+        correctly, no one will utilize 'sd_llc'..."
 
-> 4.: trigger load_microcode_amd() with the older file:
->  * this will now load rev Y into pcache
->  * rev Y will be returned by find_patch and copied into amd_bsp_mpb
->  * any try to apply rev Y will be skipped in apply_microcode_amd()
-> 
-> So now the CPU still correctly has rev X, but amd_bsp_mpb will contain
-> the wrong rev Y.
+If that is the case, then we shouldn't worry about it at all. And this
+above comments (from previous thread I've quoted and this thread I'm
+replying) they're just self contradictory.
 
-Right, so this shouldn't happen - what should happen is, pcache would
-hold both X and Y and find_patch would automatically give you the right
-one.
+> I guess I get you point, you are trying to save one time update since
+> you think this will be done twice, but actually the result of this two
+> time update was different, it's not redo and it's in order to sync
+> 'sd_llc' with 'rq->sd'.
+>
+Yes, you got my point now, but I don't understand your points. Anyway,
+I'm not going to argue with this
+anymore, this stuff isn't much of an issue, but removing this sorts of
+stuff is typical in kernel development.
 
-And this is guaranteed since we keep the patches in a sorted linked list
-by ->patch_id which is guaranteed to be increasing.
-
-So actually load_microcode_amd() shouldn't be doing cleanup() but simply
-return ret upwards.
-
-> That copying already in load_microcode also is suspicious if someone
-> would only load the microcode but not apply it. But I did not find
-> a codepath in arch/x86/kernel/microcode_core.c to load it without a
-> followup apply.
-
-Yeah, we always load and apply.
-
-So now back to the original problem - load_microcode_amd() shouldn't
-clear the pcache and, in that case, a subsequent find_patch() would
-always give the right patch.
-
-Ok?
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Rakib.
