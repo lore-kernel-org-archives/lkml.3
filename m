@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753622Ab3GXOVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:21:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45758 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752163Ab3GXOGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752598Ab3GXOGo (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 24 Jul 2013 10:06:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45849 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752273Ab3GXOGg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:06:36 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Gavin Shan" <shangw@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Paul Clements" <paul.clements@steeleye.com>,
+        "Rob Landley" <rob@landley.net>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.832521875@decadent.org.uk>
+Message-ID: <lsq.1374674565.879707266@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [40/85] net/tg3: Avoid delay during MMIO access
+Subject: [70/85] nbd: correct disconnect behavior
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,122 +33,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Paul Clements <paul.clements@steeleye.com>
 
-commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
+commit c378f70adbc1bbecd9e6db145019f14b2f688c7c upstream.
 
-When the EEH error is the result of a fenced host bridge, MMIO accesses
-can be very slow (milliseconds) to timeout and return all 1's,
-thus causing the driver various timeout loops to take way too long and
-trigger soft-lockup warnings (in addition to taking minutes to recover).
+Currently, when a disconnect is requested by the user (via NBD_DISCONNECT
+ioctl) the return from NBD_DO_IT is undefined (it is usually one of
+several error codes).  This means that nbd-client does not know if a
+manual disconnect was performed or whether a network error occurred.
+Because of this, nbd-client's persist mode (which tries to reconnect after
+error, but not after manual disconnect) does not always work correctly.
 
-It might be worthwhile to check if for any of these cases, ffffffff is
-a valid possible value, and if not, bail early since that means the HW
-is either gone or isolated. In the meantime, checking that the PCI channel
-is offline would be workaround of the problem.
+This change fixes this by causing NBD_DO_IT to always return 0 if a user
+requests a disconnect.  This means that nbd-client can correctly either
+persist the connection (if an error occurred) or disconnect (if the user
+requested it).
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context, indentation]
+Signed-off-by: Paul Clements <paul.clements@steeleye.com>
+Acked-by: Rob Landley <rob@landley.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust device pointer name]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/ethernet/broadcom/tg3.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/block/nbd.c | 7 ++++++-
+ include/linux/nbd.h | 1 +
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -688,6 +688,9 @@ static int tg3_ape_lock(struct tg3 *tp,
- 		status = tg3_ape_read32(tp, gnt + off);
- 		if (status == bit)
- 			break;
-+		if (pci_channel_offline(tp->pdev))
-+			break;
-+
- 		udelay(10);
- 	}
+--- a/drivers/block/nbd.c
++++ b/drivers/block/nbd.c
+@@ -598,8 +598,10 @@ static int __nbd_ioctl(struct block_devi
+ 		if (!lo->sock)
+ 			return -EINVAL;
  
-@@ -1465,6 +1468,9 @@ static void tg3_wait_for_event_ack(struc
- 	for (i = 0; i < delay_cnt; i++) {
- 		if (!(tr32(GRC_RX_CPU_EVENT) & GRC_RX_CPU_DRIVER_EVENT))
- 			break;
-+		if (pci_channel_offline(tp->pdev))
-+			break;
++		lo->disconnect = 1;
 +
- 		udelay(8);
+ 		nbd_send_req(lo, &sreq);
+-                return 0;
++		return 0;
  	}
- }
-@@ -1628,6 +1634,9 @@ static int tg3_poll_fw(struct tg3 *tp)
- 		for (i = 0; i < 200; i++) {
- 			if (tr32(VCPU_STATUS) & VCPU_STATUS_INIT_DONE)
+  
+ 	case NBD_CLEAR_SOCK: {
+@@ -629,6 +631,7 @@ static int __nbd_ioctl(struct block_devi
+ 				lo->sock = SOCKET_I(inode);
+ 				if (max_part > 0)
+ 					bdev->bd_invalidated = 1;
++				lo->disconnect = 0; /* we're connected now */
  				return 0;
-+			if (pci_channel_offline(tp->pdev))
-+				return -ENODEV;
-+
- 			udelay(100);
- 		}
- 		return -ENODEV;
-@@ -1638,6 +1647,15 @@ static int tg3_poll_fw(struct tg3 *tp)
- 		tg3_read_mem(tp, NIC_SRAM_FIRMWARE_MBOX, &val);
- 		if (val == ~NIC_SRAM_FIRMWARE_MBOX_MAGIC1)
- 			break;
-+		if (pci_channel_offline(tp->pdev)) {
-+			if (!tg3_flag(tp, NO_FWARE_REPORTED)) {
-+				tg3_flag_set(tp, NO_FWARE_REPORTED);
-+				netdev_info(tp->dev, "No firmware running\n");
-+			}
-+
-+			break;
-+		}
-+
- 		udelay(10);
+ 			} else {
+ 				fput(file);
+@@ -701,6 +704,8 @@ static int __nbd_ioctl(struct block_devi
+ 		set_capacity(lo->disk, 0);
+ 		if (max_part > 0)
+ 			ioctl_by_bdev(bdev, BLKRRPART, 0);
++		if (lo->disconnect) /* user requested, ignore socket errors */
++			return 0;
+ 		return lo->harderror;
  	}
  
-@@ -3067,6 +3085,10 @@ static int tg3_halt_cpu(struct tg3 *tp,
- 			tw32(offset + CPU_MODE,  CPU_MODE_HALT);
- 			if (tr32(offset + CPU_MODE) & CPU_MODE_HALT)
- 				break;
-+			if (pci_channel_offline(tp->pdev))
-+				return -EBUSY;
-+			if (pci_channel_offline(tp->pdev))
-+				return -EBUSY;
- 		}
+--- a/include/linux/nbd.h
++++ b/include/linux/nbd.h
+@@ -68,6 +68,7 @@ struct nbd_device {
+ 	u64 bytesize;
+ 	pid_t pid; /* pid of nbd-client, if attached */
+ 	int xmit_timeout;
++	int disconnect; /* a disconnect has been requested by user */
+ };
  
- 		tw32(offset + CPU_STATE, 0xffffffff);
-@@ -7569,6 +7591,14 @@ static int tg3_stop_block(struct tg3 *tp
- 	tw32_f(ofs, val);
- 
- 	for (i = 0; i < MAX_WAIT_CNT; i++) {
-+		if (pci_channel_offline(tp->pdev)) {
-+			dev_err(&tp->pdev->dev,
-+				"tg3_stop_block device offline, "
-+				"ofs=%lx enable_bit=%x\n",
-+				ofs, enable_bit);
-+			return -ENODEV;
-+		}
-+
- 		udelay(100);
- 		val = tr32(ofs);
- 		if ((val & enable_bit) == 0)
-@@ -7592,6 +7622,13 @@ static int tg3_abort_hw(struct tg3 *tp,
- 
- 	tg3_disable_ints(tp);
- 
-+	if (pci_channel_offline(tp->pdev)) {
-+		tp->rx_mode &= ~(RX_MODE_ENABLE | TX_MODE_ENABLE);
-+		tp->mac_mode &= ~MAC_MODE_TDE_ENABLE;
-+		err = -ENODEV;
-+		goto err_no_dev;
-+	}
-+
- 	tp->rx_mode &= ~RX_MODE_ENABLE;
- 	tw32_f(MAC_RX_MODE, tp->rx_mode);
- 	udelay(10);
-@@ -7640,6 +7677,7 @@ static int tg3_abort_hw(struct tg3 *tp,
- 	err |= tg3_stop_block(tp, BUFMGR_MODE, BUFMGR_MODE_ENABLE, silent);
- 	err |= tg3_stop_block(tp, MEMARB_MODE, MEMARB_MODE_ENABLE, silent);
- 
-+err_no_dev:
- 	for (i = 0; i < tp->irq_cnt; i++) {
- 		struct tg3_napi *tnapi = &tp->napi[i];
- 		if (tnapi->hw_status)
+ #endif
 
