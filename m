@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab3GXSh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:37:57 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34998 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab3GXShy (ORCPT
+	id S1753551Ab3GXSiF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:38:05 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:58213 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751222Ab3GXSiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:37:54 -0400
-Message-ID: <51F01EFB.6070207@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 13:37:47 -0500
-From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+	Wed, 24 Jul 2013 14:38:02 -0400
+Message-ID: <51F01F04.5030201@hurleysoftware.com>
+Date: Wed, 24 Jul 2013 14:37:56 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        linuxppc-dev@lists.ozlabs.org
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        isimatu.yasuaki@jp.fujitsu.com
-Subject: [PATCH 3/8] Add all memory via sysfs probe interface at once
-References: <51F01E06.6090800@linux.vnet.ibm.com>
-In-Reply-To: <51F01E06.6090800@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tony Luck <tony.luck@gmail.com>, Borislav Petkov <bp@alien8.de>
+CC: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep warning in edac_create_sysfs_mci_device
+References: <20130721144819.GJ24717@sanechka.spb.ru> <20130721190212.GA31470@pd.tnic> <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
+In-Reply-To: <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072418-5490-0000-0000-000003E0F2B2
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing memory hot add via the 'probe' interface in sysfs we do not
-need to loop through and add memory one section at a time. I think this
-was originally done for powerpc, but is not needed. This patch removes
-the loop and just calls add_memory for all of the memory to be added.
+On 07/24/2013 12:27 PM, Tony Luck wrote:
+> On Sun, Jul 21, 2013 at 12:02 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> A fix is on the way:
+>>
+>> http://marc.info/?l=linux-edac&m=137422971614927&w=2
+>
+> Fix was pulled into Linus' tree yesterday evening (Portland, OR timezone):
+>
+> commit 88d84ac97378c2f1d5fec9af1e8b7d9a662d6b00
+> Author: Borislav Petkov <bp@suse.de>
+> Date:   Fri Jul 19 12:28:25 2013 +0200
+>
+>      EDAC: Fix lockdep splat
+>
+> Alexandra: Give it a test and let me and Boris know if you still see
+> any problems.
 
-Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
----
- drivers/base/memory.c |   20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+Thanks for fixing this. Now I can fix the lockdep splat I just
+introduced to linux-next :(
 
-Index: linux/drivers/base/memory.c
-===================================================================
---- linux.orig/drivers/base/memory.c
-+++ linux/drivers/base/memory.c
-@@ -427,8 +427,8 @@ memory_probe_store(struct device *dev, s
- 		   const char *buf, size_t count)
- {
- 	u64 phys_addr;
--	int nid;
--	int i, ret;
-+	int nid, ret;
-+	unsigned long block_size;
- 	unsigned long pages_per_block = PAGES_PER_SECTION * sections_per_block;
- 
- 	phys_addr = simple_strtoull(buf, NULL, 0);
-@@ -436,19 +436,11 @@ memory_probe_store(struct device *dev, s
- 	if (phys_addr & ((pages_per_block << PAGE_SHIFT) - 1))
- 		return -EINVAL;
- 
--	for (i = 0; i < sections_per_block; i++) {
--		nid = memory_add_physaddr_to_nid(phys_addr);
--		ret = add_memory(nid, phys_addr,
--				 PAGES_PER_SECTION << PAGE_SHIFT);
--		if (ret)
--			goto out;
-+	block_size = get_memory_block_size();
-+	nid = memory_add_physaddr_to_nid(phys_addr);
-+	ret = add_memory(nid, phys_addr, block_size);
- 
--		phys_addr += MIN_MEMORY_BLOCK_SIZE;
--	}
--
--	ret = count;
--out:
--	return ret;
-+	return ret ? ret : count;
- }
- 
- static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
-
+Regards,
+Peter Hurley
 
