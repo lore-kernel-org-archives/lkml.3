@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab3GXUvo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:51:44 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:51809
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579Ab3GXUvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:51:43 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com, dave@sr71.net
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in context"
-Date: Wed, 24 Jul 2013 14:29:59 -0700
-Message-Id: <1374701399-30842-2-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1374701399-30842-1-git-send-email-kys@microsoft.com>
-References: <1374701355-30799-1-git-send-email-kys@microsoft.com>
- <1374701399-30842-1-git-send-email-kys@microsoft.com>
+	id S1753600Ab3GXUyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:54:41 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52737 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938Ab3GXUyh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 16:54:37 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Rohit Vaswani <rvaswani@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 1/9] ARM: msm: Remove unused and unmapped MSM_TLMM_BASE for 8x60
+Date: Wed, 24 Jul 2013 13:54:26 -0700
+Message-Id: <1374699274-18388-2-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.4.840.g6a90778
+In-Reply-To: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
+References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage the newly exported functionality to bring memory online
-without involving user level code.
+From: Rohit Vaswani <rvaswani@codeaurora.org>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+MSM_TLMM_BASE is currently not mapped by 8x60. Remove it.
+
+Signed-off-by: Rohit Vaswani <rvaswani@codeaurora.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/hv/hv_balloon.c |   20 +++-----------------
- 1 files changed, 3 insertions(+), 17 deletions(-)
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h | 4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
-index 2d094cf..c2eec17 100644
---- a/drivers/hv/hv_balloon.c
-+++ b/drivers/hv/hv_balloon.c
-@@ -515,11 +515,6 @@ struct hv_dynmem_device {
- 	bool host_specified_ha_region;
+diff --git a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+index 75a7b62..4f57b43 100644
+--- a/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
++++ b/arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+@@ -35,10 +35,6 @@
+  *
+  */
  
- 	/*
--	 * State to synchronize hot-add.
--	 */
--	struct completion  ol_waitevent;
--	bool ha_waiting;
--	/*
- 	 * This thread handles hot-add
- 	 * requests from the host as well as notifying
- 	 * the host with regards to memory pressure in
-@@ -581,9 +576,6 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
- 
- 		has->covered_end_pfn +=  processed_pfn;
- 
--		init_completion(&dm_device.ol_waitevent);
--		dm_device.ha_waiting = true;
+-#define MSM_TLMM_BASE		IOMEM(0xF0004000)
+-#define MSM_TLMM_PHYS		0x00800000
+-#define MSM_TLMM_SIZE		SZ_16K
 -
- 		nid = memory_add_physaddr_to_nid(PFN_PHYS(start_pfn));
- 		ret = add_memory(nid, PFN_PHYS((start_pfn)),
- 				(HA_CHUNK << PAGE_SHIFT));
-@@ -606,12 +598,10 @@ static void hv_mem_hot_add(unsigned long start, unsigned long size,
- 		}
+ #define MSM8X60_TMR_PHYS	0x02000000
+ #define MSM8X60_TMR_SIZE	SZ_4K
  
- 		/*
--		 * Wait for the memory block to be onlined.
--		 * Since the hot add has succeeded, it is ok to
--		 * proceed even if the pages in the hot added region
--		 * have not been "onlined" within the allowed time.
-+		 * Before proceeding to hot add the next segment,
-+		 * online the segment that has been hot added.
- 		 */
--		wait_for_completion_timeout(&dm_device.ol_waitevent, 5*HZ);
-+		online_memory_block(start_pfn);
- 
- 	}
- 
-@@ -625,10 +615,6 @@ static void hv_online_page(struct page *pg)
- 	unsigned long cur_start_pgp;
- 	unsigned long cur_end_pgp;
- 
--	if (dm_device.ha_waiting) {
--		dm_device.ha_waiting = false;
--		complete(&dm_device.ol_waitevent);
--	}
- 
- 	list_for_each(cur, &dm_device.ha_region_list) {
- 		has = list_entry(cur, struct hv_hotadd_state, list);
 -- 
-1.7.4.1
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
