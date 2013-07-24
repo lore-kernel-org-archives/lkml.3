@@ -1,67 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab3GXIvN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 04:51:13 -0400
-Received: from mail-ob0-f180.google.com ([209.85.214.180]:40759 "EHLO
-	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab3GXIvJ (ORCPT
+	id S1752291Ab3GXIvp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 04:51:45 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44162 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab3GXIvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 04:51:09 -0400
+	Wed, 24 Jul 2013 04:51:42 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-bb-51ef959cfe4f
+Date: Wed, 24 Jul 2013 17:51:48 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 07/10] mm, hugetlb: do not use a page in page cache
+ for cow optimization
+Message-ID: <20130724085148.GD2266@lge.com>
+References: <1374482191-3500-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1374482191-3500-8-git-send-email-iamjoonsoo.kim@lge.com>
+ <20130723114550.GB8677@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <51EF945E.3080802@samsung.com>
-References: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
-	<1374146275-5758-2-git-send-email-cw00.choi@samsung.com>
-	<CAKohpo=oTsEjzi_51UaZ8ww8UEfZ6hwKAnu9rFgGBkt=TfHi8A@mail.gmail.com>
-	<51EF2D06.7000704@samsung.com>
-	<CAKohpok7B6DaqFPWZcODEgK5GRSoAQYZ27-h2=AQ1HBBP4gH8Q@mail.gmail.com>
-	<51EF8590.7030405@samsung.com>
-	<CAKohpom19C7JHSX6w31pSDrwcAR_PZn1HzP0Jui5iZL=bALDPQ@mail.gmail.com>
-	<51EF945E.3080802@samsung.com>
-Date: Wed, 24 Jul 2013 14:21:09 +0530
-Message-ID: <CAKohpo=_3iR44XfxuRAmw-9DDk9APniWH=efd72v845wH3C-DQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v6] cpufreq: Add debugfs directory for cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130723114550.GB8677@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2013 14:16, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> In case that all CPUs share same cpufreq policy. Each debugfs dentry of CPU[1-3]
-> except for CPU0 has symbolic link to CPU0's debugfs directory as following.
->
-> -sh-4.1# ls -al /sys/kernel/debug/cpufreq/
-> total 0
-> drwxr-xr-x  3 root root 0 Jan  1 09:00 .
-> drwx------ 28 root root 0 Jan  1 09:00 ..
-> drwxr-xr-x  2 root root 0 Jan  1 09:00 cpu0             (policy->cpu is 0)
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu1 -> ./cpu0
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu2 -> ./cpu0
-> lrwxrwxrwx  1 root root 0 Jan  1 09:00 cpu3 -> ./cpu0
->
-> If turn off CPU0 state, I have to move debugfs directory data from cpu0 to cpu1
-> and again create link to cpu1's debugfs directory for CPU[2-3] debugfs directory.
-> So, I removed dentry link of CPU[1-3] before creating link again.
->
-> cpu1
-> cpu2 -> ./cpu1
-> cpu3 -> ./cpu1
->
-> But I can rewrite new link of CPU[2-3] to previous dentry link(policy->cpu_debugfs[2] or policy->cpu_debugfs[3])
-> for reducing unnecessary code without revmoval sequence.
+On Tue, Jul 23, 2013 at 01:45:50PM +0200, Michal Hocko wrote:
+> On Mon 22-07-13 17:36:28, Joonsoo Kim wrote:
+> > Currently, we use a page with mapped count 1 in page cache for cow
+> > optimization. If we find this condition, we don't allocate a new
+> > page and copy contents. Instead, we map this page directly.
+> > This may introduce a problem that writting to private mapping overwrite
+> > hugetlb file directly. You can find this situation with following code.
+> > 
+> >         size = 20 * MB;
+> >         flag = MAP_SHARED;
+> >         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+> >         if (p == MAP_FAILED) {
+> >                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+> >                 return -1;
+> >         }
+> >         p[0] = 's';
+> >         fprintf(stdout, "BEFORE STEAL PRIVATE WRITE: %c\n", p[0]);
+> >         munmap(p, size);
+> > 
+> >         flag = MAP_PRIVATE;
+> >         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+> >         if (p == MAP_FAILED) {
+> >                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+> >         }
+> >         p[0] = 'c';
+> >         munmap(p, size);
+> > 
+> >         flag = MAP_SHARED;
+> >         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+> >         if (p == MAP_FAILED) {
+> >                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+> >                 return -1;
+> >         }
+> >         fprintf(stdout, "AFTER STEAL PRIVATE WRITE: %c\n", p[0]);
+> >         munmap(p, size);
+> > 
+> > We can see that "AFTER STEAL PRIVATE WRITE: c", not "AFTER STEAL
+> > PRIVATE WRITE: s". If we turn off this optimization to a page
+> > in page cache, the problem is disappeared.
+> 
+> It would be nice to describe the fix here as well. It is far from being
+> intuitive and trivial.
 
-Because we aren't freeing the debugfs node at all (just renaming
-it), the links might still be good after renaming.. But please check
-if it is true.
+Okay. I will describe how I fix the problem in all patches you pointed out.
 
-So, according to me you need to do this:
-- Remove symlink for new policy->cpu, i..e cpu1 in your example
-- rename debugfs entry to give it to cpu1 instead of cpu0.
-- Set cpu0 pointer to NULL.
+Thanks for reviewing!
 
-Probably that's it.
+> 
+> The fix seems to be correct.
+> 
+> > Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
+> > 
+> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > index 7ca8733..8a61638 100644
+> > --- a/mm/hugetlb.c
+> > +++ b/mm/hugetlb.c
+> > @@ -2508,7 +2508,6 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  {
+> >  	struct hstate *h = hstate_vma(vma);
+> >  	struct page *old_page, *new_page;
+> > -	int avoidcopy;
+> >  	int outside_reserve = 0;
+> >  	unsigned long mmun_start;	/* For mmu_notifiers */
+> >  	unsigned long mmun_end;		/* For mmu_notifiers */
+> > @@ -2518,10 +2517,8 @@ static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  retry_avoidcopy:
+> >  	/* If no-one else is actually using this page, avoid the copy
+> >  	 * and just make the page writable */
+> > -	avoidcopy = (page_mapcount(old_page) == 1);
+> > -	if (avoidcopy) {
+> > -		if (PageAnon(old_page))
+> > -			page_move_anon_rmap(old_page, vma, address);
+> > +	if (page_mapcount(old_page) == 1 && PageAnon(old_page)) {
+> > +		page_move_anon_rmap(old_page, vma, address);
+> >  		set_huge_ptep_writable(vma, address, ptep);
+> >  		return 0;
+> >  	}
+> > -- 
+> > 1.7.9.5
+> > 
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
