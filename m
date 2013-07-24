@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab3GXUVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:21:09 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36938 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753468Ab3GXUVG (ORCPT
+	id S1752643Ab3GXUWA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:22:00 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38493 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab3GXUV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:21:06 -0400
-Message-ID: <1374697264.7382.39.camel@dabdike>
-Subject: Re: targetcli -fb now also Apache 2.0 licensed
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Andy Grover <agrover@redhat.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Ritesh Raj Sarraf <rrs@debian.org>,
-        targetcli-fb-devel@lists.fedorahosted.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 24 Jul 2013 13:21:04 -0700
-In-Reply-To: <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>
-References: <51EF73EF.1040305@redhat.com>
-	 <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Jul 2013 16:21:58 -0400
+Date: Wed, 24 Jul 2013 21:21:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: Fix deadlock scenario with smp_send_stop()
+Message-ID: <20130724202148.GA24642@n2100.arm.linux.org.uk>
+References: <1373384217-26307-1-git-send-email-sboyd@codeaurora.org> <20130724185618.GD27761@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130724185618.GD27761@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 13:09 -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2013-07-23 at 23:27 -0700, Andy Grover wrote:
-> > Hi Nick,
+On Wed, Jul 24, 2013 at 11:56:18AM -0700, Stephen Boyd wrote:
+> On 07/09, Stephen Boyd wrote:
+> > If one process calls sys_reboot and that process then stops other
+> > CPUs while those CPUs are within a spin_lock() region we can
+> > potentially encounter a deadlock scenario like below.
 > > 
-> > I just wanted to let you know that I finally received permission from 
-> > all contributors, and have matched RisingTide's relicensing of targetcli 
-> > and its dependencies to Apache 2.0, by relicensing the additional 
-> > contributions in the targetcli-fb branch under the same license.
+> > CPU 0                   CPU 1
+> > -----                   -----
+> >                         spin_lock(my_lock)
+> > smp_send_stop()
+> >  <send IPI>             handle_IPI()
+> >                          disable_preemption/irqs
+> >                           while(1);
+> >  <PREEMPT>
+> > spin_lock(my_lock) <--- Waits forever
 > > 
-> > I'm not quite sure the next steps are, except enjoying all our newly 
-> > non-viral source code, but much thanks for getting the ball rolling.
+> > We shouldn't attempt to run any other tasks after we send a stop
+> > IPI to a CPU so disable preemption so that this task runs to
+> > completion.
 > > 
+> > Reported-by: Sundarajan Srinivasan <sundaraj@codeaurora.com>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> > 
+> > Resending this patch now that the context has changed.
 > 
-> Making this type of announcement without coordinating with us on a plan
-> for moving forward is pretty lame.  Especially considering that we've
-> kept asking you privately about how to work together to reconcile -fb
-> with upstream, and your response essentially boiled down to "What's in
-> it for me..?".
+> Ping? Shall I put this in the patch tracker?
 
-Oh good grief, children, how about you both play nicely in the sand box
-or I'll fetch your parents to make you see sense.
-
-> So if you really, really need an incentive to "do the right thing", how
-> about I start not accept kernel patches from you until you're ready to
-> drop -fb and start working with upstream for real..?
-
-Well, the thing is, being a maintainer in Linux is a position of trust.
-The fastest way to lose that trust is to hold your tree to ransom or
-indeed refuse to accept patches for anything other than technical or
-licensing reasons.
-
-James
-
-
+Well, looking at x86, they use local_irq_disable() before sending the
+stop, so I think we should do the same for cross-arch consistency.
