@@ -1,112 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab3GXOJN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:09:13 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45884 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752461Ab3GXOHB (ORCPT
+	id S1752983Ab3GXOJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:09:11 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:43217 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775Ab3GXOHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:07:01 -0400
-Content-Type: text/plain; charset="UTF-8"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+From: Rupesh Gujare <rupesh.gujare@atmel.com>
+To: <devel@linuxdriverproject.org>
+CC: <dan.carpenter@oracle.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>
+Subject: [PATCH] staging: ozwpan: Fix coding style.
+Date: Wed, 24 Jul 2013 15:06:46 +0100
+Message-ID: <1374674806-7790-1-git-send-email-rupesh.gujare@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "steve" <sanpatr1@in.ibm.com>,
-        "Steve French" <smfrench@gmail.com>,
-        "Shirish Pargaonkar" <shirishpargaonkar@gmail.com>,
-        "Steve French" <smfrench@us.ibm.com>,
-        "Jeff Layton" <jlayton@redhat.com>
-Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.576040293@decadent.org.uk>
-X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [46/85] Handle big endianness in NTLM (ntlmv2) authentication
-In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
+This patch fixes coding style issues reported by Dan here:-
+http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/2012-June/027767.html
 
-------------------
-
-From: Steve French <smfrench@us.ibm.com>
-
-commit fdf96a907c1fbb93c633e2b7ede3b8df26d6a4c0 upstream.
-
-This is RH bug 970891
-Uppercasing of username during calculation of ntlmv2 hash fails
-because UniStrupr function does not handle big endian wchars.
-
-Also fix a comment in the same code to reflect its correct usage.
-
-[To make it easier for stable (rather than require 2nd patch) fixed
-this patch of Shirish's to remove endian warning generated
-by sparse -- steve f.]
-
-Reported-by: steve <sanpatr1@in.ibm.com>
-Signed-off-by: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
-[bwh: Backported to 3.2: adjust context, indentation]
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Rupesh Gujare <rupesh.gujare@atmel.com>
 ---
- fs/cifs/cifs_unicode.h | 8 ++++----
- fs/cifs/cifsencrypt.c  | 6 +++---
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/staging/ozwpan/ozcdev.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/fs/cifs/cifs_unicode.h
-+++ b/fs/cifs/cifs_unicode.h
-@@ -323,14 +323,14 @@ UniToupper(register wchar_t uc)
- /*
-  * UniStrupr:  Upper case a unicode string
-  */
--static inline wchar_t *
--UniStrupr(register wchar_t *upin)
-+static inline __le16 *
-+UniStrupr(register __le16 *upin)
+diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
+index 3e29760..73b582c 100644
+--- a/drivers/staging/ozwpan/ozcdev.c
++++ b/drivers/staging/ozwpan/ozcdev.c
+@@ -333,10 +333,11 @@ int oz_cdev_register(void)
  {
--	register wchar_t *up;
-+	register __le16 *up;
- 
- 	up = upin;
- 	while (*up) {		/* For all characters */
--		*up = UniToupper(*up);
-+		*up = cpu_to_le16(UniToupper(le16_to_cpu(*up)));
- 		up++;
+ 	int err;
+ 	struct device *dev;
++
+ 	memset(&g_cdev, 0, sizeof(g_cdev));
+ 	err = alloc_chrdev_region(&g_cdev.devnum, 0, 1, "ozwpan");
+ 	if (err < 0)
+-		goto out3;
++		return err;
+ 	oz_dbg(ON, "Alloc dev number %d:%d\n",
+ 	       MAJOR(g_cdev.devnum), MINOR(g_cdev.devnum));
+ 	cdev_init(&g_cdev.cdev, &oz_fops);
+@@ -347,26 +348,26 @@ int oz_cdev_register(void)
+ 	err = cdev_add(&g_cdev.cdev, g_cdev.devnum, 1);
+ 	if (err < 0) {
+ 		oz_dbg(ON, "Failed to add cdev\n");
+-		goto out2;
++		goto unregister;
  	}
- 	return upin;		/* Return input pointer */
---- a/fs/cifs/cifsencrypt.c
-+++ b/fs/cifs/cifsencrypt.c
-@@ -394,7 +394,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 	int rc = 0;
- 	int len;
- 	char nt_hash[CIFS_NTHASH_SIZE];
--	wchar_t *user;
-+	__le16 *user;
- 	wchar_t *domain;
- 	wchar_t *server;
- 
-@@ -419,7 +419,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 		return rc;
+ 	g_oz_class = class_create(THIS_MODULE, "ozmo_wpan");
+ 	if (IS_ERR(g_oz_class)) {
+ 		oz_dbg(ON, "Failed to register ozmo_wpan class\n");
+ 		err = PTR_ERR(g_oz_class);
+-		goto out1;
++		goto delete;
  	}
- 
--	/* convert ses->user_name to unicode and uppercase */
-+	/* convert ses->user_name to unicode */
- 	len = strlen(ses->user_name);
- 	user = kmalloc(2 + (len * 2), GFP_KERNEL);
- 	if (user == NULL) {
-@@ -427,7 +427,7 @@ static int calc_ntlmv2_hash(struct cifs_
- 		rc = -ENOMEM;
- 		return rc;
+ 	dev = device_create(g_oz_class, NULL, g_cdev.devnum, NULL, "ozwpan");
+ 	if (IS_ERR(dev)) {
+ 		oz_dbg(ON, "Failed to create sysfs entry for cdev\n");
+ 		err = PTR_ERR(dev);
+-		goto out1;
++		goto delete;
  	}
--	len = cifs_strtoUCS((__le16 *)user, ses->user_name, len, nls_cp);
-+	len = cifs_strtoUCS(user, ses->user_name, len, nls_cp);
- 	UniStrupr(user);
- 
- 	rc = crypto_shash_update(&ses->server->secmech.sdeschmacmd5->shash,
+ 	return 0;
+-out1:
++
++delete:
+ 	cdev_del(&g_cdev.cdev);
+-out2:
++unregister:
+ 	unregister_chrdev_region(g_cdev.devnum, 1);
+-out3:
+ 	return err;
+ }
+ /*------------------------------------------------------------------------------
+-- 
+1.7.9.5
 
