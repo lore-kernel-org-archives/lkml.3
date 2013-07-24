@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab3GXVPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:15:11 -0400
-Received: from p3plsmtps2ded04.prod.phx3.secureserver.net ([208.109.80.198]:59624
-	"EHLO p3plsmtps2ded04.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752116Ab3GXVPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:15:09 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        andi@firstfloor.org, akpm@linux-foundation.org, linux-mm@kvack.org,
-        kamezawa.hiroyuki@gmail.com, mhocko@suse.cz, hannes@cmpxchg.org,
-        yinghan@google.com, dave@sr71.net
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 0/2] Drivers: hv: balloon: Online memory segments "in context" 
-Date: Wed, 24 Jul 2013 14:29:15 -0700
-Message-Id: <1374701355-30799-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752855Ab3GXVXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:23:12 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:37998 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab3GXVXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 17:23:11 -0400
+Date: Wed, 24 Jul 2013 23:23:08 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Keith Packard <keithp@keithp.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 4/5] drm/i915: Add async page flip support for IVB
+Message-ID: <20130724212308.GZ5939@phenom.ffwll.local>
+Mail-Followup-To: Keith Packard <keithp@keithp.com>,
+	linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
+	dri-devel@lists.freedesktop.org
+References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
+ <1374544202-15496-5-git-send-email-keithp@keithp.com>
+ <20130723052856.GD5939@phenom.ffwll.local>
+ <86li4v3ds7.fsf@miki.keithp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86li4v3ds7.fsf@miki.keithp.com>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code depends on user level code to bring online memory
-segments that have been hot added. Change this code to online memory
-in the same context that is hot adding the memory.
+On Wed, Jul 24, 2013 at 01:26:32PM -0700, Keith Packard wrote:
+> Daniel Vetter <daniel@ffwll.ch> writes:
+> 
+> > Matching tiling modes is actually already a requirement on gen4+ (since
+> > the tiling bit and the linear/tiled offset registers can't be changed with
+> > a MI_DISPLAY_FLIP command).
+> 
+> Async flip has a harder requirement -- you must use X tiling, both
+> before and after the flip. Oh, and async flips require a 32KB aligned
+> buffer, which I'm not actually checking for. Not sure how to
 
-This patch set implements the necessary infrastructure for making
-it possible to online memory segments from within a driver.
+We could just unconditionally increase the alignement in
+intel_pin_and_fence_fb_obj - we already have more strict requirements due
+to a bunch of w/a in other places. So shouldn't hurt at all really.
 
-K. Y. Srinivasan (2):
-  Drivers: base: memory: Export functionality for "in kernel" onlining
-    of memory
-  Drivers: hv: balloon: Online the hot-added memory "in context"
+> > But atm we fail to check that in the common
+> > code, so imo better to move that to there.
+> >
+> > We already check for matching strides in common code, so with the tile
+> > check added we could drop this all here.
+> 
+> I don't see a requirement for matching stride and tile parameter in the
+> MI_DISPLAY_FLIP docs for synchronous operations, at least on DevGT+. Is
+> the common code too restrictive?
 
- drivers/base/memory.c   |   35 +++++++++++++++++++++++++++++++++++
- drivers/hv/hv_balloon.c |   20 +++-----------------
- include/linux/memory.h  |    5 +++++
- 3 files changed, 43 insertions(+), 17 deletions(-)
-
+Hm right, I've mixed that. I guess we could be a bit more sloppy with
+this, otoh no one yet seems to want it and Ville's pageflip stuff is
+rather madly flexible.
+-Daniel
 -- 
-1.7.4.1
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
