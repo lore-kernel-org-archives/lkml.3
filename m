@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712Ab3GXKBa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 06:01:30 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:64830 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab3GXKB2 (ORCPT
+	id S1752735Ab3GXKCN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 06:02:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57044 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab3GXKCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 06:01:28 -0400
+	Wed, 24 Jul 2013 06:02:11 -0400
+Message-ID: <51EFA5F5.3020406@huawei.com>
+Date: Wed, 24 Jul 2013 18:01:25 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130724102123.6d1156925959e56640c23468@canb.auug.org.au>
-References: <20130723095513.19b9638ab4a19157e9834dcf@canb.auug.org.au>
- <CACxGe6tjrFG1aLc9Scmmuunjb9hTm5vyH6LqXiys8484YY=Zzw@mail.gmail.com> <20130724102123.6d1156925959e56640c23468@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 24 Jul 2013 11:01:07 +0100
-X-Google-Sender-Auth: PpISzb77tZlqAe9f3xMEO1vRBr4
-Message-ID: <CACxGe6uB5wKzaM_X3ROnD0z+wc7WZ=cHF1bm3zD=mm=mb5QJxg@mail.gmail.com>
-Subject: Re: linux-next: status of various trees
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Mark Brown <broonie@kernel.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH v2 4/8] memcg: convert to use cgroup_is_descendant()
+References: <51EFA554.6080801@huawei.com>
+In-Reply-To: <51EFA554.6080801@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 1:21 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> OK, I have done all that.  I also removed the irqdomain-current and
-> spi-current trees.
->
-> So the trees I have left that you are responsible for are:
->
-> devicetree-current      git://git.secretlab.ca/git/linux-2.6#devicetree/merge
-> devicetree              git://git.secretlab.ca/git/linux-2.6#devicetree/next
-> arm-dt                  git://git.secretlab.ca/git/linux-2.6#devicetree/arm-next
+This is a preparation to kill css_id.
 
-You can drop the arm-dt tree also.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ mm/memcontrol.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-g.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index d12ca6f..626c426 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1434,7 +1434,7 @@ bool __mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+ 		return true;
+ 	if (!root_memcg->use_hierarchy || !memcg)
+ 		return false;
+-	return css_is_ancestor(&memcg->css, &root_memcg->css);
++	return cgroup_is_descendant(memcg->css.cgroup, root_memcg->css.cgroup);
+ }
+ 
+ static bool mem_cgroup_same_or_subtree(const struct mem_cgroup *root_memcg,
+-- 
+1.8.0.2
+
