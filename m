@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752020Ab3GXGWs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 02:22:48 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:40763 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3GXGWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 02:22:46 -0400
+	id S1752000Ab3GXGXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 02:23:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43206 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750876Ab3GXGXH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 02:23:07 -0400
+Date: Wed, 24 Jul 2013 09:22:55 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Youquan Song <youquan.song@intel.com>, Sheng Yang <sheng@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
+Message-ID: <20130724062254.GA16400@redhat.com>
+References: <1373592159-459-1-git-send-email-youquan.song@intel.com>
+ <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1307232233190.26199@axis700.grange>
-References: <1374576609-27748-1-git-send-email-g.liakhovetski@gmx.de>
-	<1374576609-27748-3-git-send-email-g.liakhovetski@gmx.de>
-	<CANqRtoRnMkUjYKp3j2agoN7ufh9DGGbha6xQS8ugibLvK3hGfA@mail.gmail.com>
-	<Pine.LNX.4.64.1307232233190.26199@axis700.grange>
-Date: Wed, 24 Jul 2013 15:22:44 +0900
-Message-ID: <CANqRtoSdfU=SP+MuOTLenPOHCp17CFLA+OVtjqpAgP7bxMVC=Q@mail.gmail.com>
-Subject: Re: [PATCH v4 02/15] DMA: shdma: add r8a7740 DMAC data to the device
- ID table
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Simon Horman <horms@verge.net.au>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Vinod Koul <vinod.koul@intel.com>, SH-Linux <linux-sh@vger.kernel.org>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guennadi,
-
-On Wed, Jul 24, 2013 at 6:19 AM, Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> wrote:
-> On Wed, 24 Jul 2013, Magnus Damm wrote:
+On Tue, Jul 23, 2013 at 09:24:45PM -0700, Yinghai Lu wrote:
+> On Thu, Jul 11, 2013 at 6:22 PM, Youquan Song <youquan.song@intel.com> wrote:
+> > x2APIC extends APICID from 8 bits to 32 bits, but the device interrupt routed
+> > from IOAPIC or delivered in MSI mode will keep 8 bits destination APICID.
+> > In order to support x2APIC, the VT-d interrupt remapping is introduced to
+> > translate the destination APICID to 32 bits in x2APIC mode and keep the device
+> > compatible in this way.
+> >
+> > x2APIC support both logical and physical mode in destination mode.
+> > In logical destination mode, the 32 bits Logical APICID has 2 sub-fields:
+> >  16 bits cluster ID and 16 bits logical ID within the cluster and it is
+> > required VT-d interrupt remapping in x2APIC cluster mode.
+> > In physical destination mode, the 8 bits physical id is compatible with 32
+> > bits physical id when CPU number < 256.
+> > When interrupt remapping initialization fail on platform with CPU number < 256,
+> > current kernel only enables x2APIC physical mode in virutalization environment,
+> > while we also can enable x2APIC physcial mode in native kernel this situation,
+> > and the device interrupt will use 8 bits destination APICID in physical mode
+> > and be compatible with x2APIC physical when < 256 CPUs.
+> >
+> > So we can benefit from x2APIC vs xAPIC MMIO:
+> >  - x2APIC MSR read/write is faster than xAPIC mmio
+> >  - x2APIC only ICR write to deliver interrupt without polling ICR deliver
+> >    status bit and xAPIC need poll to read ICR deliver status bit.
+> >  - x2APIC 64 bits ICR access instead of xAPIC two 32 bits access.
+> >
+> > Signed-off-by: Youquan Song <youquan.song@intel.com>
+> > ---
+> >  arch/x86/kernel/apic/apic.c |    7 ++-----
+> >  1 files changed, 2 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> > index 904611b..51a065a 100644
+> > --- a/arch/x86/kernel/apic/apic.c
+> > +++ b/arch/x86/kernel/apic/apic.c
+> > @@ -1603,11 +1603,8 @@ void __init enable_IR_x2apic(void)
+> >                 goto skip_x2apic;
+> >
+> >         if (ret < 0) {
+> > -               /* IR is required if there is APIC ID > 255 even when running
+> > -                * under KVM
+> > -                */
+> > -               if (max_physical_apicid > 255 ||
+> > -                   !hypervisor_x2apic_available()) {
+> > +               /* IR is required if there is APIC ID > 255 */
+> > +               if (max_physical_apicid > 255) {
+> >                         if (x2apic_preenabled)
+> >                                 disable_x2apic();
+> >                         goto skip_x2apic;
+> 
+> Those are kvm and xen related.
 >
->> Hi Guennadi,
->>
->> Thanks for your efforts on this.
->>
->> On Tue, Jul 23, 2013 at 7:49 PM, Guennadi Liakhovetski
->> <g.liakhovetski@gmx.de> wrote:
->> > This configuration data will be re-used, when DMAC DT support is added to
->> > r8a7740, DMAC platform data in setup-r8a7740.c will be removed.
->> >
->> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
->> > ---
->> >
->> > v4: make struct sh_dmae_pdata r8a7740_dma_pdata "const"
->> >
->>
->> [snip]
->>
->> > --- /dev/null
->> > +++ b/drivers/dma/sh/shdma-r8a7740.c
->> > @@ -0,0 +1,95 @@
->> > +#include <linux/sh_dma.h>
->> > +
->> > +#include <mach/dma-register.h>
->> > +#include <mach/r8a7740.h>
->>
->> Including stuff from <mach/..> isn't really compatible with
->> MULTIPLATFORM,
->
-> Hmm, right. I modeled this arch-specific driver code after Laurent's
-> pinctrl driver revamp, which also includes <mach/*.h> headers. So, we'll
-> have to think how to fix both.
+This change does not affect kvm or xen since they already enable x2apic
+without IR. But back then when I added the apicid > 255 check I had to
+add the hypervisor check too because I was told by Intel that x2apic
+without IR is not architectural. Seeing that this patch comes from Intel
+engineer it is possible that things changed since then.
 
-I mentioned this to Laurent when he started converting to PINCTRL, and
-I believe the only remaining bits are the static GPIO-to-IRQ tables.
-
->> so please don't write new code like this. Actually we
->> don't want any code under drivers/ to include stuff from the mach
->> directory.
->
-> Sure, understood.
-
-Good.
-
->> I suggest that you arrange your code in a way so the C version of DMAC
->> support has tables with slave ids as usual under
->> arch/arm/mach-shmobile/, but the DT bits that operate independently of
->> C stay in drivers/... Over time we will get rid of the C version, and
->> until that happens the DT and C version can coexist in parallel.
->
-> That's already how it is. Data, that I took to drivers/dma/sh/ is needed
-> for both DT and C. DMA stuff, needed only for C are only DMAC devices and
-> resources. I think, I might be able to carry those DMA specific headers
-> and defines over from mach/ to drivers/dma/sh. Maybe it would be easier to
-> do this in several steps:
->
-> 1. add my drivers/dma/sh/shdma-<arch>.c files *with* mach/ headers
-> 2. switch arches over to those files
-> (the above two steps are already done in my patch series)
-> 3. move headers to drivers/dma/sh
->
-> Ok, alternatively, I might be able to do (1) above without using mach/
-> headers at all by directly copying them to drivers/dma/sh/ and then
-> removing the original mach/headers in step (2)? I'll look in more detail
-> at the code tomorrow.
-
-Thanks. My apologies for reviewing your code late in the cycle, but
-I've now looked through this series and the following questions popped
-up:
-
-1) How will it look like in DT when a DMA Engine slave device will use DMA?
-
-2) Isn't it possible to leave the SHDMA_SLAVE_xx bits to only be used
-by legacy C SoC and board code in arch/arm/mach-shmobile? I don't
-understand why you have to move them over to drivers/... I just assume
-these SHDMA_SLAVE bits won't be used by 1) above.
-
-3) How difficult would it be to describe the information in "struct
-sh_dmae_slave_config" using DT?
-
-4) It seems that some patches in this series are unrelated. Can you
-submit 4/15 and 9/15 from v4 independently somehow?
-
-5) Reducing and extending (reducing is optional of course)
-
-At this point you cover r8a7740, r8a73a0 and r8a73a4. I'm not sure why
-your picked those 3 SoCs, but perhaps it would be a good idea to
-select a single SoC to begin with but extend the support to also
-provide DT code that makes use of DMA Engine in slave devices like for
-instance MMCIF (this would cover question 1) above). When we have
-agreed on the big picture then additional SoCs can easily be added
-later.
-
-6) Remove untested bits
-
-And while doing this conversion, perhaps this is a good opportunity to
-only move over DMA Engine slaves that can be tested? Having tons of
-unused DMA configuration seems overly heavy to me. If it's not tested
-then it's broken.
-
-Cheers,
-
-/ magnus
+--
+			Gleb.
