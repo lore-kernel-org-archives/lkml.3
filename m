@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab3GXOSP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:18:15 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45860 "EHLO
+	id S1753549Ab3GXOSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:18:13 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45806 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752289Ab3GXOGq (ORCPT
+	by vger.kernel.org with ESMTP id S1752271Ab3GXOGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:46 -0400
+	Wed, 24 Jul 2013 10:06:47 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
-        "Dirk Hohndel" <dirk@hohndel.org>
+CC: akpm@linux-foundation.org, "'Darren Hart'" <dvhart@linux.intel.com>,
+        "'Peter Zijlstra'" <peterz@infradead.org>,
+        "Zhang Yi" <zhang.yi20@zte.com.cn>,
+        "Jiang Biao" <jiang.biao2@zte.com.cn>,
+        "Ma Chenggong" <ma.chenggong@zte.com.cn>,
+        "'Mel Gorman'" <mgorman@suse.de>, "Zhang Yi" <wetpzy@gmail.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.933584477@decadent.org.uk>
+Message-ID: <lsq.1374674565.476773578@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [61/85] HID: Add support for the MacBook Pro 10,2 keyboard / touchpad
+Subject: [39/85] futex: Take hugepages into account when generating futex_key
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,117 +36,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Hohndel <dirk@hohndel.org>
+From: Zhang Yi <wetpzy@gmail.com>
 
-commit 8d80da90f53d37cf6caefc61353e1cc3a145b9e0 upstream.
+commit 13d60f4b6ab5b702dc8d2ee20999f98a93728aec upstream.
 
-This enables the existing drivers for keyboard and touchpad with the new
-USB IDs found on the MBP 13" Reasonable Resolution (also known as the
-Retina Display).
+The futex_keys of process shared futexes are generated from the page
+offset, the mapping host and the mapping index of the futex user space
+address. This should result in an unique identifier for each futex.
 
-Added entries to both keyboard and mouse ignore lists.
+Though this is not true when futexes are located in different subpages
+of an hugepage. The reason is, that the mapping index for all those
+futexes evaluates to the index of the base page of the hugetlbfs
+mapping. So a futex at offset 0 of the hugepage mapping and another
+one at offset PAGE_SIZE of the same hugepage mapping have identical
+futex_keys. This happens because the futex code blindly uses
+page->index.
 
-Signed-off-by: Dirk Hohndel <dirk@hohndel.org>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-[bwh: Backported to 3.2: format of limits in bcm5974 changed]
+Steps to reproduce the bug:
+
+1. Map a file from hugetlbfs. Initialize pthread_mutex1 at offset 0
+   and pthread_mutex2 at offset PAGE_SIZE of the hugetlbfs
+   mapping.
+
+   The mutexes must be initialized as PTHREAD_PROCESS_SHARED because
+   PTHREAD_PROCESS_PRIVATE mutexes are not affected by this issue as
+   their keys solely depend on the user space address.
+
+2. Lock mutex1 and mutex2
+
+3. Create thread1 and in the thread function lock mutex1, which
+   results in thread1 blocking on the locked mutex1.
+
+4. Create thread2 and in the thread function lock mutex2, which
+   results in thread2 blocking on the locked mutex2.
+
+5. Unlock mutex2. Despite the fact that mutex2 got unlocked, thread2
+   still blocks on mutex2 because the futex_key points to mutex1.
+
+To solve this issue we need to take the normal page index of the page
+which contains the futex into account, if the futex is in an hugetlbfs
+mapping. In other words, we calculate the normal page mapping index of
+the subpage in the hugetlbfs mapping.
+
+Mappings which are not based on hugetlbfs are not affected and still
+use page->index.
+
+Thanks to Mel Gorman who provided a patch for adding proper evaluation
+functions to the hugetlbfs code to avoid exposing hugetlbfs specific
+details to the futex code.
+
+[ tglx: Massaged changelog ]
+
+Signed-off-by: Zhang Yi <zhang.yi20@zte.com.cn>
+Reviewed-by: Jiang Biao <jiang.biao2@zte.com.cn>
+Tested-by: Ma Chenggong <ma.chenggong@zte.com.cn>
+Reviewed-by: 'Mel Gorman' <mgorman@suse.de>
+Acked-by: 'Darren Hart' <dvhart@linux.intel.com>
+Cc: 'Peter Zijlstra' <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/000101ce71a6%24a83c5880%24f8b50980%24@com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hid/hid-apple.c       |  6 ++++++
- drivers/hid/hid-core.c        |  6 ++++++
- drivers/hid/hid-ids.h         |  3 +++
- drivers/input/mouse/bcm5974.c | 21 +++++++++++++++++++++
- 4 files changed, 36 insertions(+)
+ include/linux/hugetlb.h | 16 ++++++++++++++++
+ kernel/futex.c          |  3 ++-
+ mm/hugetlb.c            | 17 +++++++++++++++++
+ 3 files changed, 35 insertions(+), 1 deletion(-)
 
---- a/drivers/hid/hid-apple.c
-+++ b/drivers/hid/hid-apple.c
-@@ -523,6 +523,12 @@ static const struct hid_device_id apple_
- 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
- 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
-+		.driver_data = APPLE_HAS_FN },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
-+		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
-+		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
- 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1383,6 +1383,9 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
-@@ -1989,6 +1992,9 @@ static const struct hid_device_id hid_mo
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_ISO) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7_JIS) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
- 	{ }
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -119,6 +119,9 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
- #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
- #define USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI	0x0249
- #define USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO	0x024a
- #define USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS	0x024b
---- a/drivers/input/mouse/bcm5974.c
-+++ b/drivers/input/mouse/bcm5974.c
-@@ -83,6 +83,10 @@
- #define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
- #define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
- #define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
-+/* MacbookPro10,2 (unibody, October 2012) */
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI	0x0259
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO	0x025a
-+#define USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS	0x025b
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -327,6 +327,17 @@ static inline unsigned hstate_index_to_s
+ 	return hstates[index].order + PAGE_SHIFT;
+ }
  
- #define BCM5974_DEVICE(prod) {					\
- 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
-@@ -136,6 +140,10 @@ static const struct usb_device_id bcm597
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
- 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
-+	/* MacbookPro10,2 */
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO),
-+	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
- 	/* Terminating entry */
- 	{}
- };
-@@ -369,6 +377,18 @@ static const struct bcm5974_config bcm59
- 		HAS_INTEGRATED_BUTTON,
- 		0x84, sizeof(struct bt_data),
- 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-+		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-+		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-+		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
-+		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
-+	},
-+	{
-+		USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO,
-+		USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS,
-+		HAS_INTEGRATED_BUTTON,
-+		0x84, sizeof(struct bt_data),
-+		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
- 		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
- 		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
- 		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
++pgoff_t __basepage_index(struct page *page);
++
++/* Return page->index in PAGE_SIZE units */
++static inline pgoff_t basepage_index(struct page *page)
++{
++	if (!PageCompound(page))
++		return page->index;
++
++	return __basepage_index(page);
++}
++
+ #else
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
+@@ -345,6 +356,11 @@ static inline unsigned int pages_per_hug
+ 	return 1;
+ }
+ #define hstate_index_to_shift(index) 0
++
++static inline pgoff_t basepage_index(struct page *page)
++{
++	return page->index;
++}
+ #endif
+ 
+ #endif /* _LINUX_HUGETLB_H */
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -60,6 +60,7 @@
+ #include <linux/pid.h>
+ #include <linux/nsproxy.h>
+ #include <linux/ptrace.h>
++#include <linux/hugetlb.h>
+ 
+ #include <asm/futex.h>
+ 
+@@ -363,7 +364,7 @@ again:
+ 	} else {
+ 		key->both.offset |= FUT_OFF_INODE; /* inode-based key */
+ 		key->shared.inode = page_head->mapping->host;
+-		key->shared.pgoff = page_head->index;
++		key->shared.pgoff = basepage_index(page);
+ 	}
+ 
+ 	get_futex_key_refs(key);
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -679,6 +679,23 @@ int PageHuge(struct page *page)
+ }
+ EXPORT_SYMBOL_GPL(PageHuge);
+ 
++pgoff_t __basepage_index(struct page *page)
++{
++	struct page *page_head = compound_head(page);
++	pgoff_t index = page_index(page_head);
++	unsigned long compound_idx;
++
++	if (!PageHuge(page_head))
++		return page_index(page);
++
++	if (compound_order(page_head) >= MAX_ORDER)
++		compound_idx = page_to_pfn(page) - page_to_pfn(page_head);
++	else
++		compound_idx = page - page_head;
++
++	return (index << compound_order(page_head)) + compound_idx;
++}
++
+ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
 
