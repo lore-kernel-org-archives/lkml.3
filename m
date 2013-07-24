@@ -1,58 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab3GXSjR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:39:17 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:44892 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab3GXSjN (ORCPT
+	id S1753705Ab3GXSjl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:39:41 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45459 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752805Ab3GXSjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:39:13 -0400
-Date: Wed, 24 Jul 2013 11:39:12 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>
-Subject: Re: [PATCH v5 0/5] clk: implement remuxing during set_rate
-Message-ID: <20130724183912.GC27761@codeaurora.org>
-References: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
- <20130621170407.20448.35605@quantum>
- <CAAG0J9-F0P67=oaE5UHhmgd3Wz4k4XjsRjWShxmKOqicAyrhfw@mail.gmail.com>
+	Wed, 24 Jul 2013 14:39:39 -0400
+Message-ID: <51F01F61.6010609@linux.vnet.ibm.com>
+Date: Wed, 24 Jul 2013 13:39:29 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAG0J9-F0P67=oaE5UHhmgd3Wz4k4XjsRjWShxmKOqicAyrhfw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        isimatu.yasuaki@jp.fujitsu.com
+Subject: [PATCH 4/8] Create a sysfs release file for hot removing memory
+References: <51F01E06.6090800@linux.vnet.ibm.com>
+In-Reply-To: <51F01E06.6090800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072505-3568-0000-0000-000003FAA756
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/21, James Hogan wrote:
-> On 21 June 2013 18:04, Mike Turquette <mturquette@linaro.org> wrote:
-> > Quoting James Hogan (2013-06-13 09:05:57)
-> >> This patchset adds support for automatic selection of the best parent
-> >> for a clock mux, i.e. the one which can provide the closest clock rate
-> >> to that requested. It can be disabled by a new CLK_SET_RATE_NO_REPARENT
-> >> flag (which is set for all uses of clk_register_mux().
-> >>
-> >> This works by way of adding a new op, determine_rate, similar to
-> >> round_rate but with an extra parameter to allow the clock driver to
-> >> optionally select a different parent clock. This is used in
-> >> clk_calc_new_rates to decide whether to initiate a set_parent operation.
-> >
-> > Hi James,
-> >
-> > I'm going to hold off on this one for 3.11. I'll revisit it after the
-> > next merge window.
-> 
-> Okay, no worries.
-> 
+Provide a sysfs interface to hot remove memory.
 
-Has a new patchset been sent out? I'd like to see this merge in
-3.12.
+This patch updates the sysfs interface for hot add of memory to also
+provide a sysfs interface to hot remove memory. The use of this interface
+is controlled with the ARCH_MEMORY_PROBE config option, currently used
+by x86 and powerpc. This patch also updates the name of this option to
+CONFIG_ARCH_MEMORY_PROBE_RELEASE to indicate that it controls the probe
+and release sysfs interfaces.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+---
+ Documentation/memory-hotplug.txt |   34 ++++++++++++----
+ arch/powerpc/Kconfig             |    2 
+ arch/x86/Kconfig                 |    2 
+ drivers/base/memory.c            |   81 ++++++++++++++++++++++++++++++++++-----
+ 4 files changed, 100 insertions(+), 19 deletions(-)
+
+Index: linux/drivers/base/memory.c
+===================================================================
+--- linux.orig/drivers/base/memory.c
++++ linux/drivers/base/memory.c
+@@ -129,22 +129,30 @@ static ssize_t show_mem_end_phys_index(s
+ 	return sprintf(buf, "%08lx\n", phys_index);
+ }
+ 
++static int is_memblock_removable(unsigned long start_section_nr)
++{
++	unsigned long pfn;
++	int i, ret = 1;
++
++	for (i = 0; i < sections_per_block; i++) {
++		pfn = section_nr_to_pfn(start_section_nr + i);
++		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
++	}
++
++	return ret;
++}
++
+ /*
+  * Show whether the section of memory is likely to be hot-removable
+  */
+ static ssize_t show_mem_removable(struct device *dev,
+ 			struct device_attribute *attr, char *buf)
+ {
+-	unsigned long i, pfn;
+-	int ret = 1;
++	int ret;
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, dev);
+ 
+-	for (i = 0; i < sections_per_block; i++) {
+-		pfn = section_nr_to_pfn(mem->start_section_nr + i);
+-		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
+-	}
+-
++	ret = is_memblock_removable(mem->start_section_nr);
+ 	return sprintf(buf, "%d\n", ret);
+ }
+ 
+@@ -421,7 +429,7 @@ static DEVICE_ATTR(block_size_bytes, 044
+  * as well as ppc64 will do all of their discovery in userspace
+  * and will require this interface.
+  */
+-#ifdef CONFIG_ARCH_MEMORY_PROBE
++#ifdef CONFIG_ARCH_MEMORY_PROBE_RELEASE
+ static ssize_t
+ memory_probe_store(struct device *dev, struct device_attribute *attr,
+ 		   const char *buf, size_t count)
+@@ -444,6 +452,60 @@ memory_probe_store(struct device *dev, s
+ }
+ 
+ static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
++
++static int is_memblock_offline(struct memory_block *mem, void *arg)
++{
++	if (mem->state == MEM_ONLINE)
++		return 1;
++
++	return 0;
++}
++
++static ssize_t
++memory_release_store(struct device *dev, struct device_attribute *attr,
++		     const char *buf, size_t count)
++{
++	u64 phys_addr;
++	int nid, ret = 0;
++	unsigned long block_size, pfn;
++	unsigned long pages_per_block = PAGES_PER_SECTION * sections_per_block;
++
++	lock_device_hotplug();
++
++	ret = kstrtoull(buf, 0, &phys_addr);
++	if (ret)
++		goto out;
++
++	if (phys_addr & ((pages_per_block << PAGE_SHIFT) - 1)) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	block_size = get_memory_block_size();
++	nid = memory_add_physaddr_to_nid(phys_addr);
++
++	/* Ensure memory is offline and removable before removing it. */
++	ret = walk_memory_range(PFN_DOWN(phys_addr),
++				PFN_UP(phys_addr + block_size - 1), NULL,
++				is_memblock_offline);
++	if (!ret) {
++		pfn = phys_addr >> PAGE_SHIFT;
++		ret = !is_memblock_removable(pfn_to_section_nr(pfn));
++	}
++
++	if (ret) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	remove_memory(nid, phys_addr, block_size);
++
++out:
++	unlock_device_hotplug();
++	return ret ? ret : count;
++}
++
++static DEVICE_ATTR(release, S_IWUSR, NULL, memory_release_store);
+ #endif
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+@@ -694,8 +756,9 @@ bool is_memblock_offlined(struct memory_
+ }
+ 
+ static struct attribute *memory_root_attrs[] = {
+-#ifdef CONFIG_ARCH_MEMORY_PROBE
++#ifdef CONFIG_ARCH_MEMORY_PROBE_RELEASE
+ 	&dev_attr_probe.attr,
++	&dev_attr_release.attr,
+ #endif
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+Index: linux/arch/powerpc/Kconfig
+===================================================================
+--- linux.orig/arch/powerpc/Kconfig
++++ linux/arch/powerpc/Kconfig
+@@ -438,7 +438,7 @@ config SYS_SUPPORTS_HUGETLBFS
+ 
+ source "mm/Kconfig"
+ 
+-config ARCH_MEMORY_PROBE
++config ARCH_MEMORY_PROBE_RELEASE
+ 	def_bool y
+ 	depends on MEMORY_HOTPLUG
+ 
+Index: linux/arch/x86/Kconfig
+===================================================================
+--- linux.orig/arch/x86/Kconfig
++++ linux/arch/x86/Kconfig
+@@ -1343,7 +1343,7 @@ config ARCH_SELECT_MEMORY_MODEL
+ 	def_bool y
+ 	depends on ARCH_SPARSEMEM_ENABLE
+ 
+-config ARCH_MEMORY_PROBE
++config ARCH_MEMORY_PROBE_RELEASE
+ 	def_bool y
+ 	depends on X86_64 && MEMORY_HOTPLUG
+ 
+Index: linux/Documentation/memory-hotplug.txt
+===================================================================
+--- linux.orig/Documentation/memory-hotplug.txt
++++ linux/Documentation/memory-hotplug.txt
+@@ -17,7 +17,9 @@ be changed often.
+ 3. sysfs files for memory hotplug
+ 4. Physical memory hot-add phase
+   4.1 Hardware(Firmware) Support
+-  4.2 Notify memory hot-add event by hand
++  4.2 Notify memory hot-addand hot-remove event by hand
++     4.2.1 Probe interface
++     4.2.2 Release interface
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -69,7 +71,7 @@ management tables, and makes sysfs files
+ 
+ If firmware supports notification of connection of new memory to OS,
+ this phase is triggered automatically. ACPI can notify this event. If not,
+-"probe" operation by system administration is used instead.
++"probe" and "release" operations by system administration is used instead.
+ (see Section 4.).
+ 
+ Logical Memory Hotplug phase is to change memory state into
+@@ -208,20 +210,23 @@ calls hotplug code for all of objects wh
+ If memory device is found, memory hotplug code will be called.
+ 
+ 
+-4.2 Notify memory hot-add event by hand
++4.2 Notify memory hot-add and hot-remove event by hand
+ ------------
+ In some environments, especially virtualized environment, firmware will not
+ notify memory hotplug event to the kernel. For such environment, "probe"
+-interface is supported. This interface depends on CONFIG_ARCH_MEMORY_PROBE.
++and "release" interfaces are supported. This interface depends on
++CONFIG_ARCH_MEMORY_PROBE_RELEASE.
+ 
+-Now, CONFIG_ARCH_MEMORY_PROBE is supported only by powerpc but it does not
+-contain highly architecture codes. Please add config if you need "probe"
+-interface.
++Now, CONFIG_ARCH_MEMORY_PROBE_RELEASE is supported only by powerpc but it does
++not contain highly architecture codes. Please add config if you need "probe"
++and "release" interfaces.
+ 
++4.2.1 "probe" interface
++------------
+ Probe interface is located at
+ /sys/devices/system/memory/probe
+ 
+-You can tell the physical address of new memory to the kernel by
++You can tell the physical address of new memory to hot-add to the kernel by
+ 
+ % echo start_address_of_new_memory > /sys/devices/system/memory/probe
+ 
+@@ -230,6 +235,19 @@ memory range is hot-added. In this case,
+ current implementation). You'll have to online memory by yourself.
+ Please see "How to online memory" in this text.
+ 
++4.2.2 "release" interface
++------------
++Release interface is located at
++/sys/devices/system/memory/release
++
++You can tell the physical address of memory to hot-remove from the kernel by
++
++% echo start_address_of_memory > /sys/devices/system/memory/release
++
++Then, [start_address_of_memory, start_address_of_memory + section_size)
++memory range is hot-removed. You will need to ensure all of the memory in
++this range has been offlined prior to using this interface, please see
++"How to offline memory" in this text.
+ 
+ 
+ ------------------------------
+
