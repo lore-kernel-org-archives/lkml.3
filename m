@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753535Ab3GXOT7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:19:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45865 "EHLO
+	id S1753721Ab3GXOVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:21:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45715 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752355Ab3GXOGp (ORCPT
+	by vger.kernel.org with ESMTP id S1751064Ab3GXOGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:45 -0400
+	Wed, 24 Jul 2013 10:06:44 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        "Laszlo Ersek" <lersek@redhat.com>,
-        "John Haxby" <john.haxby@oracle.com>
+CC: akpm@linux-foundation.org, "Sujith Manoharan" <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.78180375@decadent.org.uk>
+Message-ID: <lsq.1374674565.66822618@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [52/85] xen/time: remove blocked time accounting from xen "clockchip"
+Subject: [17/85] ath9k_hw: Assign default xlna config for AR9485
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,81 +31,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laszlo Ersek <lersek@redhat.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit 0b0c002c340e78173789f8afaa508070d838cf3d upstream.
+commit 30d5b709da23f4ab9836c7f66d2d2e780a69cf12 upstream.
 
-... because the "clock_event_device framework" already accounts for idle
-time through the "event_handler" function pointer in
-xen_timer_interrupt().
+For AR9485 boards with XLNA, the default gpio config
+is not set correctly, fix this.
 
-The patch is intended as the completion of [1]. It should fix the double
-idle times seen in PV guests' /proc/stat [2]. It should be orthogonal to
-stolen time accounting (the removed code seems to be isolated).
-
-The approach may be completely misguided.
-
-[1] https://lkml.org/lkml/2011/10/6/10
-[2] http://lists.xensource.com/archives/html/xen-devel/2010-08/msg01068.html
-
-John took the time to retest this patch on top of v3.10 and reported:
-"idle time is correctly incremented for pv and hvm for the normal
-case, nohz=off and nohz=idle." so lets put this patch in.
-
-Signed-off-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: John Haxby <john.haxby@oracle.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/xen/time.c | 17 ++---------------
- 1 file changed, 2 insertions(+), 15 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c | 8 ++++++--
+ drivers/net/wireless/ath/ath9k/ar9003_phy.h    | 2 ++
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -36,9 +36,8 @@ static DEFINE_PER_CPU(struct vcpu_runsta
- /* snapshots of runstate info */
- static DEFINE_PER_CPU(struct vcpu_runstate_info, xen_runstate_snapshot);
- 
--/* unused ns of stolen and blocked time */
-+/* unused ns of stolen time */
- static DEFINE_PER_CPU(u64, xen_residual_stolen);
--static DEFINE_PER_CPU(u64, xen_residual_blocked);
- 
- /* return an consistent snapshot of 64-bit time/counter value */
- static u64 get64(const u64 *p)
-@@ -115,7 +114,7 @@ static void do_stolen_accounting(void)
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -3625,7 +3625,7 @@ static u16 ar9003_hw_ant_ctrl_chain_get(
+ static void ar9003_hw_ant_ctrl_apply(struct ath_hw *ah, bool is2ghz)
  {
- 	struct vcpu_runstate_info state;
- 	struct vcpu_runstate_info *snap;
--	s64 blocked, runnable, offline, stolen;
-+	s64 runnable, offline, stolen;
- 	cputime_t ticks;
+ 	int chain;
+-	u32 regval;
++	u32 regval, value;
+ 	u32 ant_div_ctl1;
+ 	static const u32 switch_chain_reg[AR9300_MAX_CHAINS] = {
+ 			AR_PHY_SWITCH_CHAIN_0,
+@@ -3633,7 +3633,11 @@ static void ar9003_hw_ant_ctrl_apply(str
+ 			AR_PHY_SWITCH_CHAIN_2,
+ 	};
  
- 	get_runstate_snapshot(&state);
-@@ -125,7 +124,6 @@ static void do_stolen_accounting(void)
- 	snap = &__get_cpu_var(xen_runstate_snapshot);
+-	u32 value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
++	if (AR_SREV_9485(ah) && (ar9003_hw_get_rx_gain_idx(ah) == 0))
++		ath9k_hw_cfg_output(ah, AR9300_EXT_LNA_CTL_GPIO_AR9485,
++				    AR_GPIO_OUTPUT_MUX_AS_PCIE_ATTENTION_LED);
++
++	value = ar9003_hw_ant_ctrl_common_get(ah, is2ghz);
  
- 	/* work out how much time the VCPU has not been runn*ing*  */
--	blocked = state.time[RUNSTATE_blocked] - snap->time[RUNSTATE_blocked];
- 	runnable = state.time[RUNSTATE_runnable] - snap->time[RUNSTATE_runnable];
- 	offline = state.time[RUNSTATE_offline] - snap->time[RUNSTATE_offline];
+ 	if (AR_SREV_9462(ah)) {
+ 		if (AR_SREV_9462_10(ah)) {
+--- a/drivers/net/wireless/ath/ath9k/ar9003_phy.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_phy.h
+@@ -334,6 +334,8 @@
  
-@@ -141,17 +139,6 @@ static void do_stolen_accounting(void)
- 	ticks = iter_div_u64_rem(stolen, NS_PER_TICK, &stolen);
- 	__this_cpu_write(xen_residual_stolen, stolen);
- 	account_steal_ticks(ticks);
--
--	/* Add the appropriate number of ticks of blocked time,
--	   including any left-overs from last time. */
--	blocked += __this_cpu_read(xen_residual_blocked);
--
--	if (blocked < 0)
--		blocked = 0;
--
--	ticks = iter_div_u64_rem(blocked, NS_PER_TICK, &blocked);
--	__this_cpu_write(xen_residual_blocked, blocked);
--	account_idle_ticks(ticks);
- }
+ #define AR_PHY_CCA_NOM_VAL_9330_2GHZ          -118
  
- /* Get the TSC speed from Xen */
++#define AR9300_EXT_LNA_CTL_GPIO_AR9485 9
++
+ /*
+  * AGC Field Definitions
+  */
 
