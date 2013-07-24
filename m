@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab3GXWNS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:13:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55387 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab3GXWGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:06:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 18/36] regulator: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:21 -0700
-Message-Id: <1374703539-9705-19-git-send-email-gregkh@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	id S1754725Ab3GXWN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:13:29 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.108]:59173 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753670Ab3GXWN0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 18:13:26 -0400
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-8.tower-160.messagelabs.com!1374704002!6772291!11
+X-Originating-IP: [216.166.12.31]
+X-StarScan-Received: 
+X-StarScan-Version: 6.9.11; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Ian Abbott <abbotti@mev.co.uk>
+Date: Wed, 24 Jul 2013 17:11:25 -0500
+Subject: RE: [PATCH 22/36] staging: comedi: convert class code to use
+ dev_groups
+Thread-Topic: [PATCH 22/36] staging: comedi: convert class code to use
+ dev_groups
+Thread-Index: Ac6Iuf0+03LeC4NdQRqJZWexzkyiZwAAIaCA
+Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC5C1F40@AUSP01VMBX24.collaborationhost.net>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+ <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1374703539-9705-23-git-send-email-gregkh@linuxfoundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the regulator class code to use
-the correct field.
+On Wednesday, July 24, 2013 3:05 PM, Greg Kroah-Hartman wrote:
+>
+> The dev_attrs field of struct class is going away soon, dev_groups
+> should be used instead.  This converts the comedi class code to use the
+> correct field.
+>
+> Cc: Ian Abbott <abbotti@mev.co.uk>
+> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/staging/comedi/comedi_fops.c | 39 ++++++++++++++++++------------------
+>  1 file changed, 20 insertions(+), 19 deletions(-)
 
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
+Looks good to me. Not sure what my sign off should be so take your pick.
 
-Mark, feel free to take this through your tree, or ACK it and I can take it
-through mine.
+Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
- drivers/regulator/core.c | 28 ++++++++++++++++------------
- 1 file changed, 16 insertions(+), 12 deletions(-)
+Acked-by: H Hartley Sweeten <hsweeten@visionengravers.com>
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 288c75ab..e75ed1ef 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -323,13 +323,14 @@ static ssize_t regulator_uA_show(struct device *dev,
- }
- static DEVICE_ATTR(microamps, 0444, regulator_uA_show, NULL);
- 
--static ssize_t regulator_name_show(struct device *dev,
--			     struct device_attribute *attr, char *buf)
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	struct regulator_dev *rdev = dev_get_drvdata(dev);
- 
- 	return sprintf(buf, "%s\n", rdev_get_name(rdev));
- }
-+static DEVICE_ATTR_RO(name);
- 
- static ssize_t regulator_print_opmode(char *buf, int mode)
- {
-@@ -489,15 +490,16 @@ static ssize_t regulator_total_uA_show(struct device *dev,
- }
- static DEVICE_ATTR(requested_microamps, 0444, regulator_total_uA_show, NULL);
- 
--static ssize_t regulator_num_users_show(struct device *dev,
--				      struct device_attribute *attr, char *buf)
-+static ssize_t num_users_show(struct device *dev, struct device_attribute *attr,
-+			      char *buf)
- {
- 	struct regulator_dev *rdev = dev_get_drvdata(dev);
- 	return sprintf(buf, "%d\n", rdev->use_count);
- }
-+static DEVICE_ATTR_RO(num_users);
- 
--static ssize_t regulator_type_show(struct device *dev,
--				  struct device_attribute *attr, char *buf)
-+static ssize_t type_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
- {
- 	struct regulator_dev *rdev = dev_get_drvdata(dev);
- 
-@@ -509,6 +511,7 @@ static ssize_t regulator_type_show(struct device *dev,
- 	}
- 	return sprintf(buf, "unknown\n");
- }
-+static DEVICE_ATTR_RO(type);
- 
- static ssize_t regulator_suspend_mem_uV_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
-@@ -632,12 +635,13 @@ static DEVICE_ATTR(bypass, 0444,
-  * These are the only attributes are present for all regulators.
-  * Other attributes are a function of regulator functionality.
-  */
--static struct device_attribute regulator_dev_attrs[] = {
--	__ATTR(name, 0444, regulator_name_show, NULL),
--	__ATTR(num_users, 0444, regulator_num_users_show, NULL),
--	__ATTR(type, 0444, regulator_type_show, NULL),
--	__ATTR_NULL,
-+static struct attribute *regulator_dev_attrs[] = {
-+	&dev_attr_name.attr,
-+	&dev_attr_num_users.attr,
-+	&dev_attr_type.attr,
-+	NULL,
- };
-+ATTRIBUTE_GROUPS(regulator_dev);
- 
- static void regulator_dev_release(struct device *dev)
- {
-@@ -648,7 +652,7 @@ static void regulator_dev_release(struct device *dev)
- static struct class regulator_class = {
- 	.name = "regulator",
- 	.dev_release = regulator_dev_release,
--	.dev_attrs = regulator_dev_attrs,
-+	.dev_groups = regulator_dev_groups,
- };
- 
- /* Calculate the new optimum regulator operating mode based on the new total
--- 
-1.8.3.rc0.20.gb99dd2e
+
+
 
