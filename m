@@ -1,54 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab3GXJJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:09:11 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:39694 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab3GXJJI (ORCPT
+	id S1752720Ab3GXJLd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 05:11:33 -0400
+Received: from mail-qe0-f46.google.com ([209.85.128.46]:36749 "EHLO
+	mail-qe0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3GXJLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:09:08 -0400
+	Wed, 24 Jul 2013 05:11:31 -0400
 MIME-Version: 1.0
-In-Reply-To: <51EF98DD.4010607@samsung.com>
-References: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
-	<1374146275-5758-2-git-send-email-cw00.choi@samsung.com>
-	<CAKohpo=oTsEjzi_51UaZ8ww8UEfZ6hwKAnu9rFgGBkt=TfHi8A@mail.gmail.com>
-	<51EF2D06.7000704@samsung.com>
-	<CAKohpok7B6DaqFPWZcODEgK5GRSoAQYZ27-h2=AQ1HBBP4gH8Q@mail.gmail.com>
-	<51EF8590.7030405@samsung.com>
-	<CAKohpom19C7JHSX6w31pSDrwcAR_PZn1HzP0Jui5iZL=bALDPQ@mail.gmail.com>
-	<51EF945E.3080802@samsung.com>
-	<CAKohpo=_3iR44XfxuRAmw-9DDk9APniWH=efd72v845wH3C-DQ@mail.gmail.com>
-	<51EF98DD.4010607@samsung.com>
-Date: Wed, 24 Jul 2013 14:39:07 +0530
-Message-ID: <CAKohpon02iZpB7BVwdJR69Ne=8GbL0z76D7ExtAahCE-R_vnnA@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v6] cpufreq: Add debugfs directory for cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130717163548.GA14999@kroah.com>
+References: <CA+k=oDzG+R-ei5WGxP8L1Od6VWTK9SgWcXHNjd89u6+b2bECkQ@mail.gmail.com>
+ <20130715165209.GA6000@kroah.com> <CA+k=oDzZ5sf_wFMUvE_vkkqRQaOV0P3vWP99tDpoZkrwMN7Q+A@mail.gmail.com>
+ <20130716063117.GA30320@kroah.com> <20130717075706.GC5291@arwen.pp.htv.fi> <20130717163548.GA14999@kroah.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Wed, 24 Jul 2013 17:11:09 +0800
+Message-ID: <CAGsJ_4zQ_mAAHhM6Lb+4VxAMuJowxpoh8edNBhzxCP2Z_C_g+A@mail.gmail.com>
+Subject: Re: [PATCH] usb: udc: add gadget state kobject uevent
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Felipe Balbi <balbi@ti.com>, Rong Wang <wr011235813@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rong.Wang@csr.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2013 14:35, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> And, I add additional step on below:
+2013/7/18 Greg KH <gregkh@linuxfoundation.org>:
+> On Wed, Jul 17, 2013 at 10:57:06AM +0300, Felipe Balbi wrote:
+>> Hi,
+>>
+>> On Mon, Jul 15, 2013 at 11:31:17PM -0700, Greg KH wrote:
+>> > > The question is since we default GADGET, so the g_mass_storage.ko is
+>> > > installed early but connecting to a host PC
+>> > > is randomly, But the udev has no idea when a host PC connects our device.
+>> > >
+>> > > So we consider it's reasonable to let the udev know the GADGET device state.
+>> > > Is there any alternative to our question?
+>> >
+>> > I thought we already export events for gadget device states, have you
+>> > looked for them?  I can't dig through the code at the moment, but this
+>> > seems like a pretty common issue...
+>> >
+>> > Felipe, any ideas?
+>>
+>> we already expose that in sysfs. IIRC udev can act on sysfs changes,
+>> no ?
 >
->> - Remove symlink for new policy->cpu, i..e cpu1 in your example
->> - rename debugfs entry to give it to cpu1 instead of cpu0.
->   - Store renamed cpu0 pointer to cpu1 pointer
->   - Create new link for CPU[2-3] to CPU1's debugfs directory
->         because debugfs use string path to create symbolic link.
->         It isn't automatically connected with new CPU1 debugfs directory.
+> If something is polling the sysfs file, yes.  If not, a change event
+> should be sent to notify people that they need to go re-read it as
+> something major happened (laptop docked, disk got removed, device
+> changed state, etc.)
 
-Honestly speaking I am not the best at debugfs core, but I still think
-the link is connected to a struct debugfs node and not to any path..
-This node is connected to a path though. And so even after rename
-things should stay stable without your new step...
+sysfs_notify() should be a mechinism to permit userspace to
+poll()/select() the sysfs file if users want to . for example, if an
+user cares about sysfs changes, he can do:
 
-Just try and see if I am right or wrong.. Otherwise what you already
-did is correct as you need to remove links for 2-3 as well..
+res = select(sysfd+1,
+             NULL,               // readfds - not needed
+             NULL,               // writefds - not needed
+             &exceptfds,
+             NULL);              // timeout (never)
 
->> - Set cpu0 pointer to NULL.
+if (res > 0 && FD_ISSET(sysfd, &exceptfds))
+{
+
+}
+
+i didn't see udev can poll sysfs node which will change value
+dynamically. it depends on 3rd applications to do that. and i also
+didn't find we can define a udev rule to monitor sysfs change.
+
+so the benefit of this patch here is that if we send uevent, we can
+easily define a rule in udev to switch the file_storage partition to
+target board or PC dynamically. this is a very popular user scenerios
+actually, considering a phone, the SD card is mounted to mobilephone
+at first, then after we connect the phone to PC, the SD is given to
+PC, after we disconnect, the partition will be given back to phone.
+
+we did see Android have done similar patch in its tree. so i would
+suggest we continue to work on rong's patch and make it visible in
+mainline.
+
+>
+> thanks,
+>
+> greg k-h
+
+-barry
