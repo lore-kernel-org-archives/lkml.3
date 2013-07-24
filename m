@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab3GXOkJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:40:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44126 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751863Ab3GXOkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:40:07 -0400
-Date: Wed, 24 Jul 2013 15:39:31 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
-Cc: Robin Gong <b38343@freescale.com>, shawn.guo@linaro.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        lgirdwood@gmail.com, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20130724143931.GJ9858@sirena.org.uk>
-References: <1374398247-11384-1-git-send-email-b38343@freescale.com>
- <20130724083041.GC4332@pengutronix.de>
- <20130724094228.GY9858@sirena.org.uk>
- <20130724095145.GE4332@pengutronix.de>
+	id S1752257Ab3GXOlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:41:25 -0400
+Received: from bitsync.net ([80.83.126.10]:39637 "EHLO bitsync.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750957Ab3GXOlY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 10:41:24 -0400
+Message-ID: <51EFDDDC.50504@bitsync.net>
+Date: Wed, 24 Jul 2013 15:59:56 +0200
+From: Zlatko Calusic <zcalusic@bitsync.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="y/C4Z0ZQWa14ewtO"
-Content-Disposition: inline
-In-Reply-To: <20130724095145.GE4332@pengutronix.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] regulator: pfuze100: add pfuze100 regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Hush Bensen <hush.bensen@gmail.com>
+CC: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/3] mm: improve page aging fairness between zones/nodes
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org> <51ED6274.3000509@bitsync.net> <51EFB80B.1090302@bitsync.net> <51EFCCB2.5020806@gmail.com>
+In-Reply-To: <51EFCCB2.5020806@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 24.07.2013 14:46, Hush Bensen wrote:
+> 于 2013/7/24 19:18, Zlatko Calusic 写道:
+>> On 22.07.2013 18:48, Zlatko Calusic wrote:
+>>> On 19.07.2013 22:55, Johannes Weiner wrote:
+>>>> The way the page allocator interacts with kswapd creates aging
+>>>> imbalances, where the amount of time a userspace page gets in memory
+>>>> under reclaim pressure is dependent on which zone, which node the
+>>>> allocator took the page frame from.
+>>>>
+>>>> #1 fixes missed kswapd wakeups on NUMA systems, which lead to some
+>>>> nodes falling behind for a full reclaim cycle relative to the other
+>>>> nodes in the system
+>>>>
+>>>> #3 fixes an interaction where kswapd and a continuous stream of page
+>>>> allocations keep the preferred zone of a task between the high and
+>>>> low watermark (allocations succeed + kswapd does not go to sleep)
+>>>> indefinitely, completely underutilizing the lower zones and
+>>>> thrashing on the preferred zone
+>>>>
+>>>> These patches are the aging fairness part of the thrash-detection
+>>>> based file LRU balancing. Andrea recommended to submit them
+>>>> separately as they are bugfixes in their own right.
+>>>>
+>>>
+>>> I have the patch applied and under testing. So far, so good. It looks
+>>> like it could finally fix the bug that I was chasing few months ago
+>>> (nicely described in your bullet #3). But, few more days of testing will
+>>> be needed before I can reach a quality verdict.
+>>>
+>>
+>> Well, only 2 days later it's already obvious that the patch is
+>> perfect! :)
+>>
+>> In the attached image, in the left column are the graphs covering last
+>> day and a half. It can be observed that zones are really balanced, and
+>> that aging is practically perfect. Graphs on the right column cover
+>> last 10 day period, and the left side of the upper graph shows how it
+>> would look with the stock kernel after about 20 day uptime (although
+>> only a few days is enough to reach such imbalance). File pages in the
+>> Normal zone are extinct species (red) and the zone is choke full of
+>> anon pages (blue). Having seen a lot of this graphs, I'm certain that
+>> it won't happen anymore with your patch applied. The balance is
+>> restored! Thank you for your work. Feel free to add:
+>>
+>> Tested-by: Zlatko Calusic <zcalusic@bitsync.net>
+>
+> Thanks for your testing Zlatko, could you tell me which benchmark or
+> workload you are using? Btw, which tool is used to draw these nice
+> pictures? ;-)
+>
 
---y/C4Z0ZQWa14ewtO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Workload is mixed (various services, light load). What makes the biggest 
+I/O load is backup procedure that goes every evening. The graphs are 
+home-made, a little bit of rrd, a little bit of perl, nothing too 
+complex. I'm actually slowly getting rid of these extra graphs, because 
+I used them only for debugging this specific problem, which is now fixed 
+thanks to Johannes.
 
-On Wed, Jul 24, 2013 at 11:51:45AM +0200, Steffen Trumtrar wrote:
-> On Wed, Jul 24, 2013 at 10:42:28AM +0100, Mark Brown wrote:
+-- 
+Zlatko
 
-> > >  static struct regulator_ops pfuze100_fixed_regulator_ops = {
-> > > 	.list_voltage = regulator_list_voltage_linear,
-> > > +	.set_voltage_sel = regulator_set_voltage_sel_regmap,
-> > >  };
-
-> > This doesn't make much sense, you're adding a set voltage operation to a
-> > fixed voltage regulator...
-
-> Hm, okay, sounds reasonable. But if I don't, VREFDDR isn't registered because
-> _regulator_do_set_voltage returns with -EINVAL.
-> So, I probably just fixed a symptom and not the cause.
-
-Yes, the obvious question is why we're trying to set a voltage on a
-regulator which can't change voltage.  Usually this is a result of
-setting a constraint that tries to force the voltage.
-
---y/C4Z0ZQWa14ewtO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR7+cgAAoJELSic+t+oim9ElUP/juGJDGofhINfhGRYY0cB/3O
-4852+UyhdHtjl3vRVGPgp1tqzFApYRzYgGdhg5w20k2tHz4OuUxmcsQGqSDtnNTD
-zyvv3NMmkWpjK5qE+ZYAMPfACQlWYJPWrdHgJBt+O9fZGsPkwzDePHyVEAQzTLxI
-9SXn8tvumXbDqV3KIbBddNzbpwvVh0PQzPtYnhyr+5lOh29nXX6G11gKWQuMNQtc
-d4S+m8w/Li3SpIPwGcJwK6Ym8nZsFz9L/huLKPi+sEH0gN6QanepEbkVR2046cFh
-FTYdtr0ugH2HahiYou0yFWmaWH9qbS0hqUeYwcQs3Chq1qDgkoOI1SGixXzNzawn
-dgc5DuNMqj9FDiSCJtie248zJbQbctxw7CCsyBmINRzzzAc9xtaWonfV8glteGZn
-nvZmjXa+WZQj1t+Ow93VqcKam+I5F1GgSiKY0fs50PXdFYJkRlFv5KqPPQcY1ZsN
-uiHTqkPWZ/8a6eRr1Ku5bOODX+0h6NdVfZOij/+oxFVQ2OlcSG9sXQrgMjc2kgMp
-fXmTTpMRdrgieYkZcwlkc0dZXU0fyJ9FJtRYfsZIIID1moWmnaUtjnUR8kfZSiDr
-jkcSlhJfoZ9XDR537eCCA9tXZ8uBArIQ3oJjyji7s/3XZe6Ib07e9yhtswHtglYX
-oKO53R8qFnBMZbtFqvLc
-=CLTb
------END PGP SIGNATURE-----
-
---y/C4Z0ZQWa14ewtO--
