@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754216Ab3GYBCp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 21:02:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47251 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab3GYBCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 21:02:44 -0400
-Date: Thu, 25 Jul 2013 02:02:41 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm qxl fixes
-Message-ID: <alpine.DEB.2.00.1307250152320.25676@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754304Ab3GYBI0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 21:08:26 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59897 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752569Ab3GYBIX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 21:08:23 -0400
+Date: Wed, 24 Jul 2013 19:36:28 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Dhaval Giani <dgiani@mozilla.com>
+Cc: linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
+        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
+Message-ID: <20130724233628.GD3641@logfs.org>
+References: <1374699833.7083.2.camel@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1374699833.7083.2.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 24 July 2013 17:03:53 -0400, Dhaval Giani wrote:
+> 
+> I am posting this series early in its development phase to solicit some
+> feedback.
 
-Okay as I warned, the qxl driver was running a bit free and loose with its
-ttm object reservations and the new lockdep enabled reservation tracking 
-shone a bright light into it, it also with the new reservations mutexes
-hits a possible deadlock during boot.
+At this state, a good description of the format would be nice.
 
-the first patch is a real fix to render the console correctly as the 
-driver used to just drop irq renderering as too hard, this also fixes
-a sleeping while atomic warning.
+> We are implementing transparent decompression with a focus on ext4. One
+> of the main usecases is that of Firefox on Android. Currently libxul.so
+> is compressed and it is loaded into memory by a custom linker on
+> demand. With the use of transparent decompression, we can make do
+> without the custom linker. More details (i.e. code) about the linker can
+> be found at https://github.com/glandium/faulty.lib
 
-the second two patches are the big ugly ones that redo how the driver 
-allocates objects and reserves them and makes things all work properly,
-I've tested this in a VM, and compared to the current code which hits
-a lockdep warning and the sleep while atomic warning before failing.
+It is not quite clear what you want to achieve here.  One approach is
+to create an empty file, chattr it to enable compression, then write
+uncompressed data to it.  Nothing in userspace will ever know the file
+is compressed, unless you explicitly call lsattr.
 
-So sorry this is coming in late, I should have tested qxl before merging 
-the mutex code, but I'd rather just fix qxl with this than revert the 
-reservations code at this point.
+If you want to follow some other approach where userspace has one
+interface to write the compressed data to a file and some other
+interface to read the file uncompressed, you are likely in a world of
+pain.
 
-Dave.
+Assuming you use the chattr approach, that pretty much comes down to
+adding compression support to ext4.  There have been old patches for
+ext2 around that never got merged.  Reading up on the problems
+encountered by those patches might be instructive.
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
+Jörn
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
-
-are available in the git repository at:
-
-  git://people.freedesktop.org/~airlied/linux qxl-fixes
-
-for you to fetch changes up to 8002db6336dd361fc13214e9515fe5d52ff294ee:
-
-  qxl: convert qxl driver to proper use for reservations (2013-07-24 11:58:10 +1000)
-
-----------------------------------------------------------------
-Dave Airlie (3):
-      drm/qxl: add delayed fb operations
-      qxl: allow creation of pre-pinned objects and use for releases.
-      qxl: convert qxl driver to proper use for reservations
-
- drivers/gpu/drm/qxl/qxl_cmd.c     |  42 +++--
- drivers/gpu/drm/qxl/qxl_display.c |  70 ++++++---
- drivers/gpu/drm/qxl/qxl_draw.c    | 263 +++++++++++++++++++++----------
- drivers/gpu/drm/qxl/qxl_drv.h     |  76 ++++-----
- drivers/gpu/drm/qxl/qxl_fb.c      | 184 +++++++++++++++++++---
- drivers/gpu/drm/qxl/qxl_fence.c   |  10 +-
- drivers/gpu/drm/qxl/qxl_gem.c     |   2 +-
- drivers/gpu/drm/qxl/qxl_image.c   | 111 ++++++++++---
- drivers/gpu/drm/qxl/qxl_ioctl.c   | 319 +++++++++++++++++++++-----------------
- drivers/gpu/drm/qxl/qxl_object.c  |  70 ++-------
- drivers/gpu/drm/qxl/qxl_object.h  |   6 +-
- drivers/gpu/drm/qxl/qxl_release.c | 212 +++++++++++++++----------
- drivers/gpu/drm/qxl/qxl_ttm.c     |   2 +-
- 13 files changed, 859 insertions(+), 508 deletions(-)
+--
+I've never met a human being who would want to read 17,000 pages of
+documentation, and if there was, I'd kill him to get him out of the
+gene pool.
+-- Joseph Costello
