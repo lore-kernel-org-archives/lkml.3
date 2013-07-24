@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab3GXUzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:55:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:52757 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab3GXUyk (ORCPT
+	id S1754009Ab3GXUz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:55:56 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59893 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520Ab3GXUzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:54:40 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 9/9] ARM: msm: Only compile io.c on platforms that use it
-Date: Wed, 24 Jul 2013 13:54:34 -0700
-Message-Id: <1374699274-18388-10-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.4.840.g6a90778
-In-Reply-To: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
-References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 24 Jul 2013 16:55:53 -0400
+Date: Wed, 24 Jul 2013 15:23:57 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Baruch Even <baruch@ev-en.org>
+Cc: Nagalakshmi Nandigama <Nagalakshmi.Nandigama@lsi.com>,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>, Support <support@lsi.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        DL-MPTFusionLinux@lsi.com, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, mit@purestorage.com
+Subject: Re: [PATCH] mpt2sas: don't handle broadcast primitives
+Message-ID: <20130724192357.GC3641@logfs.org>
+References: <20130719220659.GF29404@logfs.org>
+ <20130719221143.GG29404@logfs.org>
+ <CAC9+anJ47nx+KyKvp7MT1Hanh-8YNDmSQwtM542dpeOdCVVoUw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAC9+anJ47nx+KyKvp7MT1Hanh-8YNDmSQwtM542dpeOdCVVoUw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only the non-dt based MSM platforms need to map memory from their
-machine descriptor. Unfortunately it is always compiled if
-ARCH_MSM=y and the file also has mach/ includes in it. Since
-dt-based MSM platforms aren't actually using anything in this
-file just compile io.c on the non-dt based MSM platforms. This
-allows the dt-based platforms to participate in the
-multi-platform kernel.
+On Wed, 24 July 2013 23:42:22 +0300, Baruch Even wrote:
+> On Sat, Jul 20, 2013 at 1:11 AM, Jörn Engel <joern@logfs.org> wrote:
+> > On Fri, 19 July 2013 18:06:59 -0400, Jörn Engel wrote:
+> >>
+> >> The handling of broadcast primitives involves
+> >> _scsih_block_io_all_device(), which does what the name implies.  I have
+> >> observed cases with >60s of blocking io on all devices, caused by a
+> >> single bad device.  The downsides of this code are obvious, while the
+> >> upsides are more elusive.
+> >
+> > And since this patch looks more like an April fools joke: I have
+> > gathered a few machine-months of testing, including tortures that
+> > specifically stress the removed codepaths.  This is a serious
+> > submission and unless someone can show me a _very_ good reason for
+> > keeping the deleted code, I would like to get it merged.
+> 
+> This would seem to cause an IO pause through the host whenever there
+> is a disk removal/insertion or SES (SAS expander) change which seems
+> like a bad proposition indeed. The part of the work that this code
+> seems to handle is that when such a change happens something needs to
+> detect the dead IOs (f.ex. surprise disk removal) but I believe that
+> the SAS HBA firmware will do that internally already so I do think
+> this code is needless.
+> 
+> The only thing I'd like not to lose is the actual notification and
+> ability to log the fact that there was a broadcast notification on the
+> SAS network.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- arch/arm/mach-msm/Makefile | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+I agree logging would be nice.  However my attempts to keep logging and
+remove the IO pause were unsuccessful.  Apparently something inside
+_scsih_sas_broadcast_primitive_event() is required to get future
+events.  If someone from LSI with data sheets and understanding of the
+firmware can do a better patch, I would be happy.
 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 4c248ba..d872634c 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,4 +1,4 @@
--obj-y += io.o timer.o
-+obj-y += timer.o
- obj-y += clock.o
- 
- obj-$(CONFIG_MSM_VIC) += irq-vic.o
-@@ -8,9 +8,9 @@ obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- 
- obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
- 
--obj-$(CONFIG_ARCH_MSM7X00A) += dma.o
--obj-$(CONFIG_ARCH_MSM7X30) += dma.o
--obj-$(CONFIG_ARCH_QSD8X50) += dma.o
-+obj-$(CONFIG_ARCH_MSM7X00A) += dma.o io.o
-+obj-$(CONFIG_ARCH_MSM7X30) += dma.o io.o
-+obj-$(CONFIG_ARCH_QSD8X50) += dma.o io.o
- 
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Jörn
 
+--
+The story so far:
+In the beginning the Universe was created.  This has made a lot
+of people very angry and been widely regarded as a bad move.
+-- Douglas Adams
