@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3GXSxz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:53:55 -0400
-Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:48995 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753538Ab3GXSxx (ORCPT
+	id S1753751Ab3GXSzr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:55:47 -0400
+Received: from mail.gctsemi.com ([211.106.186.8]:63924 "EHLO
+	KRMAIL01.gctsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3GXSzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:53:53 -0400
-Date: Wed, 24 Jul 2013 14:54:49 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-In-Reply-To: <51EF222D.9070909@oracle.com>
-Message-ID: <alpine.DEB.2.02.1307241449450.8520@pianoman.cluster.toy>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
- <51EF222D.9070909@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 24 Jul 2013 14:55:45 -0400
+X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jul 2013 14:55:45 EDT
+From: Won Kang <WonKang@gctsemi.com>
+To: Joe Perches <joe@perches.com>, Won Kang <wkang77@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Won Kang <WonKang@gctsemi.com>
+Subject: =?ks_c_5601-1987?B?yLi9xTogUmU6IFtQQVRDSCB2MiAxLzJdIHN0YWdpbmc6IGdkbTcy?=
+ =?ks_c_5601-1987?Q?40:_adding_LTE_USB_driver?=
+Thread-Topic: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
+Thread-Index: AQHOiJ6u8XdyHk6Nj0egq5lud6NY3A==
+Date: Wed, 24 Jul 2013 18:50:35 +0000
+Message-ID: <q1a8cci895yk4bvj84insdx6.1374691832660@email.android.com>
+References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
+	 <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>,<1374691311.18818.20.camel@joe-AO722>
+In-Reply-To: <1374691311.18818.20.camel@joe-AO722>
+Reply-To: Won Kang <WonKang@gctsemi.com>
+Accept-Language: ko-KR, en-US
+Content-Language: ko-KR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="ks_c_5601-1987"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020204.51F022C1.00E7,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6OItpXY031121
 
-On Tue, 23 Jul 2013, Sasha Levin wrote:
+Hi Joe,
 
-> It's probably fine to change a testing ABI once in a while, but when things
-> like trinity start breaking that often due to ABI changes in the same exact
-> place, that's too much IMO.
+Got it. Thanks
 
-The problem is they want the ABI to be "whatever our closely-coupled 
-userspace perf tool accepts as input" which is an often-changing 
-complicated (and undocumented) set of LEX and YACC parsers.
+Regards,
+Won
 
-I guess we could just give in and declare that to be the official 
-perf sysfs interface in the ABI documentation.  
 
-It's frustrating trying to maintain tools that use the perf_event 
-interface because the inclusion of perf in the kernel is used as an excuse 
-to constantly break the ABI.
 
-Vince
+-------- ¿øº» ¸Ş½ÃÁö --------
+¹ß½Å: Joe Perches <joe@perches.com>
+³¯Â¥: 2013/07/25 ¿ÀÀü 3:42 (GMT+09:00)
+¼ö½Å: Won Kang <wkang77@gmail.com>
+ÂüÁ¶: linux-kernel@vger.kernel.org,devel@driverdev.osuosl.org,gregkh@linuxfoundation.org,Won Kang <WonKang@gctsemi.com>
+Á¦¸ñ: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
+
+
+On Thu, 2013-07-25 at 03:36 +0900, Won Kang wrote:
+> GCT Semiconductor GDM7240 is 4G LTE chip.
+> This driver supports GCT reference platform as a USB device.
+>
+> Signed-off-by: Won Kang <wonkang@gctsemi.com>
+>
+> staging: gdm7240: added contacts for code maintanance
+>
+> Signed-off-by: Won Kang <wonkang@gctsemi.com>
+>
+> staging: gdm7240: style fixes
+>
+> Signed-off-by: Won Kang <wonkang@gctsemi.com>
+
+Hi Won.
+
+Please don't sign off multiple times on one patch.
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
