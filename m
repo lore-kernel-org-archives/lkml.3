@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403Ab3GXRDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:03:31 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53815 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab3GXRD3 (ORCPT
+	id S1752696Ab3GXREU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:04:20 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:41595 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab3GXRES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:03:29 -0400
-Message-ID: <51F008DE.50308@wwwdotorg.org>
-Date: Wed, 24 Jul 2013 10:03:26 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Wed, 24 Jul 2013 13:04:18 -0400
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Tuomas Tynkkynen <ttynkkynen@nvidia.com>, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        gregkh@linuxfoundation.org
-Subject: Re: [PATCH 0/9] Tegra USB cleanup series
-References: <1372455427-20898-1-git-send-email-ttynkkynen@nvidia.com> <51D1FCBD.6070104@wwwdotorg.org> <20130724123229.GE17962@radagast>
-In-Reply-To: <20130724123229.GE17962@radagast>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20130724145506.GC15095@kroah.com>
+References: <20130723220418.532514378@linuxfoundation.org>
+	<CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
+	<B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
+	<20130724145506.GC15095@kroah.com>
+Date: Wed, 24 Jul 2013 10:04:17 -0700
+X-Google-Sender-Auth: wU-JfJJ4SOd1UdtlKXsA4W_GYuk
+Message-ID: <CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
+Subject: Re: [ 000/103] 3.10.3-stable review
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
+	<gregkh@linuxfoundation.org>
+Cc: Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 05:32 AM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Jul 01, 2013 at 04:03:41PM -0600, Stephen Warren wrote:
->> On 06/28/2013 03:36 PM, Tuomas Tynkkynen wrote:
->>> Hi,
->>> 
->>> Here's a few cleanup patches for the Tegra USB drivers, to be
->>> applied on top of Mikko's two patch sets. It mostly deals with
->>> removing all usage of platform data and using standard helpers
->>> and enums instead of Tegra-specific ones.
->> 
->> With the issues in patches 5/9 and 9/9 fixed as I mentioned, this
->> series,
->> 
->> Tested-by: Stephen Warren <swarren@nvidia.com>
-> 
-> so, do you want me to apply these myself ?
+On Wed, Jul 24, 2013 at 7:55 AM, gregkh@linuxfoundation.org >>
+"Kroah-Hartman, Greg" <gregkh@linuxfoundation.org> wrote:
+> On Wed, Jul 24, 2013 at 01:40:56PM +0000, Shuah Khan wrote:
+>> Note: When I did a git reset --hard on 3.10.2-rc2 patch,
+>> drivers/acpi/acpi_cmos_rtc.c was left as an untracked file.
+>> I had to remove it before git pull succeeded for 3.10.2.
+>
+> Yes, that's because 3.10.2 added a new file to the tree, so this is to
+> be expected.
 
-Yes, I believe if all of Tuomas's and Mikko's recent USB patches can
-go through one of the USB trees, that would be best. Thanks!
+.. well, depending on how you do it, yes.
 
+So if you just originally apply it as a patch, and don't actually tell
+git about the file, then yes, "git reset --hard" will leave the new
+file alone, since git doesn't really even know about it - the same way
+that "git diff" will not actually show the file at all, for the same
+reason.
+
+And then when you apply the patch again, or when you do a "git pull",
+things will be unhappy, because you have that old untracked file
+still.
+
+When working with that kind of setup, you're generally best off doing
+"git clean -dqfx" or similar to remove all files git doesn't know
+about. Or just doing it by hand.
+
+The alternative workflow is to tell git to track the new files added
+by the patch. So if you use "git apply --index", git will not just
+apply the patch, it will also add the result to the index - so you
+could commit it with a single "git commit", and you can see the diff -
+including new files - with "git diff --cached". And then "git reset
+--hard" will also undo the new files.
+
+So you *can* make git track the new files as you apply a patch.
+Whether you actually want to is up to you.
+
+                Linus
