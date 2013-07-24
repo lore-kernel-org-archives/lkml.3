@@ -1,111 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934415Ab3GWXyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 19:54:35 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:23475 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934085Ab3GWXye (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 19:54:34 -0400
-Message-ID: <51EF17A4.5040300@hp.com>
-Date: Tue, 23 Jul 2013 19:54:12 -0400
-From: Waiman Long <waiman.long@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+	id S934435Ab3GWXzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 19:55:48 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:36637 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934085Ab3GWXzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 19:55:47 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kamal Mostafa <kamal@canonical.com>, James Hogan <james@albanarts.com>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: Linux 3.11-rc2 (acpi backlight)
+Date: Wed, 24 Jul 2013 02:05:48 +0200
+Message-ID: <1657635.t6GA9ja9Ss@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1374605189.31029.25.camel@fourier>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <9012759.Alzqtdvh5b@vostro.rjw.lan> <1374605189.31029.25.camel@fourier>
 MIME-Version: 1.0
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Weinberger <richard@nod.at>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Akinobu Mita <akinobu.mita@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Michel Lespinasse <walken@google.com>,
-        Andi Kleen <andi@firstfloor.org>, Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Chandramouleeswaran, Aswin" <aswin@hp.com>,
-        "Norton, Scott J" <scott.norton@hp.com>
-Subject: Re: [PATCH RFC 1/2] qrwlock: A queue read/write lock implementation
-References: <1373679249-27123-1-git-send-email-Waiman.Long@hp.com> <1373679249-27123-2-git-send-email-Waiman.Long@hp.com> <alpine.DEB.2.02.1307151657540.11918@ionos.tec.linutronix.de> <51E49FA3.4030202@hp.com> <alpine.DEB.2.02.1307181210330.4089@ionos.tec.linutronix.de> <51E7F95B.9050202@hp.com> <51EB74C7.7060503@linux.vnet.ibm.com>
-In-Reply-To: <51EB74C7.7060503@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2013 01:42 AM, Raghavendra K T wrote:
-> On 07/18/2013 07:49 PM, Waiman Long wrote:
->> On 07/18/2013 06:22 AM, Thomas Gleixner wrote:
->>> Waiman,
->>>
->>> On Mon, 15 Jul 2013, Waiman Long wrote:
->>>> On 07/15/2013 06:31 PM, Thomas Gleixner wrote:
->>>>> On Fri, 12 Jul 2013, Waiman Long wrote:
-> [...]
->>>
->>>>>> + * an increase in lock size is not an issue.
->>>>> So is it faster in the general case or only for the high 
->>>>> contention or
->>>>> single thread operation cases?
->>>>>
->>>>> And you still miss to explain WHY it is faster. Can you please 
->>>>> explain
->>>>> proper WHY it is faster and WHY we can't apply that technique you
->>>>> implemented for qrwlocks to writer only locks (aka spinlocks) with a
->>>>> smaller lock size?
->>>> I will try to collect more data to justify the usefulness of qrwlock.
->>> And please provide a proper argument why we can't use the same
->>> technique for spinlocks.
->>
->> Of course, we can use the same technique for spinlock. Since we only
->> need 1 bit for lock, we could combine the lock bit with the queue
->> address with a little bit more overhead in term of coding and speed.
->> That will make the new lock 4 bytes in size for 32-bit code & 8 bytes
->> for 64-bit code. That could solve a lot of performance problem that we
->> have with spinlock. However, I am aware that increasing the size of
->> spinlock (for 64-bit systems) may break a lot of inherent alignment in
->> many of the data structures. That is why I am not proposing such a
->> change right now. But if there is enough interest, we could certainly go
->> ahead and see how things go.
->
-> keeping apart the lock size part, for spinlocks, is it that
->  fastpath overhead is less significant in low contention scenarios for
-> qlocks?
+On Tuesday, July 23, 2013 11:46:29 AM Kamal Mostafa wrote:
+> On Mon, 2013-07-22 at 21:54 +0200, Rafael J. Wysocki wrote:
+> > On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
+> > > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > >
+> > > > Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
+> > > 
+> > > Yes, but [...] I'd suggest doing the revert just in time for
+> > > rc3, but waiting until then to gather info about people who see
+> > > breakage.
+> > > 
+> > > Sound like a plan?
+> > 
+> > Yes, it does.
+> > 
+> > Rafael
+> 
+> 
+> Hi Rafael-
+> 
+> For your reference...
+> 
+> As James Hogan reported, those ACPI changes break backlight control on
+> the "Dell XPS13" Ivy Bridge models (the Sandy Bridge XPS13 model is not
+> affected).
+> 
+> I confirm that reverting 8c5bd7a and efaa14c fixes it again.
 
-Fastpath speed is an important consideration for accepting changes to 
-lock, especially if the critical section is short. This is the 
-impression that I got so far. When the critical section is long, 
-however, the speed of the fastpath will be less important.
+Thanks!
 
-> Also let me know if you have POC implementation for the spinlocks that
-> you can share. I am happy to test that.
+I'd like to collect some information on the systems having problems with those
+two commits (to see if they are similar somehow).
 
-I don't any POC implementation for the spinlocks as I am aware that any 
-increase in spinlock size will cause it hard to get merged. I could make 
-one after I finish the current set of patches that I am working on.
+It seems that one common symptom is that brightness cannot be controlled
+through function keys.  Is that correct for all of you?  If so, did you try
+any other way to control brightness, like a GUI-based?
 
-> sorry. different context:
-> apart from AIM7 fserver, is there any other benchmark to exercise this
-> qrwlock series? (to help in the testing).
->
-For the AIM7 test suite, the fserver & new_fserver with ext4 are the 
-best ones for exercising the qrwlock series, but you do need to have a 
-lot of cores to see the effect. I haven't try to find other suitable 
-benchmark tests yet.
+Also, can you all please send me (a) the output of dmidecode and (b) the
+contents of /proc/cpuinfo from your systems?
 
-Actually, improving fserver and new_fserver performance is not my 
-primary objective. My primary goal is to have a fair rwlock 
-implementation that can be used to replace selected spinlocks that is in 
-high contention without losing the fairness attribute of the ticket 
-spinlock, just like the replacement of mutex by rwsem.
+Rafael
 
-Regards,
-Longman
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
