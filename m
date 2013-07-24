@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751137Ab3GXBim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 21:38:42 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:45956 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750760Ab3GXBil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 21:38:41 -0400
-Message-ID: <1374629919.10171.26.camel@joe-AO722>
-Subject: Re: [PATCH 10/27] drivers/memory: don't check resource with
- devm_ioremap_resource
-From: Joe Perches <joe@perches.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Date: Tue, 23 Jul 2013 18:38:39 -0700
-In-Reply-To: <51EF2D9D.8030904@wwwdotorg.org>
-References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
-	 <1374602524-3398-11-git-send-email-wsa@the-dreams.de>
-	 <1374603925.3387.26.camel@joe-AO722> <51EF2D9D.8030904@wwwdotorg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751143Ab3GXBn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 21:43:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55532 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750760Ab3GXBn4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 21:43:56 -0400
+X-IronPort-AV: E=Sophos;i="4.89,731,1367942400"; 
+   d="scan'208";a="7998914"
+Message-ID: <51EF31FA.3030602@cn.fujitsu.com>
+Date: Wed, 24 Jul 2013 09:46:34 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, joJoee@perches.com
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 01/21] acpi: Print Hot-Pluggable Field in SRAT.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-2-git-send-email-tangchen@cn.fujitsu.com> <20130723184843.GG21100@mtj.dyndns.org>
+In-Reply-To: <20130723184843.GG21100@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/24 09:41:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/24 09:41:53
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-23 at 18:27 -0700, Stephen Warren wrote:
-> On 07/23/2013 11:25 AM, Joe Perches wrote:
-> > On Tue, 2013-07-23 at 20:01 +0200, Wolfram Sang wrote:
-> >> devm_ioremap_resource does sanity checks on the given resource. No need to
-> >> duplicate this in the driver.
-[]
-> > This is the first and only one of the patch series I looked at.
-> > 
-> >> diff --git a/drivers/memory/tegra20-mc.c b/drivers/memory/tegra20-mc.c
-> > []
-> >> @@ -218,8 +218,6 @@ static int tegra20_mc_probe(struct platform_device *pdev)
-> >>  		struct resource *res;
-> >>  
-> >>  		res = platform_get_resource(pdev, IORESOURCE_MEM, i);
-> >> -		if (!res)
-> >> -			return -ENODEV;
-> >>  		mc->regs[i] = devm_ioremap_resource(&pdev->dev, res);
-> > 
-> > I'm not so sure this is appropriate.
-> > 
-> > devm_ioremap_resource returns ERR_PTR(-EINVAL) for
-> > null resource so this changes the return.
-> 
-> I think the exact return value is probably pretty arbitrary here.
+On 07/24/2013 02:48 AM, Tejun Heo wrote:
+> On Fri, Jul 19, 2013 at 03:59:14PM +0800, Tang Chen wrote:
+>> The Hot-Pluggable field in SRAT suggests if the memory could be
+>> hotplugged while the system is running. Print it as well when
+>> parsing SRAT will help users to know which memory is hotpluggable.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> Reviewed-by: Wanpeng Li<liwanp@linux.vnet.ibm.com>
+>
+> Acked-by: Tejun Heo<tj@kernel.org>
+>
+> But a nit below
+>
+>> +	pr_info("SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
+>> +		node, pxm,
+>> +		(unsigned long long) start, (unsigned long long) end - 1,
+>> +		hotpluggable ? "Hot Pluggable" : "");
+>
+> The following would be more conventional.
+>
+>    "...10Lx]%s\n", ..., hotpluggable ? " Hot Pluggable" : ""
+>
+> Also, isn't "Hot Pluggable" a bit too verbose?  "hotplug" should be
+> fine, I think.
+>
 
-I think so as well, but it takes code inspection to
-determine whether or not there's any code impact.
+Hi tj, Joe,
 
-I want to make sure Wolfram has done that inspection.
+OK，will change it as you guys said.
+Thank you very much.
 
-> > devm_ioremap_resource also emits a noisy dev_err
-> > message when resource is NULL.
-> > 
-> > It's a probe and before the message log would be silent
-> > but now there's a new dmesg.
-> 
-> I think those changes are fine, at least for this driver. It's a bug if
-> the required resources are missing, and having probe() actively point
-> out why it's failing can only be a good thing in my book.
-
-Again, I haven't looked at _all_ the paths for all
-of these patches, I just picked one at random.
-
-Extra dmesg output with some device probes that are
-expected to fail is not good.
-
+Thanks.
 
