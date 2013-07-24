@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143Ab3GXTEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:04:44 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:64141 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3GXTEm (ORCPT
+	id S1753405Ab3GXTEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:04:51 -0400
+Received: from shelob.oktetlabs.ru ([195.131.132.186]:54057 "EHLO
+	shelob.oktetlabs.ru" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752105Ab3GXTEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:04:42 -0400
-Message-ID: <51F0253C.7090205@gmail.com>
-Date: Wed, 24 Jul 2013 21:04:28 +0200
-From: Daniel Mack <zonque@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 15:04:48 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 shelob.oktetlabs.ru D77217F540
+Date: Wed, 24 Jul 2013 23:04:31 +0400
+From: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>, Doug Thompson <dougthompson@xmission.com>,
+        Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: lockdep warning in edac_create_sysfs_mci_device
+Message-ID: <20130724190429.GL24717@sanechka.spb.ru>
+References: <20130721144819.GJ24717@sanechka.spb.ru>
+ <20130721190212.GA31470@pd.tnic>
+ <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: v3.11-rc1 USB regressions
-References: <20130715225647.GE3296@blackmetal.musicnaut.iki.fi> <51E4E922.2040707@gmail.com> <20130716175710.GA14385@blackmetal.musicnaut.iki.fi> <20130724185119.GB26943@blackmetal.musicnaut.iki.fi>
-In-Reply-To: <20130724185119.GB26943@blackmetal.musicnaut.iki.fi>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+8MBb+GzRkj9M7gy9g5CvXfzMGCYXRXfTUycbojnspyrwvTeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Aaro,
-
-On 24.07.2013 20:51, Aaro Koskinen wrote:
-> On Tue, Jul 16, 2013 at 08:57:10PM +0300, Aaro Koskinen wrote:
-
->> Here are full details:
->>
->> Kernel v3.11-rc1 and the following USB fixes:
->> 	ARM: omap2: fix musb usage for n8x0
->> 	musb: omap: Fix: pass all the resources to musb core
+On Jul 24 09:27, Tony Luck wrote:
+> Fix was pulled into Linus' tree yesterday evening (Portland, OR timezone):
 > 
-> [...]
+> commit 88d84ac97378c2f1d5fec9af1e8b7d9a662d6b00
+> Author: Borislav Petkov <bp@suse.de>
+> Date:   Fri Jul 19 12:28:25 2013 +0200
 > 
->> When I revert fe4cb0912f8e737f8e4b8b38b9e692f8062f5423 and
->> 8b125df5b24cfb0ec7fa1971e343cc0badc1827d, it works like before (3.10):
+>     EDAC: Fix lockdep splat
 > 
-> I'm now running -rc2 with above fixes and reverts (the only way to get
-> USB working). I'm seeing an additional issue, the following crash happens
-> always on N900 when doing "poweroff":
+> Alexandra: Give it a test and let me and Boris know if you still see
+> any problems.
 
-Yes, with the mentioned patches reverted, musb_to_hcd() will return a
-faulty pointer. You can't easily revert them unfortunately.
+Thank you, the fix works.  Now it is easier for me to find problems in my
+modules...
 
-Your platform needs a real fix, I just have trouble understanding why a
-removed usb_add_hcd() would make the gadget code fail.
-
-Sorry for the trouble, but I don't currently have a board with musb in
-gadget mode to reproduce this issue.
-
-
-Thanks,
-Daniel
-
+-- 
+Alexandra N. Kossovsky
+OKTET Labs (http://www.oktetlabs.ru/)
+e-mail: sasha@oktetlabs.ru
