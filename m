@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab3GYEQQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:16:16 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:47971 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752637Ab3GYEPX (ORCPT
+	id S1753123Ab3GYEPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:15:54 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62960 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751295Ab3GYEPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:15:23 -0400
-Message-ID: <1374725713.18653.49.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 05:15:13 +0100
-In-Reply-To: <87zjtbzz8j.fsf@canonical.com>
-References: <lsq.1374674565.832521875@decadent.org.uk>
-	 <87zjtbzz8j.fsf@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-A74DR2pg4C+FjtrL5I9R"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 25 Jul 2013 00:15:08 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH] of: provide of_platform_unpopulate()
+To: Rob Herring <robherring2@gmail.com>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        George Cherian <george.cherian@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Roger Quadros <rogerq@ti.com>
+In-Reply-To: <51EDA117.10605@gmail.com>
+References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de> <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com> <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com> <51EDA117.10605@gmail.com>
+Date: Wed, 24 Jul 2013 15:19:58 +0100
+Message-Id: <20130724141958.9156F3E0A24@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 22 Jul 2013 16:16:07 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> On 07/21/2013 06:44 PM, Grant Likely wrote:
+> > On Sun, Jul 21, 2013 at 9:48 PM, Rob Herring <robherring2@gmail.com> wrote:
+> >> On 07/21/2013 09:42 AM, Rob Herring wrote:
+> >>> On 07/19/2013 01:14 PM, Sebastian Andrzej Siewior wrote:
+> >>>> So I called of_platform_populate() on a device to get each child device
+> >>>> probed and on rmmod and I need to reverse its doing. After a quick grep
+> >>>> I did what others did as well and rmmod ended in:
+> >>>>
+> >>>> | Unable to handle kernel NULL pointer dereference at virtual address 00000018
+> >>>> | PC is at release_resource+0x18/0x80
+> >>>> | Process rmmod (pid: 2005, stack limit = 0xedc30238)
+> >>>> | [<c003add0>] (release_resource+0x18/0x80) from [<c0300e08>] (platform_device_del+0x78/0xac)
+> >>>> | [<c0300e08>] (platform_device_del+0x78/0xac) from [<c0301358>] (platform_device_unregister+0xc/0x18)
+> >>>>
+> >>>> The problem is that platform_device_del() "releases" each ressource in its
+> >>>> tree. This does not work on platform_devices created by OF becuase they
+> >>>> were never added via insert_resource(). As a consequence old->parent in
+> >>>> __release_resource() is NULL and we explode while accessing ->child.
+> >>>> So I either I do something completly wrong _or_ nobody here tested the
+> >>>> rmmod path of their driver.
+> >>>
+> >>> Wouldn't the correct fix be to call insert_resource somehow? The problem
+> >>> I have is that while of_platform_populate is all about parsing the DT
+> >>> and creating devices, the removal side has nothing to do with DT. So
+> >>> this should not be in the DT code. I think the core device code should
+> >>> be able to handle removal if the device creation side is done correctly.
+> >>>
+> >>> It looks to me like of_device_add either needs to call
+> >>> platform_device_add rather than device_add. I think the device name
+> >>> setting in platform_device_add should be a nop. If not, a check that the
+> >>> name is already set could be added.
+> >>>
+> >>
+> >> BTW, it looks like Grant has attempted this already:
+> > 
+> > Yup, things broke badly. Unfortunately the of_platform_device and
+> > platform_device history doesn't treat resources in the same way. I
+> > would like to merge the code, but I haven't been able to figure out a
+> > clean way to do it. Looks like we do need the unpopulate function.
+> 
+> Was there more breakage than imx6 and amba devices? Your first version
+> had a fallback case for powerpc. Couldn't we do just allow that for more
+> than just powerpc? I'd much rather see some work-around within the core
+> DT code with a warning to prevent more proliferation than putting this
+> into drivers.
 
---=-A74DR2pg4C+FjtrL5I9R
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It's tricky stuff. I've not figured out a solution I'm happy with.
+Trying to figure out when to apply a work around is hard because the
+resource reservation makes assumptions about the memory range layout
+that doesn't match the assumptions made by device tree code.
 
-On Wed, 2013-07-24 at 17:42 +0100, Luis Henriques wrote:
-> Ben Hutchings <ben@decadent.org.uk> writes:
->=20
-> > 3.2.49-rc1 review patch.  If anyone has any objections, please let me k=
-now.
-> >
-> > ------------------
-> >
-> > From: Gavin Shan <shangw@linux.vnet.ibm.com>
-> >
-> > commit 6d446ec32f169c6a5d9bc90684a8082a6cbe90f6 upstream.
-[...]
-> > @@ -3067,6 +3085,10 @@ static int tg3_halt_cpu(struct tg3 *tp,
-> >  			tw32(offset + CPU_MODE,  CPU_MODE_HALT);
-> >  			if (tr32(offset + CPU_MODE) & CPU_MODE_HALT)
-> >  				break;
-> > +			if (pci_channel_offline(tp->pdev))
-> > +				return -EBUSY;
-> > +			if (pci_channel_offline(tp->pdev))
-> > +				return -EBUSY;
-> >  		}
->=20
-> I believe you didn't want to have these two invocations to the
-> pci_channel_offline() function.  i guess you wanted to have one of
-> these moved to the other branch of the 'if' statement.
+One /possible/ option is to not add the resources to the devices at all
+when the device is registered and instead resolve them right at bind
+time. Jean Christophe proposed doing this already to solve a different
+problem; obtaining resources that require other drivers to be probed
+first. If the resources are resolved at .probe() time, then the resource
+registration problem should also go away.
 
-Indeed, and I've dropped this patch.  This was partly due to a bug in
-the patch command.  If there are two consecutive hunks which only insert
-lines and have the same context, and it can only find one match for the
-context, it will apply both insertions in the same place.
+The downside to that approach is that it makes each deferred probe more
+expensive; potentially a *lot* more expensive depending on how much work
+the xlate functions have to do. It would be worth prototyping though to
+see how well it works.
 
-Ben.
+g.
 
-> [ btw, I've just replied to an email by David S. Miller about his
->   backport to 3.4 (and 3.2) of this commit. ]
->=20
-> Cheers,
-
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-A74DR2pg4C+FjtrL5I9R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUfCmUee/yOyVhhEJAQrALA/+P5/v/G6Tip+FOsTxAVEQeBu9hdRpD+4F
-B8u1AxmJUg5WitZEd/nyexmJtz50bGBoCsUwE4kbWeqTHKbMR/B31btq3KOFk+Jd
-Azwxy1iWSAhl3kW1HGh9H/mywHfpw75ypRLUDkSgPNQnuOwcWbmiH3H5wr6m8Jw3
-pv9mZAKz9cFzeRfwbejsqpPHDPmtg49JQ9FbffD77u3NbQLuJbokfy38rm4day7U
-ZzaFv0xefIwDT22RKIH9D1aNuxE147pi/+CppDcBzS2OvoVLZyoPvaHjYMBz5yEk
-6RfHpiWBCxo+OP/9ctUD0Nbk5qp/LPlyiyBvSQkrYYKIRssJuNv62hmmMV38nhys
-dYeD++vnW5QELpPB9D1NIaXccV5p+icbMlsuScp+OtS46SxYCTlBXXXo1XD7EJmT
-+v0AuHuS/EU48PebxAm6yq1rvT27dlGK0vYpJHySLDD+z20Stw6WyL2JnAnf7oXi
-Qo9BH6LMQXPTFSd+KUydm1O/2bqRYAYIAePiQNaxzm2gXIyjE3wo3xhlr759TFRs
-U6BxC0vEagyNoDcauHc/I7/0Kooex7aNGwmkfV0vA4JzdwA54FGoNOsI62t2IdRx
-U0iO4dohSSCkv4jc2uwQjWWt4yk8D+TGVOoOxxEVV11G2rHi/Llv+BcsNf5UIWRd
-3NKOZQ52wqI=
-=NHbQ
------END PGP SIGNATURE-----
-
---=-A74DR2pg4C+FjtrL5I9R--
