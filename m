@@ -1,95 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab3GXQt5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 12:49:57 -0400
-Received: from tango.0pointer.de ([85.214.72.216]:50159 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3GXQtz (ORCPT
+	id S1752677Ab3GXQuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 12:50:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16675 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754910Ab3GXQuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 12:49:55 -0400
-Date: Wed, 24 Jul 2013 18:49:53 +0200
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
-        Richard Weinberger <richard@nod.at>,
-        Ramkumar Ramachandra <artagnon@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] um: change defconfig to stop spawning xterm
-Message-ID: <20130724164953.GW835@tango.0pointer.de>
-References: <1374258017-19606-1-git-send-email-artagnon@gmail.com>
- <51E988FF.9010201@nod.at>
- <CALkWK0kj=maJgrLV11h8GzJ-L24KWDzgCAiZa97rieJKUXeW_A@mail.gmail.com>
- <CALkWK0=0NWediExGCwJ3R-O+7V_9sgGzJPUaXgaTEka5O05N=Q@mail.gmail.com>
- <51ED0BBF.7060502@nod.at>
- <CALkWK0mpH9XHL2PZK47Lb9frf9hFNQ8sjF2_0p7VJnY8XWhiGw@mail.gmail.com>
- <20130722223238.GC13191@tango.0pointer.de>
- <51EE1765.2000402@nod.at>
- <CAFLxGvx0-TA7R5d6ienSiRm+rrGtCyf_LU5BNTAn1t7U9Ji8Jw@mail.gmail.com>
- <20130723075757.GM4165@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130723075757.GM4165@ZenIV.linux.org.uk>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Wed, 24 Jul 2013 12:50:11 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=QIZFyTDxVIcA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=WKn5AdJQQDgA:10 a=18wTAqcYOaM2zRuaw_EA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374684607.3356.132.camel@gandalf.local.home>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+From: Steven Rostedt <rostedt@goodmis.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Willy Tarreau <w@1wt.eu>
+Date: Wed, 24 Jul 2013 12:50:07 -0400
+In-Reply-To: <1374682997.7382.8.camel@dabdike>
+References: <1373944014.17876.255.camel@gandalf.local.home>
+	 <51E4BFA9.1030600@zytor.com>
+	 <alpine.DEB.2.02.1307161230080.4618@kaball.uk.xensource.com>
+	 <1373991399.6458.6.camel@gandalf.local.home>
+	 <alpine.DEB.2.02.1307161731210.8258@kaball.uk.xensource.com>
+	 <51E59F79.1040903@zytor.com>
+	 <alpine.DEB.2.02.1307171005570.8258@kaball.uk.xensource.com>
+	 <CAMP44s3DrAMgE3fphw9A8N8NzBz5wwENa4AY4yw-VkuPdqv4=w@mail.gmail.com>
+	 <20130717144043.GA16513@xanatos>
+	 <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+	 <20130719120841.GH26716@gmail.com>
+	 <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+	 <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
+	 <CAMP44s2J2zESnYYwEtN-Q2_4ft_M8UpdLxZavtK5q2fZcFa=SQ@mail.gmail.com>
+	 <1EC23D2B9975384993D85B5DB93AAE8861AA8D@sisaex01sj>
+	 <CAMP44s1w0dfv7peUU3DnHLujf5rtyK6xfCpcWRJhMTMvFHcjug@mail.gmail.com>
+	 <1374629194.2290.77.camel@dabdike>
+	 <1374629880.3356.130.camel@gandalf.local.home>
+	 <1374682997.7382.8.camel@dabdike>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23.07.13 08:57, Al Viro (viro@ZenIV.linux.org.uk) wrote:
-
+On Wed, 2013-07-24 at 09:23 -0700, James Bottomley wrote:
+> On Tue, 2013-07-23 at 21:38 -0400, Steven Rostedt wrote:
+> > On Tue, 2013-07-23 at 18:26 -0700, James Bottomley wrote:
+> > 
+> > > I think it's not in the original fallacies because they come from Greek
+> > > rhetoric and the Greeks believed dialectic: the taking opposite
+> > > positions and arguing them thoroughly.  It's only with the advent of
+> > > Western European political systems that we're conditioned to seek
+> > > compromise without rigorous examination.  This actually makes argument
+> > > to moderation one of the most effective rhetorical tools in use today
+> > > for discrediting an opponent's argument without actually addressing it.
+> > 
+> > What? Really? You mean the truth doesn't lie in the middle between
+> > evolution and creationism?
 > 
-> On Tue, Jul 23, 2013 at 07:47:07AM +0200, richard -rw- weinberger wrote:
-> > Adding Al again, someone dropped him from the CC list...
-> 
-> FWIW, all this crap stems from the old decision to use major 4 for
-> uml consoles.  And it was a bad decision, no arguments here.
-> It's also a decision we are years too late to revert.
-> 
-> a) VT102, let alone the extensions to it, is simply wrong for uml;
-> if it's understood by anything, it's on the host userland side.
-> xterm(1) has a notion of two-dimensional array of characters on screen,
-> organized in logical lines, etc.  So does screen(1).  So does
-> drivers/tty/vt/* (i.e. the kernel side of virtual console).  uml
-> console does *not* have such a notion - it passes a linear stream
-> of octets, sight unseen, to whatever's on the other side of connection.
-> Doing an equivalent of drivers/tty/vt/* would mean maintaining such
-> a 2D array internally *AND* somehow passing updates to that beast
-> to whatever's on the other side.  That could be done (after all,
-> libcurses manages), but it won't be compatible with existing setups
-> and it should be a separate driver, anyway.  Granted, it would've
-> made a whole lot more sense in role of /dev/tty<n>, but it's too late
-> for that now.
+> Well, you jest, but actually Intelligent Design is usually presented as
+> a false compromise between the "extremes" of evolution and creationism.
+> If you listen to it's proponents, the rhetorical device they use to
+> argue for legitimacy is precisely an argument to moderation.
 
-The UML tty devices are in most regards pretty much like serial TTYs
-where there's also no meta-information available which terminal
-emulation is actually spoken on it, and that's covered pretty much OK
-everyhwere...
+Exactly, which is why I used that as an example. And also, just to kick
+the hornet's nest.
 
-> b) changing the major of /dev/tty<n> on uml will break existing setups.
-> Ain't feasible.  We probably can get away with making that controlled
-> by kernel option, and it might make sense to try going that way, but
-> I'm not entirely convinced it's worth bothering.  Up to uml maintainer...
-> IMO if we go that way, we ought to pass the relevant part of config
-> (i.e. is it xterm or pts or plain opened file) in the event udev
-> gets, so that the userland would have at least a chance of dealing
-> with another real problem - selecting TERM value for getty.
+-- Steve
 
-Which major/minor you use is irrelevant to userspace. The userspace API
-however assumes that /dev/tty[1..63] refers to the tty devices of the
-virtual console. As long as you provide some other TTY under that name
-then the virtual console TTYs you simply provide a broken API to
-userspace, and hence programs break. systemd does, gpm does, X11 does,
-and everything else that interfaces with the VC via VC APIs does too.
 
-Just pick a different name for the TTYs that UML uses, just not
-/dev/tty[1..63] and everything is fine. That's what the virtualization
-folks did with their hypervisor consoles, and is what we required from
-the container folks too.
-
-Lennart
-
--- 
-Lennart Poettering - Red Hat, Inc.
