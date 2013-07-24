@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558Ab3GXDeJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:34:09 -0400
-Received: from intranet.asianux.com ([58.214.24.6]:41094 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab3GXDeH (ORCPT
+	id S1751624Ab3GXDio (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:38:44 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:60523 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab3GXDim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:34:07 -0400
-X-Spam-Score: -100.8
-Message-ID: <51EF4AF0.1000509@asianux.com>
-Date: Wed, 24 Jul 2013 11:33:04 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130110 Thunderbird/17.0.2
+	Tue, 23 Jul 2013 23:38:42 -0400
 MIME-Version: 1.0
-To: sameo@linux.intel.com, lee.jones@linaro.org
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] drivers: mfd: mfd-core: disable irq_domain related code when
- 'HAVE_GENERIC_HARDIRQS' disabled.
-References: <51EE3E20.1090101@asianux.com> <20130723104703.GB26775@osiris> <51EF1763.3020904@asianux.com>
-In-Reply-To: <51EF1763.3020904@asianux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1374600763-19466-1-git-send-email-tobetter@gmail.com>
+References: <1374600763-19466-1-git-send-email-tobetter@gmail.com>
+Date: Wed, 24 Jul 2013 09:08:41 +0530
+Message-ID: <CAK9yfHz10ao32Y4VRsvjNLe+zaq+hYk4KVgtwFgSLDsN-9Pfpw@mail.gmail.com>
+Subject: Re: [PATCH] ARM: dts: Add USB host node for Exynos4
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Dongjin Kim <tobetter@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-'irq_domain' depends on hard irqs, so for the architectures which have
-no hard irqs, but still need mfd (e.g. s390), need disable the related
-code, or can not pass compiling.
+On 23 July 2013 23:02, Dongjin Kim <tobetter@gmail.com> wrote:
+> This patch adds EHCI and OHCI host device nodes for Exynos4.
+>
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+> ---
+>  arch/arm/boot/dts/exynos4.dtsi |   20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
+> index 3f94fe8..1cdbf89 100644
+> --- a/arch/arm/boot/dts/exynos4.dtsi
+> +++ b/arch/arm/boot/dts/exynos4.dtsi
+> @@ -155,6 +155,26 @@
+>                 status = "disabled";
+>         };
+>
+> +       ehci@12580000 {
+> +               compatible = "samsung,exynos4210-ehci";
+> +               reg = <0x12580000 0x100>;
+> +               interrupts = <0 70 0>;
+> +               status = "disabled";
+> +
+> +               clocks = <&clock 304>;
+> +               clock-names = "usbhost";
+> +       };
+> +
+> +       ohci@12590000 {
+> +               compatible = "samsung,exynos4210-ohci";
+> +               reg = <0x12580000 0x100>;
 
-The related commit:
-
-  "c94bb23 mfd: Make MFD core code Device Tree and IRQ domain aware"
-
-The related error: (with allmodconfig under s390)
-
-  ERROR: "irq_create_mapping" [drivers/mfd/mfd-core.ko] undefined!
+Register value and node name do not match. Typo?
 
 
-Signed-off-by: Chen Gang <gang.chen@asianux.com>
----
- drivers/mfd/mfd-core.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+> +               interrupts = <0 70 0>;
+> +               status = "disabled";
+> +
+> +               clocks = <&clock 304>;
+> +               clock-names = "usbhost";
+> +       };
+> +
+>         mfc: codec@13400000 {
+>                 compatible = "samsung,mfc-v5";
+>                 reg = <0x13400000 0x10000>;
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 7604f4e..8e56a74 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -129,13 +129,16 @@ static int mfd_add_device(struct device *parent, int id,
- 			res[r].end = mem_base->start +
- 				cell->resources[r].end;
- 		} else if (cell->resources[r].flags & IORESOURCE_IRQ) {
-+#ifdef HAVE_GENERIC_HARDIRQS
- 			if (domain) {
- 				/* Unable to create mappings for IRQ ranges. */
- 				WARN_ON(cell->resources[r].start !=
- 					cell->resources[r].end);
- 				res[r].start = res[r].end = irq_create_mapping(
- 					domain, cell->resources[r].start);
--			} else {
-+			} else
-+#endif
-+			{
- 				res[r].start = irq_base +
- 					cell->resources[r].start;
- 				res[r].end   = irq_base +
+
+
 -- 
-1.7.7.6
+With warm regards,
+Sachin
