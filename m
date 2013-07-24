@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751200Ab3GXKeG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 06:34:06 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39814 "EHLO mail.skyhub.de"
+	id S1751261Ab3GXKlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 06:41:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4530 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005Ab3GXKeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 06:34:04 -0400
-Date: Wed, 24 Jul 2013 12:33:56 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Francesca V." <feaeressea@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Speaking out against Sarah Sharp
-Message-ID: <20130724103356.GC30932@pd.tnic>
-References: <CAAse1WDGbvt5zLTS60VbLvr396rM-DxKf=8WhML+eueKkqDmWQ@mail.gmail.com>
- <CAAse1WDN_ghcehSnT=P5YOR=HqAzEiNoB7-f8hdifjhk1V2jsg@mail.gmail.com>
+	id S1750820Ab3GXKlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 06:41:22 -0400
+Date: Wed, 24 Jul 2013 13:39:07 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+Message-ID: <20130724103907.GF16400@redhat.com>
+References: <20130722061631.24737.75508.sendpatchset@codeblue>
+ <20130722062016.24737.54554.sendpatchset@codeblue>
+ <20130723150748.GC6029@redhat.com>
+ <51EFA24E.2060103@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAse1WDN_ghcehSnT=P5YOR=HqAzEiNoB7-f8hdifjhk1V2jsg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51EFA24E.2060103@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 03:49:19AM -0600, Francesca V. wrote:
-> Sarah Sharp recently posted a tirade about verbal abuse on here and
-> her blog - where she dismisses all comments disagreeing with her as
-> being from trolls, and deletes them - and takes pride in being
-> "accidentally racist", when she's not attention-whoring on the LKML.
+On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+> >On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+> >>+static void kvm_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
+> [...]
+> >>+
+> >>+	/*
+> >>+	 * halt until it's our turn and kicked. Note that we do safe halt
+> >>+	 * for irq enabled case to avoid hang when lock info is overwritten
+> >>+	 * in irq spinlock slowpath and no spurious interrupt occur to save us.
+> >>+	 */
+> >>+	if (arch_irqs_disabled_flags(flags))
+> >>+		halt();
+> >>+	else
+> >>+		safe_halt();
+> >>+
+> >>+out:
+> >So here now interrupts can be either disabled or enabled. Previous
+> >version disabled interrupts here, so are we sure it is safe to have them
+> >enabled at this point? I do not see any problem yet, will keep thinking.
 > 
-> I want to say, as a female developer: Sarah Sharp is not
-> representative of us. She's not representative of the women at Intel.
-> She's not representative of women in technology.
+> If we enable interrupt here, then
 > 
-> She's a bully. She bullies her husband. She dismisses bullying of her
-> coworkers. (Google: 'intel kick me'). And she's trying to bully Linus.
 > 
-> I know he's a big boy. But dare I say, Linus is too nice to tell this
-> drama queen to bugger off.
+> >>+	cpumask_clear_cpu(cpu, &waiting_cpus);
 > 
-> No one was talking to her. Linus' 'Shut the fuck up' was to a
-> developer who refused to take responsibility for his code, and blamed
-> someone else's code. It was deserved criticism. Then, Linus went and
-> explained just that:
+> and if we start serving lock for an interrupt that came here,
+> cpumask clear and w->lock=null may not happen atomically.
+> if irq spinlock does not take slow path we would have non null value
+> for lock, but with no information in waitingcpu.
 > 
-> "Similarly, you will see fireworks if some long-term maintainer makes
-> excuses for breaking user space etc. That will make me go into
-> incoherent rages."
+> I am still thinking what would be problem with that.
 > 
-> Which is exactly what the emails held up as "verbal abuse" show.
-> 
-> Sarah's exclaiming how she won't take any of this abuse, yet no one
-> was directing any of it at her. It's sickening she's got nothing
-> better to do then stick her nose in and decide to dictate to her
-> betters how to behave.  Yes I said her betters: We all run Linux. Not
-> Sarax.
-> 
-> Sarah justifies pissing in the Linux sandbox because Intel 'pays her'
-> to develop kernel drivers.  Perhaps her direct manager might rethink
-> this decision in light of how she's representing Intel in her "off"
-> time.
-> 
-> To Linus: You're a hero to many of us. Don't change. Please. You DO
-> NOT need to take time away from doing code to grow a pair of breasts
-> and judge people's emotional states:
-> 
-> "It does not matter if your cursing fits have causes.  The fact is that
-> if you misjudge someone's emotional state for the day, you yelling at
-> them is not productive."
-> 
-> As a woman, I couldn't be silent and stand by while Sarah bullied and
-> assaulted this list with her profanity and self-indulgent narcissism.
-> She's the problem. Not you. Not your style of communication. We
-> technical women appreciate being treated equally by our male peers,
-> with blunt directness and unambiguous criticism. We are not fragile
-> flowers.
+Exactly, for kicker waiting_cpus and w->lock updates are
+non atomic anyway.
 
-I don't know if you're for real but if you are, you just hit the nail on
-the head!
+> >>+	w->lock = NULL;
+> >>+	local_irq_restore(flags);
+> >>+	spin_time_accum_blocked(start);
+> >>+}
+> >>+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+> >>+
+> >>+/* Kick vcpu waiting on @lock->head to reach value @ticket */
+> >>+static void kvm_unlock_kick(struct arch_spinlock *lock, __ticket_t ticket)
+> >>+{
+> >>+	int cpu;
+> >>+
+> >>+	add_stats(RELEASED_SLOW, 1);
+> >>+	for_each_cpu(cpu, &waiting_cpus) {
+> >>+		const struct kvm_lock_waiting *w = &per_cpu(lock_waiting, cpu);
+> >>+		if (ACCESS_ONCE(w->lock) == lock &&
+> >>+		    ACCESS_ONCE(w->want) == ticket) {
+> >>+			add_stats(RELEASED_SLOW_KICKED, 1);
+> >>+			kvm_kick_cpu(cpu);
+> >What about using NMI to wake sleepers? I think it was discussed, but
+> >forgot why it was dismissed.
+> 
+> I think I have missed that discussion. 'll go back and check. so
+> what is the idea here? we can easily wake up the halted vcpus that
+> have interrupt disabled?
+We can of course. IIRC the objection was that NMI handling path is very
+fragile and handling NMI on each wakeup will be more expensive then
+waking up a guest without injecting an event, but it is still interesting
+to see the numbers.
 
-I only wish this would've come earlier and put a timely end to this
-kindergarten bullshit.
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
 --
+			Gleb.
