@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab3GXRqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:46:08 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19829 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab3GXRqF (ORCPT
+	id S1752258Ab3GXRsY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:48:24 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:42683 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab3GXRsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:46:05 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=X7p0W-CcHCoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=Ok3p364r5BlQo3MhLOIA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374687963.3356.145.camel@gandalf.local.home>
-Subject: Re: [ 000/103] 3.10.3-stable review
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
-	<gregkh@linuxfoundation.org>,
-        Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Date: Wed, 24 Jul 2013 13:46:03 -0400
-In-Reply-To: <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
-References: <20130723220418.532514378@linuxfoundation.org>
-	 <CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
-	 <B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
-	 <20130724145506.GC15095@kroah.com>
-	 <CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
-	 <1374686174.3356.135.camel@gandalf.local.home>
-	 <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Jul 2013 13:48:23 -0400
+Date: Wed, 24 Jul 2013 19:48:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Pan, Zhenjie" <zhenjie.pan@intel.com>,
+        "paulus@samba.org" <paulus@samba.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Liu, Chuansheng" <chuansheng.liu@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NMI: fix NMI period is not correct when cpu frequency
+ changes issue.
+Message-ID: <20130724174815.GA23431@somewhere>
+References: <F98D4B5C3D86834DB612ABF854C98B7FB54822@SHSMSX101.ccr.corp.intel.com>
+ <20130415163049.08498e3a8726f0bd6f4d6ebe@linux-foundation.org>
+ <1366284729.19383.16.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1366284729.19383.16.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 10:24 -0700, Linus Torvalds wrote:
-> On Wed, Jul 24, 2013 at 10:16 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> >
-> > I don't know why "git apply" doesn't do it by default. Why would you
-> > want to apply a patch without having git track new files?
+On Thu, Apr 18, 2013 at 01:32:09PM +0200, Peter Zijlstra wrote:
+> On Mon, 2013-04-15 at 16:30 -0700, Andrew Morton wrote:
+> > I think this will break the build if CONFIG_PERF_EVENTS=n and
+> > CONFIG_LOCKUP_DETECTOR=y.  I was able to create such a config for
+> > powerpc.  If I'm reading it correctly, CONFIG_PERF_EVENTS cannot be
+> > disabled on x86_64?  If so, what the heck?
 > 
-> There's a few reasons for the behavior:
+> Frederic and Ingo made that happen,.. a long while ago Frederic
+> promised to fix that.. I suppose its never been quite important enough
+> to get around to :/
 > 
->  - it turns out that for most simple patches, you don't want to add
-> them to the index, and you want to stage them separately. Doing a "git
-> apply", you'd normally expect the end result to not be staged, so that
-> it shows up in "git diff", and then you can do your normal "git add"
-> or "git commit -a" or whatever. Yes, this means that you need to know
-> about new files, but the expected use is *not* to apply a patch
-> blindly and then not even care about the index.
-
-Heh, I usually still use the --index, and then just do "git diff HEAD"
-to check out what changed. If I don't like it, a "git reset --hard"
-fixes things.
-
+> (Frederic; read this as a gentle prod to move his upward on the todo
+> list)
 > 
->  - "git apply" is actually also designed to be a *replacement* for
-> "patch". In particular, you can use it outside a git repository,
 
-OK, this makes more sense.
+Sorry to answer so late on this.
 
-> exactly like you'd use the standard "patch" program. Except unlike the
-> standard "patch" program, "git apply" doesn't accept fuzz by default
-> (which to me is a huge deal - I hate how "patch" tries to apply stuff
-> that clearly isn't valid any more) and also knows about things like
-> file modes and renames etc.
+So the breakpoint code used by ptrace is what retains perf events from
+ever being conditionally built in x86.
 
-I've learned to use -F0, but yeah, that's a pain.
+This is because the breakpoints and the perf events subsystem are
+interdependent in some nasty ways:
 
-> 
-> That second part is something not enough people use, and when I make
-> patches and tar-balls I still generate the old-style non-rename
-> patches etc for that reason. But basically the command is designed to
-> also be used in non-git environments, so the "standard usage" is very
-> much not the "involve git details" behavior.
+* perf uses the breakpoint subsystem to create perf events on breakpoints
+* ptrace use the breakpoint subsystem which then relies on perf to create
+breakpoints.
 
-I just find it funny to use git outside of a git environment. Perhaps
-"git apply" should have another name? "pit"?
+I don't feel very comfortable with this layout. Ideally, the breakpoint
+subsystem should be a standalone layer which both perf and ptrace can use
+without forcing perf as a midlayer as in what we have currently.
 
-> 
-> Most "true git" workflows end up using "git am" (or, better yet, "git
-> pull" etc) to apply patches, which obviously not only does the --index
-> thing, but also applies the changelog etc.
+So here's my point of view. And the upside is that we could make x86
+build without CONFIG_PERF_EVENTS.
 
-I'm still somewhat old school, and my workflow uses git + quilt a bit. I
-do a bunch of changes, then I do:
+But I discussed that with Ingo and he seemed to prefer that we keep the
+current state, because perf is a handy interface for ptrace to use.
 
-git diff > foo.patch
-patch -p1 -R < foo.patch
-quilt import foo.patch
-rm foo.patch
+And he's arguably right. The interface is there and it's easy to use,
+it provides all the task context management that is needed, all the breakpoint
+code and callback support. It's not perfect though: this would be even nicer if we
+could pass arch information directly to the breakpoint creation instead of
+needing to convert it to generic breakpoint interface datas first.
+But still: it's quite handy.
 
-And save off those changes to another time. When I get back to the
-patch, I do:
+Now the tradeoff is indeed this nasty inter-dependency between perf and breakpoints.
 
-quilt push
-<make final fixes>
-quilt refresh
-quilt pop
-git apply --index < patches/foo.patch
+I wouldn't mind changing that and make the breakpoint susbsystem independant
+from perf. And in my opinion we probably should do that.
 
-Sometimes I just leave off the pop and apply to do a git commit -a, but
-then when I do a quilt pop I need to do a "git reset --hard" to reset
-things. Having the patch in quilt gives me a nice record of what I did,
-instead of searching through git history.
+But I need to be sure that Ingo agrees with this aproach because that require quite
+some work and I really don't want to spend days of work and weeks of patchset iteration
+if there are good chances that it gets eventually pushed back.
 
-Note, I do know about git quiltimport, but my quilt queue contains lots
-of debug patches and things that are still pending (I modify the series
-file a lot). What would help is to add an option to git quiltimport that
-will limit the number of patches it imports.
+Is there any user of x86 that really don't care about perf events? May be some
+users are burdened with the .text and .data used by perf that increase the
+kernel image?
 
-git quiltimport -c 1
+If some users really need that to change, this would certainly cut short the issue. 
 
--- Steve
-
-
+Thanks.
