@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab3GXP4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:56:09 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:51243 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab3GXP4D (ORCPT
+	id S1754315Ab3GXP4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:56:22 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49918 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130Ab3GXP4T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:56:03 -0400
-From: Olof Johansson <olof@lixom.net>
-To: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Cc: Pekon Gupta <pekon@ti.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, Olof Johansson <olof@lixom.net>
-Subject: [PATCH] mtd: nand: omap2: Fix compilation warning
-Date: Wed, 24 Jul 2013 08:56:32 -0700
-Message-Id: <1374681392-6183-1-git-send-email-olof@lixom.net>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 24 Jul 2013 11:56:19 -0400
+Date: Wed, 24 Jul 2013 16:55:55 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20130724155555.GO9858@sirena.org.uk>
+References: <1374654408-4964-1-git-send-email-p.zabel@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ithwq2VAKZXg2OxI"
+Content-Disposition: inline
+In-Reply-To: <1374654408-4964-1-git-send-email-p.zabel@pengutronix.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regmap: irq: document mask/wake_invert flags
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fb1585bc13b (mtd: nand: omap2: clean-up BCHx_HW and BCHx_SW ECC
-configurations in device_probe) introduced a warning when the new option
-is disabled, i.e. with omap2plus_defconfig:
 
-drivers/mtd/nand/omap2.c:1075:13: warning: 'omap3_enable_hwecc_bch' defined but not used [-Wunused-function]
+--ithwq2VAKZXg2OxI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Fix this by rescoping the ifdef. Also remove a redudant #endif/#ifdef
-pair.
+On Wed, Jul 24, 2013 at 10:26:48AM +0200, Philipp Zabel wrote:
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/mtd/nand/omap2.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Applied, thanks.
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index c4c7e0d..cbf8b28 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -1060,6 +1060,7 @@ static int omap_dev_ready(struct mtd_info *mtd)
- 	}
- }
- 
-+#ifdef CONFIG_MTD_NAND_OMAP_BCH
- /**
-  * omap3_enable_hwecc_bch - Program OMAP3 GPMC to perform BCH ECC correction
-  * @mtd: MTD device structure
-@@ -1141,7 +1142,6 @@ static void omap3_enable_hwecc_bch(struct mtd_info *mtd, int mode)
- 	writel(ECCCLEAR | ECC1, info->reg.gpmc_ecc_control);
- }
- 
--#ifdef CONFIG_MTD_NAND_ECC_BCH
- /**
-  * omap3_calculate_ecc_bch4 - Generate 7 bytes of ECC bytes
-  * @mtd: MTD device structure
-@@ -1959,8 +1959,7 @@ static int omap_nand_probe(struct platform_device *pdev)
- 		omap_oobinfo.oobfree->offset	= omap_oobinfo.eccpos[0] +
- 							omap_oobinfo.eccbytes;
- 		goto custom_ecc_layout;
--#endif
--#ifdef CONFIG_MTD_NAND_ECC_BCH
-+
- 	case OMAP_ECC_BCH8_CODE_HW_DETECTION_SW:
- 		pr_info("using OMAP_ECC_BCH8_CODE_HW_DETECTION_SW ECC\n");
- 		info->nand.ecc.mode		= NAND_ECC_HW;
--- 
-1.7.10.4
+--ithwq2VAKZXg2OxI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR7/kIAAoJELSic+t+oim9+nsP/2OPe0UGZgSJeDTX/xaqWI3x
+tS+ovfYR41AkIGKDc491veEi5+hqpTI3Oi7O+3y7OtxesLIOV4oWJ0B2CwswSnSp
+vEosdPSgB+/kfMgF9rxVOGxbPlX3vpGJBAbGEU7BtRoIMR+WdfujRfzT2XfZevWc
+swNfvEzKLTexo5OEqjFYBGOWoy5X3fTWDFSOoPFOzDTlYIzkzrfHbPqQnMrjSDYB
+lfcoEz74cGv1JnJBi3QW4LaMz99clMIF56mxrpqGptUOQJr/gd52IF/SCU4CIHdp
+RfTW7DunP7xrLo/jXLuVaDBR81aeTSmaCGGEmk4kqRMJ117YSN+muIuj373fklZZ
+Hp/gU21IWwdkrslvuONBeTV2M/rUVOogEWGzmZSNymGiiilR53t8fA7n6e5BHcuP
+zTHdU8yHgE1+BogUED9wDcScE3TWirpfFzTjuA7zTTE2vkzz2KhOiufGUHJA8fWV
+I5Yj19D/L1YWr4Unk3/1CGh6GxTB/GxnMgnku/elyQ+Bq+enMLqWUyWCVdKStVPh
+mT//61o1+L3MVTprRU/4BFOi770I+ozFa49dVliaURCB1iDkA10awNSkrT5k1CEY
+3o8nRNr6Td7vP7XviQrg/zWTu9ww3Wc6FxV/MfuJWDALhR048KHM3kFUKkyGrxFw
+49kUBk8V4cASYZliK7Bx
+=fecW
+-----END PGP SIGNATURE-----
+
+--ithwq2VAKZXg2OxI--
