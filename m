@@ -1,64 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360Ab3GXC10 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 22:27:26 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:25693 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab3GXC1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 22:27:24 -0400
-X-IronPort-AV: E=Sophos;i="4.89,731,1367942400"; 
-   d="scan'208";a="7999482"
-Message-ID: <51EF3AB0.6030808@cn.fujitsu.com>
-Date: Wed, 24 Jul 2013 10:23:44 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1751342Ab3GXC3Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 22:29:16 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:40258 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750833Ab3GXC3O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 23 Jul 2013 22:29:14 -0400
 MIME-Version: 1.0
-To: Al Viro <viro@zeniv.linux.org.uk>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fs/bio-integrity: fix a potential mem leak
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/24 10:25:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/24 10:25:21,
-	Serialize complete at 2013/07/24 10:25:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20130723.164656.1794159338719943519.davem@davemloft.net>
+References: <1374518841.4990.26.camel@edumazet-glaptop>
+	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	<1374559827.4990.143.camel@edumazet-glaptop>
+	<20130723.164656.1794159338719943519.davem@davemloft.net>
+Date: Tue, 23 Jul 2013 19:29:13 -0700
+Message-ID: <CANEJEGtLavwdPdq_Qojz_x-DQ3KXfZp0vPYr6imKtNxN0Hf_2Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Grant Grundler <grundler@google.com>
+To: David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Ben Hutchings <bhutchings@solarflare.com>, oliver@neukum.org,
+        Freddy Xin <freddy@asix.com.tw>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?QVNJWCBMb3VpcyBb6JiH5aiB6Zm4XQ==?= <louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free the bio_integrity_pool in the fail path of biovec_create_pool
-in function bioset_integrity_create().
+On Tue, Jul 23, 2013 at 4:46 PM, David Miller <davem@davemloft.net> wrote:
+...
+> A quick scan shows that smsc75xx, smsc95xx, and ax88179_178a all have
+> this problem.
+>
+> Instead of the patch starting this thread, I'd like to see one that
+> hits all three drivers and removes all SG and TSO features bits from
+> both the ->features _and_ ->hw_features settings.
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/bio-integrity.c |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+Since you are asking to remove TSO, do you also want skb_linearize()
+calls in ax88179_178a.c and smsc75xx.c removed as well?
 
-diff --git a/fs/bio-integrity.c b/fs/bio-integrity.c
-index 8fb4291..6025084 100644
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -716,13 +716,14 @@ int bioset_integrity_create(struct bio_set *bs, int pool_size)
- 		return 0;
- 
- 	bs->bio_integrity_pool = mempool_create_slab_pool(pool_size, bip_slab);
--
--	bs->bvec_integrity_pool = biovec_create_pool(bs, pool_size);
--	if (!bs->bvec_integrity_pool)
-+	if (!bs->bio_integrity_pool)
- 		return -1;
- 
--	if (!bs->bio_integrity_pool)
-+	bs->bvec_integrity_pool = biovec_create_pool(bs, pool_size);
-+	if (!bs->bvec_integrity_pool) {
-+		mempool_destroy(bs->bio_integrity_pool);
- 		return -1;
-+	}
- 
- 	return 0;
- }
--- 
-1.7.7
+Not part of the original patch - but based on this thread, Eric seems
+to think calling skb_linearize isn't necessary or helpful either.
 
+cheers,
+grant
