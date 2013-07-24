@@ -1,60 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621Ab3GXUHc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:07:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54170 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752155Ab3GXUHb (ORCPT
+	id S1753852Ab3GXUIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:08:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:21290 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753029Ab3GXUIC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:07:31 -0400
-Date: Wed, 24 Jul 2013 13:07:30 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH-RESEND 3/3] staging/lustre: fix Kconfig bool defaults
-Message-ID: <20130724200730.GA22161@kroah.com>
-References: <1374689299-10126-1-git-send-email-bergwolf@gmail.com>
- <1374689299-10126-4-git-send-email-bergwolf@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374689299-10126-4-git-send-email-bergwolf@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 24 Jul 2013 16:08:02 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=wtjnJb8W-_0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=EnbaTta9GQwA:10 a=20KFwNOVAAAA:8 a=mo9_zJyWI30ozzNMY1EA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374696480.3356.158.camel@gandalf.local.home>
+Subject: Re: [PATCH 6/6] tracing: Change remove_event_file_dir() to clear
+ "d_subdirs"->i_private
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 24 Jul 2013 16:08:00 -0400
+In-Reply-To: <20130723205927.GA9082@redhat.com>
+References: <20130723205927.GA9082@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 02:08:19AM +0800, Peng Tao wrote:
-> From: Peng Tao <tao.peng@emc.com>
+On Tue, 2013-07-23 at 22:59 +0200, Oleg Nesterov wrote:
+> Change remove_event_file_dir() ->i_private for every file we
+> are going to remove.
 > 
-> Should be y instead of true.
+> tracing_open_generic_file() and tracing_release_generic_file()
+> can go away, ftrace_enable_fops and ftrace_event_filter_fops()
+> use tracing_open_generic() but only to check tracing_disabled.
 > 
-> Reported-by: Paul Bolle <pebolle@tiscali.nl>
-> Cc: Andreas Dilger <andreas.dilger@intel.com>
-> Signed-off-by: Peng Tao <tao.peng@emc.com>
+> This fixes all races with event_remove() or instance_delete().
+> f_op->read/write/whatever can never use the freed file/call,
+> all event/* files were changed to check and use ->i_private
+> under event_mutex.
+> 
+> Note: this doesn't not fix other problems, event_remove() can
+> destroy the active ftrace_event_call, we need more changes but
+> those changes are completely orthogonal.
+
+Hmm, but this patch opens up that race right? We remove the tr ref
+counter updates here.
+
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > ---
->  drivers/staging/lustre/lustre/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  kernel/trace/trace_events.c |   40 ++++++++--------------------------------
+>  1 files changed, 8 insertions(+), 32 deletions(-)
 > 
-> diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
-> index 9ae7fa8..e3b3c74 100644
-> --- a/drivers/staging/lustre/lustre/Kconfig
-> +++ b/drivers/staging/lustre/lustre/Kconfig
-> @@ -52,4 +52,4 @@ config LUSTRE_DEBUG_EXPENSIVE_CHECK
->  config LUSTRE_TRANSLATE_ERRNOS
->  	bool
->  	depends on LUSTRE_FS && !X86
-> -	default true
-> +	default y
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 3ae037c..298e4fa 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -428,42 +428,19 @@ static void *event_file_data(struct file *filp)
+>  
+>  static void remove_event_file_dir(struct ftrace_event_file *file)
+>  {
+> +	struct dentry *dir = file->dir;
+> +	struct dentry *child;
 
-Why is the default for this going to be 'y'?  That should only be for
-things that keep the machine from booting.
+Need space here.
 
-If this is something you always want to do, then why make it an option
-at all?
+> +	/* ->i_mutex is not needed, nodody can create/remove a file */
 
-Given that there is no documentation for what this option is, and why
-people should always turn it on, I can't accept this patch, sorry.
+"nodody" ;-)
 
-greg k-h
+-- Steve
+
+> +	list_for_each_entry(child, &dir->d_subdirs, d_u.d_child)
+> +		child->d_inode->i_private = NULL;
+> +
+>  	list_del(&file->list);
+> -	debugfs_remove_recursive(file->dir);
+> +	debugfs_remove_recursive(dir);
+>  	remove_subsystem(file->system);
+>  	kmem_cache_free(file_cachep, file);
+>  }
+>  
+>  /*
+> - * Open and update trace_array ref count.
+> - * Must have the current trace_array passed to it.
+> - */
+> -static int tracing_open_generic_file(struct inode *inode, struct file *filp)
+> -{
+> -	struct ftrace_event_file *file = inode->i_private;
+> -	struct trace_array *tr = file->tr;
+> -	int ret;
+> -
+> -	if (trace_array_get(tr) < 0)
+> -		return -ENODEV;
+> -
+> -	ret = tracing_open_generic(inode, filp);
+> -	if (ret < 0)
+> -		trace_array_put(tr);
+> -	return ret;
+> -}
+> -
+> -static int tracing_release_generic_file(struct inode *inode, struct file *filp)
+> -{
+> -	struct ftrace_event_file *file = inode->i_private;
+> -	struct trace_array *tr = file->tr;
+> -
+> -	trace_array_put(tr);
+> -
+> -	return 0;
+> -}
+> -
+> -/*
+>   * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+>   */
+>  static int
+> @@ -1274,10 +1251,9 @@ static const struct file_operations ftrace_set_event_fops = {
+>  };
+>  
+>  static const struct file_operations ftrace_enable_fops = {
+> -	.open = tracing_open_generic_file,
+> +	.open = tracing_open_generic,
+>  	.read = event_enable_read,
+>  	.write = event_enable_write,
+> -	.release = tracing_release_generic_file,
+>  	.llseek = default_llseek,
+>  };
+>  
+
+
