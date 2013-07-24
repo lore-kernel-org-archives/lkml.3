@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab3GXD4x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 23:56:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38409 "EHLO
+	id S1751931Ab3GXD4d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 23:56:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38391 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab3GXD4v (ORCPT
+	with ESMTP id S1751189Ab3GXD42 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 23:56:51 -0400
-Date: Tue, 23 Jul 2013 20:56:36 -0700
-From: tip-bot for Vladimir Davydov <tipbot@zytor.com>
-Message-ID: <tip-685207963be973fbb73550db6edaf920a283e1a7@git.kernel.org>
+	Tue, 23 Jul 2013 23:56:28 -0400
+Date: Tue, 23 Jul 2013 20:55:54 -0700
+From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
+Message-ID: <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, vdavydov@parallels.com
+        peterz@infradead.org, adrian.hunter@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, vdavydov@parallels.com
-In-Reply-To: <1373896159-1278-1-git-send-email-vdavydov@parallels.com>
-References: <1373896159-1278-1-git-send-email-vdavydov@parallels.com>
+        peterz@infradead.org, adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
+References: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] sched: Move h_load calculation to task_h_load()
-Git-Commit-ID: 685207963be973fbb73550db6edaf920a283e1a7
+Subject: [tip:perf/core] perf: Update perf_event_type documentation
+Git-Commit-ID: a5cdd40c9877e9aba704c020fd65d26b5cfecf18
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -27,217 +27,165 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 20:56:43 -0700 (PDT)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Tue, 23 Jul 2013 20:56:01 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  685207963be973fbb73550db6edaf920a283e1a7
-Gitweb:     http://git.kernel.org/tip/685207963be973fbb73550db6edaf920a283e1a7
-Author:     Vladimir Davydov <vdavydov@parallels.com>
-AuthorDate: Mon, 15 Jul 2013 17:49:19 +0400
+Commit-ID:  a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+Gitweb:     http://git.kernel.org/tip/a5cdd40c9877e9aba704c020fd65d26b5cfecf18
+Author:     Peter Zijlstra <peterz@infradead.org>
+AuthorDate: Tue, 16 Jul 2013 17:09:07 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Tue, 23 Jul 2013 12:18:41 +0200
+CommitDate: Tue, 23 Jul 2013 12:17:08 +0200
 
-sched: Move h_load calculation to task_h_load()
+perf: Update perf_event_type documentation
 
-The bad thing about update_h_load(), which computes hierarchical load
-factor for task groups, is that it is called for each task group in the
-system before every load balancer run, and since rebalance can be
-triggered very often, this function can eat really a lot of cpu time if
-there are many cpu cgroups in the system.
+Due to a discussion with Adrian I had a good look at the perf_event_type record
+layout and found the documentation to be somewhat unclear.
 
-Although the situation was improved significantly by commit a35b646
-('sched, cgroup: Reduce rq->lock hold times for large cgroup
-hierarchies'), the problem still can arise under some kinds of loads,
-e.g. when cpus are switching from idle to busy and back very frequently.
-
-For instance, when I start 1000 of processes that wake up every
-millisecond on my 8 cpus host, 'top' and 'perf top' show:
-
-Cpu(s): 17.8%us, 24.3%sy,  0.0%ni, 57.9%id,  0.0%wa,  0.0%hi,  0.0%si
-Events: 243K cycles
-  7.57%  [kernel]               [k] __schedule
-  7.08%  [kernel]               [k] timerqueue_add
-  6.13%  libc-2.12.so           [.] usleep
-
-Then if I create 10000 *idle* cpu cgroups (no processes in them), cpu
-usage increases significantly although the 'wakers' are still executing
-in the root cpu cgroup:
-
-Cpu(s): 19.1%us, 48.7%sy,  0.0%ni, 31.6%id,  0.0%wa,  0.0%hi,  0.7%si
-Events: 230K cycles
- 24.56%  [kernel]            [k] tg_load_down
-  5.76%  [kernel]            [k] __schedule
-
-This happens because this particular kind of load triggers 'new idle'
-rebalance very frequently, which requires calling update_h_load(),
-which, in turn, calls tg_load_down() for every *idle* cpu cgroup even
-though it is absolutely useless, because idle cpu cgroups have no tasks
-to pull.
-
-This patch tries to improve the situation by making h_load calculation
-proceed only when h_load is really necessary. To achieve this, it
-substitutes update_h_load() with update_cfs_rq_h_load(), which computes
-h_load only for a given cfs_rq and all its ascendants, and makes the
-load balancer call this function whenever it considers if a task should
-be pulled, i.e. it moves h_load calculations directly to task_h_load().
-For h_load of the same cfs_rq not to be updated multiple times (in case
-several tasks in the same cgroup are considered during the same balance
-run), the patch keeps the time of the last h_load update for each cfs_rq
-and breaks calculation when it finds h_load to be uptodate.
-
-The benefit of it is that h_load is computed only for those cfs_rq's,
-which really need it, in particular all idle task groups are skipped.
-Although this, in fact, moves h_load calculation under rq lock, it
-should not affect latency much, because the amount of work done under rq
-lock while trying to pull tasks is limited by sched_nr_migrate.
-
-After the patch applied with the setup described above (1000 wakers in
-the root cgroup and 10000 idle cgroups), I get:
-
-Cpu(s): 16.9%us, 24.8%sy,  0.0%ni, 58.4%id,  0.0%wa,  0.0%hi,  0.0%si
-Events: 242K cycles
-  7.57%  [kernel]                  [k] __schedule
-  6.70%  [kernel]                  [k] timerqueue_add
-  5.93%  libc-2.12.so              [.] usleep
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1373896159-1278-1-git-send-email-vdavydov@parallels.com
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/20130716150907.GL23818@dyad.programming.kicks-ass.net
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c  | 58 ++++++++++++++++++++++++----------------------------
- kernel/sched/sched.h |  7 +++----
- 2 files changed, 30 insertions(+), 35 deletions(-)
+ include/uapi/linux/perf_event.h | 18 +++++++++++++++++-
+ kernel/events/core.c            | 31 ++++++++++++++++---------------
+ 2 files changed, 33 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index bb456f4..765d87a 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4171,47 +4171,48 @@ static void update_blocked_averages(int cpu)
- }
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 0b1df41..00d8274 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -478,6 +478,16 @@ enum perf_event_type {
+ 	 * file will be supported by older perf tools, with these new optional
+ 	 * fields being ignored.
+ 	 *
++	 * struct sample_id {
++	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
++	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
++	 * 	{ u64			id;       } && PERF_SAMPLE_ID
++	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
++	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
++	 * } && perf_event_attr::sample_id_all
++	 */
++
++	/*
+ 	 * The MMAP events record the PROT_EXEC mappings so that we can
+ 	 * correlate userspace IPs to code. They have the following structure:
+ 	 *
+@@ -498,6 +508,7 @@ enum perf_event_type {
+ 	 *	struct perf_event_header	header;
+ 	 *	u64				id;
+ 	 *	u64				lost;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_LOST			= 2,
+@@ -508,6 +519,7 @@ enum perf_event_type {
+ 	 *
+ 	 *	u32				pid, tid;
+ 	 *	char				comm[];
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_COMM			= 3,
+@@ -518,6 +530,7 @@ enum perf_event_type {
+ 	 *	u32				pid, ppid;
+ 	 *	u32				tid, ptid;
+ 	 *	u64				time;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_EXIT			= 4,
+@@ -528,6 +541,7 @@ enum perf_event_type {
+ 	 *	u64				time;
+ 	 *	u64				id;
+ 	 *	u64				stream_id;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_THROTTLE			= 5,
+@@ -539,6 +553,7 @@ enum perf_event_type {
+ 	 *	u32				pid, ppid;
+ 	 *	u32				tid, ptid;
+ 	 *	u64				time;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_FORK			= 7,
+@@ -549,6 +564,7 @@ enum perf_event_type {
+ 	 *	u32				pid, tid;
+ 	 *
+ 	 *	struct read_format		values;
++	 * 	struct sample_id		sample_id;
+ 	 * };
+ 	 */
+ 	PERF_RECORD_READ			= 8,
+@@ -596,7 +612,7 @@ enum perf_event_type {
+ 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
+ 	 *
+ 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
+-	 *	{ u64			data_src;     } && PERF_SAMPLE_DATA_SRC
++	 *	{ u64			data_src; } && PERF_SAMPLE_DATA_SRC
+ 	 * };
+ 	 */
+ 	PERF_RECORD_SAMPLE			= 9,
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 5e2bce9..1274114 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -4462,20 +4462,6 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		}
+ 	}
  
- /*
-- * Compute the cpu's hierarchical load factor for each task group.
-+ * Compute the hierarchical load factor for cfs_rq and all its ascendants.
-  * This needs to be done in a top-down fashion because the load of a child
-  * group is a fraction of its parents load.
-  */
--static int tg_load_down(struct task_group *tg, void *data)
-+static void update_cfs_rq_h_load(struct cfs_rq *cfs_rq)
- {
--	unsigned long load;
--	long cpu = (long)data;
+-	if (!event->attr.watermark) {
+-		int wakeup_events = event->attr.wakeup_events;
 -
--	if (!tg->parent) {
--		load = cpu_rq(cpu)->avg.load_avg_contrib;
--	} else {
--		load = tg->parent->cfs_rq[cpu]->h_load;
--		load = div64_ul(load * tg->se[cpu]->avg.load_avg_contrib,
--				tg->parent->cfs_rq[cpu]->runnable_load_avg + 1);
+-		if (wakeup_events) {
+-			struct ring_buffer *rb = handle->rb;
+-			int events = local_inc_return(&rb->events);
+-
+-			if (events >= wakeup_events) {
+-				local_sub(wakeup_events, &rb->events);
+-				local_inc(&rb->wakeup);
+-			}
+-		}
 -	}
 -
--	tg->cfs_rq[cpu]->h_load = load;
--
--	return 0;
--}
--
--static void update_h_load(long cpu)
--{
--	struct rq *rq = cpu_rq(cpu);
-+	struct rq *rq = rq_of(cfs_rq);
-+	struct sched_entity *se = cfs_rq->tg->se[cpu_of(rq)];
- 	unsigned long now = jiffies;
-+	unsigned long load;
+ 	if (sample_type & PERF_SAMPLE_BRANCH_STACK) {
+ 		if (data->br_stack) {
+ 			size_t size;
+@@ -4511,16 +4497,31 @@ void perf_output_sample(struct perf_output_handle *handle,
+ 		}
+ 	}
  
--	if (rq->h_load_throttle == now)
-+	if (cfs_rq->last_h_load_update == now)
- 		return;
- 
--	rq->h_load_throttle = now;
-+	cfs_rq->h_load_next = NULL;
-+	for_each_sched_entity(se) {
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_load_next = se;
-+		if (cfs_rq->last_h_load_update == now)
-+			break;
+-	if (sample_type & PERF_SAMPLE_STACK_USER)
++	if (sample_type & PERF_SAMPLE_STACK_USER) {
+ 		perf_output_sample_ustack(handle,
+ 					  data->stack_user_size,
+ 					  data->regs_user.regs);
 +	}
  
--	rcu_read_lock();
--	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
--	rcu_read_unlock();
-+	if (!se) {
-+		cfs_rq->h_load = rq->avg.load_avg_contrib;
-+		cfs_rq->last_h_load_update = now;
-+	}
+ 	if (sample_type & PERF_SAMPLE_WEIGHT)
+ 		perf_output_put(handle, data->weight);
+ 
+ 	if (sample_type & PERF_SAMPLE_DATA_SRC)
+ 		perf_output_put(handle, data->data_src.val);
 +
-+	while ((se = cfs_rq->h_load_next) != NULL) {
-+		load = cfs_rq->h_load;
-+		load = div64_ul(load * se->avg.load_avg_contrib,
-+				cfs_rq->runnable_load_avg + 1);
-+		cfs_rq = group_cfs_rq(se);
-+		cfs_rq->h_load = load;
-+		cfs_rq->last_h_load_update = now;
++	if (!event->attr.watermark) {
++		int wakeup_events = event->attr.wakeup_events;
++
++		if (wakeup_events) {
++			struct ring_buffer *rb = handle->rb;
++			int events = local_inc_return(&rb->events);
++
++			if (events >= wakeup_events) {
++				local_sub(wakeup_events, &rb->events);
++				local_inc(&rb->wakeup);
++			}
++		}
 +	}
  }
  
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
- 
-+	update_cfs_rq_h_load(cfs_rq);
- 	return div64_ul(p->se.avg.load_avg_contrib * cfs_rq->h_load,
- 			cfs_rq->runnable_load_avg + 1);
- }
-@@ -4220,10 +4221,6 @@ static inline void update_blocked_averages(int cpu)
- {
- }
- 
--static inline void update_h_load(long cpu)
--{
--}
--
- static unsigned long task_h_load(struct task_struct *p)
- {
- 	return p->se.avg.load_avg_contrib;
-@@ -5108,7 +5105,6 @@ redo:
- 		env.src_rq    = busiest;
- 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
- 
--		update_h_load(env.src_cpu);
- more_balance:
- 		local_irq_save(flags);
- 		double_rq_lock(env.dst_rq, busiest);
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index ef0a7b2..5e129ef 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -285,7 +285,6 @@ struct cfs_rq {
- 	/* Required to track per-cpu representation of a task_group */
- 	u32 tg_runnable_contrib;
- 	unsigned long tg_load_contrib;
--#endif /* CONFIG_FAIR_GROUP_SCHED */
- 
- 	/*
- 	 *   h_load = weight * f(tg)
-@@ -294,6 +293,9 @@ struct cfs_rq {
- 	 * this group.
- 	 */
- 	unsigned long h_load;
-+	u64 last_h_load_update;
-+	struct sched_entity *h_load_next;
-+#endif /* CONFIG_FAIR_GROUP_SCHED */
- #endif /* CONFIG_SMP */
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -429,9 +431,6 @@ struct rq {
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	/* list of leaf cfs_rq on this cpu: */
- 	struct list_head leaf_cfs_rq_list;
--#ifdef CONFIG_SMP
--	unsigned long h_load_throttle;
--#endif /* CONFIG_SMP */
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
- #ifdef CONFIG_RT_GROUP_SCHED
+ void perf_prepare_sample(struct perf_event_header *header,
