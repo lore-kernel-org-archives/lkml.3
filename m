@@ -1,145 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab3GXNQo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 09:16:44 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:37945 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab3GXNQm convert rfc822-to-8bit (ORCPT
+	id S1751649Ab3GXNSm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 09:18:42 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56216 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795Ab3GXNSk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 09:16:42 -0400
-Date: Wed, 24 Jul 2013 14:16:38 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "mingo@kernel.org" <mingo@kernel.org>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "alex.shi@intel.com" <alex.shi@intel.com>,
-        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        "corbet@lwn.net" <corbet@lwn.net>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
+	Wed, 24 Jul 2013 09:18:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,735,1367996400"; 
+   d="scan'208";a="336060338"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Ben Guthro <Benjamin.Guthro@citrix.com>, "Zheng, Lv" <lv.zheng@intel.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
-Message-ID: <20130724131638.GD12572@e103034-lin>
-References: <1373385338-12983-1-git-send-email-morten.rasmussen@arm.com>
- <20130713064909.GW25631@dyad.programming.kicks-ass.net>
-MIME-Version: 1.0
-In-Reply-To: <20130713064909.GW25631@dyad.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 24 Jul 2013 13:16:37.0860 (UTC) FILETIME=[072FA240:01CE8870]
-X-MC-Unique: 113072414163906601
-Content-Type: text/plain; charset=WINDOWS-1252
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: RE: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
+ hardware sleep path
+Thread-Topic: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+ reduced hardware sleep path
+Thread-Index: AQHOcnac189PXIyTT0GA11YOlMneHJlQ7d+w///Zo4CAIr75sIAA1N8A//+f6mA=
+Date: Wed, 24 Jul 2013 13:18:37 +0000
+Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
+References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
+ <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
+ <1AE640813FDE7649BE1B193DEA596E880241B363@SHSMSX101.ccr.corp.intel.com>
+ <51D2BCB7.5040105@citrix.com>
+ <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com>
+ <51EFC1FE.5000609@citrix.com>
+In-Reply-To: <51EFC1FE.5000609@citrix.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 13, 2013 at 07:49:09AM +0100, Peter Zijlstra wrote:
-> On Tue, Jul 09, 2013 at 04:55:29PM +0100, Morten Rasmussen wrote:
+I have not looked closely at this, but we typically do things like this in ACPICA so that they only need to be implemented once to support all of the various acpica-hosted operating systems - linux, solaris, hp-ux, apple, freebsd, etc. -- even if they could be implemented "cleaner" in some way on any given host.
+
+
+
+> -----Original Message-----
+> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+> Sent: Wednesday, July 24, 2013 5:01 AM
+> To: Zheng, Lv
+> Cc: Konrad Rzeszutek Wilk; Jan Beulich; Rafael J . Wysocki; linux-
+> kernel@vger.kernel.org; linux-acpi@vger.kernel.org; xen-
+> devel@lists.xen.org; Moore, Robert
+> Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+> reduced hardware sleep path
+> 
+> 
+> 
+> On 07/24/2013 02:24 AM, Zheng, Lv wrote:
 > > Hi,
-> > 
-> > This patch set is an initial prototype aiming at the overall power-aware
-> > scheduler design proposal that I previously described
-> > <http://permalink.gmane.org/gmane.linux.kernel/1508480>.
-> > 
-> > The patch set introduces a cpu capacity managing 'power scheduler' which lives
-> > by the side of the existing (process) scheduler. Its role is to monitor the
-> > system load and decide which cpus that should be available to the process
-> > scheduler.
+> >
+> > Sorry for the delayed response.
+> >
+> >> From: Ben Guthro [mailto:Benjamin.Guthro@citrix.com]
+> >> Sent: Tuesday, July 02, 2013 7:43 PM
+> >>
+> >>
+> >> On 07/02/2013 02:19 AM, Zheng, Lv wrote:
+> >>> Thanks for your efforts!
+> >>>
+> >>> I wonder if it is possible to remove the argument - "u8 extended"
+> >>> and convert
+> >> "pm1a_control, pm1b_control" into some u8 values that are equivalent
+> >> to "acpi_gbl_sleep_type_a, acpi_gbl_sleep_type_b" in the legacy sleep
+> path.
+> >>> It can also simplify Xen codes.
+> >>
+> >> Thanks for your time to review this.
+> >>
+> >> I'm not sure that this simplifies things. I think that, in fact, it
+> >> would make them quite a bit more complicated, but perhaps I
+> misunderstand.
+> >>
+> >> Is it not preferred to use the reduced hardware sleep, over the old
+> method?
+> >> While these register definitions may be equivalent below, doing the
+> >> translation in linux, only to translate them back again at a lower
+> layer seems unnecessary.
+> >>
+> >
+> > Yes, it would require tboot layer to be able to be aware of how such
+> fields locate in the PM registers.
+> > So I think you can pass the register address of the field and the field
+> name/value pair to the tboot, this could simplify things, no lower layer
+> effort will be needed.
+> > Please don't worry about the case that a register field could be split
+> into PM1a and PM1b, it could be a hardware design issue.
+> > IMO, one field should always be in one register, either PM1a or PM1b.
+> > Or there could be hardware issues cannot be addressed by the ACPICA
+> architecture (something like natural atomicity).
+> > But maybe I'm wrong.
 > 
-> Hmm...
+> Again, I don't think this simplifies things, but complicates them
+> unnecessarily. Converting the reduced hardware sleep to the legacy sleep
+> seems like it would be an unnecessary layer of translation.
 > 
-> This looks like a userspace hotplug deamon approach lifted to kernel space :/
-
-I know I'm arriving a bit late to the party...
-
-I do see what you mean, but I think comparing it to a userspace hotplug
-deamon is a bit harsh :) As Catalin has already pointed out, the
-intention behind the design is to separate cpu capacity management from
-load-balancing and runqueue management to avoid adding further
-complexity to main load balancer. 
-
-> How about instead of layering over the load-balancer to constrain its behaviour
-> you change the behaviour to not need constraint? Fix it so it does the right
-> thing, instead of limiting it.
+> The interface now simply passes the information from ACPICA down to the
+> lower layers (xen, tboot) - and then lets them worry about the reduced
+> hardware implementation.
 > 
-> I don't think its _that_ hard to make the balancer do packing over spreading.
-> The power balance code removed in 8e7fbcbc had things like that (although it
-> was broken). And I'm sure I've seen patches over the years that did similar
-> things. Didn't Vincent and Alex also do things like that?
->
-> We should take the good bits from all that and make something of it. And I
-> think its easier now that we have the per task and per rq utilization numbers
-> [1].
-
-IMHO proper packing (capacity management) is a quite complex problem,
-that will require a major modifications to the load-balance logic if we
-want to integrate it there. Essentially getting rid of all the implicit
-assumptions that only made sense when task load weight was static and we
-didn't have a clue about the true cpu load.
-
-I don't think a load-balance code clean up can be avoided even if we go
-with the power scheduler scheduler design. For example, the scaling of
-load weight by priority makes packing based on task load weight so
-conservative that it is not usable. Any tiny high priority task may
-completely take over a cpu if it happens to be on the runqueue during
-load balance. Vincent and Alex don't use task load weight in their
-packing patches but use their own metrics instead.
-
-I agree that we should take the good bits of those patches, but they are
-far from the complete solution we are looking for in their current form.
-
-The proposed design would let us deal with the complexity of interacting
-power drivers and capacity management outside the main scheduler and use
-it more or less unmodified. At lest to begin with. Down the line, we
-will have to have a look at the load balance logic. But hopefully it
-will be simpler or at least not more complex than it is now.
-
+> FWIW, xen has shipped with this implemetation, and enterprise kernels
+> using the traditional xen kernel (like Suse) are making use of it.
 > 
-> Just start by changing the balancer to pack instead of spread. Once that works,
-> see where the two modes diverge and put a knob in.
+> It may benefit tboot, in this case, but not Xen.
 > 
-> Then worry about power thingies.
-
-I don't think packing and the power stuff can be considered completely
-orthogonal. Packing should to take power stuff like frequency domains
-and cluster/package C-states into account.
-
-
+> I personally see it as an undesirable complication.
 > 
-> I'm not entirely sold on differentiating between short running and other tasks
-> either. Although I suppose I see where that comes from. A task that would run
-> 50% on a big core would unlikely be qualified as small, however if it would
-> require 85% of a small core and there's room on the small cores its a good move
-> to run it there.
+> Best regards,
+> Ben
 > 
-> So where's the limit for being small? It seems like an artificial limit and
-> such should be avoided where possible.
-
-I agree. But having too many small tasks on a single cpu to get to 90%
-(or whatever we consider to be full) is not ideal either as the tasks
-may wait for very long to run compared to their actual running time.
-
-Vincent's patches actually tries to address this problem by reducing the
-'full' threshold depending when the number of tasks on the cpu
-increases. If I remember correctly, Vincent has removed the small task
-limit in his latest patches.
-
-For packing, I don't think we need a strict limit for when a task is
-small. Just pack until the cpu is full or the running/runnable ratio of
-the tasks on the runqueue gets too low.
-There is no small task limit in the very simplistic packing done in this
-patch set either.
-
-Part of the reason for trying to identify small tasks is that these are
-often not performance sensitive. This is related to the 'which task is
-important/this task is performance sensitive' discussion.
-
-Morten
-
+> >
+> > Thanks and best regards
+> > -Lv
+> >
+> >> The hypervisor knows how to deal with both the reduced hardware sleep
+> >> as well as the legacy sleep path - it merely need to distinguish
+> >> these two paths, when performing the hypercall.
+> >>
+> >> Since there are two paths through the higher level ACPICA code - that
+> >> in hwsleep.c, and hwesleep.c - there needs to be some distinction
+> >> between the two paths, when calling through to the lower level
+> >> acpi_os_prepare_sleep() call.
+> >>
+> >> An alternate method would be to create another interface named
+> >> acpi_os_prepare_esleep() which would do the equivalent of this patch
+> >> series, with an "extended" parameter hidden from upper level
+> interfaces.
+> >>
+> >> This, however, would also add another function to
+> >> include/acpi/acpiosxf.h - which, I thought was undesirable, in the
+> >> impression that I got from Bob Moore, and Rafael Wysocki (though,
+> >> please correct me on this point, if I have
+> >> misunderstood)
+> >>
+> >> Best Regards
+> >>
+> >> Ben
+> >>
+> >>>
+> >>> As in ACPI specification, the bit definitions between the legacy
+> >>> sleep registers
+> >> and the extended sleep registers are equivalent.
+> >>>
+> >>> The legacy sleep register definition:
+> >>> Table 4-16 PM1 Status Registers Fixed Hardware Feature Status Bits -
+> >>> WAK_STS(bit 15) Table 4-18 PM1 Control Registers Fixed Hardware
+> >>> Feature Control Bits - SLP_TYPx (bit 10-12), SLP_EN (bit 13)
+> >>>
+> >>> The extended sleep register definition:
+> >>> Table 4-24 Sleep Control Register - SLP_TYPx (3 bits from offset 2),
+> >>> SLP_EN (1
+> >> bit from offset 5), here 10-8 = 2, and 13-8 = 5, this definition is
+> >> equivalent to Table 4-18.
+> >>> Table 4-25 Sleep Status Register - WAK_STS (1 bit 7), 15-8 = 7, this
+> >>> definition is
+> >> equivalent to Table 4-16.
+> >>>
+> >>> Thanks and best regards
+> >>> -Lv
+> >>>
+> >>>> -----Original Message-----
+> >>>> From: linux-acpi-owner@vger.kernel.org
+> >>>> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Ben Guthro
+> >>>> Sent: Wednesday, June 26, 2013 10:06 PM
+> >>>> To: Konrad Rzeszutek Wilk; Jan Beulich; Rafaell J . Wysocki;
+> >>>> linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org;
+> >>>> xen-devel@lists.xen.org
+> >>>> Cc: Ben Guthro; Moore, Robert
+> >>>> Subject: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+> >>>> reduced hardware sleep path
+> >>>>
+> >>>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel
+> >>>> with reduced hardware sleep support, and the two changes didn't get
+> >>>> synchronized: The new code doesn't call the hook function (if so
+> >>>> requested). Fix this, requiring a parameter to be added to the hook
+> >>>> function to distinguish "extended" from "legacy" sleep.
+> >>>>
+> >>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> >>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >>>> Cc: Bob Moore <robert.moore@intel.com>
+> >>>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+> >>>> Cc: linux-acpi@vger.kernel.org
+> >>>> ---
+> >>>>   drivers/acpi/acpica/hwesleep.c |    8 ++++++++
+> >>>>   drivers/acpi/acpica/hwsleep.c  |    2 +-
+> >>>>   drivers/acpi/osl.c             |   16 ++++++++--------
+> >>>>   include/linux/acpi.h           |   10 +++++-----
+> >>>>   4 files changed, 22 insertions(+), 14 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/acpi/acpica/hwesleep.c
+> >>>> b/drivers/acpi/acpica/hwesleep.c index 5e5f762..6834dd7 100644
+> >>>> --- a/drivers/acpi/acpica/hwesleep.c
+> >>>> +++ b/drivers/acpi/acpica/hwesleep.c
+> >>>> @@ -43,6 +43,7 @@
+> >>>>    */
+> >>>>
+> >>>>   #include <acpi/acpi.h>
+> >>>> +#include <linux/acpi.h>
+> >>>>   #include "accommon.h"
+> >>>>
+> >>>>   #define _COMPONENT          ACPI_HARDWARE
+> >>>> @@ -128,6 +129,13 @@ acpi_status acpi_hw_extended_sleep(u8
+> >>>> sleep_state)
+> >>>>
+> >>>>   	ACPI_FLUSH_CPU_CACHE();
+> >>>>
+> >>>> +	status = acpi_os_prepare_sleep(sleep_state,
+> acpi_gbl_sleep_type_a,
+> >>>> +				       acpi_gbl_sleep_type_b, true);
+> >>>> +	if (ACPI_SKIP(status))
+> >>>> +		return_ACPI_STATUS(AE_OK);
+> >>>> +	if (ACPI_FAILURE(status))
+> >>>> +		return_ACPI_STATUS(status);
+> >>>> +
+> >>>>   	/*
+> >>>>   	 * Set the SLP_TYP and SLP_EN bits.
+> >>>>   	 *
+> >>>> diff --git a/drivers/acpi/acpica/hwsleep.c
+> >>>> b/drivers/acpi/acpica/hwsleep.c index e3828cc..a93c299 100644
+> >>>> --- a/drivers/acpi/acpica/hwsleep.c
+> >>>> +++ b/drivers/acpi/acpica/hwsleep.c
+> >>>> @@ -153,7 +153,7 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+> >>>>   	ACPI_FLUSH_CPU_CACHE();
+> >>>>
+> >>>>   	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> >>>> -				       pm1b_control);
+> >>>> +				       pm1b_control, false);
+> >>>>   	if (ACPI_SKIP(status))
+> >>>>   		return_ACPI_STATUS(AE_OK);
+> >>>>   	if (ACPI_FAILURE(status))
+> >>>> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
+> >>>> e721863..3fc2801 100644
+> >>>> --- a/drivers/acpi/osl.c
+> >>>> +++ b/drivers/acpi/osl.c
+> >>>> @@ -77,8 +77,8 @@ EXPORT_SYMBOL(acpi_in_debugger);
+> >>>>   extern char line_buf[80];
+> >>>>   #endif				/*ENABLE_DEBUGGER */
+> >>>>
+> >>>> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> >>>> -				      u32 pm1b_ctrl);
+> >>>> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 val_a,
+> >>>> +u32
+> >> val_b,
+> >>>> +				      u8 extended);
+> >>>>
+> >>>>   static acpi_osd_handler acpi_irq_handler;
+> >>>>   static void *acpi_irq_context;
+> >>>> @@ -1757,13 +1757,13 @@ acpi_status acpi_os_terminate(void)
+> >>>>   	return AE_OK;
+> >>>>   }
+> >>>>
+> >>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> >>>> -				  u32 pm1b_control)
+> >>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+> val_b,
+> >>>> +				  u8 extended)
+> >>>>   {
+> >>>>   	int rc = 0;
+> >>>>   	if (__acpi_os_prepare_sleep)
+> >>>> -		rc = __acpi_os_prepare_sleep(sleep_state,
+> >>>> -					     pm1a_control, pm1b_control);
+> >>>> +		rc = __acpi_os_prepare_sleep(sleep_state, val_a, val_b,
+> >>>> +					     extended);
+> >>>>   	if (rc < 0)
+> >>>>   		return AE_ERROR;
+> >>>>   	else if (rc > 0)
+> >>>> @@ -1772,8 +1772,8 @@ acpi_status acpi_os_prepare_sleep(u8
+> >>>> sleep_state,
+> >>>> u32 pm1a_control,
+> >>>>   	return AE_OK;
+> >>>>   }
+> >>>>
+> >>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> >>>> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+> >>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
+> val_a,
+> >>>> +					   u32 val_b, u8 extended))
+> >>>>   {
+> >>>>   	__acpi_os_prepare_sleep = func;
+> >>>>   }
+> >>>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
+> >>>> 17b5b59..de99022 100644
+> >>>> --- a/include/linux/acpi.h
+> >>>> +++ b/include/linux/acpi.h
+> >>>> @@ -477,11 +477,11 @@ static inline bool
+> >>>> acpi_driver_match_device(struct device *dev,
+> >>>>   #endif	/* !CONFIG_ACPI */
+> >>>>
+> >>>>   #ifdef CONFIG_ACPI
+> >>>> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> >>>> -			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> >>>> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state, u32
+> val_a,
+> >>>> +					   u32 val_b, u8 extended));
+> >>>>
+> >>>> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> >>>> -				  u32 pm1a_control, u32 pm1b_control);
+> >>>> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 val_a, u32
+> val_b,
+> >>>> +				  u8 extended);
+> >>>>   #ifdef CONFIG_X86
+> >>>>   void arch_reserve_mem_area(acpi_physical_address addr, size_t
+> size);
+> >>>>   #else
+> >>>> @@ -491,7 +491,7 @@ static inline void
+> >>>> arch_reserve_mem_area(acpi_physical_address addr,
+> >>>>   }
+> >>>>   #endif /* CONFIG_X86 */
+> >>>>   #else
+> >>>> -#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do {
+> >>>> } while
+> >>>> (0)
+> >>>> +#define acpi_os_set_prepare_sleep(func, val_a, val_b, ext) do { }
+> >>>> +while (0)
+> >>>>   #endif
+> >>>>
+> >>>>   #if defined(CONFIG_ACPI) && defined(CONFIG_PM_RUNTIME)
+> >>>> --
+> >>>> 1.7.9.5
+> >>>>
+> >>>> --
+> >>>> To unsubscribe from this list: send the line "unsubscribe linux-acpi"
+> >>>> in the body of a message to majordomo@vger.kernel.org More
+> >>>> majordomo info at  http://vger.kernel.org/majordomo-info.html
