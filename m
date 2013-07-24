@@ -1,116 +1,622 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab3GXVMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 17:12:09 -0400
-Received: from mail-db9lp0252.outbound.messaging.microsoft.com ([213.199.154.252]:9830
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933Ab3GXVMG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 17:12:06 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC103.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zzbb2dI98dI9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT004.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(24454002)(377454003)(479174003)(199002)(13464003)(189002)(51704005)(46102001)(76576001)(76796001)(49866001)(74502001)(79102001)(33646001)(56816003)(74662001)(47736001)(81342001)(47446002)(76786001)(4396001)(83072001)(81542001)(59766001)(76482001)(74316001)(51856001)(83322001)(19580405001)(74366001)(74706001)(54316002)(54356001)(77982001)(63696002)(19580395003)(53806001)(80022001)(77096001)(50986001)(31966008)(66066001)(47976001)(16406001)(69226001)(56776001)(74876001)(65816001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:BLUPR03MB052;H:BLUPR03MB050.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Dave Hansen <dave@sr71.net>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>
-Subject: RE: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory
- "in context"
-Thread-Topic: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory
- "in context"
-Thread-Index: AQHOiK+yQ/v5brutgUmjn/xbdgT575l0UVWAgAAAcvA=
-Date: Wed, 24 Jul 2013 21:10:03 +0000
-Message-ID: <330d6f16f1a341dbaf5028797bcad305@BLUPR03MB050.namprd03.prod.outlook.com>
-References: <1374701355-30799-1-git-send-email-kys@microsoft.com>
- <1374701399-30842-1-git-send-email-kys@microsoft.com>
- <1374701399-30842-2-git-send-email-kys@microsoft.com>
- <51F0414F.3060600@sr71.net>
-In-Reply-To: <51F0414F.3060600@sr71.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0917DFAC67
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OrganizationHeadersPreserved: BLUPR03MB052.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KVACK.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GOOGLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CMPXCHG.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.CZ$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%FIRSTFLOOR.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SR71.NET$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%CANONICAL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC103.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1752631Ab3GXVNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 17:13:07 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:43070 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751579Ab3GXVNF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 17:13:05 -0400
+Message-ID: <1374700383.1924.4.camel@joe-AO722>
+Subject: [PATCH] staging: gdm724x: Update logging
+From: Joe Perches <joe@perches.com>
+To: Jonathan Kim <jonathankim@gctsemi.com>, Dean ahn <deanahn@gctsemi.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+Date: Wed, 24 Jul 2013 14:13:03 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Make the logging prefixes match the module names
+by adding #define pr_fmt(fmt) KBUILD_MODNAME and
+converting printks to netdev_<level> when a
+struct netdevice * is available and and pr_<level>
+when not.
 
+Remove embedded prefixes.
+Add missing terminating newlines.
+Remove an unnecessary rx-dropped message.
+Remove an unnecessary temporary variable.
 
-> -----Original Message-----
-> From: Dave Hansen [mailto:dave@sr71.net]
-> Sent: Wednesday, July 24, 2013 5:04 PM
-> To: KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> andi@firstfloor.org; akpm@linux-foundation.org; linux-mm@kvack.org;
-> kamezawa.hiroyuki@gmail.com; mhocko@suse.cz; hannes@cmpxchg.org;
-> yinghan@google.com
-> Subject: Re: [PATCH 2/2] Drivers: hv: balloon: Online the hot-added memory "in
-> context"
-> 
-> On 07/24/2013 02:29 PM, K. Y. Srinivasan wrote:
-> >  		/*
-> > -		 * Wait for the memory block to be onlined.
-> > -		 * Since the hot add has succeeded, it is ok to
-> > -		 * proceed even if the pages in the hot added region
-> > -		 * have not been "onlined" within the allowed time.
-> > +		 * Before proceeding to hot add the next segment,
-> > +		 * online the segment that has been hot added.
-> >  		 */
-> > -		wait_for_completion_timeout(&dm_device.ol_waitevent,
-> 5*HZ);
-> > +		online_memory_block(start_pfn);
-> 
-> Ahhhhh....  You've got a timeout in the code in order to tell the
-> hypervisor that you were successfully able to add the memory?  The
-> userspace addition code probably wasn't running within this timeout
-> period.  right?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/staging/gdm724x/gdm_lte.c   | 38 ++++++++++++++++----------------
+ drivers/staging/gdm724x/gdm_mux.c   | 41 +++++++++++++++++------------------
+ drivers/staging/gdm724x/gdm_tty.c   |  8 ++++---
+ drivers/staging/gdm724x/gdm_usb.c   | 43 ++++++++++++++++++++-----------------
+ drivers/staging/gdm724x/netlink_k.c | 12 ++++++-----
+ 5 files changed, 73 insertions(+), 69 deletions(-)
 
-As I have always said, the onlining would not occur within a specified amount
-of time (under some conditions). The timeout here is to ensure that we are able 
-to online the memory before attempting to hot-add more memory. With the ability
-to online memory from within the kernel, we don't need this timeout and the code is
-much more predictable.
-
-Regards,
-
-K. Y
-
+diff --git a/drivers/staging/gdm724x/gdm_lte.c b/drivers/staging/gdm724x/gdm_lte.c
+index 357474a..0c33634 100644
+--- a/drivers/staging/gdm724x/gdm_lte.c
++++ b/drivers/staging/gdm724x/gdm_lte.c
+@@ -11,6 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/version.h>
+ #include <linux/etherdevice.h>
+ #include <linux/ip.h>
+@@ -103,7 +105,6 @@ static int gdm_lte_rx(struct sk_buff *skb, struct nic *nic, int nic_type)
+ 
+ 	ret = netif_rx_ni(skb);
+ 	if (ret == NET_RX_DROP) {
+-		printk(KERN_ERR "glte: rx - dropped\n");
+ 		nic->stats.rx_dropped++;
+ 	} else {
+ 		nic->stats.rx_packets++;
+@@ -416,7 +417,7 @@ static int gdm_lte_tx(struct sk_buff *skb, struct net_device *dev)
+ 
+ 	nic_type = gdm_lte_tx_nic_type(dev, skb);
+ 	if (nic_type == 0) {
+-		printk(KERN_ERR "glte: tx - invalid nic_type\n");
++		netdev_err(dev, "tx - invalid nic_type\n");
+ 		return -1;
+ 	}
+ 
+@@ -504,7 +505,7 @@ static void get_dev_endian(struct data_t *data, struct net_device *dev)
+ 
+ 	ret = copy_to_user(data->buf, gdm_dev_endian(nic), sizeof(struct dev_endian_t));
+ 	if (ret)
+-		printk(KERN_INFO "glte: state - failed to copy\n");
++		netdev_info(dev, "state - failed to copy\n");
+ }
+ 
+ static int gdm_lte_ioctl_get_data(struct wm_req_t *req, struct net_device *dev)
+@@ -517,7 +518,7 @@ static int gdm_lte_ioctl_get_data(struct wm_req_t *req, struct net_device *dev)
+ 		get_dev_endian(&req->data, dev);
+ 		break;
+ 	default:
+-		printk(KERN_ERR "glte: ioctl - unknown type %d\n", id);
++		netdev_err(dev, "ioctl - unknown type %d\n", id);
+ 		break;
+ 	}
+ 	return 0;
+@@ -562,7 +563,7 @@ int gdm_lte_event_init(void)
+ 		return 0;
+ 	}
+ 
+-	printk(KERN_ERR "glte: event init failed\n");
++	pr_err("event init failed\n");
+ 	return -1;
+ }
+ 
+@@ -654,7 +655,7 @@ static void gdm_lte_netif_rx(struct net_device *dev, char *buf, int len, int fla
+ 			eth.h_proto = htons(ETH_P_IPV6);
+ 			vlan_eth.h_vlan_encapsulated_proto = htons(ETH_P_IPV6);
+ 		} else {
+-			printk(KERN_ERR "glte: Unknown IP version %d\n", ip_version);
++			netdev_err(dev, "Unknown IP version %d\n", ip_version);
+ 			return;
+ 		}
+ 	}
+@@ -700,11 +701,11 @@ static void gdm_lte_multi_sdu_pkt(struct phy_dev *phy_dev, char *buf, int len)
+ 		nic_type = gdm_dev32_to_cpu(phy_dev->get_endian(phy_dev->priv_dev), sdu->nic_type);
+ 
+ 		if (cmd_evt != LTE_RX_SDU) {
+-			printk(KERN_ERR "glte: rx sdu wrong hci %04x\n", cmd_evt);
++			pr_err("rx sdu wrong hci %04x\n", cmd_evt);
+ 			return;
+ 		}
+ 		if (hci_len < 12) {
+-			printk(KERN_ERR "glte: rx sdu invalid len %d\n", hci_len);
++			pr_err("rx sdu invalid len %d\n", hci_len);
+ 			return;
+ 		}
+ 
+@@ -713,7 +714,7 @@ static void gdm_lte_multi_sdu_pkt(struct phy_dev *phy_dev, char *buf, int len)
+ 			dev = phy_dev->dev[index];
+ 			gdm_lte_netif_rx(dev, (char *)sdu->data, (int)(hci_len-12), nic_type);
+ 		} else {
+-			printk(KERN_ERR "glte: rx sdu invalid nic_type : %x\n", nic_type);
++			pr_err("rx sdu invalid nic_type :%x\n", nic_type);
+ 		}
+ 
+ 		data += ((hci_len+3) & 0xfffc) + HCI_HEADER_SIZE;
+@@ -730,12 +731,11 @@ static void gdm_lte_pdn_table(struct net_device *dev, char *buf, int len)
+ 		nic->pdn_table.dft_eps_id = gdm_dev32_to_cpu(gdm_dev_endian(nic), pdn_table->dft_eps_id);
+ 		nic->pdn_table.nic_type = gdm_dev32_to_cpu(gdm_dev_endian(nic), pdn_table->nic_type);
+ 
+-		printk(KERN_INFO "glte: pdn %s activated, nic_type=0x%x\n",
+-		       dev->name, nic->pdn_table.nic_type);
++		netdev_info(dev, "pdn activated, nic_type=0x%x\n",
++			    nic->pdn_table.nic_type);
+ 	} else {
+ 		memset(&nic->pdn_table, 0x00, sizeof(struct pdn_table));
+-		printk(KERN_INFO "glte: pdn %s deactivated\n",
+-		       dev->name);
++		netdev_info(dev, "pdn deactivated\n");
+ 	}
+ }
+ 
+@@ -771,11 +771,9 @@ static int gdm_lte_receive_pkt(struct phy_dev *phy_dev, char *buf, int len)
+ 		gdm_lte_multi_sdu_pkt(phy_dev, buf, len);
+ 		break;
+ 	case LTE_LINK_ON_OFF_INDICATION:
+-		{
+-			struct hci_connect_ind *connect_ind = (struct hci_connect_ind *)buf;
+-			printk(KERN_INFO "glte: link %s\n",
+-			       connect_ind->connect ? "on" : "off");
+-		}
++		netdev_info(dev, "link %s\n",
++			    ((struct hci_connect_ind *)buf)->connect
++			    ? "on" : "off");
+ 		break;
+ 	case LTE_PDN_TABLE_IND:
+ 		pdn_table = (struct hci_pdn_table_ind *)buf;
+@@ -841,7 +839,7 @@ static void validate_mac_address(u8 *mac_address)
+ {
+ 	/* if zero address or multicast bit set, restore the default value */
+ 	if (is_zero_ether_addr(mac_address) || (mac_address[0] & 0x01)) {
+-		printk(KERN_ERR "glte: MAC invalid, restoring default\n");
++		pr_err("MAC invalid, restoring default\n");
+ 		memcpy(mac_address, gdm_lte_macaddr, 6);
+ 	}
+ }
+@@ -863,7 +861,7 @@ int register_lte_device(struct phy_dev *phy_dev, struct device *dev, u8 *mac_add
+ 		/* Allocate netdev */
+ 		net = alloc_netdev(sizeof(struct nic), pdn_dev_name, ether_setup);
+ 		if (net == NULL) {
+-			printk(KERN_ERR "glte: alloc_netdev failed\n");
++			pr_err("alloc_netdev failed\n");
+ 			ret = -ENOMEM;
+ 			goto err;
+ 		}
+diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+index 2199f1b..f570bc0 100644
+--- a/drivers/staging/gdm724x/gdm_mux.c
++++ b/drivers/staging/gdm724x/gdm_mux.c
+@@ -11,6 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+@@ -172,8 +174,7 @@ static int up_to_host(struct mux_rx *r)
+ 		packet_type = __le16_to_cpu(mux_header->packet_type);
+ 
+ 		if (start_flag != START_FLAG) {
+-			printk(KERN_ERR "glte: invalid START_FLAG %x\n",
+-				start_flag);
++			pr_err("invalid START_FLAG %x\n", start_flag);
+ 			break;
+ 		}
+ 
+@@ -182,16 +183,14 @@ static int up_to_host(struct mux_rx *r)
+ 
+ 		if (len - packet_size_sum <
+ 			MUX_HEADER_SIZE + payload_size + dummy_cnt) {
+-			printk(KERN_ERR "glte: invalid payload : %d %d %04x\n",
+-			       payload_size, len,
+-			       packet_type
+-			       );
++			pr_err("invalid payload : %d %d %04x\n",
++			       payload_size, len, packet_type);
+ 			break;
+ 		}
+ 
+ 		index = packet_type_to_index(packet_type);
+ 		if (index < 0) {
+-			printk(KERN_ERR "glte: invalid index %d\n", index);
++			pr_err("invalid index %d\n", index);
+ 			break;
+ 		}
+ 
+@@ -242,7 +241,7 @@ static void do_rx(struct work_struct *work)
+ 
+ 		ret = up_to_host(r);
+ 		if (ret == TO_HOST_BUFFER_REQUEST_FAIL)
+-			printk(KERN_ERR "glte: failed to send mux data to host\n");
++			pr_err("failed to send mux data to host\n");
+ 		else
+ 			put_rx_struct(rx, r);
+ 	}
+@@ -272,7 +271,8 @@ static void gdm_mux_rcv_complete(struct urb *urb)
+ 
+ 	if (urb->status) {
+ 		if (mux_dev->usb_state == PM_NORMAL)
+-			printk(KERN_ERR "glte: gdm_mux_rcv_complete urb status error %d\n", urb->status);
++			pr_err("%s: urb status error %d\n",
++			       __func__, urb->status);
+ 		put_rx_struct(rx, r);
+ 	} else {
+ 		r->len = r->urb->actual_length;
+@@ -295,13 +295,13 @@ static int gdm_mux_recv(void *priv_dev,
+ 	int ret;
+ 
+ 	if (!usbdev) {
+-		printk(KERN_ERR "glte: device is disconnected\n");
++		pr_err("device is disconnected\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	r = get_rx_struct(rx);
+ 	if (!r) {
+-		printk(KERN_ERR "glte: get_rx_struct fail\n");
++		pr_err("get_rx_struct fail\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -331,7 +331,7 @@ static int gdm_mux_recv(void *priv_dev,
+ 
+ 		put_rx_struct(rx, r);
+ 
+-		printk(KERN_ERR "glte: usb_submit_urb ret=%d\n", ret);
++		pr_err("usb_submit_urb ret=%d\n", ret);
+ 	}
+ 
+ 	usb_mark_last_busy(usbdev);
+@@ -344,7 +344,7 @@ static void gdm_mux_send_complete(struct urb *urb)
+ 	struct mux_tx *t = urb->context;
+ 
+ 	if (urb->status == -ECONNRESET) {
+-		printk(KERN_INFO "glte: CONNRESET\n");
++		pr_info("CONNRESET\n");
+ 		free_mux_tx(t);
+ 		return;
+ 	}
+@@ -384,7 +384,7 @@ static int gdm_mux_send(void *priv_dev, void *data, int len, int tty_index,
+ 
+ 	t = alloc_mux_tx(total_len);
+ 	if (!t) {
+-		printk(KERN_ERR "glte: alloc_mux_tx fail\n");
++		pr_err("alloc_mux_tx fail\n");
+ 		spin_unlock_irqrestore(&mux_dev->write_lock, flags);
+ 		return -ENOMEM;
+ 	}
+@@ -415,7 +415,7 @@ static int gdm_mux_send(void *priv_dev, void *data, int len, int tty_index,
+ 	spin_unlock_irqrestore(&mux_dev->write_lock, flags);
+ 
+ 	if (ret)
+-		printk(KERN_ERR "glte: usb_submit_urb Error : %d\n", ret);
++		pr_err("usb_submit_urb Error: %d\n", ret);
+ 
+ 	usb_mark_last_busy(usbdev);
+ 
+@@ -440,7 +440,7 @@ static int gdm_mux_send_control(void *priv_dev, int request, int value, void *bu
+ 			     );
+ 
+ 	if (ret < 0)
+-		printk(KERN_ERR "glte: usb_control_msg error : %d\n", ret);
++		pr_err("usb_control_msg error: %d\n", ret);
+ 
+ 	return ret < 0 ? ret : 0;
+ }
+@@ -523,8 +523,7 @@ static int gdm_mux_probe(struct usb_interface *intf, const struct usb_device_id
+ 	idVendor = __le16_to_cpu(usbdev->descriptor.idVendor);
+ 	idProduct = __le16_to_cpu(usbdev->descriptor.idProduct);
+ 
+-	printk(KERN_INFO "glte: mux vid = 0x%04x pid = 0x%04x\n",
+-	       idVendor, idProduct);
++	pr_info("mux vid = 0x%04x pid = 0x%04x\n", idVendor, idProduct);
+ 
+ 	if (bInterfaceNumber != 2) {
+ 		ret = -ENODEV;
+@@ -616,7 +615,7 @@ static int gdm_mux_suspend(struct usb_interface *intf, pm_message_t pm_msg)
+ 	rx = &mux_dev->rx;
+ 
+ 	if (mux_dev->usb_state != PM_NORMAL) {
+-		printk(KERN_ERR "glte: usb suspend - invalid state\n");
++		pr_err("usb suspend - invalid state\n");
+ 		return -1;
+ 	}
+ 
+@@ -644,7 +643,7 @@ static int gdm_mux_resume(struct usb_interface *intf)
+ 	mux_dev = tty_dev->priv_dev;
+ 
+ 	if (mux_dev->usb_state != PM_SUSPEND) {
+-		printk(KERN_ERR "glte: usb resume - invalid state\n");
++		pr_err("usb resume - invalid state\n");
+ 		return -1;
+ 	}
+ 
+@@ -672,7 +671,7 @@ static int __init gdm_usb_mux_init(void)
+ 
+ 	mux_rx_wq = create_workqueue("mux_rx_wq");
+ 	if (mux_rx_wq == NULL) {
+-		printk(KERN_ERR "glte: work queue create fail");
++		pr_err("work queue create fail\n");
+ 		return -1;
+ 	}
+ 
+diff --git a/drivers/staging/gdm724x/gdm_tty.c b/drivers/staging/gdm724x/gdm_tty.c
+index a19c14f..357daa8 100644
+--- a/drivers/staging/gdm724x/gdm_tty.c
++++ b/drivers/staging/gdm724x/gdm_tty.c
+@@ -11,6 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+@@ -76,7 +78,7 @@ static int gdm_tty_open(struct tty_struct *tty, struct file *filp)
+ 	}
+ 
+ 	if (!tty_str) {
+-		printk(KERN_INFO "glte: no tty device\n");
++		pr_info("no tty device\n");
+ 		mutex_unlock(&open_mutex);
+ 		return -ENODEV;
+ 	}
+@@ -100,7 +102,7 @@ static void gdm_tty_close(struct tty_struct *tty, struct file *filp)
+ 	int i;
+ 
+ 	if (!tty_str) {
+-		printk(KERN_INFO "glte: tty device already close\n");
++		pr_info("tty device already closed\n");
+ 		return;
+ 	}
+ 
+@@ -326,7 +328,7 @@ int register_lte_tty_driver(void)
+ 	for (i = 0; i < TTY_MAX_COUNT; i++) {
+ 		tty_driver = alloc_tty_driver(GDM_TTY_MINOR);
+ 		if (!tty_driver) {
+-			printk(KERN_ERR "glte: alloc_tty_driver fail\n");
++			pr_err("alloc_tty_driver fail\n");
+ 			return -ENOMEM;
+ 		}
+ 
+diff --git a/drivers/staging/gdm724x/gdm_usb.c b/drivers/staging/gdm724x/gdm_usb.c
+index 40d362e..2e658f8 100644
+--- a/drivers/staging/gdm724x/gdm_usb.c
++++ b/drivers/staging/gdm724x/gdm_usb.c
+@@ -11,6 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+@@ -390,7 +392,7 @@ static int set_mac_address(u8 *data, void *arg)
+ 		memcpy(mac_address, tlv->data, tlv->len);
+ 
+ 		if (register_lte_device(phy_dev, &udev->intf->dev, mac_address) < 0)
+-			printk(KERN_ERR "glte: register lte device failed\n");
++			pr_err("register lte device failed\n");
+ 
+ 		udev->request_mac_addr = 0;
+ 
+@@ -444,7 +446,7 @@ static void do_rx(struct work_struct *work)
+ 						  KERNEL_THREAD);
+ 
+ 				if (ret == -EAGAIN)
+-					printk(KERN_ERR "glte: failed to send received data\n");
++					pr_err("failed to send received data\n");
+ 			}
+ 			break;
+ 		}
+@@ -491,7 +493,8 @@ static void gdm_usb_rcv_complete(struct urb *urb)
+ 		spin_unlock_irqrestore(&rx->to_host_lock, flags);
+ 	} else {
+ 		if (urb->status && udev->usb_state == PM_NORMAL)
+-			printk(KERN_ERR "glte: gdm_usb_rcv_complete urb status error %d\n", urb->status);
++			pr_err("%s: urb status error %d\n",
++			       __func__, urb->status);
+ 
+ 		put_rx_struct(rx, r);
+ 	}
+@@ -513,13 +516,13 @@ static int gdm_usb_recv(void *priv_dev,
+ 	unsigned long flags;
+ 
+ 	if (!udev->usbdev) {
+-		printk(KERN_ERR "glte: invalid device\n");
++		pr_err("invalid device\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	r = get_rx_struct(rx, &no_spc);
+ 	if (!r) {
+-		printk(KERN_ERR "glte: Out of Memory\n");
++		pr_err("Out of Memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -551,7 +554,7 @@ static int gdm_usb_recv(void *priv_dev,
+ 		list_del(&r->rx_submit_list);
+ 		spin_unlock_irqrestore(&rx->submit_lock, flags);
+ 
+-		printk(KERN_ERR "glte: usb_submit_urb fail (%p)\n", r);
++		pr_err("usb_submit_urb failed (%p)\n", r);
+ 		put_rx_struct(rx, r);
+ 	}
+ 
+@@ -566,7 +569,7 @@ static void gdm_usb_send_complete(struct urb *urb)
+ 	unsigned long flags;
+ 
+ 	if (urb->status == -ECONNRESET) {
+-		printk(KERN_INFO "glte: CONNRESET\n");
++		pr_info("CONNRESET\n");
+ 		return;
+ 	}
+ 
+@@ -599,7 +602,7 @@ static int send_tx_packet(struct usb_device *usbdev, struct usb_tx *t, u32 len)
+ 	ret = usb_submit_urb(t->urb, GFP_ATOMIC);
+ 
+ 	if (ret)
+-		printk(KERN_ERR "glte: usb_submit_urb fail %d\n", ret);
++		pr_err("usb_submit_urb failed: %d\n", ret);
+ 
+ 	usb_mark_last_busy(usbdev);
+ 
+@@ -707,7 +710,7 @@ static void do_tx(struct work_struct *work)
+ 		len = packet_aggregation(udev, t->buf);
+ 
+ 	if (send_tx_packet(usbdev, t, len)) {
+-		printk(KERN_ERR "glte: send_tx_packet fail\n");
++		pr_err("send_tx_packet failed\n");
+ 		t->callback = NULL;
+ 		gdm_usb_send_complete(t->urb);
+ 	}
+@@ -728,7 +731,7 @@ static int gdm_usb_sdu_send(void *priv_dev, void *data, int len,
+ 	u16 send_len;
+ 
+ 	if (!udev->usbdev) {
+-		printk(KERN_ERR "glte: sdu send - invalid device\n");
++		pr_err("sdu send - invalid device\n");
+ 		return TX_NO_DEV;
+ 	}
+ 
+@@ -737,7 +740,7 @@ static int gdm_usb_sdu_send(void *priv_dev, void *data, int len,
+ 	spin_unlock_irqrestore(&tx->lock, flags);
+ 
+ 	if (t_sdu == NULL) {
+-		printk(KERN_ERR "glte: sdu send - free list empty\n");
++		pr_err("sdu send - free list empty\n");
+ 		return TX_NO_SPC;
+ 	}
+ 
+@@ -781,13 +784,13 @@ static int gdm_usb_hci_send(void *priv_dev, void *data, int len,
+ 	unsigned long flags;
+ 
+ 	if (!udev->usbdev) {
+-		printk(KERN_ERR "glte: hci send - invalid device\n");
++		pr_err("hci send - invalid device\n");
+ 		return -ENODEV;
+ 	}
+ 
+ 	t = alloc_tx_struct(len);
+ 	if (t == NULL) {
+-		printk(KERN_ERR "glte: hci_send - out of memory\n");
++		pr_err("hci_send - out of memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -826,10 +829,10 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
+ 	idVendor = __le16_to_cpu(usbdev->descriptor.idVendor);
+ 	idProduct = __le16_to_cpu(usbdev->descriptor.idProduct);
+ 
+-	printk(KERN_INFO "glte: net vid = 0x%04x pid = 0x%04x\n", idVendor, idProduct);
++	pr_info("net vid = 0x%04x pid = 0x%04x\n", idVendor, idProduct);
+ 
+ 	if (bInterfaceNumber > NETWORK_INTERFACE) {
+-		printk(KERN_INFO "glte: not a network device");
++		pr_info("not a network device\n");
+ 		return -1;
+ 	}
+ 
+@@ -857,7 +860,7 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
+ 	udev->usbdev = usbdev;
+ 	ret = init_usb(udev);
+ 	if (ret < 0) {
+-		printk(KERN_ERR "glte: init_usb func fail\n");
++		pr_err("init_usb func failed\n");
+ 		goto out;
+ 	}
+ 	udev->intf = intf;
+@@ -874,7 +877,7 @@ static int gdm_usb_probe(struct usb_interface *intf, const struct usb_device_id
+ 
+ 	ret = request_mac_address(udev);
+ 	if (ret < 0) {
+-		printk(KERN_ERR "glte: request Mac address failed\n");
++		pr_err("request Mac address failed\n");
+ 		goto out;
+ 	}
+ 
+@@ -935,7 +938,7 @@ static int gdm_usb_suspend(struct usb_interface *intf, pm_message_t pm_msg)
+ 	udev = phy_dev->priv_dev;
+ 	rx = &udev->rx;
+ 	if (udev->usb_state != PM_NORMAL) {
+-		printk(KERN_ERR "glte: usb suspend - invalid state");
++		pr_err("usb suspend - invalid state\n");
+ 		return -1;
+ 	}
+ 
+@@ -968,7 +971,7 @@ static int gdm_usb_resume(struct usb_interface *intf)
+ 	rx = &udev->rx;
+ 
+ 	if (udev->usb_state != PM_SUSPEND) {
+-		printk(KERN_ERR "glte: usb resume - invalid state");
++		pr_err("usb resume - invalid state\n");
+ 		return -1;
+ 	}
+ 	udev->usb_state = PM_NORMAL;
+@@ -1007,7 +1010,7 @@ static struct usb_driver gdm_usb_lte_driver = {
+ static int __init gdm_usb_lte_init(void)
+ {
+ 	if (gdm_lte_event_init() < 0) {
+-		printk(KERN_ERR "glte: error creating event\n");
++		pr_err("error creating event\n");
+ 		return -1;
+ 	}
+ 
+diff --git a/drivers/staging/gdm724x/netlink_k.c b/drivers/staging/gdm724x/netlink_k.c
+index 9819bf0..90004a7 100644
+--- a/drivers/staging/gdm724x/netlink_k.c
++++ b/drivers/staging/gdm724x/netlink_k.c
+@@ -11,6 +11,8 @@
+  * GNU General Public License for more details.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/version.h>
+ #include <linux/export.h>
+ #include <linux/etherdevice.h>
+@@ -48,19 +50,19 @@ static void netlink_rcv_cb(struct sk_buff *skb)
+ 	int ifindex;
+ 
+ 	if (!rcv_cb) {
+-		printk(KERN_ERR "glte: nl cb - unregistered\n");
++		pr_err("nl cb - unregistered\n");
+ 		return;
+ 	}
+ 
+ 	if (skb->len < NLMSG_SPACE(0)) {
+-		printk(KERN_ERR "glte: nl cb - invalid skb length\n");
++		pr_err("nl cb - invalid skb length\n");
+ 		return;
+ 	}
+ 
+ 	nlh = (struct nlmsghdr *)skb->data;
+ 
+ 	if (skb->len < nlh->nlmsg_len || nlh->nlmsg_len > ND_MAX_MSG_LEN) {
+-		printk(KERN_ERR "glte: nl cb - invalid length (%d,%d)\n",
++		pr_err("nl cb - invalid length (%d,%d)\n",
+ 		       skb->len, nlh->nlmsg_len);
+ 		return;
+ 	}
+@@ -74,7 +76,7 @@ static void netlink_rcv_cb(struct sk_buff *skb)
+ 		rcv_cb(dev, nlh->nlmsg_type, msg, mlen);
+ 		dev_put(dev);
+ 	} else {
+-		printk(KERN_ERR "glte: nl cb - dev (%d) not found\n", ifindex);
++		pr_err("nl cb - dev (%d) not found\n", ifindex);
+ 	}
+ }
+ 
+@@ -152,7 +154,7 @@ int netlink_send(struct sock *sock, int group, u16 type, void *msg, int len)
+ 		return len;
+ 
+ 	if (ret != -ESRCH)
+-		printk(KERN_ERR "glte: nl broadcast g=%d, t=%d, l=%d, r=%d\n",
++		pr_err("nl broadcast g=%d, t=%d, l=%d, r=%d\n",
+ 		       group, type, len, ret);
+ 	else if (netlink_has_listeners(sock, group+1))
+ 		return -EAGAIN;
 
 
