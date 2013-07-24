@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab3GXAWC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 20:22:02 -0400
-Received: from mga11.intel.com ([192.55.52.93]:21922 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752681Ab3GXAV7 convert rfc822-to-8bit (ORCPT
+	id S1758105Ab3GXAWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 20:22:43 -0400
+Received: from smtp-fw-2101.amazon.com ([72.21.196.25]:16431 "EHLO
+	smtp-fw-2101.amazon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751002Ab3GXAWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 20:21:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,731,1367996400"; 
-   d="scan'208";a="374955158"
-From: "Zheng, Lv" <lv.zheng@intel.com>
+	Tue, 23 Jul 2013 20:22:42 -0400
+X-IronPort-AV: E=Sophos;i="4.89,731,1367971200"; 
+   d="scan'208";a="585125542"
+Date: Tue, 23 Jul 2013 17:22:36 -0700
+From: Matt Wilson <msw@amazon.com>
 To: Greg KH <gregkh@linuxfoundation.org>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: RE: [PATCH 01/13] ACPI/IPMI: Fix potential response buffer overflow
-Thread-Topic: [PATCH 01/13] ACPI/IPMI: Fix potential response buffer overflow
-Thread-Index: AQHOh3wLKhdEYIiVUE2C0IUCYAmbI5lx0/CAgAEj1aA=
-Date: Wed, 24 Jul 2013 00:21:42 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024350EA@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <cover.1374566394.git.lv.zheng@intel.com>
- <be902a592144313dbf382876965166166bf81438.1374566394.git.lv.zheng@intel.com>
- <20130723145419.GA12065@kroah.com>
-In-Reply-To: <20130723145419.GA12065@kroah.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+CC: "H. Peter Anvin" <hpa@zytor.com>, <xen-devel@lists.xensource.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>, <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Brandon Philips <brandon@ifup.org>
+Subject: Re: [Xen-devel] is kexec on Xen domU possible?
+Message-ID: <20130724002235.GA15047@u109add4315675089e695.ant.amazon.com>
+References: <20130719020603.GA22932@kroah.com>
+ <20130719131819.GC11233@debian70-amd64.local.net-space.pl>
+ <20130719151243.GA15488@kroah.com>
+ <20130719183235.GA12267@debian70-amd64.local.net-space.pl>
+ <20130719191449.GA1882@kroah.com>
+ <51E9A85D.2060206@zytor.com>
+ <20130722170307.GB14451@debian70-amd64.local.net-space.pl>
+ <87wqoise9d.fsf@xmission.com>
+ <51ED78EE.9020903@zytor.com>
+ <20130722183315.GA29273@kroah.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130722183315.GA29273@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: linux-acpi-owner@vger.kernel.org
-> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Greg KH
-> Sent: Tuesday, July 23, 2013 10:54 PM
+On Mon, Jul 22, 2013 at 11:33:15AM -0700, Greg KH wrote:
+> On Mon, Jul 22, 2013 at 11:24:46AM -0700, H. Peter Anvin wrote:
+> > On 07/22/2013 10:20 AM, Eric W. Biederman wrote:
+> > >>>
+> > >>> Also, in any virtualized environment the hypervisor can do a better job
+> > >>> for things like kdump, simply because it can provide two things that are
+> > >>> otherwise hard to do:
+> > >>>
+> > >>> 1. a known-good system state;
+> > >>> 2. a known-clean kdump image.
+> > >>>
+> > >>> As such, I do encourage the virtualization people to (also) develop
+> > >>> hypervisor-*aware* solutions for these kinds of things.
+> > >>
+> > >> In general I agree but if you could not change hypervisor
+> > >> and/or dom0 (e.g. you are using cloud providers which are
+> > >> stick to old versions of Xen) then you have no choice.
+> > > 
+> > > Which tends to be where kexec on panic comes in most cases.  Getting
+> > > platform vendors to do something sane tends to be a multi-year political
+> > > effort of dubious worth while just solving the problem locally actually
+> > > gets the problem solved for those who care.
+> > > 
+> > 
+> > It should not be a "one or the other" issue.
 > 
-> On Tue, Jul 23, 2013 at 04:08:59PM +0800, Lv Zheng wrote:
-> > This patch enhances sanity checks on message size to avoid potential
-> > buffer overflow.
-> >
-> > The kernel IPMI message size is IPMI_MAX_MSG_LENGTH(272 bytes) while
-> > the ACPI specification defined IPMI message size is 64 bytes.  The
-> > difference is not handled by the original codes.  This may cause crash
-> > in the response handling codes.
-> > This patch fixes this gap and also combines rx_data/tx_data to use
-> > single data/len pair since they need not be seperated.
-> >
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Reviewed-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  drivers/acpi/acpi_ipmi.c |  100
-> > ++++++++++++++++++++++++++++------------------
-> >  1 file changed, 61 insertions(+), 39 deletions(-)
-> 
-> <formletter>
-> 
-> This is not the correct way to submit patches for inclusion in the stable kernel
-> tree.  Please read Documentation/stable_kernel_rules.txt
-> for how to do this properly.
-> 
-> </formletter>
-> 
-> Same goes for the other patches you sent in this thread...
+> I don't care about kdump, I care about kexec on domU for people who are
+> running on cloud providers with old versions of Xen so that they can
+> control what kernel they can boot, when they want to boot it.  If kdump
+> works as well, that's just a bonus, but it's down on the list of things
+> for me to be concerned about.
 
-OK, I'll add prerequisites for each that want to be accepted by the stable queue and re-send them (PATCH 01-06).
+Many Xen-based cloud providers provide a mechanism for users to boot
+the kernels they want. For example you can use PV-GRUB on EC2
+instances to boot a kernel that is stored within an AMI.
 
-Thanks and best regards
--Lv
+For more info:
+  http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/UserProvidedkernels.html
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
+--msw
