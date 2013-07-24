@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071Ab3GXOQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:16:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45782 "EHLO
+	id S1753481Ab3GXOQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:16:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45744 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752150Ab3GXOGt (ORCPT
+	by vger.kernel.org with ESMTP id S1752319Ab3GXOGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:49 -0400
+	Wed, 24 Jul 2013 10:06:48 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Bert De Jonghe" <Bert.DeJonghe@amplidata.com>,
-        "Jens Axboe" <axboe@kernel.dk>, "Jan Kara" <jack@suse.cz>
+CC: akpm@linux-foundation.org, "Soeren Moch" <smoch@web.de>,
+        "Sakari Ailus" <sakari.ailus@iki.fi>,
+        "Mauro Carvalho Chehab" <mchehab@redhat.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.243493672@decadent.org.uk>
+Message-ID: <lsq.1374674565.555105067@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [50/85] writeback: Fix periodic writeback after fs mount
+Subject: [27/85] [media] media: dmxdev: remove dvb_ringbuffer_flush() on
+ writer side
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,56 +33,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Soeren Moch <smoch@web.de>
 
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
+commit 414abbd2cd4c2618895f02ed3a76ec6647281436 upstream.
 
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
+In dvb_ringbuffer lock-less synchronizationof reader and writer threads is done
+with separateread and write pointers. Sincedvb_ringbuffer_flush() modifies the
+read pointer, this function must not be called from the writer thread.
+This patch removes the dvb_ringbuffer_flush() calls in the dmxdev ringbuffer
+write functions, this fixes Oopses "Unable to handle kernel paging request"
+I could observe for the call chaindvb_demux_read ->dvb_dmxdev_buffer_read ->
+dvb_ringbuffer_read_user -> __copy_to_user (the reader side of the ringbuffer).
+The flush calls at the write side are not necessary anyway since ringbuffer_flush
+is also called in dvb_dmxdev_buffer_read() when an error condition is set in the
+ringbuffer.
+This patch should also be applied to stable kernels.
 
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
-
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Soeren Moch <smoch@web.de>
+Reviewed-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/block_dev.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/media/dvb/dvb-core/dmxdev.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -55,17 +55,24 @@ static void bdev_inode_switch_bdi(struct
- 			struct backing_dev_info *dst)
- {
- 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+	bool wakeup_bdi = false;
- 
- 	if (unlikely(dst == old))		/* deadlock avoidance */
- 		return;
- 	bdi_lock_two(&old->wb, &dst->wb);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&old->wb.list_lock);
- 	spin_unlock(&dst->wb.list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
- }
- 
- sector_t blkdev_max_block(struct block_device *bdev)
+--- a/drivers/media/dvb/dvb-core/dmxdev.c
++++ b/drivers/media/dvb/dvb-core/dmxdev.c
+@@ -380,10 +380,8 @@ static int dvb_dmxdev_section_callback(c
+ 		ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer2,
+ 					      buffer2_len);
+ 	}
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(&dmxdevfilter->buffer);
++	if (ret < 0)
+ 		dmxdevfilter->buffer.error = ret;
+-	}
+ 	if (dmxdevfilter->params.sec.flags & DMX_ONESHOT)
+ 		dmxdevfilter->state = DMXDEV_STATE_DONE;
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+@@ -419,10 +417,8 @@ static int dvb_dmxdev_ts_callback(const
+ 	ret = dvb_dmxdev_buffer_write(buffer, buffer1, buffer1_len);
+ 	if (ret == buffer1_len)
+ 		ret = dvb_dmxdev_buffer_write(buffer, buffer2, buffer2_len);
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(buffer);
++	if (ret < 0)
+ 		buffer->error = ret;
+-	}
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+ 	wake_up(&buffer->queue);
+ 	return 0;
 
