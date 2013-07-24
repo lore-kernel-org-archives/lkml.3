@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab3GXRWV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:22:21 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60409 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab3GXRU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:20:27 -0400
-Message-ID: <51F00CD8.9000601@wwwdotorg.org>
-Date: Wed, 24 Jul 2013 10:20:24 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Rhyland Klein <rklein@nvidia.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Joseph Lo <josephl@nvidia.com>, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH] regulator: palmas: fix pdata ptr not be updated after
- it has been allocated
-References: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
-In-Reply-To: <1374683282-17517-1-git-send-email-rklein@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752398Ab3GXRXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:23:20 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:54721 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751585Ab3GXRXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 13:23:19 -0400
+Message-ID: <1374686598.18818.18.camel@joe-AO722>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+From: Joe Perches <joe@perches.com>
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Anton Vorontsov <anton@enomsg.org>,
+        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
+        Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org
+Date: Wed, 24 Jul 2013 10:23:18 -0700
+In-Reply-To: <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
+	 <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 09:28 AM, Rhyland Klein wrote:
-> The pmic platform data wasn't updated to dev.platform_data after it had
-> been allocated. That can cause the driver crash when using it.
-> This patch fixes the issue.
+On Wed, 2013-07-24 at 22:43 +0530, Naveen N. Rao wrote:
+> On 2013/07/22 11:01PM, Borislav Petkov wrote:
+> > From: Borislav Petkov <bp@suse.de>
+> > 
+> > [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x        c7f00000> for ERST.
+> > 
+> > This needs to have leading zeroes. Make it so.
+
+Why does it need leading zeros?
+
+> While looking at this, I noticed that we seem to be using varying field
+> widths in our APEI code:
+> - einj.c has two instances using %#010llx.
+> - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
 > 
-> We need to update the pdata pointer at the end of probe because if
-> probe should fail for some reason, for instance if an in-supply
-> isn't ready yet, then probe will defer. However, the pdata is allocated
-> with devm, and so is freed when probe is deferred.
+> Not sure if these are intentional and those fields truly aren't 64-bit
+> (as suggested by the usage of long long int).
 
-This looks wrong. If the module is removed and re-probed, then the pdata
-pointer will still be set to a stale (free'd) value and hence not
-re-allocated, but it will still be used.
+I suggest using "0x%llx" everywhere unless there's a
+compelling reason like columnar alignment for them.
 
-This function shouldn't save the pdata in dev.platform_data, but rather
-some data structure that has the same scope as probe()..remove(), for
-example as a field in the drvdata struct, as set by dev_set_drvdata().
+
