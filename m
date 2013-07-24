@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151Ab3GXOGa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:06:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45704 "EHLO
+	id S1751634Ab3GXOGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:06:36 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45698 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751605Ab3GXOG1 (ORCPT
+	by vger.kernel.org with ESMTP id S1751189Ab3GXOGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:27 -0400
+	Wed, 24 Jul 2013 10:06:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Francois Romieu" <romieu@fr.zoreil.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Minchan Kim" <minchan@kernel.org>, "Jiang Liu" <jiang.liu@huawei.com>,
+        "Jiang Liu" <liuj97@gmail.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.359135881@decadent.org.uk>
+Message-ID: <lsq.1374674565.249269575@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [01/85] r8169: fix offloaded tx checksum for small packets.
+Subject: [12/85] zram: protect sysfs handler from invalid memory access
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,36 +33,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Jiang Liu <liuj97@gmail.com>
 
-The workaround introduced by commit e5195c1f31f3 'r8169: fix 8168evl
-frame padding.' upstream was incorrect and was entirely replaced in
-commit b423e9ae49d7 'r8169: fix offloaded tx checksum for small
-packets.'
+commit 5863e10b441e7ea4b492f930f1be180a97d026f3 upstream.
 
-On the 3.2.y branch, the first commit has effectively been applied
-twice: the first time by itself, and the second time in commit
-3cf40360f431 which squashed the two upstream commits together.  That
-left us with both the incorrect and the correct workaround in place.
-Remove the incorrect one.
+Use zram->init_lock to protect access to zram->meta, otherwise it
+may cause invalid memory access if zram->meta has been freed by
+zram_reset_device().
 
+This issue may be triggered by:
+Thread 1:
+while true; do cat mem_used_total; done
+Thread 2:
+while true; do echo 8M > disksize; echo 1 > reset; done
+
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Cc: Francois Romieu <romieu@fr.zoreil.com>
---- a/drivers/net/ethernet/realtek/r8169.c
-+++ b/drivers/net/ethernet/realtek/r8169.c
-@@ -5584,14 +5584,6 @@ static netdev_tx_t rtl8169_start_xmit(st
- 		goto err_stop_0;
+---
+ drivers/staging/zram/zram_sysfs.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/staging/zram/zram_sysfs.c
++++ b/drivers/staging/zram/zram_sysfs.c
+@@ -186,10 +186,12 @@ static ssize_t mem_used_total_show(struc
+ 	u64 val = 0;
+ 	struct zram *zram = dev_to_zram(dev);
+ 
++	down_read(&zram->init_lock);
+ 	if (zram->init_done) {
+ 		val = xv_get_total_size_bytes(zram->mem_pool) +
+ 			((u64)(zram->stats.pages_expand) << PAGE_SHIFT);
  	}
++	up_read(&zram->init_lock);
  
--	/* 8168evl does not automatically pad to minimum length. */
--	if (unlikely(tp->mac_version == RTL_GIGA_MAC_VER_34 &&
--		     skb->len < ETH_ZLEN)) {
--		if (skb_padto(skb, ETH_ZLEN))
--			goto err_update_stats;
--		skb_put(skb, ETH_ZLEN - skb->len);
--	}
--
- 	if (unlikely(le32_to_cpu(txd->opts1) & DescOwn))
- 		goto err_stop_0;
- 
+ 	return sprintf(buf, "%llu\n", val);
+ }
 
