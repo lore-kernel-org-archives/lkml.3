@@ -1,70 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab3GXRmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:42:46 -0400
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:40612 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751008Ab3GXRmp (ORCPT
+	id S1752416Ab3GXRoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:44:10 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:36059 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab3GXRoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:42:45 -0400
+	Wed, 24 Jul 2013 13:44:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374687373.7382.22.camel@dabdike>
-References: <20130724160826.GD24851@moon> <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com>
- <20130724163734.GE24851@moon> <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com>
- <20130724171728.GH8508@moon> <1374687373.7382.22.camel@dabdike>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 24 Jul 2013 10:42:24 -0700
-Message-ID: <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Linux MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <CE156A09.575CF%andreas.dilger@intel.com>
+References: <1374654692-13237-9-git-send-email-mail-agent-noreply@emc.com> <CE156A09.575CF%andreas.dilger@intel.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Thu, 25 Jul 2013 01:43:46 +0800
+Message-ID: <CA+a=Yy7G41W=j8=czozVORdbCXned+qQ2KknGzzHm3HvSu_uMA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] staging/lustre: fix errno translate code on non-x86
+To: "Dilger, Andreas" <andreas.dilger@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:36 AM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> On Wed, 2013-07-24 at 21:17 +0400, Cyrill Gorcunov wrote:
->> On Wed, Jul 24, 2013 at 10:06:53AM -0700, Andy Lutomirski wrote:
->> > > Hi Andy, if I understand you correctly "file-backed pages" are carried
->> > > in pte with _PAGE_FILE bit set and the swap soft-dirty bit won't be
->> > > used on them but _PAGE_SOFT_DIRTY will be set on write if only I've
->> > > not missed something obvious (Pavel?).
->> >
->> > If I understand this stuff correctly, the vmscan code calls
->> > try_to_unmap when it reclaims memory, which makes its way into
->> > try_to_unmap_one, which clears the pte (and loses the soft-dirty bit).
->>
->> Indeed, I was so stareing into swap that forgot about files. I'll do
->> a separate patch for that, thanks!
+On Thu, Jul 25, 2013 at 1:27 AM, Dilger, Andreas
+<andreas.dilger@intel.com> wrote:
+> On 2013/07/24 2:31 AM, "mail-agent-noreply@emc.com"
+> <mail-agent-noreply@emc.com> wrote:
 >
-> Lets just be clear about the problem first: the vmscan pass referred to
-> above happens only on clean pages, so the soft dirty bit could only be
-> set if the page was previously dirty and got written back.  Now it's an
-> exercise for the reader whether we want to reinstantiate a cleaned
-> evicted page for the purpose of doing an iterative migration or whether
-> we want to flip the page in the migrated entity to be evicted (so if it
-> gets referred to, it pulls in an up to date copy) ... assuming the
-> backing file also gets transferred, of course.
+>>From: Peng Tao <bergwolf@gmail.com>
+>>
+>>On non-x86 we will build with Lustre's errno translate code but
+>>it has a few issues that break build on non-x86 platforms.
+>
+> Tao
+> if the build is broken, wouldn't it make sense either to merge this patch
+> into
+> the original or land it earlier in the series to minimize/eliminate the
+> window
+> of un-bisectability?
+>
+The original one introduced the bug is already merged. See commit
+2d58de78b2f6c53688a154b02bae3ada19ed15a9 in Greg's staging-next
+(staging/lustre/ptlrpc: Translate between host and network errnos). So
+we need to fix it in a separate patch.
 
-I think I understand your distinction.  Nonetheless, given the loss of
-the soft-dirty bit, the migration tool could fail to notice that the
-pages was dirtied and subsequently cleaned and evicted.  I'm
-unconvinced that doing this on a per-PTE basis is the right way,
-though.
+And I agree with you that we need to put this one just before the
+Kconfig fixup so that we don't break bisectability.
 
-I've long wanted a feature to efficiently see what changed on a
-filesystem by comparing, say, a hash tree.  NTFS can do this (sort
-of), but I don't think that anything else can.  I think that btrfs
-should be able to, but there's no API that I've ever seen.
+> Cheers, Andreas
+>
+> PS - this is a bug introduced during porting to the upstream kernel, it
+> does
+>      not exist in Lustre master branch.
+>
+Lustre master also need fixing. EIOCBRETRY is removed in recent
+kernels. We'll need to backport that part of the patch to Intel tree.
 
---Andy
+Thanks,
+Tao
+
+
+>>Cc: Andreas Dilger <andreas.dilger@intel.com>
+>>Signed-off-by: Peng Tao <tao.peng@emc.com>
+>>---
+>> drivers/staging/lustre/lustre/ptlrpc/Makefile |    2 +-
+>> drivers/staging/lustre/lustre/ptlrpc/errno.c  |    4 +---
+>> 2 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>>diff --git a/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>>b/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>>index a379558..6d78b80 100644
+>>--- a/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>>+++ b/drivers/staging/lustre/lustre/ptlrpc/Makefile
+>>@@ -16,7 +16,7 @@ ptlrpc_objs += sec.o sec_bulk.o sec_gc.o sec_config.o
+>>sec_lproc.o
+>> ptlrpc_objs += sec_null.o sec_plain.o nrs.o nrs_fifo.o
+>>
+>> ptlrpc-y := $(ldlm_objs) $(ptlrpc_objs)
+>>-ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.c
+>>+ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.o
+>>
+>> obj-$(CONFIG_PTLRPC_GSS) += gss/
+>>
+>>diff --git a/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>>b/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>>index 46e259e..1c10063 100644
+>>--- a/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>>+++ b/drivers/staging/lustre/lustre/ptlrpc/errno.c
+>>@@ -25,7 +25,7 @@
+>>  * Copyright (c) 2013, Intel Corporation.
+>>  */
+>>
+>>-#include <libcfs/libcfs.h>
+>>+#include <linux/libcfs/libcfs.h>
+>> #include <lustre/lustre_errno.h>
+>>
+>> /*
+>>@@ -184,7 +184,6 @@ static int lustre_errno_hton_mapping[] = {
+>>       [EBADTYPE]              = LUSTRE_EBADTYPE,
+>>       [EJUKEBOX]              = LUSTRE_EJUKEBOX,
+>>       [EIOCBQUEUED]           = LUSTRE_EIOCBQUEUED,
+>>-      [EIOCBRETRY]            = LUSTRE_EIOCBRETRY
+>> };
+>>
+>> static int lustre_errno_ntoh_mapping[] = {
+>>@@ -331,7 +330,6 @@ static int lustre_errno_ntoh_mapping[] = {
+>>       [LUSTRE_EBADTYPE]               = EBADTYPE,
+>>       [LUSTRE_EJUKEBOX]               = EJUKEBOX,
+>>       [LUSTRE_EIOCBQUEUED]            = EIOCBQUEUED,
+>>-      [LUSTRE_EIOCBRETRY]             = EIOCBRETRY
+>> };
+>>
+>> unsigned int lustre_errno_hton(unsigned int h)
+>>--
+>>1.7.1
+>>
+>>
+>
+>
+> Cheers, Andreas
+> --
+> Andreas Dilger
+>
+> Lustre Software Architect
+> Intel High Performance Data Division
+>
+>
