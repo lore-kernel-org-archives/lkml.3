@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753853Ab3GXPFI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 11:05:08 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:53272 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752696Ab3GXPFG (ORCPT
+	id S1754246Ab3GXPFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 11:05:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50919 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3GXPFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 11:05:06 -0400
-Date: Wed, 24 Jul 2013 16:05:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>, arnd@arndb.de,
-        linus.walleij@stericsson.com, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v2 07/22] ARM: Exynos4210: Remove '0x's from Exynos4110
- DTSI file
-Message-ID: <20130724150500.GN26801@laptop>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
- <20130724123931.GL26801@laptop>
- <6156493.tCYrm4xD5A@amdc1227>
+	Wed, 24 Jul 2013 11:05:15 -0400
+Date: Wed, 24 Jul 2013 08:06:27 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Michal Hocko <mhocko@suse.cz>, devel@driverdev.osuosl.org,
+        konrad.wilk@oracle.com, Piotr Sarna <p.sarna@partner.samsung.com>,
+        linux-kernel@vger.kernel.org, bob.liu@oracle.com,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH] zcache: fix "zcache=" kernel parameter
+Message-ID: <20130724150627.GF15095@kroah.com>
+References: <1374245201-24474-1-git-send-email-p.sarna@partner.samsung.com>
+ <7560549.NYTHa4SYx0@amdc1032>
+ <20130724114157.GB3976@dhcp22.suse.cz>
+ <4003586.oV5ROrQ3Ke@amdc1032>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6156493.tCYrm4xD5A@amdc1227>
+In-Reply-To: <4003586.oV5ROrQ3Ke@amdc1032>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Jul 2013, Tomasz Figa wrote:
-
-> On Wednesday 24 of July 2013 13:39:31 Lee Jones wrote:
-> > ... for the sake of consistency and assumed convention.
-> > 
-> > Cc: Kukjin Kim <kgene.kim@samsung.com>
-> > Cc: linux-samsung-soc@vger.kernel.org
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > 
-> > diff --git a/arch/arm/boot/dts/exynos4210.dtsi
-> > b/arch/arm/boot/dts/exynos4210.dtsi index b7f358a..53e2527 100644
-> > --- a/arch/arm/boot/dts/exynos4210.dtsi
-> > +++ b/arch/arm/boot/dts/exynos4210.dtsi
-> > @@ -72,7 +72,7 @@
-> >                 };
-> >         };
-> > 
-> > -       clock: clock-controller@0x10030000 {
-> > +       clock: clock-controller@10030000 {
-> >                 compatible = "samsung,exynos4210-clock";
-> >                 reg = <0x10030000 0x20000>;
-> >                 #clock-cells = <1>;
+On Wed, Jul 24, 2013 at 01:54:56PM +0200, Bartlomiej Zolnierkiewicz wrote:
 > 
-> Looks good to me, except the subject which is still wrong - 
-> s/Exynos4110/Exynos4210/.
+> On Wednesday, July 24, 2013 01:41:57 PM Michal Hocko wrote:
+> > On Wed 24-07-13 12:32:32, Bartlomiej Zolnierkiewicz wrote:
+> > > 
+> > > Hi,
+> > > 
+> > > On Wednesday, July 24, 2013 12:04:41 PM Michal Hocko wrote:
+> > > > On Wed 24-07-13 12:02:35, Michal Hocko wrote:
+> > > > > I have posted a similar fix quite some time ago and I guess Greg should
+> > > > > already have it.
+> > > > 
+> > > > For reference https://lkml.org/lkml/2013/6/26/410
+> > > 
+> > > There was a reply from Greg:
+> > > 
+> > > 	https://lkml.org/lkml/2013/6/26/410
+> > 
+> > I guess you meant https://lkml.org/lkml/2013/6/26/569
+> 
+> Uh, yes.
+> 
+> > > and it seems that Greg's request has not been fullfilled.
+> > 
+> > Bob Liu has resent the patch (I cannot find the email in the archive).
+> 
+> Indeed, I've found it here:
+> 
+> http://comments.gmane.org/gmane.linux.kernel.mm/102484
+> 
+> > > Anyway Piotr's patch seems to be more complete:
+> > > - it also fixes case in which invalid "zcache=" option is given (returns
+> > >   an error value 1 while with your patch the code still erronously retuns 0)
+> > > - it prints information about compressor type being used when "zcache="
+> > >   option is used (your patch skips it due to addition of "goto out_alloc")
+> > 
+> > I do not care which one will make it I just pointed out that there is
+> > another patch dealing with the same and it is a question how far that
+> > one went.
+> 
+> OK.
+> 
+> Greg, could you please pick Piotr's patch?
 
-Ah, I get you know. My bad, will fix.
+Wait, I'm going to take the first one I got, from Michal, as that's the
+original author here, not Piotr...
 
-> I guess it might be fixed when applying, though.
+confused, and really grumpy about the whole zcache mess...
 
-
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+greg k-h
