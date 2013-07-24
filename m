@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab3GXOKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:10:24 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45724 "EHLO
+	id S1753229Ab3GXOKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:10:22 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45815 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752448Ab3GXOGx (ORCPT
+	by vger.kernel.org with ESMTP id S1752189Ab3GXOGy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:53 -0400
+	Wed, 24 Jul 2013 10:06:54 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nicolin Chen" <b42378@freescale.com>,
-        "Mark Brown" <broonie@linaro.org>
+CC: akpm@linux-foundation.org, "Jiri Kosina" <jkosina@suse.cz>,
+        "Dmitry Torokhov" <rydberg@euromail.se>,
+        "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.312387739@decadent.org.uk>
+Message-ID: <lsq.1374674565.974236672@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [22/85] ASoC: wm8962: Remove remaining direct register cache accesses
+Subject: [62/85] HID: apple: Add support for the 2013 Macbook Air
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,74 +32,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicolin Chen <b42378@freescale.com>
+From: Dmitry Torokhov <rydberg@euromail.se>
 
-commit 2e7ee15ced914e109a1a5b6dfcd463d846a13bd5 upstream.
+commit 9d9a04ee758b4c1fcc7586d065cdde7a7607e156 upstream.
 
-Also fix return values for headphone switch updates.
+This patch adds keyboard support for MacbookAir6,2 as WELLSPRING8
+(0x0291, 0x0292, 0x0293). The touchpad is handled in a separate
+bcm5974 patch, as usual.
 
-Signed-off-by: Nicolin Chen <b42378@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Reported-and-tested-by: Brad Ford <plymouthffl@gmail.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/wm8962.c | 24 +++++++++++++-----------
- 1 file changed, 13 insertions(+), 11 deletions(-)
+ drivers/hid/hid-apple.c | 6 ++++++
+ drivers/hid/hid-core.c  | 6 ++++++
+ drivers/hid/hid-ids.h   | 3 +++
+ 3 files changed, 15 insertions(+)
 
---- a/sound/soc/codecs/wm8962.c
-+++ b/sound/soc/codecs/wm8962.c
-@@ -2117,7 +2117,6 @@ static int wm8962_put_hp_sw(struct snd_k
- 			    struct snd_ctl_elem_value *ucontrol)
- {
- 	struct snd_soc_codec *codec = snd_kcontrol_chip(kcontrol);
--	u16 *reg_cache = codec->reg_cache;
- 	int ret;
- 
- 	/* Apply the update (if any) */
-@@ -2126,16 +2125,19 @@ static int wm8962_put_hp_sw(struct snd_k
- 		return 0;
- 
- 	/* If the left PGA is enabled hit that VU bit... */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTL_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
--				     reg_cache[WM8962_HPOUTL_VOLUME]);
-+	ret = snd_soc_read(codec, WM8962_PWR_MGMT_2);
-+	if (ret & WM8962_HPOUTL_PGA_ENA) {
-+		snd_soc_write(codec, WM8962_HPOUTL_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTL_VOLUME));
-+		return 1;
-+	}
- 
- 	/* ...otherwise the right.  The VU is stereo. */
--	if (snd_soc_read(codec, WM8962_PWR_MGMT_2) & WM8962_HPOUTR_PGA_ENA)
--		return snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
--				     reg_cache[WM8962_HPOUTR_VOLUME]);
-+	if (ret & WM8962_HPOUTR_PGA_ENA)
-+		snd_soc_write(codec, WM8962_HPOUTR_VOLUME,
-+			      snd_soc_read(codec, WM8962_HPOUTR_VOLUME));
- 
--	return 0;
-+	return 1;
- }
- 
- /* The VU bits for the speakers are in a different register to the mute
-@@ -3944,7 +3946,6 @@ static int wm8962_probe(struct snd_soc_c
- 	int ret;
- 	struct wm8962_priv *wm8962 = snd_soc_codec_get_drvdata(codec);
- 	struct wm8962_pdata *pdata = dev_get_platdata(codec->dev);
--	u16 *reg_cache = codec->reg_cache;
- 	int i, trigger, irq_pol;
- 	bool dmicclk, dmicdat;
- 
-@@ -4055,8 +4056,9 @@ static int wm8962_probe(struct snd_soc_c
- 
- 		/* Put the speakers into mono mode? */
- 		if (pdata->spk_mono)
--			reg_cache[WM8962_CLASS_D_CONTROL_2]
--				|= WM8962_SPK_MONO;
-+			snd_soc_update_bits(codec, WM8962_CLASS_D_CONTROL_2,
-+				WM8962_SPK_MONO_MASK, WM8962_SPK_MONO);
-+
- 
- 		/* Micbias setup, detection enable and detection
- 		 * threasholds. */
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -529,6 +529,12 @@ static const struct hid_device_id apple_
+ 		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS),
+ 		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI),
++		.driver_data = APPLE_HAS_FN },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO),
++		.driver_data = APPLE_HAS_FN | APPLE_ISO_KEYBOARD },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS),
++		.driver_data = APPLE_HAS_FN | APPLE_RDESC_JIS },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO),
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1386,6 +1386,9 @@ static const struct hid_device_id hid_ha
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
+@@ -1995,6 +1998,9 @@ static const struct hid_device_id hid_mo
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ANSI) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING7A_JIS) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_ISO) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING8_JIS) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
+ 	{ }
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -136,6 +136,9 @@
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ANSI	0x0291
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_ISO	0x0292
++#define USB_DEVICE_ID_APPLE_WELLSPRING8_JIS	0x0293
+ #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
+ #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
+ #define USB_DEVICE_ID_APPLE_ATV_IRCONTROL	0x8241
 
