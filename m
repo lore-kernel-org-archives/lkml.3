@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752698Ab3GXJ7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 05:59:55 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:41152 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3GXJ7y (ORCPT
+	id S1752531Ab3GXKAv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 06:00:51 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:24037 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab3GXKAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 05:59:54 -0400
-Message-ID: <51EFA559.9050601@linux.vnet.ibm.com>
-Date: Wed, 24 Jul 2013 15:28:49 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
+	Wed, 24 Jul 2013 06:00:50 -0400
+Message-ID: <51EFA59B.9070409@huawei.com>
+Date: Wed, 24 Jul 2013 17:59:55 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Michael Ellerman <michael@ellerman.id.au>
-CC: linuxppc-dev@lists.ozlabs.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] cpuidle/powernv: cpuidle backend driver for powernv
-References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090137.7291.36657.stgit@deepthi.in.ibm.com> <20130723140645.GI31944@concordia>
-In-Reply-To: <20130723140645.GI31944@concordia>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH v2 2/8] cgroup: document how cgroup IDs are assigned
+References: <51EFA554.6080801@huawei.com>
+In-Reply-To: <51EFA554.6080801@huawei.com>
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072409-3864-0000-0000-0000093BB362
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 07:36 PM, Michael Ellerman wrote:
-> On Tue, Jul 23, 2013 at 02:31:41PM +0530, Deepthi Dharwar wrote:
->> This patch implements a back-end cpuidle driver for
->> powernv calling power7_nap and snooze idle states.
->> This can be extended by adding more idle states
->> in the future to the existing framework.
-> 
-> Other than the state table and a few minor details this looks almost
-> identical to the pseries driver. Can we not have a single version in
-> sysdev and isolate just the differences?
->
+As cgroup id has been used in netprio cgroup and will be used in memcg,
+it's important to make it clear how a cgroup id is allocated.
 
-Hi Michael,
+For example, in netprio cgroup, the id is used as index of an array.
 
-Yes, I was actually looking at consolidating and moving all the powerpc
-cpuidle driver code to drivers/cpuidle/. sysdev also seems fine. Let me
-redo and club the drivers and have a single version of the code in
-sysdev for both powerpc and powernv platforms.
+Signed-off-by: Li Zefan <lizefan@huwei.com>
+---
+ include/linux/cgroup.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-Thanks !
-Deepthi
-
-
-> cheers
-> 
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 2bd052d..8c107e9 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -161,7 +161,13 @@ struct cgroup_name {
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
+ 
+-	int id;				/* idr allocated in-hierarchy ID */
++	/*
++	 * idr allocated in-hierarchy ID.
++	 *
++	 * The ID of the root cgroup is always 0, and a new cgroup
++	 * will be assigned with a smallest available ID.
++	 */
++	int id;
+ 
+ 	/*
+ 	 * We link our 'sibling' struct into our parent's 'children'.
+-- 
+1.8.0.2
 
