@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab3GXOZq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:25:46 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45752 "EHLO
+	id S1751561Ab3GXOZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:25:45 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45793 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752070Ab3GXOGj (ORCPT
+	by vger.kernel.org with ESMTP id S1752364Ab3GXOGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 10:06:39 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Steffen Maier" <maier@linux.vnet.ibm.com>,
-        "Martin Peschke" <mpeschke@linux.vnet.ibm.com>,
-        "James Bottomley" <JBottomley@Parallels.com>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.309702674@decadent.org.uk>
+Message-ID: <lsq.1374674565.79166003@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [04/85] [SCSI] zfcp: block queue limits with data router
+Subject: [82/85] ext4: fix overflow when counting used blocks on 32-bit
+ architectures
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,69 +32,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 5fea4291deacd80188b996d2f555fc6a1940e5d4 upstream.
+commit 8af8eecc1331dbf5e8c662022272cf667e213da5 upstream.
 
-Commit 86a9668a8d29ea711613e1cb37efa68e7c4db564
-"[SCSI] zfcp: support for hardware data router"
-reduced the initial block queue limits in the scsi_host_template to the
-absolute minimum and adjusted them later on. However, the adjustment was
-too late for the BSG devices of Scsi_Host and fc_host.
+The arithmetics adding delalloc blocks to the number of used blocks in
+ext4_getattr() can easily overflow on 32-bit archs as we first multiply
+number of blocks by blocksize and then divide back by 512. Make the
+arithmetics more clever and also use proper type (unsigned long long
+instead of unsigned long).
 
-Therefore, ioctl(..., SG_IO, ...) with request or response size > 4kB to a
-BSG device of an fc_host or a Scsi_Host fails with EINVAL. As a result,
-users of such ioctl such as HBA_SendCTPassThru() in libzfcphbaapi return
-with error HBA_STATUS_ERROR.
-
-Initialize the block queue limits in zfcp_scsi_host_template to the
-greatest common denominator (GCD).
-
-While we cannot exploit the slightly enlarged maximum request size with
-data router, this should be neglectible. Doing so also avoids running into
-trouble after live guest relocation (LGR) / migration from a data router
-FCP device to an FCP device that does not support data router. In that
-case, zfcp would figure out the new limits on adapter recovery, but the
-fc_host and Scsi_Host (plus in fact all sdevs) still exist with the old and
-now too large queue limits.
-
-It should also OK, not to use half the size as in the DIX case, because
-fc_host and Scsi_Host do not transport FCP requests including SCSI commands
-using protection data.
-
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-[bwh: Backported to 3.2: copyright notice changed slightly]
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/s390/scsi/zfcp_scsi.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/ext4/inode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_scsi.c
-+++ b/drivers/s390/scsi/zfcp_scsi.c
-@@ -3,7 +3,7 @@
-  *
-  * Interface to Linux SCSI midlayer.
-  *
-- * Copyright IBM Corporation 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4335,7 +4335,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 		 struct kstat *stat)
+ {
+ 	struct inode *inode;
+-	unsigned long delalloc_blocks;
++	unsigned long long delalloc_blocks;
  
- #define KMSG_COMPONENT "zfcp"
-@@ -311,8 +311,12 @@ static struct scsi_host_template zfcp_sc
- 	.proc_name		 = "zfcp",
- 	.can_queue		 = 4096,
- 	.this_id		 = -1,
--	.sg_tablesize		 = 1, /* adjusted later */
--	.max_sectors		 = 8, /* adjusted later */
-+	.sg_tablesize		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2),
-+				   /* GCD, adjusted later */
-+	.max_sectors		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2) * 8,
-+				   /* GCD, adjusted later */
- 	.dma_boundary		 = ZFCP_QDIO_SBALE_LEN - 1,
- 	.cmd_per_lun		 = 1,
- 	.use_clustering		 = 1,
+ 	inode = dentry->d_inode;
+ 	generic_fillattr(inode, stat);
+@@ -4352,7 +4352,7 @@ int ext4_getattr(struct vfsmount *mnt, s
+ 	 */
+ 	delalloc_blocks = EXT4_I(inode)->i_reserved_data_blocks;
+ 
+-	stat->blocks += (delalloc_blocks << inode->i_sb->s_blocksize_bits)>>9;
++	stat->blocks += delalloc_blocks << (inode->i_sb->s_blocksize_bits-9);
+ 	return 0;
+ }
+ 
 
