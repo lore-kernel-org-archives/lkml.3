@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753751Ab3GXSzr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:55:47 -0400
-Received: from mail.gctsemi.com ([211.106.186.8]:63924 "EHLO
-	KRMAIL01.gctsemi.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab3GXSzp (ORCPT
+	id S1753964Ab3GXSzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:55:53 -0400
+Received: from relay.parallels.com ([195.214.232.42]:32779 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab3GXSzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:55:45 -0400
-X-Greylist: delayed 306 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jul 2013 14:55:45 EDT
-From: Won Kang <WonKang@gctsemi.com>
-To: Joe Perches <joe@perches.com>, Won Kang <wkang77@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Won Kang <WonKang@gctsemi.com>
-Subject: =?ks_c_5601-1987?B?yLi9xTogUmU6IFtQQVRDSCB2MiAxLzJdIHN0YWdpbmc6IGdkbTcy?=
- =?ks_c_5601-1987?Q?40:_adding_LTE_USB_driver?=
-Thread-Topic: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
-Thread-Index: AQHOiJ6u8XdyHk6Nj0egq5lud6NY3A==
-Date: Wed, 24 Jul 2013 18:50:35 +0000
-Message-ID: <q1a8cci895yk4bvj84insdx6.1374691832660@email.android.com>
-References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
-	 <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>,<1374691311.18818.20.camel@joe-AO722>
-In-Reply-To: <1374691311.18818.20.camel@joe-AO722>
-Reply-To: Won Kang <WonKang@gctsemi.com>
-Accept-Language: ko-KR, en-US
-Content-Language: ko-KR
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="ks_c_5601-1987"
+	Wed, 24 Jul 2013 14:55:51 -0400
+Message-ID: <51F0232D.6060306@parallels.com>
+Date: Wed, 24 Jul 2013 22:55:41 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
+References: <20130724160826.GD24851@moon> <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com> <20130724163734.GE24851@moon> <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com> <20130724171728.GH8508@moon> <1374687373.7382.22.camel@dabdike> <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com> <20130724181516.GI8508@moon> <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com> <20130724185256.GA24365@moon>
+In-Reply-To: <20130724185256.GA24365@moon>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6OItpXY031121
 
-Hi Joe,
+On 07/24/2013 10:52 PM, Cyrill Gorcunov wrote:
+> On Wed, Jul 24, 2013 at 11:21:46AM -0700, Andy Lutomirski wrote:
+>>>
+>>> I fear for tracking soft-dirty-bit for swapped entries we sinply have
+>>> no other place than pte (still i'm quite open for ideas, maybe there
+>>> are a better way which I've missed).
+>>
+>> I know approximately nothing about how swap and anon_vma work.
+>>
+>> For files, sticking it in struct page seems potentially nicer,
+>> although finding a free bit might be tough.  (FWIW, I have plans to
+>> free up a page flag on x86 some time moderately soon as part of a
+>> completely unrelated project.)  I think this stuff really belongs to
+>> the address_space more than it belongs to the pte.
+> 
+> Well, some part of information already lays in pte (such as 'file' bit,
+> swap entries) so it looks natural i think to work on this level. but
+> letme think if use page struct for that be more convenient...
 
-Got it. Thanks
+It hardly will be. Consider we have a page shared between two tasks,
+then first one "touches" it and soft-dirty is put onto his PTE and,
+subsequently, the page itself. The we go and clear sofr-dirty for the
+2nd task. What should we do with the soft-dirty bit on the page?
 
-Regards,
-Won
+The soft-dirty thing watches changes in the virtual memory, not in
+the physical one.
 
-
-
--------- ¿øº» ¸Ş½ÃÁö --------
-¹ß½Å: Joe Perches <joe@perches.com>
-³¯Â¥: 2013/07/25 ¿ÀÀü 3:42 (GMT+09:00)
-¼ö½Å: Won Kang <wkang77@gmail.com>
-ÂüÁ¶: linux-kernel@vger.kernel.org,devel@driverdev.osuosl.org,gregkh@linuxfoundation.org,Won Kang <WonKang@gctsemi.com>
-Á¦¸ñ: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
-
-
-On Thu, 2013-07-25 at 03:36 +0900, Won Kang wrote:
-> GCT Semiconductor GDM7240 is 4G LTE chip.
-> This driver supports GCT reference platform as a USB device.
->
-> Signed-off-by: Won Kang <wonkang@gctsemi.com>
->
-> staging: gdm7240: added contacts for code maintanance
->
-> Signed-off-by: Won Kang <wonkang@gctsemi.com>
->
-> staging: gdm7240: style fixes
->
-> Signed-off-by: Won Kang <wonkang@gctsemi.com>
-
-Hi Won.
-
-Please don't sign off multiple times on one patch.
+>>
+>> How do you handle the write syscall?
+> 
+> I fear I somehow miss your point here, could please alaborate a bit?
+> There is no additional code I know of being write() specific, just
+> a code for #PF exceptions.
+> .
+> 
 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
