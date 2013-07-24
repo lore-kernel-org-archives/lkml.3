@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754230Ab3GXUOe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 16:14:34 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:40483 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab3GXUOc (ORCPT
+	id S1753738Ab3GXUUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 16:20:52 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:50403 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab3GXUUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 16:14:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374694998.7382.33.camel@dabdike>
-References: <CA+8MBb+pSmRPqV-5xsEwBM_23sGaci5T6vka1LgTD5aiEoHCbg@mail.gmail.com>
-	<1374694998.7382.33.camel@dabdike>
-Date: Wed, 24 Jul 2013 13:14:31 -0700
-Message-ID: <CA+8MBbL+GqQQ8-_=D=qOVj9qa1RebtmaF9spHR6NcHMTPrQpFw@mail.gmail.com>
-Subject: Re: scsi scan: INQUIRY result too short (5), using 36
-From: Tony Luck <tony.luck@gmail.com>
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-scsi@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Jul 2013 16:20:51 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
+        Tushar Behera <tushar.behera@linaro.org>
+Subject: [PATCH] gpio_msm: Fix build error due to missing err.h
+Date: Wed, 24 Jul 2013 13:20:48 -0700
+Message-Id: <1374697248-23401-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 12:43 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
-> Oops, apparently no-one I cc'd at intel actually bothered to check the
-> patch for the isci driver.  The looks to be that sci_swab32_cpy needs
-> multiples of four, so for commands that aren't that, it's rounding the
-> wrong way.  Does this fix it?
+drivers/gpio/gpio-msm-v1.c: In function 'gpio_msm_v1_probe':
+drivers/gpio/gpio-msm-v1.c:656:2:
+error: implicit declaration of function 'IS_ERR'
+[-Werror=implicit-function-declaration]
+drivers/gpio/gpio-msm-v1.c:657:3:
+error: implicit declaration of function 'PTR_ERR'
+[-Werror=implicit-function-declaration]
 
-Yes. That fixes it.
+This driver failed to compile after commit 68515bb
+(gpio_msm: Convert to use devm_ioremap_resource,
+2013-06-10).
 
-Wrap whichever of:
+Cc: Tushar Behera <tushar.behera@linaro.org>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ drivers/gpio/gpio-msm-v1.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Reported-by: Tony Luck <tony.luck@intel.com>
+diff --git a/drivers/gpio/gpio-msm-v1.c b/drivers/gpio/gpio-msm-v1.c
+index e3ceaac..73b7396 100644
+--- a/drivers/gpio/gpio-msm-v1.c
++++ b/drivers/gpio/gpio-msm-v1.c
+@@ -21,6 +21,7 @@
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
++#include <linux/err.h>
+ 
+ #include <mach/msm_gpiomux.h>
+ 
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
-and/or
-
-Tested-by: Tony Luck <tony.luck@intel.com>
-
-around that patch and ship it!
-
-Thanks for the fast fix.
-
--Tony
