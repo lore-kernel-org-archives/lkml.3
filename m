@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab3GXWMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:12:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55400 "EHLO
+	id S1754571Ab3GXWMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:12:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753851Ab3GXWGH (ORCPT
+	with ESMTP id S1753748Ab3GXWGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:06:07 -0400
+	Wed, 24 Jul 2013 18:06:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, netdev@vger.kernel.org
-Subject: [PATCH 30/36] net: core: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:33 -0700
-Message-Id: <1374703539-9705-31-git-send-email-gregkh@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Subject: [PATCH 29/36] video: output: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:32 -0700
+Message-Id: <1374703539-9705-30-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -21,341 +23,77 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the networking core class code to
+should be used instead.  This converts the video output class code to
 use the correct field.
 
-In order to do this in the "cleanest" way, some of the macros had to be
-changed to reflect the driver core format of naming show/store
-functions, which accounts for the majority of the churn in this file.
-
-Cc: netdev@vger.kernel.org
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
 
-netdev@ maintainers, feel free to take this through your tree, or ACK it
-and I can take it through mine.
+Jean-Christophe and Tomi, feel free to take this through your tree, or
+ACK it and I can take it through mine.
 
- net/core/net-sysfs.c | 136 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 75 insertions(+), 61 deletions(-)
+ drivers/video/output.c | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index 981fed39..707c3134 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -60,12 +60,19 @@ static ssize_t format_##field(const struct net_device *net, char *buf)	\
- {									\
- 	return sprintf(buf, format_string, net->field);			\
- }									\
--static ssize_t show_##field(struct device *dev,				\
-+static ssize_t field##_show(struct device *dev,				\
- 			    struct device_attribute *attr, char *buf)	\
- {									\
- 	return netdev_show(dev, attr, buf, format_##field);		\
--}
-+}									\
-+
-+#define NETDEVICE_SHOW_RO(field, format_string)				\
-+NETDEVICE_SHOW(field, format_string);					\
-+static DEVICE_ATTR_RO(field)
+diff --git a/drivers/video/output.c b/drivers/video/output.c
+index 6285b971..1446c49f 100644
+--- a/drivers/video/output.c
++++ b/drivers/video/output.c
+@@ -32,8 +32,8 @@ MODULE_DESCRIPTION("Display Output Switcher Lowlevel Control Abstraction");
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Luming Yu <luming.yu@intel.com>");
  
-+#define NETDEVICE_SHOW_RW(field, format_string)				\
-+NETDEVICE_SHOW(field, format_string);					\
-+static DEVICE_ATTR_RW(field)
- 
- /* use same locking and permission rules as SIF* ioctl's */
- static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
-@@ -96,16 +103,16 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
- 	return ret;
+-static ssize_t video_output_show_state(struct device *dev,
+-				       struct device_attribute *attr, char *buf)
++static ssize_t state_show(struct device *dev, struct device_attribute *attr,
++			  char *buf)
+ {
+ 	ssize_t ret_size = 0;
+ 	struct output_device *od = to_output_device(dev);
+@@ -42,9 +42,8 @@ static ssize_t video_output_show_state(struct device *dev,
+ 	return ret_size;
  }
  
--NETDEVICE_SHOW(dev_id, fmt_hex);
--NETDEVICE_SHOW(addr_assign_type, fmt_dec);
--NETDEVICE_SHOW(addr_len, fmt_dec);
--NETDEVICE_SHOW(iflink, fmt_dec);
--NETDEVICE_SHOW(ifindex, fmt_dec);
--NETDEVICE_SHOW(type, fmt_dec);
--NETDEVICE_SHOW(link_mode, fmt_dec);
-+NETDEVICE_SHOW_RO(dev_id, fmt_hex);
-+NETDEVICE_SHOW_RO(addr_assign_type, fmt_dec);
-+NETDEVICE_SHOW_RO(addr_len, fmt_dec);
-+NETDEVICE_SHOW_RO(iflink, fmt_dec);
-+NETDEVICE_SHOW_RO(ifindex, fmt_dec);
-+NETDEVICE_SHOW_RO(type, fmt_dec);
-+NETDEVICE_SHOW_RO(link_mode, fmt_dec);
- 
- /* use same locking rules as GIFHWADDR ioctl's */
--static ssize_t show_address(struct device *dev, struct device_attribute *attr,
-+static ssize_t address_show(struct device *dev, struct device_attribute *attr,
- 			    char *buf)
+-static ssize_t video_output_store_state(struct device *dev,
+-					struct device_attribute *attr,
+-					const char *buf,size_t count)
++static ssize_t state_store(struct device *dev, struct device_attribute *attr,
++			   const char *buf,size_t count)
  {
- 	struct net_device *net = to_net_dev(dev);
-@@ -117,15 +124,17 @@ static ssize_t show_address(struct device *dev, struct device_attribute *attr,
- 	read_unlock(&dev_base_lock);
- 	return ret;
- }
-+static DEVICE_ATTR_RO(address);
- 
--static ssize_t show_broadcast(struct device *dev,
--			    struct device_attribute *attr, char *buf)
-+static ssize_t broadcast_show(struct device *dev,
-+			      struct device_attribute *attr, char *buf)
- {
- 	struct net_device *net = to_net_dev(dev);
- 	if (dev_isalive(net))
- 		return sysfs_format_mac(buf, net->broadcast, net->addr_len);
- 	return -EINVAL;
- }
-+static DEVICE_ATTR_RO(broadcast);
- 
- static int change_carrier(struct net_device *net, unsigned long new_carrier)
- {
-@@ -134,13 +143,13 @@ static int change_carrier(struct net_device *net, unsigned long new_carrier)
- 	return dev_change_carrier(net, (bool) new_carrier);
- }
- 
--static ssize_t store_carrier(struct device *dev, struct device_attribute *attr,
--			 const char *buf, size_t len)
-+static ssize_t carrier_store(struct device *dev, struct device_attribute *attr,
-+			     const char *buf, size_t len)
- {
- 	return netdev_store(dev, attr, buf, len, change_carrier);
- }
- 
--static ssize_t show_carrier(struct device *dev,
-+static ssize_t carrier_show(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
- {
- 	struct net_device *netdev = to_net_dev(dev);
-@@ -149,8 +158,9 @@ static ssize_t show_carrier(struct device *dev,
+ 	char *endp;
+ 	struct output_device *od = to_output_device(dev);
+@@ -62,6 +61,7 @@ static ssize_t video_output_store_state(struct device *dev,
  	}
- 	return -EINVAL;
+ 	return count;
  }
-+static DEVICE_ATTR_RW(carrier);
++static DEVICE_ATTR_RW(state);
  
--static ssize_t show_speed(struct device *dev,
-+static ssize_t speed_show(struct device *dev,
- 			  struct device_attribute *attr, char *buf)
+ static void video_output_release(struct device *dev)
  {
- 	struct net_device *netdev = to_net_dev(dev);
-@@ -167,8 +177,9 @@ static ssize_t show_speed(struct device *dev,
- 	rtnl_unlock();
- 	return ret;
- }
-+static DEVICE_ATTR_RO(speed);
- 
--static ssize_t show_duplex(struct device *dev,
-+static ssize_t duplex_show(struct device *dev,
- 			   struct device_attribute *attr, char *buf)
- {
- 	struct net_device *netdev = to_net_dev(dev);
-@@ -198,8 +209,9 @@ static ssize_t show_duplex(struct device *dev,
- 	rtnl_unlock();
- 	return ret;
- }
-+static DEVICE_ATTR_RO(duplex);
- 
--static ssize_t show_dormant(struct device *dev,
-+static ssize_t dormant_show(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
- {
- 	struct net_device *netdev = to_net_dev(dev);
-@@ -209,6 +221,7 @@ static ssize_t show_dormant(struct device *dev,
- 
- 	return -EINVAL;
- }
-+static DEVICE_ATTR_RO(dormant);
- 
- static const char *const operstates[] = {
- 	"unknown",
-@@ -220,7 +233,7 @@ static const char *const operstates[] = {
- 	"up"
- };
- 
--static ssize_t show_operstate(struct device *dev,
-+static ssize_t operstate_show(struct device *dev,
- 			      struct device_attribute *attr, char *buf)
- {
- 	const struct net_device *netdev = to_net_dev(dev);
-@@ -237,35 +250,33 @@ static ssize_t show_operstate(struct device *dev,
- 
- 	return sprintf(buf, "%s\n", operstates[operstate]);
- }
-+static DEVICE_ATTR_RO(operstate);
- 
- /* read-write attributes */
--NETDEVICE_SHOW(mtu, fmt_dec);
- 
- static int change_mtu(struct net_device *net, unsigned long new_mtu)
- {
- 	return dev_set_mtu(net, (int) new_mtu);
+@@ -69,16 +69,16 @@ static void video_output_release(struct device *dev)
+ 	kfree(od);
  }
  
--static ssize_t store_mtu(struct device *dev, struct device_attribute *attr,
-+static ssize_t mtu_store(struct device *dev, struct device_attribute *attr,
- 			 const char *buf, size_t len)
- {
- 	return netdev_store(dev, attr, buf, len, change_mtu);
- }
--
--NETDEVICE_SHOW(flags, fmt_hex);
-+NETDEVICE_SHOW_RW(mtu, fmt_dec);
- 
- static int change_flags(struct net_device *net, unsigned long new_flags)
- {
- 	return dev_change_flags(net, (unsigned int) new_flags);
- }
- 
--static ssize_t store_flags(struct device *dev, struct device_attribute *attr,
-+static ssize_t flags_store(struct device *dev, struct device_attribute *attr,
- 			   const char *buf, size_t len)
- {
- 	return netdev_store(dev, attr, buf, len, change_flags);
- }
--
--NETDEVICE_SHOW(tx_queue_len, fmt_ulong);
-+NETDEVICE_SHOW_RW(flags, fmt_hex);
- 
- static int change_tx_queue_len(struct net_device *net, unsigned long new_len)
- {
-@@ -273,7 +284,7 @@ static int change_tx_queue_len(struct net_device *net, unsigned long new_len)
- 	return 0;
- }
- 
--static ssize_t store_tx_queue_len(struct device *dev,
-+static ssize_t tx_queue_len_store(struct device *dev,
- 				  struct device_attribute *attr,
- 				  const char *buf, size_t len)
- {
-@@ -282,8 +293,9 @@ static ssize_t store_tx_queue_len(struct device *dev,
- 
- 	return netdev_store(dev, attr, buf, len, change_tx_queue_len);
- }
-+NETDEVICE_SHOW_RW(tx_queue_len, fmt_ulong);
- 
--static ssize_t store_ifalias(struct device *dev, struct device_attribute *attr,
-+static ssize_t ifalias_store(struct device *dev, struct device_attribute *attr,
- 			     const char *buf, size_t len)
- {
- 	struct net_device *netdev = to_net_dev(dev);
-@@ -306,7 +318,7 @@ static ssize_t store_ifalias(struct device *dev, struct device_attribute *attr,
- 	return ret < 0 ? ret : len;
- }
- 
--static ssize_t show_ifalias(struct device *dev,
-+static ssize_t ifalias_show(struct device *dev,
- 			    struct device_attribute *attr, char *buf)
- {
- 	const struct net_device *netdev = to_net_dev(dev);
-@@ -319,8 +331,7 @@ static ssize_t show_ifalias(struct device *dev,
- 	rtnl_unlock();
- 	return ret;
- }
--
--NETDEVICE_SHOW(group, fmt_dec);
-+static DEVICE_ATTR_RW(ifalias);
- 
- static int change_group(struct net_device *net, unsigned long new_group)
- {
-@@ -328,35 +339,37 @@ static int change_group(struct net_device *net, unsigned long new_group)
- 	return 0;
- }
- 
--static ssize_t store_group(struct device *dev, struct device_attribute *attr,
--			 const char *buf, size_t len)
-+static ssize_t group_store(struct device *dev, struct device_attribute *attr,
-+			   const char *buf, size_t len)
- {
- 	return netdev_store(dev, attr, buf, len, change_group);
- }
--
--static struct device_attribute net_class_attributes[] = {
--	__ATTR(addr_assign_type, S_IRUGO, show_addr_assign_type, NULL),
--	__ATTR(addr_len, S_IRUGO, show_addr_len, NULL),
--	__ATTR(dev_id, S_IRUGO, show_dev_id, NULL),
--	__ATTR(ifalias, S_IRUGO | S_IWUSR, show_ifalias, store_ifalias),
--	__ATTR(iflink, S_IRUGO, show_iflink, NULL),
--	__ATTR(ifindex, S_IRUGO, show_ifindex, NULL),
--	__ATTR(type, S_IRUGO, show_type, NULL),
--	__ATTR(link_mode, S_IRUGO, show_link_mode, NULL),
--	__ATTR(address, S_IRUGO, show_address, NULL),
--	__ATTR(broadcast, S_IRUGO, show_broadcast, NULL),
--	__ATTR(carrier, S_IRUGO | S_IWUSR, show_carrier, store_carrier),
--	__ATTR(speed, S_IRUGO, show_speed, NULL),
--	__ATTR(duplex, S_IRUGO, show_duplex, NULL),
--	__ATTR(dormant, S_IRUGO, show_dormant, NULL),
--	__ATTR(operstate, S_IRUGO, show_operstate, NULL),
--	__ATTR(mtu, S_IRUGO | S_IWUSR, show_mtu, store_mtu),
--	__ATTR(flags, S_IRUGO | S_IWUSR, show_flags, store_flags),
--	__ATTR(tx_queue_len, S_IRUGO | S_IWUSR, show_tx_queue_len,
--	       store_tx_queue_len),
--	__ATTR(netdev_group, S_IRUGO | S_IWUSR, show_group, store_group),
--	{}
-+NETDEVICE_SHOW(group, fmt_dec);
-+static DEVICE_ATTR(netdev_group, S_IRUGO | S_IWUSR, group_show, group_store);
-+
-+static struct attribute *net_class_attrs[] = {
-+	&dev_attr_netdev_group.attr,
-+	&dev_attr_type.attr,
-+	&dev_attr_dev_id.attr,
-+	&dev_attr_iflink.attr,
-+	&dev_attr_ifindex.attr,
-+	&dev_attr_addr_assign_type.attr,
-+	&dev_attr_addr_len.attr,
-+	&dev_attr_link_mode.attr,
-+	&dev_attr_address.attr,
-+	&dev_attr_broadcast.attr,
-+	&dev_attr_speed.attr,
-+	&dev_attr_duplex.attr,
-+	&dev_attr_dormant.attr,
-+	&dev_attr_operstate.attr,
-+	&dev_attr_ifalias.attr,
-+	&dev_attr_carrier.attr,
-+	&dev_attr_mtu.attr,
-+	&dev_attr_flags.attr,
-+	&dev_attr_tx_queue_len.attr,
+-static struct device_attribute video_output_attributes[] = {
+-	__ATTR(state, 0644, video_output_show_state, video_output_store_state),
+-	__ATTR_NULL,
++static struct attribute *video_output_attrs[] = {
++	&dev_attr_state.attr,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(net_class);
+-
++ATTRIBUTE_GROUPS(video_output);
  
- /* Show a given an attribute in the statistics group */
- static ssize_t netstat_show(const struct device *d,
-@@ -382,13 +395,13 @@ static ssize_t netstat_show(const struct device *d,
- 
- /* generate a read-only statistics attribute */
- #define NETSTAT_ENTRY(name)						\
--static ssize_t show_##name(struct device *d,				\
-+static ssize_t name##_show(struct device *d,				\
- 			   struct device_attribute *attr, char *buf) 	\
- {									\
- 	return netstat_show(d, attr, buf,				\
- 			    offsetof(struct rtnl_link_stats64, name));	\
- }									\
--static DEVICE_ATTR(name, S_IRUGO, show_##name, NULL)
-+static DEVICE_ATTR_RO(name)
- 
- NETSTAT_ENTRY(rx_packets);
- NETSTAT_ENTRY(tx_packets);
-@@ -457,6 +470,9 @@ static struct attribute_group wireless_group = {
- 	.attrs = wireless_attrs,
+ static struct class video_output_class = {
+ 	.name = "video_output",
+ 	.dev_release = video_output_release,
+-	.dev_attrs = video_output_attributes,
++	.dev_groups = video_output_groups,
  };
- #endif
-+
-+#else /* CONFIG_SYSFS */
-+#define net_class_groups	NULL
- #endif /* CONFIG_SYSFS */
  
- #ifdef CONFIG_RPS
-@@ -1229,9 +1245,7 @@ static const void *net_namespace(struct device *d)
- static struct class net_class = {
- 	.name = "net",
- 	.dev_release = netdev_release,
--#ifdef CONFIG_SYSFS
--	.dev_attrs = net_class_attributes,
--#endif /* CONFIG_SYSFS */
-+	.dev_groups = net_class_groups,
- 	.dev_uevent = netdev_uevent,
- 	.ns_type = &net_ns_type_operations,
- 	.namespace = net_namespace,
+ struct output_device *video_output_register(const char *name,
 -- 
 1.8.3.rc0.20.gb99dd2e
 
