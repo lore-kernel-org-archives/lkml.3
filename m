@@ -1,133 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751170Ab3GXFF4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 01:05:56 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:56083 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab3GXFFy (ORCPT
+	id S1751102Ab3GXFJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 01:09:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44744 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750743Ab3GXFJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 01:05:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <51EF2D06.7000704@samsung.com>
-References: <1374146275-5758-1-git-send-email-cw00.choi@samsung.com>
-	<1374146275-5758-2-git-send-email-cw00.choi@samsung.com>
-	<CAKohpo=oTsEjzi_51UaZ8ww8UEfZ6hwKAnu9rFgGBkt=TfHi8A@mail.gmail.com>
-	<51EF2D06.7000704@samsung.com>
-Date: Wed, 24 Jul 2013 10:35:54 +0530
-Message-ID: <CAKohpok7B6DaqFPWZcODEgK5GRSoAQYZ27-h2=AQ1HBBP4gH8Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3 v6] cpufreq: Add debugfs directory for cpufreq
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        cpufreq@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 24 Jul 2013 01:09:39 -0400
+Message-ID: <1374642569.18653.27.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 07/11] MAINTAINERS: add stable_kernel_rules.txt to stable
+ maintainer information
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Wed, 24 Jul 2013 06:09:29 +0100
+In-Reply-To: <20130711220546.392644563@linuxfoundation.org>
+References: <20130711220545.542911892@linuxfoundation.org>
+	 <20130711220546.392644563@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-t4Xdbo6ebx8jeSqr0v86"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 July 2013 06:55, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> On 07/22/2013 07:11 PM, Viresh Kumar wrote:
->> On 18 July 2013 16:47, Chanwoo Choi <cw00.choi@samsung.com> wrote:
 
->>> +static void cpufreq_remove_debugfs_dir(struct cpufreq_policy *policy,
->>> +                                      unsigned int cpu)
->>> +{
->>> +       unsigned int idx = cpumask_weight(policy->cpus) > 1 ? cpu : 0;
->>> +
->>> +       if (!policy->cpu_debugfs[idx])
->>> +               return;
->>> +
->>> +       debugfs_remove_recursive(policy->cpu_debugfs[idx]);
->>
->> Whey do we need recursive here? And what exactly does recursive will
->> do?
->>
->
-> If cpu is last user of policy, __cpufreq_remove_dev() have to remove debugfs directory
-> and child file/directory of root debugfs directory. So, I used debugfs_remove_recursive() function.
+--=-t4Xdbo6ebx8jeSqr0v86
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-You are calling this routine even when we aren't at the last cpu of a policy.
-And so, eventually you are calling this routine for a link you have created.
+On Thu, 2013-07-11 at 15:11 -0700, Greg Kroah-Hartman wrote:
+> 3.4-stable review patch.  If anyone has any objections, please let me kno=
+w.
+>=20
+> ------------------
+>=20
+> From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> commit 7b175c46720f8e6b92801bb634c93d1016f80c62 upstream.
+>=20
+> This hopefully will help point developers to the proper way that patches
+> should be submitted for inclusion in the stable kernel releases.
+[...]
 
-Have you actually tested your code? What kind of platform? What is cpu
-topology ?? And what exactly you tested..
+I've queued this up for 3.2.  And, since there was fuzz, I also picked
+your email address update (commit 879a5a001b62).
 
-We are already on v6 and this patch still looks like the v1.. It still has lots
-of basic mistakes, which I don't expect so later in the series..
+Ben.
 
-Its very difficult for me to review the same patchset again and again.. So,
-normally people might not review it well after v3-v4 and just trust the sender..
-But I am nowhere close to getting that.. And so discouraged to review it..
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
-Please review/test it well on multiple kind of systems if possible. Test on
-your intel laptop and see if it has multiple policy structures with
-multiple cpus
-in it.. cpuX/cpufreq/related_cpus gives you all cpus that share policy
-structure.
+--=-t4Xdbo6ebx8jeSqr0v86
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
->>> +}
->>> +
->>
->> same problem here too.
->>> +static void cpufreq_move_debugfs_dir(struct cpufreq_policy *policy,
->>> +                                    unsigned int new_cpu)
->>> +{
->>> +       struct dentry *old_entry, *new_entry;
->>> +       char new_dir_name[CPUFREQ_NAME_LEN];
->>> +       unsigned int j, old_cpu = policy->cpu;
->>> +
->>> +       if (!policy->cpu_debugfs[new_cpu])
->>> +               return;
->>> +
->>> +       /*
->>> +        * Remove symbolic link of debugfs directory except for debugfs
->>> +        * directory of old_cpu.
->>> +        */
->>> +       for_each_present_cpu(j) {
->>> +               if (old_cpu == j)
->>> +                       continue;
->>> +
->>> +               debugfs_remove(policy->cpu_debugfs[j]);
->>
->> Why you need this? We aren't removing the earlier dentry at all here.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-haven't answered this.
+iQIVAwUAUe9hiee/yOyVhhEJAQpt7RAAm/ZWo8UoPKvfTh7D1f+jAcOek1mp32YY
+5yW/UsE/hgkh4/WZCr1a3DTb1KpcdvcB36emkGH0NyDBUIj+jo1Ow3b0ltijdIXS
+LZZpGnRj33aom3wbrVxSIAQe3s4bg4sKk8d3Q4Sy/3TvyLnUUH19QGd6BAZcqK5A
+1uFASovPgxWxaAaJR8JMm6SE1l+08LxVzvYaOYerfE1L/VaVOlm4pI5xmM49DUpt
+78OvB+kW9Jj8igZCF1fS3bpSPBEe3Hw8G/6YzSlyLd5jmjixOckeyIb3Zp7Ledaz
+2WLP/98Zx46WMDOc/zFq1gxbfIGL9GwXYdBBTqau2KduaEfKXuN3SbZ/nh/F8Ca3
+F9Pa41VlBSR28R8YxUHXAD8Pc/XbOxTbzZU+GB7PHAymGc78e8FD1lgSgZqO3LCt
+kOfscGPGD/pzSxP0KLIBqbJlqGeMEjyjtmnO3iO4Xv0X7v+dV6i0BqFEgZTyA6rM
+CUunLyKamITfa2oU1Qn2oDqGdZGWYjtSH/CF2M6kibnf33zLDTw66NygrDbYen68
+OH1HDNgbzZNDIvk0Gneum9CHaiVmGOB+HzHoCIdkiJkP8PE8V0W9m1wFdoO9KsnT
+VN6xspK5V9xvjVgc14EiDKuefJha6m6xxQpurF39TuXEQcswonA0thP6T8H1P901
+mU3jeukUvus=
+=cfzY
+-----END PGP SIGNATURE-----
 
->>> +       if (!new_entry) {
->>> +               pr_err("changing debugfs directory name failed\n");
->>> +               goto err_rename;
->>> +       }
->>> +
->>> +       policy->cpu_debugfs[new_cpu] = new_entry;
->>> +       policy->cpu_debugfs[old_cpu] = NULL;
->>> +
->>> +       /* Create again symbolic link of debugfs directory */
->>> +       for_each_present_cpu(j) {
->>
->> present_cpu?? We discussed this before.. You will break multi cluster
->> systems.
->
-> My mistake. I'll use for_each_cpu() macro instead of for_each_present_cpu().
-
-Go through earlier comments about this.. you are still wrong.. You need to
-run over cpus that are in this policy.. i.e. policy->cpus.
-
->>> +               if (new_cpu == j)
->>> +                       continue;
->>> +
-
->>> @@ -1894,6 +2065,8 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
->>>         cpufreq_driver = driver_data;
->>>         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
->>>
->>> +       cpufreq_create_debugfs();
->>
->> Why you moved this to register_driver? It was fine at cpufreq_core_init()
->
-> If we moved this to cpufreq_core_int(), I have to create cpufreq_core_exit().
-> Do you agree about creating cpufreq_core_exit()(?
-
-No you don't need that routine. Or in other words there isn't any exit
-for cpufreq core and so this directory must not be removed.
+--=-t4Xdbo6ebx8jeSqr0v86--
