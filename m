@@ -1,156 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753557Ab3GXX0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 19:26:50 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:59166 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752805Ab3GXX0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 19:26:49 -0400
-Date: Thu, 25 Jul 2013 01:26:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 6/7] nohz_full: Add full-system-idle state
- machine
-Message-ID: <20130724232642.GB30349@somewhere>
-References: <20130718013259.GA7398@somewhere>
- <20130718033921.GL4161@linux.vnet.ibm.com>
- <20130718142450.GB7398@somewhere>
- <20130718164749.GV4161@linux.vnet.ibm.com>
- <20130718224620.GF7398@somewhere>
- <20130719002408.GB21367@linux.vnet.ibm.com>
- <20130719021207.GA19491@somewhere>
- <20130719050625.GC21367@linux.vnet.ibm.com>
- <20130724180903.GB23431@somewhere>
- <20130724220902.GA3889@linux.vnet.ibm.com>
+	id S1753980Ab3GXX2N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 19:28:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:38667 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752981Ab3GXX2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 19:28:11 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        Zhao Yakui <yakui.zhao@intel.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, linux-acpi@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net
+Subject: Re: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected ACPI IPMI transfers
+Date: Thu, 25 Jul 2013 01:38:15 +0200
+Message-ID: <1520893.BbRK6T3F73@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <970a8a7108e4c95ce09e34eee03eb5731645729f.1374566394.git.lv.zheng@intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com> <970a8a7108e4c95ce09e34eee03eb5731645729f.1374566394.git.lv.zheng@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130724220902.GA3889@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 03:09:02PM -0700, Paul E. McKenney wrote:
-> On Wed, Jul 24, 2013 at 08:09:04PM +0200, Frederic Weisbecker wrote:
-> > On Thu, Jul 18, 2013 at 10:06:25PM -0700, Paul E. McKenney wrote:
-> > > > Lets summarize the last sequence, the following happens ordered by time:
-> > > > 
-> > > >         CPU 0                          CPU 1
-> > > > 
-> > > >      cmpxchg(&full_sysidle_state,
-> > > >              RCU_SYSIDLE_SHORT,
-> > > >              RCU_SYSIDLE_LONG);
-> > > > 
-> > > >      smp_mb() //cmpxchg
-> > > > 
-> > > >      atomic_read(rdtp(1)->dynticks_idle)
-> > > > 
-> > > >      //CPU 0 goes to sleep
-> > > >                                        //CPU 1 wakes up
-> > > >                                        atomic_inc(rdtp(1)->dynticks_idle)
-> > > > 
-> > > >                                        smp_mb()
-> > > > 
-> > > >                                        ACCESS_ONCE(full_sysidle_state)
-> > > > 
-> > > > 
-> > > > Are you suggesting that because the CPU 1 executes its atomic_inc() _after_ (in terms
-> > > > of absolute time) the atomic_read of CPU 0, the ordering settled in both sides guarantees
-> > > > that the value read from CPU 1 is the one from the cmpxchg that precedes the atomic_read,
-> > > > or FULL or FULL_NOTED that happen later.
-> > > > 
-> > > > If so that's a big lesson for me.                                     
-> > > 
-> > > It is not absolute time that matters.  Instead, it is the fact that
-> > > CPU 0, when reading from ->dynticks_idle, read the old value before the
-> > > atomic_inc().  Therefore, anything CPU 0 did before that memory barrier
-> > > preceding CPU 0's read must come before anything CPU 1 did after that
-> > > memory barrier following the atomic_inc().  For this to work, there
-> > > must be some access to the same variable on each CPU.
-> > 
-> > Aren't we in the following situation?
-> > 
-> >     CPU 0                          CPU 1
-> > 
-> >     STORE A                        STORE B
-> >     LOAD B                         LOAD A
-> > 
-> > 
-> > If so and referring to your perfbook, this is an "ears to mouth" situation.
-> > And it seems to describe there is no strong guarantee in that situation.
+On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
+> This patch fixes races caused by unprotected ACPI IPMI transfers.
 > 
-> "Yes" to the first, but on modern hardware, "no" to the second.  The key
-> paragraph is Section 12.2.4.5:
+> We can see the following crashes may occur:
+> 1. There is no tx_msg_lock held for iterating tx_msg_list in
+>    ipmi_flush_tx_msg() while it is parellel unlinked on failure in
+>    acpi_ipmi_space_handler() under protection of tx_msg_lock.
+> 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
+>    while it is parellel accessed in ipmi_flush_tx_msg() and
+>    ipmi_msg_handler().
 > 
-> 	The following pairings from Table 12.1 can be used on modern
-> 	hardware, but might fail on some systems that were produced in
-> 	the 1990s. However, these can safely be used on all mainstream
-> 	hardware introduced since the year 2000.
-
-Right I missed that!
-
+> This patch enhances tx_msg_lock to protect all tx_msg accesses to solve
+> this issue.  Then tx_msg_lock is always held around complete() and tx_msg
+> accesses.
+> Calling smp_wmb() before setting msg_done flag so that messages completed
+> due to flushing will not be handled as 'done' messages while their contents
+> are not vaild.
 > 
-> That said, you are not the first to be confused by this, so I might need
-> to rework this section to make it clear that each can in fact be used on
-> modern hardware.
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Cc: Zhao Yakui <yakui.zhao@intel.com>
+> Reviewed-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/acpi/acpi_ipmi.c |   10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
 > 
-> If you happen to have an old Sequent NUMA-Q or Symmetry box lying around,
-> things are a bit different.  On the other hand, I don't believe that any
-> of these old boxes are still running Linux.  (Hey, I am as sentimental as
-> the next guy, but there are limits!)
-> 
-> I updated this section and pushed it, please let me know if this helps!
+> diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
+> index b37c189..527ee43 100644
+> --- a/drivers/acpi/acpi_ipmi.c
+> +++ b/drivers/acpi/acpi_ipmi.c
+> @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct acpi_ipmi_device *ipmi)
+>  	struct acpi_ipmi_msg *tx_msg, *temp;
+>  	int count = HZ / 10;
+>  	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
+> +	unsigned long flags;
+>  
+> +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+>  	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
+>  		/* wake up the sleep thread on the Tx msg */
+>  		complete(&tx_msg->tx_complete);
+>  	}
+> +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+>  
+>  	/* wait for about 100ms to flush the tx message list */
+>  	while (count--) {
+> @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  			break;
+>  		}
+>  	}
+> -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+>  
+>  	if (!msg_found) {
+>  		dev_warn(&pnp_dev->dev,
+>  			 "Unexpected response (msg id %ld) is returned.\n",
+>  			 msg->msgid);
+> -		goto out_msg;
+> +		goto out_lock;
+>  	}
+>  
+>  	/* copy the response data to Rx_data buffer */
+> @@ -286,10 +288,14 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  	}
+>  	tx_msg->rx_len = msg->msg.data_len;
+>  	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
+> +	/* tx_msg content must be valid before setting msg_done flag */
+> +	smp_wmb();
 
-I don't know because I encountered some troubles to build it, I'm seeing thousand
-lines like this:
+That's suspicious.
 
-Name "main::opt_help" used only once: possible typo at /usr/bin/a2ping line 534.
-/usr/bin/a2ping: not a GS output from gs -dSAFER
-./cartoons/whippersnapper300.eps -> ./cartoons/whippersnapper300.pdf
-Name "main::opt_extra" used only once: possible typo at /usr/bin/a2ping line 546.
-Name "main::opt_help" used only once: possible typo at /usr/bin/a2ping line 534.
-/usr/bin/a2ping: not a GS output from gs -dSAFER
-make: *** [embedfonts] Error 1
+If you need the write barrier here, you'll most likely need a read barrier
+somewhere else.  Where's that?
 
-Anyway I looked at the diff and it looks indeed clearer, thanks!
+>  	tx_msg->msg_done = 1;
+>  
+>  out_comp:
+>  	complete(&tx_msg->tx_complete);
+> +out_lock:
+> +	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+>  out_msg:
+>  	ipmi_free_recv_msg(msg);
+>  }
 
-So back to the issue, I think we made nice progresses with my rusty brain ;-)
-But just to be clear, I'm pasting that again for just a few precisions:
-
-        CPU 0                                CPU 1
-
-       cmpxchg(&full_sysidle_state,          //CPU 1 wakes up
-                RCU_SYSIDLE_SHORT,           atomic_inc(rdtp(1)->dynticks_idle)
-                RCU_SYSIDLE_LONG);
-
-       smp_mb() //cmpxchg                    smp_mb()
-       atomic_read(rdtp(1)->dynticks_idle)   ACCESS_ONCE(full_sysidle_state
-      //CPU 0 goes to sleep
+Rafael
 
 
-
-1) If CPU 0 sets RCU_SYSIDLE_LONG and sees dynticks_idle as even, do we have the _guarantee_
-that later CPU 1 sees full_sysidle_state == RCU_SYSIDLE_LONG (or any later full_sysidle_state value)
-due to the connection between atomic_read / atomic_inc and the barriers that come along?
-
-2) You taught me once that barrier != memory committed, and it has been one of the hardest trauma
-in my life. How can we be sure that CPU 1 sees memory as committed from CPU 0? The only fact that
-we read an even value from CPU 0 is enough for the connection between the atomic_read() and atomic_inc()
-and all the barriers that come along?
-
-3) In your book it says: "recent hardware would guarantee that at least one of the loads saw the value
-stored by the corresponding store".
-
-At least one? So in our example, CPU 0 could see dynticks_idle as even (success to see some prior store done in
-CPU 1) but following the above statement reasoning, CPU 1 might not see the corresponding store and see, for example
-RCU_SYSIDLE_SHORT?
-
-I'm really sorry to bother you with that... :-(
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
