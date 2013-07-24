@@ -1,68 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751024Ab3GXBdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 23 Jul 2013 21:33:19 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:53585 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab3GXBdR (ORCPT
+	id S1750989Ab3GXBe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 23 Jul 2013 21:34:59 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47345 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab3GXBe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 23 Jul 2013 21:33:17 -0400
-Date: Wed, 24 Jul 2013 03:33:15 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Vince Weaver <vince@deater.net>,
-        Andi Kleen <ak@linux.intel.com>, acme@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-Message-ID: <20130724013315.GU6123@two.firstfloor.org>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
- <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
- <20130723060108.GA18396@tassilo.jf.intel.com>
- <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
- <20130723225150.GT6123@two.firstfloor.org>
- <51EF222D.9070909@oracle.com>
+	Tue, 23 Jul 2013 21:34:58 -0400
+Message-ID: <51EF2F3C.4070105@wwwdotorg.org>
+Date: Tue, 23 Jul 2013 18:34:52 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51EF222D.9070909@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King <linux@arm.linux.org.uk>
+CC: Wolfram Sang <wsa@the-dreams.de>, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 02/27] drivers/amba: don't check resource with devm_ioremap_resource
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de> <1374602524-3398-3-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1374602524-3398-3-git-send-email-wsa@the-dreams.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 08:39:09PM -0400, Sasha Levin wrote:
-> On 07/23/2013 06:51 PM, Andi Kleen wrote:
-> >On Tue, Jul 23, 2013 at 05:27:43PM -0400, Vince Weaver wrote:
-> >>>
-> >>>I hate having to justify why breaking the ABI is unacceptable.
-> >Well it's a testing ABI, so we can do changes to it.
+On 07/23/2013 11:01 AM, Wolfram Sang wrote:
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
 > 
-> The testing ABI has a simple policy about changes:
-> 
-> 	The interface can be changed to add new features, but the
-> 	current interface will not break by doing this, unless grave
-> 	errors or security problems are found in them.
-> 
-> It's probably fine to change a testing ABI once in a while, but when things
-> like trinity start breaking that often due to ABI changes in the same exact
-> place, that's too much IMO.
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+> Please apply via the subsystem-tree.
 
-It sounds like trinity is breaking (well printing a message, not really
-breaking) on any addition. So if we follow that the perf sysfs interface
-would be completely frozen and can never be extended over today.
-
-I don't think it's a big problem that a test tool needs to be extended
-when the software it's testing changes.
-
-If there are enough other widely used programs that actually break from
-additions probably would need a v2 of the sysfs interface for extensions
-(with new file or directory names), and keep v1 frozen for
-compatibility. 
-
-But I don't think that's the case today?
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Russell, I assume you'll take this patch?
