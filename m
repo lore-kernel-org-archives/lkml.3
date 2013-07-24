@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3GXXKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 19:10:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56066 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab3GXXKv (ORCPT
+	id S1754076Ab3GXXMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 19:12:13 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:54457 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752775Ab3GXXMM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 19:10:51 -0400
-Date: Wed, 24 Jul 2013 16:10:50 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com, balbi@ti.com,
-        florian@openwrt.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yuanlmm@gmail.com,
-        ratbert.chuang@gmail.com, john453@faraday-tech.com
-Subject: Re: [PATCH v2] usb: host: Faraday fotg210-hcd driver
-Message-ID: <20130724231050.GA29499@kroah.com>
-References: <1370452543-19014-1-git-send-email-yhchen@faraday-tech.com>
- <1371671584-8181-1-git-send-email-yhchen@faraday-tech.com>
+	Wed, 24 Jul 2013 19:12:12 -0400
+Message-ID: <51F05F49.60609@hurleysoftware.com>
+Date: Wed, 24 Jul 2013 19:12:09 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1371671584-8181-1-git-send-email-yhchen@faraday-tech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dean Jenkins <Dean_Jenkins@mentor.com>
+CC: Andre Naujoks <nautsch2@gmail.com>, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/5] Bluetooth: Add RFCOMM TTY write return error codes
+References: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com> <1372779094-11730-2-git-send-email-Dean_Jenkins@mentor.com>
+In-Reply-To: <1372779094-11730-2-git-send-email-Dean_Jenkins@mentor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 19, 2013 at 07:53:04PM +0000, Yuan-Hsin Chen wrote:
-> FOTG210 is an OTG controller which can be configured as an
-> USB2.0 host. FOTG210 host is an ehci-like controller with
-> some differences. First, register layout of FOTG210 is
-> incompatible with EHCI. Furthermore, FOTG210 is lack of
-> siTDs which means iTDs are used for both HS and FS ISO
-> transfer.
-> 
-> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+On 07/02/2013 11:31 AM, Dean Jenkins wrote:
+> It appears that rfcomm_tty_write() does not check that the
+> passed in TTY device_data is not NULL and also does not check
+> that the RFCOMM DLC serial data link pointer is not NULL.
+>
+> A kernel crash was observed whilst SLIP was bound to /dev/rfcomm0
+> but the /dev/rfcomm0 had subsequently disconnected. Unfortunately,
+> SLIP attempted to write to the now non-existant RFCOMM TTY device
+> which caused a NULL pointer dereference because the device_data
+> no longer existed.
+>
+> Therefore, add NULL pointer checks for the dev and dlc pointers
+> and output kernel error debug to show that NULL had been detected.
 
-As your email now is bouncing, I'm going to revert this patch, I can't
-take a patch for a driver with no active maintainer, sorry.
+Dean,
 
-If someone else from Faraday will step up and maintain this, that would
-be great, please resend it with your email information.
+Sorry, I didn't see these until just now.
 
-thanks,
+> Signed-off-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+> ---
+>   net/bluetooth/rfcomm/tty.c | 14 +++++++++++++-
+>   1 file changed, 13 insertions(+), 1 deletion(-)
+>
+> diff --git a/net/bluetooth/rfcomm/tty.c b/net/bluetooth/rfcomm/tty.c
+> index b6e44ad..56d28d1 100644
+> --- a/net/bluetooth/rfcomm/tty.c
+> +++ b/net/bluetooth/rfcomm/tty.c
+> @@ -761,12 +761,24 @@ static void rfcomm_tty_close(struct tty_struct *tty, struct file *filp)
+>   static int rfcomm_tty_write(struct tty_struct *tty, const unsigned char *buf, int count)
+>   {
+>   	struct rfcomm_dev *dev = (struct rfcomm_dev *) tty->driver_data;
+> -	struct rfcomm_dlc *dlc = dev->dlc;
+> +	struct rfcomm_dlc *dlc;
+>   	struct sk_buff *skb;
+>   	int err = 0, sent = 0, size;
+>
+>   	BT_DBG("tty %p count %d", tty, count);
+>
+> +	if (!dev) {
+> +		BT_ERR("RFCOMM TTY device data structure does not exist");
+> +		return -ENODEV;
+> +	}
+> +
+> +	dlc = dev->dlc;
+> +
+> +	if (!dlc) {
+> +		BT_ERR("RFCOMM serial data link does not exist");
+> +		return -ENOLINK;
+> +	}
+> +
 
-greg k-h
+A number of bugs in rfcomm contributed to the crash you observed.
+Several other reporters have also noted crashes stemming from
+device disconnect. The rfcomm device must not disappear while a tty
+is in-use.
+
+Fixes for these are in-progress in a patch series by Gianluca Anzolin
+on linux-bluetooth ML.
+
+Also, for the future, kernel bluetooth patches go to:
+   Gustavo Padovan <gustavo@padovan.org>
+with cc's to:
+   Johan Hedberg <johan.hedberg@gmail.com>
+   Marcel Holtmann <marcel@holtmann.org>
+   linux-bluetooth@vger.kernel.org
+
+Regards,
+Peter Hurley
+
