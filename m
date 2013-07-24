@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754378Ab3GXWGS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 18:06:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55343 "EHLO
+	id S1754331Ab3GXWGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 18:06:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55331 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753054Ab3GXWFz (ORCPT
+	with ESMTP id S1752953Ab3GXWFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 18:05:55 -0400
+	Wed, 24 Jul 2013 18:05:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 13/36] enclosure: convert class code to use dev_groups
-Date: Wed, 24 Jul 2013 15:05:16 -0700
-Message-Id: <1374703539-9705-14-git-send-email-gregkh@linuxfoundation.org>
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH 10/36] leds: convert class code to use dev_groups
+Date: Wed, 24 Jul 2013 15:05:13 -0700
+Message-Id: <1374703539-9705-11-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
@@ -22,88 +22,100 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 The dev_attrs field of struct class is going away soon, dev_groups
-should be used instead.  This converts the enclosure class code to use
-the correct field.
+should be used instead.  This converts the led class code to use the
+correct field.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Bryan Wu <cooloney@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/misc/enclosure.c | 29 +++++++++++------------------
- 1 file changed, 11 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/misc/enclosure.c b/drivers/misc/enclosure.c
-index 00e5fcac8..0e8df41a 100644
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -239,7 +239,7 @@ static void enclosure_component_release(struct device *dev)
- 	put_device(dev->parent);
+Bryan and Richard, feel free to take this through your tree, or ACK it and I
+can take it through mine.
+
+ drivers/leds/led-class.c | 38 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 30 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 4336e37a..f37d63cf 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -29,7 +29,7 @@ static void led_update_brightness(struct led_classdev *led_cdev)
+ 		led_cdev->brightness = led_cdev->brightness_get(led_cdev);
  }
  
--static const struct attribute_group *enclosure_groups[];
-+static const struct attribute_group *enclosure_component_groups[];
- 
- /**
-  * enclosure_component_register - add a particular component to an enclosure
-@@ -282,7 +282,7 @@ enclosure_component_register(struct enclosure_device *edev,
- 		dev_set_name(cdev, "%u", number);
- 
- 	cdev->release = enclosure_component_release;
--	cdev->groups = enclosure_groups;
-+	cdev->groups = enclosure_component_groups;
- 
- 	err = device_register(cdev);
- 	if (err) {
-@@ -365,25 +365,26 @@ EXPORT_SYMBOL_GPL(enclosure_remove_device);
-  * sysfs pieces below
-  */
- 
--static ssize_t enclosure_show_components(struct device *cdev,
--					 struct device_attribute *attr,
--					 char *buf)
-+static ssize_t components_show(struct device *cdev,
-+			       struct device_attribute *attr, char *buf)
+-static ssize_t led_brightness_show(struct device *dev,
++static ssize_t brightness_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
  {
- 	struct enclosure_device *edev = to_enclosure_device(cdev);
- 
- 	return snprintf(buf, 40, "%d\n", edev->components);
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+@@ -40,7 +40,7 @@ static ssize_t led_brightness_show(struct device *dev,
+ 	return sprintf(buf, "%u\n", led_cdev->brightness);
  }
-+static DEVICE_ATTR_RO(components);
  
--static struct device_attribute enclosure_attrs[] = {
--	__ATTR(components, S_IRUGO, enclosure_show_components, NULL),
--	__ATTR_NULL
-+static struct attribute *enclosure_class_attrs[] = {
-+	&dev_attr_components.attr,
+-static ssize_t led_brightness_store(struct device *dev,
++static ssize_t brightness_store(struct device *dev,
+ 		struct device_attribute *attr, const char *buf, size_t size)
+ {
+ 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+@@ -57,6 +57,7 @@ static ssize_t led_brightness_store(struct device *dev,
+ 
+ 	return size;
+ }
++static DEVICE_ATTR_RW(brightness);
+ 
+ static ssize_t led_max_brightness_show(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+@@ -65,14 +66,35 @@ static ssize_t led_max_brightness_show(struct device *dev,
+ 
+ 	return sprintf(buf, "%u\n", led_cdev->max_brightness);
+ }
++static DEVICE_ATTR(max_brightness, 0444, led_max_brightness_show, NULL);
+ 
+-static struct device_attribute led_class_attrs[] = {
+-	__ATTR(brightness, 0644, led_brightness_show, led_brightness_store),
+-	__ATTR(max_brightness, 0444, led_max_brightness_show, NULL),
+ #ifdef CONFIG_LEDS_TRIGGERS
+-	__ATTR(trigger, 0644, led_trigger_show, led_trigger_store),
++static DEVICE_ATTR(trigger, 0644, led_trigger_show, led_trigger_store);
++static struct attribute *led_trigger_attrs[] = {
++	&dev_attr_trigger.attr,
++	NULL,
++};
++static const struct attribute_group led_trigger_group = {
++	.attrs = led_trigger_attrs,
++};
++#endif
++
++static struct attribute *led_class_attrs[] = {
++	&dev_attr_brightness.attr,
++	&dev_attr_max_brightness.attr,
++	NULL,
++};
++
++static const struct attribute_group led_group = {
++	.attrs = led_class_attrs,
++};
++
++static const struct attribute_group *led_groups[] = {
++	&led_group,
++#ifdef CONFIG_LEDS_TRIGGERS
++	&led_trigger_group,
+ #endif
+-	__ATTR_NULL,
 +	NULL,
  };
-+ATTRIBUTE_GROUPS(enclosure_class);
  
- static struct class enclosure_class = {
- 	.name			= "enclosure",
- 	.owner			= THIS_MODULE,
- 	.dev_release		= enclosure_release,
--	.dev_attrs		= enclosure_attrs,
-+	.dev_groups		= enclosure_class_groups,
- };
+ static void led_timer_function(unsigned long data)
+@@ -258,7 +280,7 @@ static int __init leds_init(void)
+ 	if (IS_ERR(leds_class))
+ 		return PTR_ERR(leds_class);
+ 	leds_class->pm = &leds_class_dev_pm_ops;
+-	leds_class->dev_attrs = led_class_attrs;
++	leds_class->dev_groups = led_groups;
+ 	return 0;
+ }
  
- static const char *const enclosure_status [] = {
-@@ -536,15 +537,7 @@ static struct attribute *enclosure_component_attrs[] = {
- 	&dev_attr_type.attr,
- 	NULL
- };
--
--static struct attribute_group enclosure_group = {
--	.attrs = enclosure_component_attrs,
--};
--
--static const struct attribute_group *enclosure_groups[] = {
--	&enclosure_group,
--	NULL
--};
-+ATTRIBUTE_GROUPS(enclosure_component);
- 
- static int __init enclosure_init(void)
- {
 -- 
 1.8.3.rc0.20.gb99dd2e
 
