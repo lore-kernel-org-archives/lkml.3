@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab3GXO05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:26:57 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45839 "EHLO
+	id S1753919Ab3GXO1e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:27:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45830 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752252Ab3GXOGi (ORCPT
+	by vger.kernel.org with ESMTP id S1752284Ab3GXOGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:38 -0400
+	Wed, 24 Jul 2013 10:06:35 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Nicholas Bellinger" <nab@linux-iscsi.org>,
-        "=?UTF-8?q?J=C3=B6rn=20Engel?=" <joern@logfs.org>
+CC: akpm@linux-foundation.org, "J. Bruce Fields" <bfields@redhat.com>,
+        "Rick Macklem" <rmacklem@uoguelph.ca>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.557486956@decadent.org.uk>
+Message-ID: <lsq.1374674565.678899440@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [73/85] iscsi-target: Fix tfc_tpg_nacl_auth_cit configfs length
- overflow
+Subject: [59/85] nfsd4: fix decoding of compounds across page boundaries
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jörn Engel <joern@logfs.org>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit 0fbfc46fb0b2f543a8b539e94c6c293ebc0b05a6 upstream.
+commit 247500820ebd02ad87525db5d9b199e5b66f6636 upstream.
 
-This patch fixes a potential buffer overflow while processing
-iscsi_node_auth input for configfs attributes within NodeACL
-tfc_tpg_nacl_auth_cit context.
+A freebsd NFSv4.0 client was getting rare IO errors expanding a tarball.
+A network trace showed the server returning BAD_XDR on the final getattr
+of a getattr+write+getattr compound.  The final getattr started on a
+page boundary.
 
-Signed-off-by: Joern Engel <joern@logfs.org>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+I believe the Linux client ignores errors on the post-write getattr, and
+that that's why we haven't seen this before.
+
+Reported-by: Rick Macklem <rmacklem@uoguelph.ca>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/iscsi/iscsi_target_configfs.c | 2 +-
+ fs/nfsd/nfs4xdr.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/target/iscsi/iscsi_target_configfs.c
-+++ b/drivers/target/iscsi/iscsi_target_configfs.c
-@@ -419,7 +419,7 @@ static ssize_t __iscsi_##prefix##_store_
- 	if (!capable(CAP_SYS_ADMIN))					\
- 		return -EPERM;						\
- 									\
--	snprintf(auth->name, PAGE_SIZE, "%s", page);			\
-+	snprintf(auth->name, sizeof(auth->name), "%s", page);		\
- 	if (!strncmp("NULL", auth->name, 4))				\
- 		auth->naf_flags &= ~flags;				\
- 	else								\
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -177,8 +177,8 @@ static __be32 *read_buf(struct nfsd4_com
+ 	 */
+ 	memcpy(p, argp->p, avail);
+ 	/* step to next page */
+-	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
++	argp->p = page_address(argp->pagelist[0]);
+ 	if (argp->pagelen < PAGE_SIZE) {
+ 		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
 
