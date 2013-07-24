@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab3GXMji (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 08:39:38 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:44781 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab3GXMjg (ORCPT
+	id S1751895Ab3GXMrK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 08:47:10 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:44677 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3GXMrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 08:39:36 -0400
-Date: Wed, 24 Jul 2013 13:39:31 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>
-Cc: arnd@arndb.de, linus.walleij@stericsson.com,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v2 07/22] ARM: Exynos4210: Remove '0x's from Exynos4110 DTSI
- file
-Message-ID: <20130724123931.GL26801@laptop>
-References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
- <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
+	Wed, 24 Jul 2013 08:47:08 -0400
+Message-ID: <51EFCCB2.5020806@gmail.com>
+Date: Wed, 24 Jul 2013 20:46:42 +0800
+From: Hush Bensen <hush.bensen@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:22.0) Gecko/20100101 Thunderbird/22.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374490361-25769-7-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zlatko Calusic <zcalusic@bitsync.net>,
+        Johannes Weiner <hannes@cmpxchg.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/3] mm: improve page aging fairness between zones/nodes
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org> <51ED6274.3000509@bitsync.net> <51EFB80B.1090302@bitsync.net>
+In-Reply-To: <51EFB80B.1090302@bitsync.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-... for the sake of consistency and assumed convention.
-    
-Cc: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-samsung-soc@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+于 2013/7/24 19:18, Zlatko Calusic 写道:
+> On 22.07.2013 18:48, Zlatko Calusic wrote:
+>> On 19.07.2013 22:55, Johannes Weiner wrote:
+>>> The way the page allocator interacts with kswapd creates aging
+>>> imbalances, where the amount of time a userspace page gets in memory
+>>> under reclaim pressure is dependent on which zone, which node the
+>>> allocator took the page frame from.
+>>>
+>>> #1 fixes missed kswapd wakeups on NUMA systems, which lead to some
+>>> nodes falling behind for a full reclaim cycle relative to the other
+>>> nodes in the system
+>>>
+>>> #3 fixes an interaction where kswapd and a continuous stream of page
+>>> allocations keep the preferred zone of a task between the high and
+>>> low watermark (allocations succeed + kswapd does not go to sleep)
+>>> indefinitely, completely underutilizing the lower zones and
+>>> thrashing on the preferred zone
+>>>
+>>> These patches are the aging fairness part of the thrash-detection
+>>> based file LRU balancing. Andrea recommended to submit them
+>>> separately as they are bugfixes in their own right.
+>>>
+>>
+>> I have the patch applied and under testing. So far, so good. It looks
+>> like it could finally fix the bug that I was chasing few months ago
+>> (nicely described in your bullet #3). But, few more days of testing will
+>> be needed before I can reach a quality verdict.
+>>
+>
+> Well, only 2 days later it's already obvious that the patch is 
+> perfect! :)
+>
+> In the attached image, in the left column are the graphs covering last 
+> day and a half. It can be observed that zones are really balanced, and 
+> that aging is practically perfect. Graphs on the right column cover 
+> last 10 day period, and the left side of the upper graph shows how it 
+> would look with the stock kernel after about 20 day uptime (although 
+> only a few days is enough to reach such imbalance). File pages in the 
+> Normal zone are extinct species (red) and the zone is choke full of 
+> anon pages (blue). Having seen a lot of this graphs, I'm certain that 
+> it won't happen anymore with your patch applied. The balance is 
+> restored! Thank you for your work. Feel free to add:
+>
+> Tested-by: Zlatko Calusic <zcalusic@bitsync.net>
 
-diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
-index b7f358a..53e2527 100644
---- a/arch/arm/boot/dts/exynos4210.dtsi
-+++ b/arch/arm/boot/dts/exynos4210.dtsi
-@@ -72,7 +72,7 @@
-                };
-        };
- 
--       clock: clock-controller@0x10030000 {
-+       clock: clock-controller@10030000 {
-                compatible = "samsung,exynos4210-clock";
-                reg = <0x10030000 0x20000>;
-                #clock-cells = <1>;
+Thanks for your testing Zlatko, could you tell me which benchmark or 
+workload you are using? Btw, which tool is used to draw these nice 
+pictures? ;-)
+
+>
+> Regards,
+
