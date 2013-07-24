@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836Ab3GXSEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:04:45 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33418 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab3GXSEo convert rfc822-to-8bit (ORCPT
+	id S1753108Ab3GXSFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:05:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53055 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab3GXSFR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:04:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,736,1367996400"; 
-   d="scan'208";a="375797120"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
-Subject: RE: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Thread-Topic: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Thread-Index: AQHOiIb0dT8QWA0joUSnTutOsRQJK5l0Aa0g///P94CAAE2lEA==
-Date: Wed, 24 Jul 2013 18:04:33 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE73993@HASMSX106.ger.corp.intel.com>
-References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
- <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
- <20130724160008.GA17083@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
- <20130724162605.GA9700@kroah.com>
-In-Reply-To: <20130724162605.GA9700@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Jul 2013 14:05:17 -0400
+Date: Wed, 24 Jul 2013 11:05:16 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Peng Tao <bergwolf@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andreas Dilger <andreas.dilger@intel.com>,
+        Peng Tao <tao.peng@emc.com>
+Subject: Re: [PATCH-RESEND 2/3] staging/lustre: fix build on non-x86
+Message-ID: <20130724180516.GA4958@kroah.com>
+References: <1374688821-9874-1-git-send-email-bergwolf@gmail.com>
+ <1374688821-9874-3-git-send-email-bergwolf@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374688821-9874-3-git-send-email-bergwolf@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> >
-> > Just to make sure, is this what you're suggesting ?
-> >
-> > device->groups = mei_attr_groups
-> > mei_misc_device.parent = device;
-> > ret = misc_register(&mei_misc_device);
+On Thu, Jul 25, 2013 at 02:00:20AM +0800, Peng Tao wrote:
+> On non-x86 we will build with Lustre's errno translate code but
+> it has a few issues.
 > 
-> Yes, that should work.  If not, please let me know, the code underwent some
-> changes in 3.11-rc2.
+> Cc: Andreas Dilger <andreas.dilger@intel.com>
+> Signed-off-by: Peng Tao <tao.peng@emc.com>
 
-I don' t see the file being created.
-Not sure if the  misc_register setup the parent sysfs as well.
+You forgot your "From: Peng Tao <tao.peng@emc.com>" line in this, and
+the third, patch to get the authorship correct.
 
-Thanks
-Tomas
+thanks,
+
+greg k-h
