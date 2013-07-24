@@ -1,80 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab3GXSLc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 14:11:32 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:41441 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab3GXSL1 (ORCPT
+	id S1752751Ab3GXSNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 14:13:05 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:43680 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105Ab3GXSND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 14:11:27 -0400
-From: Peng Tao <bergwolf@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Peng Tao <tao.peng@emc.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH-RESEND 2/3] staging/lustre: fix build on non-x86
-Date: Thu, 25 Jul 2013 02:08:18 +0800
-Message-Id: <1374689299-10126-3-git-send-email-bergwolf@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374689299-10126-1-git-send-email-bergwolf@gmail.com>
-References: <1374689299-10126-1-git-send-email-bergwolf@gmail.com>
+	Wed, 24 Jul 2013 14:13:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374687485-31440-2-git-send-email-benjamin.tissoires@redhat.com>
+References: <1374687485-31440-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1374687485-31440-2-git-send-email-benjamin.tissoires@redhat.com>
+Date: Wed, 24 Jul 2013 21:13:01 +0300
+Message-ID: <CAHp75VcExk8XG0EdR=pvs1moVAF9EkFGLg=-gZDPnuqSBq=pHA@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] HID: trivial devm conversion for special hid drivers
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Jiri Kosina <jkosina@suse.cz>,
+        Stephane Chatty <chatty@enac.fr>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peng Tao <tao.peng@emc.com>
+On Wed, Jul 24, 2013 at 8:38 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> It is safe to use devres allocation within the hid subsystem:
+> - the devres release is called _after_ the call to .remove(), meaning
+>   that no freed pointers will exists while removing the device
+> - if a .probe() fails, devres releases all the allocated ressources
+>   before going to the next driver: there will not be ghost ressources
+>   attached to a hid device if several drivers are probed.
+>
+> Given that, we can clean up a little some of the HID drivers. These ones
+> are trivial:
+> - there is only one kzalloc in the driver
+> - the .remove() callback contains only one kfree on top of hid_hw_stop()
+> - the error path in the probe is easy enough to be manually checked
 
-On non-x86 we will build with Lustre's errno translate code but
-it has a few issues.
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 
-Cc: Andreas Dilger <andreas.dilger@intel.com>
-Signed-off-by: Peng Tao <tao.peng@emc.com>
----
- drivers/staging/lustre/lustre/ptlrpc/Makefile |    2 +-
- drivers/staging/lustre/lustre/ptlrpc/errno.c  |    4 +---
- 2 files changed, 2 insertions(+), 4 deletions(-)
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/hid/hid-a4tech.c     | 21 ++++-----------------
+>  drivers/hid/hid-apple.c      | 16 +++-------------
+>  drivers/hid/hid-magicmouse.c | 17 +++--------------
+>  drivers/hid/hid-sony.c       |  9 +++------
+>  drivers/hid/hid-zydacron.c   | 19 +++----------------
+>  5 files changed, 16 insertions(+), 66 deletions(-)
+>
+> diff --git a/drivers/hid/hid-a4tech.c b/drivers/hid/hid-a4tech.c
+> index 7c5507e..9428ea7 100644
+> --- a/drivers/hid/hid-a4tech.c
+> +++ b/drivers/hid/hid-a4tech.c
+> @@ -90,11 +90,10 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         struct a4tech_sc *a4;
+>         int ret;
+>
+> -       a4 = kzalloc(sizeof(*a4), GFP_KERNEL);
+> +       a4 = devm_kzalloc(&hdev->dev, sizeof(*a4), GFP_KERNEL);
+>         if (a4 == NULL) {
+>                 hid_err(hdev, "can't alloc device descriptor\n");
+> -               ret = -ENOMEM;
+> -               goto err_free;
+> +               return -ENOMEM;
+>         }
+>
+>         a4->quirks = id->driver_data;
+> @@ -104,27 +103,16 @@ static int a4_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>         if (ret) {
+>                 hid_err(hdev, "hw start failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         return 0;
+> -err_free:
+> -       kfree(a4);
+> -       return ret;
+> -}
+> -
+> -static void a4_remove(struct hid_device *hdev)
+> -{
+> -       struct a4tech_sc *a4 = hid_get_drvdata(hdev);
+> -
+> -       hid_hw_stop(hdev);
+> -       kfree(a4);
+>  }
+>
+>  static const struct hid_device_id a4_devices[] = {
+> @@ -144,7 +132,6 @@ static struct hid_driver a4_driver = {
+>         .input_mapped = a4_input_mapped,
+>         .event = a4_event,
+>         .probe = a4_probe,
+> -       .remove = a4_remove,
+>  };
+>  module_hid_driver(a4_driver);
+>
+> diff --git a/drivers/hid/hid-apple.c b/drivers/hid/hid-apple.c
+> index c7710b5..881cf7b 100644
+> --- a/drivers/hid/hid-apple.c
+> +++ b/drivers/hid/hid-apple.c
+> @@ -349,7 +349,7 @@ static int apple_probe(struct hid_device *hdev,
+>         unsigned int connect_mask = HID_CONNECT_DEFAULT;
+>         int ret;
+>
+> -       asc = kzalloc(sizeof(*asc), GFP_KERNEL);
+> +       asc = devm_kzalloc(&hdev->dev, sizeof(*asc), GFP_KERNEL);
+>         if (asc == NULL) {
+>                 hid_err(hdev, "can't alloc apple descriptor\n");
+>                 return -ENOMEM;
+> @@ -362,7 +362,7 @@ static int apple_probe(struct hid_device *hdev,
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         if (quirks & APPLE_HIDDEV)
+> @@ -373,19 +373,10 @@ static int apple_probe(struct hid_device *hdev,
+>         ret = hid_hw_start(hdev, connect_mask);
+>         if (ret) {
+>                 hid_err(hdev, "hw start failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         return 0;
+> -err_free:
+> -       kfree(asc);
+> -       return ret;
+> -}
+> -
+> -static void apple_remove(struct hid_device *hdev)
+> -{
+> -       hid_hw_stop(hdev);
+> -       kfree(hid_get_drvdata(hdev));
+>  }
+>
+>  static const struct hid_device_id apple_devices[] = {
+> @@ -551,7 +542,6 @@ static struct hid_driver apple_driver = {
+>         .id_table = apple_devices,
+>         .report_fixup = apple_report_fixup,
+>         .probe = apple_probe,
+> -       .remove = apple_remove,
+>         .event = apple_event,
+>         .input_mapping = apple_input_mapping,
+>         .input_mapped = apple_input_mapped,
+> diff --git a/drivers/hid/hid-magicmouse.c b/drivers/hid/hid-magicmouse.c
+> index 5bc3734..d393eb7 100644
+> --- a/drivers/hid/hid-magicmouse.c
+> +++ b/drivers/hid/hid-magicmouse.c
+> @@ -484,7 +484,7 @@ static int magicmouse_probe(struct hid_device *hdev,
+>         struct hid_report *report;
+>         int ret;
+>
+> -       msc = kzalloc(sizeof(*msc), GFP_KERNEL);
+> +       msc = devm_kzalloc(&hdev->dev, sizeof(*msc), GFP_KERNEL);
+>         if (msc == NULL) {
+>                 hid_err(hdev, "can't alloc magicmouse descriptor\n");
+>                 return -ENOMEM;
+> @@ -498,13 +498,13 @@ static int magicmouse_probe(struct hid_device *hdev,
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "magicmouse hid parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>         if (ret) {
+>                 hid_err(hdev, "magicmouse hw start failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         if (!msc->input) {
+> @@ -548,19 +548,9 @@ static int magicmouse_probe(struct hid_device *hdev,
+>         return 0;
+>  err_stop_hw:
+>         hid_hw_stop(hdev);
+> -err_free:
+> -       kfree(msc);
+>         return ret;
+>  }
+>
+> -static void magicmouse_remove(struct hid_device *hdev)
+> -{
+> -       struct magicmouse_sc *msc = hid_get_drvdata(hdev);
+> -
+> -       hid_hw_stop(hdev);
+> -       kfree(msc);
+> -}
+> -
+>  static const struct hid_device_id magic_mice[] = {
+>         { HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+>                 USB_DEVICE_ID_APPLE_MAGICMOUSE), .driver_data = 0 },
+> @@ -574,7 +564,6 @@ static struct hid_driver magicmouse_driver = {
+>         .name = "magicmouse",
+>         .id_table = magic_mice,
+>         .probe = magicmouse_probe,
+> -       .remove = magicmouse_remove,
+>         .raw_event = magicmouse_raw_event,
+>         .input_mapping = magicmouse_input_mapping,
+>         .input_configured = magicmouse_input_configured,
+> diff --git a/drivers/hid/hid-sony.c b/drivers/hid/hid-sony.c
+> index 87fbe29..30dbb6b 100644
+> --- a/drivers/hid/hid-sony.c
+> +++ b/drivers/hid/hid-sony.c
+> @@ -624,7 +624,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         struct sony_sc *sc;
+>         unsigned int connect_mask = HID_CONNECT_DEFAULT;
+>
+> -       sc = kzalloc(sizeof(*sc), GFP_KERNEL);
+> +       sc = devm_kzalloc(&hdev->dev, sizeof(*sc), GFP_KERNEL);
+>         if (sc == NULL) {
+>                 hid_err(hdev, "can't alloc sony descriptor\n");
+>                 return -ENOMEM;
+> @@ -636,7 +636,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         if (sc->quirks & VAIO_RDESC_CONSTANT)
+> @@ -649,7 +649,7 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         ret = hid_hw_start(hdev, connect_mask);
+>         if (ret) {
+>                 hid_err(hdev, "hw start failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         if (sc->quirks & SIXAXIS_CONTROLLER_USB) {
+> @@ -669,8 +669,6 @@ static int sony_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         return 0;
+>  err_stop:
+>         hid_hw_stop(hdev);
+> -err_free:
+> -       kfree(sc);
+>         return ret;
+>  }
+>
+> @@ -682,7 +680,6 @@ static void sony_remove(struct hid_device *hdev)
+>                 buzz_remove(hdev);
+>
+>         hid_hw_stop(hdev);
+> -       kfree(sc);
+>  }
+>
+>  static const struct hid_device_id sony_devices[] = {
+> diff --git a/drivers/hid/hid-zydacron.c b/drivers/hid/hid-zydacron.c
+> index e4cddec..1a660bd 100644
+> --- a/drivers/hid/hid-zydacron.c
+> +++ b/drivers/hid/hid-zydacron.c
+> @@ -169,7 +169,7 @@ static int zc_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         int ret;
+>         struct zc_device *zc;
+>
+> -       zc = kzalloc(sizeof(*zc), GFP_KERNEL);
+> +       zc = devm_kzalloc(&hdev->dev, sizeof(*zc), GFP_KERNEL);
+>         if (zc == NULL) {
+>                 hid_err(hdev, "can't alloc descriptor\n");
+>                 return -ENOMEM;
+> @@ -180,28 +180,16 @@ static int zc_probe(struct hid_device *hdev, const struct hid_device_id *id)
+>         ret = hid_parse(hdev);
+>         if (ret) {
+>                 hid_err(hdev, "parse failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
+>         if (ret) {
+>                 hid_err(hdev, "hw start failed\n");
+> -               goto err_free;
+> +               return ret;
+>         }
+>
+>         return 0;
+> -err_free:
+> -       kfree(zc);
+> -
+> -       return ret;
+> -}
+> -
+> -static void zc_remove(struct hid_device *hdev)
+> -{
+> -       struct zc_device *zc = hid_get_drvdata(hdev);
+> -
+> -       hid_hw_stop(hdev);
+> -       kfree(zc);
+>  }
+>
+>  static const struct hid_device_id zc_devices[] = {
+> @@ -217,7 +205,6 @@ static struct hid_driver zc_driver = {
+>         .input_mapping = zc_input_mapping,
+>         .raw_event = zc_raw_event,
+>         .probe = zc_probe,
+> -       .remove = zc_remove,
+>  };
+>  module_hid_driver(zc_driver);
+>
+> --
+> 1.8.3.1
+>
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/Makefile b/drivers/staging/lustre/lustre/ptlrpc/Makefile
-index a379558..6d78b80 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/Makefile
-+++ b/drivers/staging/lustre/lustre/ptlrpc/Makefile
-@@ -16,7 +16,7 @@ ptlrpc_objs += sec.o sec_bulk.o sec_gc.o sec_config.o sec_lproc.o
- ptlrpc_objs += sec_null.o sec_plain.o nrs.o nrs_fifo.o
- 
- ptlrpc-y := $(ldlm_objs) $(ptlrpc_objs)
--ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.c
-+ptlrpc-$(CONFIG_LUSTRE_TRANSLATE_ERRNOS) += errno.o
- 
- obj-$(CONFIG_PTLRPC_GSS) += gss/
- 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/errno.c b/drivers/staging/lustre/lustre/ptlrpc/errno.c
-index 46e259e..1c10063 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/errno.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/errno.c
-@@ -25,7 +25,7 @@
-  * Copyright (c) 2013, Intel Corporation.
-  */
- 
--#include <libcfs/libcfs.h>
-+#include <linux/libcfs/libcfs.h>
- #include <lustre/lustre_errno.h>
- 
- /*
-@@ -184,7 +184,6 @@ static int lustre_errno_hton_mapping[] = {
- 	[EBADTYPE]		= LUSTRE_EBADTYPE,
- 	[EJUKEBOX]		= LUSTRE_EJUKEBOX,
- 	[EIOCBQUEUED]		= LUSTRE_EIOCBQUEUED,
--	[EIOCBRETRY]		= LUSTRE_EIOCBRETRY
- };
- 
- static int lustre_errno_ntoh_mapping[] = {
-@@ -331,7 +330,6 @@ static int lustre_errno_ntoh_mapping[] = {
- 	[LUSTRE_EBADTYPE]		= EBADTYPE,
- 	[LUSTRE_EJUKEBOX]		= EJUKEBOX,
- 	[LUSTRE_EIOCBQUEUED]		= EIOCBQUEUED,
--	[LUSTRE_EIOCBRETRY]		= EIOCBRETRY
- };
- 
- unsigned int lustre_errno_hton(unsigned int h)
+
+
 -- 
-1.7.9.5
-
+With Best Regards,
+Andy Shevchenko
