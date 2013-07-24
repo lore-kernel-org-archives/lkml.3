@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab3GXRHp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 13:07:45 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:41008 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab3GXRHo (ORCPT
+	id S1751674Ab3GXRJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 13:09:18 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:10761 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab3GXRJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 13:07:44 -0400
-Date: Wed, 24 Jul 2013 18:07:21 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Message-ID: <20130724170721.GQ9858@sirena.org.uk>
-References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
- <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gepL2JgcC5Q6nP6x"
-Content-Disposition: inline
-In-Reply-To: <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Wed, 24 Jul 2013 13:09:17 -0400
+X-Greylist: delayed 579 seconds by postgrey-1.27 at vger.kernel.org; Wed, 24 Jul 2013 13:09:16 EDT
+Message-ID: <1374685121.16322.218.camel@misato.fc.hp.com>
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+From: Toshi Kani <toshi.kani@hp.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
+        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com
+Date: Wed, 24 Jul 2013 10:58:41 -0600
+In-Reply-To: <20130724042041.GA8504@gmail.com>
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
+	 <20130722083721.GC25976@gmail.com>
+	 <1374513120.16322.21.camel@misato.fc.hp.com>
+	 <20130723080101.GB15255@gmail.com>
+	 <1374612301.16322.136.camel@misato.fc.hp.com>
+	 <20130724042041.GA8504@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2013-07-24 at 06:20 +0200, Ingo Molnar wrote:
+> * Toshi Kani <toshi.kani@hp.com> wrote:
+> 
+> > On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
+> > > * Toshi Kani <toshi.kani@hp.com> wrote:
+> > > 
+> > > > > Could we please also fix it to never crash the kernel, even if stupid 
+> > > > > ranges are provided?
+> > > > 
+> > > > Yes, this probe interface can be enhanced to verify the firmware 
+> > > > information before adding a given memory address.  However, such change 
+> > > > would interfere its test use of "fake" hotplug, which is only the known 
+> > > > use-case of this interface on x86.
+> > > 
+> > > Not crashing the kernel is not a novel concept even for test interfaces...
+> > 
+> > Agreed.
+> > 
+> > > Where does the possible crash come from - from using invalid RAM ranges, 
+> > > right? I.e. on x86 to fix the crash we need to check the RAM is present in 
+> > > the e820 maps, is marked RAM there, and is not already registered with the 
+> > > kernel, or so?
+> > 
+> > Yes, the crash comes from using invalid RAM ranges.  How to check if the
+> > RAM is present is different if the system supports hotplug or not.
+> > 
+> > > > In order to verify if a given memory address is enabled at run-time (as 
+> > > > opposed to boot-time), we need to check with ACPI memory device objects 
+> > > > on x86.  However, system vendors tend to not implement memory device 
+> > > > objects unless their systems support memory hotplug.  Dave Hansen is 
+> > > > using this interface for his testing as a way to fake a hotplug event on 
+> > > > a system that does not support memory hotplug.
+> > > 
+> > > All vendors implement e820 maps for the memory present at boot time.
+> > 
+> > Yes for boot time.  At run-time, e820 is not guaranteed to represent a
+> > new memory added. [...]
+> 
+> Yes I know that, the e820 map is boot only.
+> 
+> You claimed that the only purpose of this on x86 was that testing was done 
+> on non-hotplug systems, using this interface. Non-hotplug systems have 
+> e820 maps.
 
---gepL2JgcC5Q6nP6x
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right.  Sorry, I first thought that the interface needed to work as
+defined, i.e. detect a new memory.  But for the test purpose on
+non-hotplug systems, that is not necessary.  So, I agree that we can
+check e820.
 
-On Wed, Jul 24, 2013 at 06:34:42PM +0200, Philipp Zabel wrote:
+I summarized two options in the email below.
+https://lkml.org/lkml/2013/7/23/602
 
-> +	ret = regmap_read(da9063->regmap, DA9063_REG_CHIP_ID, &model);
-> +	if (ret < 0) {
-> +		dev_err(da9063->dev, "Cannot read chip model id.\n");
-> +		return -EIO;
-> +	}
-> +
-> +	ret = regmap_read(da9063->regmap, DA9063_REG_CHIP_VARIANT, &revision);
-> +	if (ret < 0) {
-> +		dev_err(da9063->dev, "Cannot read chip revision id.\n");
-> +		return -EIO;
-> +	}
+Option 1) adds a check with e820.  Option 2) deprecates the interface by
+removing the config option from x86 Kconfig.  I was thinking that we
+could evaluate two options after this patch gets in.  Does it make
+sense?   
 
-Is it possible to valiate these at all?
+> > > How does the hotplug event based approach solve double adds? Relies on 
+> > > the hardware not sending a hot-add event twice for the same memory 
+> > > area or for an invalid memory area, or does it include fail-safes and 
+> > > double checks as well to avoid double adds and adding invalid memory? 
+> > > If yes then that could be utilized here as well.
+> > 
+> > In high-level, here is how ACPI memory hotplug works:
+> > 
+> > 1. ACPI sends a hotplug event to a new ACPI memory device object that is
+> > hot-added.
+> > 2. The kernel is notified, and verifies if the new memory device object
+> > has not been attached by any handler yet.
+> > 3. The memory handler is called, and obtains a new memory range from the
+> > ACPI memory device object. 
+> > 4. The memory handler calls add_memory() with the new address range.
+> > 
+> > The above step 1-4 proceeds automatically within the kernel.  No user 
+> > input (nor sysfs interface) is necessary.  Step 2 prevents double adds 
+> > [...]
+> 
+> If this 'new memory device object' is some ACPI detail then I don't see 
+> how it protects the kernel from a buggy ACPI implementation double adding 
+> the same physical memory range.
 
-> +static int __init da9063_i2c_init(void)
-> +{
-> +	int ret;
-> +
-> +	ret = i2c_add_driver(&da9063_i2c_driver);
-> +	if (ret != 0)
-> +		pr_err("Failed to register da9063 I2C driver\n");
-> +
-> +	return ret;
-> +}
-> +subsys_initcall(da9063_i2c_init);
+You are right that the kernel is not fully protected from buggy ACPI.
+In case of double adding, though, such hot-add operation fails
+gracefully since add_memory() returns with -EEXIST.  But if buggy ACPI
+returns an invalid RAM range, then it can crash the system, just like an
+invalid address in e820 can crash the system as well.
 
-You should really be able to use module_i2c_driver() for modern systems,
-probe deferral should resolve the init order issues.
+> > and step 3 gets a valid address range from the firmware directly.  Step 
+> > 4 is basically the same as the "probe" interface, but with all the 
+> > verification up front, this step is safe.
+> 
+> So what verification does the kernel do to ensure that a buggy ACPI 
+> implementation does not pass us a crappy memory range, such a double 
+> physical range (represented via separate 'memory device objects'), or a 
+> range overlapping with an existing physical memory range already known to 
+> the kernel, or a totally nonsensical range the CPU cannot even access 
+> physically, etc.?
 
---gepL2JgcC5Q6nP6x
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The kernel checks if the status of an ACPI memory device object is
+marked as enabled.  But it does not protect from buggy ACPI because
+anything can be wrong... 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Overlapping and double add cases are verified in add_memory(), i.e.
+register_memory_resource() fails.
 
-iQIcBAEBAgAGBQJR8AnGAAoJELSic+t+oim9iBoP/A2wEBUM5PD62tOdWfzUF3t0
-c/AXbiMcMGHLiF7O6NAzLe4hUz1NQpEsx7dFIReFeWDHuw35Q7J+uY9vqJ5GGx2K
-DQRZddxboq98hDsH7a4VisP3dWFEyeV4WRonsk54HSRU55tkvTeyrf7c0sosfvR4
-mddurseRMww1UxfuqTHFR8d8ndUl/dlflpSq03QuYXgP0mzhazwYcI0nW47cls9N
-BG14q7sO6S3kHlT31RMVmSEH+haB1TJXoRNOibxLArWhNLPrEMv6tu3cHkwQa/qg
-dvU8YFR2JInQMhgvNE7Uq2jA/45NJeXQxa5MCzKvIslRCBZRcGVTgPeW4/WimYD1
-WxXLMc0U66QfvvkegDzBPsynYGOsk9Ar8GqRsi0+5u0CdtcousrkmWhiylh0l9mF
-y4vdfEHpZQHgnPlM44E93KuSreToOOwE8OhsGh/n2TGamL9025kMeY1BTCbKxEa/
-5VIrKX3BDmn7mDjgOpI+PB01IOeIzANqD0AXBi6z0XacOU3YK0iT2M8/keh65GME
-1Ptmxtvj46NaoHvXWoEvVen3j/oWaV6BnZCydTYr3w0aJMfUGuBJuikntIPfn0LB
-WgoyZ325B5cNeIQapJxNcCQb+9Lg874HMYs9kp1e8IAM957FoHxRDXc/Szxw506G
-QizVR7vl8A9OCQ2f3TQF
-=qK8V
------END PGP SIGNATURE-----
+If an address range is unique & wrong, we have no protection from it.
 
---gepL2JgcC5Q6nP6x--
+> Also, is there any verification done to make sure that the new memory 
+> range is actually RAM - i.e. we could write the first and last word of it 
+> and see whether it gets modified correctly [to keep the sanity check 
+> fast]?
+
+No such check is performed -- just like we don't at boot-time.
+
+This may sound bad, but in my experience, such obvious bugs are quickly
+found and fixed during the FW development phase.
+
+
+Thanks,
+-Toshi
+
