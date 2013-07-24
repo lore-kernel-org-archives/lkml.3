@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab3GXTFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 15:05:00 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:56021 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752105Ab3GXTE5 (ORCPT
+	id S1753605Ab3GXTFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 15:05:41 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:55963 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752153Ab3GXTFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 15:04:57 -0400
-Date: Wed, 24 Jul 2013 23:04:53 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-Message-ID: <20130724190453.GJ8508@moon>
-References: <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com>
- <20130724163734.GE24851@moon>
- <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com>
- <20130724171728.GH8508@moon>
- <1374687373.7382.22.camel@dabdike>
- <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com>
- <20130724181516.GI8508@moon>
- <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com>
- <20130724185256.GA24365@moon>
- <51F0232D.6060306@parallels.com>
+	Wed, 24 Jul 2013 15:05:39 -0400
+Date: Wed, 24 Jul 2013 21:05:37 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Vince Weaver <vince@deater.net>
+Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        acme@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
+        trinity@vger.kernel.org
+Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
+Message-ID: <20130724190537.GW6123@two.firstfloor.org>
+References: <1374501138-13496-1-git-send-email-andi@firstfloor.org>
+ <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy>
+ <20130723060108.GA18396@tassilo.jf.intel.com>
+ <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy>
+ <20130723225150.GT6123@two.firstfloor.org>
+ <alpine.DEB.2.02.1307241433380.8230@pianoman.cluster.toy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F0232D.6060306@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.DEB.2.02.1307241433380.8230@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:55:41PM +0400, Pavel Emelyanov wrote:
-> > 
-> > Well, some part of information already lays in pte (such as 'file' bit,
-> > swap entries) so it looks natural i think to work on this level. but
-> > letme think if use page struct for that be more convenient...
+> I'd prefer if it were
 > 
-> It hardly will be. Consider we have a page shared between two tasks,
-> then first one "touches" it and soft-dirty is put onto his PTE and,
-> subsequently, the page itself. The we go and clear sofr-dirty for the
-> 2nd task. What should we do with the soft-dirty bit on the page?
-
-Indeed, this won't help. Well then, bippidy-boppidy-boo, our
-pants are metaphorically on fire (c)
-
+>   precise_ip:0-1
 > 
-> The soft-dirty thing watches changes in the virtual memory, not in
-> the physical one.
+> as the code you use to set the value looks like 
+>    attr->precise_ip=2;
+> I don't think you can even set bits 15-16 of flags directly, can you?
+
+Sorry I meant flags as an alias of "the 64bits currently occupied by the
+bitfield". Perhaps the name choice was not very good.
+
+"flags_bitfield" ?
+
+So the tool would only need to know that, not every bit.
+
+In theory it could be also generalized as a byte offset to perf_event,
+but that may be overengineered.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
