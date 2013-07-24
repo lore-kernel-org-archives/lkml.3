@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab3GXKAv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 06:00:51 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:24037 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab3GXKAu (ORCPT
+	id S1752712Ab3GXKBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 06:01:30 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:64830 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752370Ab3GXKB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 06:00:50 -0400
-Message-ID: <51EFA59B.9070409@huawei.com>
-Date: Wed, 24 Jul 2013 17:59:55 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 06:01:28 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: [PATCH v2 2/8] cgroup: document how cgroup IDs are assigned
-References: <51EFA554.6080801@huawei.com>
-In-Reply-To: <51EFA554.6080801@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130724102123.6d1156925959e56640c23468@canb.auug.org.au>
+References: <20130723095513.19b9638ab4a19157e9834dcf@canb.auug.org.au>
+ <CACxGe6tjrFG1aLc9Scmmuunjb9hTm5vyH6LqXiys8484YY=Zzw@mail.gmail.com> <20130724102123.6d1156925959e56640c23468@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 24 Jul 2013 11:01:07 +0100
+X-Google-Sender-Auth: PpISzb77tZlqAe9f3xMEO1vRBr4
+Message-ID: <CACxGe6uB5wKzaM_X3ROnD0z+wc7WZ=cHF1bm3zD=mm=mb5QJxg@mail.gmail.com>
+Subject: Re: linux-next: status of various trees
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Mark Brown <broonie@kernel.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As cgroup id has been used in netprio cgroup and will be used in memcg,
-it's important to make it clear how a cgroup id is allocated.
+On Wed, Jul 24, 2013 at 1:21 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> OK, I have done all that.  I also removed the irqdomain-current and
+> spi-current trees.
+>
+> So the trees I have left that you are responsible for are:
+>
+> devicetree-current      git://git.secretlab.ca/git/linux-2.6#devicetree/merge
+> devicetree              git://git.secretlab.ca/git/linux-2.6#devicetree/next
+> arm-dt                  git://git.secretlab.ca/git/linux-2.6#devicetree/arm-next
 
-For example, in netprio cgroup, the id is used as index of an array.
+You can drop the arm-dt tree also.
 
-Signed-off-by: Li Zefan <lizefan@huwei.com>
----
- include/linux/cgroup.h | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 2bd052d..8c107e9 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -161,7 +161,13 @@ struct cgroup_name {
- struct cgroup {
- 	unsigned long flags;		/* "unsigned long" so bitops work */
- 
--	int id;				/* idr allocated in-hierarchy ID */
-+	/*
-+	 * idr allocated in-hierarchy ID.
-+	 *
-+	 * The ID of the root cgroup is always 0, and a new cgroup
-+	 * will be assigned with a smallest available ID.
-+	 */
-+	int id;
- 
- 	/*
- 	 * We link our 'sibling' struct into our parent's 'children'.
--- 
-1.8.0.2
-
+Thanks,
+g.
