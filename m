@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab3GXOGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 10:06:49 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45757 "EHLO
+	id S1753071Ab3GXOQa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 10:16:30 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:45782 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab3GXOGh (ORCPT
+	by vger.kernel.org with ESMTP id S1752150Ab3GXOGt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 10:06:37 -0400
+	Wed, 24 Jul 2013 10:06:49 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Daniel Hansel" <daniel.hansel@linux.vnet.ibm.com>,
-        "Steffen Maier" <maier@linux.vnet.ibm.com>,
-        "James Bottomley" <JBottomley@Parallels.com>
+CC: akpm@linux-foundation.org, "Bert De Jonghe" <Bert.DeJonghe@amplidata.com>,
+        "Jens Axboe" <axboe@kernel.dk>, "Jan Kara" <jack@suse.cz>
 Date: Wed, 24 Jul 2013 15:02:45 +0100
-Message-ID: <lsq.1374674565.55470673@decadent.org.uk>
+Message-ID: <lsq.1374674565.243493672@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [03/85] [SCSI] zfcp: fix adapter (re)open recovery while link to
- SAN is down
+Subject: [50/85] writeback: Fix periodic writeback after fs mount
 In-Reply-To: <lsq.1374674564.753305150@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.101
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,44 +31,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
+commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
 
-FCP device remains in status ERP_FAILED when device is switched online
-or adapter recovery is triggered  while link to SAN is down.
+Code in blkdev.c moves a device inode to default_backing_dev_info when
+the last reference to the device is put and moves the device inode back
+to its bdi when the first reference is acquired. This includes moving to
+wb.b_dirty list if the device inode is dirty. The code however doesn't
+setup timer to wake corresponding flusher thread and while wb.b_dirty
+list is non-empty __mark_inode_dirty() will not set it up either. Thus
+periodic writeback is effectively disabled until a sync(2) call which can
+lead to unexpected data loss in case of crash or power failure.
 
-When Exchange Configuration Data command returns the FSF status
-FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
-The only retries are done during the common error recovery procedure
-(i.e. max. 3 retries with 8sec sleep between) and remains in status
-ERP_FAILED with QDIO down.
+Fix the problem by setting up a timer for periodic writeback in case we
+add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
 
-This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
-(zfcp: Fix adapter activation on link down).
-When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
-adapter recovery will be finished without any retries. QDIO will be
-up now and status changes such as LINK UP will be received now.
-
-Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/s390/scsi/zfcp_fsf.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ fs/block_dev.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -534,6 +534,10 @@ static void zfcp_fsf_exchange_config_dat
- 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
- 		adapter->hydra_version = 0;
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -55,17 +55,24 @@ static void bdev_inode_switch_bdi(struct
+ 			struct backing_dev_info *dst)
+ {
+ 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
++	bool wakeup_bdi = false;
  
-+		/* avoids adapter shutdown to be able to recognize
-+		 * events such as LINK UP */
-+		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
-+				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
- 		break;
+ 	if (unlikely(dst == old))		/* deadlock avoidance */
+ 		return;
+ 	bdi_lock_two(&old->wb, &dst->wb);
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_data.backing_dev_info = dst;
+-	if (inode->i_state & I_DIRTY)
++	if (inode->i_state & I_DIRTY) {
++		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
++			wakeup_bdi = true;
+ 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
++	}
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&old->wb.list_lock);
+ 	spin_unlock(&dst->wb.list_lock);
++
++	if (wakeup_bdi)
++		bdi_wakeup_thread_delayed(dst);
+ }
+ 
+ sector_t blkdev_max_block(struct block_device *bdev)
 
