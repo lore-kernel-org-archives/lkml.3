@@ -1,87 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3GYJVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:21:30 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:53372 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab3GYJV2 (ORCPT
+	id S1755367Ab3GYJ3w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:29:52 -0400
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:46750
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754912Ab3GYJ3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:21:28 -0400
-Date: Thu, 25 Jul 2013 11:21:23 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [s390x] build error: undefined reference to `sie_exit'
-Message-ID: <20130725092123.GD4288@osiris>
-References: <209887675.5191065.1374718087774.JavaMail.root@redhat.com>
- <1999182864.5191140.1374718153443.JavaMail.root@redhat.com>
+	Thu, 25 Jul 2013 05:29:48 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzzz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Thu, 25 Jul 2013 17:34:23 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Shawn Guo <shawn.guo@linaro.org>, <grant.likely@linaro.org>,
+        <rob.herring@calxeda.com>, <rob@landley.net>, <lgirdwood@gmail.com>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <s.trumtrar@pengutronix.de>
+Subject: Re: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
+Message-ID: <20130725093422.GA10787@Robin-OptiPlex-780>
+References: <1374723198-9716-1-git-send-email-b38343@freescale.com>
+ <20130725084042.GA19368@S2101-09.ap.freescale.net>
+ <20130725085809.GA10765@Robin-OptiPlex-780>
+ <20130725091642.GT9858@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1999182864.5191140.1374718153443.JavaMail.root@redhat.com>
+In-Reply-To: <20130725091642.GT9858@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072509-8372-0000-0000-000006ABCB8C
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:09:13PM -0400, Zhouping Liu wrote:
-> Hello All,
+On Thu, Jul 25, 2013 at 10:16:42AM +0100, Mark Brown wrote:
+> On Thu, Jul 25, 2013 at 04:58:10PM +0800, Robin Gong wrote:
 > 
-> I met the below error on b3a3a9c441 with s390x arch:
-> arch/s390/built-in.o: In function `sys_call_table_emu':
-> (.rodata+0x2b98): undefined reference to `sie_exit'
-> arch/s390/built-in.o: In function `sys_call_table_emu':
-> (.rodata+0x2ba0): undefined reference to `sie_exit'
-> make: *** [vmlinux] Error 1
+> > Shawn, I notice there are the same descriptions in the many docs of regulator
+> > drivers, can we consider the 'regulators' child node as one of special property
+> > ? Sorry for missing the information in the last mail.. 
+> 
+> No, it's just people using the wrong language to refer to them.
+Ok, I will update the patch if there are no other comments. Thanks all.
 
-Thanks for reporting, I just committed the patch below to our
-local branch:
-
->From c073dc1f474094b5610739e752d83bcb547b1d7d Mon Sep 17 00:00:00 2001
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-Date: Thu, 25 Jul 2013 11:16:48 +0200
-Subject: [PATCH] s390/perf: fix compile error (undefined reference sie_exit)
-
-The perf_event code references sie_exit even if KVM is not available.
-So add proper ifdefs to fix this one:
-
-arch/s390/built-in.o: In function `sys_call_table_emu':
-(.rodata+0x2b98): undefined reference to `sie_exit'
-arch/s390/built-in.o: In function `sys_call_table_emu':
-(.rodata+0x2ba0): undefined reference to `sie_exit'
-make: *** [vmlinux] Error 1
-
-Reported-by: Zhouping Liu <zliu@redhat.com>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- arch/s390/kernel/perf_event.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/arch/s390/kernel/perf_event.c b/arch/s390/kernel/perf_event.c
-index a6fc037..500aa10 100644
---- a/arch/s390/kernel/perf_event.c
-+++ b/arch/s390/kernel/perf_event.c
-@@ -52,12 +52,13 @@ static struct kvm_s390_sie_block *sie_block(struct pt_regs *regs)
- 
- static bool is_in_guest(struct pt_regs *regs)
- {
--	unsigned long ip = instruction_pointer(regs);
--
- 	if (user_mode(regs))
- 		return false;
--
--	return ip == (unsigned long) &sie_exit;
-+#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
-+	return instruction_pointer(regs) == (unsigned long) &sie_exit;
-+#else
-+	return false;
-+#endif
- }
- 
- static unsigned long guest_is_user_mode(struct pt_regs *regs)
--- 
-1.8.2.3
 
