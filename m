@@ -1,67 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3GYJay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:30:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36096 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071Ab3GYJat (ORCPT
+	id S1755470Ab3GYJa1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:30:27 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:8370 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755331Ab3GYJ3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:30:49 -0400
-Date: Thu, 25 Jul 2013 10:30:45 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@gmail.com>
-Message-ID: <20130725093045.GW9858@sirena.org.uk>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
- <1374703539-9705-19-git-send-email-gregkh@linuxfoundation.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Dncj+IwC/iyYwPCk"
-Content-Disposition: inline
-In-Reply-To: <1374703539-9705-19-git-send-email-gregkh@linuxfoundation.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 18/36] regulator: convert class code to use dev_groups
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Thu, 25 Jul 2013 05:29:52 -0400
+X-AuditID: cbfec7f5-b7f376d000001ec6-b4-51f0f00d61d1
+Message-id: <51F0F00A.1040907@samsung.com>
+Date: Thu, 25 Jul 2013 11:29:46 +0200
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Tomasz Figa <t.figa@samsung.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
+        balbi@ti.com, jg1.han@samsung.com, kgene.kim@samsung.com,
+        grant.likely@linaro.org, tony@atomide.com, swarren@nvidia.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
+        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
+        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
+        Daniel Lezcano <daniel.lezcano@linaro.org>
+Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
+References: <Pine.LNX.4.44L0.1307231708020.1304-100000@iolanthe.rowland.org>
+ <5977067.8rykRgjgre@flatron> <201307242032.03597.arnd@arndb.de>
+In-reply-to: <201307242032.03597.arnd@arndb.de>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA03SW0iTYRzH8Z69h83V7PXIg5DlIgIzTwg+ilTYhS/dpHQhCVJv+qKSm7ap
+	eCA1T+Rp6mw5N0vNWSnCbBYeOujE1MxMN09Emp3LPAxF8zArp11497n48vz+Fw8Ps13FnXgx
+	4gRWImZihSQff/2nb+ykwGQK8dT3OaIqbROJtuS9XPRIqSWQoryVRPoPGUjx8QuJ7i4fQtU9
+	QwQa0D8gUJe5DaDsOi2JjLUGAhXXjJFo+GsRid5kzXFRfpmGi3SfxwlUm6fBUb/MRCBjRxWJ
+	ipqfEEitKcGR8u0LDrp3PxdDncXNHDQwsbw93arDUenmMIkmK3IINKvPw7dn2zlIq/yFo8YO
+	M0Cdo+fOCOnNDTmgV1fkON2umuLS6puVBK1rzCfp9+PPSLpfuYnTnXeauHSLJoMe7c8i6OLs
+	BZIu2fKk1VNrgJY9bgR032Qrh17WOQfbhPEDItnYmCRW4nHqMj/a3LSAxRusk825OdxMYNxf
+	AKx4kPKB+WvrxK4d4fC0lrTYlqoH8NM6UwD4214CUJ3dgxUAHk9AucLZQV9Lg1PHYM9QNmYx
+	SXnB4pcyYLEDFQzrNENciwWUDVwrn8YttqdcoOLHN8zyJkatcOH3wbGdyI4KhPO5c9jusAzA
+	GbW/xVaUBzQ1bOwchFFusDP39n8fhi1N81gpoFR7NlR7MtWerAZgjcCBTYyIl16JEnm7SxmR
+	NFEc5R4RJ9KB3b+y0gbqe/27AcUDwgOCh78XQ2wJJkmaIuoGkIcJ7QXhyaYQW0Ekk5LKSuIu
+	SRJjWWk34PCsnDJBJXv1eTrr/jNtXB3kEtlQZ2D01Yx3V0FhYVdb+HWB3TWzSGq8MOHzqsPX
+	ECq5YUxWaqMDb8nPvhte/lsmlpnl6U/rgtgQa054ldFvUZLKPzE5MSFKDBPZJ4CDLn4jp6tc
+	lxLqKWKu1PlIQ8VRP0Va5HG30Jjx8zP74MjFgC0hLo1mvFwxiZT5BywC6TsJAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/2013 08:32 PM, Arnd Bergmann wrote:
+> On Tuesday 23 July 2013, Tomasz Figa wrote:
+>> On Tuesday 23 of July 2013 17:14:20 Alan Stern wrote:
+>>> On Tue, 23 Jul 2013, Tomasz Figa wrote:
+>>>> Where would you want to have those phy_address arrays stored? There
+>>>> are no board files when booting with DT. Not even saying that you
+>>>> don't need to use any hacky schemes like this when you have DT that
+>>>> nicely specifies relations between devices.
+>>>
+>>> If everybody agrees DT has a nice scheme for specifying relations
+>>> between devices, why not use that same scheme in the PHY core?
+>>
+>> It is already used, for cases when consumer device has a DT node attached. 
+>> In non-DT case this kind lookup translates loosely to something that is 
+>> being done in regulator framework - you can't bind devices by pointers, 
+>> because you don't have those pointers, so you need to use device names.
+>>
+> 
+> Sorry for jumping in to the middle of the discussion, but why does a *new*
+> framework even bother defining an interface for board files?
+> 
+> Can't we just drop any interfaces for platform data passing in the phy
+> framework and put the burden of adding those to anyone who actually needs
+> them? All the platforms we are concerned with here (exynos and omap,
+> plus new platforms) can be booted using DT anyway.
 
---Dncj+IwC/iyYwPCk
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Indeed, I was also a bit surprised we still need non-dt support, since
+migration to this generic PHY framework in case of exynos was solely
+part of migration of the whole platform to DT.
 
-On Wed, Jul 24, 2013 at 03:05:21PM -0700, Greg Kroah-Hartman wrote:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the regulator class code to use
-> the correct field.
+Two of the drivers that are being converted are also used on s5pv210,
+but there is currently no boards in mainline that would use devices
+covered by those drivers and s5pv210 will very likely get DT support
+in v3.13 anyway.
 
-Applied, thanks.
+But it seems omap still needs non-dt support in the PHY framework.
 
---Dncj+IwC/iyYwPCk
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8PBCAAoJELSic+t+oim9G5oP/2tecxdhU3JM5suIF6tZH/iz
-Qpap++5klKmqVA5MmGZz2Envn9bcOJqa9VXOWLBYL4S8+PS984rFqWXTGoQW1YYU
-Rx0NToijNJ2mkWPfM93Ugw8Gq10WddFX1k9j6EEl0EWqvQ5VScYRJeEq+/H1rGrc
-wGTlPMTpx9oFTk0PjfcKwsB6v85PWN1x3VSmLIU+eLH8mUIoaOmOy4q1+GYh4QSz
-M4N8rJbCfKJ7lHFm7ssxJ+rNoAb8r+CC9t9O50nR+0XsBA5HZs3yA506Y1LkRaGA
-LHHiJKvU2pZf0ORqEbza3CkvT9vgnHDwdTNQM8r+6iVToYS3ZhyBxUMpIqiEYqM6
-ryiCs1oWaCQ/B8f0AeDmITvDroTYc1n1TTjVG1WHpmTxV1lktG+2QYkdpcFzMEqV
-JbdWhpdjPbmL/KgitD3ipvm+cnp6mFHTt6B9Jvw+cNn81O1dIF/Jq9aIemjPntss
-2MZ4QZnrK6kUTy3AkVvq6xiuRBfMzO7tHhBx45NEQbXLXnDPiL7MO7olX4r+YXPr
-L6Dp03sKE8iUafU4DoHAZw/Vs1a4fZoLH3BupAQjkEugQR3UoB3Uh+KTI98HI3fw
-nSqxyj4sTol4+9kgx+uuVqrMDd5KTmB7RwFwYeqMtBPtaL+al5Edq0ZmiXDTBKMB
-GQqqUT8Brr69bKCQInsy
-=I2fS
------END PGP SIGNATURE-----
-
---Dncj+IwC/iyYwPCk--
+---
+Thanks,
+Sylwester
