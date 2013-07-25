@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab3GYQgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:36:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46885 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab3GYQgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:36:03 -0400
-Date: Thu, 25 Jul 2013 09:36:02 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
-Message-ID: <20130725163602.GB29694@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
- <52875092.tEWeSbEJZC@flatron>
+	id S1756750Ab3GYQge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:36:34 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4538 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756225Ab3GYQgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:36:16 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51F153F2.4080107@broadcom.com>
+Date: Thu, 25 Jul 2013 18:36:02 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <52875092.tEWeSbEJZC@flatron>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Tim Kryger" <tim.kryger@linaro.org>
+cc: "Christian Daudt" <csd@broadcom.com>, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        "Grant Likely" <grant.likely@secretlab.ca>,
+        "Lee Jones" <lee.jones@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 05/22] ARM: dts: bcm281xx: Remove '0x's from
+ BCM11351 BRT DTS file
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+ <1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+ <51ED2D90.4020209@broadcom.com> <20130722133852.GA26801@laptop>
+ <51ED3971.905@broadcom.com> <51ED6486.3080700@broadcom.com>
+ <CAAYSxhrf+WNz1+ojA1r_pOLWg4xf9Ko8OyUc4GfVEMUN776pfA@mail.gmail.com>
+In-Reply-To: <CAAYSxhrf+WNz1+ojA1r_pOLWg4xf9Ko8OyUc4GfVEMUN776pfA@mail.gmail.com>
+X-WSS-ID: 7DEF8E242L852111417-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25, Tomasz Figa wrote:
-> Hi Stephen,
-> 
-> On Wednesday 24 of July 2013 17:43:31 Stephen Boyd wrote:
-> > In similar fashion as of_regulator_match() add an of_clk_match()
-> > function that finds an initializes clock init_data structs from
-> > devicetree. Drivers should use this API to find clocks that their
-> > device is providing and then iterate over their match table
-> > registering the clocks with the init data parsed.
-> 
-> I think all you need here is declaring all your clock drivers using 
-> CLK_OF_DECLARE() macro. Then they will be automatically probed by 
-> of_clk_init(). See last lines of drivers/clk/clk-fixed-rate.c for an 
-> example.
-> 
+On 07/25/2013 05:43 PM, Tim Kryger wrote:
+> On Mon, Jul 22, 2013 at 9:57 AM, Christian Daudt <csd@broadcom.com> wrote:
+>
+>> it'd be nice to have something to point
+>> people to as this being the best practice for kernel dev.
+>
+> Power.org's ePAPR exclusively omits the 0x in the unit-address of node names.
+>
+> https://www.power.org/wp-content/uploads/2012/06/Power_ePAPR_APPROVED_v1.1.pdf
+>
 
-CLK_OF_DECLARE() will not work because it doesn't give the
-caller a struct device. I want that struct device to use managed
-allocations and clk registrations.
+Thanks for the link. While browsing on power.org I got the impression 
+that I needed to have a membership to get it.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Regards,
+Arend
+
