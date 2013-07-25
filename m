@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab3GYOdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:33:07 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52661 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab3GYOdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:33:03 -0400
-Date: Thu, 25 Jul 2013 17:32:53 +0300
+	id S1756232Ab3GYOdl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:33:41 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57401 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755882Ab3GYOdi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 10:33:38 -0400
+Date: Thu, 25 Jul 2013 17:33:30 +0300
 From: Felipe Balbi <balbi@ti.com>
 To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <balbi@ti.com>, <george.cherian@ti.com>
-Subject: Re: [PATCH 01/16] usb: musb: dsps: init / shutdown the phy
-Message-ID: <20130725143253.GJ16106@radagast>
+Subject: Re: [PATCH 02/16] usb: phy: phy-nop: add support for am335x PHY
+Message-ID: <20130725143330.GK16106@radagast>
 Reply-To: <balbi@ti.com>
 References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
- <1374516607-2705-2-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-3-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vzUQzca511KWT6Hk"
+	protocol="application/pgp-signature"; boundary="qd/SZIFVu+MYwfCR"
 Content-Disposition: inline
-In-Reply-To: <1374516607-2705-2-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1374516607-2705-3-git-send-email-bigeasy@linutronix.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---vzUQzca511KWT6Hk
+--qd/SZIFVu+MYwfCR
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 22, 2013 at 08:09:52PM +0200, Sebastian Andrzej Siewior wrote:
-> If the init / shutdown function of the phy moves out of dsps into the
-> phy driver, then dsps needs to call the callbacks of the phy driver to
-> ensure that this happens.
+On Mon, Jul 22, 2013 at 08:09:53PM +0200, Sebastian Andrzej Siewior wrote:
+> The am335x PHY code is well hidden in multiple places. The glue layer
+> uses the nop and does up/down in the background. This patch copies the
+> power on / power off part out of dsps so it can be removed later in
+> dsps. At this point I am not sure if it is better to write a new phy
+> driver for am335x or just add the missing pieces to this one.
 >=20
 > Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-cool, eventually we should move these calls to musb_core.c though.
+right, I replied to the wrong series, please add a patch renaming file
+and functions to phy-generic.c/usb_phy_gen_
+
+or something similar.
 
 --=20
 balbi
 
---vzUQzca511KWT6Hk
+--qd/SZIFVu+MYwfCR
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR8TcUAAoJEIaOsuA1yqRE8iEP/RtyYdIJaf9m+iKDs5j1cACp
-1cuxVKv1YMMDy/c6W9UYQX67N4+/UW2ahCPbExghdetiQIXyShWa59JhQRoc5goH
-iC5AwrWgGxX14BVKI6tPaw3I+SDxA9c0q0aiUXY2iEaxaDXCNKEQO/B5z3DLuQXo
-T8R9GxsLF0pc3g/lN9x5pRAgQ1oIuh4s4gDQKBy1E6fCIiYMa2cessnKyYgE+rIB
-ygybhddAeTBXTRhLUgDYDAqBBrjUXKekSl+RX9kcGp5bFWNRMfAiq3K9ec/VvMNV
-CIuVUEi2pmCrXfaLa3uzZyzFs7+wTMma05TfqaIRR/IkVcQBPo7Z9OyKpS+G8Dby
-iqXddbpDt8ywBPtF8BsLyBJ9kQaoilFWHir+i7iRcJekbN1nyUX/dmnrMfGSUDVo
-1xUnL2/YQb+I1usvF/L2aZxdX6aDRCvidT3Vzg3SoYgKU8tiGFC1czakdzvbr5zq
-NNJNXN3hvrAu55FgUH3XPuITj/to5s1JmAboH8FvRX9Zub8POI3lcFIJ8qM3SGRw
-C1xGwfec2yayCJ4abLtdC4R7bVSGAPniX2Gl+2e+s3VCasHnVRYKfyR8hHLU0PQq
-MOLoC2k6kkeeuiNOEP+Abx4Jnj/cSNV/W35vH3K9tE2TCsC1Ifr9+673VlertZFb
-iYF5Kpbup34Veoe/TY3E
-=Fani
+iQIcBAEBAgAGBQJR8Tc5AAoJEIaOsuA1yqREUzcP/2ydCREn600qznnoBoqNztF2
+lGL+YiQI69ntxSNlNAFnR2vmnOpCaNYb/OtDntbHhZ8Fbk8gTEBZycD+pBNaLWUS
+EW3QvBfIe+1PfRNGdQb8K2m0sJwFr/aSrpOKmY0pQCU83Uuv2LLVUDmRZEByJL1u
+QnyuJJu1wqTTPlz4gRjufz2EywRrY70BajXj7zWloyEhJFi/kv405sZBpiT6jayM
+vC/xWQrP+5n4gVaepGfzDBkCA4r+hyt1q2X1dJm8MhPdO6nNYplwLZoNr2+rCCcf
+ppckUGO/p8KQOTPxzlI8MIzjG69oEpMOO43qPN4j2Ou3hVy89ISb1G6T7x+beCgT
+TwBY16U8/9XwAssfxi3J5UzAhiBFyIwIFc2WNTGHsuuxD5Of1OTyoXZZ0fEOJ3v0
+YRyhqFW4/ixIqnDRgO83oGcydQZUQ+gJ08u4ny4LRPC0fY7olNfCCU7bRs4VRIFC
+2GJRW6B04ou8cMf117RrC6Mtufwl2ZW82W0MaeMtwgNlCR8rgQS4YkeE1l3Zc/+5
+GQ8mpp68qwaVti9zmVt6667Jjm+eAQSbv1bHpYS6QngL2ISP9nWl/5OR+XLRDpl7
+v6ht3720znD9xejCwRkYoIDY1cBKHAqva+0v08TqWcKLsWdozKRa4O/z2RHcV/tv
+t1W/fsRunjE4Lf2jUX5K
+=OPdN
 -----END PGP SIGNATURE-----
 
---vzUQzca511KWT6Hk--
+--qd/SZIFVu+MYwfCR--
