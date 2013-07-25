@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab3GYGUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:20:53 -0400
-Received: from nautica.notk.org ([91.121.71.147]:42822 "EHLO nautica.notk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753005Ab3GYGUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:20:49 -0400
-X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Jul 2013 02:20:49 EDT
-Date: Thu, 25 Jul 2013 08:14:11 +0200
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: David Miller <davem@davemloft.net>
-Cc: pebolle@tiscali.nl, lucho@ionkov.net, ericvh@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, andi@etezian.org,
-        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
-Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
- function
-Message-ID: <20130725061411.GA8579@nautica>
-References: <1374497956-32104-1-git-send-email-andi@etezian.org>
- <20130724.154646.2283898956674234778.davem@davemloft.net>
- <1374707387.29835.23.camel@x61.thuisdomein>
- <20130724.164514.393667021861625699.davem@davemloft.net>
+	id S1754884Ab3GYG0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:26:51 -0400
+Received: from mail-ea0-f173.google.com ([209.85.215.173]:40785 "EHLO
+	mail-ea0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab3GYG0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:26:50 -0400
+Message-ID: <51F0C525.8080506@suse.cz>
+Date: Thu, 25 Jul 2013 08:26:45 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:19.0) Gecko/20130124 Thunderbird/19.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130724.164514.393667021861625699.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Gianluca Anzolin <gianluca@sottospazio.it>, gregkh@linuxfoundation.org
+CC: gustavo@padovan.org, peter@hurleysoftware.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty_port: Fix refcounting leak in tty_port_tty_hangup()
+References: <1374729977-7164-1-git-send-email-gianluca@sottospazio.it>
+In-Reply-To: <1374729977-7164-1-git-send-email-gianluca@sottospazio.it>
+X-Enigmail-Version: 1.6a1pre
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-David Miller wrote on Wed, Jul 24, 2013 :
-> From: Paul Bolle <pebolle@tiscali.nl>
-> Date: Thu, 25 Jul 2013 01:09:47 +0200
-> > After this patch one might as well revert the rest of commit
-> > 80b45261a0b2 ("9P: Add cancelled() to the transport functions.") too. It
-> > seems the entire cancelled callback stuff is now pointless.
-> > 
-> > As I already asked in https://lkml.org/lkml/2013/7/15/87 : did that
-> > commit "forget to actually hook up rdma_cancelled() into
-> > p9_rdma_trans()?". It does look so to me.
+On 07/25/2013 07:26 AM, Gianluca Anzolin wrote:
+> The function tty_port_tty_hangup() could leak a reference to the tty_struct:
 > 
-> If nobody responds to this in the next day or so, feel free to send me
-> a patch which rips it all out.
+>         struct tty_struct *tty = tty_port_tty_get(port);
 > 
-> No response means they don't care, and neither, therefore, should we.
+>         if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+>                 tty_hangup(tty);
+>                 tty_kref_put(tty);
+>         }
+> 
+> If tty != NULL and the second condition is false we never call tty_kref_put and
+> the reference is leaked.
+> 
+> Fix by always calling tty_kref_put() which accepts a NULL argument.
+> 
+> The patch fixes a regression introduced by commit aa27a094.
+> 
+> Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+> Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
 
-Well, I do care - but I couldn't find where the trans->cancelled member
-function was supposed to be called anyway...
-So adding it to the struct and fixing the warning is well and fine, but
-if it's still never called in the end I don't see much point and there's
-nothing to test.
+Acked-by: Jiri Slaby <jslaby@suse.cz>
 
-It's on my loooong todo list of things to look at, but as no other reply
-came and the patch was never picked up it kind of dropped in priority.
-I'll have another look next week
+Thanks for the fix.
 
-I guess the worst that could happen would be submitting the
-rdma_cancelled function again when this is sorted out :)
+> ---
+>  drivers/tty/tty_port.c | 5 ++---
+>  1 file changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+> index 121aeb9..f597e88 100644
+> --- a/drivers/tty/tty_port.c
+> +++ b/drivers/tty/tty_port.c
+> @@ -256,10 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
+>  {
+>  	struct tty_struct *tty = tty_port_tty_get(port);
+>  
+> -	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+> +	if (tty && (!check_clocal || !C_CLOCAL(tty)))
+>  		tty_hangup(tty);
+> -		tty_kref_put(tty);
+> -	}
+> +	tty_kref_put(tty);
+>  }
+>  EXPORT_SYMBOL_GPL(tty_port_tty_hangup);
+>  
+> 
 
-Regards,
+
 -- 
-Dominique Martinet
+js
+suse labs
