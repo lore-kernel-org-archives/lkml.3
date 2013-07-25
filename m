@@ -1,100 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755622Ab3GYKix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:38:53 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:55596 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755547Ab3GYKiv (ORCPT
+	id S1755685Ab3GYKjE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:39:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34778 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab3GYKi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:38:51 -0400
-Subject: Re: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-To: gong.chen@linux.intel.com, tony.luck@intel.com
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-Cc: bp@suse.de, linux-kernel@vger.kernel.org
-Date: Thu, 25 Jul 2013 16:08:26 +0530
-Message-ID: <20130725103647.5009.92648.stgit@localhost.localdomain>
-In-Reply-To: <20130724061626.GA18995@gchen.bj.intel.com>
-References: <20130724061626.GA18995@gchen.bj.intel.com>
-User-Agent: StGit/0.16
+	Thu, 25 Jul 2013 06:38:59 -0400
+Date: Thu, 25 Jul 2013 12:38:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mm, numa: Sanitize task_numa_fault() callsites
+Message-ID: <20130725103845.GN27075@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072510-3864-0000-0000-000009409136
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 11:46 AM, Chen Gong wrote:
-> On Tue, Jul 23, 2013 at 03:51:14PM -0700, Tony Luck wrote:
->> Date: Tue, 23 Jul 2013 15:51:14 -0700
->> From: Tony Luck <tony.luck@gmail.com>
->> To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
->> Cc: Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>,
->>   "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
->> Subject: Re: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
->>   parsing 'UC' errors.
->>
->> Gah ... there is another bug in that unaffected thread entry.  The check
->> for
->> MCG_STATUS should be for RIPV=1 *and* EIPV=0
->>
->
-> I set "MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)" becase
-> I want it to cover Non-Affected Logical Processors (1,0)
-> and Affected Logical Processor/Recoverable continuable (1,1).
->
-> I think both of them are continuable so they should be as
-> *KEEP*.
 
-For affected logical processors, we won't be able to continue if we were in
-kernel-space. Right? So, it looks like we should panic and I think this gets
-covered by "Action required: unknown MCACOD" entry later on, though a more
-explicit entry might help. For user-space, the next two entries cover AR.
+Subject: mm, numa: Sanitize task_numa_fault() callsites
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Mon Jul 22 10:42:38 CEST 2013
 
-Does the below help or am I reading this wrong?
+There are three callers of task_numa_fault():
 
-Thanks,
-Naveen
+ - do_huge_pmd_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
 
---
-We have three categories under MCA Action Required (AR):
-1. Unaffected threads/cpu (RIPV=1,EIPV=0): always continuable
-2. Affected threads (RIPV=EIPV=1): continuable
-3. Affected threads (RIPV=0): not continuable
+ - do_numa_page():
+     Accounts against the current node, not the node where the
+     page resides, unless we migrated, in which case it accounts
+     against the node we migrated to.
 
-The consolidated entry (Tony's new patch) should only cover (1).
+ - do_pmd_numa_page():
+     Accounts not at all when the page isn't migrated, otherwise
+     accounts against the node we migrated towards.
 
-(2) and (3) are covered for user-space by the two entries following the entry
-for (1) for data load and instruction fetch errors.
+This seems wrong to me; all three sites should have the same
+sementaics, furthermore we should accounts against where the page
+really is, we already know where the task is.
 
-(3) is covered for kernel-space by the earlier entry for "In kernel and no
-restart IP" where we panic. The below patch is to make (2) explicit for
-kernel-space.
+So modify all three sites to always account; we did after all receive
+the fault; and always account to where the page is after migration,
+regardless of success.
 
+They all still differ on when they clear the PTE/PMD; ideally that
+would get sorted too.
 
-Signed-off-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- arch/x86/kernel/cpu/mcheck/mce-severity.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ mm/huge_memory.c |   24 ++++++++++++++----------
+ mm/memory.c      |   52 ++++++++++++++++++++++------------------------------
+ 2 files changed, 36 insertions(+), 40 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index e2703520..585ddbb 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -115,6 +115,12 @@ static struct severity {
- 		MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
- 		),
- 	MCESEV(
-+		PANIC, "Action required but kernel thread is not continuable",
-+		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR, MCI_UC_SAR|MCI_ADDR),
-+		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, MCG_STATUS_RIPV|MCG_STATUS_EIPV),
-+		KERNEL
-+		),
-+	MCESEV(
- 		AR, "Action required: data load error in a user process",
- 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
- 		USER
-
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1292,9 +1292,9 @@ int do_huge_pmd_numa_page(struct mm_stru
+ {
+ 	struct page *page;
+ 	unsigned long haddr = addr & HPAGE_PMD_MASK;
++	int page_nid = -1, this_nid = numa_node_id();
+ 	int target_nid, last_nidpid;
+-	int src_nid = -1;
+-	bool migrated;
++	bool migrated = false;
+ 
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp)))
+@@ -1311,9 +1311,9 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	if (is_huge_zero_page(page))
+ 		goto clear_pmdnuma;
+ 
+-	src_nid = numa_node_id();
++	page_nid = page_to_nid(page);
+ 	count_vm_numa_event(NUMA_HINT_FAULTS);
+-	if (src_nid == page_to_nid(page))
++	if (page_nid == this_nid)
+ 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
+ 
+ 	last_nidpid = page_nidpid_last(page);
+@@ -1327,7 +1327,7 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	spin_unlock(&mm->page_table_lock);
+ 	lock_page(page);
+ 
+-	/* Confirm the PTE did not while locked */
++	/* Confirm the PMD didn't change while we released the page_table_lock */
+ 	spin_lock(&mm->page_table_lock);
+ 	if (unlikely(!pmd_same(pmd, *pmdp))) {
+ 		unlock_page(page);
+@@ -1339,11 +1339,12 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	/* Migrate the THP to the requested node */
+ 	migrated = migrate_misplaced_transhuge_page(mm, vma,
+ 				pmdp, pmd, addr, page, target_nid);
+-	if (!migrated)
++	if (migrated)
++		page_nid = target_nid;
++	else
+ 		goto check_same;
+ 
+-	task_numa_fault(last_nidpid, target_nid, HPAGE_PMD_NR, true);
+-	return 0;
++	goto out;
+ 
+ check_same:
+ 	spin_lock(&mm->page_table_lock);
+@@ -1356,8 +1357,11 @@ int do_huge_pmd_numa_page(struct mm_stru
+ 	update_mmu_cache_pmd(vma, addr, pmdp);
+ out_unlock:
+ 	spin_unlock(&mm->page_table_lock);
+-	if (src_nid != -1)
+-		task_numa_fault(last_nidpid, src_nid, HPAGE_PMD_NR, false);
++
++out:
++	if (page_nid != -1)
++		task_numa_fault(last_nidpid, page_nid, HPAGE_PMD_NR, migrated);
++
+ 	return 0;
+ }
+ 
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3533,8 +3533,8 @@ int do_numa_page(struct mm_struct *mm, s
+ {
+ 	struct page *page = NULL;
+ 	spinlock_t *ptl;
+-	int current_nid = -1, last_nidpid;
+-	int target_nid;
++	int page_nid = -1;
++	int target_nid, last_nidpid;
+ 	bool migrated = false;
+ 
+ 	/*
+@@ -3569,15 +3569,10 @@ int do_numa_page(struct mm_struct *mm, s
+ 	}
+ 
+ 	last_nidpid = page_nidpid_last(page);
+-	current_nid = page_to_nid(page);
+-	target_nid = numa_migrate_prep(page, vma, addr, current_nid);
++	page_nid = page_to_nid(page);
++	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
+ 	pte_unmap_unlock(ptep, ptl);
+ 	if (target_nid == -1) {
+-		/*
+-		 * Account for the fault against the current node if it not
+-		 * being replaced regardless of where the page is located.
+-		 */
+-		current_nid = numa_node_id();
+ 		put_page(page);
+ 		goto out;
+ 	}
+@@ -3585,11 +3580,12 @@ int do_numa_page(struct mm_struct *mm, s
+ 	/* Migrate to the requested node */
+ 	migrated = migrate_misplaced_page(page, vma, target_nid);
+ 	if (migrated)
+-		current_nid = target_nid;
++		page_nid = target_nid;
+ 
+ out:
+-	if (current_nid != -1)
+-		task_numa_fault(last_nidpid, current_nid, 1, migrated);
++	if (page_nid != -1)
++		task_numa_fault(last_nidpid, page_nid, 1, migrated);
++
+ 	return 0;
+ }
+ 
+@@ -3604,7 +3600,6 @@ static int do_pmd_numa_page(struct mm_st
+ 	unsigned long offset;
+ 	spinlock_t *ptl;
+ 	bool numa = false;
+-	int local_nid = numa_node_id();
+ 	int last_nidpid;
+ 
+ 	spin_lock(&mm->page_table_lock);
+@@ -3628,9 +3623,10 @@ static int do_pmd_numa_page(struct mm_st
+ 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
+ 		pte_t pteval = *pte;
+ 		struct page *page;
+-		int curr_nid = local_nid;
++		int page_nid = -1;
+ 		int target_nid;
+-		bool migrated;
++		bool migrated = false;
++
+ 		if (!pte_present(pteval))
+ 			continue;
+ 		if (!pte_numa(pteval))
+@@ -3649,26 +3645,22 @@ static int do_pmd_numa_page(struct mm_st
+ 		if (unlikely(!page))
+ 			continue;
+ 
+-		/*
+-		 * Note that the NUMA fault is later accounted to either
+-		 * the node that is currently running or where the page is
+-		 * migrated to.
+-		 */
+-		curr_nid = local_nid;
+ 		last_nidpid = page_nidpid_last(page);
++		page_nid = page_to_nid(page);
+ 		target_nid = numa_migrate_prep(page, vma, addr,
+-					       page_to_nid(page));
+-		if (target_nid == -1) {
++				               page_nid);
++		pte_unmap_unlock(pte, ptl);
++
++		if (target_nid != -1) {
++			migrated = migrate_misplaced_page(page, vma, target_nid);
++			if (migrated)
++				page_nid = target_nid;
++		} else {
+ 			put_page(page);
+-			continue;
+ 		}
+ 
+-		/* Migrate to the requested node */
+-		pte_unmap_unlock(pte, ptl);
+-		migrated = migrate_misplaced_page(page, vma, target_nid);
+-		if (migrated)
+-			curr_nid = target_nid;
+-		task_numa_fault(last_nidpid, curr_nid, 1, migrated);
++		if (page_nid != -1)
++			task_numa_fault(last_nidpid, page_nid, 1, migrated);
+ 
+ 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
+ 	}
