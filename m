@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab3GYQpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:45:44 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47654 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab3GYQpn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:45:43 -0400
-Date: Thu, 25 Jul 2013 09:45:42 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        James Hogan <james.hogan@imgtec.com>,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 04/14] clk: Add set_rate_and_parent() op
-Message-ID: <20130725164542.GF29694@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-5-git-send-email-sboyd@codeaurora.org>
- <4582949.WCP5JfKYES@flatron>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4582949.WCP5JfKYES@flatron>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756659Ab3GYQrY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:47:24 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:59677 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756382Ab3GYQrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:47:21 -0400
+Message-ID: <1374770840.1957.4.camel@joe-AO722>
+Subject: Re: [PATCH] dynamic_debug: add wildcard support to filter
+ files/functions/modules
+From: Joe Perches <joe@perches.com>
+To: "Du, Changbin" <changbin.du@gmail.com>
+Cc: jbaron@redhat.com, linux-kernel@vger.kernel.org
+Date: Thu, 25 Jul 2013 09:47:20 -0700
+In-Reply-To: <1374757321-5988-1-git-send-email-changbin.du@gmail.com>
+References: <1374757321-5988-1-git-send-email-changbin.du@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25, Tomasz Figa wrote:
-> On Wednesday 24 of July 2013 17:43:32 Stephen Boyd wrote:
-> > Some of Qualcomm's clocks can change their parent and rate at the
-> > same time with a single register write. Add support for this
-> > hardware to the common clock framework by adding a new
-> > set_rate_and_parent() op. When the clock framework determines
-> > that both the parent and the rate are going to change during
-> > clk_set_rate() it will call the .set_rate_and_parent() op if
-> > available and fall back to calling .set_parent() followed by
-> > .set_rate() otherwise.
+On Thu, 2013-07-25 at 21:02 +0800, Du, Changbin wrote:
+> From: "Du, Changbin" <changbin.du@gmail.com>
 > 
-> This is strange. Does you hardware support switching parent and rate 
-> separately or you always need to set both and so all the fuss here?
+> This patch add wildcard '*'(matches zero or more characters) and '?'
+> (matches one character) support when qurying debug flags.
 
-It supports setting the parent or setting the rate, or setting
-both at the same time.
+Seems very useful.  Caveat below.
 
-> 
-> If the latter is the case, then maybe you can simply keep parent index and 
-> rate cached inside driver data of your clock driver and use them on any 
-> .set_rate() or .set_parent() calls?
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+[]
+> @@ -127,6 +127,21 @@ static void vpr_info_dq(const struct ddebug_query *query, const char *msg)
+>  		 query->first_lineno, query->last_lineno);
+>  }
+>  
+> +static int match_pattern(char *pat, char *str)
+> +{
+> +	switch (*pat) {
+> +	case '\0':
+> +		return !*str;
+> +	case '*':
+> +		return  match_pattern(pat+1, str) || 
+> +			(*str && match_pattern(pat, str+1));
+> +	case '?':
+> +		return *str && match_pattern(pat+1, str+1);
+> +	default:
+> +		return *pat == *str && match_pattern(pat+1, str 1);
+> +	}
+> +}
 
-This will not work. In fact, doing that would cause us to
-overclock hardware for a short time between switching the parent
-and the rate.
+What's the maximum length string used today?
+On a very long pattern, can this recursion cause stack overflow?
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Other than that, I like it.
+
+
