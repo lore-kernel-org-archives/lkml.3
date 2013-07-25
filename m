@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab3GYWn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 18:43:56 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:58713 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757240Ab3GYWnx (ORCPT
+	id S1758002Ab3GYWv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 18:51:26 -0400
+Received: from mailout2.w2.samsung.com ([211.189.100.12]:43216 "EHLO
+	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756722Ab3GYWvY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 18:43:53 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 25 Jul 2013 23:42:15 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 2/2] x86: add early quirk for reserving Intel graphics
- stolen memory v3
-Message-ID: <20130725224006.GC13295@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-	hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-	torvalds@linux-foundation.org
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
- <1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+	Thu, 25 Jul 2013 18:51:24 -0400
+X-AuditID: cbfec37a-b7fc36d0000050de-50-51f1abead801
+From: Daniel Phillips <d.phillips@partner.samsung.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Thread-topic: [Ksummit-2013-discuss] [ATTEND] How to act on LKML
+Thread-index: Ac6FrfBMfsbqYywbRzi3Al0U5EyIiw==
+Date: Thu, 25 Jul 2013 22:51:21 +0000
+Message-id: <1EC23D2B9975384993D85B5DB93AAE8861C061@sisaex01sj>
+References: <20130717144043.GA16513@xanatos>
+ <CAMP44s1EGqth8gs+0Fs6-n+OjUjcj9-Gce=aDZ61=9aUr06zvg@mail.gmail.com>
+ <20130719120841.GH26716@gmail.com>
+ <CAMP44s21fZtw+0LghxpcpQeE5ptcisKRjPv6VUQeE4NbBWa4-w@mail.gmail.com>
+ <CAMuHMdUWsppKBNrFSB981MXTeGpb4yPtiL2QW7HiUjUaMej0=g@mail.gmail.com>
+ <CAMP44s2J2zESnYYwEtN-Q2_4ft_M8UpdLxZavtK5q2fZcFa=SQ@mail.gmail.com>
+ <1EC23D2B9975384993D85B5DB93AAE8861AA8D@sisaex01sj>
+ <CAMP44s1w0dfv7peUU3DnHLujf5rtyK6xfCpcWRJhMTMvFHcjug@mail.gmail.com>
+ <1EC23D2B9975384993D85B5DB93AAE8861B641@sisaex01sj>
+ <CAMP44s1szaS0BVpGfDS66aeox9j0YT5D3pdsjMhz64LW-uVczw@mail.gmail.com>
+ <20130725143327.GF2346@1wt.eu>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [105.144.21.63]
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 8BIT
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCIsWRmVeSWpSXmKPExsVy+t9hX93Xqz8GGiy4xGSx/fVGNos7hzUs
+	Dj7Os3h2ay+TRfPi9WwWt37MZbK4vGsOm8Xqf6cYLRZsfMRo8fPORUaLR31v2S2Oz5/D6MDj
+	cXr6fmaP7U9EPHbOusvusWlVJ5vHoStrGT1OzPjN4nHocAejx7yTgR77565h9/j9YzKjx+dN
+	cgHcUVw2Kak5mWWpRfp2CVwZ23Z3Mhb8Z63Y89SrgfEtSxcjJ4eEgInE5Tcf2CFsMYkL99az
+	dTFycQgJLGOUmPXpATuE08sksefOBShnPqPEuYXTwFrYBMwklh4/wwRiiwjISDRNnQ42lllg
+	OYvExX/SILawgL3EgtbJzBA1DhIHv91igbD1JL79OwA0h4ODRUBV4uD7AhCTF6j87gELiFUd
+	rBIPzh8Ea2UEuu77qTVMEOPFJZpbb0J9ICCxZM95ZghbVOLl43+sIHMkBBQltq+2gijXkli/
+	8zhUq7bEk3cXWEFsXgFBiR+T77FMYBSbhWTqLCQts5C0zELSsoCRZRWjWGlxckFxUnpqhaFe
+	cWJucWleul5yfu4mRkjMV+1gvPPV5hCjAAejEg+vgtPHQCHWxLLiytxDjBIczEoivLd6gUK8
+	KYmVValF+fFFpTmpxYcYmTg4pRoYI6vtHxlxiH+ult7xd+5FSZ2uM58f6J76dzbT4is7i2v5
+	/wmHv+o0bN1dyqP18vSKU67FazLsfqzhLLhu3vGP+42k8aQ0nev+J1Q3HV4c82LFDVO1Rt5M
+	hxbvwJVPez0nbeRibfwdfcZ2d/G/o2ceP76wUMAy+WWvYvv6CU2+nDUN3b3nWbT1lViKMxIN
+	tZiLihMBVTXmZtcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:37:49AM -0700, Jesse Barnes wrote:
-> Systems with Intel graphics controllers set aside memory exclusively for
-> gfx driver use.  This memory is not marked in the E820 as reserved or as
-> RAM, and so is subject to overlap from E820 manipulation later in the
-> boot process.  On some systems, MMIO space is allocated on top, despite
-> the efforts of the "RAM buffer" approach, which simply rounds memory
-> boundaries up to 64M to try to catch space that may decode as RAM and so
-> is not suitable for MMIO.
-> 
-> v2: use read_pci_config for 32 bit reads instead of adding a new one
->     (Chris)
->     add gen6 stolen size function (Chris)
->     use a function pointer (Chris)
->     drop gen2 bits (Daniel)
+On 07/25/2013 02:34 PM, Willy Tarreau wrote:
+> Guys, could we please stop this endless boring thread ?
 
-As a reminder, can you please reorder the entries in the macro to ease
-compilation by userspace - c++ doesn't like having .class and so I have
-to massage the file with
+Willy, I believe we are on the same side of the civility debate, but I 
+somehow got the feeling that you just characterized my comment re "open 
+and honest" as "endless and boring".
 
-intel_pciids.h: i915_pciids.h
-       sed 's/_I915_PCIIDS/INTEL_PCIIDS/; s/\..*= //' < $^ > $@
+I agree that the attempt to divert the intent of my comment into a 
+farcical debate on debating was not worth the internet bytes it was 
+printed on. In fact, that nicely demonstrates one class of technique 
+commonly used on lkml to silence criticism, and is worth studying from 
+that viewpoint. That sort of diverting should end, particularly in 
+regards to the topic at hand.
 
-to strip out the C99-style struct declarations (as my cpp skills were
-obviously not strong enough) but then that requires the member ordering
-is correct. Alternatively, if we discard the clean C99 code, both the
-kernel struct pci_device_id and libpciaccess's struct pci_match_data are
-the same - and I can just use i915_pciids.h directly. My perference is
-to keep using C99 in the kernel as it makes the header much more
-readable.
--Chris
+Regards,
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Daniel
