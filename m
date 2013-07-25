@@ -1,298 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3GYQiq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:38:46 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33827 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756565Ab3GYQhz (ORCPT
+	id S1756479Ab3GYQkK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:40:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47358 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab3GYQkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:37:55 -0400
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: [PATCH 2/2] x86: add early quirk for reserving Intel graphics stolen memory v3
-Date: Thu, 25 Jul 2013 09:37:49 -0700
-Message-Id: <1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 25 Jul 2013 12:40:07 -0400
+Date: Thu, 25 Jul 2013 09:40:05 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 08/14] clk: msm: Add MSM clock driver
+Message-ID: <20130725164005.GE29694@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-9-git-send-email-sboyd@codeaurora.org>
+ <2513717.VTXGvIpGv4@flatron>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2513717.VTXGvIpGv4@flatron>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Systems with Intel graphics controllers set aside memory exclusively for
-gfx driver use.  This memory is not marked in the E820 as reserved or as
-RAM, and so is subject to overlap from E820 manipulation later in the
-boot process.  On some systems, MMIO space is allocated on top, despite
-the efforts of the "RAM buffer" approach, which simply rounds memory
-boundaries up to 64M to try to catch space that may decode as RAM and so
-is not suitable for MMIO.
+On 07/25, Tomasz Figa wrote:
+> On Wednesday 24 of July 2013 17:43:36 Stephen Boyd wrote:
+> > Add a clock driver that registers clocks from a DT node's
+> > 'clocks' child. Each new SoC will add a file describing the
+> > software interface and frequency plan to drivers/clk/msm/ and
+> > then hook that into the msm_cc_match_table by means of a
+> > compatible string and an msm_clk_match table.
+> > 
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  drivers/clk/msm/Makefile   |   2 +
+> >  drivers/clk/msm/core.c     | 265
+> > +++++++++++++++++++++++++++++++++++++++++++++
+> > drivers/clk/msm/internal.h |  24 ++++
+> >  3 files changed, 291 insertions(+)
+> >  create mode 100644 drivers/clk/msm/core.c
+> >  create mode 100644 drivers/clk/msm/internal.h
+> > 
+> > diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
+> > index e1cee29..9cfd0d7 100644
+> > --- a/drivers/clk/msm/Makefile
+> > +++ b/drivers/clk/msm/Makefile
+> > @@ -4,3 +4,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
+> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
+> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
+> > +
+> > +clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
+> > diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
+> > new file mode 100644
+> > index 0000000..b1904c0
+> > --- /dev/null
+> > +++ b/drivers/clk/msm/core.c
+> > @@ -0,0 +1,265 @@
+> > +/*
+> > + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> > + *
+> > + * This software is licensed under the terms of the GNU General Public
+> > + * License version 2, as published by the Free Software Foundation, and
+> > + * may be copied, distributed, and modified under those terms. + *
+> > + * This program is distributed in the hope that it will be useful,
+> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > + * GNU General Public License for more details.
+> > + */
+> > +
+> > +#include <linux/err.h>
+> > +#include <linux/platform_device.h>
+> > +#include <linux/module.h>
+> > +#include <linux/clk-provider.h>
+> > +#include <linux/of.h>
+> > +#include <linux/of_device.h>
+> > +#include <linux/spinlock.h>
+> > +
+> > +#include "internal.h"
+> > +#include "clk-pll.h"
+> > +#include "clk-rcg.h"
+> > +#include "clk-branch.h"
+> > +
+> > +struct cc_data {
+> > +	void __iomem *base;
+> > +	spinlock_t lock;
+> > +};
+> > +
+> > +static struct clk *
+> > +dispatch_fixed_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	u32 rate;
+> > +	const char *name = m->init_data->name;
+> > +
+> > +	if (of_property_read_u32(m->of_node, "clock-frequency", &rate))
+> > +		return ERR_PTR(-EINVAL);
+> > +
+> > +	return clk_register_fixed_rate(dev, name, NULL, CLK_IS_ROOT, 
+> rate);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_pll_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct pll_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return pll_clk_register(dev, desc, m->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_pll_vote_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct pll_vote_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return pll_vote_clk_register(dev, desc, m->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_p2mn16_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct rcg_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_p2mn16_clk_register(dev, desc, &cc->lock, m-
+> >init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_p2mn8_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct rcg_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_p2mn8_clk_register(dev, desc, &cc->lock, m->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_mn8_dyn_clk(struct of_clk_match *match, struct device
+> > *dev, +		struct cc_data *cc)
+> > +{
+> > +	struct rcg_dyn_desc *desc = match->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_mn8_dyn_clk_register(dev, desc, &cc->lock,
+> > +			match->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_p4_dyn_clk(struct of_clk_match *match, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct rcg_dyn_desc *desc = match->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_p4_dyn_clk_register(dev, desc, &cc->lock,
+> > +			match->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_h5mn8_clk(struct of_clk_match *match, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct rcg2_desc *desc = match->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_h5mn8_clk_register(dev, desc, &cc->lock, match-
+> >init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_rcg_h5mn16_clk(struct of_clk_match *match, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct rcg2_desc *desc = match->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return rcg_h5mn16_clk_register(dev, desc, &cc->lock,
+> > match->init_data); +}
+> > +
+> > +static struct clk *
+> > +dispatch_branch_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct branch_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return branch_clk_register(dev, desc, &cc->lock, m->init_data);
+> > +}
+> > +
+> > +static struct clk *
+> > +dispatch_branch_hg_clk(struct of_clk_match *m, struct device *dev,
+> > +		struct cc_data *cc)
+> > +{
+> > +	struct branch_desc *desc = m->driver_data;
+> > +
+> > +	desc->base = cc->base;
+> > +
+> > +	return branch_hg_clk_register(dev, desc, &cc->lock, m->init_data);
+> > +}
+> > +
+> > +static const struct of_device_id dispatch_table[] = {
+> > +	{ .compatible = "fixed-clock", .data = dispatch_fixed_clk },
+> 
+> This is already handled by the fixed-rate-clock driver and of_clk_init().
 
-v2: use read_pci_config for 32 bit reads instead of adding a new one
-    (Chris)
-    add gen6 stolen size function (Chris)
-    use a function pointer (Chris)
-    drop gen2 bits (Daniel)
+I don't plan to use of_clk_init() because I have actual device
+drivers.
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- arch/x86/kernel/early-quirks.c  |  158 +++++++++++++++++++++++++++++++++++++++
- drivers/gpu/drm/i915/i915_reg.h |   15 ----
- include/drm/i915_drm.h          |   32 ++++++++
- 3 files changed, 190 insertions(+), 15 deletions(-)
+> 
+> > +	{ .compatible = "qcom,pll", .data = dispatch_pll_clk },
+> > +	{ .compatible = "qcom,pll-vote", .data = dispatch_pll_vote_clk },
+> > +	{ .compatible = "qcom,p2-mn8-clock", .data = 
+> dispatch_rcg_p2mn8_clk },
+> > +	{ .compatible = "qcom,p2-mn16-clock", .data = 
+> dispatch_rcg_p2mn16_clk
+> > }, +	{ .compatible = "qcom,mn8-dyn-clock", .data =
+> > dispatch_rcg_mn8_dyn_clk }, +	{ .compatible = "qcom,p4-dyn-clock",
+> > .data = dispatch_rcg_p4_dyn_clk }, +	{ .compatible =
+> > "qcom,h5-mn8-clock", .data = dispatch_rcg_h5mn8_clk }, +	{ 
+> .compatible
+> > = "qcom,h5-mn16-clock", .data = dispatch_rcg_h5mn16_clk }, +	{
+> > .compatible = "qcom,cxc-clock", .data = dispatch_branch_clk }, +	{
+> > .compatible = "qcom,cxc-hg-clock", .data = dispatch_branch_hg_clk },
+> > +};
+> 
+> You can avoid all the code above by using OF_CLK_DECLARE() and 
+> of_clk_init().
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 94ab6b9..bff8a6f 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -12,6 +12,7 @@
- #include <linux/pci.h>
- #include <linux/acpi.h>
- #include <linux/pci_ids.h>
-+#include <drm/i915_drm.h>
- #include <asm/pci-direct.h>
- #include <asm/dma.h>
- #include <asm/io_apic.h>
-@@ -208,6 +209,161 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 
- }
- 
-+/*
-+ * Systems with Intel graphics controllers set aside memory exclusively
-+ * for gfx driver use.  This memory is not marked in the E820 as reserved
-+ * or as RAM, and so is subject to overlap from E820 manipulation later
-+ * in the boot process.  On some systems, MMIO space is allocated on top,
-+ * despite the efforts of the "RAM buffer" approach, which simply rounds
-+ * memory boundaries up to 64M to try to catch space that may decode
-+ * as RAM and so is not suitable for MMIO.
-+ *
-+ * And yes, so far on current devices the base addr is always under 4G.
-+ */
-+static u32 __init intel_stolen_base(int num, int slot, int func)
-+{
-+	u32 base;
-+
-+	/*
-+	 * Almost universally we can find the Graphics Base of Stolen Memory
-+	 * at offset 0x5c in the igfx configuration space. On a few (desktop)
-+	 * machines this is also mirrored in the bridge device at different
-+	 * locations, or in the MCHBAR.
-+	 */
-+	base = read_pci_config(num, slot, func, 0x5c);
-+	base &= ~((1<<20) - 1);
-+
-+	return base;
-+}
-+
-+#define KB(x)	((x) * 1024)
-+#define MB(x)	(KB (KB (x)))
-+#define GB(x)	(MB (KB (x)))
-+
-+static size_t __init gen3_stolen_size(int num, int slot, int func)
-+{
-+	size_t stolen_size;
-+	u16 gmch_ctrl;
-+
-+	gmch_ctrl = read_pci_config_16(0, 0, 0, I830_GMCH_CTRL);
-+
-+	switch (gmch_ctrl & I855_GMCH_GMS_MASK) {
-+	case I855_GMCH_GMS_STOLEN_1M:
-+		stolen_size = MB(1);
-+		break;
-+	case I855_GMCH_GMS_STOLEN_4M:
-+		stolen_size = MB(4);
-+		break;
-+	case I855_GMCH_GMS_STOLEN_8M:
-+		stolen_size = MB(8);
-+		break;
-+	case I855_GMCH_GMS_STOLEN_16M:
-+		stolen_size = MB(16);
-+		break;
-+	case I855_GMCH_GMS_STOLEN_32M:
-+		stolen_size = MB(32);
-+		break;
-+	case I915_GMCH_GMS_STOLEN_48M:
-+		stolen_size = MB(48);
-+		break;
-+	case I915_GMCH_GMS_STOLEN_64M:
-+		stolen_size = MB(64);
-+		break;
-+	case G33_GMCH_GMS_STOLEN_128M:
-+		stolen_size = MB(128);
-+		break;
-+	case G33_GMCH_GMS_STOLEN_256M:
-+		stolen_size = MB(256);
-+		break;
-+	case INTEL_GMCH_GMS_STOLEN_96M:
-+		stolen_size = MB(96);
-+		break;
-+	case INTEL_GMCH_GMS_STOLEN_160M:
-+		stolen_size = MB(160);
-+		break;
-+	case INTEL_GMCH_GMS_STOLEN_224M:
-+		stolen_size = MB(224);
-+		break;
-+	case INTEL_GMCH_GMS_STOLEN_352M:
-+		stolen_size = MB(352);
-+		break;
-+	default:
-+		stolen_size = 0;
-+		break;
-+	}
-+
-+	return stolen_size;
-+}
-+
-+static size_t __init gen6_stolen_size(int num, int slot, int func)
-+{
-+	u16 gmch_ctrl;
-+
-+	gmch_ctrl = read_pci_config_16(num, slot, func, SNB_GMCH_CTRL);
-+	gmch_ctrl >>= SNB_GMCH_GMS_SHIFT;
-+	gmch_ctrl &= SNB_GMCH_GMS_MASK;
-+
-+	return gmch_ctrl << 25; /* 32 MB units */
-+}
-+
-+typedef size_t (*stolen_size_fn)(int num, int slot, int func);
-+
-+static struct pci_device_id intel_stolen_ids[] __initdata = {
-+	INTEL_I915G_IDS(gen3_stolen_size),
-+	INTEL_I915GM_IDS(gen3_stolen_size),
-+	INTEL_I945G_IDS(gen3_stolen_size),
-+	INTEL_I945GM_IDS(gen3_stolen_size),
-+	INTEL_VLV_M_IDS(gen3_stolen_size),
-+	INTEL_VLV_D_IDS(gen3_stolen_size),
-+	INTEL_PINEVIEW_IDS(gen3_stolen_size),
-+	INTEL_I965G_IDS(gen3_stolen_size),
-+	INTEL_G33_IDS(gen3_stolen_size),
-+	INTEL_I965GM_IDS(gen3_stolen_size),
-+	INTEL_GM45_IDS(gen3_stolen_size),
-+	INTEL_G45_IDS(gen3_stolen_size),
-+	INTEL_IRONLAKE_D_IDS(gen3_stolen_size),
-+	INTEL_IRONLAKE_M_IDS(gen3_stolen_size),
-+	INTEL_SNB_D_IDS(gen6_stolen_size),
-+	INTEL_SNB_M_IDS(gen6_stolen_size),
-+	INTEL_IVB_M_IDS(gen6_stolen_size),
-+	INTEL_IVB_D_IDS(gen6_stolen_size),
-+	INTEL_HSW_D_IDS(gen6_stolen_size),
-+	INTEL_HSW_M_IDS(gen6_stolen_size),
-+};
-+
-+static void __init intel_graphics_stolen(int num, int slot, int func)
-+{
-+	size_t size;
-+	int i;
-+	u32 start;
-+	u16 device, subvendor, subdevice;
-+
-+	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
-+	subvendor = read_pci_config_16(num, slot, func,
-+				       PCI_SUBSYSTEM_VENDOR_ID);
-+	subdevice = read_pci_config_16(num, slot, func, PCI_SUBSYSTEM_ID);
-+
-+	for (i = 0; i < ARRAY_SIZE(intel_stolen_ids); i++) {
-+		if (intel_stolen_ids[i].device == device) {
-+			stolen_size_fn stolen_size =
-+				(stolen_size_fn)intel_stolen_ids[i].driver_data;
-+			size = stolen_size(num, slot, func);
-+			start = intel_stolen_base(num, slot, func);
-+			if (size && start)
-+				goto found;
-+			else
-+				break;
-+		}
-+	}
-+
-+	/* No match or invalid data, don't bother reserving */
-+	return;
-+found:
-+	/* Mark this space as reserved */
-+	e820_add_region(start, size, E820_RESERVED);
-+	return;
-+}
-+
- #define QFLAG_APPLY_ONCE 	0x1
- #define QFLAG_APPLIED		0x2
- #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-@@ -241,6 +397,8 @@ static struct chipset early_qrk[] __initdata = {
- 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
- 	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
- 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
-+	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA, PCI_ANY_ID,
-+	  QFLAG_APPLY_ONCE, intel_graphics_stolen },
- 	{}
- };
- 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index 5e58a44..d707ce6 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -33,21 +33,6 @@
- #define _MASKED_BIT_ENABLE(a) (((a) << 16) | (a))
- #define _MASKED_BIT_DISABLE(a) ((a) << 16)
- 
--/*
-- * The Bridge device's PCI config space has information about the
-- * fb aperture size and the amount of pre-reserved memory.
-- * This is all handled in the intel-gtt.ko module. i915.ko only
-- * cares about the vga bit for the vga rbiter.
-- */
--#define INTEL_GMCH_CTRL		0x52
--#define INTEL_GMCH_VGA_DISABLE  (1 << 1)
--#define SNB_GMCH_CTRL		0x50
--#define    SNB_GMCH_GGMS_SHIFT	8 /* GTT Graphics Memory Size */
--#define    SNB_GMCH_GGMS_MASK	0x3
--#define    SNB_GMCH_GMS_SHIFT   3 /* Graphics Mode Select */
--#define    SNB_GMCH_GMS_MASK    0x1f
--
--
- /* PCI config space */
- 
- #define HPLLCC	0xc0 /* 855 only */
-diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
-index 7276a72..3abfa6e 100644
---- a/include/drm/i915_drm.h
-+++ b/include/drm/i915_drm.h
-@@ -36,4 +36,36 @@ extern bool i915_gpu_lower(void);
- extern bool i915_gpu_busy(void);
- extern bool i915_gpu_turbo_disable(void);
- 
-+/*
-+ * The Bridge device's PCI config space has information about the
-+ * fb aperture size and the amount of pre-reserved memory.
-+ * This is all handled in the intel-gtt.ko module. i915.ko only
-+ * cares about the vga bit for the vga rbiter.
-+ */
-+#define INTEL_GMCH_CTRL		0x52
-+#define INTEL_GMCH_VGA_DISABLE  (1 << 1)
-+#define SNB_GMCH_CTRL		0x50
-+#define    SNB_GMCH_GGMS_SHIFT	8 /* GTT Graphics Memory Size */
-+#define    SNB_GMCH_GGMS_MASK	0x3
-+#define    SNB_GMCH_GMS_SHIFT   3 /* Graphics Mode Select */
-+#define    SNB_GMCH_GMS_MASK    0x1f
-+
-+#define I830_GMCH_CTRL			0x52
-+
-+#define I855_GMCH_GMS_MASK		0xF0
-+#define I855_GMCH_GMS_STOLEN_0M		0x0
-+#define I855_GMCH_GMS_STOLEN_1M		(0x1 << 4)
-+#define I855_GMCH_GMS_STOLEN_4M		(0x2 << 4)
-+#define I855_GMCH_GMS_STOLEN_8M		(0x3 << 4)
-+#define I855_GMCH_GMS_STOLEN_16M	(0x4 << 4)
-+#define I855_GMCH_GMS_STOLEN_32M	(0x5 << 4)
-+#define I915_GMCH_GMS_STOLEN_48M	(0x6 << 4)
-+#define I915_GMCH_GMS_STOLEN_64M	(0x7 << 4)
-+#define G33_GMCH_GMS_STOLEN_128M	(0x8 << 4)
-+#define G33_GMCH_GMS_STOLEN_256M	(0x9 << 4)
-+#define INTEL_GMCH_GMS_STOLEN_96M	(0xa << 4)
-+#define INTEL_GMCH_GMS_STOLEN_160M	(0xb << 4)
-+#define INTEL_GMCH_GMS_STOLEN_224M	(0xc << 4)
-+#define INTEL_GMCH_GMS_STOLEN_352M	(0xd << 4)
-+
- #endif				/* _I915_DRM_H_ */
+As stated earlier that won't work because I want a struct device.
+
+> > +
+> > +static int __init msm_cc_init(void)
+> > +{
+> > +	return platform_driver_register(&msm_cc_driver);
+> > +}
+> > +core_initcall(msm_cc_init);
+> 
+> I might be saying something stupid, but is it okay for a removable module 
+> to have a core_initcall?
+> 
+
+If its compiled as a module the core_initcall becomes a
+module_initcall(). It's here because I need the clocks before the
+serial driver probes. If clocks supported deferred probing this
+wouldn't be necessary and we could use module_platform_driver().
+
 -- 
-1.7.9.5
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
