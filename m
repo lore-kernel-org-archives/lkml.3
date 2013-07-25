@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482Ab3GYPGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:06:07 -0400
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:49960 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042Ab3GYPGD (ORCPT
+	id S1756437Ab3GYPJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:09:24 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:48724 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457Ab3GYPJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:06:03 -0400
-Date: Thu, 25 Jul 2013 11:05:54 -0400
+	Thu, 25 Jul 2013 11:09:21 -0400
+X-Greylist: delayed 151796 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Jul 2013 11:09:21 EDT
+Date: Thu, 25 Jul 2013 11:09:13 -0400
 From: Tejun Heo <tj@kernel.org>
 To: Tang Chen <tangchen@cn.fujitsu.com>
 Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
@@ -21,17 +22,18 @@ Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
         x86@kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in
- memblock.reserve with numa_meminfo.
-Message-ID: <20130725150554.GC26107@mtj.dyndns.org>
+Subject: Re: [PATCH 17/21] page_alloc, mem-hotplug: Improve movablecore to
+ {en|dis}able using SRAT.
+Message-ID: <20130725150913.GD26107@mtj.dyndns.org>
 References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
- <20130723212548.GZ21100@mtj.dyndns.org>
- <51F0A4F9.2060802@cn.fujitsu.com>
+ <1374220774-29974-18-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723210435.GV21100@mtj.dyndns.org>
+ <20130723211119.GW21100@mtj.dyndns.org>
+ <51F0A074.403@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F0A4F9.2060802@cn.fujitsu.com>
+In-Reply-To: <51F0A074.403@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,28 +41,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello, Tang.
 
-On Thu, Jul 25, 2013 at 12:09:29PM +0800, Tang Chen wrote:
-> And as in [patch 14/21], when reserving hotpluggable memory, we use
-> pxm. So my
+On Thu, Jul 25, 2013 at 11:50:12AM +0800, Tang Chen wrote:
+> movablecore boot option was used to specify the size of ZONE_MOVABLE. And
+> this patch-set aims to arrange ZONE_MOVABLE with SRAT info. So my original
+> thinking is to reuse movablecore.
+> 
+> Since you said above, I think we have two problems here:
+> 1. Should not let users care about where the hotplug info comes from.
+> 2. Should not distinguish movable node and memory hotplug, since for now,
+>    to use memory hotplug is to use movable node.
+> 
+> So how about something like "movablenode", just like "quiet" boot option.
+> If users specify "movablenode", then memblock will reserve hotpluggable
+> memory, and create movable nodes if any. If users specify nothing, then
+> the kernel acts as before.
 
-Which is kinda nasty.
-
-> idea was to do a nid sync in numa_init(). After this, memblock will
-> set nid when
-> it allocates memory.
-
-Sure, that's the only place we can set the numa node IDs but my point
-is that you don't need to add another interface.  Jet let
-memblock_set_node() handle both memblock.memory and .reserved ranges.
-That way, you can make memblock simpler to use and less error-prone.
-
-> If we want to let memblock_set_node() and alloc functions set nid on
-> the reserved
-> regions, we should setup nid <-> pxm mapping when we parst SRAT for
-> the first time.
-
-I don't follow why it has to be different.  Why do you need to do
-anything differently?  What am I missing here?
+Maybe I'm confused but memory hotplug isn't likely to work without
+this, right?  If so, wouldn't it make more sense to have
+"memory_hotplug" option rather than "movablecore=acpi" which in no way
+indicates that it has something to do with memory hotplug?
 
 Thanks.
 
