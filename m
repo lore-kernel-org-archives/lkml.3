@@ -1,124 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab3GYEDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:03:45 -0400
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:37474 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab3GYEDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:03:42 -0400
-Date: Thu, 25 Jul 2013 00:09:36 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
-        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
-Subject: [PATCH 1/2] Update perf_event ABI documentation: format and events
-Message-ID: <alpine.DEB.2.10.1307250004590.25162@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752525Ab3GYEGz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:06:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:23692 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab3GYEGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 00:06:47 -0400
+X-IronPort-AV: E=Sophos;i="4.89,740,1367942400"; 
+   d="scan'208";a="8015463"
+Message-ID: <51F0A4F9.2060802@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 12:09:29 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in memblock.reserve
+ with numa_meminfo.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com> <20130723212548.GZ21100@mtj.dyndns.org>
+In-Reply-To: <20130723212548.GZ21100@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 12:04:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 12:04:42,
+	Serialize complete at 2013/07/25 12:04:42
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/2013 05:25 AM, Tejun Heo wrote:
+> On Fri, Jul 19, 2013 at 03:59:31PM +0800, Tang Chen wrote:
+>> Vasilis Liaskovitis found that before we parse SRAT and fulfill numa_meminfo,
+>> the nids of all the regions in memblock.reserve[] are MAX_NUMNODES. That is
+>> because nids have not been mapped at that time.
+>>
+>> When we arrange ZONE_MOVABLE in each node later, we need nid in memblock. So
+>> after we parse SRAT and fulfill nume_meminfo, synchronize the nid info to
+>> memblock.reserve[] immediately.
+>
+> Having a separate sync is rather nasty.  Why not let
+> memblock_set_node() and alloc functions set nid on the reserved
+> regions?
 
-This clarifies some of the ABI, as there has been some confusion
-and minor breakages lately.  Most notably it documents that as of
-3.10 the events entries can contain decimal values in addition to
-hex.
+Node id and pxm are 1-1 mapped. For the current kernel, before SRAT is 
+parsed,
+we don't know nid. So all allocated regions are reserved by memblock with
+nid = MAX_NUMNODES. So for early allocated memory, we cannot use 
+memblock_set_node()
+and alloc functions to set the nid.
 
-This is version 2 containing whitespace fixes suggested by
-Jiri Olsa.
+In this patch-set, we parse SRAT twice, the first one is right after 
+memblock is ready.
+But we didn't setup nid <-> pxm mapping. So we still have this problem.
 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+And as in [patch 14/21], when reserving hotpluggable memory, we use pxm. 
+So my
+idea was to do a nid sync in numa_init(). After this, memblock will set 
+nid when
+it allocates memory.
 
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-index 3c1cc24..16d9107 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
-@@ -1,30 +1,52 @@
--What:		/sys/devices/cpu/events/
-+What:		/sys/bus/event_source/devices/<dev>/events
-+
-+Date:		2013/01/08
-+
-+Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
-+
-+Description:	Generic performance monitoring events
-+
-+		A collection of performance monitoring events that are
-+		supported by the PMU (performance monitoring unit)
-+		specified by "<dev>". These events can be monitored
-+		using the 'perf(1)' tool.
-+
-+		The contents of each file is a list of attribute names
-+		(as found in the corresponding
-+			/sys/bus/event_source/devices/<dev>/format
-+		file) separated by commas.  Each entry has
-+		an optional value (either hex or decimal).  If no
-+		value is specified than it is assumed to be a single-bit
-+		field with a value of 1.
-+
-+		An example of what you might find:
-+			event=0x2,inv,ldlat=3
-+
-+
-+What:		/sys/devices/cpu/events/branch-instructions
- 		/sys/devices/cpu/events/branch-misses
--		/sys/devices/cpu/events/cache-references
-+		/sys/devices/cpu/events/bus-cycles
- 		/sys/devices/cpu/events/cache-misses
--		/sys/devices/cpu/events/stalled-cycles-frontend
--		/sys/devices/cpu/events/branch-instructions
--		/sys/devices/cpu/events/stalled-cycles-backend
--		/sys/devices/cpu/events/instructions
-+		/sys/devices/cpu/events/cache-references
- 		/sys/devices/cpu/events/cpu-cycles
-+		/sys/devices/cpu/events/instructions
-+		/sys/devices/cpu/events/ref-cycles
-+		/sys/devices/cpu/events/stalled-cycles-backend
-+		/sys/devices/cpu/events/stalled-cycles-frontend
- 
- Date:		2013/01/08
- 
- Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
- 
--Description:	Generic performance monitoring events
-+Description:	Generic CPU performance monitoring events
- 
- 		A collection of performance monitoring events that may be
- 		supported by many/most CPUs. These events can be monitored
- 		using the 'perf(1)' tool.
- 
--		The contents of each file would look like:
--
--			event=0xNNNN
--
--		where 'N' is a hex digit and the number '0xNNNN' shows the
--		"raw code" for the perf event identified by the file's
--		"basename".
-+		The format of these files matches that of
-+		/sys/bus/event_source/devices/<dev>/events as described
-+		previously in this file.
- 
- 
- What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
-diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-index 77f47ff..8f4c13f 100644
---- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-+++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
-@@ -15,6 +15,12 @@ Description:
- 			attr2 = 'config:0-7'
- 			attr3 = 'config:12-35'
- 
--		Example: 'config1:1,6-10,44'
-+		Example: event = 'config1:1,6-10,44'
- 		Defines contents of attribute that occupies bits 1,6-10,44 of
- 		perf_event_attr::config1.
-+
-+		In this example, the events file would have the value
-+			event=0x7f
-+		to set all of the specified bits (they will be split up).
-+		You would not use 0x10000007c2 (which is what the bits
-+		actually passed into config1 would look like).
+If we want to let memblock_set_node() and alloc functions set nid on the 
+reserved
+regions, we should setup nid <-> pxm mapping when we parst SRAT for the 
+first time.
+If you think this is OK, I can try it.
+
+Thanks.
