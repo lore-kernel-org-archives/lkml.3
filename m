@@ -1,119 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756029Ab3GYNGD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:06:03 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:53674 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab3GYNF6 (ORCPT
+	id S1756055Ab3GYNGc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:06:32 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:60201 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755953Ab3GYNFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:05:58 -0400
-Date: Thu, 25 Jul 2013 14:05:54 +0100
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2013-07-25
-Message-ID: <20130725130552.GE9913@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Jul 2013 09:05:48 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 2/3] video: hx8357: Make IM pins optional
+Date: Thu, 25 Jul 2013 15:05:12 +0200
+Message-Id: <1374757513-2253-3-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374757513-2253-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1374757513-2253-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The IM pins of the HX8357 controller are used to define the interface
+used to feed pixel stream to the LCD panel.
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Most of the time, these pins are directly routed to either the ground or
+the VCC to set their values.
 
-Hi John,
+Remove the need to assign GPIOs to these pins when we are in such a case.
 
-A few fixes and devices ID additions for 3.11:=20
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/video/backlight/hx8357.c | 53 +++++++++++++++++++++++-----------------
+ 1 file changed, 31 insertions(+), 22 deletions(-)
 
- * There are 3 new ath3k device ids=20
- * Fixed stack memory usage in ath3k.
- * Fixed the init process of BlueFRITZ! devices, they were failing to init
-   due to an unsupported command we sent.=20
- * Fixed wrong use of PTR_ERR in btusb code that was preventing intel devic=
-es
-   to work properly=20
- * Fixed race codition between hci_register_dev() and hci_dev_open() that
-   could cause a NULL pointer dereference.
+diff --git a/drivers/video/backlight/hx8357.c b/drivers/video/backlight/hx8357.c
+index a0482b5..00614ce 100644
+--- a/drivers/video/backlight/hx8357.c
++++ b/drivers/video/backlight/hx8357.c
+@@ -76,6 +76,7 @@ struct hx8357_data {
+ 	unsigned		reset;
+ 	struct spi_device	*spi;
+ 	int			state;
++	bool			use_im_pins;
+ };
+ 
+ static u8 hx8357_seq_power[] = {
+@@ -250,9 +251,11 @@ static int hx8357_lcd_init(struct lcd_device *lcdev)
+ 	 * Set the interface selection pins to SPI mode, with three
+ 	 * wires
+ 	 */
+-	gpio_set_value_cansleep(lcd->im_pins[0], 1);
+-	gpio_set_value_cansleep(lcd->im_pins[1], 0);
+-	gpio_set_value_cansleep(lcd->im_pins[2], 1);
++	if (lcd->use_im_pins) {
++		gpio_set_value_cansleep(lcd->im_pins[0], 1);
++		gpio_set_value_cansleep(lcd->im_pins[1], 0);
++		gpio_set_value_cansleep(lcd->im_pins[2], 1);
++	}
+ 
+ 	/* Reset the screen */
+ 	gpio_set_value(lcd->reset, 1);
+@@ -424,26 +427,32 @@ static int hx8357_probe(struct spi_device *spi)
+ 		return -EINVAL;
+ 	}
+ 
+-	for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
+-		lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
+-						"im-gpios", i);
+-		if (lcd->im_pins[i] == -EPROBE_DEFER) {
+-			dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
+-			return -EPROBE_DEFER;
+-		}
+-		if (!gpio_is_valid(lcd->im_pins[i])) {
+-			dev_err(&spi->dev, "Missing dt property: im-gpios\n");
+-			return -EINVAL;
++	if (of_find_property(spi->dev.of_node, "im-gpios", NULL)) {
++		lcd->use_im_pins = 1;
++
++		for (i = 0; i < HX8357_NUM_IM_PINS; i++) {
++			lcd->im_pins[i] = of_get_named_gpio(spi->dev.of_node,
++							    "im-gpios", i);
++			if (lcd->im_pins[i] == -EPROBE_DEFER) {
++				dev_info(&spi->dev, "GPIO requested is not here yet, deferring the probe\n");
++				return -EPROBE_DEFER;
++			}
++			if (!gpio_is_valid(lcd->im_pins[i])) {
++				dev_err(&spi->dev, "Missing dt property: im-gpios\n");
++				return -EINVAL;
++			}
++
++			ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
++						    GPIOF_OUT_INIT_LOW,
++						    "im_pins");
++			if (ret) {
++				dev_err(&spi->dev, "failed to request gpio %d: %d\n",
++					lcd->im_pins[i], ret);
++				return -EINVAL;
++			}
+ 		}
+-
+-		ret = devm_gpio_request_one(&spi->dev, lcd->im_pins[i],
+-					GPIOF_OUT_INIT_LOW, "im_pins");
+-		if (ret) {
+-			dev_err(&spi->dev, "failed to request gpio %d: %d\n",
+-				lcd->im_pins[i], ret);
+-			return -EINVAL;
+-		}
+-	}
++	} else
++		lcd->use_im_pins = 0;
+ 
+ 	lcdev = lcd_device_register("mxsfb", &spi->dev, lcd, &hx8357_ops);
+ 	if (IS_ERR(lcdev)) {
+-- 
+1.8.3.2
 
-Please pull or let me know of any issues. Thanks.
-
-	Gustavo
-
---
-The following changes since commit 57bf74407bd501b0599568a3112fc16395b575d9:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/bl=
-uetooth/bluetooth (2013-06-24 13:53:15 -0400)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth for-ups=
-tream
-
-for you to fetch changes up to 352c3b276ca7e2df479cd0b9b87d227f14efb20a:
-
-  Bluetooth: Fix race between hci_register_dev() and hci_dev_open() (2013-0=
-7-25 13:55:59 +0100)
-
-----------------------------------------------------------------
-AceLan Kao (1):
-      Bluetooth: Add support for Atheros [0cf3:3121]
-
-Adam Lee (1):
-      Bluetooth: fix wrong use of PTR_ERR() in btusb
-
-Gustavo Padovan (1):
-      Bluetooth: Fix race between hci_register_dev() and hci_dev_open()
-
-Johan Hedberg (1):
-      Bluetooth: Fix HCI init for BlueFRITZ! devices
-
-Stanislaw Gruszka (1):
-      Bluetooth: ath3k: don't use stack memory for DMA
-
-Sujith Manoharan (1):
-      Bluetooth: ath3k: Add support for ID 0x13d3/0x3402
-
-Thomas Loo (1):
-      Bluetooth: ath3k: Add support for Fujitsu Lifebook UH5x2 [04c5:1330]
-
- drivers/bluetooth/ath3k.c | 44 +++++++++++++++++++++++++++++++++++---------
- drivers/bluetooth/btusb.c | 17 ++++++++++-------
- net/bluetooth/hci_core.c  | 16 ++++++++--------
- 3 files changed, 53 insertions(+), 24 deletions(-)
-
-
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8SKwAAoJEPs3PUX4s20oloMP/3xtV+rqwF8B7KDxMaRv4CgN
-Nh51XXfGotIph40PNDhj8Q/86FElTVpQYc48J0PqIx2RzMdjPOCDecVUqI5rgc+O
-Bf7U/z09mwYJnazQOn+nqAcxLFBn/0OrhRIZdQE8ex48Z1o6M2N/VapVa4gyXN4Y
-8xZTjQ8vdKOgaCMOWSkzhYYlOqdIw8qlFA7biL5KgSLeABZWn5KxDvGUf7ktgm3g
-YcaoU/7twRwwije3fO9523ak4IQNDREljfo0hw6CCslWKSeu2iVXqsPDViO16e+u
-0vFBA1yB+7094SNEI081+fBEE1us21nlUJNME6RGe3z5VGeJWTxy6L2ZWFpr00Px
-ZsLbv5zI4KycGuOu1L92RLWc3MXxFe84ccdil47CxLK/L6SEJGp/HanjmxLVlWFo
-m4DpOF4RHQ0DmqqnuP687C76TH2cUgmT4MXLhYFLj3LzUVQ1S+2IRp841Mqg+Gej
-QxHLw+tLqbIhxRgzCTnToZ18mQvTQGg2n8U+FbG7WfH/OY8Ts0ZkAuu4q2DH+P/Z
-FStw9u26kVvBXZAymxMB6JuQf1Ma/a7GjgjtrsFE6khwBu6uT1955M1IYtzt48fe
-C4nG6eAQAOmYuow2aNa+zI82si35SON9hWNOf6u2fmMqJzUmujVfJ1El3e5n8phx
-i5bCLARqvrOClrAExfIJ
-=GOMw
------END PGP SIGNATURE-----
-
---AhhlLboLdkugWU4S--
