@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534Ab3GYQWO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54925 "EHLO mx1.redhat.com"
+	id S1756168Ab3GYQ1m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:27:42 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:51038 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756244Ab3GYQWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:22:11 -0400
-Date: Thu, 25 Jul 2013 12:22:03 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: bskeggs@redhat.com
-Subject: nouveau oops in nouveau_bo_new
-Message-ID: <20130725162203.GA32273@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, bskeggs@redhat.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755552Ab3GYQ1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:27:41 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com, gregkh@linuxfoundation.org
+Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Subject: [PATCH] usb: dwc3: core: modify IO memory resource after deferred probe completes
+Date: Thu, 25 Jul 2013 19:26:30 +0300
+Message-Id: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This recently started happening (since the last DRM merge, 3.10 was fine).
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-[   17.751970] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[   17.752260] Modules linked in: nouveau(+) video mxm_wmi wmi i2c_algo_bit tg3 ttm drm_kms_helper iTCO_wdt drm iTCO_vendor_support ptp lpc_ich ppdev dcdbas mfd_core pps_core serio_raw i5k_amb i2c_i801 pcspkr i2c_core shpchp parport_pc parport xfs libcrc32c raid0 floppy
-[   17.753911] CPU: 3 PID: 292 Comm: systemd-udevd Not tainted 3.11.0-rc2+ #13 
-[   17.754123] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
-[   17.754285] task: ed9dabc0 ti: ecdd0000 task.ti: ecdd0000
-[   17.754392] EIP: 0060:[<f86dde0f>] EFLAGS: 00010296 CPU: 3
-[   17.754542] EIP is at nouveau_bo_new+0x1f/0x28c [nouveau]
-[   17.754647] EAX: 00000000 EBX: ed8610b0 ECX: 00000100 EDX: 00004000
-[   17.754753] ESI: 00004000 EDI: ec8390b0 EBP: ecdd1b4c ESP: ecdd1b14
-[   17.754858]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   17.754963] CR0: 80050033 CR2: 00000000 CR3: 2ca65000 CR4: 000007f0
-[   17.755069] Stack:
-[   17.755167]  00000003 f1002780 000008b0 ecdd0000 f850280f 00000600 000080d0 ed8610b0
-[   17.755690]  00000100 ef9f3cd0 00000000 ed8610b0 ef9f3cd0 00000000 ecdd1b78 f86ef2f6
-[   17.756210]  00000004 00000000 00000000 00000000 ed861444 ecef8c30 ebb41520 ef9f3cd0
-[   17.756729] Call Trace:
-[   17.756849]  [<f850280f>] ? drm_mode_crtc_set_gamma_size+0x23/0x43 [drm]
-[   17.756993]  [<f86ef2f6>] nv04_crtc_create+0xd4/0x142 [nouveau]
-[   17.757138]  [<f86f2758>] nv04_display_create+0xf2/0x35a [nouveau]
-[   17.757281]  [<f86e801a>] nouveau_display_create+0x33f/0x553 [nouveau]
-[   17.757422]  [<f86d99fb>] nouveau_drm_load+0x22f/0x5dc [nouveau]
-[   17.757534]  [<c1391816>] ? device_register+0x17/0x1a
-[   17.757648]  [<f84ff77b>] ? drm_sysfs_device_add+0x76/0xa3 [drm]
-[   17.757764]  [<f84fe6bd>] drm_get_pci_dev+0x138/0x238 [drm]
-[   17.757902]  [<f86ab3ce>] ? nouveau_device_create_+0x65/0x11b [nouveau]
-[   17.758044]  [<f86da081>] nouveau_drm_probe+0x2d9/0x360 [nouveau]
-[   17.758155]  [<c12d55ac>] pci_device_probe+0x6c/0xb0
-[   17.758261]  [<c1393dae>] driver_probe_device+0x7f/0x356
-[   17.758367]  [<c139412c>] __driver_attach+0x74/0x76
-[   17.758473]  [<c13940b8>] ? __device_attach+0x33/0x33
-[   17.758579]  [<c13922b6>] bus_for_each_dev+0x49/0x74
-[   17.758684]  [<c13938ec>] driver_attach+0x1e/0x20
-[   17.758791]  [<c13940b8>] ? __device_attach+0x33/0x33
-[   17.758896]  [<c1393550>] bus_add_driver+0x1d0/0x27c
-[   17.759002]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
-[   17.759109]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
-[   17.759215]  [<c1394667>] driver_register+0x6a/0x123
-[   17.759321]  [<c12bdfad>] ? __raw_spin_lock_init+0x2d/0x4e
-[   17.759428]  [<c12d45f3>] __pci_register_driver+0x4a/0x4d
-[   17.760008]  [<f84fe8a3>] drm_pci_init+0xe6/0xee [drm]
-[   17.760008]  [<f8752000>] ? 0xf8751fff
-[   17.760008]  [<f8752048>] nouveau_drm_init+0x48/0x1000 [nouveau]
-[   17.760008]  [<c10003f0>] do_one_initcall+0xc0/0x180
-[   17.760008]  [<f8752000>] ? 0xf8751fff
-[   17.760008]  [<c1033765>] ? set_memory_nx+0x5a/0x5c
-[   17.760008]  [<c15aca75>] ? set_section_ro_nx+0x54/0x59
-[   17.760008]  [<c10b4174>] load_module+0x1ad6/0x2519
-[   17.760008]  [<c10b05ed>] ? copy_module_from_fd.isra.49+0x34/0x13b
-[   17.760008]  [<c10b4d0b>] SyS_finit_module+0x73/0xac
-[   17.760008]  [<c106b0cb>] ? up_write+0x1b/0x30
-[   17.760008]  [<c11343ca>] ? vm_mmap_pgoff+0x7a/0x97
-[   17.760008]  [<c15bf03b>] sysenter_do_call+0x12/0x32
-[   17.760008] Code: c7 83 1c 01 00 00 ff ff ff ff eb aa 55 89 e5 57 56 53 83 ec 2c 66 66 66 66 90 89 d6 89 4d e8 8b b8 ec 03 00 00 8b 87 8c 00 00 00 <8b> 00 0f b6 88 91 00 00 00 b8 ff ff ff ff d3 e0 25 ff ff ff 7f
-[   17.760008] EIP: [<f86dde0f>] nouveau_bo_new+0x1f/0x28c [nouveau] SS:ESP 0068:ecdd1b14
-[   17.760008] CR2: 0000000000000000
+When deferred probe happens driver will try to ioremap multiple times
+and will fail. Memory resource.start variable is a global variable,
+modifications in this field will be accumulated on every probe.
+Fix this by moving the above operations after driver hold all
+required PHY's.
+
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/dwc3/core.c |   31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
+
+diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+index 607bef8..50c833f 100644
+--- a/drivers/usb/dwc3/core.c
++++ b/drivers/usb/dwc3/core.c
+@@ -384,21 +384,6 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		dev_err(dev, "missing memory resource\n");
+ 		return -ENODEV;
+ 	}
+-	dwc->xhci_resources[0].start = res->start;
+-	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+-					DWC3_XHCI_REGS_END;
+-	dwc->xhci_resources[0].flags = res->flags;
+-	dwc->xhci_resources[0].name = res->name;
+-
+-	res->start += DWC3_GLOBALS_REGS_START;
+-
+-	 /*
+-	  * Request memory region but exclude xHCI regs,
+-	  * since it will be requested by the xhci-plat driver.
+-	  */
+-	regs = devm_ioremap_resource(dev, res);
+-	if (IS_ERR(regs))
+-		return PTR_ERR(regs);
+ 
+ 	if (node) {
+ 		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+@@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
+ 		return -EPROBE_DEFER;
+ 	}
+ 
++	dwc->xhci_resources[0].start = res->start;
++	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
++					DWC3_XHCI_REGS_END;
++	dwc->xhci_resources[0].flags = res->flags;
++	dwc->xhci_resources[0].name = res->name;
++
++	res->start += DWC3_GLOBALS_REGS_START;
++
++	 /*
++	  * Request memory region but exclude xHCI regs,
++	  * since it will be requested by the xhci-plat driver.
++	  */
++	regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR(regs))
++		return PTR_ERR(regs);
++
+ 	usb_phy_set_suspend(dwc->usb2_phy, 0);
+ 	usb_phy_set_suspend(dwc->usb3_phy, 0);
+ 
+-- 
+1.7.9.5
 
