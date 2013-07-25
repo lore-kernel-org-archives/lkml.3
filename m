@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754311Ab3GYDbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:31:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:16250 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3GYDbL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:31:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,740,1367971200"; 
-   d="scan'208";a="37265805"
-Message-ID: <1374723067.32286.34.camel@hastur.hellion.org.uk>
-Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out
- pages
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        <xen-devel@lists.xensource.com>, <alex@alex.org.uk>,
-        <dcrisan@flexiant.com>, <linux-kernel@vger.kernel.org>
-Date: Thu, 25 Jul 2013 04:31:07 +0100
-In-Reply-To: <20130724145838.GM2518@phenom.dumpdata.com>
-References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
-	 <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
-	 <1374602409.6623.138.camel@hastur.hellion.org.uk>
-	 <20130723190521.GA7073@phenom.dumpdata.com>
-	 <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com>
-	 <20130724145838.GM2518@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-MIME-Version: 1.0
+	id S1754586Ab3GYDbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:31:55 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:50548 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753343Ab3GYDby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:31:54 -0400
+Message-ID: <1374723112.1924.41.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Fix networking kernel-doc block comment defect
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Darren Hart <dvhart@linux.intel.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Whitcroft <apw@canonical.com>
+Date: Wed, 24 Jul 2013 20:31:52 -0700
+In-Reply-To: <1374722064.3436.252.camel@dvhart-mobl1.amr.corp.intel.com>
+References: <b939bb41630693171771c108801c1c5f688ecabc.1374525261.git.dvhart@linux.intel.com>
+	 <cover.1374525261.git.dvhart@linux.intel.com>
+	 <79241b53ec4e638008ba3384958ef9901ad11338.1374525261.git.dvhart@linux.intel.com>
+	 <20130724.170008.924195436945641752.davem@davemloft.net>
+	 <1374711603.3436.246.camel@dvhart-mobl1.amr.corp.intel.com>
+	 <1374712895.1924.13.camel@joe-AO722>
+	 <1374721094.3436.249.camel@dvhart-mobl1.amr.corp.intel.com>
+	 <1374721731.1924.34.camel@joe-AO722>
+	 <1374722064.3436.252.camel@dvhart-mobl1.amr.corp.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 10:58 -0400, Konrad Rzeszutek Wilk wrote:
-> On Wed, Jul 24, 2013 at 12:05:05PM +0100, Stefano Stabellini wrote:
-> > On Tue, 23 Jul 2013, Konrad Rzeszutek Wilk wrote:
-> > > On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
-> > > > On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
-> > > > > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
-> > > > > +				    unsigned long action, void *hcpu)
-> > > > > +{
-> > > > > +	int cpu = (long)hcpu;
-> > > > > +	switch (action) {
-> > > > > +	case CPU_UP_PREPARE:
-> > > > > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
-> > > > > +			break;
-> > > > 
-> > > > Thinking about this a bit more -- do we know what happens to the per-cpu
-> > > > area for a CPU which is unplugged and then reintroduced? Is it preserved
-> > > > or is it reset?
-> > > > 
-> > > > If it is reset then this gets more complicated :-( We might be able to
-> > > > use the core mm page reference count, so that when the last reference is
-> > > > removed the page is automatically reclaimed. We can obviously take a
-> > > > reference whenever we add a mapping of the trade page, but I'm not sure
-> > > > we are always on the path which removes such mappings... Even then you
-> > > > could waste pages for some potentially large amount of time each time
-> > > > you replug a VCPU.
-> > > > 
-> > > > Urg, I really hope the per-cpu area is preserved!
-> > > 
-> > > It is. During bootup time you see this:
-> > > 
-> > > [    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
-> > > [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
-> > > 
-> > > which means that all of the per_CPU are shrunk down to 128 (from 
-> > > CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
-> > > 
-> > > You might have to clear it when the vCPU comes back up though - otherwise you
-> > > will have garbage.
-> > 
-> > I don't see anything in the hotplug code that would modify the value of
-> > the per_cpu area of offline cpus.
-> 
-> You might have never onlined the CPUs and the kernel is built with DEBUG options
-> which poison the page.
-> 
-> Anyhow, doing a memset seems like a prudent thing to do? Perhaps when
-> built with CONFG_DEBUG_XENFS you add poison values to it?
+checkpatch can generate a false positive when inserting
+a new kernel-doc block and function above an existing
+kernel-doc block.
 
-The point is that the patches need for the per-cpu areas to *not* be
-reinitialised over a vcpu unplug+plug, otherwise we will leak the
-original page when we allocate the new one on plug.
+Fix it by checking that the context line is also a newly
+inserted line.
 
-We can't just free the page on vcpu unplug because it might still be in
-use.
+Reported-by: Darren Hart <dvhart@linux.intel.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 1 +
+ 1 file changed, 1 insertion(+)
 
-Ian.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 23126d4..c18e1be 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2074,6 +2074,7 @@ sub process {
+ 		if ($realfile =~ m@^(drivers/net/|net/)@ &&
+ 		    $prevrawline =~ /^\+[ \t]*\/\*/ &&		#starting /*
+ 		    $prevrawline !~ /\*\/[ \t]*$/ &&		#no trailing */
++		    $rawline =~ /^\+/ &&			#line is new
+ 		    $rawline !~ /^\+[ \t]*\*/) {		#no leading *
+ 			WARN("NETWORKING_BLOCK_COMMENT_STYLE",
+ 			     "networking block comments start with * on subsequent lines\n" . $hereprev);
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
+
 
