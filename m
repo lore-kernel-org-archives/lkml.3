@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab3GYVIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:08:13 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:31622 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755292Ab3GYVIJ (ORCPT
+	id S1756316Ab3GYVJi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:09:38 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:49675 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754781Ab3GYVJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:08:09 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18w0w6J5eAGKJ05kyLPSErvhjPFZedQHh0=
-Date: Thu, 25 Jul 2013 17:07:55 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 2/2] ARM: orion5x: add missing mbus include
-Message-ID: <20130725210755.GZ23879@titan.lakedaemon.net>
-References: <1372762453-12018-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1372762453-12018-3-git-send-email-sebastian.hesselbarth@gmail.com>
- <20130725153856.GI23879@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130725153856.GI23879@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 25 Jul 2013 17:09:35 -0400
+Date: Thu, 25 Jul 2013 14:09:33 -0700 (PDT)
+Message-Id: <20130725.140933.1460349218585474906.davem@davemloft.net>
+To: sony.chacko@qlogic.com
+Cc: gregkh@linuxfoundation.org, rajesh.borundia@qlogic.com,
+        shahed.shaikh@qlogic.com, jitendra.kalsaria@qlogic.com,
+        Linux-Driver@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: qlcnic binary sysfs file abuse
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <0EA5B226BC5C7B45A71BF612AA8A019E355A3BD4@AVMB1.qlogic.org>
+References: <20130707002949.GA15822@kroah.com>
+	<0EA5B226BC5C7B45A71BF612AA8A019E355A3BD4@AVMB1.qlogic.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 25 Jul 2013 14:09:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:38:56AM -0400, Jason Cooper wrote:
-> On Tue, Jul 02, 2013 at 12:54:13PM +0200, Sebastian Hesselbarth wrote:
-> > edmini_v2-setup is missing an include of linux/mbus.h which causes
-> > compiler error because of missing reference to mvebu_mbus_add_window.
-> > 
-> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> > ---
-> > Cc: Russell King <linux@arm.linux.org.uk> 
-> > Cc: Jason Cooper <jason@lakedaemon.net>
-> > Cc: Andrew Lunn <andrew@lunn.ch>
-> > Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> > Cc: Gregory CLEMENT <gregory.clement@free-electrons.com> 
-> > Cc: devicetree-discuss@lists.ozlabs.org 
-> > Cc: linux-kernel@vger.kernel.org 
-> > Cc: linux-arm-kernel@lists.infradead.org 
-> > ---
-> >  arch/arm/mach-orion5x/edmini_v2-setup.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
+From: Sony Chacko <sony.chacko@qlogic.com>
+Date: Thu, 25 Jul 2013 19:37:46 +0000
+
+>> -----Original Message-----
+>> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+>> Sent: Saturday, July 06, 2013 5:30 PM
+>> To: Rajesh Borundia; Shahed Shaikh; Jitendra Kalsaria; Sony Chacko; Dept-Eng
+>> Linux Driver
+>> Cc: netdev; linux-kernel
+>> Subject: qlcnic binary sysfs file abuse
+>> 
+>> I was doing a kernel-wide audit on all of the binary sysfs files, and noticed a
+>> metric ton of them in the qlcnic driver.
+>> 
+>> So, any objection to me just deleting these entirely?  Or, if they really are
+>> needed, can I just move them to debugfs, which is where I think they should
+>> have been from the beginning?
 > 
-> Applied to mvebu/stable-3.10
+> Some applications are using these files, please move them to debugfs.
 
-nevermind, Olof caught that v3.10 builds fine without this patch (I
-should've checked).  The build error was introduced by
+This is quite a mess, and I've complained about all of the crazy
+files created by qlcnic in the past.
 
-  ARM: orion5x: remove legacy mv643xx_eth board setup
+debugfs is for things that do not create a ABI which the kernel has to
+maintain forever.
 
-which removed mv643xx_eth.h include, which had included the needed
-mbus.h.  This patch is queued for v3.12.
-
-I'll squash this patch into the above mentioned patch and call it a day.
-
-thx,
-
-Jason.
