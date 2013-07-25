@@ -1,54 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755244Ab3GYIIf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:08:35 -0400
-Received: from mail-ea0-f182.google.com ([209.85.215.182]:58692 "EHLO
-	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab3GYIIH (ORCPT
+	id S1755200Ab3GYIM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:12:27 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:37765 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3GYIMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:08:07 -0400
-Date: Thu, 25 Jul 2013 09:08:00 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
-Message-ID: <20130725080800.GC3403@laptop>
-References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
- <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
- <20130725080443.GB3403@laptop>
+	Thu, 25 Jul 2013 04:12:16 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
+Date: Thu, 25 Jul 2013 10:12:12 +0200
+Message-ID: <52875092.tEWeSbEJZC@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130725080443.GB3403@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > ---
-> >  drivers/mfd/Kconfig                  |   12 +
-> >  drivers/mfd/Makefile                 |    3 +
-> >  drivers/mfd/da9063-core.c            |  177 ++++++
-> >  drivers/mfd/da9063-i2c.c             |  197 ++++++
-> >  drivers/mfd/da9063-irq.c             |  193 ++++++
-> >  include/linux/mfd/da9063/core.h      |  110 ++++
-> >  include/linux/mfd/da9063/pdata.h     |  114 ++++
-> >  include/linux/mfd/da9063/registers.h | 1090 ++++++++++++++++++++++++++++++++++
-> >  8 files changed, 1896 insertions(+)
-> 
-> Whoah!! Who's going to want to review a 2k line patch?
-> 
-> Any chance you can split this stuff up into more 'bite sized' patches?
+Hi Stephen,
 
-You also missed Sam off the addressees list, which is not a good idea.
+On Wednesday 24 of July 2013 17:43:31 Stephen Boyd wrote:
+> In similar fashion as of_regulator_match() add an of_clk_match()
+> function that finds an initializes clock init_data structs from
+> devicetree. Drivers should use this API to find clocks that their
+> device is providing and then iterate over their match table
+> registering the clocks with the init data parsed.
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I think all you need here is declaring all your clock drivers using 
+CLK_OF_DECLARE() macro. Then they will be automatically probed by 
+of_clk_init(). See last lines of drivers/clk/clk-fixed-rate.c for an 
+example.
+
+Best regards,
+Tomasz
+
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  drivers/clk/clk.c            | 64
+> ++++++++++++++++++++++++++++++++++++++++++++
+> include/linux/clk-provider.h | 16 +++++++++++
+>  2 files changed, 80 insertions(+)
+> 
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index ea8e951b..1e3e0db 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2289,4 +2289,68 @@ err:
+>  	return -ENOMEM;
+>  }
+>  EXPORT_SYMBOL_GPL(of_init_clk_data);
+> +
+> +/**
+> + * of_clk_match() - Scan and match clock providers from the DT node of
+> a device + * @dev: device initializing clock providers
+> + * @matches: match table of clocks
+> + * @num_matches: number of entries in @matches
+> + *
+> + * This function uses a match table specified by the clock driver to
+> parse + * clock init data from the device tree. @dev is expected to be
+> a device with + * a 'clocks' child node containing a set of child
+> nodes, each providing the + * init data for one clock. The data parsed
+> from a child node will be matched + * to a clock based on the child
+> node's name. Note that the match table is + * modified in place.
+> + *
+> + * Returns the number of matches found or a negative error code on
+> failure. + */
+> +int of_clk_match(struct device *dev, struct of_clk_match *matches,
+> +		 int num_matches)
+> +{
+> +	int count = 0;
+> +	int err, i;
+> +	struct device_node *np, *clocks;
+> +	struct clk_init_data *init;
+> +
+> +	clocks = of_find_node_by_name(dev->of_node, "clocks");
+> +	if (!clocks)
+> +		return -EINVAL;
+> +
+> +	for (i = 0; i < num_matches; i++) {
+> +		struct of_clk_match *match = &matches[i];
+> +		match->init_data = NULL;
+> +		match->of_node = NULL;
+> +	}
+> +
+> +	for_each_available_child_of_node(clocks, np) {
+> +		for (i = 0; i < num_matches; i++) {
+> +			struct of_clk_match *match = &matches[i];
+> +			if (match->of_node)
+> +				continue;
+> +
+> +			if (strcmp(match->name, np->name))
+> +				continue;
+> +
+> +			init = devm_kzalloc(dev, sizeof(*init), 
+GFP_KERNEL);
+> +			if (!init)
+> +				return -ENOMEM;
+> +
+> +			err = of_init_clk_data(np, init);
+> +			if (err) {
+> +				dev_err(dev,
+> +					"failed to parse DT for clock 
+%s\n",
+> +					np->name);
+> +				return err;
+> +			}
+> +			match->of_node = np;
+> +			match->init_data = init;
+> +			count++;
+> +			break;
+> +		}
+> +	}
+> +
+> +	return count;
+> +}
+> +EXPORT_SYMBOL_GPL(of_clk_match);
+>  #endif
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 18d6362..484f8ad 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -461,6 +461,13 @@ struct clk_onecell_data {
+>  		__used __section(__clk_of_table)		\
+>  		= { .compatible = compat, .data = fn };
+> 
+> +struct of_clk_match {
+> +	const char *name;
+> +	void *driver_data;
+> +	struct clk_init_data *init_data;
+> +	struct device_node *of_node;
+> +};
+> +
+>  #ifdef CONFIG_OF
+>  int of_clk_add_provider(struct device_node *np,
+>  			struct clk *(*clk_src_get)(struct of_phandle_args 
+*args,
+> @@ -475,6 +482,9 @@ const char *of_clk_get_parent_name(struct
+> device_node *np, int index); void of_clk_init(const struct of_device_id
+> *matches);
+>  int of_init_clk_data(struct device_node *np, struct clk_init_data
+> *init);
+> 
+> +int of_clk_match(struct device *dev, struct of_clk_match *matches,
+> +		 int num_matches);
+> +
+>  #else /* !CONFIG_OF */
+> 
+>  static inline int of_clk_add_provider(struct device_node *np,
+> @@ -508,6 +518,12 @@ of_init_clk_data(struct device_node *np, struct
+> clk_init_data *init) {
+>  	return 0;
+>  }
+> +static inline int
+> +of_clk_match(struct device *dev, struct of_clk_match *matches, int
+> num_matches) +{
+> +
+> +	return 0;
+> +}
+>  #endif /* CONFIG_OF */
+>  #endif /* CONFIG_COMMON_CLK */
+>  #endif /* CLK_PROVIDER_H */
