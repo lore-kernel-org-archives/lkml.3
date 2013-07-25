@@ -1,197 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab3GYTSp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:18:45 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:40735 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756883Ab3GYTSo (ORCPT
+	id S1758036Ab3GYTT2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:19:28 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:33825 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674Ab3GYTTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:18:44 -0400
+	Thu, 25 Jul 2013 15:19:25 -0400
+Date: Thu, 25 Jul 2013 20:19:05 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20130725191905.GR9858@sirena.org.uk>
+References: <20130725111459.145a4aa4@armhf>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <86ppu6tsmu.fsf@miki.keithp.com>
-References: <1374544202-15496-1-git-send-email-keithp@keithp.com>
-	<1374544202-15496-5-git-send-email-keithp@keithp.com>
-	<20130723052856.GD5939@phenom.ffwll.local>
-	<86li4v3ds7.fsf@miki.keithp.com>
-	<20130724212308.GZ5939@phenom.ffwll.local>
-	<86siz3v2m7.fsf@miki.keithp.com>
-	<20130725074757.GE5939@phenom.ffwll.local>
-	<86ppu6tsmu.fsf@miki.keithp.com>
-Date: Thu, 25 Jul 2013 21:18:43 +0200
-X-Google-Sender-Auth: PVbkQIUvnEmRp4vSWFhezmZcnSg
-Message-ID: <CAKMK7uFiL+p48Phwc=jmWtsOgjNOYJzTCWmHe3Bp7-jWMpTtTA@mail.gmail.com>
-Subject: Re: [PATCH 4/5] drm/i915: Add async page flip support for IVB
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Keith Packard <keithp@keithp.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@redhat.com>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ljwjD4eUwP//fgul"
+Content-Disposition: inline
+In-Reply-To: <20130725111459.145a4aa4@armhf>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/4] ASoc: kirkwood: add DT support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 8:13 PM, Keith Packard <keithp@keithp.com> wrote:
-> Daniel Vetter <daniel@ffwll.ch> writes:
->
->> On Wed, Jul 24, 2013 at 06:40:16PM -0700, Keith Packard wrote:
->>> Daniel Vetter <daniel@ffwll.ch> writes:
->>>
->>> > We could just unconditionally increase the alignement in
->>> > intel_pin_and_fence_fb_obj - we already have more strict requirements due
->>> > to a bunch of w/a in other places. So shouldn't hurt at all really.
->>>
->>> That seems like a fine plan; 32kB isn't that onerous. Do you want the
->>> trivial patch to do this from me then?
->>
->> Yes please, merging patches from other people is much easier than begging for
->> review for my own ;-)
->> -Daniel
->
-> Here's a replacement for patch #4 that just adds the alignment
-> requirement there. Do you want any other changes in this series?
 
-Generally I think checking our current sw state instead of reading hw
-registers would be safer, e.g. in case we start to queue up more than
-one pageflip. For async pageflips in benchmark mode "flip as fast as
-you can queue" would be a sensible mode.
--Daniel
+--ljwjD4eUwP//fgul
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
-> From 9a51e7118fce58c835cabb192f6b6e0a4a5f6660 Mon Sep 17 00:00:00 2001
-> From: Keith Packard <keithp@keithp.com>
-> Date: Mon, 22 Jul 2013 18:12:28 -0700
-> Subject: [PATCH 4/5] drm/i915: Add async page flip support for IVB
->
-> This adds the necesary register defines for async page flipping
-> through the command ring, and then hooks those up for Ivybridge (gen7)
-> page flipping.
->
-> Signed-off-by: Keith Packard <keithp@keithp.com>
-> ---
->  drivers/gpu/drm/i915/i915_reg.h      |  6 +++++
->  drivers/gpu/drm/i915/intel_display.c | 46 ++++++++++++++++++++++++++++++++----
->  2 files changed, 48 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-> index dc3d6a7..029cfb0 100644
-> --- a/drivers/gpu/drm/i915/i915_reg.h
-> +++ b/drivers/gpu/drm/i915/i915_reg.h
-> @@ -209,6 +209,7 @@
->  #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
->  #define MI_DISPLAY_FLIP                MI_INSTR(0x14, 2)
->  #define MI_DISPLAY_FLIP_I915   MI_INSTR(0x14, 1)
-> +#define   MI_DISPLAY_FLIP_ASYNC_INDICATOR      (1 << 22)
->  #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
->  /* IVB has funny definitions for which plane to flip. */
->  #define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
-> @@ -217,6 +218,11 @@
->  #define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
->  #define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
->  #define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
-> +/* These go in the bottom of the base address value */
-> +#define   MI_DISPLAY_FLIP_TYPE_SYNC    (0 << 0)
-> +#define   MI_DISPLAY_FLIP_TYPE_ASYNC   (1 << 0)
-> +#define   MI_DISPLAY_FLIP_TYPE_STEREO  (2 << 0)
-> +#define   MI_DISPLAY_FLIP_TYPE_SYNCHRONOUS     (0 << 0)
->  #define MI_ARB_ON_OFF          MI_INSTR(0x08, 0)
->  #define   MI_ARB_ENABLE                        (1<<0)
->  #define   MI_ARB_DISABLE               (0<<0)
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index bdb8854..f2624a4 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -1833,8 +1833,10 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
->                         alignment = 64 * 1024;
->                 break;
->         case I915_TILING_X:
-> -               /* pin() will align the object as required by fence */
-> -               alignment = 0;
-> +               /* Async page flipping requires X tiling and 32kB alignment, so just
-> +                * make all X tiled frame buffers aligned for that
-> +                */
-> +               alignment = 32 * 1024;
->                 break;
->         case I915_TILING_Y:
->                 /* Despite that we check this in framebuffer_init userspace can
-> @@ -7514,6 +7516,8 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
->         struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
->         struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
->         uint32_t plane_bit = 0;
-> +       uint32_t cmd;
-> +       uint32_t base;
->         int ret;
->
->         ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
-> @@ -7536,13 +7540,43 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
->                 goto err_unpin;
->         }
->
-> +       cmd = MI_DISPLAY_FLIP_I915 | plane_bit;
-> +       base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
-> +
-> +       if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-> +
-> +               /* XXX check limitations for async flip here */
-> +
-> +               if (fb->pitches[0] != I915_READ(DSPSTRIDE(intel_crtc->plane))) {
-> +                       WARN_ONCE(1, "mismatching stride in async plane flip (%d != %d)\n",
-> +                                 fb->pitches[0], I915_READ(DSPSTRIDE(intel_crtc->plane)));
-> +                       ret = -EINVAL;
-> +                       goto err_unpin;
-> +               }
-> +
-> +               if (obj->tiling_mode != I915_TILING_X) {
-> +                       WARN_ONCE(1, "async plane flip requires X tiling\n");
-> +                       ret = -EINVAL;
-> +                       goto err_unpin;
-> +               }
-> +
-> +               if ((I915_READ(DSPCNTR(intel_crtc->plane)) & DISPPLANE_TILED) == 0) {
-> +                       WARN_ONCE(1, "display not currently tiled in async plane flip\n");
-> +                       ret = -EINVAL;
-> +                       goto err_unpin;
-> +               }
-> +
-> +               cmd |= MI_DISPLAY_FLIP_ASYNC_INDICATOR;
-> +               base |= MI_DISPLAY_FLIP_TYPE_ASYNC;
-> +       }
-> +
->         ret = intel_ring_begin(ring, 4);
->         if (ret)
->                 goto err_unpin;
->
-> -       intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
-> +       intel_ring_emit(ring, cmd);
->         intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
-> -       intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
-> +       intel_ring_emit(ring, base);
->         intel_ring_emit(ring, (MI_NOOP));
->
->         intel_mark_page_flip_active(intel_crtc);
-> @@ -9705,6 +9739,10 @@ void intel_modeset_init(struct drm_device *dev)
->                 dev->mode_config.max_width = 8192;
->                 dev->mode_config.max_height = 8192;
->         }
-> +
-> +       if (IS_GEN7(dev))
-> +               dev->mode_config.async_page_flip = true;
-> +
->         dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
->
->         DRM_DEBUG_KMS("%d display pipe%s available.\n",
-> --
-> 1.8.3.2
->
->
->
-> --
-> keith.packard@intel.com
+On Thu, Jul 25, 2013 at 11:14:59AM +0200, Jean-Francois Moine wrote:
 
+> +	if (np) {
+> +		priv->burst = 128;		/* might be 32 or 128 */
+> +	} else if (data) {
 
+When you posted this before I queried how and why the value might vary -
+I see the code is the same and I don't recall a reply.
 
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> -	priv->clk = devm_clk_get(&pdev->dev, NULL);
+> +	priv->clk = devm_clk_get(&pdev->dev, "internal");
+>  	if (IS_ERR(priv->clk)) {
+> -		dev_err(&pdev->dev, "no clock\n");
+> +		dev_err(&pdev->dev, "no internal clock\n");
+>  		return PTR_ERR(priv->clk);
+>  	}
+
+Does the code providing it already name the clock?  If not are updates
+needed to do that?
+
+> -	priv->extclk = clk_get(&pdev->dev, "extclk");
+> +	priv->extclk = clk_get(&pdev->dev, "external");
+
+Is the clock actually called extclk in the datasheet and so on?  If so
+it seems better to stick with that name.  Do any boards need updates for
+the new name?
+
+--ljwjD4eUwP//fgul
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8XolAAoJELSic+t+oim9V58P/1UNcnn+z1B+jlsAmpiBFQ09
+f70LNDBBcE99XhF5Bn6Kl1pgtuZhnS4JIGkM3MI8yay5/S6L7KXcgmZEhX1zgnWG
+pQf9nN94kGCHy7TExzTzFLXWGMa4MeT7DEczvsdMzJOQSQ24WRcXSoEacmjdresX
+Jkq50zMl11ozYR9PlAvlHPA88jqKBBTaLVMp9f681c9c0kwHAKEuqDL8x9L+zDkR
+Mwkg3+5XhqB+TbEFnQ2A+dXvglvtDiEQLtJXp04Ds0t+mfoJPKftfy7gAkJyKMr+
+6xalKd+iABVFnytHw/Sq6DI/bBXyYtRCi5+NlDQodaIohxTb+QD3nO1AYNmSfOcZ
+CgB692c8lsIMAv1jCdK2DYMnm59cgiE/xPNnTfNNrxDHJs8H8aMBF1DJQIb/7SbZ
+aGmYV31TylBQEgyYQIGR6gQIpwHW0c1bEAcWrr9KfG8WTTDGinlaCcdXnJR5nVtq
+7w4XbWCraXB9vU48YBYXyz21GcxKBRfe4EWoLp++OlllPJnFN9YuBhqZXi45p8dc
+rBt89L8oFXwteSRLXcoMNzV4aXt2m+MOPEb9YQJysF7dwMeG423c0tSeGLy8TNrj
+XVyp0lbCgbFFjwCGLfmJWGZ7Drzx0Ugrg3HrEIzCufw4KO2PZHh6cVuxb+K7VsF6
+wbsnADjmiNspjLUv7AGY
+=uKcT
+-----END PGP SIGNATURE-----
+
+--ljwjD4eUwP//fgul--
