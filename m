@@ -1,57 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab3GYP3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:29:53 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:64646 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489Ab3GYP3m convert rfc822-to-8bit (ORCPT
+	id S1756504Ab3GYPbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:31:22 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38502 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755609Ab3GYPbV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:29:42 -0400
+	Thu, 25 Jul 2013 11:31:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/5gE751kFtbHKfDKrDhHhDvuE3vX0ZN6Q=
+Date: Thu, 25 Jul 2013 11:31:04 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] ARM: remove dmacap,memset from Device tree binding
+Message-ID: <20130725153104.GH23879@titan.lakedaemon.net>
+References: <1372762453-12018-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1372762453-12018-2-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <51F14136.30409@mozilla.com>
-References: <1374699833.7083.2.camel@localhost>
-	<20130724233628.GD3641@logfs.org>
-	<51F14136.30409@mozilla.com>
-Date: Thu, 25 Jul 2013 16:29:41 +0100
-Message-ID: <CAB3wodfp88G62YGU1hB_P4SSj3CiV3MjY1-Jn5FDr_GJ2KtYHQ@mail.gmail.com>
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-From: Phillip Lougher <phillip.lougher@gmail.com>
-To: Dhaval Giani <dgiani@mozilla.com>
-Cc: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
-        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372762453-12018-2-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 16:16, Dhaval Giani <dgiani@mozilla.com> wrote:
-> On 07/24/2013 07:36 PM, Jörn Engel wrote:
+On Tue, Jul 02, 2013 at 12:54:12PM +0200, Sebastian Hesselbarth wrote:
+> DMA_MEMSET support has been removed, so update the device tree files
+> and corresponding binding documentation for Marvell SoCs.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk> 
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com> 
+> Cc: devicetree-discuss@lists.ozlabs.org 
+> Cc: linux-kernel@vger.kernel.org 
+> Cc: linux-arm-kernel@lists.infradead.org 
+> ---
+>  Documentation/devicetree/bindings/dma/mv-xor.txt |    2 --
+>  arch/arm/boot/dts/armada-370.dtsi                |    2 --
+>  arch/arm/boot/dts/armada-xp.dtsi                 |    2 --
+>  arch/arm/boot/dts/dove.dtsi                      |    2 --
+>  arch/arm/boot/dts/kirkwood.dtsi                  |    2 --
+>  arch/arm/boot/dts/orion5x.dtsi                   |    1 -
+>  6 files changed, 0 insertions(+), 11 deletions(-)
 
->
->> Assuming you use the chattr approach, that pretty much comes down to
->> adding compression support to ext4.  There have been old patches for
->> ext2 around that never got merged.  Reading up on the problems
->> encountered by those patches might be instructive.
->
->
-> Do you have subjects for these? When I googled for ext4 compression, I found
-> http://code.google.com/p/e4z/ which doesn't seem to exist, and checking in
-> my LKML archives gives too many false positives.
->
+Adding the new devicetree ml to the Cc:
 
-The ext2 compression project was called e2compr, http://e2compr.sourceforge.net/
+I'm fine with the changes to the dts{i} files, but I think the binding
+document should be handled differently.
 
-Also just google for "e2compr".
+thx,
 
-Phillip
+Jason.
 
-> Thanks!
-> Dhaval
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
->
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> diff --git a/Documentation/devicetree/bindings/dma/mv-xor.txt b/Documentation/devicetree/bindings/dma/mv-xor.txt
+> index 7c6cb7f..68f7004 100644
+> --- a/Documentation/devicetree/bindings/dma/mv-xor.txt
+> +++ b/Documentation/devicetree/bindings/dma/mv-xor.txt
+> @@ -14,7 +14,6 @@ properties:
+>  
+>  And the following optional properties:
+>  - dmacap,memcpy to indicate that the XOR channel is capable of memcpy operations
+> -- dmacap,memset to indicate that the XOR channel is capable of memset operations
+>  - dmacap,xor to indicate that the XOR channel is capable of xor operations
+>  
+>  Example:
+> @@ -35,6 +34,5 @@ xor@d0060900 {
+>  	      interrupts = <52>;
+>  	      dmacap,memcpy;
+>  	      dmacap,xor;
+> -	      dmacap,memset;
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/armada-370.dtsi b/arch/arm/boot/dts/armada-370.dtsi
+> index fa3dfc6..a315ad1 100644
+> --- a/arch/arm/boot/dts/armada-370.dtsi
+> +++ b/arch/arm/boot/dts/armada-370.dtsi
+> @@ -132,7 +132,6 @@
+>  					interrupts = <52>;
+>  					dmacap,memcpy;
+>  					dmacap,xor;
+> -					dmacap,memset;
+>  				};
+>  			};
+>  
+> @@ -151,7 +150,6 @@
+>  					interrupts = <95>;
+>  					dmacap,memcpy;
+>  					dmacap,xor;
+> -					dmacap,memset;
+>  				};
+>  			};
+>  
+> diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
+> index 416eb94..4b3dd56 100644
+> --- a/arch/arm/boot/dts/armada-xp.dtsi
+> +++ b/arch/arm/boot/dts/armada-xp.dtsi
+> @@ -114,7 +114,6 @@
+>  					interrupts = <52>;
+>  					dmacap,memcpy;
+>  					dmacap,xor;
+> -					dmacap,memset;
+>  				};
+>  			};
+>  
+> @@ -134,7 +133,6 @@
+>  					interrupts = <95>;
+>  					dmacap,memcpy;
+>  					dmacap,xor;
+> -					dmacap,memset;
+>  				};
+>  			};
+>  
+> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> index 6cab468..2cef34f 100644
+> --- a/arch/arm/boot/dts/dove.dtsi
+> +++ b/arch/arm/boot/dts/dove.dtsi
+> @@ -232,7 +232,6 @@
+>  
+>  			channel1 {
+>  				interrupts = <40>;
+> -				dmacap,memset;
+>  				dmacap,memcpy;
+>  				dmacap,xor;
+>  			};
+> @@ -253,7 +252,6 @@
+>  
+>  			channel1 {
+>  				interrupts = <43>;
+> -				dmacap,memset;
+>  				dmacap,memcpy;
+>  				dmacap,xor;
+>  			};
+> diff --git a/arch/arm/boot/dts/kirkwood.dtsi b/arch/arm/boot/dts/kirkwood.dtsi
+> index 9809fc1..078637c 100644
+> --- a/arch/arm/boot/dts/kirkwood.dtsi
+> +++ b/arch/arm/boot/dts/kirkwood.dtsi
+> @@ -126,7 +126,6 @@
+>  			      interrupts = <6>;
+>  			      dmacap,memcpy;
+>  			      dmacap,xor;
+> -			      dmacap,memset;
+>  			};
+>  		};
+>  
+> @@ -146,7 +145,6 @@
+>  			      interrupts = <8>;
+>  			      dmacap,memcpy;
+>  			      dmacap,xor;
+> -			      dmacap,memset;
+>  			};
+>  		};
+>  
+> diff --git a/arch/arm/boot/dts/orion5x.dtsi b/arch/arm/boot/dts/orion5x.dtsi
+> index 892c64e..f82ece7 100644
+> --- a/arch/arm/boot/dts/orion5x.dtsi
+> +++ b/arch/arm/boot/dts/orion5x.dtsi
+> @@ -120,7 +120,6 @@
+>  			      interrupts = <31>;
+>  			      dmacap,memcpy;
+>  			      dmacap,xor;
+> -			      dmacap,memset;
+>  			};
+>  		};
+>  
+> -- 
+> 1.7.2.5
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
