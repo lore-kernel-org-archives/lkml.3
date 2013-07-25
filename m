@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab3GYNPb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:15:31 -0400
+	id S1755995Ab3GYNPl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:15:41 -0400
 Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:44171 "EHLO
 	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755894Ab3GYNP1 (ORCPT
+	by vger.kernel.org with ESMTP id S1755925Ab3GYNPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:15:27 -0400
+	Thu, 25 Jul 2013 09:15:30 -0400
 From: Shuah Khan <shuah.kh@samsung.com>
 To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         aik@ozlabs.ru, joe@perches.com, rostedt@goodmis.org,
@@ -14,9 +14,9 @@ To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         ohad@wizery.com, andreas.herrmann@calxeda.com, will.deacon@arm.com
 Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: [PATCH 1/4] iommu: Add event tracing feature to iommu - Add iommu trace events
-Date: Thu, 25 Jul 2013 07:15:02 -0600
-Message-Id: <7b0b388ea2e8f1d245450a8ec34755f608618224.1374711464.git.shuah.kh@samsung.com>
+Subject: [PATCH 4/4] iommu: Add event tracing feature to iommu - iommu driver trace events
+Date: Thu, 25 Jul 2013 07:15:05 -0600
+Message-Id: <735116faffe67fea4de5496c5cd9ba16e5ca9d00.1374711464.git.shuah.kh@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
 References: <cover.1374711464.git.shuah.kh@samsung.com>
@@ -43,8 +43,8 @@ iommu:attach_device_to_domain
 iommu:detach_device_from_domain
 
 iommu_map_unmap class events can be enabled to trigger when iommu map and
-unmap iommu ops. Trace information includes iova, physical address (map event
-only), and size.
+unmap iommu ops complete. Trace information includes iova, physical address
+(map event only), and size.
 
 iommu:unmap
 iommu:map
@@ -59,190 +59,82 @@ iommu:amd_event
 
 Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- include/trace/events/iommu.h |  174 ++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 174 insertions(+)
- create mode 100644 include/trace/events/iommu.h
+ drivers/iommu/iommu.c |   17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/include/trace/events/iommu.h b/include/trace/events/iommu.h
-new file mode 100644
-index 0000000..3d8d5e8
---- /dev/null
-+++ b/include/trace/events/iommu.h
-@@ -0,0 +1,174 @@
-+/*
-+ * iommu trace points
-+ *
-+ * Copyright (C) 2013 Shuah Khan <shuah.kh@samsung.com>
-+ *
-+ */
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM iommu
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index fbe9ca7..8e77110 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -29,6 +29,7 @@
+ #include <linux/idr.h>
+ #include <linux/notifier.h>
+ #include <linux/err.h>
++#include <trace/events/iommu.h>
+ 
+ static struct kset *iommu_group_kset;
+ static struct ida iommu_group_ida;
+@@ -363,6 +364,8 @@ rename:
+ 	/* Notify any listeners about change to group. */
+ 	blocking_notifier_call_chain(&group->notifier,
+ 				     IOMMU_GROUP_NOTIFY_ADD_DEVICE, dev);
 +
-+#if !defined(_TRACE_IOMMU_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_IOMMU_H
++	trace_add_device_to_group(group->id, dev);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(iommu_group_add_device);
+@@ -399,6 +402,8 @@ void iommu_group_remove_device(struct device *dev)
+ 	sysfs_remove_link(group->devices_kobj, device->name);
+ 	sysfs_remove_link(&dev->kobj, "iommu_group");
+ 
++	trace_remove_device_from_group(group->id, dev);
 +
-+#include <linux/tracepoint.h>
-+#include <linux/pci.h>
+ 	kfree(device->name);
+ 	kfree(device);
+ 	dev->iommu_group = NULL;
+@@ -680,10 +685,16 @@ EXPORT_SYMBOL_GPL(iommu_domain_free);
+ 
+ int iommu_attach_device(struct iommu_domain *domain, struct device *dev)
+ {
++	int ret;
+ 	if (unlikely(domain->ops->attach_dev == NULL))
+ 		return -ENODEV;
+ 
+-	return domain->ops->attach_dev(domain, dev);
++	ret = domain->ops->attach_dev(domain, dev);
 +
-+struct device;
++	if (!ret)
++		trace_attach_device_to_domain(dev);
 +
-+DECLARE_EVENT_CLASS(iommu_group_event,
-+
-+	TP_PROTO(int group_id, struct device *dev),
-+
-+	TP_ARGS(group_id, dev),
-+
-+	TP_STRUCT__entry(
-+		__field(int, gid)
-+		__string(device, dev_name(dev))
-+	),
-+
-+	TP_fast_assign(
-+		__entry->gid = group_id;
-+		__assign_str(device, dev_name(dev));
-+	),
-+
-+	TP_printk("IOMMU: groupID=%d device=%s",
-+			__entry->gid, __get_str(device)
-+	)
-+);
-+
-+DEFINE_EVENT(iommu_group_event, add_device_to_group,
-+
-+	TP_PROTO(int group_id, struct device *dev),
-+
-+	TP_ARGS(group_id, dev)
-+
-+);
-+
-+DEFINE_EVENT(iommu_group_event, remove_device_from_group,
-+
-+	TP_PROTO(int group_id, struct device *dev),
-+
-+	TP_ARGS(group_id, dev)
-+);
-+
-+DECLARE_EVENT_CLASS(iommu_device_event,
-+
-+	TP_PROTO(struct device *dev),
-+
-+	TP_ARGS(dev),
-+
-+	TP_STRUCT__entry(
-+		__string(device, dev_name(dev))
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(device, dev_name(dev));
-+	),
-+
-+	TP_printk("IOMMU: device=%s", __get_str(device)
-+	)
-+);
-+
-+DEFINE_EVENT(iommu_device_event, attach_device_to_domain,
-+
-+	TP_PROTO(struct device *dev),
-+
-+	TP_ARGS(dev)
-+);
-+
-+DEFINE_EVENT(iommu_device_event, detach_device_from_domain,
-+
-+	TP_PROTO(struct device *dev),
-+
-+	TP_ARGS(dev)
-+);
-+
-+DECLARE_EVENT_CLASS(iommu_map_unmap,
-+
-+	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
-+
-+	TP_ARGS(iova, paddr, size),
-+
-+	TP_STRUCT__entry(
-+		__field(u64, iova)
-+		__field(u64, paddr)
-+		__field(int, size)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->iova = iova;
-+		__entry->paddr = paddr;
-+		__entry->size = size;
-+	),
-+
-+	TP_printk("IOMMU: iova=0x%016llx paddr=0x%016llx size=0x%x",
-+			__entry->iova, __entry->paddr, __entry->size
-+	)
-+);
-+
-+DEFINE_EVENT(iommu_map_unmap, map,
-+
-+	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
-+
-+	TP_ARGS(iova, paddr, size)
-+);
-+
-+DEFINE_EVENT_PRINT(iommu_map_unmap, unmap,
-+
-+	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
-+
-+	TP_ARGS(iova, paddr, size),
-+
-+	TP_printk("IOMMU: iova=0x%016llx size=0x%x",
-+			__entry->iova, __entry->size
-+	)
-+);
-+
-+DECLARE_EVENT_CLASS(iommu_amd_event,
-+
-+	TP_PROTO(char *event_str, int type, int domain_id, int device_id,
-+		 u64 address, int flags),
-+
-+	TP_ARGS(event_str, type, domain_id, device_id, address, flags),
-+
-+	TP_STRUCT__entry(
-+		__string(event_str, event_str)
-+		__field(int, type)
-+		__field(int, domain_id)
-+		__field(int, device_id)
-+		__field(u64, address)
-+		__field(int, flags)
-+	),
-+
-+	TP_fast_assign(
-+		__assign_str(event_str, event_str);
-+		__entry->type = type;
-+		__entry->domain_id = domain_id;
-+		__entry->device_id = device_id;
-+		__entry->address = address;
-+		__entry->flags = flags;
-+	),
-+
-+	TP_printk("IOMMU:%s 0x%02x %02x:%02x.%x d=0x%04x a=0x%016llx f=0x%04x",
-+			__get_str(event_str),
-+			__entry->type,
-+			PCI_BUS_NUM(__entry->device_id),
-+			PCI_SLOT(__entry->device_id),
-+			PCI_FUNC(__entry->device_id),
-+			__entry->domain_id,
-+			__entry->address, __entry->flags
-+	)
-+);
-+
-+DEFINE_EVENT(iommu_amd_event, amd_event,
-+
-+	TP_PROTO(char *event_str, int type, int domain_id, int device_id,
-+		 u64 address, int flags),
-+
-+	TP_ARGS(event_str, type, domain_id, device_id, address, flags)
-+);
-+
-+#endif /* _TRACE_IOMMU_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(iommu_attach_device);
+ 
+@@ -693,6 +704,7 @@ void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
+ 		return;
+ 
+ 	domain->ops->detach_dev(domain, dev);
++	trace_detach_device_from_domain(dev);
+ }
+ EXPORT_SYMBOL_GPL(iommu_detach_device);
+ 
+@@ -832,6 +844,8 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
+ 	/* unroll mapping in case something went wrong */
+ 	if (ret)
+ 		iommu_unmap(domain, orig_iova, orig_size - size);
++	else
++		trace_map(iova, paddr, size);
+ 
+ 	return ret;
+ }
+@@ -880,6 +894,7 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
+ 		unmapped += unmapped_page;
+ 	}
+ 
++	trace_unmap(iova, 0, size);
+ 	return unmapped;
+ }
+ EXPORT_SYMBOL_GPL(iommu_unmap);
 -- 
 1.7.10.4
 
