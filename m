@@ -1,290 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab3GYJGC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:06:02 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:55958 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755115Ab3GYJFl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:05:41 -0400
-Subject: [RFC PATCH 3/5] cpuidle/ppc: Add timer offload framework to support
- deep idle states
-To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
-        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
-        fweisbec@gmail.com, paulmck@linux.vnet.ibm.com, michael@ellerman.id.au,
-        arnd@arndb.de, linux-pm@vger.kernel.org, rostedt@goodmis.org,
-        rjw@sisk.pl, john.stultz@linaro.org, tglx@linutronix.de,
-        chenhui.zhao@freescale.com, deepthi@linux.vnet.ibm.com,
-        geoff@infradead.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 14:32:57 +0530
-Message-ID: <20130725090257.12500.44766.stgit@preeti.in.ibm.com>
-In-Reply-To: <20130725090016.12500.28888.stgit@preeti.in.ibm.com>
-References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.16-38-g167d
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072508-2000-0000-0000-00000D0775DE
+	id S1755245Ab3GYJGU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:06:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745Ab3GYJGN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 05:06:13 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, pbonzini@redhat.com
+Cc: kvm@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Doug Covelli <dcovelli@vmware.com>, Borislav Petkov <bp@suse.de>,
+        Dan Hecht <dhecht@vmware.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, devel@linuxdriverproject.org,
+        xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH V2 4/4] x86: correctly detect hypervisor
+Date: Thu, 25 Jul 2013 16:54:35 +0800
+Message-Id: <1374742475-2485-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
+References: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On ppc, in deep idle states, the lapic of the cpus gets switched off.
-Hence make use of the broadcast framework to wakeup cpus in sleep state,
-except that on ppc, we do not have an external device such as HPET, but
-we use the lapic of a cpu itself as the broadcast device.
+We try to handle the hypervisor compatibility mode by detecting hypervisor
+through a specific order. This is not robust, since hypervisors may implement
+each others features.
 
-Instantiate two different clock event devices, one representing the
-lapic and another representing the broadcast device for each cpu.
-Such a cpu is forbidden to enter the deep idle state. The cpu which hosts
-the broadcast device will be referred to as the broadcast cpu in the
-changelogs of this patchset for convenience.
+This patch tries to handle this situation by always choosing the last one in the
+CPUID leaves. This is done by letting .detect() returns a priority instead of
+true/false and just re-using the CPUID leaf where the signature were found as
+the priority (or 1 if it was found by DMI). Then we can just pick hypervisor who
+has the highest priority. Other sophisticated detection method could also be
+implemented on top.
 
-For now, only the boot cpu's broadcast device gets registered as a clock event
-device along with the lapic. Hence this is the broadcast cpu.
+Suggested by H. Peter Anvin and Paolo Bonzini.
 
-On the broadcast cpu, on each timer interrupt, apart from the regular lapic event
-handler the broadcast handler is also called. We avoid the overhead of
-programming the lapic for a broadcast event specifically. The reason is
-prevent multiple cpus from sending IPIs to program the lapic of the broadcast
-cpu for their next local event each time they go to deep idle state.
-
-Apart from this there is no change in the way broadcast is handled today. On
-a broadcast ipi the event handler for a timer interrupt is called on the cpu
-in deep idle state to handle the local events.
-
-The current design and implementation of the timer offload framework supports
-the ONESHOT tick mode but not the PERIODIC mode.
-
-Signed-off-by: Preeti U. Murthy <preeti@linux.vnet.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: K. Y. Srinivasan <kys@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Doug Covelli <dcovelli@vmware.com>
+Cc: Borislav Petkov <bp@suse.de>
+Cc: Dan Hecht <dhecht@vmware.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: devel@linuxdriverproject.org
+Cc: kvm@vger.kernel.org
+Cc: xen-devel@lists.xensource.com
+Cc: virtualization@lists.linux-foundation.org
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
+ arch/x86/include/asm/hypervisor.h |    2 +-
+ arch/x86/kernel/cpu/hypervisor.c  |   15 +++++++--------
+ arch/x86/kernel/cpu/mshyperv.c    |   13 ++++++++-----
+ arch/x86/kernel/cpu/vmware.c      |    8 ++++----
+ arch/x86/kernel/kvm.c             |    6 ++----
+ arch/x86/xen/enlighten.c          |    9 +++------
+ 6 files changed, 25 insertions(+), 28 deletions(-)
 
- arch/powerpc/include/asm/time.h        |    3 +
- arch/powerpc/kernel/smp.c              |    4 +-
- arch/powerpc/kernel/time.c             |   79 ++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/powernv/Kconfig |    1 
- 4 files changed, 84 insertions(+), 3 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/time.h b/arch/powerpc/include/asm/time.h
-index c1f2676..936be0d 100644
---- a/arch/powerpc/include/asm/time.h
-+++ b/arch/powerpc/include/asm/time.h
-@@ -24,14 +24,17 @@ extern unsigned long tb_ticks_per_jiffy;
- extern unsigned long tb_ticks_per_usec;
- extern unsigned long tb_ticks_per_sec;
- extern struct clock_event_device decrementer_clockevent;
-+extern struct clock_event_device broadcast_clockevent;
+diff --git a/arch/x86/include/asm/hypervisor.h b/arch/x86/include/asm/hypervisor.h
+index 2d4b5e6..e42f758 100644
+--- a/arch/x86/include/asm/hypervisor.h
++++ b/arch/x86/include/asm/hypervisor.h
+@@ -33,7 +33,7 @@ struct hypervisor_x86 {
+ 	const char	*name;
  
- struct rtc_time;
- extern void to_tm(int tim, struct rtc_time * tm);
- extern void GregorianDay(struct rtc_time *tm);
-+extern void decrementer_timer_interrupt(void);
+ 	/* Detection routine */
+-	bool		(*detect)(void);
++	uint32_t	(*detect)(void);
  
- extern void generic_calibrate_decr(void);
+ 	/* Adjust CPU feature bits (run once per CPU) */
+ 	void		(*set_cpu_features)(struct cpuinfo_x86 *);
+diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
+index 8727921..36ce402 100644
+--- a/arch/x86/kernel/cpu/hypervisor.c
++++ b/arch/x86/kernel/cpu/hypervisor.c
+@@ -25,11 +25,6 @@
+ #include <asm/processor.h>
+ #include <asm/hypervisor.h>
  
- extern void set_dec_cpu6(unsigned int val);
-+extern int bc_cpu;
- 
- /* Some sane defaults: 125 MHz timebase, 1GHz processor */
- extern unsigned long ppc_proc_freq;
-diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-index 6a68ca4..d3b7014 100644
---- a/arch/powerpc/kernel/smp.c
-+++ b/arch/powerpc/kernel/smp.c
-@@ -114,7 +114,7 @@ int smp_generic_kick_cpu(int nr)
- 
- static irqreturn_t timer_action(int irq, void *data)
+-/*
+- * Hypervisor detect order.  This is specified explicitly here because
+- * some hypervisors might implement compatibility modes for other
+- * hypervisors and therefore need to be detected in specific sequence.
+- */
+ static const __initconst struct hypervisor_x86 * const hypervisors[] =
  {
--	timer_interrupt();
-+	decrementer_timer_interrupt();
- 	return IRQ_HANDLED;
+ #ifdef CONFIG_XEN_PVHVM
+@@ -49,15 +44,19 @@ static inline void __init
+ detect_hypervisor_vendor(void)
+ {
+ 	const struct hypervisor_x86 *h, * const *p;
++	uint32_t pri, max_pri = 0;
+ 
+ 	for (p = hypervisors; p < hypervisors + ARRAY_SIZE(hypervisors); p++) {
+ 		h = *p;
+-		if (h->detect()) {
++		pri = h->detect();
++		if (pri != 0 && pri > max_pri) {
++			max_pri = pri;
+ 			x86_hyper = h;
+-			printk(KERN_INFO "Hypervisor detected: %s\n", h->name);
+-			break;
+ 		}
+ 	}
++
++	if (max_pri)
++		printk(KERN_INFO "Hypervisor detected: %s\n", x86_hyper->name);
  }
  
-@@ -223,7 +223,7 @@ irqreturn_t smp_ipi_demux(void)
+ void init_hypervisor(struct cpuinfo_x86 *c)
+diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
+index 8f4be53..71a39f3 100644
+--- a/arch/x86/kernel/cpu/mshyperv.c
++++ b/arch/x86/kernel/cpu/mshyperv.c
+@@ -27,20 +27,23 @@
+ struct ms_hyperv_info ms_hyperv;
+ EXPORT_SYMBOL_GPL(ms_hyperv);
  
- #ifdef __BIG_ENDIAN
- 		if (all & (1 << (24 - 8 * PPC_MSG_TIMER)))
--			timer_interrupt();
-+			decrementer_timer_interrupt();
- 		if (all & (1 << (24 - 8 * PPC_MSG_RESCHEDULE)))
- 			scheduler_ipi();
- 		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNC_SINGLE)))
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 65ab9e9..8ed0fb3 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -42,6 +42,7 @@
- #include <linux/timex.h>
- #include <linux/kernel_stat.h>
- #include <linux/time.h>
-+#include <linux/timer.h>
- #include <linux/init.h>
- #include <linux/profile.h>
- #include <linux/cpu.h>
-@@ -97,8 +98,11 @@ static struct clocksource clocksource_timebase = {
+-static bool __init ms_hyperv_platform(void)
++static uint32_t  __init ms_hyperv_platform(void)
+ {
+ 	u32 eax;
+ 	u32 hyp_signature[3];
  
- static int decrementer_set_next_event(unsigned long evt,
- 				      struct clock_event_device *dev);
-+static int broadcast_set_next_event(unsigned long evt,
-+				      struct clock_event_device *dev);
- static void decrementer_set_mode(enum clock_event_mode mode,
- 				 struct clock_event_device *dev);
-+static void decrementer_timer_broadcast(const struct cpumask *mask);
+ 	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
+-		return false;
++		return 0;
  
- struct clock_event_device decrementer_clockevent = {
- 	.name           = "decrementer",
-@@ -106,13 +110,26 @@ struct clock_event_device decrementer_clockevent = {
- 	.irq            = 0,
- 	.set_next_event = decrementer_set_next_event,
- 	.set_mode       = decrementer_set_mode,
--	.features       = CLOCK_EVT_FEAT_ONESHOT,
-+	.broadcast	= decrementer_timer_broadcast,
-+	.features       = CLOCK_EVT_FEAT_C3STOP | CLOCK_EVT_FEAT_ONESHOT,
- };
- EXPORT_SYMBOL(decrementer_clockevent);
+ 	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
+ 	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
  
-+struct clock_event_device broadcast_clockevent = {
-+	.name           = "broadcast",
-+	.rating         = 200,
-+	.irq            = 0,
-+	.set_next_event = broadcast_set_next_event,
-+	.set_mode       = decrementer_set_mode,
-+	.features       = CLOCK_EVT_FEAT_ONESHOT,
-+};
-+EXPORT_SYMBOL(broadcast_clockevent);
+-	return eax >= HYPERV_CPUID_MIN &&
+-		eax <= HYPERV_CPUID_MAX &&
+-		!memcmp("Microsoft Hv", hyp_signature, 12);
++	if (eax >= HYPERV_CPUID_MIN &&
++	    eax <= HYPERV_CPUID_MAX &&
++	    !memcmp("Microsoft Hv", hyp_signature, 12))
++		return HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS;
 +
- DEFINE_PER_CPU(u64, decrementers_next_tb);
- static DEFINE_PER_CPU(struct clock_event_device, decrementers);
-+static DEFINE_PER_CPU(struct clock_event_device, bc_timer);
- 
-+int bc_cpu;
- #define XSEC_PER_SEC (1024*1024)
- 
- #ifdef CONFIG_PPC64
-@@ -487,6 +504,8 @@ void timer_interrupt(struct pt_regs * regs)
- 	struct pt_regs *old_regs;
- 	u64 *next_tb = &__get_cpu_var(decrementers_next_tb);
- 	struct clock_event_device *evt = &__get_cpu_var(decrementers);
-+	struct clock_event_device *bc_evt = &__get_cpu_var(bc_timer);
-+	int cpu = smp_processor_id();
- 	u64 now;
- 
- 	/* Ensure a positive value is written to the decrementer, or else
-@@ -532,6 +551,10 @@ void timer_interrupt(struct pt_regs * regs)
- 		*next_tb = ~(u64)0;
- 		if (evt->event_handler)
- 			evt->event_handler(evt);
-+		if (cpu == bc_cpu && bc_evt->event_handler) {
-+			bc_evt->event_handler(bc_evt);
-+		}
-+
- 	} else {
- 		now = *next_tb - now;
- 		if (now <= DECREMENTER_MAX)
-@@ -806,6 +829,18 @@ static int decrementer_set_next_event(unsigned long evt,
- 	return 0;
- }
- 
-+/*
-+ * We cannot program the decrementer of a remote CPU. Hence CPUs going into
-+ * deep idle states need to send IPIs to the broadcast CPU to program its
-+ * decrementer for their next local event so as to receive a broadcast IPI
-+ * for the same. In order to avoid this overhead, this function is a nop.
-+ */
-+static int broadcast_set_next_event(unsigned long evt,
-+					struct clock_event_device *dev)
-+{
 +	return 0;
-+}
-+
- static void decrementer_set_mode(enum clock_event_mode mode,
- 				 struct clock_event_device *dev)
- {
-@@ -813,6 +848,20 @@ static void decrementer_set_mode(enum clock_event_mode mode,
- 		decrementer_set_next_event(DECREMENTER_MAX, dev);
  }
  
-+void decrementer_timer_interrupt(void)
-+{
-+	struct clock_event_device *evt;
-+	evt = &per_cpu(decrementers, smp_processor_id());
-+
-+	if (evt->event_handler)
-+		evt->event_handler(evt);
-+}
-+
-+static void decrementer_timer_broadcast(const struct cpumask *mask)
-+{
-+	arch_send_tick_broadcast(mask);
-+}
-+
- static void register_decrementer_clockevent(int cpu)
+ static cycle_t read_hv_clock(struct clocksource *arg)
+diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
+index 7076878..628a059 100644
+--- a/arch/x86/kernel/cpu/vmware.c
++++ b/arch/x86/kernel/cpu/vmware.c
+@@ -93,7 +93,7 @@ static void __init vmware_platform_setup(void)
+  * serial key should be enough, as this will always have a VMware
+  * specific string when running under VMware hypervisor.
+  */
+-static bool __init vmware_platform(void)
++static uint32_t __init vmware_platform(void)
  {
- 	struct clock_event_device *dec = &per_cpu(decrementers, cpu);
-@@ -826,6 +875,20 @@ static void register_decrementer_clockevent(int cpu)
- 	clockevents_register_device(dec);
+ 	if (cpu_has_hypervisor) {
+ 		unsigned int eax;
+@@ -102,12 +102,12 @@ static bool __init vmware_platform(void)
+ 		cpuid(CPUID_VMWARE_INFO_LEAF, &eax, &hyper_vendor_id[0],
+ 		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
+ 		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
+-			return true;
++			return CPUID_VMWARE_INFO_LEAF;
+ 	} else if (dmi_available && dmi_name_in_serial("VMware") &&
+ 		   __vmware_platform())
+-		return true;
++		return 1;
+ 
+-	return false;
++	return 0;
  }
  
-+static void register_broadcast_clockevent(int cpu)
-+{
-+	struct clock_event_device *bc_evt = &per_cpu(bc_timer, cpu);
-+
-+	*bc_evt = broadcast_clockevent;
-+	bc_evt->cpumask = cpumask_of(cpu);
-+
-+	printk_once(KERN_DEBUG "clockevent: %s mult[%x] shift[%d] cpu[%d]\n",
-+		    bc_evt->name, bc_evt->mult, bc_evt->shift, cpu);
-+
-+	clockevents_register_device(bc_evt);
-+	bc_cpu = cpu;
-+}
-+
- static void __init init_decrementer_clockevent(void)
- {
- 	int cpu = smp_processor_id();
-@@ -840,6 +903,19 @@ static void __init init_decrementer_clockevent(void)
- 	register_decrementer_clockevent(cpu);
+ /*
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index a96d32c..7817afd 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -498,11 +498,9 @@ void __init kvm_guest_init(void)
+ #endif
  }
  
-+static void __init init_broadcast_clockevent(void)
-+{
-+	int cpu = smp_processor_id();
-+
-+	clockevents_calc_mult_shift(&broadcast_clockevent, ppc_tb_freq, 4);
-+
-+	broadcast_clockevent.max_delta_ns =
-+		clockevent_delta2ns(DECREMENTER_MAX, &broadcast_clockevent);
-+	broadcast_clockevent.min_delta_ns =
-+		clockevent_delta2ns(2, &broadcast_clockevent);
-+	register_broadcast_clockevent(cpu);
-+}
-+
- void secondary_cpu_time_init(void)
+-static bool __init kvm_detect(void)
++static uint32_t __init kvm_detect(void)
  {
- 	/* Start the decrementer on CPUs that have manual control
-@@ -916,6 +992,7 @@ void __init time_init(void)
- 	clocksource_init();
- 
- 	init_decrementer_clockevent();
-+	init_broadcast_clockevent();
+-	if (!kvm_para_available())
+-		return false;
+-	return true;
++	return kvm_cpuid_base();
  }
  
+ const struct hypervisor_x86 x86_hyper_kvm __refconst = {
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 193097e..2fcaedc 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1720,15 +1720,12 @@ static void __init xen_hvm_guest_init(void)
+ 	xen_hvm_init_mmu_ops();
+ }
  
-diff --git a/arch/powerpc/platforms/powernv/Kconfig b/arch/powerpc/platforms/powernv/Kconfig
-index ace2d22..e1a96eb 100644
---- a/arch/powerpc/platforms/powernv/Kconfig
-+++ b/arch/powerpc/platforms/powernv/Kconfig
-@@ -6,6 +6,7 @@ config PPC_POWERNV
- 	select PPC_ICP_NATIVE
- 	select PPC_P7_NAP
- 	select PPC_PCI_CHOICE if EMBEDDED
-+	select GENERIC_CLOCKEVENTS_BROADCAST
- 	select EPAPR_BOOT
- 	default y
+-static bool __init xen_hvm_platform(void)
++static uint32_t __init xen_hvm_platform(void)
+ {
+ 	if (xen_pv_domain())
+-		return false;
+-
+-	if (!xen_cpuid_base())
+-		return false;
++		return 0;
  
+-	return true;
++	return xen_cpuid_base();
+ }
+ 
+ bool xen_hvm_need_lapic(void)
+-- 
+1.7.1
 
