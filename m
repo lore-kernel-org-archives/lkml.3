@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab3GYPbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:31:32 -0400
-Received: from mail-yh0-f52.google.com ([209.85.213.52]:49206 "EHLO
-	mail-yh0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3GYPb1 (ORCPT
+	id S1756587Ab3GYPbs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:31:48 -0400
+Received: from smtp-out-039.synserver.de ([212.40.185.39]:1045 "EHLO
+	smtp-out-037.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755892Ab3GYPbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:31:27 -0400
-Date: Thu, 25 Jul 2013 11:31:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: clear workers of a pool after the CPU is
- offline
-Message-ID: <20130725153121.GF26107@mtj.dyndns.org>
-References: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com>
+	Thu, 25 Jul 2013 11:31:45 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 13346
+Message-ID: <51F14513.5030200@metafoo.de>
+Date: Thu, 25 Jul 2013 17:32:35 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH 15/16] dmaengine: add transfered member to dma_async_tx_descriptor
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-16-git-send-email-bigeasy@linutronix.de> <51F13CEB.7030408@metafoo.de> <51F1404B.7070207@linutronix.de>
+In-Reply-To: <51F1404B.7070207@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
-
-On Thu, Jul 25, 2013 at 06:52:02PM +0800, Lai Jiangshan wrote:
-> The unbound pools and their workers can be destroyed/cleared
-> when their refcnt become zero. But the cpu pool can't be destroyed
-> due to they are always referenced, their refcnt are always > 0.
+On 07/25/2013 05:12 PM, Sebastian Andrzej Siewior wrote:
+> On 07/25/2013 04:57 PM, Lars-Peter Clausen wrote:
+>> I'm not sure that this will work. Once you've submitted the descriptor it is
+>> owned by the dmaengine driver and you are not allowed to dereference it
+>> anymore since the dmaengine driver might free the memory at any time. You
+>> should only reference the descriptor by the cookie returned by submit().
 > 
-> We don't want to destroy the cpu pools, but we want to destroy
-> the workers of the pool when the pool is full idle after the cpu
-> is offline. This is the default behavior in old days until
-> we removed the trustee_thread().
-> 
-> We need to find a new way to restore this behavior,
-> We add offline_pool() and POOL_OFFLINE flag to do so.
+> I see. But it can't be reused before calling the callback if it is
+> going to call the callback, right?
+> So if this is a no-no, I'm left with an additional argument to the
+> complete callback?
 
-Hmmm... if I'm not confused, now the cpu pools just behave like a
-normal unbound pool when the cpu goes down, which means that the idle
-cpu workers will exit once idle timeout is reached, right?  I really
-don't think it'd be worthwhile to add extra logic to accelerate the
-process.
+Hm, maybe using dmaengine_tx_status() and checking the residue field of the
+state struct. transferred is basically len - residue.
 
-Note that there actually are benefits to doing it asynchronously as
-CPUs go up and down very frequently on mobile platforms and destroying
-idle workers as soon as possible would just mean that we'd be doing a
-lot of work which isn't necessary.  I mean, we even grew an explicit
-mechanism to park kthreads to avoid repeatedly creating and destroying
-per-cpu kthreads as cpus go up and down.  I don't see any point in
-adding code to go the other direction.
-
-Thanks.
-
--- 
-tejun
