@@ -1,69 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab3GYWC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 18:02:27 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:53288 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab3GYWCY (ORCPT
+	id S1756533Ab3GYWFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 18:05:11 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:41977 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab3GYWFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 18:02:24 -0400
-Message-ID: <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Alexander Gordeev <agordeev@redhat.com>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <axboe@kernel.dk>, Mike Christie <michaelc@cs.wisc.edu>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Thu, 25 Jul 2013 15:08:02 -0700
-In-Reply-To: <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
-References: <51E83E32.9050306@cs.wisc.edu>
-	 <1374193399.7397.973.camel@haakon3.risingtidesystems.com>
-	 <20130719003034.GG28005@kernel.dk>
-	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
-	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
-	 <1374248000.2266.20.camel@dabdike>
-	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
-	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
-	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
-	 <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
-	 <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Jul 2013 18:05:08 -0400
+Date: Fri, 26 Jul 2013 00:05:02 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH, re-send] Always trap on BUG()
+Message-ID: <20130725220502.GI18254@gmail.com>
+References: <201307051738.35930.arnd@arndb.de>
+ <20130715151612.9499c2b2ad40e88d183a4600@linux-foundation.org>
+ <20130715222755.GY24642@n2100.arm.linux.org.uk>
+ <51E47924.9030005@zytor.com>
+ <20130723093628.GC19786@gmail.com>
+ <51EF1936.7090801@asianux.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51EF1936.7090801@asianux.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 12:16 +0200, Alexander Gordeev wrote:
-> On Mon, Jul 22, 2013 at 02:10:36PM -0700, Nicholas A. Bellinger wrote:
-> > Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
-> > target-pending/scsi-mq, which now has functioning scsi-generic support.
+* Chen Gang <gang.chen@asianux.com> wrote:
+
+> On 07/23/2013 05:36 PM, Ingo Molnar wrote:
+> > 
+> > (the crazies can keep a separate patch to remove even more of BUG() to win 
+> > a K or two.)
+> > 
 > 
-> Survives a boot, a kernel build and the build's result :)
+> Excuse me, my English is not quite well, I do not quite understand your
+> meaning, could you please repeat again in details or say more clearly ?
 
-Great.  Thanks for the feedback Alexander!
+I meant: those people who'd like to have the tiny 
+additional space savings offered by !CONFIG_BUG (and are 
+crazy enough to live with non-determinism in exchange for a 
+measly payment of 1 KB), can apply a separate, out of tree 
+patch just fine and don't need upstream kernel support.
 
-So the next step on my end is to enable -mq for ahci, and verify initial
-correctness using QEMU/KVM hardware emulation.
+Thanks,
 
-Btw, I've been looking at enabling the SHT->cmd_size for struct
-ata_queued_cmd descriptor pre-allocation, but AFAICT these descriptors
-are already all pre-allocated by libata and obtained via ata_qc_new() ->
-__ata_qc_from_tag() during ata_scsi_queuecmd().
-
-So that said, with the struct request + struct scsi_cmnd pre-allocations
-already provided by blk-mq -> scsi-mq code, all memory allocations
-should have already been eliminated from I/O fast path.
-
---nab
-
-
-
-
-
-
-
-
+	Ingo
