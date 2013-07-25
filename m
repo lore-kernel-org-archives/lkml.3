@@ -1,153 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab3GYPln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:41:43 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40045 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756423Ab3GYPll (ORCPT
+	id S1756596Ab3GYPnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:43:41 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:34887 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756456Ab3GYPnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:41:41 -0400
-From: Zach Levis <zml@linux.vnet.ibm.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, Zach Levis <zml@linux.vnet.ibm.com>,
-        Zach Levis <zach@zachsthings.com>
-Subject: [PATCH 1/3] fs/binfmts: Add a name field to the binfmt struct
-Date: Thu, 25 Jul 2013 08:40:43 -0700
-Message-Id: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072515-4834-0000-0000-000009636DCD
+	Thu, 25 Jul 2013 11:43:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <51ED6486.3080700@broadcom.com>
+References: <1374490361-25769-1-git-send-email-lee.jones@linaro.org>
+	<1374490361-25769-5-git-send-email-lee.jones@linaro.org>
+	<51ED2D90.4020209@broadcom.com>
+	<20130722133852.GA26801@laptop>
+	<51ED3971.905@broadcom.com>
+	<51ED6486.3080700@broadcom.com>
+Date: Thu, 25 Jul 2013 08:43:38 -0700
+Message-ID: <CAAYSxhrf+WNz1+ojA1r_pOLWg4xf9Ko8OyUc4GfVEMUN776pfA@mail.gmail.com>
+Subject: Re: [PATCH 05/22] ARM: dts: bcm281xx: Remove '0x's from BCM11351 BRT
+ DTS file
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Christian Daudt <csd@broadcom.com>
+Cc: Arend van Spriel <arend@broadcom.com>, linus.walleij@stericsson.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding the name field helps when printing error messages referring to
-specific binfmts
+On Mon, Jul 22, 2013 at 9:57 AM, Christian Daudt <csd@broadcom.com> wrote:
 
-Signed-off-by: Zach Levis <zach@zachsthings.com>
-Signed-off-by: Zach Levis <zml@linux.vnet.ibm.com>
----
- fs/binfmt_aout.c        |    1 +
- fs/binfmt_elf.c         |    1 +
- fs/binfmt_elf_fdpic.c   |    1 +
- fs/binfmt_em86.c        |    1 +
- fs/binfmt_flat.c        |    1 +
- fs/binfmt_misc.c        |    1 +
- fs/binfmt_script.c      |    1 +
- fs/binfmt_som.c         |    1 +
- include/linux/binfmts.h |    1 +
- 9 files changed, 9 insertions(+), 0 deletions(-)
+> it'd be nice to have something to point
+> people to as this being the best practice for kernel dev.
 
-diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
-index bce8769..f6bed04 100644
---- a/fs/binfmt_aout.c
-+++ b/fs/binfmt_aout.c
-@@ -115,6 +115,7 @@ end_coredump:
- #endif
- 
- static struct linux_binfmt aout_format = {
-+	.name		= "a.out",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_aout_binary,
- 	.load_shlib	= load_aout_library,
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index f8a0b0e..2533969 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -75,6 +75,7 @@ static int elf_core_dump(struct coredump_params *cprm);
- #define ELF_PAGEALIGN(_v) (((_v) + ELF_MIN_ALIGN - 1) & ~(ELF_MIN_ALIGN - 1))
- 
- static struct linux_binfmt elf_format = {
-+	.name		= "elf",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_elf_binary,
- 	.load_shlib	= load_elf_library,
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index c166f32..6be4448 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -81,6 +81,7 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm);
- #endif
- 
- static struct linux_binfmt elf_fdpic_format = {
-+	.name		= "FDPIC ELF",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_elf_fdpic_binary,
- #ifdef CONFIG_ELF_CORE
-diff --git a/fs/binfmt_em86.c b/fs/binfmt_em86.c
-index 037a3e2..8404cdd 100644
---- a/fs/binfmt_em86.c
-+++ b/fs/binfmt_em86.c
-@@ -93,6 +93,7 @@ static int load_em86(struct linux_binprm *bprm)
- }
- 
- static struct linux_binfmt em86_format = {
-+	.name		= "em86",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_em86,
- };
-diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
-index d50bbe5..a7641e1 100644
---- a/fs/binfmt_flat.c
-+++ b/fs/binfmt_flat.c
-@@ -92,6 +92,7 @@ static int load_flat_binary(struct linux_binprm *);
- static int flat_core_dump(struct coredump_params *cprm);
- 
- static struct linux_binfmt flat_format = {
-+	.name		= "flat",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_flat_binary,
- 	.core_dump	= flat_core_dump,
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 1c740e1..d74afc0 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -694,6 +694,7 @@ static struct dentry *bm_mount(struct file_system_type *fs_type,
- }
- 
- static struct linux_binfmt misc_format = {
-+	.name	= "misc",
- 	.module = THIS_MODULE,
- 	.load_binary = load_misc_binary,
- };
-diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
-index 5027a3e..53f3c17 100644
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -99,6 +99,7 @@ static int load_script(struct linux_binprm *bprm)
- }
- 
- static struct linux_binfmt script_format = {
-+	.name		= "script",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_script,
- };
-diff --git a/fs/binfmt_som.c b/fs/binfmt_som.c
-index 4e00ed6..1c3ccc5 100644
---- a/fs/binfmt_som.c
-+++ b/fs/binfmt_som.c
-@@ -53,6 +53,7 @@ static int som_core_dump(struct coredump_params *cprm);
- #define SOM_PAGEALIGN(_v) (((_v) + SOM_PAGESIZE - 1) & ~(SOM_PAGESIZE - 1))
- 
- static struct linux_binfmt som_format = {
-+	.name		= "SOM",
- 	.module		= THIS_MODULE,
- 	.load_binary	= load_som_binary,
- 	.load_shlib	= load_som_library,
-diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
-index 70cf138..402a74a 100644
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -70,6 +70,7 @@ struct coredump_params {
- struct linux_binfmt {
- 	struct list_head lh;
- 	struct module *module;
-+	const char *name;
- 	int (*load_binary)(struct linux_binprm *);
- 	int (*load_shlib)(struct file *);
- 	int (*core_dump)(struct coredump_params *cprm);
--- 
-1.7.1
+Power.org's ePAPR exclusively omits the 0x in the unit-address of node names.
 
+https://www.power.org/wp-content/uploads/2012/06/Power_ePAPR_APPROVED_v1.1.pdf
