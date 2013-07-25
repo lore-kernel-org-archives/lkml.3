@@ -1,174 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3GYNmb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:42:31 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:51509 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755417Ab3GYNm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:42:28 -0400
-Date: Thu, 25 Jul 2013 08:42:27 -0500
-From: Robin Holt <holt@sgi.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Robin Holt <holt@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
-Message-ID: <20130725134227.GT3421@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
- <1373594635-131067-5-git-send-email-holt@sgi.com>
- <CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
- <20130725022543.GR3421@sgi.com>
- <CAE9FiQV7Va8iAESoXsPCFJo8-jeA=-7SW2b9BmKnUrVonLV1=g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQV7Va8iAESoXsPCFJo8-jeA=-7SW2b9BmKnUrVonLV1=g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756118Ab3GYNnP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:43:15 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:40818 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755417Ab3GYNnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:43:13 -0400
+Message-ID: <1374759740.1956.30.camel@iivanov-dev.int.mm-sol.com>
+Subject: Re: [PATCH v2 2/7] usb: phy: msm: Migrate to Managed Device
+ Resource allocation
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Thu, 25 Jul 2013 16:42:20 +0300
+In-Reply-To: <20130724123822.GH17962@radagast>
+References: <1373384833-18077-1-git-send-email-iivanov@mm-sol.com>
+	 <1373384833-18077-3-git-send-email-iivanov@mm-sol.com>
+	 <20130724123822.GH17962@radagast>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 05:50:57AM -0700, Yinghai Lu wrote:
-> On Wed, Jul 24, 2013 at 7:25 PM, Robin Holt <holt@sgi.com> wrote:
-> >>
-> >> How about holes that is not in memblock.reserved?
-> >>
-> >> before this patch:
-> >> free_area_init_node/free_area_init_core/memmap_init_zone
-> >> will mark all page in node range to Reserved in struct page, at first.
-> >>
-> >> but those holes is not mapped via kernel low mapping.
-> >> so it should be ok not touch "struct page" for them.
-> >>
-> >> Now you only mark reserved for memblock.reserved at first, and later
-> >> mark {memblock.memory} - { memblock.reserved} to be available.
-> >> And that is ok.
-> >>
-> >> but should split that change to another patch and add some comment
-> >> and change log for the change.
-> >> in case there is some user like UEFI etc do weird thing.
-> >
-> > Nate and I talked this over today.  Sorry for the delay, but it was the
-> > first time we were both free.  Neither of us quite understands what you
-> > are asking for here.  My interpretation is that you would like us to
-> > change the use of the PageReserved flag such that during boot, we do not
-> > set the flag at all from memmap_init_zone, and then only set it on pages
-> > which, at the time of free_all_bootmem, have been allocated/reserved in
-> > the memblock allocator.  Is that correct?  I will start to work that up
-> > on the assumption that is what you are asking for.
+
+Hi, 
+
+On Wed, 2013-07-24 at 15:38 +0300, Felipe Balbi wrote:
+> Hi,
 > 
-> Not exactly.
+> On Tue, Jul 09, 2013 at 06:47:08PM +0300, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > 
+> > Use managed device resources to clean up the probe/remove
+> > and get DT support for free.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  drivers/usb/phy/phy-msm-usb.c |   78 +++++++++++------------------------------
+> >  1 file changed, 20 insertions(+), 58 deletions(-)
+> > 
+> > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> > index ab1b880..cc37f5e 100644
+> > --- a/drivers/usb/phy/phy-msm-usb.c
+> > +++ b/drivers/usb/phy/phy-msm-usb.c
+> > @@ -1458,30 +1455,27 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+> >  	 * clock is introduced to remove the dependency on AXI
+> >  	 * bus frequency.
+> >  	 */
+> > -	motg->core_clk = clk_get(&pdev->dev, "usb_hs_core_clk");
+> > +	motg->core_clk = devm_clk_get(&pdev->dev, "usb_hs_core_clk");
+> >  	if (IS_ERR(motg->core_clk))
+> >  		motg->core_clk = NULL;
+> >  
+> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> >  	if (!res) {
 > 
-> your change should be right, but there is some subtle change about
-> holes handling.
+> no need to check for the resource when using devm_ioremap_resource()
 > 
-> before mem holes between memory ranges in memblock.memory, get struct page,
-> and initialized with to Reserved in memmap_init_zone.
-> Those holes is not in memory.reserved, with your patches, those hole's
-> struct page
-> will still have all 0.
+> >  		dev_err(&pdev->dev, "failed to get platform resource mem\n");
+> > -		ret = -ENODEV;
+> > -		goto put_core_clk;
+> > +		return -ENODEV;
+> >  	}
+> >  
+> > -	motg->regs = ioremap(res->start, resource_size(res));
+> > +	motg->regs = devm_ioremap_resource(&pdev->dev, res);
+> >  	if (!motg->regs) {
+> >  		dev_err(&pdev->dev, "ioremap failed\n");
 > 
-> Please separate change about set page to reserved according to memory.reserved
-> to another patch.
+> don't print error messages when using devm_ioremap_resource()
+
+Will fix these places and re-send,
+
+Thank you,
+Ivan
 
 
-Just want to make sure this is where you want me to go.  Here is my
-currently untested patch.  Is that what you were expecting to have done?
-One thing I don't like about this patch is it seems to slow down boot in
-my simulator environment.  I think I am going to look at restructuring
-things a bit to see if I can eliminate that performance penalty.
-Otherwise, I think I am following your directions.
-
-Thanks,
-Robin Holt
-
->From bdd2fefa59af18f283af6f066bc644ddfa5c7da8 Mon Sep 17 00:00:00 2001
-From: Robin Holt <holt@sgi.com>
-Date: Thu, 25 Jul 2013 04:25:15 -0500
-Subject: [RFC -v2-pre2 4/5] ZZZ Only SegPageReserved() on memblock reserved
- pages.
-
----
- include/linux/mm.h |  2 ++
- mm/nobootmem.c     |  3 +++
- mm/page_alloc.c    | 18 +++++++++++-------
- 3 files changed, 16 insertions(+), 7 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index e0c8528..b264a26 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1322,6 +1322,8 @@ static inline void adjust_managed_page_count(struct page *page, long count)
- 	totalram_pages += count;
- }
- 
-+extern void reserve_bootmem_region(unsigned long start, unsigned long end);
-+
- /* Free the reserved page into the buddy system, so it gets managed. */
- static inline void __free_reserved_page(struct page *page)
- {
-diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-index 2159e68..0840af2 100644
---- a/mm/nobootmem.c
-+++ b/mm/nobootmem.c
-@@ -117,6 +117,9 @@ static unsigned long __init free_low_memory_core_early(void)
- 	phys_addr_t start, end, size;
- 	u64 i;
- 
-+	for_each_reserved_mem_region(i, &start, &end)
-+		reserve_bootmem_region(start, end);
-+
- 	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
- 		count += __free_memory_core(start, end);
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 048e166..3aa30b7 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -698,7 +698,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
- }
- 
- static void __init_single_page(unsigned long pfn, unsigned long zone,
--			       int nid, int reserved)
-+			       int nid, int page_count)
- {
- 	struct page *page = pfn_to_page(pfn);
- 	struct zone *z = &NODE_DATA(nid)->node_zones[zone];
-@@ -708,12 +708,9 @@ static void __init_single_page(unsigned long pfn, unsigned long zone,
- 	init_page_count(page);
- 	page_mapcount_reset(page);
- 	page_nid_reset_last(page);
--	if (reserved) {
--		SetPageReserved(page);
--	} else {
--		ClearPageReserved(page);
--		set_page_count(page, 0);
--	}
-+	ClearPageReserved(page);
-+	set_page_count(page, page_count);
-+
- 	/*
- 	 * Mark the block movable so that blocks are reserved for
- 	 * movable at startup. This will force kernel allocations
-@@ -741,6 +738,13 @@ static void __init_single_page(unsigned long pfn, unsigned long zone,
- #endif
- }
- 
-+void reserve_bootmem_region(unsigned long start, unsigned long end)
-+{
-+	for (; start < end; start++)
-+		if (pfn_valid(start))
-+			SetPageReserved(pfn_to_page(start));
-+}
-+
- static bool free_pages_prepare(struct page *page, unsigned int order)
- {
- 	int i;
--- 
-1.8.2.1
 
