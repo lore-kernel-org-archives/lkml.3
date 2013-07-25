@@ -1,146 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab3GYAN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:13:29 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39295 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753924Ab3GYAN2 (ORCPT
+	id S1754367Ab3GYARV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:17:21 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:60793 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab3GYARU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:13:28 -0400
-Message-ID: <51F06DA4.6010603@hurleysoftware.com>
-Date: Wed, 24 Jul 2013 20:13:24 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Wed, 24 Jul 2013 20:17:20 -0400
+Message-ID: <51F06E87.1060902@gmail.com>
+Date: Thu, 25 Jul 2013 08:17:11 +0800
+From: Hush Bensen <hush.bensen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: Dean Jenkins <Dean_Jenkins@mentor.com>
-CC: Andre Naujoks <nautsch2@gmail.com>, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 5/5] SLIP: Fix transmission segmentation mechanism
-References: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com> <1372779094-11730-6-git-send-email-Dean_Jenkins@mentor.com>
-In-Reply-To: <1372779094-11730-6-git-send-email-Dean_Jenkins@mentor.com>
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        dave@sr71.net, kosaki.motohiro@gmail.com,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com>
+In-Reply-To: <1374681742.16322.180.camel@misato.fc.hp.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2013 11:31 AM, Dean Jenkins wrote:
-> Binding SLIP with a PTY/TTY can cause truncated SLIP frames to be
-> transmitted when the first write to the TTY fails to consume all
-> the characters of the SLIP frame.
+On 07/25/2013 12:02 AM, Toshi Kani wrote:
+> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
+>> On 07/24/2013 04:45 AM, Toshi Kani wrote:
+>>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
+>>>> * Toshi Kani <toshi.kani@hp.com> wrote:
+>>>>
+>>>>>> Could we please also fix it to never crash the kernel, even if stupid
+>>>>>> ranges are provided?
+>>>>> Yes, this probe interface can be enhanced to verify the firmware
+>>>>> information before adding a given memory address.  However, such change
+>>>>> would interfere its test use of "fake" hotplug, which is only the known
+>>>>> use-case of this interface on x86.
+>>>> Not crashing the kernel is not a novel concept even for test interfaces...
+>>> Agreed.
+>>>
+>>>> Where does the possible crash come from - from using invalid RAM ranges,
+>>>> right? I.e. on x86 to fix the crash we need to check the RAM is present in
+>>>> the e820 maps, is marked RAM there, and is not already registered with the
+>>>> kernel, or so?
+>>> Yes, the crash comes from using invalid RAM ranges.  How to check if the
+>>> RAM is present is different if the system supports hotplug or not.
+>> Could you explain different methods to check the RAM is present if the
+>> system supports hotplkug or not?
+> e820 and UEFI memory descriptor tables are the boot-time interfaces.
+> These interfaces are not required to reflect any run-time changes.
 >
-> Asynchronous to the write function is a wakeup event from the TTY
-> that indicates the TTY can accept more data. The wakeup event
-> calls tty_wakeup() which calls slip_write_wakeup() when
-> TTY_DO_WRITE_WAKEUP is set.
+> ACPI memory device objects can be used at both boot-time and run-time,
+> which reflect any run-time changes.  But they are optional to implement.
+> They typically are not implemented unless the system supports hotplug.
 >
-> To complete the transmission of a SLIP frame to the TTY,
-> slip_write_wakeup() must run at least once. Unfortunately, pty_write()
-> also calls tty_wakeup() and when TTY_DO_WRITE_WAKEUP is set,
-> slip_write_wakeup() is called. xleft is always zero and
-> causes slip_write_wakeup() to complete the transmission and
-> clears the TTY_DO_WRITE_WAKEUP flag. This can cause a truncated
-> SLIP frame because any remaining characters will not get sent.
+>>>>> In order to verify if a given memory address is enabled at run-time (as
+>>>>> opposed to boot-time), we need to check with ACPI memory device objects
+>>>>> on x86.  However, system vendors tend to not implement memory device
+>>>>> objects unless their systems support memory hotplug.  Dave Hansen is
+>>>>> using this interface for his testing as a way to fake a hotplug event on
+>>>>> a system that does not support memory hotplug.
+>>>> All vendors implement e820 maps for the memory present at boot time.
+>>> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
+>>> new memory added.  Here is a quote from ACPI spec.
+>>>
+>>> ===
+>>> 15.1 INT 15H, E820H - Query System Address Map
+>>>    :
+>>> The memory map conveyed by this interface is not required to reflect any
+>>> changes in available physical memory that have occurred after the BIOS
+>>> has initially passed control to the operating system. For example, if
+>>> memory is added dynamically, this interface is not required to reflect
+>>> the new system memory configuration.
+>>> ===
+>>>
+>>> By definition, the "probe" interface is used for the kernel to recognize
+>>> a new memory added at run-time.  So, it should check ACPI memory device
+>>> objects (which represents run-time state) for the verification.  On x86,
+>>> however, ACPI also sends a hotplug event to the kernel, which triggers
+>>> the kernel to recognize the new physical memory properly.  Hence, users
+>>> do not need this "probe" interface.
+>>>
+>>>> How is the testing done by Dave Hansen? If it's done by booting with less
+>>>> RAM than available (via say the mem=1g boot parameter), and then
+>>>> hot-adding some of the missing RAM, then this could be made safe via the
+>>>> e820 maps and by consultig the physical memory maps (to avoid double
+>>>> registry), right?
+>>> If we focus on this test scenario on a system that does not support
+>>> hotplug, yes, I agree that we can check with e820 since it is safe to
+>>> assume that the system has no change after boot.  IOW, it is unsafe to
+>>> check with e820 if the system supports hotplug, but there is no use in
+>>> this interface for testing if the system supports hotplug.  So, this may
+>>> be a good idea.
+>>>
+>>> Dave, is this how you are testing?  Do you always specify a valid memory
+>>> address for your testing?
+>>>
+>>>> How does the hotplug event based approach solve double adds? Relies on the
+>>>> hardware not sending a hot-add event twice for the same memory area or for
+>>>> an invalid memory area, or does it include fail-safes and double checks as
+>>>> well to avoid double adds and adding invalid memory? If yes then that
+>>>> could be utilized here as well.
+>>> In high-level, here is how ACPI memory hotplug works:
+>>>
+>>> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
+>>> hot-added.
+>>> 2. The kernel is notified, and verifies if the new memory device object
+>>> has not been attached by any handler yet.
+>>> 3. The memory handler is called, and obtains a new memory range from the
+>>> ACPI memory device object.
+>>> 4. The memory handler calls add_memory() with the new address range.
+>>>
+>>> The above step 1-4 proceeds automatically within the kernel.  No user
+>>> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
+>>> and step 3 gets a valid address range from the firmware directly.  Step
+>>> 4 is basically the same as the "probe" interface, but with all the
+>>> verification up front, this step is safe.
+>> This is hot-added part, could you also explain how ACPI memory hotplug
+>> works for hot-remove?
+> Sure.  Here is high-level.
 >
-> The wakeup event is unable to process the remaining characters
-> because the TTY_DO_WRITE_WAKEUP flag has been cleared.
->
-> The code modification fixes the transmission segmentation
-> mechanism by preventing pty_write() from calling
-> slip_write_wakeup() by clearing TTY_DO_WRITE_WAKEUP before calling
-> pty_write(). After pty_write() returns, TTY_DO_WRITE_WAKEUP is set
-> to allow the TTY wakeup event to call slip_write_wakeup() to
-> attempt to complete the transmission of the SLIP frame.
->
-> This may not be foolproof because a timeout is needed to
-> break out of the cycle of transmission attempts. Note error
-> codes from the TTY layer will break out of the cycle of
-> transmission attempts.
->
-> Signed-off-by: Dean Jenkins <Dean_Jenkins@mentor.com>
-> ---
->   drivers/net/slip/slip.c | 29 ++++++++++++++++++++---------
->   1 file changed, 20 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
-> index e2eff84..0ded23d 100644
-> --- a/drivers/net/slip/slip.c
-> +++ b/drivers/net/slip/slip.c
-> @@ -404,15 +404,13 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
->   	 */
->   	sl->xleft = 0;
->
-> -	/* Order of next two lines is *very* important.
-> -	 * When we are sending a little amount of data,
-> -	 * the transfer may be completed inside the ops->write()
-> -	 * routine, because it's running with interrupts enabled.
-> -	 * In this case we *never* got WRITE_WAKEUP event,
-> -	 * if we did not request it before write operation.
-> -	 *       14 Oct 1994  Dmitry Gorodchanin.
-> +	/* ensure slip_write_wakeup() does not run due to write()
-> +	 * or write_wakeup event and this prevents slip_write_wakeup()
-> +	 * responding to an out of date xleft value.
->   	 */
-> -	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-> +	clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
-> +
-> +	/* attempt to write the SLIP frame to the TTY buffer */
->   	err = sl->tty->ops->write(sl->tty, sl->xbuff, count);
->
->   	if (err < 0) {
-> @@ -432,6 +430,11 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
->   	/* VSV */
->   	clear_bit(SLF_OUTWAIT, &sl->flags);	/* reset outfill flag */
->   #endif
-> +	/* xleft will be zero when all characters have been written.
-> +	 * if xleft is positive then additional writes are needed.
-> +	 * write_wakeup event is needed to complete the transmission.
-> +	 */
-> +	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+> 1. ACPI sends a hotplug event to an ACPI memory device object that is
+> requested to hot-remove.
+> 2. The kernel is notified, and verifies if the memory device object is
+> attached by a handler.
+> 3. The memory handler is called (which is being attached), and obtains
+> its memory range.
+> 4. The memory handler calls remove_memory() with the address range.
+> 5. The kernel calls eject method of the ACPI memory device object.
 
-What happens if the tty_wakeup() has already happened on another
-CPU before TTY_DO_WRITE_WAKEUP was set?
+Thanks for your explaination, very useful for me. ;-) Btw, what's the 
+eject method done?
 
->   }
 >
->   /*
-> @@ -447,15 +450,18 @@ static void slip_write_wakeup(struct tty_struct *tty)
->   	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
->   		return;
+> Thanks,
+> -Toshi
 >
-> +	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-> +
->   	if (sl->xleft <= 0)  {
-> +		/* Whole SLIP frame has been written. */
->   		/* Now serial buffer is almost free & we can start
->   		 * transmission of another packet */
->   		sl->dev->stats.tx_packets++;
-> -		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
->   		sl_unlock(sl);
->   		return;
->   	}
->
-> +	/* attempt to write the remaining SLIP frame characters */
->   	err = tty->ops->write(tty, sl->xhead, sl->xleft);
->
->   	if (err < 0) {
-> @@ -468,6 +474,11 @@ static void slip_write_wakeup(struct tty_struct *tty)
->
->   	sl->xleft -= actual;
->   	sl->xhead += actual;
-> +
-> +	/* allow the next tty wakeup event to attempt to complete
-> +	 * the transmission
-> +	 */
-> +	set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
-
-Same here.
-
->   }
->
->   static void sl_tx_timeout(struct net_device *dev)
 >
 
