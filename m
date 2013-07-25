@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab3GYLE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 07:04:59 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:35270 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755668Ab3GYLE6 (ORCPT
+	id S1755837Ab3GYLGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 07:06:07 -0400
+Received: from mail-vb0-f48.google.com ([209.85.212.48]:52785 "EHLO
+	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755574Ab3GYLGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 07:04:58 -0400
-Date: Thu, 25 Jul 2013 13:04:47 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Ellerman <michael@ellerman.id.au>
-Cc: linux-kernel@vger.kernel.org, acme@ghostprotocols.net, mingo@redhat.com,
-        Paul Mackerras <paulus@samba.org>, Anton Blanchard <anton@samba.org>
-Subject: Re: [PATCH] perf tools: Add support for pinned modifier
-Message-ID: <20130725110447.GS27075@twins.programming.kicks-ass.net>
-References: <1374632802-15436-1-git-send-email-michael@ellerman.id.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374632802-15436-1-git-send-email-michael@ellerman.id.au>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 25 Jul 2013 07:06:04 -0400
+Message-ID: <1374750359.23313.17.camel@edumazet-glaptop>
+Subject: Re: Hack bench regression with CONFIG_SLUB_CPU_PARTIAL disabled
+ (info only)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <edumazet@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 04:05:59 -0700
+In-Reply-To: <51F0DB11.2080508@linux.vnet.ibm.com>
+References: <51F0DB11.2080508@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 12:26:42PM +1000, Michael Ellerman wrote:
+On Thu, 2013-07-25 at 13:30 +0530, Raghavendra K T wrote:
+> Hi,
 > 
-> I would have used "p" obviously, but that's taken. Are folks happy that
-> "P" is sufficiently different from "p"? I couldn't think of anything
-> better.
+> While testing hackbench with 3.11-rc1 I observed hackbench testcase
+> took too long to complete (32 vcpu kvm guest on 32 core HT off machine).
+> 
+> hackbench 1x degraded by 3 time (40sec vs 112sec)
+> hackbench 2x degraded by around 20time (90sec vs 1800 sec)
+> 
+> When I bisected, I found that I had CONFIG_SLUB_CPU_PARTIAL
+> accidentally disabled.
+> I understand that  CONFIG_SLUB_CPU_PARTIAL=y by default and the config
+> option is to provide determinism for RT kernels and thus it is not a
+> problem.
+> But thought of sharing this here so that if somebody runs into same 
+> issue accidently, it would save their time.
 
-I've seen proposals where 'P' is used for the max 'p' level :/
+Incidentally, what difference do you currently get with SLUB and SLAB ?
 
-But yes, vexing situation. 
+
+
