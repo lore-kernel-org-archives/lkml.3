@@ -1,270 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab3GYQkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:40:10 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47358 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab3GYQkH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:40:07 -0400
-Date: Thu, 25 Jul 2013 09:40:05 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomasz Figa <tomasz.figa@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 08/14] clk: msm: Add MSM clock driver
-Message-ID: <20130725164005.GE29694@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
- <1374713022-6049-9-git-send-email-sboyd@codeaurora.org>
- <2513717.VTXGvIpGv4@flatron>
+	id S1756716Ab3GYQka (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:40:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23912 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756463Ab3GYQk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:40:28 -0400
+Message-ID: <51F154F2.20400@redhat.com>
+Date: Fri, 26 Jul 2013 00:40:18 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2513717.VTXGvIpGv4@flatron>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [s390x] build error: undefined reference to `sie_exit'
+References: <209887675.5191065.1374718087774.JavaMail.root@redhat.com> <1999182864.5191140.1374718153443.JavaMail.root@redhat.com> <20130725092123.GD4288@osiris>
+In-Reply-To: <20130725092123.GD4288@osiris>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25, Tomasz Figa wrote:
-> On Wednesday 24 of July 2013 17:43:36 Stephen Boyd wrote:
-> > Add a clock driver that registers clocks from a DT node's
-> > 'clocks' child. Each new SoC will add a file describing the
-> > software interface and frequency plan to drivers/clk/msm/ and
-> > then hook that into the msm_cc_match_table by means of a
-> > compatible string and an msm_clk_match table.
-> > 
-> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> > ---
-> >  drivers/clk/msm/Makefile   |   2 +
-> >  drivers/clk/msm/core.c     | 265
-> > +++++++++++++++++++++++++++++++++++++++++++++
-> > drivers/clk/msm/internal.h |  24 ++++
-> >  3 files changed, 291 insertions(+)
-> >  create mode 100644 drivers/clk/msm/core.c
-> >  create mode 100644 drivers/clk/msm/internal.h
-> > 
-> > diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-> > index e1cee29..9cfd0d7 100644
-> > --- a/drivers/clk/msm/Makefile
-> > +++ b/drivers/clk/msm/Makefile
-> > @@ -4,3 +4,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
-> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
-> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
-> >  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
-> > +
-> > +clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
-> > diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-> > new file mode 100644
-> > index 0000000..b1904c0
-> > --- /dev/null
-> > +++ b/drivers/clk/msm/core.c
-> > @@ -0,0 +1,265 @@
-> > +/*
-> > + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> > + *
-> > + * This software is licensed under the terms of the GNU General Public
-> > + * License version 2, as published by the Free Software Foundation, and
-> > + * may be copied, distributed, and modified under those terms. + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +
-> > +#include <linux/err.h>
-> > +#include <linux/platform_device.h>
-> > +#include <linux/module.h>
-> > +#include <linux/clk-provider.h>
-> > +#include <linux/of.h>
-> > +#include <linux/of_device.h>
-> > +#include <linux/spinlock.h>
-> > +
-> > +#include "internal.h"
-> > +#include "clk-pll.h"
-> > +#include "clk-rcg.h"
-> > +#include "clk-branch.h"
-> > +
-> > +struct cc_data {
-> > +	void __iomem *base;
-> > +	spinlock_t lock;
-> > +};
-> > +
-> > +static struct clk *
-> > +dispatch_fixed_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	u32 rate;
-> > +	const char *name = m->init_data->name;
-> > +
-> > +	if (of_property_read_u32(m->of_node, "clock-frequency", &rate))
-> > +		return ERR_PTR(-EINVAL);
-> > +
-> > +	return clk_register_fixed_rate(dev, name, NULL, CLK_IS_ROOT, 
-> rate);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_pll_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct pll_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return pll_clk_register(dev, desc, m->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_pll_vote_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct pll_vote_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return pll_vote_clk_register(dev, desc, m->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_p2mn16_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct rcg_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_p2mn16_clk_register(dev, desc, &cc->lock, m-
-> >init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_p2mn8_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct rcg_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_p2mn8_clk_register(dev, desc, &cc->lock, m->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_mn8_dyn_clk(struct of_clk_match *match, struct device
-> > *dev, +		struct cc_data *cc)
-> > +{
-> > +	struct rcg_dyn_desc *desc = match->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_mn8_dyn_clk_register(dev, desc, &cc->lock,
-> > +			match->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_p4_dyn_clk(struct of_clk_match *match, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct rcg_dyn_desc *desc = match->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_p4_dyn_clk_register(dev, desc, &cc->lock,
-> > +			match->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_h5mn8_clk(struct of_clk_match *match, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct rcg2_desc *desc = match->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_h5mn8_clk_register(dev, desc, &cc->lock, match-
-> >init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_rcg_h5mn16_clk(struct of_clk_match *match, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct rcg2_desc *desc = match->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return rcg_h5mn16_clk_register(dev, desc, &cc->lock,
-> > match->init_data); +}
-> > +
-> > +static struct clk *
-> > +dispatch_branch_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct branch_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return branch_clk_register(dev, desc, &cc->lock, m->init_data);
-> > +}
-> > +
-> > +static struct clk *
-> > +dispatch_branch_hg_clk(struct of_clk_match *m, struct device *dev,
-> > +		struct cc_data *cc)
-> > +{
-> > +	struct branch_desc *desc = m->driver_data;
-> > +
-> > +	desc->base = cc->base;
-> > +
-> > +	return branch_hg_clk_register(dev, desc, &cc->lock, m->init_data);
-> > +}
-> > +
-> > +static const struct of_device_id dispatch_table[] = {
-> > +	{ .compatible = "fixed-clock", .data = dispatch_fixed_clk },
-> 
-> This is already handled by the fixed-rate-clock driver and of_clk_init().
+On 07/25/2013 05:21 PM, Heiko Carstens wrote:
+> On Wed, Jul 24, 2013 at 10:09:13PM -0400, Zhouping Liu wrote:
+>> Hello All,
+>>
+>> I met the below error on b3a3a9c441 with s390x arch:
+>> arch/s390/built-in.o: In function `sys_call_table_emu':
+>> (.rodata+0x2b98): undefined reference to `sie_exit'
+>> arch/s390/built-in.o: In function `sys_call_table_emu':
+>> (.rodata+0x2ba0): undefined reference to `sie_exit'
+>> make: *** [vmlinux] Error 1
+> Thanks for reporting, I just committed the patch below to our
+> local branch:
+>
+>  From c073dc1f474094b5610739e752d83bcb547b1d7d Mon Sep 17 00:00:00 2001
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> Date: Thu, 25 Jul 2013 11:16:48 +0200
+> Subject: [PATCH] s390/perf: fix compile error (undefined reference sie_exit)
+>
+> The perf_event code references sie_exit even if KVM is not available.
+> So add proper ifdefs to fix this one:
+>
+> arch/s390/built-in.o: In function `sys_call_table_emu':
+> (.rodata+0x2b98): undefined reference to `sie_exit'
+> arch/s390/built-in.o: In function `sys_call_table_emu':
+> (.rodata+0x2ba0): undefined reference to `sie_exit'
+> make: *** [vmlinux] Error 1
 
-I don't plan to use of_clk_init() because I have actual device
-drivers.
+The patch is good for me.
 
-> 
-> > +	{ .compatible = "qcom,pll", .data = dispatch_pll_clk },
-> > +	{ .compatible = "qcom,pll-vote", .data = dispatch_pll_vote_clk },
-> > +	{ .compatible = "qcom,p2-mn8-clock", .data = 
-> dispatch_rcg_p2mn8_clk },
-> > +	{ .compatible = "qcom,p2-mn16-clock", .data = 
-> dispatch_rcg_p2mn16_clk
-> > }, +	{ .compatible = "qcom,mn8-dyn-clock", .data =
-> > dispatch_rcg_mn8_dyn_clk }, +	{ .compatible = "qcom,p4-dyn-clock",
-> > .data = dispatch_rcg_p4_dyn_clk }, +	{ .compatible =
-> > "qcom,h5-mn8-clock", .data = dispatch_rcg_h5mn8_clk }, +	{ 
-> .compatible
-> > = "qcom,h5-mn16-clock", .data = dispatch_rcg_h5mn16_clk }, +	{
-> > .compatible = "qcom,cxc-clock", .data = dispatch_branch_clk }, +	{
-> > .compatible = "qcom,cxc-hg-clock", .data = dispatch_branch_hg_clk },
-> > +};
-> 
-> You can avoid all the code above by using OF_CLK_DECLARE() and 
-> of_clk_init().
+Tested-by: Zhouping Liu <zliu@redhat.com>
 
-As stated earlier that won't work because I want a struct device.
+Thanks,
+Zhouping
 
-> > +
-> > +static int __init msm_cc_init(void)
-> > +{
-> > +	return platform_driver_register(&msm_cc_driver);
-> > +}
-> > +core_initcall(msm_cc_init);
-> 
-> I might be saying something stupid, but is it okay for a removable module 
-> to have a core_initcall?
-> 
+> Reported-by: Zhouping Liu <zliu@redhat.com>
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+>   arch/s390/kernel/perf_event.c | 9 +++++----
+>   1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/s390/kernel/perf_event.c b/arch/s390/kernel/perf_event.c
+> index a6fc037..500aa10 100644
+> --- a/arch/s390/kernel/perf_event.c
+> +++ b/arch/s390/kernel/perf_event.c
+> @@ -52,12 +52,13 @@ static struct kvm_s390_sie_block *sie_block(struct pt_regs *regs)
+>   
+>   static bool is_in_guest(struct pt_regs *regs)
+>   {
+> -	unsigned long ip = instruction_pointer(regs);
+> -
+>   	if (user_mode(regs))
+>   		return false;
+> -
+> -	return ip == (unsigned long) &sie_exit;
+> +#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
+> +	return instruction_pointer(regs) == (unsigned long) &sie_exit;
+> +#else
+> +	return false;
+> +#endif
+>   }
+>   
+>   static unsigned long guest_is_user_mode(struct pt_regs *regs)
 
-If its compiled as a module the core_initcall becomes a
-module_initcall(). It's here because I need the clocks before the
-serial driver probes. If clocks supported deferred probing this
-wouldn't be necessary and we could use module_platform_driver().
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
