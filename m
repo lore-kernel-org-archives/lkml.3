@@ -1,112 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756066Ab3GYNQC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:16:02 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:36455 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755910Ab3GYNP3 (ORCPT
+	id S1756084Ab3GYNQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:16:25 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:41535 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755417Ab3GYNQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:15:29 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
-        aik@ozlabs.ru, joe@perches.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, mingo@redhat.com, tony@atomide.com,
-        ohad@wizery.com, andreas.herrmann@calxeda.com, will.deacon@arm.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
-        iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: [PATCH 2/4] iommu: Add event tracing feature to iommu - export trace events
-Date: Thu, 25 Jul 2013 07:15:03 -0600
-Message-Id: <9c521d0f7b74339d3717273238c89640bdb04602.1374711464.git.shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
-References: <cover.1374711464.git.shuah.kh@samsung.com>
-In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
-References: <cover.1374711464.git.shuah.kh@samsung.com>
+	Thu, 25 Jul 2013 09:16:23 -0400
+Date: Thu, 25 Jul 2013 14:15:56 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130725131556.GD9858@sirena.org.uk>
+References: <1624911.6TtmtVmU1T@avalon>
+ <CACRpkdazPX3EbVbLvXQZh0oRBpHoWPK+EkFO75v9zfAXSPCkHA@mail.gmail.com>
+ <1408178.cxAUTUGJc5@avalon>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="j8mZs4DFq4CNSWJ6"
+Content-Disposition: inline
+In-Reply-To: <1408178.cxAUTUGJc5@avalon>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control
+ its IRQ domain ?
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tracing feature to iommu driver to report various iommu events. Classes
-iommu_group, iommu_device, iommu_map_unmap, and iommu_amd_event are defined.
 
-iommu_group class events can be enabled to trigger when devices get added
-to and removed from an iommu group. Trace information includes iommu group
-id and device name.
+--j8mZs4DFq4CNSWJ6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-iommu:add_device_to_group
-iommu:remove_device_from_group
+On Thu, Jul 25, 2013 at 11:45:33AM +0200, Laurent Pinchart wrote:
 
-iommu_device class events can be enabled to trigger when devices are attached
-to and detached from a domain. Trace information includes device name.
+> The two devices are independent, so there's no real parent/child relation=
+ship.=20
+> However, as Grant proposed, I could list all the interrupts associated wi=
+th=20
+> GPIOs in the GPIO controller DT node. I would then just call=20
+> irq_of_parse_and_map() in the .to_irq() handler to magically translate th=
+e=20
+> GPIO number to a mapped IRQ number.
 
-iommu:attach_device_to_domain
-iommu:detach_device_from_domain
+> The number of interrupts can be pretty high (up to 58 in the worst case s=
+o=20
+> far), so an alternative would be to specify the interrupt-parent only, an=
+d=20
+> call irq_create_of_mapping() directly. What solution would you prefer ?
 
-iommu_map_unmap class events can be enabled to trigger when iommu map and
-unmap iommu ops complete. Trace information includes iova, physical address
-(map event only), and size.
+Are the interrupts in a contiguous block in the controller so you can
+just pass around the controller and a base number?
 
-iommu:unmap
-iommu:map
+--j8mZs4DFq4CNSWJ6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-iommu_amd_event class can be enabled to trigger when AMD IOMMU driver finds
-events when it polls the IOMMU Event Log. Trace information includes the
-event string derived from the event type in human friendly form, event type,
-id of the domain the device is placed in, device (bus number, slot number,
-and function number), address associated with the event, and flags.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iommu:amd_event
+iQIcBAEBAgAGBQJR8SUJAAoJELSic+t+oim9z/cP/R64rP34dn7tcWqn4Bg9CIKJ
+IFieZCVJOfZY5PBqWx/sCG2FI9O0k5jx0K4tNQUsDiVXkmgSOTSfA+Bs50US0x5Y
+dfXidgkvG2EXuRoSDQGhHqpYBvRnfkqMvIvpduyLivNEvYLS+ApfQie2IXMG9wK6
+7W4dcsV0KwBULYFe6Pigqz27XinhhUcbQIGLXw6ODMAGJyXoaqky/G3pJOEbPmiZ
+XCfTEH8ViHGX24KzeMktTjxMZRV+B5BAoBdukKpVeTxaDrh3khVkVGY5cV5Swh17
+FafJINPiTfr8VqyeDZzzPYf11lISHTSrWA1j5XMvMRG15ca/A6y8ASbTSBRww25r
+I1/i+L8uMoMNrdpTMX/maW3yrk70Ryq99MCnJ0mjH2n1IKN7+h6ugAUSL4Myr0qO
+nF4WcIlhi2KC3aCWDmvk6q0lVW0C26ILJXUUQ00so5OcEFTN+klxYrRHoiTMhDz5
+HDp9PcpB3cebG7/wkvQGGKlKav+MuxS5F2jU5baTzDuWn+iaOu3RStG2rUgd1piS
+xsz8NlWt09EShWUSE1EMFRsVU2FZMsmJcdjHPcHkN0vWDF8hM5ppD76OMpjQ8+P0
+ItoIePW0a1O9QkRUxt1XyqVDnlbJlhw5rhAHSn/mVoItZKxykR69j8dCbyCVCJlJ
+3R4JWjArP03elptBditn
+=nohB
+-----END PGP SIGNATURE-----
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/iommu/Makefile       |    1 +
- drivers/iommu/iommu-traces.c |   27 +++++++++++++++++++++++++++
- 2 files changed, 28 insertions(+)
- create mode 100644 drivers/iommu/iommu-traces.c
-
-diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index bbe7041..9015c45 100644
---- a/drivers/iommu/Makefile
-+++ b/drivers/iommu/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_IOMMU_API) += iommu.o
-+obj-$(CONFIG_IOMMU_API) += iommu-traces.o
- obj-$(CONFIG_OF_IOMMU)	+= of_iommu.o
- obj-$(CONFIG_MSM_IOMMU) += msm_iommu.o msm_iommu_dev.o
- obj-$(CONFIG_AMD_IOMMU) += amd_iommu.o amd_iommu_init.o
-diff --git a/drivers/iommu/iommu-traces.c b/drivers/iommu/iommu-traces.c
-new file mode 100644
-index 0000000..5b92e4c
---- /dev/null
-+++ b/drivers/iommu/iommu-traces.c
-@@ -0,0 +1,27 @@
-+/*
-+ * iommu trace points
-+ *
-+ * Copyright (C) 2013 Shuah Khan <shuah.kh@samsung.com>
-+ *
-+ */
-+
-+#include <linux/string.h>
-+#include <linux/types.h>
-+
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/iommu.h>
-+
-+/* iommu_group_event */
-+EXPORT_TRACEPOINT_SYMBOL_GPL(add_device_to_group);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(remove_device_from_group);
-+
-+/* iommu_device_event */
-+EXPORT_TRACEPOINT_SYMBOL_GPL(attach_device_to_domain);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(detach_device_from_domain);
-+
-+/* iommu_map_unmap */
-+EXPORT_TRACEPOINT_SYMBOL_GPL(map);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(unmap);
-+
-+/* iommu_amd_event */
-+EXPORT_TRACEPOINT_SYMBOL_GPL(amd_event);
--- 
-1.7.10.4
-
+--j8mZs4DFq4CNSWJ6--
