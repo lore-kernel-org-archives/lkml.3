@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755777Ab3GYNRo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:17:44 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48388 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab3GYNRi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:17:38 -0400
+	id S1756056Ab3GYNRx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:17:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53513 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755430Ab3GYNRq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:17:46 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
 CC: Kevin Hilman <khilman@linaro.org>, Graeme Gregory <gg@slimlogic.co.uk>,
         <linux-omap@vger.kernel.org>, Ruslan Bilovol <ruslan.bilovol@ti.com>,
         <linux-kernel@vger.kernel.org>,
         Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 1/5] mfd: twl6030-irq: migrate to IRQ threaded handler
-Date: Thu, 25 Jul 2013 16:15:47 +0300
-Message-ID: <1374758151-12097-2-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v2 3/5] mfd: twl6030-irq: convert to use linear irq_domain
+Date: Thu, 25 Jul 2013 16:15:49 +0300
+Message-ID: <1374758151-12097-4-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com>
 References: <1374758151-12097-1-git-send-email-grygorii.strashko@ti.com>
@@ -24,243 +25,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Naga Venkata Srikanth V <vnv.srikanth@samsung.com>
+Since the TWL6030 PMIC is used with OMAP4 SoCs only and OMAP4 legacy
+boot is dropped there are no needs to allocate the range of IRQ
+descriptors during system boot to support TWL6030 IRQs.
 
-1) Removed request_irq() and replaced it with request_threaded_irq().
+Hence, convert it to use linear irq_domain and move IRQ configuration in
+.map()/.unmap() callbacks of irq_domain. So, IRQ mapping and descriptors
+allocation will be performed dynamically basing on DT configuration.
 
-2) Removed generic_handle_irq() and replaced it with
-handle_nested_irq().
-  Handling of these interrupts is nested, as we are handling an
-interrupt (for e.g rtc, mmc1) when we are still servicing TWL irq.
+The error message will be reported in case if unmapped IRQ is received by
+TWL6030 (virq==0).
 
-3) Removed I2C read-retry logic for the case when twl_i2c_read() is
-failed inside IRQ handler - there is no sense to do that, so just report
-an error and return.
-
-4) Each nested IRQ is configured with corresponding parent_irq,
-which need to be retriggered in case if nested IRQ is marked
-as IRQS_PENDING.
-
-Signed-off-by: Naga Venkata Srikanth V <vnv.srikanth@samsung.com>
-Signed-off-by: Oleg_Kosheliev <oleg.kosheliev@ti.com>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
 ---
- drivers/mfd/twl6030-irq.c |  150 +++++++++++++++------------------------------
- 1 file changed, 50 insertions(+), 100 deletions(-)
+ drivers/mfd/twl6030-irq.c |  119 ++++++++++++++++++++++++++-------------------
+ 1 file changed, 69 insertions(+), 50 deletions(-)
 
 diff --git a/drivers/mfd/twl6030-irq.c b/drivers/mfd/twl6030-irq.c
-index 277a8db..1606ced 100644
+index f7da261..1b03ce9 100644
 --- a/drivers/mfd/twl6030-irq.c
 +++ b/drivers/mfd/twl6030-irq.c
-@@ -90,7 +90,6 @@ static unsigned twl6030_irq_base;
+@@ -86,11 +86,11 @@ static int twl6030_interrupt_mapping[24] = {
+ };
+ /*----------------------------------------------------------------------*/
+ 
+-static unsigned twl6030_irq_base;
  static int twl_irq;
  static bool twl_irq_wake_enabled;
  
--static struct completion irq_event;
  static atomic_t twl6030_wakeirqs = ATOMIC_INIT(0);
++struct irq_domain	*irq_domain;
  
  static int twl6030_irq_pm_notifier(struct notifier_block *notifier,
-@@ -131,95 +130,57 @@ static struct notifier_block twl6030_irq_pm_notifier_block = {
- };
- 
- /*
-- * This thread processes interrupts reported by the Primary Interrupt Handler.
-- */
--static int twl6030_irq_thread(void *data)
-+* Threaded irq handler for the twl6030 interrupt.
-+* We query the interrupt controller in the twl6030 to determine
-+* which module is generating the interrupt request and call
-+* handle_nested_irq for that module.
-+*/
-+static irqreturn_t twl6030_irq_thread(int irq, void *data)
+ 				   unsigned long pm_event, void *unused)
+@@ -138,6 +138,7 @@ static struct notifier_block twl6030_irq_pm_notifier_block = {
+ static irqreturn_t twl6030_irq_thread(int irq, void *data)
  {
--	long irq = (long)data;
--	static unsigned i2c_errors;
--	static const unsigned max_i2c_errors = 100;
--	int ret;
--
--	while (!kthread_should_stop()) {
--		int i;
--		union {
-+	int i, ret;
-+	union {
+ 	int i, ret;
++	struct irq_domain *irq_domain = (struct irq_domain *)data;
+ 	union {
  		u8 bytes[4];
  		u32 int_sts;
--		} sts;
--
--		/* Wait for IRQ, then read PIH irq status (also blocking) */
--		wait_for_completion_interruptible(&irq_event);
--
--		/* read INT_STS_A, B and C in one shot using a burst read */
--		ret = twl_i2c_read(TWL_MODULE_PIH, sts.bytes,
--				REG_INT_STS_A, 3);
--		if (ret) {
--			pr_warning("twl6030: I2C error %d reading PIH ISR\n",
--					ret);
--			if (++i2c_errors >= max_i2c_errors) {
--				printk(KERN_ERR "Maximum I2C error count"
--						" exceeded.  Terminating %s.\n",
--						__func__);
--				break;
--			}
--			complete(&irq_event);
--			continue;
--		}
--
-+	} sts;
+@@ -161,9 +162,14 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
  
-+	/* read INT_STS_A, B and C in one shot using a burst read */
-+	ret = twl_i2c_read(TWL_MODULE_PIH, sts.bytes, REG_INT_STS_A, 3);
-+	if (ret) {
-+		pr_warn("twl6030_irq: I2C error %d reading PIH ISR\n", ret);
-+		return IRQ_HANDLED;
-+	}
- 
--		sts.bytes[3] = 0; /* Only 24 bits are valid*/
-+	sts.bytes[3] = 0; /* Only 24 bits are valid*/
- 
--		/*
--		 * Since VBUS status bit is not reliable for VBUS disconnect
--		 * use CHARGER VBUS detection status bit instead.
--		 */
--		if (sts.bytes[2] & 0x10)
--			sts.bytes[2] |= 0x08;
-+	/*
-+	 * Since VBUS status bit is not reliable for VBUS disconnect
-+	 * use CHARGER VBUS detection status bit instead.
-+	 */
-+	if (sts.bytes[2] & 0x10)
-+		sts.bytes[2] |= 0x08;
- 
--		for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++) {
--			local_irq_disable();
--			if (sts.int_sts & 0x1) {
--				int module_irq = twl6030_irq_base +
-+	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
-+		if (sts.int_sts & 0x1) {
-+			int module_irq = twl6030_irq_base +
- 					twl6030_interrupt_mapping[i];
--				generic_handle_irq(module_irq);
--
--			}
--		local_irq_enable();
-+			handle_nested_irq(module_irq);
-+			pr_debug("twl6030_irq: PIH ISR %u, virq%u\n",
-+				 i, module_irq);
+ 	for (i = 0; sts.int_sts; sts.int_sts >>= 1, i++)
+ 		if (sts.int_sts & 0x1) {
+-			int module_irq = twl6030_irq_base +
+-					twl6030_interrupt_mapping[i];
+-			handle_nested_irq(module_irq);
++			int module_irq =
++				irq_find_mapping(irq_domain,
++						 twl6030_interrupt_mapping[i]);
++			if (module_irq)
++				handle_nested_irq(module_irq);
++			else
++				pr_err("twl6030_irq: Unmapped PIH ISR %u detected\n",
++				       i);
+ 			pr_debug("twl6030_irq: PIH ISR %u, virq%u\n",
+ 				 i, module_irq);
  		}
+@@ -186,19 +192,6 @@ static irqreturn_t twl6030_irq_thread(int irq, void *data)
  
--		/*
--		 * NOTE:
--		 * Simulation confirms that documentation is wrong w.r.t the
--		 * interrupt status clear operation. A single *byte* write to
--		 * any one of STS_A to STS_C register results in all three
--		 * STS registers being reset. Since it does not matter which
--		 * value is written, all three registers are cleared on a
--		 * single byte write, so we just use 0x0 to clear.
--		 */
--		ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
--		if (ret)
--			pr_warning("twl6030: I2C error in clearing PIH ISR\n");
--
--		enable_irq(irq);
--	}
--
--	return 0;
--}
-+	/*
-+	 * NOTE:
-+	 * Simulation confirms that documentation is wrong w.r.t the
-+	 * interrupt status clear operation. A single *byte* write to
-+	 * any one of STS_A to STS_C register results in all three
-+	 * STS registers being reset. Since it does not matter which
-+	 * value is written, all three registers are cleared on a
-+	 * single byte write, so we just use 0x0 to clear.
-+	 */
-+	ret = twl_i2c_write_u8(TWL_MODULE_PIH, 0x00, REG_INT_STS_A);
-+	if (ret)
-+		pr_warn("twl6030_irq: I2C error in clearing PIH ISR\n");
+ /*----------------------------------------------------------------------*/
  
--/*
-- * handle_twl6030_int() is the desc->handle method for the twl6030 interrupt.
-- * This is a chained interrupt, so there is no desc->action method for it.
-- * Now we need to query the interrupt controller in the twl6030 to determine
-- * which module is generating the interrupt request.  However, we can't do i2c
-- * transactions in interrupt context, so we must defer that work to a kernel
-- * thread.  All we do here is acknowledge and mask the interrupt and wakeup
-- * the kernel thread.
-- */
--static irqreturn_t handle_twl6030_pih(int irq, void *devid)
+-static inline void activate_irq(int irq)
 -{
--	disable_irq_nosync(irq);
--	complete(devid);
- 	return IRQ_HANDLED;
- }
- 
-@@ -351,7 +312,6 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+-#ifdef CONFIG_ARM
+-	/* ARM requires an extra step to clear IRQ_NOREQUEST, which it
+-	 * sets on behalf of every irq_chip.  Also sets IRQ_NOPROBE.
+-	 */
+-	set_irq_flags(irq, IRQF_VALID);
+-#else
+-	/* same effect on other architectures */
+-	irq_set_noprobe(irq);
+-#endif
+-}
+-
+ static int twl6030_irq_set_wake(struct irq_data *d, unsigned int on)
  {
- 	struct			device_node *node = dev->of_node;
- 	int			nr_irqs, irq_base, irq_end;
--	struct task_struct	*task;
- 	static struct irq_chip  twl6030_irq_chip;
- 	int			status = 0;
- 	int			i;
-@@ -396,36 +356,26 @@ int twl6030_init_irq(struct device *dev, int irq_num)
- 		irq_set_chip_and_handler(i, &twl6030_irq_chip,
- 					 handle_simple_irq);
- 		irq_set_chip_data(i, (void *)irq_num);
-+		irq_set_nested_thread(i, true);
-+		irq_set_parent(i, irq_num);
- 		activate_irq(i);
+ 	if (on)
+@@ -279,7 +272,7 @@ int twl6030_mmc_card_detect_config(void)
+ 		return ret;
  	}
  
--	dev_info(dev, "PIH (irq %d) chaining IRQs %d..%d\n",
--			irq_num, irq_base, irq_end);
-+	dev_info(dev, "PIH (irq %d) nested IRQs %d..%d\n",
-+		 irq_num, irq_base, irq_end);
+-	return twl6030_irq_base + MMCDETECT_INTR_OFFSET;
++	return irq_find_mapping(irq_domain, MMCDETECT_INTR_OFFSET);
+ }
+ EXPORT_SYMBOL(twl6030_mmc_card_detect_config);
+ 
+@@ -308,28 +301,54 @@ int twl6030_mmc_card_detect(struct device *dev, int slot)
+ }
+ EXPORT_SYMBOL(twl6030_mmc_card_detect);
+ 
++static struct irq_chip twl6030_irq_chip;
++
++static int twl6030_irq_map(struct irq_domain *d, unsigned int virq,
++			      irq_hw_number_t hwirq)
++{
++	irq_set_chip_data(virq, &twl6030_irq_chip);
++	irq_set_chip_and_handler(virq,  &twl6030_irq_chip, handle_simple_irq);
++	irq_set_nested_thread(virq, true);
++	irq_set_parent(virq, twl_irq);
++
++#ifdef CONFIG_ARM
++	/*
++	 * ARM requires an extra step to clear IRQ_NOREQUEST, which it
++	 * sets on behalf of every irq_chip.  Also sets IRQ_NOPROBE.
++	 */
++	set_irq_flags(virq, IRQF_VALID);
++#else
++	/* same effect on other architectures */
++	irq_set_noprobe(virq);
++#endif
++
++	return 0;
++}
++
++static void twl6030_irq_unmap(struct irq_domain *d, unsigned int virq)
++{
++#ifdef CONFIG_ARM
++	set_irq_flags(virq, 0);
++#endif
++	irq_set_chip_and_handler(virq, NULL, NULL);
++	irq_set_chip_data(virq, NULL);
++}
++
++static struct irq_domain_ops twl6030_irq_domain_ops = {
++	.map	= twl6030_irq_map,
++	.unmap	= twl6030_irq_unmap,
++	.xlate	= irq_domain_xlate_onetwocell,
++};
++
+ int twl6030_init_irq(struct device *dev, int irq_num)
+ {
+ 	struct			device_node *node = dev->of_node;
+-	int			nr_irqs, irq_base, irq_end;
+-	static struct irq_chip  twl6030_irq_chip;
++	int			nr_irqs;
+ 	int			status;
+-	int			i;
+ 	u8			mask[3];
+ 
+ 	nr_irqs = TWL6030_NR_IRQS;
+ 
+-	irq_base = irq_alloc_descs(-1, 0, nr_irqs, 0);
+-	if (IS_ERR_VALUE(irq_base)) {
+-		dev_err(dev, "Fail to allocate IRQ descs\n");
+-		return irq_base;
+-	}
+-
+-	irq_domain_add_legacy(node, nr_irqs, irq_base, 0,
+-			      &irq_domain_simple_ops, NULL);
+-
+-	irq_end = irq_base + nr_irqs;
+-
+ 	mask[0] = 0xFF;
+ 	mask[1] = 0xFF;
+ 	mask[2] = 0xFF;
+@@ -346,8 +365,6 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+ 		return status;
+ 	}
+ 
+-	twl6030_irq_base = irq_base;
+-
+ 	/*
+ 	 * install an irq handler for each of the modules;
+ 	 * clone dummy irq_chip since PIH can't *do* anything
+@@ -357,21 +374,18 @@ int twl6030_init_irq(struct device *dev, int irq_num)
+ 	twl6030_irq_chip.irq_set_type = NULL;
+ 	twl6030_irq_chip.irq_set_wake = twl6030_irq_set_wake;
+ 
+-	for (i = irq_base; i < irq_end; i++) {
+-		irq_set_chip_and_handler(i, &twl6030_irq_chip,
+-					 handle_simple_irq);
+-		irq_set_chip_data(i, (void *)irq_num);
+-		irq_set_nested_thread(i, true);
+-		irq_set_parent(i, irq_num);
+-		activate_irq(i);
++	irq_domain = irq_domain_add_linear(node, nr_irqs,
++					   &twl6030_irq_domain_ops, NULL);
++	if (!irq_domain) {
++		dev_err(dev, "Can't add irq_domain\n");
++		return -ENOMEM;
+ 	}
+ 
+-	dev_info(dev, "PIH (irq %d) nested IRQs %d..%d\n",
+-		 irq_num, irq_base, irq_end);
++	dev_info(dev, "PIH (irq %d) nested IRQs\n", irq_num);
  
  	/* install an irq handler to demultiplex the TWL6030 interrupt */
--	init_completion(&irq_event);
--
--	status = request_irq(irq_num, handle_twl6030_pih, 0, "TWL6030-PIH",
--			     &irq_event);
-+	status = request_threaded_irq(irq_num, NULL, twl6030_irq_thread,
-+				      IRQF_ONESHOT, "TWL6030-PIH", NULL);
+ 	status = request_threaded_irq(irq_num, NULL, twl6030_irq_thread,
+-				      IRQF_ONESHOT, "TWL6030-PIH", NULL);
++				      IRQF_ONESHOT, "TWL6030-PIH", irq_domain);
  	if (status < 0) {
  		dev_err(dev, "could not claim irq %d: %d\n", irq_num, status);
  		goto fail_irq;
- 	}
+@@ -379,23 +393,28 @@ int twl6030_init_irq(struct device *dev, int irq_num)
  
--	task = kthread_run(twl6030_irq_thread, (void *)irq_num, "twl6030-irq");
--	if (IS_ERR(task)) {
--		dev_err(dev, "could not create irq %d thread!\n", irq_num);
--		status = PTR_ERR(task);
--		goto fail_kthread;
--	}
--
  	twl_irq = irq_num;
  	register_pm_notifier(&twl6030_irq_pm_notifier_block);
- 	return irq_base;
+-	return irq_base;
++	return 0;
  
--fail_kthread:
--	free_irq(irq_num, &irq_event);
--
  fail_irq:
- 	for (i = irq_base; i < irq_end; i++)
- 		irq_set_chip_and_handler(i, NULL, NULL);
-@@ -435,12 +385,12 @@ fail_irq:
+-	for (i = irq_base; i < irq_end; i++)
+-		irq_set_chip_and_handler(i, NULL, NULL);
+-
++	irq_domain_remove(irq_domain);
+ 	return status;
+ }
  
  int twl6030_exit_irq(void)
  {
--	unregister_pm_notifier(&twl6030_irq_pm_notifier_block);
- 
--	if (twl6030_irq_base) {
--		pr_err("twl6030: can't yet clean up IRQs?\n");
--		return -ENOSYS;
-+	if (twl_irq) {
-+		unregister_pm_notifier(&twl6030_irq_pm_notifier_block);
-+		free_irq(twl_irq, NULL);
+-
+ 	if (twl_irq) {
+ 		unregister_pm_notifier(&twl6030_irq_pm_notifier_block);
+ 		free_irq(twl_irq, NULL);
++		/*
++		 * TODO: IRQ domain and allocated nested IRQ descriptors
++		 * should be freed somehow here. Now It can't be done, because
++		 * child devices will not be deleted during removing of
++		 * TWL Core driver and they will still contain allocated
++		 * virt IRQs in their Resources tables.
++		 * The same prevents us from using devm_request_threaded_irq()
++		 * in this module.
++		 */
  	}
-+
+-
  	return 0;
  }
  
