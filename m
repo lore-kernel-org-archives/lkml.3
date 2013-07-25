@@ -1,72 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab3GYUF4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 16:05:56 -0400
-Received: from mail-ea0-f181.google.com ([209.85.215.181]:34099 "EHLO
-	mail-ea0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756517Ab3GYUFz (ORCPT
+	id S1757474Ab3GYUHH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 16:07:07 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:33808 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3GYUHF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 16:05:55 -0400
-Date: Thu, 25 Jul 2013 22:05:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: Re: Ugly patches for stolen reservation
-Message-ID: <20130725200551.GA16719@gmail.com>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
+	Thu, 25 Jul 2013 16:07:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
+References: <20130725170144.GE6493@cantiga.alporthouse.com>
+	<CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
+	<20130725172616.GA11514@cantiga.alporthouse.com>
+	<CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
+	<CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
+	<CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
+	<20130725184504.GC11514@cantiga.alporthouse.com>
+	<CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+	<20130725190006.GD11514@cantiga.alporthouse.com>
+	<CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
+	<20130725192248.GA13295@cantiga.alporthouse.com>
+	<CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
+Date: Thu, 25 Jul 2013 22:07:02 +0200
+Message-ID: <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 25, 2013 at 9:32 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Jul 25, 2013 at 9:22 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+>> On Thu, Jul 25, 2013 at 09:12:41PM +0200, Sedat Dilek wrote:
+>>> New -3 dmesg.
+>>
+>> That puts the ball back in the ddx's court. Next debugging patch:
+>>
+>> diff --git a/src/intel_driver.c b/src/intel_driver.c
+>> index f4d76bb..1f4f299 100644
+>> --- a/src/intel_driver.c
+>> +++ b/src/intel_driver.c
+>> @@ -170,6 +170,7 @@ static Bool i830CreateScreenResources(ScreenPtr screen)
+>>                 return FALSE;
+>>
+>>         intel_copy_fb(scrn);
+>> +       ErrorF("%s: Success\n", __func__);
+>>         return TRUE;
+>>  }
+>>
+>> diff --git a/src/intel_uxa.c b/src/intel_uxa.c
+>> index 2f14173..6be7ebe 100644
+>> --- a/src/intel_uxa.c
+>> +++ b/src/intel_uxa.c
+>> @@ -1150,11 +1150,15 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+>>         intel_screen_private *intel = intel_get_screen_private(scrn);
+>>         dri_bo *bo = intel->front_buffer;
+>>
+>> -       if (!uxa_resources_init(screen))
+>> +       if (!uxa_resources_init(screen)) {
+>> +               ErrorF("bang: %d\n", __LINE__);
+>>                 return FALSE;
+>> +       }
+>>
+>> -       if (drm_intel_gem_bo_map_gtt(bo))
+>> +       if (drm_intel_gem_bo_map_gtt(bo)) {
+>> +               ErrorF("bang: %d\n", __LINE__);
+>>                 return FALSE;
+>> +       }
+>>
+>>         pixmap = screen->GetScreenPixmap(screen);
+>>         intel_set_pixmap_bo(pixmap, bo);
+>> @@ -1167,8 +1171,10 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+>>                                    NULL);
+>>         scrn->displayWidth = intel->front_pitch / intel->cpp;
+>>
+>> -       if (!intel_glamor_create_screen_resources(screen))
+>> +       if (!intel_glamor_create_screen_resources(screen)) {
+>> +               ErrorF("bang: %d\n", __LINE__);
+>>                 return FALSE;
+>> +       }
+>>
+>>         return TRUE;
+>>  }
+>>
+>> --
+>
+> dmesg -4 and X.log attached.
+>
 
-* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+What means the bang line?
 
-> Patch 2/2 has the description, but suffice it to say I'm 
-> not really pleased with this, though it does solve a 
-> problem we have.  On some machines, we get MMIO space 
-> allocated on top of this hidden memory, which can cause 
-> problems.  I'm not sure if there are similar problems for 
-> other hunks of the address space; if so it's possible 
-> this could be made more general (though the bits for 
-> looking up the address of this region are definitely 
-> Intel graphics specific).
+[    54.564] (II) GLX: Initialized DRI2 GL provider for screen 0
+[    54.565] bang: 1159
+[    54.565]
+Fatal server error:
+[    54.565] failed to create screen resources
 
-It looks pretty hardware specific. Discovering it the hard 
-way and marking it e820 reserved in an early quirk is what 
-the firmware should have done to begin with - and I doubt 
-the kernel could do anything significantly cleaner.
+>From [1];
+...
+Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+{
+	ScrnInfoPtr scrn = xf86ScreenToScrn(screen);
+	PixmapPtr pixmap;
+	intel_screen_private *intel = intel_get_screen_private(scrn);
+	dri_bo *bo = intel->front_buffer;
 
-How does Windows manage to not crash? By luckily never 
-allocating PCI resources on top of the RAM? Or does it have 
-a quirk?
+	if (!uxa_resources_init(screen))
+		return FALSE;
 
-> Chris has some patches on top to add a new E820 type so 
-> we can look up the region later, which removes some 
-> redundant code in the i915 driver at least.
-> 
-> Any comments?  I assume no one likes this, but maybe it's 
-> just another early quirk we'll have to live with...
+	if (drm_intel_gem_bo_map_gtt(bo))
+		return FALSE;
 
-No strong feelings against it - my only suggestion would be 
-to make this more visible - right now it's added as e820 
-reserved which hides amongst other areas already marked 
-reserved - would a low-key printk() of the range added make 
-it more apparent that a kernel quirk activated here?
+	pixmap = screen->GetScreenPixmap(screen); <--- Line #1159 ?
+	intel_set_pixmap_bo(pixmap, bo);
+	intel_get_pixmap_private(pixmap)->pinned |= PIN_SCANOUT;
+	screen->ModifyPixmapHeader(pixmap,
+				   scrn->virtualX,
+				   scrn->virtualY,
+				   -1, -1,
+				   intel->front_pitch,
+				   NULL);
+	scrn->displayWidth = intel->front_pitch / intel->cpp;
 
-Just so that people know that it came from the kernel, not 
-the firmware.
+	if (!intel_glamor_create_screen_resources(screen))
+		return FALSE;
 
-But in any case:
+	return TRUE;
+}
+...
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+- Sedat -
 
-Thanks,
+[1] http://cgit.freedesktop.org/xorg/driver/xf86-video-intel/tree/src/intel_uxa.c?id=6f5fd772c7ca656b86394a0f036d4e0cf5b33d8e#n1159
 
-	Ingo
+
+> - S.
+>
+>> Chris Wilson, Intel Open Source Technology Centre
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
