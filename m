@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab3GYFIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 01:08:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57977 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751425Ab3GYFIw (ORCPT
+	id S1753254Ab3GYFLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 01:11:05 -0400
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:37450 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3GYFLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 01:08:52 -0400
-Date: Wed, 24 Jul 2013 22:10:04 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: kys@microsoft.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: hv: remove HV_DRV_VERSION
-Message-ID: <20130725051004.GA21893@kroah.com>
-References: <1369819747-6218-1-git-send-email-olaf@aepfle.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1369819747-6218-1-git-send-email-olaf@aepfle.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Jul 2013 01:11:02 -0400
+Message-ID: <1374729058.23313.8.camel@edumazet-glaptop>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
+	<louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>
+Date: Wed, 24 Jul 2013 22:10:58 -0700
+In-Reply-To: <CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+	 <1374512879.4990.19.camel@edumazet-glaptop>
+	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
+	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
+	 <1374518841.4990.26.camel@edumazet-glaptop>
+	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	 <1374559827.4990.143.camel@edumazet-glaptop>
+	 <CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 29, 2013 at 11:29:07AM +0200, Olaf Hering wrote:
-> Remove HV_DRV_VERSION, it has no meaning for upstream drivers.
-> 
-> Initially it was supposed to show the "Linux Integration Services"
-> version, now it is not in sync anymore with the out-of-tree drivers
-> available from the MSFT website.
-> 
-> The only place where a version string is still required is the KVP
-> command "IntegrationServicesVersion" which is handled by
-> tools/hv/hv_kvp_daemon.c. To satisfy such KVP request from the host pass
-> the current string to the daemon during KVP userland registration.
-> 
-> Signed-off-by: Olaf Hering <olaf@aepfle.de>
-> ---
->  drivers/hid/hid-hyperv.c        |  1 -
->  drivers/hv/hv_balloon.c         |  1 -
->  drivers/hv/hv_kvp.c             |  2 ++
->  drivers/hv/hv_util.c            |  1 -
->  drivers/hv/vmbus_drv.c          |  1 -
->  drivers/net/hyperv/netvsc_drv.c |  2 --
->  drivers/scsi/storvsc_drv.c      |  1 -
->  drivers/video/hyperv_fb.c       |  1 -
->  include/linux/hyperv.h          | 21 ---------------------
->  9 files changed, 2 insertions(+), 29 deletions(-)
+On Thu, 2013-07-25 at 10:28 +0800, Ming Lei wrote:
 
-KY, what happened to this patch?  Any ack/nak for it?
+> 
+> It depends if size of sg buffer(except for last one) in the sg list can be
+> divided by usb endpoint's max packet size(512 or 1024), at least there
+> is the constraint:
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=10e232c597ac757e7f8600649f7e872e86de190f
+> 
+> I am wondering if network stack can meet that.  If not, it might be a
+> bit difficult
+> because lots of USB host controller don't support that, and driver may have
+> to support SG and non-SG at the same time for working well on all HCs.
 
-thanks,
+I do not see the problem.
 
-greg k-h
+If one skb has 2 fragments of 32KB, couldn't they be split into 64 1K
+segments by the device driver ?
+
+
+
