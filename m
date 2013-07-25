@@ -1,99 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab3GYQJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:09:21 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:45862 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755892Ab3GYQJU (ORCPT
+	id S1756245Ab3GYQLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:11:23 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:54260 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910Ab3GYQLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:09:20 -0400
+	Thu, 25 Jul 2013 12:11:19 -0400
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-Date: Thu, 25 Jul 2013 09:09:19 -0700
-Message-ID: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
-Subject: DT bindings as ABI [was: Do we have people interested in device tree
- janitoring / cleanup?]
-From: Olof Johansson <olof@lixom.net>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+References: <CA+icZUVHkYd6xcGe7v-zA8=f+vTF1eF2JszvFPfqzJwE34_2ig@mail.gmail.com>
+	<87ehanx9bx.fsf@intel.com>
+	<CA+icZUXX1-kz9QbY5CpU1UDU8trxgfJSS6ZnUpx9ieq5FnVNSQ@mail.gmail.com>
+	<CA+icZUWOwKH+oF4Ekrkk3pUCjz4Rc361kzdsKjb04WzsEtWPYA@mail.gmail.com>
+	<87bo5rx7m0.fsf@intel.com>
+	<CA+icZUXhW_yAie25DPVXzhi2_pYQTjJpDqa7EzRfvtQ0gFYYHQ@mail.gmail.com>
+	<20130725133651.GI5939@phenom.ffwll.local>
+	<CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
+	<20130725142705.GM5939@phenom.ffwll.local>
+	<CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
+	<CAKMK7uG-KCF5oU2XJ5UWPJn=V3i0jBLs5a=gU9UPuJxY0v=bNw@mail.gmail.com>
+	<CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+Date: Thu, 25 Jul 2013 18:11:18 +0200
+Message-ID: <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I'm adding LKML and ksummit-discuss to this thread, since the ACPI/DT
-discussions have been covered there and this overlaps some with that]
-
-On Thu, Jul 25, 2013 at 7:38 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Thu, Jul 25, 2013 at 03:27:02PM +0100, Russell King - ARM Linux wrote:
->> Remember the stated assertion when DT was first added to the kernel: the
->> DT descriptions _will_ become a separately maintained project which is
->> independent of the kernel.  They will _not_ be kernel version specific.
+On Thu, Jul 25, 2013 at 5:34 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> On Thu, Jul 25, 2013 at 5:05 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
+>> On Thu, Jul 25, 2013 at 5:03 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>> On Thu, Jul 25, 2013 at 4:27 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>>>> On Thu, Jul 25, 2013 at 04:23:40PM +0200, Sedat Dilek wrote:
+>>>>> On Thu, Jul 25, 2013 at 3:36 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>>>>> > On Thu, Jul 25, 2013 at 12:37:44PM +0200, Sedat Dilek wrote:
+>>>>> >> On Thu, Jul 25, 2013 at 12:21 PM, Jani Nikula
+>>>>> >> <jani.nikula@linux.intel.com> wrote:
+>>>>> >> > On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> >> >> On Thu, Jul 25, 2013 at 12:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> >> >>> On Thu, Jul 25, 2013 at 11:44 AM, Jani Nikula
+>>>>> >> >>> <jani.nikula@linux.intel.com> wrote:
+>>>>> >> >>>> On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>>>>> >> >>>>> On Thu, Jul 25, 2013 at 7:12 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>>> >> >>>>>> Hi all,
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> Changes since 20130724:
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> Removed tree:
+>>>>> >> >>>>>>         arm-dt (at maintainer's request)
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> The wireless-next tree lost its build failure and gained a conflict
+>>>>> >> >>>>>> against Linus' tree.
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> The tty tree lost its build failure.
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> The staging tree gained a build failure for which I disabled a driver.
+>>>>> >> >>>>>>
+>>>>> >> >>>>>> ----------------------------------------------------------------------------
+>>>>> >> >>>>>>
+>>>>> >> >>>>>
+>>>>> >> >>>>> [ CCing drm and drm-intel folks ]
+>>>>> >> >>>>>
+>>>>> >> >>>>> With today's next-20130725 I see the following:
+>>>>> >> >>>>
+>>>>> >> >>>> Use of dev_priv->gt_lock in I915_WRITE through
+>>>>> >> >>>> intel_disable_gt_powersave before spin lock init, caused by
+>>>>> >> >>>>
+>>>>> >> >>>> commit 181d1b9e31c668259d3798c521672afb8edd355c
+>>>>> >> >>>> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>>>> >> >>>> Date:   Sun Jul 21 13:16:24 2013 +0200
+>>>>> >> >>>>
+>>>>> >> >>>>     drm/i915: fix up gt init sequence fallout
+>>>>> >> >>>>
+>>>>> >> >>>
+>>>>> >> >>> Ah, cool.
+>>>>> >> >>>
+>>>>> >> >>> I assumed/tested "drm/i915: fix the racy object accounting", but this
+>>>>> >> >>> does not fix it.
+>>>>> >> >>> Will try with yours.
+>>>>> >> >>>
+>>>>> >> >>
+>>>>> >> >> Sorry, Jani.
+>>>>> >> >>
+>>>>> >> >> next-20130725 ships the patch you pointed, too.
+>>>>> >> >
+>>>>> >> > Confused. I meant that the above mentioned commit "drm/i915: fix up gt
+>>>>> >> > init sequence fallout" causes the problem. The patch I included in my
+>>>>> >> > mail should fix it. Could you try that please?
+>>>>> >> >
+>>>>> >>
+>>>>> >> [ Note2myself: Do not read half of the message... ]
+>>>>> >>
+>>>>> >> The bad... Your patch needed some refresh against next-20130725 (guess
+>>>>> >> it's against drm-intel-nightly).
+>>>>> >>
+>>>>> >> The good... YES, your patch fixes the issue for me!
+>>>>> >>
+>>>>> >> The ugly... /me.
+>>>>> >>
+>>>>> >> Feel free to add my:
+>>>>> >>
+>>>>> >>        Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+>>>>> >>
+>>>>> >> Thanks for the quick fix!
+>>>>> >
+>>>>> > Thanks a lot for the report, since this should be something I should have
+>>>>> > caught. And for added insult the offending patch is already in Linus' tree
+>>>>> > :( Patch merged to -fixes.
+>>>>>
+>>>>> Hmmm, don't you merge -fixes into -nightly?
+>>>>
+>>>> I do, but it seems to only blow up with spinlock debugging enabling I
+>>>> think. Our QA should run full debug buils in the -nightly testing, but
+>>>> apparently they didn't catch this. I'm looking into what went wrong here
+>>>> and fix up the process.
+>>>
+>>> First, I thought I made my merge wrong, but there is no
+>>>
+>>> $ grep spin_lock_init linux-next/drivers/gpu/drm/i915/i915_dma.c | grep gt_lock
+>>>
+>>> Same in [1]:
+>>> ...
+>>>         spin_lock_init(&dev_priv->irq_lock);
+>>>         spin_lock_init(&dev_priv->gpu_error.lock);
+>>>         spin_lock_init(&dev_priv->backlight.lock);
+>>>         spin_lock_init(&dev_priv->uncore.lock);
+>>
+>> It's hiding in plain sight here ;-) -next has it renamed to
+>> uncore.lock, so I've applied the patch to -fixes only. I've also
+>> changed the patch in -fixes to cause an explicit conflict here, makes
+>> merging a bit easier.
 >
-> I'm looking forward to this.
+> Ah, I see... "drm/i915: Colocate all GT access routines in the same file"
 >
-> Question for the DT guys: what are the plans here? Are we going to get
-> rid of the .dts files inside the kernel tree?
+> @@ -1493,7 +1477,7 @@ int i915_driver_load(struct drm_device *dev,
+> unsigned long flags)
+> ...
+> - spin_lock_init(&dev_priv->gt_lock);
+> + spin_lock_init(&dev_priv->uncore.lock);
+> ...
+>
 
-In the discussions we had in Dublin, a couple of options on how to
-lock in bindings were discussed. I'm a little surprised that Grant
-didn't cover them in his initial emails on the new maintainership
-model, but maybe he wanted the new group to handle it. And they didn't
-bring it up yet either. So I am. :-)
-
-Until now, we have been working under the assumption that the bindings
-are _NOT LOCKED_. I.e. they can change as needed, and we _ARE_
-assuming that the device tree has to match the kernel. That has been a
-good choice as people get up to speed on what is a good binding and
-not, and has given us much-needed room to adjust things as needed.
-That obviously has to change, but doing so needs to be done carefully.
-
-It's likely that we still want to have a period in which a binding is
-tentative and can be changed. Sometimes we don't know what we really
-want until after we've used it a while, and sometimes we, like
-everybody else, make mistakes on what is a good idea and not. The
-alternative is to grind most new binding proposals to a halt while we
-spend mind-numbing hours and hours on polishing every single aspect of
-the binding to a perfect shine, since we can't go back and fix it.
-
-So, there really seems to be a need for a layered approach, one in
-which a binding "graduates" from being tentative to being locked in.
-I'm refraining from using the terms "staging" and "stable" here, since
-they have overloaded meaning in the kernel world that doesn't apply
-here.
-
-One problem that needs to be solved is obviously how a binding
-graduates from tentative to locked. This work isn't going to be very
-interesting to most people, I suspect. Think standards committee type
-work.
-
-A possible way to handle this is to have exactly that: A group of
-people that essentially constitute the "standards committee" that meet
-on a regular basis to review and approve new bindings. They should be
-people not just doing ARM Linux work, but other stakeholders in these
-bindings too. One of the things they should probably do is sift
-through our current in-kernel bindings and select those who seem ready
-to be locked in, review/discuss/decide upon that and once the decision
-is made, that specific binding does become part of the static,
-never-ever-change ABI of firmware-to-kernel interfaces.   That might
-also be the time that the binding is moved from the kernel to a
-separate repo, but that's a technicality that we'll let the DT
-maintainers decide among themselves, IMHO.
-
-I think that captures most of what we discussed in person. Others
-might have changed their opinions since then, so I'm definitely not
-claiming that any of this was an official decision made by anybody.
-It's just one proposal on how to handle these things moving forward.
+Might be OT, but I cannot use my X graphics stack containing
+libdrm-2.4.46, mesa-9.1.5 and intel-ddx 2.21.12-git (tried also
+v2.21.11).
+Switching back to the one from Ubuntu/precise lets my X start.
 
 
--Olof
+[    40.379] (II) AIGLX: enabled GLX_MESA_copy_sub_buffer
+[    40.379] (II) AIGLX: enabled GLX_INTEL_swap_event
+[    40.380] (II) AIGLX: enabled GLX_SGI_swap_control and GLX_MESA_swap_control
+[    40.380] (II) AIGLX: GLX_EXT_texture_from_pixmap backed by buffer objects
+[    40.380] (II) AIGLX: Loaded and initialized i965
+[    40.380] (II) GLX: Initialized DRI2 GL provider for screen 0
+[    40.380]
+Fatal server error:
+[    40.380] failed to create screen resources
+[    40.380]
+Please consult the The X.Org Foundation support
+         at http://wiki.x.org
+ for help.
+[    40.380] Please also check the log file at "/var/log/Xorg.0.log"
+for additional information.
+[    40.380]
+[    40.380] (II) AIGLX: Suspending AIGLX clients for VT switch
+[    40.396]  ddxSigGiveUp: Closing log
+[    40.398] Server terminated with error (1). Closing log file.
+
+- Sedat -
+
+> - Sedat -
+>
+> http://cgit.freedesktop.org/~danvet/drm-intel/commit/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly&id=907b28c56ea40629aa6595ddfa414ec2fc7da41c
+>
+>> -Daniel
+>>
+>>>         spin_lock_init(&dev_priv->mm.object_stat_lock);
+>>> ...
+>>>
+>>> - Sedat -
+>>>
+>>> [1] http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly#n1477
+>>>
+>>>
+>>>> -Daniel
+>>>> --
+>>>> Daniel Vetter
+>>>> Software Engineer, Intel Corporation
+>>>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+>>
+>>
+>>
+>> --
+>> Daniel Vetter
+>> Software Engineer, Intel Corporation
+>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
