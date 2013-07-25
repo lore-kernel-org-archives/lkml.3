@@ -1,46 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3GYQEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:04:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51962 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755778Ab3GYQEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:04:13 -0400
-Subject: Re: [PATCH 0/7] rapidio: modularize rapidio subsystem
-From: Jean Delvare <jdelvare@suse.de>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>,
-        Stef van Os <stef.van.os@Prodrive.nl>
-In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
-References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Thu, 25 Jul 2013 18:03:43 +0200
-Message-ID: <1374768223.4604.207.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1756203Ab3GYQJV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:09:21 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:45862 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755892Ab3GYQJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:09:20 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+Date: Thu, 25 Jul 2013 09:09:19 -0700
+Message-ID: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+Subject: DT bindings as ABI [was: Do we have people interested in device tree
+ janitoring / cleanup?]
+From: Olof Johansson <olof@lixom.net>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+[I'm adding LKML and ksummit-discuss to this thread, since the ACPI/DT
+discussions have been covered there and this overlaps some with that]
 
-Le Friday 28 June 2013 à 15:18 -0400, Alexandre Bounine a écrit :
-> The following set of patches modifies kernel RapidIO subsystem to enable build
-> and use of its components as loadable kernel modules. Combinations of statically
-> linked and modular components are also supported.
-> (...)
+On Thu, Jul 25, 2013 at 7:38 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Thu, Jul 25, 2013 at 03:27:02PM +0100, Russell King - ARM Linux wrote:
+>> Remember the stated assertion when DT was first added to the kernel: the
+>> DT descriptions _will_ become a separately maintained project which is
+>> independent of the kernel.  They will _not_ be kernel version specific.
+>
+> I'm looking forward to this.
+>
+> Question for the DT guys: what are the plans here? Are we going to get
+> rid of the .dts files inside the kernel tree?
 
-Thanks to this patch set, I was finally able to make all RapidIO support
-modular in openSUSE kernels. This is very appreciated, thanks a lot!
+In the discussions we had in Dublin, a couple of options on how to
+lock in bindings were discussed. I'm a little surprised that Grant
+didn't cover them in his initial emails on the new maintainership
+model, but maybe he wanted the new group to handle it. And they didn't
+bring it up yet either. So I am. :-)
 
--- 
-Jean Delvare
-Suse L3
+Until now, we have been working under the assumption that the bindings
+are _NOT LOCKED_. I.e. they can change as needed, and we _ARE_
+assuming that the device tree has to match the kernel. That has been a
+good choice as people get up to speed on what is a good binding and
+not, and has given us much-needed room to adjust things as needed.
+That obviously has to change, but doing so needs to be done carefully.
 
+It's likely that we still want to have a period in which a binding is
+tentative and can be changed. Sometimes we don't know what we really
+want until after we've used it a while, and sometimes we, like
+everybody else, make mistakes on what is a good idea and not. The
+alternative is to grind most new binding proposals to a halt while we
+spend mind-numbing hours and hours on polishing every single aspect of
+the binding to a perfect shine, since we can't go back and fix it.
+
+So, there really seems to be a need for a layered approach, one in
+which a binding "graduates" from being tentative to being locked in.
+I'm refraining from using the terms "staging" and "stable" here, since
+they have overloaded meaning in the kernel world that doesn't apply
+here.
+
+One problem that needs to be solved is obviously how a binding
+graduates from tentative to locked. This work isn't going to be very
+interesting to most people, I suspect. Think standards committee type
+work.
+
+A possible way to handle this is to have exactly that: A group of
+people that essentially constitute the "standards committee" that meet
+on a regular basis to review and approve new bindings. They should be
+people not just doing ARM Linux work, but other stakeholders in these
+bindings too. One of the things they should probably do is sift
+through our current in-kernel bindings and select those who seem ready
+to be locked in, review/discuss/decide upon that and once the decision
+is made, that specific binding does become part of the static,
+never-ever-change ABI of firmware-to-kernel interfaces.   That might
+also be the time that the binding is moved from the kernel to a
+separate repo, but that's a technicality that we'll let the DT
+maintainers decide among themselves, IMHO.
+
+I think that captures most of what we discussed in person. Others
+might have changed their opinions since then, so I'm definitely not
+claiming that any of this was an official decision made by anybody.
+It's just one proposal on how to handle these things moving forward.
+
+
+-Olof
