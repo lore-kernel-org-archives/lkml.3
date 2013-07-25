@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3GYJ6q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:58:46 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:49804 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755301Ab3GYJ6l (ORCPT
+	id S1755220Ab3GYJ7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:59:51 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34002 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab3GYJ7u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:58:41 -0400
-Date: Thu, 25 Jul 2013 11:58:33 +0200
-From: Fabio Baltieri <fabio.baltieri@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mac80211: use oneshot blink API for LED triggers
-Message-ID: <20130725095833.GA21158@balto.lan>
-References: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
- <1374624581-6012-2-git-send-email-fabio.baltieri@gmail.com>
- <1374653665.8180.0.camel@jlt4.sipsolutions.net>
- <20130724085337.GA7096@balto.lan>
- <1374739101.8827.7.camel@jlt4.sipsolutions.net>
+	Thu, 25 Jul 2013 05:59:50 -0400
+Date: Thu, 25 Jul 2013 11:59:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 0/8] perf: Finer grained full dynticks handling
+Message-ID: <20130725095938.GI27075@twins.programming.kicks-ass.net>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374739101.8827.7.camel@jlt4.sipsolutions.net>
-X-Operating-System: Linux balto 3.11.0-rc2-00001-g765589b x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:58:21AM +0200, Johannes Berg wrote:
-> > So, are you definitely rejecting this patch or should I fix indentation
-> > and send a v2?
+On Tue, Jul 23, 2013 at 02:30:58AM +0200, Frederic Weisbecker wrote:
+> Hi,
 > 
-> I think I'll take it, I kinda hope nobody will really care much about it
-> but the behaviour looks better and the code is simpler, so ... :)
+> This patchset inspires from Peterz patch in http://marc.info/?l=linux-kernel&m=137155182121860
+> to make perf retain the timer tick less often, ie: only when there are freq events
+> or when one throttles.
+> 
+> The main purpose is to make the lockup detector work with full dynticks, as I suspect
+> that distros want to enable both...
+> 
+> 
+> You can fetch from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+> 	perf/nohz
+> 
+> Thanks,
+> 	Frederic
 
-Good enough...  I'll send the v2 then. :-)
+Awesome, looks good, thanks Frederic!
 
-Thanks,
-Fabio
-
--- 
-Fabio Baltieri
+Acked-by: Peter Zijlstra <peterz@infradead.org>
