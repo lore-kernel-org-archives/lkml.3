@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab3GYCDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:03:42 -0400
-Received: from ringil.hengli.com.au ([178.18.16.133]:58252 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754388Ab3GYCDl (ORCPT
+	id S1754565Ab3GYCJP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 22:09:15 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:43917 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753983Ab3GYCJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:03:41 -0400
-Date: Thu, 25 Jul 2013 12:03:29 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andreas Robinson <andr345@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zhao Hongjiang <zhaohongjiang@huawei.com>, davem@davemloft.net,
-        tim.c.chen@linux.intel.com, Andrew Morton <akpm@linux-foundation.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        linux-crypto@vger.kernel.org
-Subject: Re: [PATCH] modules: add support for soft module dependencies
-Message-ID: <20130725020329.GA14625@gondor.apana.org.au>
-References: <20130724071757.GA30970@gondor.apana.org.au>
- <87siz38q2t.fsf@rustcorp.com.au>
+	Wed, 24 Jul 2013 22:09:13 -0400
+Date: Wed, 24 Jul 2013 22:09:13 -0400 (EDT)
+From: Zhouping Liu <zliu@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Message-ID: <1999182864.5191140.1374718153443.JavaMail.root@redhat.com>
+In-Reply-To: <209887675.5191065.1374718087774.JavaMail.root@redhat.com>
+Subject: [s390x] build error: undefined reference to `sie_exit'
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87siz38q2t.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF22 (Linux)/8.0.3_GA_5664)
+Thread-Topic: build error: undefined reference to `sie_exit'
+Thread-Index: mPuuPsVtqj6rG/3L0RNcJP94BAsgsg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:32:02AM +0930, Rusty Russell wrote:
-> Herbert Xu <herbert@gondor.apana.org.au> writes:
-> > Hi Rusty:
-> >
-> > I don't know why this patch never went into the kernel, even
-> > though the corresponding features have been added to modprobe
-> > in most if not all distros.
-> 
-> Because Andreas never sent me the patch?  This is the first I've *heard*
-> of this feature.  Looks like it didn't hit lkml either.  And what was
-> 2/2?
+Hello All,
 
-2/2 was the patch to actually use this in crc32c.
+I met the below error on b3a3a9c441 with s390x arch:
 
-> It's not how I would have done this: post-deps are more flexibly done at
-> runtime, because the module may have to do work to figure out what to
-> pull in.  But since it already exists, I'll apply this patch: it doesn't
-> cost the kernel anything.
-> 
-> And I've fixed the example, so we know how to list multiple modules!
+# make
+  CHK     include/generated/uapi/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CHK     include/generated/uapi/linux/version.h
+  LINK    vmlinux
+  LD      vmlinux.o
+  MODPOST vmlinux.o
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+arch/s390/built-in.o: In function `sys_call_table_emu':
+(.rodata+0x2b98): undefined reference to `sie_exit'
+arch/s390/built-in.o: In function `sys_call_table_emu':
+(.rodata+0x2ba0): undefined reference to `sie_exit'
+make: *** [vmlinux] Error 1
 
-Thanks!
+
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks,
+Zhouping
