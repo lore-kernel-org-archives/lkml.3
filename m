@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3GYKUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:20:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:44685 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab3GYKUj (ORCPT
+	id S1755442Ab3GYKWZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:22:25 -0400
+Received: from cpsmtpb-ews07.kpnxchange.com ([213.75.39.10]:54360 "EHLO
+	cpsmtpb-ews07.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753369Ab3GYKWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:20:39 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, linux-fbdev@vger.kernel.org,
+	Thu, 25 Jul 2013 06:22:22 -0400
+Message-ID: <1374747739.29835.45.camel@x61.thuisdomein>
+Subject: Re: [PATCH V2] driver/vga16fb.c: remove the unused variable "dev"
+ of function vga16fb_destroy()
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] driver/vga16fb.c: remove the unused variable "dev" of function vga16fb_destroy()
-References: <51F09D5E.70304@cn.fujitsu.com>
-Date: Thu, 25 Jul 2013 11:20:34 +0100
-In-Reply-To: <51F09D5E.70304@cn.fujitsu.com> (Gu Zheng's message of "Thu, 25
-	Jul 2013 11:37:02 +0800")
-Message-ID: <87siz3uej1.fsf@canonical.com>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+Date: Thu, 25 Jul 2013 12:22:19 +0200
+In-Reply-To: <CAMuHMdXWpdTD4sHat9sm5pvXVeGNNKMF6eEN=bUK4qU0H6i1Aw@mail.gmail.com>
+References: <51F0F88D.8060903@cn.fujitsu.com>
+	 <CAMuHMdXWpdTD4sHat9sm5pvXVeGNNKMF6eEN=bUK4qU0H6i1Aw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 Jul 2013 10:22:20.0642 (UTC) FILETIME=[D89C8C20:01CE8920]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2013-07-25 at 12:11 +0200, Geert Uytterhoeven wrote:
+> Please send a v3, which has the version info under the above "---",
+> instead of making it a part of the patch description to be committed.
 
-Gu Zheng <guz.fnst@cn.fujitsu.com> writes:
+Grepping through my mail tells me this is the fourth time a patch has
+been submitted to fix this trivial issue. Perhaps (one of) the
+maintainers can indicate which patch, if any, the maintainers have taken
+or will be taking.
 
-> Commit 	e21d2170f36602ae2708 removed the unnecessary platform_set_drvdata(),
-> but left the variable "dev" unused, delete it.
->
-> Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->  drivers/video/vga16fb.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
-> index 830ded4..2827333 100644
-> --- a/drivers/video/vga16fb.c
-> +++ b/drivers/video/vga16fb.c
-> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
->  
->  static void vga16fb_destroy(struct fb_info *info)
->  {
-> -	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
->  	iounmap(info->screen_base);
->  	fb_dealloc_cmap(&info->cmap);
->  	/* XXX unshare VGA regions */
 
-I'm not sure if this fix isn't already queued as I sent a similar
-patch a few days ago:
+Paul Bolle
 
- https://lkml.org/lkml/2013/7/10/524
 
-Cheers,
--- 
-Luis
