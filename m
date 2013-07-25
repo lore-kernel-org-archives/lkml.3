@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3GYVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:03:28 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38423 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754618Ab3GYVD0 (ORCPT
+	id S1755588Ab3GYVD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:03:58 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:58708 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754186Ab3GYVDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:03:26 -0400
-X-Sasl-enc: PiKps3CT7k29idh5fNJCGZzyJeAJ/fdBmCsbnygjX0+W 1374786205
-Date: Thu, 25 Jul 2013 14:03:24 -0700
-From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: luis.henriques@canonical.com, ben@decadent.org.uk,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, shangw@linux.vnet.ibm.com
-Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
-Message-ID: <20130725210324.GA6089@kroah.com>
-References: <lsq.1374674565.832521875@decadent.org.uk>
- <87zjtbzz8j.fsf@canonical.com>
- <20130724.124504.1663757440011643606.davem@davemloft.net>
- <20130724.140907.326515349808465987.davem@davemloft.net>
+	Thu, 25 Jul 2013 17:03:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130724.140907.326515349808465987.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130722110341.GR9858@sirena.org.uk>
+References: <1374361668-3184-1-git-send-email-andrea.adami@gmail.com>
+	<20130722110341.GR9858@sirena.org.uk>
+Date: Thu, 25 Jul 2013 23:03:52 +0200
+Message-ID: <CAAQYJAteA2aQd5XRpi3NS-RazDoeWWbGFeUYcdP1kYc+sgmMUQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: pxamci: Refactor regulator support
+From: Andrea Adami <andrea.adami@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-mmc@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marko Katic <dromede@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 02:09:07PM -0700, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Wed, 24 Jul 2013 12:45:04 -0700 (PDT)
-> 
-> > From: Luis Henriques <luis.henriques@canonical.com>
-> > Date: Wed, 24 Jul 2013 17:42:04 +0100
-> > 
-> >> I believe you didn't want to have these two invocations to the
-> >> pci_channel_offline() function.  i guess you wanted to have one of
-> >> these moved to the other branch of the 'if' statement.
-> >> 
-> >> [ btw, I've just replied to an email by David S. Miller about his
-> >>   backport to 3.4 (and 3.2) of this commit. ]
-> > 
-> > Yes, indeed, both of these backports were done incorrectly.
-> 
-> Greg/Ben, please drop the tg3 patch of my networking bits from your
-> queues, I'll send a fixed up version soon.
+On Mon, Jul 22, 2013 at 1:03 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Sun, Jul 21, 2013 at 01:07:48AM +0200, Andrea Adami wrote:
+>
+>> The ADS7846 driver _requires_ the use of a voltage regulator
+>> or if not present, CONFIG_REGULATOR_DUMMY should be used for proper operation.
+>> This was made mandatory by the following commit:
+>
+> No, CONFIG_REGULATOR_DUMMY should *never* be used in production.
+>
+>> The ADS7846 in spitz machines is not connected to
+>> any power regulator so it needs CONFIG_REGULATOR_DUMMY enabled.
+>
+> I don't think that's the case, it would be a very unusual piece of
+> silicon that was able to operate without power.  It may be that it's not
+> using a software controllable regulator but there will be one or more
+> power supplies.  Judging by your problem here it seems like there is
+> actually a software controllable regulator though...
+>
+>> However, enabling CONFIG_REGULATOR and CONFIG_REGULATOR_DUMMY
+>> will break pxamci driver and cause the following error output:
+>
+> This is why you should never use CONFIG_REGULATOR_DUMMY in production,
+> it's just a crutch to help things boot during development.
+>
+>> Regulator support in pxamci_init_ocr() is not
+>> written with the existence of the dummy regulator driver in
+>> mind. It does not check the return value of mmc_regulator_get_ocrmask()
+>> and it will only fall back to platform data if no regulator was found.
+>
+> No regulator driver should be written with CONFIG_REGULATOR_DUMMY in
+> mind.  My guess here is that your custom callbacks for this board should
+> be being replaced by a regulator, for example the fixed voltage
+> regulator if there's only one voltage supported.
 
-Now dropped from my 3.4-stable queue, thanks.
 
-greg k-h
+Thanks Mark,
+
+patch is withdrawn.
+
+In fact adding regulators has been self-inflicted pain...
+Poodle and spitz boot normally with # CONFIG_REGULATOR is not set.
+
+Sorry for the noise
+
+Andrea Adami
