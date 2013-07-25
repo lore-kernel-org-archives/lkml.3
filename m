@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab3GYWZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 18:25:59 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50966 "EHLO zene.cmpxchg.org"
+	id S1757966Ab3GYW0H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 18:26:07 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:50984 "EHLO zene.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756883Ab3GYWZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 18:25:55 -0400
+	id S1757204Ab3GYW0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 18:26:00 -0400
 From: Johannes Weiner <hannes@cmpxchg.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
@@ -13,9 +13,9 @@ Cc: Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
         azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
         x86@kernel.org, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [patch 2/6] arch: mm: do not invoke OOM killer on kernel fault OOM
-Date: Thu, 25 Jul 2013 18:25:34 -0400
-Message-Id: <1374791138-15665-3-git-send-email-hannes@cmpxchg.org>
+Subject: [patch 4/6] x86: finish user fault error path with fatal signal
+Date: Thu, 25 Jul 2013 18:25:36 -0400
+Message-Id: <1374791138-15665-5-git-send-email-hannes@cmpxchg.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
 References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
@@ -23,159 +23,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel faults are expected to handle OOM conditions gracefully (gup,
-uaccess etc.), so they should never invoke the OOM killer.  Reserve
-this for faults triggered in user context when it is the only option.
+The x86 fault handler bails in the middle of error handling when the
+task has a fatal signal pending.  For a subsequent patch this is a
+problem in OOM situations because it relies on
+pagefault_out_of_memory() being called even when the task has been
+killed, to perform proper per-task OOM state unwinding.
 
-Most architectures already do this, fix up the remaining few.
+Shortcutting the fault like this is a rather minor optimization that
+saves a few instructions in rare cases.  Just remove it for
+user-triggered faults.
+
+Use the opportunity to split the fault retry handling from actual
+fault errors and add locking documentation that reads suprisingly
+similar to ARM's.
 
 Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 ---
- arch/arm/mm/fault.c       | 14 +++++++-------
- arch/arm64/mm/fault.c     | 14 +++++++-------
- arch/avr32/mm/fault.c     |  2 +-
- arch/mips/mm/fault.c      |  2 ++
- arch/um/kernel/trap.c     |  2 ++
- arch/unicore32/mm/fault.c | 14 +++++++-------
- 6 files changed, 26 insertions(+), 22 deletions(-)
+ arch/x86/mm/fault.c | 35 +++++++++++++++++------------------
+ 1 file changed, 17 insertions(+), 18 deletions(-)
 
-diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index c97f794..217bcbf 100644
---- a/arch/arm/mm/fault.c
-+++ b/arch/arm/mm/fault.c
-@@ -349,6 +349,13 @@ retry:
- 	if (likely(!(fault & (VM_FAULT_ERROR | VM_FAULT_BADMAP | VM_FAULT_BADACCESS))))
- 		return 0;
- 
-+	/*
-+	 * If we are in kernel mode at this point, we
-+	 * have no context to handle this fault with.
-+	 */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
- 	if (fault & VM_FAULT_OOM) {
- 		/*
- 		 * We ran out of memory, call the OOM killer, and return to
-@@ -359,13 +366,6 @@ retry:
- 		return 0;
- 	}
- 
--	/*
--	 * If we are in kernel mode at this point, we
--	 * have no context to handle this fault with.
--	 */
--	if (!user_mode(regs))
--		goto no_context;
--
- 	if (fault & VM_FAULT_SIGBUS) {
- 		/*
- 		 * We had some memory, but were unable to
-diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
-index 0ecac89..dab1cfd 100644
---- a/arch/arm64/mm/fault.c
-+++ b/arch/arm64/mm/fault.c
-@@ -294,6 +294,13 @@ retry:
- 			      VM_FAULT_BADACCESS))))
- 		return 0;
- 
-+	/*
-+	 * If we are in kernel mode at this point, we have no context to
-+	 * handle this fault with.
-+	 */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
- 	if (fault & VM_FAULT_OOM) {
- 		/*
- 		 * We ran out of memory, call the OOM killer, and return to
-@@ -304,13 +311,6 @@ retry:
- 		return 0;
- 	}
- 
--	/*
--	 * If we are in kernel mode at this point, we have no context to
--	 * handle this fault with.
--	 */
--	if (!user_mode(regs))
--		goto no_context;
--
- 	if (fault & VM_FAULT_SIGBUS) {
- 		/*
- 		 * We had some memory, but were unable to successfully fix up
-diff --git a/arch/avr32/mm/fault.c b/arch/avr32/mm/fault.c
-index b2f2d2d..2ca27b0 100644
---- a/arch/avr32/mm/fault.c
-+++ b/arch/avr32/mm/fault.c
-@@ -228,9 +228,9 @@ no_context:
- 	 */
- out_of_memory:
- 	up_read(&mm->mmap_sem);
--	pagefault_out_of_memory();
- 	if (!user_mode(regs))
- 		goto no_context;
-+	pagefault_out_of_memory();
- 	return;
- 
- do_sigbus:
-diff --git a/arch/mips/mm/fault.c b/arch/mips/mm/fault.c
-index 85df1cd..94d3a31 100644
---- a/arch/mips/mm/fault.c
-+++ b/arch/mips/mm/fault.c
-@@ -241,6 +241,8 @@ out_of_memory:
- 	 * (which will retry the fault, or kill us if we got oom-killed).
- 	 */
- 	up_read(&mm->mmap_sem);
-+	if (!user_mode(regs))
-+		goto no_context;
- 	pagefault_out_of_memory();
- 	return;
- 
-diff --git a/arch/um/kernel/trap.c b/arch/um/kernel/trap.c
-index 089f398..b2f5adf 100644
---- a/arch/um/kernel/trap.c
-+++ b/arch/um/kernel/trap.c
-@@ -124,6 +124,8 @@ out_of_memory:
- 	 * (which will retry the fault, or kill us if we got oom-killed).
- 	 */
- 	up_read(&mm->mmap_sem);
-+	if (!is_user)
-+		goto out_nosemaphore;
- 	pagefault_out_of_memory();
- 	return 0;
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 6d77c38..3aaeffc 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -842,23 +842,15 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+ 	force_sig_info_fault(SIGBUS, code, address, tsk, fault);
  }
-diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
-index f9b5c10..8ed3c45 100644
---- a/arch/unicore32/mm/fault.c
-+++ b/arch/unicore32/mm/fault.c
-@@ -278,6 +278,13 @@ retry:
- 	       (VM_FAULT_ERROR | VM_FAULT_BADMAP | VM_FAULT_BADACCESS))))
- 		return 0;
  
-+	/*
-+	 * If we are in kernel mode at this point, we
-+	 * have no context to handle this fault with.
-+	 */
-+	if (!user_mode(regs))
-+		goto no_context;
-+
+-static noinline int
++static noinline void
+ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 	       unsigned long address, unsigned int fault)
+ {
+-	/*
+-	 * Pagefault was interrupted by SIGKILL. We have no reason to
+-	 * continue pagefault.
+-	 */
+-	if (fatal_signal_pending(current)) {
+-		if (!(fault & VM_FAULT_RETRY))
+-			up_read(&current->mm->mmap_sem);
+-		if (!(error_code & PF_USER))
+-			no_context(regs, error_code, address, 0, 0);
+-		return 1;
++	if (fatal_signal_pending(current) && !(error_code & PF_USER)) {
++		up_read(&current->mm->mmap_sem);
++		no_context(regs, error_code, address, 0, 0);
++		return;
+ 	}
+-	if (!(fault & VM_FAULT_ERROR))
+-		return 0;
+ 
  	if (fault & VM_FAULT_OOM) {
- 		/*
- 		 * We ran out of memory, call the OOM killer, and return to
-@@ -288,13 +295,6 @@ retry:
- 		return 0;
+ 		/* Kernel mode? Handle exceptions or die: */
+@@ -866,7 +858,7 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 			up_read(&current->mm->mmap_sem);
+ 			no_context(regs, error_code, address,
+ 				   SIGSEGV, SEGV_MAPERR);
+-			return 1;
++			return;
+ 		}
+ 
+ 		up_read(&current->mm->mmap_sem);
+@@ -884,7 +876,6 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 		else
+ 			BUG();
+ 	}
+-	return 1;
+ }
+ 
+ static int spurious_fault_check(unsigned long error_code, pte_t *pte)
+@@ -1189,9 +1180,17 @@ good_area:
+ 	 */
+ 	fault = handle_mm_fault(mm, vma, address, flags);
+ 
+-	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
+-		if (mm_fault_error(regs, error_code, address, fault))
+-			return;
++	/*
++	 * If we need to retry but a fatal signal is pending, handle the
++	 * signal first. We do not need to release the mmap_sem because it
++	 * would already be released in __lock_page_or_retry in mm/filemap.c.
++	 */
++	if (unlikely((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)))
++		return;
++
++	if (unlikely(fault & VM_FAULT_ERROR)) {
++		mm_fault_error(regs, error_code, address, fault);
++		return;
  	}
  
--	/*
--	 * If we are in kernel mode at this point, we
--	 * have no context to handle this fault with.
--	 */
--	if (!user_mode(regs))
--		goto no_context;
--
- 	if (fault & VM_FAULT_SIGBUS) {
- 		/*
- 		 * We had some memory, but were unable to
+ 	/*
 -- 
 1.8.3.2
 
