@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab3GYVuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:50:44 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:50932 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754601Ab3GYVum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:50:42 -0400
-Date: Thu, 25 Jul 2013 17:50:33 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        righi.andrea@gmail.com
-Subject: Re: [patch 3/5] x86: finish fault error path with fatal signal
-Message-ID: <20130725215033.GP715@cmpxchg.org>
-References: <20130714015112.FFCB7AF7@pobox.sk>
- <20130715154119.GA32435@dhcp22.suse.cz>
- <20130715160006.GB32435@dhcp22.suse.cz>
- <20130716153544.GX17812@cmpxchg.org>
- <20130716160905.GA20018@dhcp22.suse.cz>
- <20130716164830.GZ17812@cmpxchg.org>
- <20130719042124.GC17812@cmpxchg.org>
- <20130719042502.GF17812@cmpxchg.org>
- <20130724203205.GL715@cmpxchg.org>
- <51F18A99.7000306@gmail.com>
+	id S1756080Ab3GYVxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:53:15 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:56597 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754001Ab3GYVxM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 17:53:12 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 25 Jul 2013 22:52:59 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+Message-ID: <20130725215259.GB13295@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	linux-next <linux-next@vger.kernel.org>
+References: <CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
+ <CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
+ <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
+ <20130725184504.GC11514@cantiga.alporthouse.com>
+ <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+ <20130725190006.GD11514@cantiga.alporthouse.com>
+ <CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
+ <20130725192248.GA13295@cantiga.alporthouse.com>
+ <CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
+ <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F18A99.7000306@gmail.com>
+In-Reply-To: <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 04:29:13PM -0400, KOSAKI Motohiro wrote:
-> (7/24/13 4:32 PM), Johannes Weiner wrote:
-> >@@ -1189,9 +1174,17 @@ good_area:
-> >  	 */
-> >  	fault = handle_mm_fault(mm, vma, address, flags);
-> >
-> >-	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
-> >-		if (mm_fault_error(regs, error_code, address, fault))
-> >-			return;
-> >+	/*
-> >+	 * If we need to retry but a fatal signal is pending, handle the
-> >+	 * signal first. We do not need to release the mmap_sem because it
-> >+	 * would already be released in __lock_page_or_retry in mm/filemap.c.
-> >+	 */
-> >+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
-> >+		return;
-> >+
-> >+	if (unlikely(fault & VM_FAULT_ERROR)) {
-> >+		mm_fault_error(regs, error_code, address, fault);
-> >+		return;
-> >  	}
+On Thu, Jul 25, 2013 at 10:07:02PM +0200, Sedat Dilek wrote:
+> What means the bang line?
 > 
-> When I made the patch you removed code, Ingo suggested we need put all rare case code
-> into if(unlikely()) block. Yes, this is purely micro optimization. But it is not costly
-> to maintain.
+> [    54.564] (II) GLX: Initialized DRI2 GL provider for screen 0
+> [    54.565] bang: 1159
+> [    54.565]
+> Fatal server error:
+> [    54.565] failed to create screen resources
 
-Fair enough, thanks for the heads up!
+That means between the kernel reporting success for
+DRM_IOCTL_I915_GEM_MMAP_GTT and libdrm returning from
+drm_intel_gem_bo_map_gtt(), something went wrong. This implies that the
+call to mmap() failed.
+
+I don't see how changing versions of the ddx would unmask the bug, nor
+why the mmap() should suddenly start failing. Anybody have any
+suggestions other than
+
+diff --git a/src/intel_uxa.c b/src/intel_uxa.c
+index 2f14173..3872258 100644
+--- a/src/intel_uxa.c
++++ b/src/intel_uxa.c
+@@ -1149,12 +1149,15 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+        PixmapPtr pixmap;
+        intel_screen_private *intel = intel_get_screen_private(scrn);
+        dri_bo *bo = intel->front_buffer;
++       int ret;
+ 
+        if (!uxa_resources_init(screen))
+                return FALSE;
+ 
+-       if (drm_intel_gem_bo_map_gtt(bo))
++       if ((ret = drm_intel_gem_bo_map_gtt(bo))) {
++               ErrorF("%s:%d bang, errno=%d\n", __func__, __LINE__, -ret);
+                return FALSE;
++       }
+ 
+        pixmap = screen->GetScreenPixmap(screen);
+        intel_set_pixmap_bo(pixmap, bo);
+
+which is most likely to report EINVAL (22)?
+-Chris
+
+-- 
+Chris Wilson, Intel Open Source Technology Centre
