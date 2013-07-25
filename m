@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab3GYXPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:15:09 -0400
-Received: from www.sr71.net ([198.145.64.142]:38364 "EHLO blackbird.sr71.net"
+	id S1758204Ab3GYXQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:16:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:49494 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756969Ab3GYXPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:15:06 -0400
-Message-ID: <51F1B179.4070309@sr71.net>
-Date: Thu, 25 Jul 2013 16:15:05 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1756722Ab3GYXQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 19:16:11 -0400
+Message-ID: <51F1B17F.30902@ti.com>
+Date: Thu, 25 Jul 2013 19:15:11 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>
-Subject: SATA hotplug not detecting new disks
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>, <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
+References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com> <20130629152959.GB31339@mtj.dyndns.org> <20130629172123.GA3353@n2100.arm.linux.org.uk> <20130629175743.GA382@mtj.dyndns.org> <CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com> <20130629195549.GE3353@n2100.arm.linux.org.uk> <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com> <51D18DBA.6090608@ti.com> <51F1A7AA.8080700@ti.com> <20130725223658.GJ26107@mtj.dyndns.org>
+In-Reply-To: <20130725223658.GJ26107@mtj.dyndns.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got a relatively new system that doesn't seem to be able to hotplug
-SATA disks.  I see the same behavior on 3.10, 3.11-rc2, and Ubuntu's
-3.8.0-25-generic.  The disks are detected right away on reboots, but
-even after poking the /sys/class/scsi_host/host*/scan files, new disks
-are never detected.  I've disabled link power management.
+On Thursday 25 July 2013 06:36 PM, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Jul 25, 2013 at 06:33:14PM -0400, Santosh Shilimkar wrote:
+>> Any comments here. I would like to know your plan for the new
+>> API. You might have seen on the ARM no-bootmem thread, we started to
+>> move ARM to nobootmem with Russell's help.
+> 
+> Ooh, the plan sounds good to me and I was thinking you were gonna do
+> it?
+> 
+Wooo..
 
-Am I doing something stupid here?  I thought this "just worked" on my
-previous hardware.
+Sorry if I wasn't clear before, but I need help to at least have new
+memblock API support since I am not familiar with memblock code. 
+I could help in adaptation to the new API for ARM arch and
+core kernel code.
 
-The motherboard is an Intel DH87RL. The SATA controller is:
+Let me know your thoughts.
 
-> 00:1f.2 SATA controller: Intel Corporation Lynx Point 6-port SATA Controller 1 [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
-> 	Subsystem: Intel Corporation Device 204a
-> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
-> 	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> 	Latency: 0
-> 	Interrupt: pin B routed to IRQ 41
-> 	Region 0: I/O ports at f0d0 [size=8]
-> 	Region 1: I/O ports at f0c0 [size=4]
-> 	Region 2: I/O ports at f0b0 [size=8]
-> 	Region 3: I/O ports at f0a0 [size=4]
-> 	Region 4: I/O ports at f060 [size=32]
-> 	Region 5: Memory at f7d3a000 (32-bit, non-prefetchable) [size=2K]
-> 	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-> 		Address: fee2200c  Data: 4191
-> 	Capabilities: [70] Power Management version 3
-> 		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold-)
-> 		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> 	Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
-> 	Kernel driver in use: ahci
+Regards,
+Santosh
 
-Relevant dmesg from boot:
 
-ahci 0000:00:1f.2: version 3.0
-ahci 0000:00:1f.2: irq 41 for MSI/MSI-X
-ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 5 ports 6 Gbps 0x1e impl SATA
-mode
-ahci 0000:00:1f.2: flags: 64bit ncq pm led clo pio slum part ems apst
-ahci 0000:00:1f.2: setting latency timer to 64
-scsi0 : ahci
-scsi1 : ahci
-scsi2 : ahci
-scsi3 : ahci
-scsi4 : ahci
-ata1: DUMMY
-ata2: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a180 irq 41
-ata3: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a200 irq 41
-ata4: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a280 irq 41
-ata5: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a300 irq 41
 
