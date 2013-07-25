@@ -1,168 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab3GYJc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:32:28 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59456 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab3GYJc0 (ORCPT
+	id S1755534Ab3GYJci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:32:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36189 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab3GYJce (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:32:26 -0400
-Message-ID: <51F0F202.5090001@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 15:08:10 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 05:32:34 -0400
+Date: Thu, 25 Jul 2013 10:32:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: shawn.guo@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        rob@landley.net, lgirdwood@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, s.trumtrar@pengutronix.de
+Message-ID: <20130725093209.GX9858@sirena.org.uk>
+References: <1374723198-9716-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com>
-In-Reply-To: <20130725091509.GA22735@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072509-5140-0000-0000-000003937F02
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6ISAYjCz29ajFyjn"
+Content-Disposition: inline
+In-Reply-To: <1374723198-9716-1-git-send-email-b38343@freescale.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 02:45 PM, Gleb Natapov wrote:
-> On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
->> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
->>> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
->>>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
->>>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
->>>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
->>>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
->>>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
->>>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
->>>>>>>>> __ticket_t want)
->>>>>>> [...]
->>>>>>>>> +
->>>>>>>>> +    /*
->>>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
->>>>>>>>> halt
->>>>>>>>> +     * for irq enabled case to avoid hang when lock info is
->>>>>>>>> overwritten
->>>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
->>>>>>>>> to save us.
->>>>>>>>> +     */
->>>>>>>>> +    if (arch_irqs_disabled_flags(flags))
->>>>>>>>> +        halt();
->>>>>>>>> +    else
->>>>>>>>> +        safe_halt();
->>>>>>>>> +
->>>>>>>>> +out:
->>>>>>>> So here now interrupts can be either disabled or enabled. Previous
->>>>>>>> version disabled interrupts here, so are we sure it is safe to
->>>>>>>> have them
->>>>>>>> enabled at this point? I do not see any problem yet, will keep
->>>>>>>> thinking.
->>>>>>>
->>>>>>> If we enable interrupt here, then
->>>>>>>
->>>>>>>
->>>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
->>>>>>>
->>>>>>> and if we start serving lock for an interrupt that came here,
->>>>>>> cpumask clear and w->lock=null may not happen atomically.
->>>>>>> if irq spinlock does not take slow path we would have non null value
->>>>>>> for lock, but with no information in waitingcpu.
->>>>>>>
->>>>>>> I am still thinking what would be problem with that.
->>>>>>>
->>>>>> Exactly, for kicker waiting_cpus and w->lock updates are
->>>>>> non atomic anyway.
->>>>>>
->>>>>>>>> +    w->lock = NULL;
->>>>>>>>> +    local_irq_restore(flags);
->>>>>>>>> +    spin_time_accum_blocked(start);
->>>>>>>>> +}
->>>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
->>>>>>>>> +
->>>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
->>>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
->>>>>>>>> __ticket_t ticket)
->>>>>>>>> +{
->>>>>>>>> +    int cpu;
->>>>>>>>> +
->>>>>>>>> +    add_stats(RELEASED_SLOW, 1);
->>>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
->>>>>>>>> +        const struct kvm_lock_waiting *w =
->>>>>>>>> &per_cpu(lock_waiting, cpu);
->>>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
->>>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
->>>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
->>>>>>>>> +            kvm_kick_cpu(cpu);
->>>>>>>> What about using NMI to wake sleepers? I think it was discussed, but
->>>>>>>> forgot why it was dismissed.
->>>>>>>
->>>>>>> I think I have missed that discussion. 'll go back and check. so
->>>>>>> what is the idea here? we can easily wake up the halted vcpus that
->>>>>>> have interrupt disabled?
->>>>>> We can of course. IIRC the objection was that NMI handling path is very
->>>>>> fragile and handling NMI on each wakeup will be more expensive then
->>>>>> waking up a guest without injecting an event, but it is still
->>>>>> interesting
->>>>>> to see the numbers.
->>>>>>
->>>>>
->>>>> Haam, now I remember, We had tried request based mechanism. (new
->>>>> request like REQ_UNHALT) and process that. It had worked, but had some
->>>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
->>>>> request cleared.  So had left it there..
->>>>>
->>>>> https://lkml.org/lkml/2012/4/30/67
->>>>>
->>>>> But I do not remember performance impact though.
->>>> No, this is something different. Wakeup with NMI does not need KVM
->>>> changes at
->>>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
->>>>
->>>
->>> True. It was not NMI.
->>> just to confirm, are you talking about something like this to be tried ?
->>>
->>> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
->>
->> When I started benchmark, I started seeing
->> "Dazed and confused, but trying to continue" from unknown nmi error
->> handling.
->> Did I miss anything (because we did not register any NMI handler)? or
->> is it that spurious NMIs are trouble because we could get spurious NMIs
->> if next waiter already acquired the lock.
-> There is a default NMI handler that tries to detect the reason why NMI
-> happened (which is no so easy on x86) and prints this message if it
-> fails. You need to add logic to detect spinlock slow path there. Check
-> bit in waiting_cpus for instance.
 
-aha.. Okay. will check that.
+--6ISAYjCz29ajFyjn
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->>
->> (note: I tried sending APIC_DM_REMRD IPI directly, which worked fine
->> but hypercall way of handling still performed well from the results I
->> saw).
-> You mean better? This is strange. Have you ran guest with x2apic?
->
+On Thu, Jul 25, 2013 at 11:33:18AM +0800, Robin Gong wrote:
+> Add pfuze100 regulator driver.
 
-Had the same doubt. So ran the full benchmark for dbench.
-So here is what I saw now. 1x was neck to neck (0.9% for hypercall vs 
-0.7% for IPI which should boil to no difference considering the noise
-factors) but otherwise, by sending IPI I see few percentage gain in 
-overcommit cases.
+Applied, thanks.  Fixing the language about the regulators being a
+property would be good, please send a followup for that.
 
+--6ISAYjCz29ajFyjn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR8PCWAAoJELSic+t+oim9iIwP/jzxQZ6aPor+AjsWN9c4q20i
+mr3ajfxGc70RPw2HUcXCU3joGgXUotGhNK4wTrIWKDsGAni8EC/kdR8BVH4vVHQE
+VKI+a6Dt41yQQX2hbgGxAi6bctmXl6FrJMbmawWsAqGsFS/E8s/OJ4cCeLzqQjYB
+lXxpiQtDH2V5BYvISR5GX3uH5C4+IDjGfEiRjTtG7jAmnZ1ktIpefZ1+jZWzPmAY
+VorVe+nh3XZv92tBJuHCPykNJST8lRoWp1NL4WvDPjUjwLpv1wzEceXANuuMGHZ+
+7cXBq9+48mJKTkz3LY0bV4/DrBdPZ8vn2FXfdJGSza/cF/NuBK1gp2z7z6sWF8eK
+XRz8seIjr/J3wYJ60w3JZLc4LqjXCK1Vo3WeAvG9oYdzwdCX6FRVniCtXWYlEOXa
+V1/Me+RxGL/6iH6XE1pAjSfYAsWp2E3TTwUtKfNoH+XKVdSwgwAW4KNNoLgtInQ7
+mHvkd03mLDIJqeuY9RvPhOh6b6KvMNHQ2Ge6D0+HgbzhTQove2zs2ZczTQS7ZBD3
+S4Czmj/d4BcTY1utDiGp4HhBPkK1FGeRzOkbU+xdpkblYpg+lhuP7TSATQ/QYZU7
+S/m3dE+VNcxRUxt4u13YX5PiGbnMRdROyBBNqUdoAXrNL8Erc7RZLoR/7hTM1OtS
+pdwthLFm0JZdmVJxVc0D
+=zSAA
+-----END PGP SIGNATURE-----
 
+--6ISAYjCz29ajFyjn--
