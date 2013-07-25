@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab3GYPQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:16:58 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59597 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3GYPQz (ORCPT
+	id S1756254Ab3GYPRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:17:30 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:43025 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755990Ab3GYPR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:16:55 -0400
-Message-ID: <51F14165.3060803@linutronix.de>
-Date: Thu, 25 Jul 2013 17:16:53 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Thu, 25 Jul 2013 11:17:27 -0400
+Date: Thu, 25 Jul 2013 11:17:19 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 14/21] x86, acpi, numa: Reserve hotpluggable memory at
+ early time.
+Message-ID: <20130725151719.GE26107@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-15-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723205557.GS21100@mtj.dyndns.org>
+ <20130723213212.GA21100@mtj.dyndns.org>
+ <51F089C1.4010402@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Bin Liu <binmlist@gmail.com>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to am33xx_driver_data
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-7-git-send-email-bigeasy@linutronix.de> <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com> <20130725144118.GA5412@linutronix.de> <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
-In-Reply-To: <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F089C1.4010402@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 05:12 PM, Bin Liu wrote:
-> Sebastian,
+Hello,
 
-Hi Bin,
+On Thu, Jul 25, 2013 at 10:13:21AM +0800, Tang Chen wrote:
+> >>This is rather hacky.  Why not just introduce MEMBLOCK_NO_MERGE flag?
+> 
+> The original thinking is to merge regions with the same nid. So I used pxm.
+> And then refresh the nid field when nids are mapped.
+> 
+> I will try to introduce MEMBLOCK_NO_MERGE and make it less hacky.
 
->> Is it really there or was it never there and it has been added to TRM by
->> accident?
-> The EOI register IS in the USB subsystem of AM33xx, but the SoC does
-> not use it because it uses level triggering for USB interrupt.
+I kinda don't follow why it's necessary to disallow merging BTW.  Can
+you plesae elaborate?  Shouldn't it be enough to mark the regions
+hotpluggable?  Why does it matter whether they get merged or not?  If
+they belong to different nodes, they'll be separated during the
+isolation phase while setting nids, which is the modus operandi of
+memblock anyway.
 
-I see.
+> In order to let memblock control the allocation, we have to store the
+> hotpluggable ranges somewhere, and keep the allocated range out of the
+> hotpluggable regions. I just think reserving the hotpluggable regions
+> and then memblock won't allocate them. No need to do any other limitation.
 
->>> But I am not sure if it is a good idea to remove eoi from the musb_dsps
->>> driver. If the intension is to merge the support for other SoC, such as
->>> AM35xx, AM18xx, then EOI handling might be still needed. I just don't know
->>> how those devices use EOI.
->>
->> If one of the architectures gets added which need an EOI then the offset
->> can be 0 and the EOI will happen only if it is != 0.
-> This patch cleaned up the use of EOI. Do you mean EOI handling will be
-> added back with condition EOI offset != 0, when the support of new
-> device which uses EIO is added?
+It isn't different from what you're doing right now.  Just tell
+memblock that the areas are hotpluggable and the default memblock
+allocation functions stay away from the areas.  That way you can later
+add functions which may allocate from hotpluggable areas for
+node-local data without resorting to tricks like unreserving part of
+it and trying allocation or what not.  As it currently stands, you're
+scattering hotpluggable memory handling across memblock and acpi which
+is kinda nasty.  Please make acpi feed information into memblock and
+make memblock handle hotpluggable regions appropriately.
 
-That is my intention.
+> And also, the acpi side modification in this patch-set is to get SRAT
+> and parse it. I think most of the logic in
+> acpi_reserve_hotpluggable_memory()
+> is necessary. I don't think letting memblock control the allocation will
+> make the acpi side easier.
 
-> Regards,
-> -Bin.
+It's about proper layering.  The code change involved in either case
+aren't big but splitting it right would give us less headache when we
+later try to support a different firmware or add more features, and
+more importantly, it makes things logical and lowers the all important
+WTH factor and makes things easier to follow.
 
-Sebastian
+Thanks.
+
+-- 
+tejun
