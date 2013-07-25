@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab3GYLWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 07:22:06 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:63394 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753394Ab3GYLWC (ORCPT
+	id S1755897Ab3GYLXv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 07:23:51 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48625 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755862Ab3GYLXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 07:22:02 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Michal Simek <monstr@monstr.eu>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] video: xilinxfb: Fix compilation warning
-Date: Thu, 25 Jul 2013 13:21:54 +0200
-Message-Id: <204d93f8a9dffef6ff00d961f91be0b465f21841.1374751310.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-10653-1374751314-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Thu, 25 Jul 2013 07:23:47 -0400
+Message-ID: <51F10AA8.2050901@linux.vnet.ibm.com>
+Date: Thu, 25 Jul 2013 16:53:20 +0530
+From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>, Borislav Petkov <bp@alien8.de>,
+        bhelgaas@google.com
+CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-acpi@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+References: <1374526866-6813-1-git-send-email-bp@alien8.de> <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722>
+In-Reply-To: <1374686598.18818.18.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072511-5816-0000-0000-00000916D38B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+On 07/24/2013 10:53 PM, Joe Perches wrote:
+> On Wed, 2013-07-24 at 22:43 +0530, Naveen N. Rao wrote:
+>> On 2013/07/22 11:01PM, Borislav Petkov wrote:
+>>> From: Borislav Petkov <bp@suse.de>
+>>>
+>>> [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x        c7f00000> for ERST.
+>>>
+>>> This needs to have leading zeroes. Make it so.
+>
+> Why does it need leading zeros?
+>
+>> While looking at this, I noticed that we seem to be using varying field
+>> widths in our APEI code:
+>> - einj.c has two instances using %#010llx.
+>> - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
+>>
+>> Not sure if these are intentional and those fields truly aren't 64-bit
+>> (as suggested by the usage of long long int).
+>
+> I suggest using "0x%llx" everywhere unless there's a
+> compelling reason like columnar alignment for them.
 
---=_mimegpg-monstr-desktop-10653-1374751314-0001
+I think that might be better. I see that these changes were done in 
+commit 46b91e37. Copying Bjorn Helgaas.
 
-regs_phys is phys_addr_t (u32 or u64).
-Lets retype it to u64.
+On 07/24/2013 11:40 PM, Borislav Petkov wrote:
+ > That's an interesting question but I think you're better fitted to
+ > answer it - I try to avoid the APEI spec as much as possible.
+ >
+ > :-)
+ >
 
-Fixes compilation warning introduced by:
-video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-(sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
-
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
-Changes in v2:
-- Use %pa instead of casting
-
-ppc44x_defconfig
-Fixes regressions in v3.11-rc2
-
----
- drivers/video/xilinxfb.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index f3d4a69..6629b29 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -341,8 +341,8 @@ static int xilinxfb_assign(struct platform_device *pdev,
-
- 	if (drvdata->flags & BUS_ACCESS_FLAG) {
- 		/* Put a banner in the log (for DEBUG) */
--		dev_dbg(dev, "regs: phys=%x, virt=%p\n", drvdata->regs_phys,
--					drvdata->regs);
-+		dev_dbg(dev, "regs: phys=%pa, virt=%p\n",
-+			&drvdata->regs_phys, drvdata->regs);
- 	}
- 	/* Put a banner in the log (for DEBUG) */
- 	dev_dbg(dev, "fb: phys=%llx, virt=%p, size=%x\n",
---
-1.8.2.3
+Oh, I've hardly scratched the surface w.r.t APEI. I think I'll let the 
+experts comment on this :)
 
 
---=_mimegpg-monstr-desktop-10653-1374751314-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+Thanks,
+Naveen
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAlHxClIACgkQykllyylKDCGvRQCeLyz0P8oGAxPmDZ08Dz4gnx00
-QfYAnj+0pOvklgckpxiDl0fxDoM6nsiB
-=DWWc
------END PGP SIGNATURE-----
-
---=_mimegpg-monstr-desktop-10653-1374751314-0001--
