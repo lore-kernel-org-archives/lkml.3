@@ -1,99 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab3GYSlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:41:49 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:4241 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117Ab3GYSiZ (ORCPT
+	id S1757000Ab3GYSpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:45:16 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:63655 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756064Ab3GYSpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:38:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 11:38:24 -0700
-From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-To: <balbi@ti.com>
-CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
-        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v3 2/9] usb: host: tegra: Remove leftover code
-Date: Thu, 25 Jul 2013 21:38:02 +0300
-Message-ID: <1374777489-13093-3-git-send-email-ttynkkynen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
-References: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
-X-NVConfidentiality: public
+	Thu, 25 Jul 2013 14:45:12 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 25 Jul 2013 19:45:04 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+Message-ID: <20130725184504.GC11514@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	linux-next <linux-next@vger.kernel.org>
+References: <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+ <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
+ <20130725163150.GD6493@cantiga.alporthouse.com>
+ <CA+icZUWmpZK0jO_G1ec446WftzXDvSdnHLcQrkmBSHA7fSAqcw@mail.gmail.com>
+ <20130725170144.GE6493@cantiga.alporthouse.com>
+ <CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
+ <20130725172616.GA11514@cantiga.alporthouse.com>
+ <CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
+ <CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
+ <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ehci-tegra calls devm_usb_get_phy, which will never succeed since the Tegra
-PHY does not register itself with the PHY subsystem. It is also completely
-redundant since the code has already located a PHY via an internal API.
+On Thu, Jul 25, 2013 at 08:03:06PM +0200, Sedat Dilek wrote:
+> On Thu, Jul 25, 2013 at 7:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> > F*ck. Wrong patch refreshed.
+> >
+> 
+> New dmesg attached.
 
-Call otg_set_host unconditionally to simplify the code since it should
-be safe to do so.
+Hmm, not seeing any difference, so let's add a couple more lines just to
+be sure:
 
-Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
----
- drivers/usb/host/ehci-tegra.c | 20 +++++---------------
- 1 file changed, 5 insertions(+), 15 deletions(-)
+(apologies I didn't stash the previous debug patch)
 
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index 14c1f35..06e8feb 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -58,7 +58,6 @@ static int (*orig_hub_control)(struct usb_hcd *hcd,
- struct tegra_ehci_hcd {
- 	struct tegra_usb_phy *phy;
- 	struct clk *clk;
--	struct usb_phy *transceiver;
- 	int port_resuming;
- 	bool needs_double_reset;
- 	enum tegra_usb_phy_port_speed port_speed;
-@@ -436,26 +435,18 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 		goto cleanup_phy;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 0563661..4d21f37 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1624,30 +1624,39 @@ i915_gem_mmap_gtt(struct drm_file *file,
+ 	struct drm_i915_gem_object *obj;
+ 	int ret;
+ 
++	printk(KERN_ERR "Hello!\n");
++
+ 	ret = i915_mutex_lock_interruptible(dev);
+-	if (ret)
++	if (ret) {
++		DRM_DEBUG_DRIVER("interrupted: ret=%d\n", ret);
+ 		return ret;
++	}
+ 
+ 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, handle));
+ 	if (&obj->base == NULL) {
++		DRM_DEBUG_DRIVER("Unknown object handle %d\n", handle);
+ 		ret = -ENOENT;
+ 		goto unlock;
  	}
  
--	if (pdata->operating_mode == TEGRA_USB_OTG) {
--		tegra->transceiver =
--			devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
--		if (!IS_ERR(tegra->transceiver))
--			otg_set_host(tegra->transceiver->otg, &hcd->self);
--	} else {
--		tegra->transceiver = ERR_PTR(-ENODEV);
--	}
-+	otg_set_host(u_phy->otg, &hcd->self);
- 
- 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
- 	if (err) {
- 		dev_err(&pdev->dev, "Failed to add USB HCD\n");
--		goto cleanup_transceiver;
-+		goto cleanup_otg_set_host;
+ 	if (obj->base.size > dev_priv->gtt.mappable_end) {
++		DRM_DEBUG_DRIVER("Object (%d) larger than mappable aperture (%d) > %d\n",
++				(int)obj->base.size, (int)dev_priv->gtt.mappable_end);
+ 		ret = -E2BIG;
+ 		goto out;
  	}
  
- 	return err;
+ 	if (obj->madv != I915_MADV_WILLNEED) {
+-		DRM_ERROR("Attempting to mmap a purgeable buffer\n");
++		DRM_DEBUG_DRIVER("Attempting to mmap a purgeable buffer\n");
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
  
--cleanup_transceiver:
--	if (!IS_ERR(tegra->transceiver))
--		otg_set_host(tegra->transceiver->otg, NULL);
-+cleanup_otg_set_host:
-+	otg_set_host(u_phy->otg, NULL);
- cleanup_phy:
- 	usb_phy_shutdown(hcd->phy);
- cleanup_clk_en:
-@@ -473,8 +464,7 @@ static int tegra_ehci_remove(struct platform_device *pdev)
- 	struct tegra_ehci_hcd *tegra =
- 		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
+ 	ret = i915_gem_object_create_mmap_offset(obj);
+-	if (ret)
++	if (ret) {
++		DRM_DEBUG_DRIVER("Failed to allocate mmap offset (ret=%d)\n", ret);
+ 		goto out;
++	}
  
--	if (!IS_ERR(tegra->transceiver))
--		otg_set_host(tegra->transceiver->otg, NULL);
-+	otg_set_host(hcd->phy->otg, NULL);
+ 	*offset = (u64)obj->base.map_list.hash.key << PAGE_SHIFT;
  
- 	usb_phy_shutdown(hcd->phy);
- 	usb_remove_hcd(hcd);
+@@ -1655,6 +1664,7 @@ out:
+ 	drm_gem_object_unreference(&obj->base);
+ unlock:
+ 	mutex_unlock(&dev->struct_mutex);
++	DRM_DEBUG_DRIVER("done, ret=%d\n", ret);
+ 	return ret;
+ }
+
+
 -- 
-1.8.1.5
-
+Chris Wilson, Intel Open Source Technology Centre
