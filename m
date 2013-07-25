@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab3GYDcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:32:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab3GYDc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:32:27 -0400
-Message-ID: <51F09C2B.2080802@redhat.com>
-Date: Thu, 25 Jul 2013 11:31:55 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1754590Ab3GYDeX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:34:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18438 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab3GYDeV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:34:21 -0400
+X-IronPort-AV: E=Sophos;i="4.89,740,1367942400"; 
+   d="scan'208";a="8015090"
+Message-ID: <51F09BB9.7030906@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 11:30:01 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Stephen Hemminger <stephen@networkplumber.org>
-CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Basil Gor <basil.gor@gmail.com>
-Subject: Re: [PATCH net-next] tuntap: hardware vlan tx support
-References: <1374563748-38821-1-git-send-email-jasowang@redhat.com> <20130723085310.4a036a47@nehalam.linuxnetplumber.net> <51EF6C42.1070304@redhat.com> <20130724081139.28ba3429@nehalam.linuxnetplumber.net>
-In-Reply-To: <20130724081139.28ba3429@nehalam.linuxnetplumber.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Kim <jaegeuk.kim@samsung.com>
+CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] f2fs: move bio_private allocation out of f2fs_bio_alloc()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 11:31:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 11:31:42,
+	Serialize complete at 2013/07/25 11:31:42
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 11:11 PM, Stephen Hemminger wrote:
-> On Wed, 24 Jul 2013 13:55:14 +0800
-> Jason Wang <jasowang@redhat.com> wrote:
->
->> On 07/23/2013 11:53 PM, Stephen Hemminger wrote:
->>> On Tue, 23 Jul 2013 15:15:48 +0800
->>> Jason Wang <jasowang@redhat.com> wrote:
->>>
->>>> +		struct {
->>>> +			__be16 h_vlan_proto;
->>>> +			__be16 h_vlan_TCI;
->>>> +		} veth;
->>> Don't you want to use struct vlan_hdr here? 
->> There's no need to care encapsulated proto here. In fact, we just
->> emulate the hardware inserting of 802.1Q header. So only skb->vlan_tci
->> and skb->vlan_proto needs to be cared.
->>> Your definition puts the two fields out of order?
->> It's order is same as struct vlan_ethhdr. Did you see any issue?
-> I was looking at if_vlan.h struct vlan_hdr. The veth structure
-> is a slice between ether and vlan header.
+bio->bi_private is not always needed. As in the reading data path,
+end_read_io does not need bio_private for further using, so moving
+bio_private allocation out of f2fs_bio_alloc(). Alloc it in the
+submit_write_page(), and ignore it in the f2fs_readpage().
 
-Right, so no functional issue.
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ fs/f2fs/data.c    |    1 -
+ fs/f2fs/segment.c |   19 +++++++++++--------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index c73c394..19cd7c6 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -365,7 +365,6 @@ static void read_end_io(struct bio *bio, int err)
+ 		}
+ 		unlock_page(page);
+ 	} while (bvec >= bio->bi_io_vec);
+-	kfree(bio->bi_private);
+ 	bio_put(bio);
+ }
+ 
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+index a86d125..9b74ae2 100644
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -611,18 +611,12 @@ static void f2fs_end_io_write(struct bio *bio, int err)
+ struct bio *f2fs_bio_alloc(struct block_device *bdev, int npages)
+ {
+ 	struct bio *bio;
+-	struct bio_private *priv;
+-retry:
+-	priv = kmalloc(sizeof(struct bio_private), GFP_NOFS);
+-	if (!priv) {
+-		cond_resched();
+-		goto retry;
+-	}
+ 
+ 	/* No failure on bio allocation */
+ 	bio = bio_alloc(GFP_NOIO, npages);
+ 	bio->bi_bdev = bdev;
+-	bio->bi_private = priv;
++	bio->bi_private = NULL;
++
+ 	return bio;
+ }
+ 
+@@ -681,8 +675,17 @@ static void submit_write_page(struct f2fs_sb_info *sbi, struct page *page,
+ 		do_submit_bio(sbi, type, false);
+ alloc_new:
+ 	if (sbi->bio[type] == NULL) {
++		struct bio_private *priv;
++retry:
++		priv = kmalloc(sizeof(struct bio_private), GFP_NOFS);
++		if (!priv) {
++			cond_resched();
++			goto retry;
++		}
++
+ 		sbi->bio[type] = f2fs_bio_alloc(bdev, max_hw_blocks(sbi));
+ 		sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
++		sbi->bio[type]->bi_private = priv;
+ 		/*
+ 		 * The end_io will be assigned at the sumbission phase.
+ 		 * Until then, let bio_add_page() merge consecutive IOs as much
+-- 
+1.7.7
+
