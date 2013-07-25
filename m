@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab3GYRWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:22:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38781 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab3GYRWs (ORCPT
+	id S1756806Ab3GYR01 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:26:27 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:59855 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756102Ab3GYR0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:22:48 -0400
-Message-ID: <51F15E9F.1080600@ti.com>
-Date: Thu, 25 Jul 2013 13:21:35 -0400
-From: Eduardo Valentin <eduardo.valentin@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Thu, 25 Jul 2013 13:26:25 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 25 Jul 2013 18:26:16 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+Message-ID: <20130725172616.GA11514@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	linux-next <linux-next@vger.kernel.org>
+References: <CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
+ <20130725142705.GM5939@phenom.ffwll.local>
+ <CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
+ <CAKMK7uG-KCF5oU2XJ5UWPJn=V3i0jBLs5a=gU9UPuJxY0v=bNw@mail.gmail.com>
+ <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+ <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
+ <20130725163150.GD6493@cantiga.alporthouse.com>
+ <CA+icZUWmpZK0jO_G1ec446WftzXDvSdnHLcQrkmBSHA7fSAqcw@mail.gmail.com>
+ <20130725170144.GE6493@cantiga.alporthouse.com>
+ <CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
 MIME-Version: 1.0
-To: Pawel Moll <pawel.moll@arm.com>
-CC: Eduardo Valentin <eduardo.valentin@ti.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: RFC: device thermal limits represented in device tree nodes
-References: <51ED40E3.5020703@ti.com> <51EF3186.9060001@wwwdotorg.org>  <1374664745.25700.118.camel@hornet> <51EFED19.5090900@ti.com>  <1374768928.3213.31.camel@hornet> <1374770294.3213.35.camel@hornet>
-In-Reply-To: <1374770294.3213.35.camel@hornet>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature";
-	boundary="Ips3dcRL1pdEAAfT61g678Mknhi9Kp4Ar"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Ips3dcRL1pdEAAfT61g678Mknhi9Kp4Ar
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 25, 2013 at 07:15:03PM +0200, Sedat Dilek wrote:
+> On Thu, Jul 25, 2013 at 7:01 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> > Basically boils down to either an object allocation failure or mmaping
+> > failure. I think dmesg with drm.debug=7 is the next step.
+> 
+> Attached! Thanks for taking care.
 
-On 25-07-2013 12:38, Pawel Moll wrote:
-> On Thu, 2013-07-25 at 17:15 +0100, Pawel Moll wrote:
->>> Another way, as I mentioned in the original RFC, an option would be t=
-o
->>> have the thermal_zone node not embedded in any device node. But them,=
- we
->>> would need to firmly link it to other device nodes, to describe what =
-is
->>> monitored and what is used for monitoring.=20
->>
->> You mean the zone nodes would live at the top level of the tree? To my=
+Hmm, looks like i915_gem_map_gtt fails, but no reason given, so can you
+please apply this for more debug:
 
->> mind the root represents the device (the board, whatever you call it),=
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 0563661..34e09bf 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -1630,24 +1630,29 @@ i915_gem_mmap_gtt(struct drm_file *file,
+ 
+ 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, handle));
+ 	if (&obj->base == NULL) {
++		DRM_DRIVER_DEBUG("Unknown object handle %d\n", handle);
+ 		ret = -ENOENT;
+ 		goto unlock;
+ 	}
+ 
+ 	if (obj->base.size > dev_priv->gtt.mappable_end) {
++		DRM_DRIVER_DEBUG("Object (%d) larger than mappable aperture (%d) > %d\n",
++				(int)obj->base.size, (int)dev_priv->gtt.mappable_end);
+ 		ret = -E2BIG;
+ 		goto out;
+ 	}
+ 
+ 	if (obj->madv != I915_MADV_WILLNEED) {
+-		DRM_ERROR("Attempting to mmap a purgeable buffer\n");
++		DRM_DRIVER_DEBUG("Attempting to mmap a purgeable buffer\n");
+ 		ret = -EINVAL;
+ 		goto out;
+ 	}
+ 
+ 	ret = i915_gem_object_create_mmap_offset(obj);
+-	if (ret)
++	if (ret) {
++		DRM_DRIVER_DEBUG("Failed to allocate mmap offset (ret=%d)\n", ret);
+ 		goto out;
++	}
+ 
+ 	*offset = (u64)obj->base.map_list.hash.key << PAGE_SHIFT;
 
->=20
-> What I wanted to say was: ... so the zone would still be embedded in a
-> device node :-)
->
-
-ahh ok.. I see.
-
-
-> Pawel
->=20
->=20
->=20
->=20
-
-
---=20
-You have got to be excited about what you are doing. (L. Lamport)
-
-Eduardo Valentin
-
-
---Ips3dcRL1pdEAAfT61g678Mknhi9Kp4Ar
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iF4EAREIAAYFAlHxXp8ACgkQCXcVR3XQvP3SJwD/Q43Alhj39BctflLwzOkAlYsP
-ohwpftfjiAOnOKgRmiMBAIBeRddeMk1TEg6FSQagfW5y+lLZgBGCfZO+XKLdYshr
-=/SSk
------END PGP SIGNATURE-----
-
---Ips3dcRL1pdEAAfT61g678Mknhi9Kp4Ar--
+-- 
+Chris Wilson, Intel Open Source Technology Centre
