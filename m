@@ -1,142 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab3GYM0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 08:26:17 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:31166 "EHLO
+	id S1755696Ab3GYM2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 08:28:31 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32272 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781Ab3GYM0L (ORCPT
+	with ESMTP id S1755358Ab3GYM23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 08:26:11 -0400
-Date: Thu, 25 Jul 2013 08:25:53 -0400
+	Thu, 25 Jul 2013 08:28:29 -0400
+Date: Thu, 25 Jul 2013 08:28:14 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Zhenzhong Duan <zhenzhong.duan@oracle.com>
 Cc: linux-pci@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         xen-devel <xen-devel@lists.xen.org>, bhelgaas@google.com,
         Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-Message-ID: <20130725122552.GA23927@konrad-lan.dumpdata.com>
-References: <51EF451A.8050003@oracle.com>
- <20130724134622.GC2518@phenom.dumpdata.com>
- <51F0CB10.1070500@oracle.com>
+        "x86@kernel.org >> \"x86@kernel.org\"" <x86@kernel.org>
+Subject: Re: [PATCH 3/3] msix restore code optimization for dom0
+Message-ID: <20130725122813.GB23927@konrad-lan.dumpdata.com>
+References: <51EF453B.5070200@oracle.com>
+ <20130724135555.GD2518@phenom.dumpdata.com>
+ <51F0D109.4050002@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F0CB10.1070500@oracle.com>
+In-Reply-To: <51F0D109.4050002@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 02:52:00PM +0800, Zhenzhong Duan wrote:
+On Thu, Jul 25, 2013 at 03:17:29PM +0800, Zhenzhong Duan wrote:
 > 
-> On 2013-07-24 21:46, Konrad Rzeszutek Wilk wrote:
-> >On Wed, Jul 24, 2013 at 11:08:10AM +0800, Zhenzhong Duan wrote:
-> >>xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
-> >>in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
-> >>
-> >>Move restore of mask in default_restore_msi_irqs, this could avoid mask
-> >>restored twice in dom0, once in hypercall, the other in kernel.
-> >Why not remove the hypercall then?
-> If removed, msi entry couldn't be restored, such as
-> pci_reset_function who will reset pci registers.
-
-I did not read your email first time correctly. You are saying
-that we restore it twice in the host kernel (aka dom0), once in the
-hypervisor (b/c the guest tries to do MSI-X write and it ends up in
-the hypervisor), and then we also do it in the guest kernel?
-
-That is a lot of duplicate calls.
-> >Or alter the function to detect
-> >whether the restore of the mask has occurred?
-> Then we need to add the check for dom0 only.
-
-I am not sure I completly follow this. Is the reason for the lost of
-interrupt b/c one of those four MSI-X writes ends up masking and the
-subsequent writes end up with invalid data?
-
+> On 2013-07-24 21:55, Konrad Rzeszutek Wilk wrote:
+> >On Wed, Jul 24, 2013 at 11:08:43AM +0800, Zhenzhong Duan wrote:
+> >>PHYSDEVOP_restore_msi is used to restore all msix entrys in one hypercall
+> >>in dom0. But it is called multi times in current code.
+> >Couldn't the restore_msi_irqs instead check whether it has already
+> >made the hypercall (perhaps by seeing if the MSI-X's are enabled?)
+> >and if so don't do the hypercall?
+> I think it's better to remove the for loop for dom0, also hard to
+> know when to clear hypercall count.
 > >
-> >>Without that, qlcnic driver calling pci_reset_function will lost interrupt
-> >>in dom0.
+> >I think you are addressing the problem from a different viewpoint.
+> >
+> >The problem is not with the API (the x86_msi one). The problem
+> >is with the implementation (x86_msi.restore_msi_irq - specifically
+> >the Xen one) having an side effect.
+> We have x86_msi.restore_msi_irqs and no x86_msi.restore_msi_irq,if want to
+> add x86_msi.restore_msi_irq, same hypercall need to be added accordingly.
 
-But if you pass said PCI device to a guest there is no need for the
-interrupts to go to the host (dom0). They should go to the hypervisor
-which will deliever them to the guest.
+I think you need to repost this then without any mention to the
+implementation  and just point out that the reason for doing the cleanup
+from an API perspective.
 
-Is that what you meant by 'in dom0' ?
-
-
-> >>
-> >>Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-> >>Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-> >>---
-> >>  drivers/pci/msi.c |   17 ++++++++++++++---
-> >>  1 files changed, 14 insertions(+), 3 deletions(-)
-> >>
-> >>diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-> >>index 87223ae..922fb49 100644
-> >>--- a/drivers/pci/msi.c
-> >>+++ b/drivers/pci/msi.c
-> >>@@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
-> >>  #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
-> >>  void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-> >>  {
-> >>+	int pos;
-> >>+	u16 control;
-> >>  	struct msi_desc *entry;
-> >>  	entry = NULL;
-> >>@@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
-> >>  		entry = irq_get_msi_desc(irq);
-> >>  	}
-> >>-	if (entry)
-> >>+	if (entry) {
-> >>  		write_msi_msg(irq, &entry->msg);
-> >>+		if (dev->msix_enabled) {
-> >>+			msix_mask_irq(entry, entry->masked);
-> >>+			readl(entry->mask_base);
-> >>+		} else {
-> >>+			pos = entry->msi_attrib.pos;
-> >>+			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
-> >>+					     &control);
-> >>+			msi_mask_irq(entry, msi_capable_mask(control),
-> >>+				     entry->masked);
-> >>+		}
-> >>+	}
-> >>  }
-> >>  #endif
-> >>@@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
-> >>  	arch_restore_msi_irqs(dev, dev->irq);
-> >>  	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
-> >>-	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
-> >Before this patch we had:
+And also change the title. Thanks
+ 
 > >
-> >	write_msi_msg(..)
-> >	pci_read_config_work(PCI_MSI_FLAGS, &control)
-> >	pci_write_config_dword(~msi_capable_mask(control) | entry->masked)
-> >	control &= ~_PCI_MSI_FLAGS_QSIZE;
-> >	control |= ...
-> >	pci_write_config_dword(PCI_MSI_FLAGS, control)
+> >>This patch split arch_restore_msi_irqs into two functions.
+> >>Use arch_restore_msi_irq deal with one entry and avoid call hypercall multi
+> >>times in __pci_restore_msix_state.
+> >But irregardless of how you address the problem, this in the MSI code
+> >is a bit odd:
 > >
-> >while with this you have now:
+> >	list_for_each_entry(entry, &dev->msi_list, list) {
+> >		arch_restore_msi_irqs(dev, entry->irq);
+> >	}
 > >
-> >	write_msi_msg(..)
-> >	pci_read_config_work(PCI_MSI_FLAGS, &_control)
-> >	pci_write_config_dword(~msi_capable_mask(_control) | entry->masked)
-> >--> 	pci_read_config_work(PCI_MSI_FLAGS, &control)
-> >	control &= ~_PCI_MSI_FLAGS_QSIZE;
-> >	control |= ...
-> >	pci_write_config_dword(PCI_MSI_FLAGS, control)
+> >and if you collapse that and make the 'arch_restore_msi_irqs' be responsible
+> >for doing all the heavy lifting.. That does seem an improvement on the API
+> >and will make it inline with 'teardown_msi_irqs'.
 > >
-> >see the problem? The 'control' value in __pci_restore_msi_state reads the
-> >value _after_ it has been masked (which is now done in default_restore_msi_irqs).
-> >
-> >Wouldn't that cause problems?
-> >
-> pci_write_config_dword(~msi_capable_mask(_control) | entry->masked) restore per vector
-> msi mask bits based on the support of PCI_MSI_FLAGS_MASKBIT. This is different from the
-> global mask bit in PCI_MSI_FLAGS.
-
-So I think you are saying that it won't cause problems? 
-> 
+> >So from that view I think it would be nicer?
+> Yes, This patch just did that. There is
+> teardown_msi_irqs/teardown_msi_irq pair.
+> But in current code, arch_restore_msi_irqs is used for one msix
+> entry, this is not consistent with
+> its naming tradiition. So I changed default_restore_msi_irqs to deal
+> with all entrys and
+> default_restore_msi_irq to deal with one entry for baremetal. For
+> dom0, we have
+> PHYSDEVOP_restore_msi  to restore all msix entrys.
