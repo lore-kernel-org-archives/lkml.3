@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754996Ab3GYICo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:02:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:16845 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754862Ab3GYIC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:02:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,742,1367996400"; 
-   d="scan'208";a="351296248"
-Date: Thu, 25 Jul 2013 12:53:51 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Dan Williams <djbw@fb.com>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "Vutla, Lokesh" <lokeshvutla@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Matt Porter <matt@ohporter.com>, Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
-Message-ID: <20130725072351.GJ18642@intel.com>
-References: <1374597804-3961-1-git-send-email-joelf@ti.com>
- <51EF8A52.90902@metafoo.de>
- <51EF8C2B.2030409@ti.com>
- <51EF8F4E.8080806@metafoo.de>
- <FB20353E-4890-4462-A671-3587A3841B4A@ti.com>
- <51EF92F2.3030405@metafoo.de>
- <51F0231C.7000401@ti.com>
- <20130724183329.GH18642@intel.com>
- <51F02CBA.5060704@ti.com>
+	id S1755126Ab3GYIDY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:03:24 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56646 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab3GYIDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:03:20 -0400
+Message-ID: <51F0DB11.2080508@linux.vnet.ibm.com>
+Date: Thu, 25 Jul 2013 13:30:17 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F02CBA.5060704@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Eric Dumazet <edumazet@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Gao feng <gaofeng@cn.fujitsu.com>
+Subject: Hack bench regression with CONFIG_SLUB_CPU_PARTIAL disabled (info
+ only)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072507-5490-0000-0000-000003E2061C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 02:36:26PM -0500, Joel Fernandes wrote:
-> > Also another point worth considering is the approach Russell suggested, I havent
-> > gotten a chance to dig deeper but if I understood it correctly then programming
-> > the device_dma_parameters should be the right thing to do. Again I need to look
-> > deeper and esp wrt edma
-> 
-> OK. I have some patches sitting in my tree too that I'm working on. With
-> that I don't need to know about maximum number of allowed segments and
-> can send along any number of segment. I will rework them and post them.
-> fwiw, I will also implement caps API incase like Lars did populating the
-> other fields though these will not be unused.
-> 
-> For segment size, at this time I don't know any driver that uses it
-> other than davinci-pcm. For this reason the calculations can be done as
-> Lars suggested (for minimum of maximum). Do you know in advance if
-> you're going to amend to drop segment size if we go with what Russell
-> suggested, or are you going to leave the seg-size in the caps API anyway.
-I am just back and havent really done my work on this. Let me check and as I
-said if my understanding is right I would be inclined to remove these fields...
+Hi,
 
-~Vinod
--- 
+While testing hackbench with 3.11-rc1 I observed hackbench testcase
+took too long to complete (32 vcpu kvm guest on 32 core HT off machine).
+
+hackbench 1x degraded by 3 time (40sec vs 112sec)
+hackbench 2x degraded by around 20time (90sec vs 1800 sec)
+
+When I bisected, I found that I had CONFIG_SLUB_CPU_PARTIAL
+accidentally disabled.
+I understand that  CONFIG_SLUB_CPU_PARTIAL=y by default and the config
+option is to provide determinism for RT kernels and thus it is not a
+problem.
+But thought of sharing this here so that if somebody runs into same 
+issue accidently, it would save their time.
+
