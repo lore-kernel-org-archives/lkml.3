@@ -1,227 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab3GYB3V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 21:29:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:37333 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752871Ab3GYB3U convert rfc822-to-8bit (ORCPT
+	id S1754335Ab3GYBdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 21:33:10 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45504 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753484Ab3GYBdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 21:29:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,738,1367996400"; 
-   d="scan'208";a="376000579"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ben Guthro <Benjamin.Guthro@citrix.com>
-CC: "Moore, Robert" <robert.moore@intel.com>, Jan Beulich <jbeulich@suse.com>,
-        "Rafael J . Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Subject: RE: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
- hardware sleep path
-Thread-Topic: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
- reduced hardware sleep path
-Thread-Index: AQHOcnac189PXIyTT0GA11YOlMneHJlQ7d+w///Zo4CAIr75sP//2WoAgAAVrYCAAAE8AIAAFSaAgAAJ4gCAABXVAIABGJaQ
-Date: Thu, 25 Jul 2013 01:28:49 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024356ED@SHSMSX101.ccr.corp.intel.com>
-References: <1372255575-29567-1-git-send-email-benjamin.guthro@citrix.com>
- <1372255575-29567-2-git-send-email-benjamin.guthro@citrix.com>
- <1AE640813FDE7649BE1B193DEA596E880241B363@SHSMSX101.ccr.corp.intel.com>
- <51D2BCB7.5040105@citrix.com>
- <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com>
- <51EFC1FE.5000609@citrix.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
- <51EFD536.8070209@citrix.com>
- <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA884D@ORSMSX103.amr.corp.intel.com>
- <51EFEF3E.8020001@citrix.com> <20130724163214.GB6308@phenom.dumpdata.com>
-In-Reply-To: <20130724163214.GB6308@phenom.dumpdata.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 24 Jul 2013 21:33:08 -0400
+Message-ID: <51F08050.40207@hurleysoftware.com>
+Date: Wed, 24 Jul 2013 21:33:04 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH v2 6/9] n_tty: Process echoes in blocks
+References: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com> <1371305069-5366-1-git-send-email-peter@hurleysoftware.com> <1371305069-5366-7-git-send-email-peter@hurleysoftware.com> <20130723235329.GA14499@kroah.com>
+In-Reply-To: <20130723235329.GA14499@kroah.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let me just give an example to let you know the difficulties for ACPICA developers to merge Xen's acpi_os_prepare_sleep.
+On 07/23/2013 07:53 PM, Greg Kroah-Hartman wrote:
+> On Sat, Jun 15, 2013 at 10:04:26AM -0400, Peter Hurley wrote:
+>> Byte-by-byte echo output is painfully slow, requiring a lock/unlock
+>> cycle for every input byte.
+>>
+>> Instead, perform the echo output in blocks of 256 characters, and
+>> at least once per flip buffer receive. Enough space is reserved in
+>> the echo buffer to guarantee a full block can be saved without
+>> overrunning the echo output. Overrun is prevented by discarding
+>> the oldest echoes until enough space exists in the echo buffer
+>> to receive at least a full block of new echoes.
+>
+> I'm a bit worried about this, I wonder if anything is expecting the
+> echos to not come in "bursts" like this, but I really can't think of why
+> they would want that.
 
-The original logic in the acpi_hw_legacy_sleep is:
-111         /* Get current value of PM1A control */
-112 
-113         status = acpi_hw_register_read(ACPI_REGISTER_PM1_CONTROL,
-114                                        &pm1a_control);
-115         if (ACPI_FAILURE(status)) {
-116                 return_ACPI_STATUS(status);
-117         }
-118         ACPI_DEBUG_PRINT((ACPI_DB_INIT,
-119                           "Entering sleep state [S%u]\n", sleep_state));
-120 
-121         /* Clear the SLP_EN and SLP_TYP fields */
-122 
-123         pm1a_control &= ~(sleep_type_reg_info->access_bit_mask |
-124                           sleep_enable_reg_info->access_bit_mask);
-125         pm1b_control = pm1a_control;
-126 
-127         /* Insert the SLP_TYP bits */
-128 
-129         pm1a_control |=
-130             (acpi_gbl_sleep_type_a << sleep_type_reg_info->bit_position);
-131         pm1b_control |=
-132             (acpi_gbl_sleep_type_b << sleep_type_reg_info->bit_position);
-133 
-134         /*
-135          * We split the writes of SLP_TYP and SLP_EN to workaround
-136          * poorly implemented hardware.
-137          */
-138 
-139         /* Write #1: write the SLP_TYP data to the PM1 Control registers */
-140 
-141         status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
-142         if (ACPI_FAILURE(status)) {
-143                 return_ACPI_STATUS(status);
-144         }
-145 
-146         /* Insert the sleep enable (SLP_EN) bit */
-147 
-148         pm1a_control |= sleep_enable_reg_info->access_bit_mask;
-149         pm1b_control |= sleep_enable_reg_info->access_bit_mask;
-150 
-151         /* Flush caches, as per ACPI specification */
-152 
-153         ACPI_FLUSH_CPU_CACHE();
-154 
-=======
-[Now Xen's hook appears here)
-=======
-161         /* Write #2: Write both SLP_TYP + SLP_EN */
-162 
-163         status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
-164         if (ACPI_FAILURE(status)) {
-165                 return_ACPI_STATUS(status);
-166         }
+The block size for echoes is trivially settable so if you'd prefer a
+smaller value than every 256 chars, I could send a patch for a value
+you are more comfortable with - 64 chars, 32 chars, whatever.
 
-If the whole block is re-implemented by ACPICA in the future:
+I picked that value from casual performance testing and that it
+coincides with the smallest possible flip buffer; ie., echo blocks are
+retired at the same rate as flip buffers when receiving is not
+saturated.
 
-Acpi_hw_write_field_register(ACPI_SLEEP_REGISTER, ACPI_SLP_TYPE | ACPI_SLP_EN, slp_type | slp_en);
+> So let's apply it and see what breaks!  :)
 
-Then where should ACPICA put this hook under the new design?
-Can it go inside acpi_hw_write_field_register?
-If the hook is in the current position, then future ACPICA development work on the suspend/resume codes are likely broken.
+I'm ready :)
 
-IMO,
-1. acpi_os_preapre_sleep() should be put before Line 111
-2. acpi_os_preapre_sleep()'s parameters should be re-designed
-3. Xen only register hacking logic should be put inside acpi_os_prepare_sleep().
+Regards,
+Peter Hurley
 
-Hope the above example can make my concern clearer now. :-)
-
-Thanks
--Lv
-
-> -----Original Message-----
-> From: linux-acpi-owner@vger.kernel.org
-> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Konrad Rzeszutek Wilk
-> Sent: Thursday, July 25, 2013 12:32 AM
-> To: Ben Guthro
-> Cc: Moore, Robert; Zheng, Lv; Jan Beulich; Rafael J . Wysocki;
-> linux-kernel@vger.kernel.org; linux-acpi@vger.kernel.org;
-> xen-devel@lists.xen.org
-> Subject: Re: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
-> hardware sleep path
-> 
-> On Wed, Jul 24, 2013 at 11:14:06AM -0400, Ben Guthro wrote:
-> >
-> >
-> > On 07/24/2013 10:38 AM, Moore, Robert wrote:
-> > > I haven't found a high-level description of "acpi_os_prepare_sleep",
-> perhaps I missed it.
-> > >
-> > > Can someone point me to the overall description of this change and why it is
-> being considered?
-> >
-> > Hi Bob,
-> >
-> > For this series, the v6 of this series does a decent job of what it is
-> > trying to accomplish:
-> > https://lkml.org/lkml/2013/7/1/205
-> >
-> > However, I recognize that this does not really describe *why*
-> > acpi_os_prepare_sleep is necessary to begin with. For that, we need to
-> > go back a little more.
-> >
-> > The summary for the series that introduced it is a good description,
-> > of the reasons it is necessary:
-> > http://lkml.indiana.edu/hypermail/linux/kernel/1112.2/00450.html
-> >
-> > In summary though - in the case of Xen (and I believe this is also
-> > true in tboot) a value inappropriate for a VM (which dom0 is a special
-> > case
-> > of) was being written to cr3, and the physical machine would never
-> > come out of S3.
-> >
-> > This mechanism gives an os specific hook to do something else down at
-> > the lower levels, while still being able to take advantage of the
-> > large amount of OS independent code in ACPICA.
-> 
-> It might be also prudent to look at original 'hook' that was added by Intel in the
-> Linux code to support TXT:
-> 
-> 
-> commit 86886e55b273f565935491816c7c96b82469d4f8
-> Author: Joseph Cihula <joseph.cihula@intel.com>
-> Date:   Tue Jun 30 19:31:07 2009 -0700
-> 
->     x86, intel_txt: Intel TXT Sx shutdown support
-> 
->     Support for graceful handling of sleep states (S3/S4/S5) after an Intel(R)
-> TXT launch.
-> 
->     Without this patch, attempting to place the system in one of the ACPI
-> sleep
->     states (S3/S4/S5) will cause the TXT hardware to treat this as an attack
-> and
->     will cause a system reset, with memory locked.  Not only may the
-> subsequent
->     memory scrub take some time, but the platform will be unable to enter
-> the
->     requested power state.
-> 
->     This patch calls back into the tboot so that it may properly and securely
-> clean
->     up system state and clear the secrets-in-memory flag, after which it will
-> place
->     the system into the requested sleep state using ACPI information passed
-> by the kernel.
-> 
->      arch/x86/kernel/smpboot.c     |    2 ++
->      drivers/acpi/acpica/hwsleep.c |    3 +++
->      kernel/cpu.c                  |    7 ++++++-
->      3 files changed, 11 insertions(+), 1 deletion(-)
-> 
->     Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
->     Signed-off-by: Shane Wang <shane.wang@intel.com>
->     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> 
-> I suspect that if tboot was used with a different OS (Solaris?) it would hit the
-> same case and a similar hook would be needed.
-> 
-> Said 'hook' (which was a call to tboot_sleep) was converted to be a more
-> neutral 'acpi_os_prepare_sleep' which tboot can use (and incidently Xen too).
-> 
-> I think what Bob is saying that if said hook is neccessary (and I believe it is - and
-> Intel TXT maintainer thinks so too since he added it in the first place), then the
-> right way of adding it is via the ACPICA tree.
-> 
-> Should the discussion for this be moved there ? (https://acpica.org/community)
-> and an generic 'os_prepare_sleep' patch added in
-> git://github.com/acpica/acpica.git?
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
