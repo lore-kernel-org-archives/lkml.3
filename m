@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756628Ab3GYPsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:48:22 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:30504 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756402Ab3GYPsV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:48:21 -0400
-Message-ID: <1374767240.16322.228.camel@misato.fc.hp.com>
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-From: Toshi Kani <toshi.kani@hp.com>
-To: Hush Bensen <hush.bensen@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        dave@sr71.net, kosaki.motohiro@gmail.com,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Date: Thu, 25 Jul 2013 09:47:20 -0600
-In-Reply-To: <51F06E87.1060902@gmail.com>
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>
-	   <20130722083721.GC25976@gmail.com>
-	   <1374513120.16322.21.camel@misato.fc.hp.com>
-	   <20130723080101.GB15255@gmail.com>
-	  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com>
-	 <1374681742.16322.180.camel@misato.fc.hp.com> <51F06E87.1060902@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756671Ab3GYPsi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:48:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22765 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756516Ab3GYPsc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 11:48:32 -0400
+From: Peter Jones <pjones@redhat.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Alexandra N. Kossovsky" <Alexandra.Kossovsky@oktetlabs.ru>,
+        linux-fbdev@vger.kernel.org, <linux-kernel@vger.kernel.org>,
+        Peter Jones <pjones@redhat.com>
+Subject: [PATCH] Release efifb's colormap in efifb_destroy()
+Date: Thu, 25 Jul 2013 11:48:11 -0400
+Message-Id: <1374767291-2874-1-git-send-email-pjones@redhat.com>
+In-Reply-To: <CAHkRjk4Ansh+Xr+cPQNacwx=aOb65_hW_MNRx5QVtatJCz5tqg@mail.gmail.com>
+References: <CAHkRjk4Ansh+Xr+cPQNacwx=aOb65_hW_MNRx5QVtatJCz5tqg@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 08:17 +0800, Hush Bensen wrote:
- :
-> Thanks for your explaination, very useful for me. ;-) Btw, what's the 
-> eject method done?
+This was found by Alexandra Kossovsky, who noted this traceback from
+kmemleak:
 
-On bare metal, the eject method makes a target device electrically
-isolated and physically removable.  On virtualized environment, the
-eject method makes a target device unassigned and released.
+> unreferenced object 0xffff880216fcfe00 (size 512):
+>   comm "swapper/0", pid 1, jiffies 4294895429 (age 1415.320s)
+>   hex dump (first 32 bytes):
+>     00 00 00 00 00 00 00 00 aa aa aa aa aa aa aa aa  ................
+>     55 55 55 55 55 55 55 55 ff ff ff ff ff ff ff ff  UUUUUUUU........
+>   backtrace:
+>     [<ffffffff813e415c>] kmemleak_alloc+0x21/0x3e
+>     [<ffffffff8111c17f>]
+>     kmemleak_alloc_recursive.constprop.57+0x16/0x18
+>     [<ffffffff8111e63b>] __kmalloc+0xf9/0x144
+>     [<ffffffff8123d9cf>] fb_alloc_cmap_gfp+0x47/0xe1
+>     [<ffffffff8123da77>] fb_alloc_cmap+0xe/0x10
+>     [<ffffffff81aff40a>] efifb_probe+0x3e9/0x48f
+>     [<ffffffff812c566f>] platform_drv_probe+0x34/0x5e
+>     [<ffffffff812c3e6d>] driver_probe_device+0x98/0x1b4
+>     [<ffffffff812c3fd7>] __driver_attach+0x4e/0x6f
+>     [<ffffffff812c25bf>] bus_for_each_dev+0x57/0x8a
+>     [<ffffffff812c3984>] driver_attach+0x19/0x1b
+>     [<ffffffff812c362b>] bus_add_driver+0xde/0x201
+>     [<ffffffff812c453f>] driver_register+0x8c/0x110
+>     [<ffffffff812c510d>] platform_driver_register+0x41/0x43
+>     [<ffffffff812c5127>] platform_driver_probe+0x18/0x8a
+>     [<ffffffff81aff002>] efifb_init+0x276/0x295
+---
+ drivers/video/efifb.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-> Could you give me the calltrace of add_memory and remove_memory? I
-> don't have machine support hotplug, but I hope to investigate how
-> ACPI part works for memory hotplug. ;-)
-
-Here you go.
-
-[   84.883517]  [<ffffffff8153e8a4>] add_memory+0x24/0x185
-[   84.883525]  [<ffffffff812ca331>] ? acpi_get_pxm+0x2b/0x4e
-[   84.883533]  [<ffffffff81303418>] acpi_memory_device_add+0x144/0x274
-[   84.883539]  [<ffffffff812c1b25>] acpi_bus_device_attach+0x80/0xd9
-[   84.883545]  [<ffffffff812c2b65>] acpi_bus_scan+0x65/0x9f
-[   84.883551]  [<ffffffff812c2c1d>] acpi_scan_bus_device_check
-+0x7e/0x10f
-[   84.883556]  [<ffffffff812c2cc1>] acpi_scan_device_check+0x13/0x15
-[   84.883562]  [<ffffffff812bbdab>] acpi_os_execute_deferred+0x25/0x32
-[   84.883568]  [<ffffffff81057cbc>] process_one_work+0x229/0x3d3
-[   84.883573]  [<ffffffff81057bfa>] ? process_one_work+0x167/0x3d3
-[   84.883579]  [<ffffffff81058248>] worker_thread+0x133/0x200
-[   84.883584]  [<ffffffff81058115>] ? rescuer_thread+0x280/0x280
-[   84.883591]  [<ffffffff8105e0c3>] kthread+0xb1/0xb9
-[   84.883598]  [<ffffffff8105e012>] ? __kthread_parkme+0x65/0x65
-[   84.883604]  [<ffffffff81556c9c>] ret_from_fork+0x7c/0xb0
-[   84.883610]  [<ffffffff8105e012>] ? __kthread_parkme+0x65/0x65
-
-[  129.586622]  [<ffffffff8153f4b1>] remove_memory+0x22/0x85
-[  129.586627]  [<ffffffff813031c6>] acpi_memory_device_remove+0x77/0xa7
-[  129.586631]  [<ffffffff812c0f95>] acpi_bus_device_detach+0x3d/0x5e
-[  129.586634]  [<ffffffff812c0ff8>] acpi_bus_trim+0x42/0x7a
-[  129.586637]  [<ffffffff812c1587>] acpi_scan_hot_remove+0x1ba/0x261
-[  129.586641]  [<ffffffff812c16ce>] acpi_bus_device_eject+0xa0/0xd0
-[  129.586644]  [<ffffffff812bbdab>] acpi_os_execute_deferred+0x25/0x32
-[  129.586648]  [<ffffffff81057cbc>] process_one_work+0x229/0x3d3
-[  129.586652]  [<ffffffff81057bfa>] ? process_one_work+0x167/0x3d3
-[  129.586655]  [<ffffffff81058248>] worker_thread+0x133/0x200
-[  129.586658]  [<ffffffff81058115>] ? rescuer_thread+0x280/0x280
-[  129.586663]  [<ffffffff8105e0c3>] kthread+0xb1/0xb9
-[  129.586667]  [<ffffffff8105e012>] ? __kthread_parkme+0x65/0x65
-[  129.586671]  [<ffffffff81556c9c>] ret_from_fork+0x7c/0xb0
-[  129.586675]  [<ffffffff8105e012>] ? __kthread_parkme+0x65/0x65
-
--Toshi
+diff --git a/drivers/video/efifb.c b/drivers/video/efifb.c
+index 390b61b..1f3eab3 100644
+--- a/drivers/video/efifb.c
++++ b/drivers/video/efifb.c
+@@ -289,6 +289,7 @@ static void efifb_destroy(struct fb_info *info)
+ 	if (request_mem_succeeded)
+ 		release_mem_region(info->apertures->ranges[0].base,
+ 				   info->apertures->ranges[0].size);
++	fb_dealloc_cmap(&info->cmap);
+ 	framebuffer_release(info);
+ }
+ 
+-- 
+1.8.3.1
 
