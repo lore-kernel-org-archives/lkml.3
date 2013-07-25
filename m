@@ -1,94 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754708Ab3GYC21 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:28:27 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:49753 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab3GYC2V (ORCPT
+	id S1754587Ab3GYCbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 22:31:18 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:58101 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753215Ab3GYCbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:28:21 -0400
+	Wed, 24 Jul 2013 22:31:16 -0400
+Message-ID: <51F08D4B.3010201@huawei.com>
+Date: Thu, 25 Jul 2013 10:28:27 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374559827.4990.143.camel@edumazet-glaptop>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	<1374512879.4990.19.camel@edumazet-glaptop>
-	<CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-	<1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-	<1374518841.4990.26.camel@edumazet-glaptop>
-	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-	<1374559827.4990.143.camel@edumazet-glaptop>
-Date: Thu, 25 Jul 2013 10:28:20 +0800
-Message-ID: <CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Ming Lei <tom.leiming@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        =?Big5?B?QVNJWCBMb3VpcyBbxKyrwrOwXQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2][RESEND] tracing: Shrink the size of struct ftrace_event_field
+References: <51F08D1B.1080300@huawei.com>
+In-Reply-To: <51F08D1B.1080300@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 2:10 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Mon, 2013-07-22 at 20:47 +0100, Ben Hutchings wrote:
->> On Mon, 2013-07-22 at 11:47 -0700, Eric Dumazet wrote:
->> > On Mon, 2013-07-22 at 19:38 +0100, Ben Hutchings wrote:
->> > > On Mon, 2013-07-22 at 11:29 -0700, Grant Grundler wrote:
->> > > > On Mon, Jul 22, 2013 at 10:07 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> > > > ...
->> > > > > I guess that if a driver does not advertise NETIF_F_SG, this
->> > > > > skb_linearize() call is not needed : All frames reaching your xmit
->> > > > > function should already be linear
->> > > >
->> > > > As Ben Hutchings pointed out, hw_features is still setting this...but
->> > > > I'm not sure how that matters.
->> > > >
->> > > > ax88179_set_features() doesn't allow setting SG or TSO features.  But
->> > > > I expect it would be "not too difficult" to add such that ethtool
->> > > > could set those features after boot.
->> > > [...]
->> > >
->> > > It already can.  That's what putting feature flags in hw_features does.
->> >
->> > My original concern, that inspired this patch, was to remove SG support,
->> > as this driver does not have SG support at all.
->> >
->> > Linearize a full TSO packet needs order-5 allocations, thats likely to
->> > fail and lead to very slow TCP performance, because it will only rely on
->> > retransmits.
->>
->> The driver could set gso_max_size to reduce that problem.  But I rather
->> doubt that TSO followed by skb_linearize() significantly improves
->> throughput or CPU-efficiency.  (If the device has a 1G link but is
->> connected to the host through a USB 2.0 port, then USB is the bottleneck
->> and TSO could improve throughput a few percent.  But that's a silly
->> configuration.)
->>
->> The real solution would be for someone to add SG support to the usbnet
->> core.  Trying to support 1GbE with only linear skbs is not a great
->> idea... and it can only be a matter of time before there is USB ultra
->> speed (or whatever comes after 'super') with 10GbE devices...
->>
->
-> This sounds a good idea.
->
-> Is anybody working on adding SG to usbnet ?
 
-It depends if size of sg buffer(except for last one) in the sg list can be
-divided by usb endpoint's max packet size(512 or 1024), at least there
-is the constraint:
 
-http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=10e232c597ac757e7f8600649f7e872e86de190f
+Use bit fields, and the size of struct ftrace_event_field can be
+shrunk from 48 bytes to 40 bytes on 64bit kernel.
 
-I am wondering if network stack can meet that.  If not, it might be a
-bit difficult
-because lots of USB host controller don't support that, and driver may have
-to support SG and non-SG at the same time for working well on all HCs.
+slab_name active_obj nr_obj size obj_per_slab
+---------------------------------------------
+ftrace_event_field   1105   1105     48   85  (before)
+ftrace_event_field   1224   1224     40  102  (after)
 
-Thanks,
--- 
-Ming Lei
+This saves a few Kbytes: (1224 * 40) - (1105 * 48) = 4080
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/trace/trace.h        | 8 ++++----
+ kernel/trace/trace_events.c | 5 +++++
+ 2 files changed, 9 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 9e01458..a3365a4 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -916,10 +916,10 @@ struct ftrace_event_field {
+ 	struct list_head	link;
+ 	const char		*name;
+ 	const char		*type;
+-	int			filter_type;
+-	int			offset;
+-	int			size;
+-	int			is_signed;
++	unsigned int		filter_type:4;
++	unsigned int		offset:12;
++	unsigned int		size:12;
++	unsigned int		is_signed:1;
+ };
+ 
+ struct event_filter {
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 53582e9..67aee85 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -111,6 +111,11 @@ static int __trace_define_field(struct list_head *head, const char *type,
+ 	field->size = size;
+ 	field->is_signed = is_signed;
+ 
++	WARN_ON(offset >= (1 << 12));
++	WARN_ON(size >= (1 << 12));
++	WARN_ON(is_signed >= (1 << 1));
++	WARN_ON(field->filter_type >= (1 << 4));
++
+ 	list_add(&field->link, head);
+ 
+ 	return 0;
+-- 1.8.0.2
+
