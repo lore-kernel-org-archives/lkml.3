@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab3GYSU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:20:56 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:56692 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756883Ab3GYSUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:20:54 -0400
-Subject: Re: [PATCH] usb: dwc3: core: modify IO memory resource after
- deferred probe completes
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <51F15E85.1050808@cogentembedded.com>
-References: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
-	 <51F15E85.1050808@cogentembedded.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Jul 2013 21:20:51 +0300
-Message-ID: <1374776451.24810.3.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+	id S1757300Ab3GYSWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:22:55 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:3659 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756940Ab3GYSWx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:22:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 25 Jul 2013 11:21:40 -0700
+Message-ID: <51F16CF9.1070704@nvidia.com>
+Date: Thu, 25 Jul 2013 21:22:49 +0300
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: "balbi@ti.com" <balbi@ti.com>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 0/9] Tegra USB cleanup series
+References: <1373918029-28977-1-git-send-email-ttynkkynen@nvidia.com> <51E485B8.5050502@wwwdotorg.org> <20130725175133.GM25415@radagast>
+In-Reply-To: <20130725175133.GM25415@radagast>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 21:21 +0400, Sergei Shtylyov wrote:
-> On 07/25/2013 08:26 PM, Ivan T. Ivanov wrote:
+On 07/25/2013 08:51 PM, Felipe Balbi wrote:
+
 > 
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> series doesn't apply on top of Mikko's patches. Please rebase on my
+> testing branch on kernel.org.
+
+Ah, the regulator patch got a v3 after I sent out these. Will do.
+
 > 
-> > When deferred probe happens driver will try to ioremap multiple times
-> > and will fail. Memory resource.start variable is a global variable,
-> > modifications in this field will be accumulated on every probe.
-> > Fix this by moving the above operations after driver hold all
-> > required PHY's.
+> When resending, please put Stephen's reviewed-by, tested-by and acked-by
+> in the patches to make my life a little easier :-)
 > 
 
-Forgot to mention, generated on top of Felipe's 'testing' branch.
+Will do.
 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >   drivers/usb/dwc3/core.c |   31 ++++++++++++++++---------------
-> >   1 file changed, 16 insertions(+), 15 deletions(-)
-> 
-> > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > index 607bef8..50c833f 100644
-> > --- a/drivers/usb/dwc3/core.c
-> > +++ b/drivers/usb/dwc3/core.c
-> [...]
-> > @@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
-> >   		return -EPROBE_DEFER;
-> >   	}
-> >
-> > +	dwc->xhci_resources[0].start = res->start;
-> > +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
-> > +					DWC3_XHCI_REGS_END;
-> > +	dwc->xhci_resources[0].flags = res->flags;
-> > +	dwc->xhci_resources[0].name = res->name;
-> > +
-> > +	res->start += DWC3_GLOBALS_REGS_START;
-> > +
-> > +	 /*
-> > +	  * Request memory region but exclude xHCI regs,
-> > +	  * since it will be requested by the xhci-plat driver.
-> > +	  */
-> 
->      Please remove an extra space after a tab on each comment line.
-> It seems like a good time to do it, while you're moving this code.
-> 
-
-Ok. 
-
-Regards,
-Ivan
-
-> > +	regs = devm_ioremap_resource(dev, res);
-> > +	if (IS_ERR(regs))
-> > +		return PTR_ERR(regs);
-> > +
-> 
-> WBR, Sergei
-> 
-
-
+- Tuomas
