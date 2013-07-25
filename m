@@ -1,222 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab3GYR74 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:59:56 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19899 "EHLO
+	id S932256Ab3GYR7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:59:53 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19909 "EHLO
 	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756984Ab3GYRwD (ORCPT
+	with ESMTP id S1756822Ab3GYRwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:52:03 -0400
+	Thu, 25 Jul 2013 13:52:04 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V8 08/33] iov_iter: add bvec support
-Date: Thu, 25 Jul 2013 12:50:34 -0500
-Message-Id: <1374774659-13121-9-git-send-email-dave.kleikamp@oracle.com>
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Subject: [PATCH V8 22/33] ext4: add support for read_iter and write_iter
+Date: Thu, 25 Jul 2013 12:50:48 -0500
+Message-Id: <1374774659-13121-23-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-This adds a set of iov_iter_ops calls which work with memory which is
-specified by an array of bio_vec structs instead of an array of iovec
-structs.
-
-The big difference is that the pages referenced by the bio_vec elements
-are pinned.  They don't need to be faulted in and we can always use
-kmap_atomic() to map them one at a time.
+use the generic_file_read_iter(), create ext4_file_write_iter() based on
+ext4_file_write(), and make ext4_file_write() a wrapper around
+ext4_file_write_iter().
 
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Cc: Zach Brown <zab@zabbo.net>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/iov-iter.c      | 129 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h |  19 ++++++++
- 2 files changed, 148 insertions(+)
+ fs/ext4/file.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index 59f9556..5624e36 100644
---- a/fs/iov-iter.c
-+++ b/fs/iov-iter.c
-@@ -5,6 +5,7 @@
- #include <linux/hardirq.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/bio.h>
- 
- static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
- 				   size_t base, size_t bytes, int atomic)
-@@ -109,6 +110,134 @@ success:
- 	return copied;
- }
- 
-+#ifdef CONFIG_BLOCK
-+/*
-+ * As an easily verifiable first pass, we implement all the methods that
-+ * copy data to and from bvec pages with one function.  We implement it
-+ * all with kmap_atomic().
-+ */
-+static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
-+				    unsigned long page_offset, size_t bytes,
-+				    int topage)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)iter->data;
-+	size_t bvec_offset = iter->iov_offset;
-+	size_t remaining = bytes;
-+	void *bvec_map;
-+	void *page_map;
-+	size_t copy;
-+
-+	page_map = kmap_atomic(page);
-+
-+	BUG_ON(bytes > iter->count);
-+	while (remaining) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec_offset >= bvec->bv_len);
-+		copy = min(remaining, bvec->bv_len - bvec_offset);
-+		bvec_map = kmap_atomic(bvec->bv_page);
-+		if (topage)
-+			memcpy(page_map + page_offset,
-+			       bvec_map + bvec->bv_offset + bvec_offset,
-+			       copy);
-+		else
-+			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
-+			       page_map + page_offset,
-+			       copy);
-+		kunmap_atomic(bvec_map);
-+		remaining -= copy;
-+		bvec_offset += copy;
-+		page_offset += copy;
-+		if (bvec_offset == bvec->bv_len) {
-+			bvec_offset = 0;
-+			bvec++;
-+		}
-+	}
-+
-+	kunmap_atomic(page_map);
-+
-+	return bytes;
-+}
-+
-+static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
-+					  unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes,
-+				   int check_access)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_from_user_atomic(struct page *page,
-+					    struct iov_iter *i,
-+					    unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
-+				     unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+
-+/*
-+ * bio_vecs have a stricter structure than iovecs that might have
-+ * come from userspace.  There are no zero length bio_vec elements.
-+ */
-+static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	size_t offset = i->iov_offset;
-+	size_t delta;
-+
-+	BUG_ON(i->count < bytes);
-+	while (bytes) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec->bv_len <= offset);
-+		delta = min(bytes, bvec->bv_len - offset);
-+		offset += delta;
-+		i->count -= delta;
-+		bytes -= delta;
-+		if (offset == bvec->bv_len) {
-+			bvec++;
-+			offset = 0;
-+		}
-+	}
-+
-+	i->data = (unsigned long)bvec;
-+	i->iov_offset = offset;
-+}
-+
-+/*
-+ * pages pointed to by bio_vecs are always pinned.
-+ */
-+static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return 0;
-+}
-+
-+static size_t ii_bvec_single_seg_count(const struct iov_iter *i)
-+{
-+	const struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	if (i->nr_segs == 1)
-+		return i->count;
-+	else
-+		return min(i->count, bvec->bv_len - i->iov_offset);
-+}
-+
-+struct iov_iter_ops ii_bvec_ops = {
-+	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_bvec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_bvec_copy_from_user,
-+	.ii_advance = ii_bvec_advance,
-+	.ii_fault_in_readable = ii_bvec_fault_in_readable,
-+	.ii_single_seg_count = ii_bvec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_bvec_ops);
-+#endif	/* CONFIG_BLOCK */
-+
- static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
- 				     size_t base, size_t bytes, int atomic)
+diff --git a/fs/ext4/file.c b/fs/ext4/file.c
+index 6f4cc56..c25d48a 100644
+--- a/fs/ext4/file.c
++++ b/fs/ext4/file.c
+@@ -74,12 +74,11 @@ void ext4_unwritten_wait(struct inode *inode)
+  * or one thread will zero the other's data, causing corruption.
+  */
+ static int
+-ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
+-		   unsigned long nr_segs, loff_t pos)
++ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
  {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 96120d5..c2cd17c 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -349,6 +349,25 @@ static inline size_t iov_iter_single_seg_count(const struct iov_iter *i)
- 	return i->ops->ii_single_seg_count(i);
+ 	struct super_block *sb = inode->i_sb;
+ 	int blockmask = sb->s_blocksize - 1;
+-	size_t count = iov_length(iov, nr_segs);
++	size_t count = iov_iter_count(iter);
+ 	loff_t final_size = pos + count;
+ 
+ 	if (pos >= inode->i_size)
+@@ -92,8 +91,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
  }
  
-+#ifdef CONFIG_BLOCK
-+extern struct iov_iter_ops ii_bvec_ops;
-+
-+struct bio_vec;
-+static inline void iov_iter_init_bvec(struct iov_iter *i,
-+				      struct bio_vec *bvec,
-+				      unsigned long nr_segs,
-+				      size_t count, size_t written)
-+{
-+	i->ops = &ii_bvec_ops;
-+	i->data = (unsigned long)bvec;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count + written;
-+
-+	iov_iter_advance(i, written);
-+}
-+#endif
-+
- extern struct iov_iter_ops ii_iovec_ops;
+ static ssize_t
+-ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+-		    unsigned long nr_segs, loff_t pos)
++ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
++		    loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+ 	struct inode *inode = file->f_mapping->host;
+@@ -101,11 +100,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	int unaligned_aio = 0;
+ 	ssize_t ret;
+ 	int overwrite = 0;
+-	size_t length = iov_length(iov, nr_segs);
++	size_t length = iov_iter_count(iter);
  
- static inline void iov_iter_init(struct iov_iter *i,
+ 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
+ 	    !is_sync_kiocb(iocb))
+-		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
++		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
+ 
+ 	/* Unaligned direct AIO must be serialized; see comment above */
+ 	if (unaligned_aio) {
+@@ -146,7 +145,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ 			overwrite = 1;
+ 	}
+ 
+-	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
++	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
+ 	mutex_unlock(&inode->i_mutex);
+ 
+ 	if (ret > 0 || ret == -EIOCBQUEUED) {
+@@ -165,8 +164,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
+ }
+ 
+ static ssize_t
+-ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+-		unsigned long nr_segs, loff_t pos)
++ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
+ {
+ 	struct inode *inode = file_inode(iocb->ki_filp);
+ 	ssize_t ret;
+@@ -178,22 +176,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
+ 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+-		size_t length = iov_length(iov, nr_segs);
++		size_t length = iov_iter_count(iter);
+ 
+ 		if ((pos > sbi->s_bitmap_maxbytes ||
+ 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
+ 			return -EFBIG;
+ 
+ 		if (pos + length > sbi->s_bitmap_maxbytes) {
+-			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
+-					      sbi->s_bitmap_maxbytes - pos);
++			ret = iov_iter_shorten(iter,
++					       sbi->s_bitmap_maxbytes - pos);
++			if (ret)
++				return ret;
+ 		}
+ 	}
+ 
+ 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
+-		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
++		ret = ext4_file_dio_write(iocb, iter, pos);
+ 	else
+-		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
++		ret = generic_file_write_iter(iocb, iter, pos);
+ 
+ 	return ret;
+ }
+@@ -607,8 +607,8 @@ const struct file_operations ext4_file_operations = {
+ 	.llseek		= ext4_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= generic_file_aio_read,
+-	.aio_write	= ext4_file_write,
++	.read_iter	= generic_file_read_iter,
++	.write_iter	= ext4_file_write_iter,
+ 	.unlocked_ioctl = ext4_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl	= ext4_compat_ioctl,
 -- 
 1.8.3.4
 
