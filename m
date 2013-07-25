@@ -1,81 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab3GYSwh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:52:37 -0400
-Received: from mail-ye0-f179.google.com ([209.85.213.179]:42857 "EHLO
-	mail-ye0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab3GYSwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:52:36 -0400
-From: Tom Rini <trini@ti.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org
-Cc: Jianpeng Ma <majianpeng@gmail.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg KH <greg@kroah.com>
-Subject: [PATCH v2] numa: Mark __node_set as __always_inline
-Date: Thu, 25 Jul 2013 14:26:10 -0400
-Message-Id: <1374776770-32361-1-git-send-email-trini@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757740Ab3GYSx3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:53:29 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:37694 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756758Ab3GYSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:53:27 -0400
+Message-ID: <1374778405.1957.21.camel@joe-AO722>
+Subject: [trivial PATCH] treewide: Fix printks with 0x%#
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Daniele Venzano <venza@brownhat.org>, Andi Kleen <andi@firstfloor.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-mm@kvack.org,
+        alsa-devel <alsa-devel@alsa-project.org>
+Date: Thu, 25 Jul 2013 11:53:25 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is posible for some compilers to decide that __node_set does not need
-to be made turned into an inline function.  When the compiler does this
-on an __init function calling it on __initdata we get a section mismatch
-warning now.  Use __always_inline to ensure that we will be inlined.
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Cc: Jianpeng Ma <majianpeng@gmail.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Cc: Wen Congyang <wency@cn.fujitsu.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Greg KH <greg@kroah.com>
-Signed-off-by: Tom Rini <trini@ti.com>
+Using 0x%# emits 0x0x.  Only one is necessary.
 
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-Changes in v2:
-- As per KOSAKI Motohiro, add a comment as well about why we need
-  __always_inline to the header.
----
- include/linux/nodemask.h |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ arch/parisc/kernel/signal.c       | 2 +-
+ drivers/clocksource/acpi_pm.c     | 4 ++--
+ drivers/net/ethernet/sis/sis900.c | 2 +-
+ mm/memory-failure.c               | 2 +-
+ sound/pci/ens1370.c               | 2 +-
+ sound/pci/via82xx.c               | 2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
-index 4e2cbfa..58b9a02 100644
---- a/include/linux/nodemask.h
-+++ b/include/linux/nodemask.h
-@@ -98,8 +98,17 @@
- typedef struct { DECLARE_BITMAP(bits, MAX_NUMNODES); } nodemask_t;
- extern nodemask_t _unused_nodemask_arg_;
+diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
+index 940188d..35c5bf1 100644
+--- a/arch/parisc/kernel/signal.c
++++ b/arch/parisc/kernel/signal.c
+@@ -85,7 +85,7 @@ restore_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs)
+ 	err |= __copy_from_user(regs->iaoq, sc->sc_iaoq, sizeof(regs->iaoq));
+ 	err |= __copy_from_user(regs->iasq, sc->sc_iasq, sizeof(regs->iasq));
+ 	err |= __get_user(regs->sar, &sc->sc_sar);
+-	DBG(2,"restore_sigcontext: iaoq is 0x%#lx / 0x%#lx\n", 
++	DBG(2,"restore_sigcontext: iaoq is %#lx / %#lx\n",
+ 			regs->iaoq[0],regs->iaoq[1]);
+ 	DBG(2,"restore_sigcontext: r28 is %ld\n", regs->gr[28]);
+ 	return err;
+diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
+index 6efe4d1..6eab889 100644
+--- a/drivers/clocksource/acpi_pm.c
++++ b/drivers/clocksource/acpi_pm.c
+@@ -200,14 +200,14 @@ static int __init init_acpi_pm_clocksource(void)
+ 			if ((value2 < value1) && ((value2) < 0xFFF))
+ 				break;
+ 			printk(KERN_INFO "PM-Timer had inconsistent results:"
+-			       " 0x%#llx, 0x%#llx - aborting.\n",
++			       " %#llx, %#llx - aborting.\n",
+ 			       value1, value2);
+ 			pmtmr_ioport = 0;
+ 			return -EINVAL;
+ 		}
+ 		if (i == ACPI_PM_READ_CHECKS) {
+ 			printk(KERN_INFO "PM-Timer failed consistency check "
+-			       " (0x%#llx) - aborting.\n", value1);
++			       " (%#llx) - aborting.\n", value1);
+ 			pmtmr_ioport = 0;
+ 			return -ENODEV;
+ 		}
+diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
+index eb4aea3..6c1e34c 100644
+--- a/drivers/net/ethernet/sis/sis900.c
++++ b/drivers/net/ethernet/sis/sis900.c
+@@ -1723,7 +1723,7 @@ static irqreturn_t sis900_interrupt(int irq, void *dev_instance)
  
-+/*
-+ * The inline keyword gives the compiler room to decide to inline, or
-+ * not inline a function as it sees best.  However, as these functions
-+ * are called in both __init and non-__init functions, if they are not
-+ * inlined we will end up with a section mis-match error (of the type of
-+ * freeable items not being freed).  So we must use __always_inline here
-+ * to fix the problem.  If other functions in the future also end up in
-+ * this situation they will also need to be annotated as __always_inline
-+ */
- #define node_set(node, dst) __node_set((node), &(dst))
--static inline void __node_set(int node, volatile nodemask_t *dstp)
-+static __always_inline void __node_set(int node, volatile nodemask_t *dstp)
- {
- 	set_bit(node, dstp->bits);
- }
--- 
-1.7.9.5
+ 	if(netif_msg_intr(sis_priv))
+ 		printk(KERN_DEBUG "%s: exiting interrupt, "
+-		       "interrupt status = 0x%#8.8x.\n",
++		       "interrupt status = %#8.8x\n",
+ 		       net_dev->name, sr32(isr));
+ 
+ 	spin_unlock (&sis_priv->lock);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 09ae111..29d3f38 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1267,7 +1267,7 @@ void memory_failure_queue(unsigned long pfn, int trapno, int flags)
+ 	if (kfifo_put(&mf_cpu->fifo, &entry))
+ 		schedule_work_on(smp_processor_id(), &mf_cpu->work);
+ 	else
+-		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
++		pr_err("Memory failure: buffer overflow when queuing memory failure at %#lx\n",
+ 		       pfn);
+ 	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
+ 	put_cpu_var(memory_failure_cpu);
+diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
+index ca8929b..61262f3 100644
+--- a/sound/pci/ens1370.c
++++ b/sound/pci/ens1370.c
+@@ -1842,7 +1842,7 @@ static int snd_ensoniq_create_gameport(struct ensoniq *ensoniq, int dev)
+ 
+ 	default:
+ 		if (!request_region(io_port, 8, "ens137x: gameport")) {
+-			printk(KERN_WARNING "ens137x: gameport io port 0x%#x in use\n",
++			printk(KERN_WARNING "ens137x: gameport io port %#x in use\n",
+ 			       io_port);
+ 			return -EBUSY;
+ 		}
+diff --git a/sound/pci/via82xx.c b/sound/pci/via82xx.c
+index 3c511d0..5ae6f04 100644
+--- a/sound/pci/via82xx.c
++++ b/sound/pci/via82xx.c
+@@ -1940,7 +1940,7 @@ static int snd_via686_create_gameport(struct via82xx *chip, unsigned char *legac
+ 
+ 	r = request_region(JOYSTICK_ADDR, 8, "VIA686 gameport");
+ 	if (!r) {
+-		printk(KERN_WARNING "via82xx: cannot reserve joystick port 0x%#x\n",
++		printk(KERN_WARNING "via82xx: cannot reserve joystick port %#x\n",
+ 		       JOYSTICK_ADDR);
+ 		return -EBUSY;
+ 	}
+
+
 
