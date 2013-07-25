@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab3GYKLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:11:41 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:56653
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755486Ab3GYKLg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:11:36 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
-From: Gong Yibin-B38343 <B38343@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "s.trumtrar@pengutronix.de" <s.trumtrar@pengutronix.de>
-Subject: RE: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
-Thread-Topic: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
-Thread-Index: AQHOiRnVcUZVp8GUf0Smiqqh95Bdhpl1LGVg
-Date: Thu, 25 Jul 2013 10:11:30 +0000
-Message-ID: <95EEB29E288F544BAED903CDEA0C4C060111CF75@039-SN1MPN1-005.039d.mgd.msft.net>
-References: <1374723198-9716-1-git-send-email-b38343@freescale.com>
- <20130725093209.GX9858@sirena.org.uk>
-In-Reply-To: <20130725093209.GX9858@sirena.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.252.106]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1755490Ab3GYKOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:14:30 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:8753 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab3GYKO3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 06:14:29 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee61b-b7efe6d000007b11-db-51f0fa834f75
+Content-transfer-encoding: 8BIT
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, konrad.wilk@oracle.com,
+        crrodriguez@opensuse.org, p.sarna@partner.samsung.com,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, bob.liu@oracle.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com
+Subject: [PATCH] staging: zcache: fix "zcache=" kernel parameter
+Date: Thu, 25 Jul 2013 12:13:54 +0200
+Message-id: <1374747234-11237-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrALMWRmVeSWpSXmKPExsVy+t9jQd3mXx8CDXYc5bHYOGM9q0XXqaks
+	Fvf+TWOy2HPmF7tF8+L1bBbLFj9ltDjb9Ibd4vKuOWwWr5q/s1qsWhTlwOVxb99hFo/9c9ew
+	exw7+ZLV4+PTWyweB9/tYfLo27KK0ePMgiPsHp83yQVwRHHZpKTmZJalFunbJXBlTJv6nKmg
+	Taiis+0KYwNjN38XIyeHhICJxNPpu9khbDGJC/fWs3UxcnEICUxnlPh3o40NJMErICjxY/I9
+	li5GDg5mAXmJI5eyQcLMAuoSk+YtYoao72KSWHT1DdggNgEriYntqxhBbBEBOYknt/+AFTEL
+	vGKUuPxhNQtIQljAQWL53XtMIDaLgKpE48pGdohlHhKznzxlhLhIXuLp/T62CYx8s5DcMQvh
+	jllI7ljAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzjcn0nvYFzVYHGIUYCDUYmHd8X3
+	94FCrIllxZW5hxglOJiVRHhjKz4ECvGmJFZWpRblxxeV5qQWH2KU5mBREuc92GodKCSQnliS
+	mp2aWpBaBJNl4uCUamBsPiVyj6HA2mXu9+YwEQ2Zz79S1pdtL17+3fFs7COr3ombFmZ/Fzh/
+	72Br2Z/0A4Fb2KQKD+6Xz/BWtX9hrit/+FqRztLFStmTM4NPTeu083hmyPt4f2Lyf6mw+u60
+	+jgvF0n5SyarNzpyX2ThOLtYV741bYPm3yXS71b62+29Odfy5s+LS44osRRnJBpqMRcVJwIA
+	0AkPhXMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I will.
+From: Piotr Sarna <p.sarna@partner.samsung.com>
 
------Original Message-----
-From: Mark Brown [mailto:broonie@kernel.org] 
-Sent: Thursday, July 25, 2013 5:32 PM
-To: Gong Yibin-B38343
-Cc: shawn.guo@linaro.org; grant.likely@linaro.org; rob.herring@calxeda.com; rob@landley.net; lgirdwood@gmail.com; devicetree-discuss@lists.ozlabs.org; linux-doc@vger.kernel.org; linux-kernel@vger.kernel.org; s.trumtrar@pengutronix.de
-Subject: Re: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
+Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
+a module") introduced an incorrect handling of "zcache=" parameter.
 
-On Thu, Jul 25, 2013 at 11:33:18AM +0800, Robin Gong wrote:
-> Add pfuze100 regulator driver.
+Inside zcache_comp_init() function, zcache_comp_name variable is
+checked for being empty. If not empty, the above variable is tested
+for being compatible with Crypto API. Unfortunately, after that
+function ends unconditionally (by the "goto out" directive) and returns:
+- non-zero value if verification succeeded, wrongly indicating an error
+- zero value if verification failed, falsely informing that function
+  zcache_comp_init() ended properly.
 
-Applied, thanks.  Fixing the language about the regulators being a property would be good, please send a followup for that.
+A solution to this problem is as following:
+1. Move the "goto out" directive inside the "if (!ret)" statement
+2. In case that crypto_has_comp() returned 0, change the value of ret
+   to non-zero before "goto out" to indicate an error.
+
+This patch replaces an earlier one from Michal Hocko (based on report
+from Cristian Rodríguez):
+
+	http://permalink.gmane.org/gmane.linux.kernel.mm/102484
+
+It also addressed the same issue but didn't fix the zcache_comp_init()
+for case when the compressor data passed to "zcache=" option was invalid
+or unsupported.
+
+Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+[bzolnier: updated patch description]
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Cristian Rodríguez <crrodriguez@opensuse.org>
+Cc: Bob Liu <bob.liu@oracle.com>
+---
+ drivers/staging/zcache/zcache-main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index dcceed2..81972fa 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+ #else
+ 	if (*zcache_comp_name != '\0') {
+ 		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+-		if (!ret)
++		if (!ret) {
+ 			pr_info("zcache: %s not supported\n",
+ 					zcache_comp_name);
+-		goto out;
++			ret = 1;
++			goto out;
++		}
+ 	}
+ 	if (!ret)
+ 		strcpy(zcache_comp_name, "lzo");
+-- 
+1.8.2.3
 
