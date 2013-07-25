@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab3GYVRc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:17:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34891 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab3GYVR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:17:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,745,1367996400"; 
-   d="scan'208";a="376612212"
-From: "Luck, Tony" <tony.luck@intel.com>
-Subject: [PATCH] x86/mce: Fix mce regression from recent cleanup
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Borislav Petkov <bp@suse.de>, Chen Gong <gong.chen@linux.intel.com>
-Date: Thu, 25 Jul 2013 14:17:29 -0700
-Message-Id: <51f195e92945393d0@agluck-desk.sc.intel.com>
+	id S1756758Ab3GYVSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:18:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39312 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab3GYVSN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 17:18:13 -0400
+Date: Thu, 25 Jul 2013 14:18:12 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 04/36] tile: srom: convert srom_class to use dev_groups
+Message-ID: <20130725211812.GA16574@kroah.com>
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+ <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
+ <51F1949D.3000706@tilera.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F1949D.3000706@tilera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In commit 33d7885b594e169256daef652e8d3527b2298e75
-   x86/mce: Update MCE severity condition check
+On Thu, Jul 25, 2013 at 05:11:57PM -0400, Chris Metcalf wrote:
+> On 7/24/2013 6:13 PM, Greg Kroah-Hartman wrote:
+> > The dev_attrs field of struct class is going away soon, dev_groups
+> > should be used instead.  This converts the tile srom_class code to use
+> > the correct field.
+> > 
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > ---
+> >  drivers/char/tile-srom.c | 28 ++++++++++++++++------------
+> >  1 file changed, 16 insertions(+), 12 deletions(-)
+> 
+> I just got a failed build email from the kisskb build server:
+> 
+> drivers/char/tile-srom.c:308:2: error: initializer element is not computable at load time
+> drivers/char/tile-srom.c:308:2: error: (near initialization for 'srom_dev_attrs[0].mode')
+> 
+> plus a bunch of warnings:
 
-we simplified the rules to recognise each classification of recoverable
-machine check combining the instruction and data fetch rules into a
-single entry based on clarifications in the June 2013 SDM that all
-recoverable events would be reported on the unaffected processor with
-MCG_STATUS.EIPV=0 and MCG_STATUS.RIPV=1.  Unfortunately the simplified
-rule has a couple of bugs.  Fix them here.
+Yes, I just fixed that and pushed out my changes, I forgot a '*', sorry
+about that.
 
-Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
----
- arch/x86/kernel/cpu/mcheck/mce-severity.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-index e2703520..c370e1c 100644
---- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
-@@ -111,8 +111,8 @@ static struct severity {
- #ifdef	CONFIG_MEMORY_FAILURE
- 	MCESEV(
- 		KEEP, "Action required but unaffected thread is continuable",
--		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR),
--		MCGMASK(MCG_STATUS_RIPV, MCG_STATUS_RIPV)
-+		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR, MCI_UC_SAR|MCI_ADDR),
-+		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, MCG_STATUS_RIPV)
- 		),
- 	MCESEV(
- 		AR, "Action required: data load error in a user process",
--- 
-1.8.1.4
-
+greg k-h
