@@ -1,478 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3GYJKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:10:20 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52140 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755002Ab3GYJI4 (ORCPT
+	id S1755418Ab3GYJKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:10:44 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50399 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752418Ab3GYJKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:08:56 -0400
-X-AuditID: 85900ec0-d38c8b900000151e-85-51f0eb25cab6
-X-Mailbox-Line: From nobody Thu Jul 25 17:37:30 2013
-From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Subject: [RESEND RFC PATCH 4/5] msghash: Add userland msghash tool
-To: linux-kernel@vger.kernel.org
-Cc: yrl.pp-manager.tt@hitachi.com, akpm@linux-foundation.org,
-        gregkh@linuxfoundation.org, kay@vrfy.org, davem@davemloft.net,
-        itoukzo@nttdata.co.jp, Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Date: Thu, 25 Jul 2013 17:37:30 +0900
-Message-ID: <20130725083730.20349.83637.stgit@localhost.localdomain>
-In-Reply-To: <20130725083730.20349.50797.stgit@localhost.localdomain>
-References: <20130725083730.20349.50797.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Thu, 25 Jul 2013 05:10:33 -0400
+Message-ID: <51F0ED31.3040200@linux.vnet.ibm.com>
+Date: Thu, 25 Jul 2013 14:47:37 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com>
+In-Reply-To: <51EFCA42.5020009@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072509-2674-0000-0000-000009F431FC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds scripts/msghash/msghash.  msghash scans a kmsg_meta
-table between __start___kmsg_meta to __stop___kmsg_meta in the
-target object file (vmlinux), computes a hash value for each
-message format string, then replaces the format string with the
-hash value.  Valid flags are also set to entries in the kmsg_meta
-table.  When computing the hash value, prefixed loglevel characters
-are ignored.
+On 07/24/2013 06:06 PM, Raghavendra K T wrote:
+> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
+>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
+>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
+>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
+>>>>>>> __ticket_t want)
+>>>>> [...]
+>>>>>>> +
+>>>>>>> +    /*
+>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
+>>>>>>> halt
+>>>>>>> +     * for irq enabled case to avoid hang when lock info is
+>>>>>>> overwritten
+>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
+>>>>>>> to save us.
+>>>>>>> +     */
+>>>>>>> +    if (arch_irqs_disabled_flags(flags))
+>>>>>>> +        halt();
+>>>>>>> +    else
+>>>>>>> +        safe_halt();
+>>>>>>> +
+>>>>>>> +out:
+>>>>>> So here now interrupts can be either disabled or enabled. Previous
+>>>>>> version disabled interrupts here, so are we sure it is safe to
+>>>>>> have them
+>>>>>> enabled at this point? I do not see any problem yet, will keep
+>>>>>> thinking.
+>>>>>
+>>>>> If we enable interrupt here, then
+>>>>>
+>>>>>
+>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
+>>>>>
+>>>>> and if we start serving lock for an interrupt that came here,
+>>>>> cpumask clear and w->lock=null may not happen atomically.
+>>>>> if irq spinlock does not take slow path we would have non null value
+>>>>> for lock, but with no information in waitingcpu.
+>>>>>
+>>>>> I am still thinking what would be problem with that.
+>>>>>
+>>>> Exactly, for kicker waiting_cpus and w->lock updates are
+>>>> non atomic anyway.
+>>>>
+>>>>>>> +    w->lock = NULL;
+>>>>>>> +    local_irq_restore(flags);
+>>>>>>> +    spin_time_accum_blocked(start);
+>>>>>>> +}
+>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+>>>>>>> +
+>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
+>>>>>>> __ticket_t ticket)
+>>>>>>> +{
+>>>>>>> +    int cpu;
+>>>>>>> +
+>>>>>>> +    add_stats(RELEASED_SLOW, 1);
+>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
+>>>>>>> +        const struct kvm_lock_waiting *w =
+>>>>>>> &per_cpu(lock_waiting, cpu);
+>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
+>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
+>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
+>>>>>>> +            kvm_kick_cpu(cpu);
+>>>>>> What about using NMI to wake sleepers? I think it was discussed, but
+>>>>>> forgot why it was dismissed.
+>>>>>
+>>>>> I think I have missed that discussion. 'll go back and check. so
+>>>>> what is the idea here? we can easily wake up the halted vcpus that
+>>>>> have interrupt disabled?
+>>>> We can of course. IIRC the objection was that NMI handling path is very
+>>>> fragile and handling NMI on each wakeup will be more expensive then
+>>>> waking up a guest without injecting an event, but it is still
+>>>> interesting
+>>>> to see the numbers.
+>>>>
+>>>
+>>> Haam, now I remember, We had tried request based mechanism. (new
+>>> request like REQ_UNHALT) and process that. It had worked, but had some
+>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
+>>> request cleared.  So had left it there..
+>>>
+>>> https://lkml.org/lkml/2012/4/30/67
+>>>
+>>> But I do not remember performance impact though.
+>> No, this is something different. Wakeup with NMI does not need KVM
+>> changes at
+>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
+>>
+>
+> True. It was not NMI.
+> just to confirm, are you talking about something like this to be tried ?
+>
+> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
 
-Even if configured with CONFIG_KMSG_HASH=y, without running msghash,
-no hash values are output via /dev/kmsg.  So msghash is executed
-during the build process, just after generating vmlinux.
+When I started benchmark, I started seeing
+"Dazed and confused, but trying to continue" from unknown nmi error
+handling.
+Did I miss anything (because we did not register any NMI handler)? or
+is it that spurious NMIs are trouble because we could get spurious NMIs
+if next waiter already acquired the lock.
 
-msghash also generate a Hash-and-message catalog named
-"<objfile>.msglist".  Each line in the .msglist file is output
-in the form of:
-<hash in hex>@<file>:<lineno>,<message format>
+(note: I tried sending APIC_DM_REMRD IPI directly, which worked fine
+but hypercall way of handling still performed well from the results I
+saw).
 
-.msglist file is useful to match /dev/kmsg messages with messages
-you concern.
 
-Here is the example of .msglist:
-...
-b6be0058@init/main.c:180,"Parameter %s is obsolete, ignored"
-72dfe336@init/main.c:403,"Malformed early option '%s'"
-85788d36@init/do_mounts.c:573,"Waiting for root device %s..."
-...
 
-Currently, only vmlinux is supported.  msghash can't update
-the kmsg_meta tables of kernel modules.
-
-Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
----
-
- .gitignore                 |    1 
- Makefile                   |    7 +
- lib/Kconfig.debug          |    5 +
- scripts/Makefile           |    1 
- scripts/link-vmlinux.sh    |    5 +
- scripts/msghash/.gitignore |    1 
- scripts/msghash/Makefile   |    7 +
- scripts/msghash/msghash.c  |  241 ++++++++++++++++++++++++++++++++++++++++++++
- scripts/msghash/msghash.sh |   45 ++++++++
- 9 files changed, 312 insertions(+), 1 deletions(-)
- create mode 100644 scripts/msghash/.gitignore
- create mode 100644 scripts/msghash/Makefile
- create mode 100644 scripts/msghash/msghash.c
- create mode 100755 scripts/msghash/msghash.sh
-
-diff --git a/.gitignore b/.gitignore
-index 3b8b9b3..3bb5735 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -32,6 +32,7 @@ modules.builtin
- *.lzo
- *.patch
- *.gcno
-+*.msglist
- 
- #
- # Top-level generic files
-diff --git a/Makefile b/Makefile
-index a35f72a..6d11a09 100644
---- a/Makefile
-+++ b/Makefile
-@@ -766,6 +766,10 @@ vmlinux-deps := $(KBUILD_LDS) $(KBUILD_VMLINUX_INIT) $(KBUILD_VMLINUX_MAIN)
-       cmd_link-vmlinux = $(CONFIG_SHELL) $< $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux)
- quiet_cmd_link-vmlinux = LINK    $@
- 
-+# Remove old .msglist
-+      cmd_rm-msglist = echo rm -f $@.msglist
-+quiet_cmd_rm-msglist = CLEAN   $@.msglist
-+
- # Include targets which we want to
- # execute if the rest of the kernel build went well.
- vmlinux: scripts/link-vmlinux.sh $(vmlinux-deps) FORCE
-@@ -1274,7 +1278,8 @@ clean: $(clean-dirs)
- 		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
- 		-o -name '*.symtypes' -o -name 'modules.order' \
- 		-o -name modules.builtin -o -name '.tmp_*.o.*' \
--		-o -name '*.gcno' \) -type f -print | xargs rm -f
-+		-o -name '*.gcno' -o -name '*.msglist' \) -type f -print |\
-+		xargs rm -f
- 
- # Generate tags for editors
- # ---------------------------------------------------------------------------
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 907f8cf..78d60f0 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -12,6 +12,11 @@ config PRINTK_TIME
- 	  to /dev/kmsg. This flag just specifies if the timestamp should
- 	  be included, not that the timestamp is recorded.
- 
-+	  Hash values are calculated during the build process and
-+	  put into a table in object files.  Hash-and-message catalogs
-+	  named <objfile>.msglist are also generated for convenience
-+	  in message handling in userland.
-+
- 	  The behavior is also controlled by the kernel command line
- 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
- 
-diff --git a/scripts/Makefile b/scripts/Makefile
-index 01e7adb..7568e35 100644
---- a/scripts/Makefile
-+++ b/scripts/Makefile
-@@ -37,6 +37,7 @@ subdir-$(CONFIG_MODVERSIONS) += genksyms
- subdir-y                     += mod
- subdir-$(CONFIG_SECURITY_SELINUX) += selinux
- subdir-$(CONFIG_DTC)         += dtc
-+subdir-$(CONFIG_KMSG_HASH) += msghash
- 
- # Let clean descend into subdirs
- subdir-	+= basic kconfig package selinux
-diff --git a/scripts/link-vmlinux.sh b/scripts/link-vmlinux.sh
-index 0149949..575c2bb 100644
---- a/scripts/link-vmlinux.sh
-+++ b/scripts/link-vmlinux.sh
-@@ -228,5 +228,10 @@ if [ -n "${CONFIG_KALLSYMS}" ]; then
- 	fi
- fi
- 
-+if [ -n "${CONFIG_KMSG_HASH}" ]; then
-+	rm -f vmlinux.msglist
-+	${srctree}/scripts/msghash/msghash.sh vmlinux || exit 1
-+fi
-+
- # We made a new kernel - delete old version file
- rm -f .old_version
-diff --git a/scripts/msghash/.gitignore b/scripts/msghash/.gitignore
-new file mode 100644
-index 0000000..8bcfa1d
---- /dev/null
-+++ b/scripts/msghash/.gitignore
-@@ -0,0 +1 @@
-+msghash
-diff --git a/scripts/msghash/Makefile b/scripts/msghash/Makefile
-new file mode 100644
-index 0000000..add1e14
---- /dev/null
-+++ b/scripts/msghash/Makefile
-@@ -0,0 +1,7 @@
-+hostprogs-y	:= msghash
-+
-+HOST_EXTRACFLAGS += -I$(srctree)/tools/include -I$(srctree)/include
-+
-+always		:= $(hostprogs-y)
-+clean-files	:= $(hostprogs-y)
-+
-diff --git a/scripts/msghash/msghash.c b/scripts/msghash/msghash.c
-new file mode 100644
-index 0000000..832fdb9
---- /dev/null
-+++ b/scripts/msghash/msghash.c
-@@ -0,0 +1,241 @@
-+/*
-+ * msghash.c: calculate hash values of printk messages and update the
-+ *            kmsg_meta table in the target object file.
-+ *
-+ * Copyright 2013 Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <sys/mman.h>
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <fcntl.h>
-+
-+typedef u_int8_t u8;
-+typedef u_int16_t u16;
-+typedef u_int32_t u32;
-+typedef u_int64_t u64;
-+
-+#include <linux/kmsghash.h>
-+#include <tools/jhash.h>
-+
-+#define KERN_SOH_ASCII	'\001'
-+static inline char *printk_skip_level(char *buffer)
-+{
-+	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {
-+		switch (buffer[1]) {
-+		case '0' ... '7':
-+		case 'd':	/* KERN_DEFAULT */
-+			return buffer + 2;
-+		}
-+	}
-+	return buffer;
-+}
-+
-+static unsigned long rodata_addr;
-+static unsigned long rodata_off;
-+static FILE *outfp;
-+struct msghash_stat {
-+	int updated;	/* number of entries updated successfully */
-+	int skipped;	/* skipped entries because of having a valid hash */
-+	int invalid;	/* entries whoes format string is not constant */
-+} st;
-+
-+static inline unsigned long addr_to_offset(unsigned long addr)
-+{
-+	return  addr - rodata_addr + rodata_off;
-+}
-+
-+static void usage(void)
-+{
-+	fprintf(stderr,
-+	"Usage: msghash [-o <outfile>] <objfile> <start_meta> <stop_meta>\n"
-+	"               <rodata_addr> <rodata_offset>\n");
-+}
-+
-+/*
-+ * Update the hash value of a given kmsg_meta object and write out
-+ * a Hash-and-message line to the specified file.
-+ */
-+static void update_and_print_hash(char *buf, struct kmsg_meta *meta)
-+{
-+	static char fmtbuf[4096];
-+	u_int32_t hash;
-+	char *str;
-+	int len;
-+	int i, j, c;
-+
-+	if (meta->flags & KMSG_FLAGS_HASH_VALID) {
-+		st.skipped++;
-+		return;
-+	}
-+
-+	/* Non-constant format case, skip it. */
-+	if (!meta->u.format) {
-+		st.invalid++;
-+		return;
-+	}
-+
-+	str = buf + addr_to_offset((unsigned long)meta->u.format);
-+	str = printk_skip_level(str);
-+	len = strlen(str);
-+	hash = jhash(str, len, 0);
-+	meta->u.format = 0;
-+	meta->u.hash = hash;
-+	meta->flags |= KMSG_FLAGS_HASH_VALID;
-+
-+	/*
-+	 * We output the kmsg metadata info only if the hash value
-+	 * has just been updated because a pointer to the format string
-+	 * is overwritten with a hash value.
-+	 */
-+	if (outfp) {
-+		/* Don't printout a newline at the tail. */
-+		if (str[len - 1] == '\n')
-+			len--;
-+
-+		/* Escape special codes same as reading /dev/kmsg */
-+		for (i = 0, j = 0; i < len; i++) {
-+			c = str[i];
-+
-+			if (c < ' ' || c >= 127 || c == '\\')
-+				j += sprintf(fmtbuf + j, "\\x%02x", c);
-+			else
-+				fmtbuf[j++] = c;
-+		}
-+		fmtbuf[j] = 0;
-+		fprintf(outfp, "%08x@%s:%d,\"%s\"\n", meta->u.hash,
-+			buf + addr_to_offset((unsigned long)meta->filename),
-+			meta->lineno, fmtbuf);
-+	}
-+
-+	st.updated++;
-+}
-+
-+/*
-+ * Calculate hash values of printk message formats and replace it with
-+ * the hash values.  This means we modify kmsg_meta table in .rodata
-+ * section of the target file (vmlinux).
-+ */
-+static void walk_kmsg_meta(char *buf, unsigned long start, unsigned long end)
-+{
-+	char *p;
-+
-+	for (p = buf + start; p < buf + end; p += sizeof(struct kmsg_meta))
-+		update_and_print_hash(buf, (struct kmsg_meta *)p);
-+}
-+
-+static char *do_mmap_objfile(const char *filename, size_t *len)
-+{
-+	int fd;
-+	struct stat sb;
-+	char *buf;
-+
-+	fd = open(filename, O_RDWR | O_APPEND);
-+	if (fd < 0) {
-+		perror("msghash: open");
-+		return NULL;
-+	}
-+
-+	if (fstat(fd, &sb) < 0) {
-+		perror("msghash: fstat");
-+		return NULL;
-+	}
-+
-+	buf = mmap(0, sb.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-+	if (buf == MAP_FAILED) {
-+		perror("msghash: mmap");
-+		return NULL;
-+	}
-+	*len = sb.st_size;
-+
-+	return buf;
-+}
-+
-+int main(int argc, char *argv[])
-+{
-+	unsigned long start_meta, stop_meta, start, end;
-+	char *outfile = NULL;
-+	char *buf;
-+	size_t len;
-+	int total;
-+	int c;
-+	int ret;
-+
-+	while ((c = getopt(argc, argv, "o:")) >= 0) {
-+		switch (c) {
-+		case 'o':
-+			outfile = optarg;
-+			break;
-+		default:
-+			usage();
-+			return 1;
-+		}
-+	}
-+
-+	if (argc - optind < 5) {
-+		usage();
-+		return 1;
-+	}
-+
-+	start_meta = strtoul(argv[optind + 1], NULL, 0);
-+	stop_meta = strtoul(argv[optind + 2], NULL, 0);
-+	rodata_addr = strtoul(argv[optind + 3], NULL, 0);
-+	rodata_off = strtoul(argv[optind + 4], NULL, 0);
-+
-+	/* Do some sanity checks. */
-+	if (!start_meta || !stop_meta || start_meta > stop_meta) {
-+		fprintf(stderr, "msghash: Invalid arguments\n");
-+		fprintf(stderr, "  start_meta:  0x%08lx\n", start_meta);
-+		fprintf(stderr, "  stop_meta:   0x%08lx\n", stop_meta);
-+		fprintf(stderr, "  rodata_addr: 0x%08lx\n", rodata_addr);
-+		fprintf(stderr, "  rodata_off:  0x%08lx\n", rodata_off);
-+		return 1;
-+	}
-+
-+	if (start_meta == stop_meta) {
-+		/* There is nothing to do. */
-+		return 0;
-+	}
-+
-+	buf = do_mmap_objfile(argv[optind], &len);
-+	if (!buf)
-+		return 1;
-+	outfp = fopen(outfile, "w");
-+	if (outfp < 0) {
-+		perror("msghash: fopen output file");
-+		return 1;
-+	}
-+
-+	start = addr_to_offset(start_meta);
-+	end = addr_to_offset(stop_meta);
-+
-+	walk_kmsg_meta(buf, start, end);
-+	ret = msync(buf, len, MS_SYNC);
-+	if (ret < 0) {
-+		perror("msghash: msync");
-+		return 1;
-+	}
-+
-+	total = st.updated + st.skipped + st.invalid;
-+	printf("msghash: %d/%d entries updated, %d skipped, %d invalid\n",
-+	       st.updated, total, st.skipped, st.invalid);
-+
-+	return 0;
-+}
-diff --git a/scripts/msghash/msghash.sh b/scripts/msghash/msghash.sh
-new file mode 100755
-index 0000000..a0b749f7
---- /dev/null
-+++ b/scripts/msghash/msghash.sh
-@@ -0,0 +1,45 @@
-+#!/bin/sh
-+#
-+# msghash.sh -- calculate hash values of printk messages and update
-+#               the kmsg_meta table in a given object file.
-+#               A Message-and-hash catalog named <object file>.msglist
-+#               is also created.
-+#
-+# Usage: msghash.sh <object file>
-+#
-+# Copyright 2013 Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-+#
-+# This program is free software; you can redistribute it and/or modify
-+# it under the terms of the GNU General Public License version 2 as
-+# published by the Free Software Foundation.
-+#
-+# This program is distributed in the hope it will be useful,
-+# but WITHOUT ANY WARRANTY; without even the implied warranty of
-+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+# GNU General Public License for more details.
-+#
-+# You should have received a copy of the GNU General Public License
-+# along with this program; if not, write to the Free Software
-+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+
-+MSGHASH=${srctree}/scripts/msghash/msghash
-+target="$1"
-+outfile="${target}.msglist"
-+
-+start_meta=`nm "$target" | grep ' __start___kmsg_meta' | awk '{print "0x"$1}'`
-+stop_meta=`nm "$target" | grep ' __stop___kmsg_meta' | awk '{print "0x"$1}'`
-+tmp=`objdump -h "$target" | grep ' .rodata '`
-+eval `echo "$tmp" | awk '{print "rodata_addr=0x"$4"; rodata_offset=0x"$6}'`
-+
-+if [ -z "$start_meta" -o -z "$stop_meta" ]; then
-+    echo "msghash: Couldn't find the kmsg_meta table."
-+    exit 1
-+fi
-+if [ -z "$rodata_addr" -o -z "$rodata_offset" ]; then
-+    echo "msghash: Failed to get .rodata section info."
-+    exit 1
-+fi
-+
-+$MSGHASH -o $outfile "$target" $start_meta $stop_meta $rodata_addr $rodata_offset
-+
-+exit $?
 
 
