@@ -1,302 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3GYK5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:57:07 -0400
-Received: from mail-db9lp0249.outbound.messaging.microsoft.com ([213.199.154.249]:8855
-	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755148Ab3GYK5D convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:57:03 -0400
-X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14MLTC102.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
-X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT003.namprd03.prod.outlook.com;R:internal;EFV:INT
-X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(13464003)(377454003)(189002)(199002)(51704005)(49866001)(47976001)(74316001)(74662001)(19580405001)(74502001)(31966008)(66066001)(47736001)(50986001)(65816001)(83322001)(59766001)(4396001)(79102001)(51856001)(77982001)(63696002)(56816003)(76786001)(74706001)(76482001)(77096001)(33646001)(56776001)(81542001)(80022001)(53806001)(76796001)(46102001)(69226001)(83072001)(47446002)(74876001)(74366001)(19580395003)(76576001)(81342001)(54316002)(54356001)(16406001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB063;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;MX:1;A:1;LANG:en;
-From: KY Srinivasan <kys@microsoft.com>
-To: Jason Wang <jasowang@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pbonzini@redhat.com" <pbonzini@redhat.com>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Doug Covelli <dcovelli@vmware.com>, Borislav Petkov <bp@suse.de>,
-        Dan Hecht <dhecht@vmware.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: RE: [PATCH V2 4/4] x86: correctly detect hypervisor
-Thread-Topic: [PATCH V2 4/4] x86: correctly detect hypervisor
-Thread-Index: AQHOiRZBs7iRiJk7XUucfvAIpxXjdZl1N/Qg
-Date: Thu, 25 Jul 2013 10:56:10 +0000
-Message-ID: <1f47d60c59a842a1bab5f5d7377cea53@SN2PR03MB061.namprd03.prod.outlook.com>
-References: <1374742475-2485-1-git-send-email-jasowang@redhat.com>
- <1374742475-2485-4-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1374742475-2485-4-git-send-email-jasowang@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [173.61.119.57]
-x-forefront-prvs: 0918748D70
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755621Ab3GYK6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:58:20 -0400
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:35612 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab3GYK6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 06:58:17 -0400
+Message-ID: <51F104C3.2050407@de.ibm.com>
+Date: Thu, 25 Jul 2013 12:58:11 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-OrganizationHeadersPreserved: SN2PR03MB063.namprd03.prod.outlook.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%WINDRIVER.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%REDHAT.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VMWARE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%SUSE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.XENSOURCE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LISTS.LINUX-FOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUXDRIVERPROJECT.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GMAIL.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ZYTOR.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%LINUTRONIX.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%ORACLE.COM$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%GOOP.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
-X-CrossPremisesHeadersPromoted: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-CrossPremisesHeadersFiltered: TK5EX14MLTC102.redmond.corp.microsoft.com
-X-OriginatorOrg: microsoft.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Nick Piggin <npiggin@kernel.dk>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Konstantin Weitz <konstantin.weitz@gmail.com>
+Subject: Re: [PATCH 2/2] s390/kvm: support collaborative memory management
+References: <1374742461-29160-1-git-send-email-schwidefsky@de.ibm.com> <1374742461-29160-3-git-send-email-schwidefsky@de.ibm.com>
+In-Reply-To: <1374742461-29160-3-git-send-email-schwidefsky@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072510-2966-0000-0000-0000083C3014
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25/07/13 10:54, Martin Schwidefsky wrote:
+> From: Konstantin Weitz <konstantin.weitz@gmail.com>
+> 
+> This patch enables Collaborative Memory Management (CMM) for kvm
+> on s390. CMM allows the guest to inform the host about page usage
+> (see arch/s390/mm/cmm.c). The host uses this information to avoid
+> swapping in unused pages in the page fault handler. Further, a CPU
+> provided list of unused invalid pages is processed to reclaim swap
+> space of not yet accessed unused pages.
+> 
+> [ Martin Schwidefsky: patch reordering and cleanup ]
+> 
+> Signed-off-by: Konstantin Weitz <konstantin.weitz@gmail.com>
+> Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+
+Two things to consider: life migration and reset
+
+When we implement life migration, we need to add some additional magic for
+userspace to query/set unused state. But this can be a followup patch, 
+whenever this becomes necessary.
+
+As of today it should be enough to add some code to the diag308 handler to
+make reset save. For other kinds of reset (e.g. those for kdump) we need
+to make this accessible to userspace. Again, this can be added later on
+when we implement the other missing pieces for kdump and friends.
+
+So
+
+Reviewed-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
 
-> -----Original Message-----
-> From: Jason Wang [mailto:jasowang@redhat.com]
-> Sent: Thursday, July 25, 2013 4:55 AM
-> To: tglx@linutronix.de; mingo@redhat.com; hpa@zytor.com; x86@kernel.org;
-> linux-kernel@vger.kernel.org; pbonzini@redhat.com
-> Cc: kvm@vger.kernel.org; Jason Wang; KY Srinivasan; Haiyang Zhang; Konrad
-> Rzeszutek Wilk; Jeremy Fitzhardinge; Doug Covelli; Borislav Petkov; Dan Hecht;
-> Paul Gortmaker; Marcelo Tosatti; Gleb Natapov; Frederic Weisbecker;
-> devel@linuxdriverproject.org; xen-devel@lists.xensource.com;
-> virtualization@lists.linux-foundation.org
-> Subject: [PATCH V2 4/4] x86: correctly detect hypervisor
-> 
-> We try to handle the hypervisor compatibility mode by detecting hypervisor
-> through a specific order. This is not robust, since hypervisors may implement
-> each others features.
-> 
-> This patch tries to handle this situation by always choosing the last one in the
-> CPUID leaves. This is done by letting .detect() returns a priority instead of
-> true/false and just re-using the CPUID leaf where the signature were found as
-> the priority (or 1 if it was found by DMI). Then we can just pick hypervisor who
-> has the highest priority. Other sophisticated detection method could also be
-> implemented on top.
-> 
-> Suggested by H. Peter Anvin and Paolo Bonzini.
-> 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: x86@kernel.org
-> Cc: K. Y. Srinivasan <kys@microsoft.com>
-> Cc: Haiyang Zhang <haiyangz@microsoft.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Doug Covelli <dcovelli@vmware.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Dan Hecht <dhecht@vmware.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Paolo Bonzini <pbonzini@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: devel@linuxdriverproject.org
-> Cc: kvm@vger.kernel.org
-> Cc: xen-devel@lists.xensource.com
-> Cc: virtualization@lists.linux-foundation.org
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
 
 > ---
->  arch/x86/include/asm/hypervisor.h |    2 +-
->  arch/x86/kernel/cpu/hypervisor.c  |   15 +++++++--------
->  arch/x86/kernel/cpu/mshyperv.c    |   13 ++++++++-----
->  arch/x86/kernel/cpu/vmware.c      |    8 ++++----
->  arch/x86/kernel/kvm.c             |    6 ++----
->  arch/x86/xen/enlighten.c          |    9 +++------
->  6 files changed, 25 insertions(+), 28 deletions(-)
+>  arch/s390/include/asm/kvm_host.h |    5 ++-
+>  arch/s390/include/asm/pgtable.h  |   24 ++++++++++++
+>  arch/s390/kvm/kvm-s390.c         |   25 +++++++++++++
+>  arch/s390/kvm/kvm-s390.h         |    2 +
+>  arch/s390/kvm/priv.c             |   41 ++++++++++++++++++++
+>  arch/s390/mm/pgtable.c           |   77 ++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 173 insertions(+), 1 deletion(-)
 > 
-> diff --git a/arch/x86/include/asm/hypervisor.h
-> b/arch/x86/include/asm/hypervisor.h
-> index 2d4b5e6..e42f758 100644
-> --- a/arch/x86/include/asm/hypervisor.h
-> +++ b/arch/x86/include/asm/hypervisor.h
-> @@ -33,7 +33,7 @@ struct hypervisor_x86 {
->  	const char	*name;
+> diff --git a/arch/s390/include/asm/kvm_host.h b/arch/s390/include/asm/kvm_host.h
+> index 3238d40..de6450e 100644
+> --- a/arch/s390/include/asm/kvm_host.h
+> +++ b/arch/s390/include/asm/kvm_host.h
+> @@ -113,7 +113,9 @@ struct kvm_s390_sie_block {
+>  	__u64	gbea;			/* 0x0180 */
+>  	__u8	reserved188[24];	/* 0x0188 */
+>  	__u32	fac;			/* 0x01a0 */
+> -	__u8	reserved1a4[92];	/* 0x01a4 */
+> +	__u8	reserved1a4[20];	/* 0x01a4 */
+> +	__u64	cbrlo;			/* 0x01b8 */
+> +	__u8	reserved1c0[64];	/* 0x01c0 */
+>  } __attribute__((packed));
 > 
->  	/* Detection routine */
-> -	bool		(*detect)(void);
-> +	uint32_t	(*detect)(void);
+>  struct kvm_vcpu_stat {
+> @@ -149,6 +151,7 @@ struct kvm_vcpu_stat {
+>  	u32 instruction_stsi;
+>  	u32 instruction_stfl;
+>  	u32 instruction_tprot;
+> +	u32 instruction_essa;
+>  	u32 instruction_sigp_sense;
+>  	u32 instruction_sigp_sense_running;
+>  	u32 instruction_sigp_external_call;
+> diff --git a/arch/s390/include/asm/pgtable.h b/arch/s390/include/asm/pgtable.h
+> index 75fb726..65d48b8 100644
+> --- a/arch/s390/include/asm/pgtable.h
+> +++ b/arch/s390/include/asm/pgtable.h
+> @@ -227,6 +227,7 @@ extern unsigned long MODULES_END;
+>  #define _PAGE_SWR	0x008		/* SW pte referenced bit */
+>  #define _PAGE_SWW	0x010		/* SW pte write bit */
+>  #define _PAGE_SPECIAL	0x020		/* SW associated with special page */
+> +#define _PAGE_UNUSED	0x040		/* SW bit for ptep_clear_flush() */
+>  #define __HAVE_ARCH_PTE_SPECIAL
 > 
->  	/* Adjust CPU feature bits (run once per CPU) */
->  	void		(*set_cpu_features)(struct cpuinfo_x86 *);
-> diff --git a/arch/x86/kernel/cpu/hypervisor.c b/arch/x86/kernel/cpu/hypervisor.c
-> index 8727921..36ce402 100644
-> --- a/arch/x86/kernel/cpu/hypervisor.c
-> +++ b/arch/x86/kernel/cpu/hypervisor.c
-> @@ -25,11 +25,6 @@
->  #include <asm/processor.h>
->  #include <asm/hypervisor.h>
+>  /* Set of bits not changed in pte_modify */
+> @@ -375,6 +376,12 @@ extern unsigned long MODULES_END;
 > 
-> -/*
-> - * Hypervisor detect order.  This is specified explicitly here because
-> - * some hypervisors might implement compatibility modes for other
-> - * hypervisors and therefore need to be detected in specific sequence.
-> - */
->  static const __initconst struct hypervisor_x86 * const hypervisors[] =
->  {
->  #ifdef CONFIG_XEN_PVHVM
-> @@ -49,15 +44,19 @@ static inline void __init
->  detect_hypervisor_vendor(void)
->  {
->  	const struct hypervisor_x86 *h, * const *p;
-> +	uint32_t pri, max_pri = 0;
+>  #endif /* CONFIG_64BIT */
 > 
->  	for (p = hypervisors; p < hypervisors + ARRAY_SIZE(hypervisors); p++) {
->  		h = *p;
-> -		if (h->detect()) {
-> +		pri = h->detect();
-> +		if (pri != 0 && pri > max_pri) {
-> +			max_pri = pri;
->  			x86_hyper = h;
-> -			printk(KERN_INFO "Hypervisor detected: %s\n", h-
-> >name);
-> -			break;
->  		}
->  	}
+> +/* Guest Page State used for virtualization */
+> +#define _PGSTE_GPS_ZERO 	0x0000000080000000UL
+> +#define _PGSTE_GPS_USAGE_MASK	0x0000000003000000UL
+> +#define _PGSTE_GPS_USAGE_STABLE 0x0000000000000000UL
+> +#define _PGSTE_GPS_USAGE_UNUSED 0x0000000001000000UL
 > +
-> +	if (max_pri)
-> +		printk(KERN_INFO "Hypervisor detected: %s\n", x86_hyper-
-> >name);
->  }
-> 
->  void init_hypervisor(struct cpuinfo_x86 *c)
-> diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-> index 8f4be53..71a39f3 100644
-> --- a/arch/x86/kernel/cpu/mshyperv.c
-> +++ b/arch/x86/kernel/cpu/mshyperv.c
-> @@ -27,20 +27,23 @@
->  struct ms_hyperv_info ms_hyperv;
->  EXPORT_SYMBOL_GPL(ms_hyperv);
-> 
-> -static bool __init ms_hyperv_platform(void)
-> +static uint32_t  __init ms_hyperv_platform(void)
->  {
->  	u32 eax;
->  	u32 hyp_signature[3];
-> 
->  	if (!boot_cpu_has(X86_FEATURE_HYPERVISOR))
-> -		return false;
-> +		return 0;
-> 
->  	cpuid(HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS,
->  	      &eax, &hyp_signature[0], &hyp_signature[1], &hyp_signature[2]);
-> 
-> -	return eax >= HYPERV_CPUID_MIN &&
-> -		eax <= HYPERV_CPUID_MAX &&
-> -		!memcmp("Microsoft Hv", hyp_signature, 12);
-> +	if (eax >= HYPERV_CPUID_MIN &&
-> +	    eax <= HYPERV_CPUID_MAX &&
-> +	    !memcmp("Microsoft Hv", hyp_signature, 12))
-> +		return HYPERV_CPUID_VENDOR_AND_MAX_FUNCTIONS;
-> +
-> +	return 0;
->  }
-> 
->  static cycle_t read_hv_clock(struct clocksource *arg)
-> diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-> index 7076878..628a059 100644
-> --- a/arch/x86/kernel/cpu/vmware.c
-> +++ b/arch/x86/kernel/cpu/vmware.c
-> @@ -93,7 +93,7 @@ static void __init vmware_platform_setup(void)
->   * serial key should be enough, as this will always have a VMware
->   * specific string when running under VMware hypervisor.
->   */
-> -static bool __init vmware_platform(void)
-> +static uint32_t __init vmware_platform(void)
->  {
->  	if (cpu_has_hypervisor) {
->  		unsigned int eax;
-> @@ -102,12 +102,12 @@ static bool __init vmware_platform(void)
->  		cpuid(CPUID_VMWARE_INFO_LEAF, &eax,
-> &hyper_vendor_id[0],
->  		      &hyper_vendor_id[1], &hyper_vendor_id[2]);
->  		if (!memcmp(hyper_vendor_id, "VMwareVMware", 12))
-> -			return true;
-> +			return CPUID_VMWARE_INFO_LEAF;
->  	} else if (dmi_available && dmi_name_in_serial("VMware") &&
->  		   __vmware_platform())
-> -		return true;
-> +		return 1;
-> 
-> -	return false;
-> +	return 0;
->  }
-> 
 >  /*
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index a96d32c..7817afd 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -498,11 +498,9 @@ void __init kvm_guest_init(void)
->  #endif
+>   * A user page table pointer has the space-switch-event bit, the
+>   * private-space-control bit and the storage-alteration-event-control
+> @@ -590,6 +597,12 @@ static inline int pte_file(pte_t pte)
+>  	return (pte_val(pte) & mask) == _PAGE_TYPE_FILE;
 >  }
 > 
-> -static bool __init kvm_detect(void)
-> +static uint32_t __init kvm_detect(void)
+> +static inline int pte_swap(pte_t pte)
+> +{
+> +	unsigned long mask = _PAGE_RO | _PAGE_INVALID | _PAGE_SWT | _PAGE_SWX;
+> +	return (pte_val(pte) & mask) == _PAGE_TYPE_SWAP;
+> +}
+> +
+>  static inline int pte_special(pte_t pte)
 >  {
-> -	if (!kvm_para_available())
-> -		return false;
-> -	return true;
-> +	return kvm_cpuid_base();
+>  	return (pte_val(pte) & _PAGE_SPECIAL);
+> @@ -794,6 +807,7 @@ unsigned long gmap_translate(unsigned long address, struct gmap *);
+>  unsigned long __gmap_fault(unsigned long address, struct gmap *);
+>  unsigned long gmap_fault(unsigned long address, struct gmap *);
+>  void gmap_discard(unsigned long from, unsigned long to, struct gmap *);
+> +void __gmap_zap(unsigned long address, struct gmap *);
+> 
+>  void gmap_register_ipte_notifier(struct gmap_notifier *);
+>  void gmap_unregister_ipte_notifier(struct gmap_notifier *);
+> @@ -825,6 +839,7 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+> 
+>  	if (mm_has_pgste(mm)) {
+>  		pgste = pgste_get_lock(ptep);
+> +		pgste_val(pgste) &= ~_PGSTE_GPS_ZERO;
+>  		pgste_set_key(ptep, pgste, entry);
+>  		pgste_set_pte(ptep, entry);
+>  		pgste_set_unlock(ptep, pgste);
+> @@ -858,6 +873,12 @@ static inline int pte_young(pte_t pte)
+>  	return 0;
 >  }
 > 
->  const struct hypervisor_x86 x86_hyper_kvm __refconst = {
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 193097e..2fcaedc 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1720,15 +1720,12 @@ static void __init xen_hvm_guest_init(void)
->  	xen_hvm_init_mmu_ops();
->  }
+> +#define __HAVE_ARCH_PTE_UNUSED
+> +static inline int pte_unused(pte_t pte)
+> +{
+> +	return pte_val(pte) & _PAGE_UNUSED;
+> +}
+> +
+>  /*
+>   * pgd/pmd/pte modification functions
+>   */
+> @@ -1142,6 +1163,9 @@ static inline pte_t ptep_clear_flush(struct vm_area_struct *vma,
+>  	pte_val(*ptep) = _PAGE_TYPE_EMPTY;
 > 
-> -static bool __init xen_hvm_platform(void)
-> +static uint32_t __init xen_hvm_platform(void)
+>  	if (mm_has_pgste(vma->vm_mm)) {
+> +		if ((pgste_val(pgste) & _PGSTE_GPS_USAGE_MASK) ==
+> +		    _PGSTE_GPS_USAGE_UNUSED)
+> +			pte_val(pte) |= _PAGE_UNUSED;
+>  		pgste = pgste_update_all(&pte, pgste);
+>  		pgste_set_unlock(ptep, pgste);
+>  	}
+> diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
+> index ba694d2..052a773 100644
+> --- a/arch/s390/kvm/kvm-s390.c
+> +++ b/arch/s390/kvm/kvm-s390.c
+> @@ -67,6 +67,7 @@ struct kvm_stats_debugfs_item debugfs_entries[] = {
+>  	{ "instruction_storage_key", VCPU_STAT(instruction_storage_key) },
+>  	{ "instruction_stsch", VCPU_STAT(instruction_stsch) },
+>  	{ "instruction_chsc", VCPU_STAT(instruction_chsc) },
+> +	{ "instruction_essa", VCPU_STAT(instruction_essa) },
+>  	{ "instruction_stsi", VCPU_STAT(instruction_stsi) },
+>  	{ "instruction_stfl", VCPU_STAT(instruction_stfl) },
+>  	{ "instruction_tprot", VCPU_STAT(instruction_tprot) },
+> @@ -276,7 +277,11 @@ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
+>  	if (kvm_is_ucontrol(vcpu->kvm))
+>  		gmap_free(vcpu->arch.gmap);
+> 
+> +	if (vcpu->arch.sie_block->cbrlo)
+> +		__free_page(__pfn_to_page(
+> +				vcpu->arch.sie_block->cbrlo >> PAGE_SHIFT));
+>  	free_page((unsigned long)(vcpu->arch.sie_block));
+> +
+>  	kvm_vcpu_uninit(vcpu);
+>  	kmem_cache_free(kvm_vcpu_cache, vcpu);
+>  }
+> @@ -380,6 +385,8 @@ int kvm_arch_vcpu_postcreate(struct kvm_vcpu *vcpu)
+> 
+>  int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
 >  {
->  	if (xen_pv_domain())
-> -		return false;
-> -
-> -	if (!xen_cpuid_base())
-> -		return false;
-> +		return 0;
-> 
-> -	return true;
-> +	return xen_cpuid_base();
+> +	struct page *cbrl;
+> +
+>  	atomic_set(&vcpu->arch.sie_block->cpuflags, CPUSTAT_ZARCH |
+>  						    CPUSTAT_SM |
+>  						    CPUSTAT_STOPPED |
+> @@ -388,6 +395,14 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
+>  	vcpu->arch.sie_block->ecb2  = 8;
+>  	vcpu->arch.sie_block->eca   = 0xC1002001U;
+>  	vcpu->arch.sie_block->fac   = (int) (long) facilities;
+> +	if (kvm_enabled_cmma()) {
+> +		cbrl = alloc_page(GFP_KERNEL | __GFP_ZERO);
+> +		if (cbrl) {
+> +			vcpu->arch.sie_block->ecb2 |= 0x80;
+> +			vcpu->arch.sie_block->ecb2 &= ~0x08;
+> +			vcpu->arch.sie_block->cbrlo = page_to_phys(cbrl);
+> +		}
+> +	}
+>  	hrtimer_init(&vcpu->arch.ckc_timer, CLOCK_REALTIME, HRTIMER_MODE_ABS);
+>  	tasklet_init(&vcpu->arch.tasklet, kvm_s390_tasklet,
+>  		     (unsigned long) vcpu);
+> @@ -682,6 +697,16 @@ static int kvm_s390_handle_requests(struct kvm_vcpu *vcpu)
+>  	return 0;
 >  }
 > 
->  bool xen_hvm_need_lapic(void)
-> --
-> 1.7.1
+> +bool kvm_enabled_cmma(void)
+> +{
+> +	if (!MACHINE_IS_LPAR)
+> +		return false;
+> +	/* only enable for z10 and later */
+> +	if (!MACHINE_HAS_EDAT1)
+> +		return false;
+> +	return true;
+> +}
+> +
+>  static int __vcpu_run(struct kvm_vcpu *vcpu)
+>  {
+>  	int rc;
+> diff --git a/arch/s390/kvm/kvm-s390.h b/arch/s390/kvm/kvm-s390.h
+> index 028ca9f..ea3d5f7 100644
+> --- a/arch/s390/kvm/kvm-s390.h
+> +++ b/arch/s390/kvm/kvm-s390.h
+> @@ -145,6 +145,8 @@ void s390_vcpu_block(struct kvm_vcpu *vcpu);
+>  void s390_vcpu_unblock(struct kvm_vcpu *vcpu);
+>  void exit_sie(struct kvm_vcpu *vcpu);
+>  void exit_sie_sync(struct kvm_vcpu *vcpu);
+> +/* are we going to support cmma? */
+> +bool kvm_enabled_cmma(void);
+>  /* implemented in diag.c */
+>  int kvm_s390_handle_diag(struct kvm_vcpu *vcpu);
 > 
+> diff --git a/arch/s390/kvm/priv.c b/arch/s390/kvm/priv.c
+> index 0da3e6e..e0703db 100644
+> --- a/arch/s390/kvm/priv.c
+> +++ b/arch/s390/kvm/priv.c
+> @@ -581,9 +581,50 @@ static int handle_pfmf(struct kvm_vcpu *vcpu)
+>  	return 0;
+>  }
 > 
+> +static int handle_essa(struct kvm_vcpu *vcpu)
+> +{
+> +	/* entries expected to be 1FF */
+> +	int entries = (vcpu->arch.sie_block->cbrlo & ~PAGE_MASK) >> 3;
+> +	unsigned long *cbrlo, cbrle;
+> +	struct gmap *gmap;
+> +	int i;
+> +
+> +	VCPU_EVENT(vcpu, 5, "cmma release %d pages", entries);
+> +	gmap = vcpu->arch.gmap;
+> +	vcpu->stat.instruction_essa++;
+> +	if (!kvm_enabled_cmma() || !vcpu->arch.sie_block->cbrlo)
+> +		return kvm_s390_inject_program_int(vcpu, PGM_OPERATION);
+> +
+> +	if (vcpu->arch.sie_block->gpsw.mask & PSW_MASK_PSTATE)
+> +		return kvm_s390_inject_program_int(vcpu, PGM_PRIVILEGED_OP);
+> +
+> +	if (((vcpu->arch.sie_block->ipb & 0xf0000000) >> 28) > 6)
+> +		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
+> +
+> +	/* Rewind PSW to repeat the ESSA instruction */
+> +	vcpu->arch.sie_block->gpsw.addr =
+> +		__rewind_psw(vcpu->arch.sie_block->gpsw, 4);
+> +	vcpu->arch.sie_block->cbrlo &= PAGE_MASK;	/* reset nceo */
+> +	cbrlo = phys_to_virt(vcpu->arch.sie_block->cbrlo);
+> +	down_read(&gmap->mm->mmap_sem);
+> +	for (i = 0; i < entries; ++i) {
+> +		cbrle = cbrlo[i];
+> +		if (unlikely(cbrle & ~PAGE_MASK || cbrle < 2 * PAGE_SIZE))
+> +			/* invalid entry */
+> +			break;
+> +		/* try to free backing */
+> +		__gmap_zap(cbrle, gmap);
+> +	}
+> +	up_read(&gmap->mm->mmap_sem);
+> +	if (i < entries)
+> +		return kvm_s390_inject_program_int(vcpu, PGM_SPECIFICATION);
+> +	return 0;
+> +}
+> +
+>  static const intercept_handler_t b9_handlers[256] = {
+>  	[0x8d] = handle_epsw,
+>  	[0x9c] = handle_io_inst,
+> +	[0xab] = handle_essa,
+>  	[0xaf] = handle_pfmf,
+>  };
 > 
-
-
+> diff --git a/arch/s390/mm/pgtable.c b/arch/s390/mm/pgtable.c
+> index a8154a1..567f89e 100644
+> --- a/arch/s390/mm/pgtable.c
+> +++ b/arch/s390/mm/pgtable.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/quicklist.h>
+>  #include <linux/rcupdate.h>
+>  #include <linux/slab.h>
+> +#include <linux/swapops.h>
+> 
+>  #include <asm/pgtable.h>
+>  #include <asm/pgalloc.h>
+> @@ -573,6 +574,82 @@ unsigned long gmap_fault(unsigned long address, struct gmap *gmap)
+>  }
+>  EXPORT_SYMBOL_GPL(gmap_fault);
+> 
+> +static void gmap_zap_swap_entry(swp_entry_t entry, struct mm_struct *mm)
+> +{
+> +	if (!non_swap_entry(entry))
+> +		dec_mm_counter(mm, MM_SWAPENTS);
+> +	else if (is_migration_entry(entry)) {
+> +		struct page *page = migration_entry_to_page(entry);
+> +
+> +		if (PageAnon(page))
+> +			dec_mm_counter(mm, MM_ANONPAGES);
+> +		else
+> +			dec_mm_counter(mm, MM_FILEPAGES);
+> +	}
+> +	free_swap_and_cache(entry);
+> +}
+> +
+> +/**
+> + * The mm->mmap_sem lock must be held
+> + */
+> +static void gmap_zap_unused(struct mm_struct *mm, unsigned long address)
+> +{
+> +	unsigned long ptev, pgstev;
+> +	spinlock_t *ptl;
+> +	pgste_t pgste;
+> +	pte_t *ptep, pte;
+> +
+> +	ptep = get_locked_pte(mm, address, &ptl);
+> +	if (unlikely(!ptep))
+> +		return;
+> +	pte = *ptep;
+> +	if (!pte_swap(pte))
+> +		goto out_pte;
+> +	/* Zap unused and logically-zero pages */
+> +	pgste = pgste_get_lock(ptep);
+> +	pgstev = pgste_val(pgste);
+> +	ptev = pte_val(pte);
+> +	if (((pgstev & _PGSTE_GPS_USAGE_MASK) == _PGSTE_GPS_USAGE_UNUSED) ||
+> +	    ((pgstev & _PGSTE_GPS_ZERO) && (ptev & _PAGE_INVALID))) {
+> +		gmap_zap_swap_entry(pte_to_swp_entry(pte), mm);
+> +		pte_clear(mm, address, ptep);
+> +	}
+> +	pgste_set_unlock(ptep, pgste);
+> +out_pte:
+> +	pte_unmap_unlock(*ptep, ptl);
+> +}
+> +
+> +/*
+> + * this function is assumed to be called with mmap_sem held
+> + */
+> +void __gmap_zap(unsigned long address, struct gmap *gmap)
+> +{
+> +	unsigned long *table, *segment_ptr;
+> +	unsigned long segment, pgstev, ptev;
+> +	struct gmap_pgtable *mp;
+> +	struct page *page;
+> +
+> +	segment_ptr = gmap_table_walk(address, gmap);
+> +	if (IS_ERR(segment_ptr))
+> +		return;
+> +	segment = *segment_ptr;
+> +	if (segment & _SEGMENT_ENTRY_INV)
+> +		return;
+> +	page = pfn_to_page(segment >> PAGE_SHIFT);
+> +	mp = (struct gmap_pgtable *) page->index;
+> +	address = mp->vmaddr | (address & ~PMD_MASK);
+> +	/* Page table is present */
+> +	table = (unsigned long *)(segment & _SEGMENT_ENTRY_ORIGIN);
+> +	table = table + ((address >> 12) & 0xff);
+> +	pgstev = table[PTRS_PER_PTE];
+> +	ptev = table[0];
+> +	/* quick check, checked again with locks held */
+> +	if (((pgstev & _PGSTE_GPS_USAGE_MASK) == _PGSTE_GPS_USAGE_UNUSED) ||
+> +	    ((pgstev & _PGSTE_GPS_ZERO) && (ptev & _PAGE_INVALID)))
+> +		gmap_zap_unused(gmap->mm, address);
+> +}
+> +EXPORT_SYMBOL_GPL(__gmap_zap);
+> +
+>  void gmap_discard(unsigned long from, unsigned long to, struct gmap *gmap)
+>  {
+> 
 
