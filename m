@@ -1,44 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab3GYUWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 16:22:11 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:65451 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab3GYUWI (ORCPT
+	id S1753642Ab3GYU3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 16:29:00 -0400
+Received: from mail-gh0-f182.google.com ([209.85.160.182]:45791 "EHLO
+	mail-gh0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab3GYU2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 16:22:08 -0400
-Date: Thu, 25 Jul 2013 22:22:01 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 0/9] perf tools: add support for reading object code
-Message-ID: <20130725202201.GC16719@gmail.com>
-References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
+	Thu, 25 Jul 2013 16:28:55 -0400
+Message-ID: <51F18A99.7000306@gmail.com>
+Date: Thu, 25 Jul 2013 16:29:13 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Michal Hocko <mhocko@suse.cz>, azurIt <azurit@pobox.sk>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        cgroups mailinglist <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        righi.andrea@gmail.com, kosaki.motohiro@gmail.com
+Subject: Re: [patch 3/5] x86: finish fault error path with fatal signal
+References: <20130711072507.GA21667@dhcp22.suse.cz> <20130714012641.C2DA4E05@pobox.sk> <20130714015112.FFCB7AF7@pobox.sk> <20130715154119.GA32435@dhcp22.suse.cz> <20130715160006.GB32435@dhcp22.suse.cz> <20130716153544.GX17812@cmpxchg.org> <20130716160905.GA20018@dhcp22.suse.cz> <20130716164830.GZ17812@cmpxchg.org> <20130719042124.GC17812@cmpxchg.org> <20130719042502.GF17812@cmpxchg.org> <20130724203205.GL715@cmpxchg.org>
+In-Reply-To: <20130724203205.GL715@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(7/24/13 4:32 PM), Johannes Weiner wrote:
+> On Fri, Jul 19, 2013 at 12:25:02AM -0400, Johannes Weiner wrote:
+>> The x86 fault handler bails in the middle of error handling when the
+>> task has been killed.  For the next patch this is a problem, because
+>> it relies on pagefault_out_of_memory() being called even when the task
+>> has been killed, to perform proper OOM state unwinding.
+>>
+>> This is a rather minor optimization, just remove it.
+>>
+>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+>> ---
+>>   arch/x86/mm/fault.c | 11 -----------
+>>   1 file changed, 11 deletions(-)
+>>
+>> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+>> index 1cebabe..90248c9 100644
+>> --- a/arch/x86/mm/fault.c
+>> +++ b/arch/x86/mm/fault.c
+>> @@ -846,17 +846,6 @@ static noinline int
+>>   mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+>>   	       unsigned long address, unsigned int fault)
+>>   {
+>> -	/*
+>> -	 * Pagefault was interrupted by SIGKILL. We have no reason to
+>> -	 * continue pagefault.
+>> -	 */
+>> -	if (fatal_signal_pending(current)) {
+>> -		if (!(fault & VM_FAULT_RETRY))
+>> -			up_read(&current->mm->mmap_sem);
+>> -		if (!(error_code & PF_USER))
+>> -			no_context(regs, error_code, address);
+>> -		return 1;
+>
+> This is broken but I only hit it now after testing for a while.
+>
+> The patch has the right idea: in case of an OOM kill, we should
+> continue the fault and not abort.  What I missed is that in case of a
+> kill during lock_page, i.e. VM_FAULT_RETRY && fatal_signal, we have to
+> exit the fault and not do up_read() etc.  This introduced a locking
+> imbalance that would get everybody hung on mmap_sem.
+>
+> I moved the retry handling outside of mm_fault_error() (come on...)
+> and stole some documentation from arm.  It's now a little bit more
+> explicit and comparable to other architectures.
+>
+> I'll send an updated series, patch for reference:
+>
+> ---
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Subject: [patch] x86: finish fault error path with fatal signal
+>
+> The x86 fault handler bails in the middle of error handling when the
+> task has been killed.  For the next patch this is a problem, because
+> it relies on pagefault_out_of_memory() being called even when the task
+> has been killed, to perform proper OOM state unwinding.
+>
+> This is a rather minor optimization that cuts short the fault handling
+> by a few instructions in rare cases.  Just remove it.
+>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>   arch/x86/mm/fault.c | 33 +++++++++++++--------------------
+>   1 file changed, 13 insertions(+), 20 deletions(-)
+>
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 6d77c38..0c18beb 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -842,31 +842,17 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+>   	force_sig_info_fault(SIGBUS, code, address, tsk, fault);
+>   }
+>
+> -static noinline int
+> +static noinline void
+>   mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+>   	       unsigned long address, unsigned int fault)
+>   {
+> -	/*
+> -	 * Pagefault was interrupted by SIGKILL. We have no reason to
+> -	 * continue pagefault.
+> -	 */
+> -	if (fatal_signal_pending(current)) {
+> -		if (!(fault & VM_FAULT_RETRY))
+> -			up_read(&current->mm->mmap_sem);
+> -		if (!(error_code & PF_USER))
+> -			no_context(regs, error_code, address, 0, 0);
+> -		return 1;
+> -	}
+> -	if (!(fault & VM_FAULT_ERROR))
+> -		return 0;
+> -
+>   	if (fault & VM_FAULT_OOM) {
+>   		/* Kernel mode? Handle exceptions or die: */
+>   		if (!(error_code & PF_USER)) {
+>   			up_read(&current->mm->mmap_sem);
+>   			no_context(regs, error_code, address,
+>   				   SIGSEGV, SEGV_MAPERR);
+> -			return 1;
+> +			return;
+>   		}
+>
+>   		up_read(&current->mm->mmap_sem);
+> @@ -884,7 +870,6 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+>   		else
+>   			BUG();
+>   	}
+> -	return 1;
+>   }
+>
+>   static int spurious_fault_check(unsigned long error_code, pte_t *pte)
+> @@ -1189,9 +1174,17 @@ good_area:
+>   	 */
+>   	fault = handle_mm_fault(mm, vma, address, flags);
+>
+> -	if (unlikely(fault & (VM_FAULT_RETRY|VM_FAULT_ERROR))) {
+> -		if (mm_fault_error(regs, error_code, address, fault))
+> -			return;
+> +	/*
+> +	 * If we need to retry but a fatal signal is pending, handle the
+> +	 * signal first. We do not need to release the mmap_sem because it
+> +	 * would already be released in __lock_page_or_retry in mm/filemap.c.
+> +	 */
+> +	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current))
+> +		return;
+> +
+> +	if (unlikely(fault & VM_FAULT_ERROR)) {
+> +		mm_fault_error(regs, error_code, address, fault);
+> +		return;
+>   	}
 
-* Adrian Hunter <adrian.hunter@intel.com> wrote:
+When I made the patch you removed code, Ingo suggested we need put all rare case code
+into if(unlikely()) block. Yes, this is purely micro optimization. But it is not costly
+to maintain.
 
-> Hi
-> 
-> Here are some patches that add support for reading object code from vmlinux,
-> kernel modules and /proc/kcore.
 
-Nice feature!
 
-Thanks,
 
-	Ingo
