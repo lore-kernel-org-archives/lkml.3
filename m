@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280Ab3GYISz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:18:55 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30638 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754732Ab3GYISw (ORCPT
+	id S1755295Ab3GYIVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:21:13 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:56765 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab3GYIVH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:18:52 -0400
-Date: Thu, 25 Jul 2013 16:18:41 +0800
-From: Liu Bo <bo.li.liu@oracle.com>
-To: Andi Shyti <andi@etezian.org>
-Cc: chris.mason@fusionio.com, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] btrfs: raid56: avoid double allocation
-Message-ID: <20130725081840.GB5202@localhost.localdomain>
-Reply-To: bo.li.liu@oracle.com
-References: <1374710980-5707-1-git-send-email-andi@etezian.org>
+	Thu, 25 Jul 2013 04:21:07 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 02/14] clk: Add of_init_clk_data() to parse common clock bindings
+Date: Thu, 25 Jul 2013 10:21:02 +0200
+Message-ID: <1714620.Z8J8zTxIRB@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374710980-5707-1-git-send-email-andi@etezian.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 02:09:40AM +0200, Andi Shyti wrote:
-> alloc_rbio frees already bbio and raid_map, therefore they don't
-> need to be freed in case it fails
+Hi Stephen,
+
+Pretty good idea, but I have some comments inline.
+
+On Wednesday 24 of July 2013 17:43:30 Stephen Boyd wrote:
+> Consolidate DT parsing for the common bits of a clock binding in
+> one place to simplify clock drivers. This also has the added
+> benefit of standardizing how the clock names used by the common
+> clock framework are generated from the DT bindings. We always use
+> the first clock-output-names string if it exists, otherwise we
+> fall back to the node name.
 > 
-
-Looks good to me.
-
-Reviewed-by: Liu Bo <bo.li.liu@oracle.com>
-
-> Signed-off-by: Andi Shyti <andi@etezian.org>
+> To be slightly more efficient and make the caller's life easier,
+> we introduce a shallow copy flag so that the clock core knows to
+> just copy the pointers to the strings and not the string
+> contents. Otherwise the callers of this function would have to
+> free the strings allocated here which could be cumbersome.
+> 
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 > ---
->  fs/btrfs/raid56.c | 6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
+>  drivers/clk/clk.c            | 59
+> +++++++++++++++++++++++++++++++++++++++++++-
+> include/linux/clk-provider.h |  7 ++++++
+>  2 files changed, 65 insertions(+), 1 deletion(-)
 > 
-> diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
-> index 0525e13..35fe775 100644
-> --- a/fs/btrfs/raid56.c
-> +++ b/fs/btrfs/raid56.c
-> @@ -1687,11 +1687,9 @@ int raid56_parity_write(struct btrfs_root *root, struct bio *bio,
->  	struct blk_plug_cb *cb;
->  
->  	rbio = alloc_rbio(root, bbio, raid_map, stripe_len);
-> -	if (IS_ERR(rbio)) {
-> -		kfree(raid_map);
-> -		kfree(bbio);
-> +	if (IS_ERR(rbio))
->  		return PTR_ERR(rbio);
-> -	}
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 1ed9bdd..ea8e951b 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1809,6 +1809,10 @@ static int _clk_register(struct device *dev,
+> struct clk_hw *hw, struct clk *clk) {
+>  	int i, ret;
+> 
+> +	hw->clk = clk;
+> +	if (hw->init->flags & CLK_SHALLOW_COPY)
+> +		return PTR_RET(__clk_register(dev, hw));
 > +
->  	bio_list_add(&rbio->bio_list, bio);
->  	rbio->bio_list_bytes = bio->bi_size;
->  
-> -- 
-> 1.8.3.2
+>  	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
+>  	if (!clk->name) {
+>  		pr_err("%s: could not allocate clk->name\n", __func__);
+> @@ -1819,7 +1823,6 @@ static int _clk_register(struct device *dev,
+> struct clk_hw *hw, struct clk *clk) clk->hw = hw;
+>  	clk->flags = hw->init->flags;
+>  	clk->num_parents = hw->init->num_parents;
+> -	hw->clk = clk;
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
--liubo
+>  	/* allocate local copy in case parent_names is __initdata */
+>  	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
+> @@ -2232,4 +2235,58 @@ void __init of_clk_init(const struct of_device_id
+> *matches) clk_init_cb(np);
+>  	}
+>  }
+> +
+> +/**
+> + * of_init_clk_data() - Initialize a clk_init_data struct from a DT
+> node + * @np: node to initialize struct from
+> + * @init: struct to initialize
+> + *
+> + * Populates the clk_init_data struct by parsing the device node for
+> + * properties matching the common clock binding. Returns 0 on success
+> + * and a negative error code on failure.
+> + */
+> +int of_init_clk_data(struct device_node *np, struct clk_init_data
+> *init) +{
+> +	struct of_phandle_args s;
+> +	const char **names = NULL, **p;
+> +	const char *name;
+> +	int i;
+> +
+> +	if (of_property_read_string(np, "clock-output-names", &name) < 0)
+> +		name = np->name;
+> +	init->name = kstrdup(name, GFP_KERNEL);
+> +	if (!init->name)
+> +		return -ENOMEM;
+> +
+> +	for (i = 0; of_parse_phandle_with_args(np, "clocks", "#clock-
+cells",
+> +				i, &s) == 0; i++) {
+> +		p = krealloc(names, sizeof(*names) * (i + 1), GFP_KERNEL);
+> +		if (!p)
+> +			goto err;
+
+What about using of_count_phandle_with_args() first to get the parent 
+count?
+
+> +		names = p;
+> +
+> +		if (of_property_read_string(s.np, "clock-output-names",
+> +					&name) < 0)
+> +			name = s.np->name;
+
+You should be able to use of_clk_get_parent_name() here, instead of 
+parsing the properties directly.
+
+Best regards,
+Tomasz
+
