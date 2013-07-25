@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208Ab3GYSfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:35:52 -0400
-Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:56136 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755964Ab3GYSft (ORCPT
+	id S1757042Ab3GYSiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:38:22 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4227 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab3GYSiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:35:49 -0400
-Message-ID: <51F17005.7030309@mozilla.com>
-Date: Thu, 25 Jul 2013 14:35:49 -0400
-From: Dhaval Giani <dgiani@mozilla.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 14:38:20 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 11:38:20 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v3 0/9] Tegra USB cleanup series
+Date: Thu, 25 Jul 2013 21:38:00 +0300
+Message-ID: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-CC: Taras Glek <tglek@mozilla.com>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-References: <1374699833.7083.2.camel@localhost> <20130724233628.GD3641@logfs.org> <51F14136.30409@mozilla.com> <51F1556A.20909@mozilla.com> <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
-In-Reply-To: <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013-07-25 2:15 PM, Vyacheslav Dubeyko wrote:
-> On Jul 25, 2013, at 8:42 PM, Taras Glek wrote:
->
-> [snip]
->>> To introduce transparent decompression. Let someone else do the compression for us, and supply decompressed data on demand  (in this case a read call). Reduces the complexity which would otherwise have to be brought into the filesystem.
->> The main use for file compression for Firefox(it's useful on Linux desktop too) is to improve IO-throughput and reduce startup latency. In order for compression to be a net win an application should be aware of what is being compressed and what isn't. For example patterns for IO on large libraries (eg 30mb libxul.so) are well suited to compression, but SQLite databases are not.  Similarly for our disk cache: images should not be compressed, but javascript should be. Footprint wins are useful on android, but it's the increased IO throughput on crappy storage devices that makes this most attractive.
->>
->> In addition of being aware of which files should be compressed, Firefox is aware of patterns of usage of various files it could schedule compression at the most optimal time.
->>
->> Above needs tie in nicely with the simplification of not implementing compression at fs-level.
-> There are many filesystems that uses compression as internal technique. And, as I understand, implementation
-> of compression in different Linux kernel filesystem drivers has similar code patterns. So, from my point of view,
-> it makes sense to generalize compression/decompression code in the form of library. The API of such generalized
-> compression kernel library can be used in drivers of different file systems. Also such generalized compression
-> library will simplify support of compression in file system drivers that don't support compression feature currently.
->
-> Moreover, I think that it is possible to implement compression support on VFS level. Such feature gives
-> opportunity to have compression support for filesystems that don't support compression feature as
-> internal technique.
+Hi,
 
-I am not sure it is a very good idea at this stage.
-> [snip]
->> This transparent decompression idea is based on our experience with HFS+. Apple uses the fs-attribute approach. OSX is able to compress application libraries at installation-time, apps remain blissfully unaware but get an extra boost in startup perf.
->>
-> HFS+ supports compression as internal filesystem technique. It means that HFS+ volume layout has
-> metadata structures for compression support (compressed xattrs or compressed resource forks).
-> So, compression is supported on FS level. As I know, Mac OS X has native decompression support
-> for compressed files but you need to use special tool for compression of files on HFS+. Maybe
-> Mac OS X has internal library that give opportunity to compress application libraries at installation
-> time. But I suppose that it is simply user-space tool or library that uses HFS+ compression support
-> on kernel-space and volume layout levels.
-In addition to what Taras mentioned, there is a similar approach being 
-followed here. There is a compression tool to compress files at 
-https://github.com/glandium/faulty.lib/blob/master/linker/szip.cpp .
+Here's a V3 of the few cleanup patches for the Tegra USB drivers, to be applied
+on top of Mikko's two patch sets. It mostly deals with removing all usage of
+platform data and using standard helpers and enums instead of Tegra-specific
+ones.
+
+v3 diff:
+    Rebased on v3 of Mikko's regulator patch (just a whitespace change)
+    Added Stephen's Reviewed & Tested-bys & Ack to Patch 4
+
+v2 diff:
+    Patch 5: Do the usb_add_phy_dev as the very last thing in .probe
+    Patch 9: Default to host mode if the property didn't exist
+
+Tuomas Tynkkynen (9):
+  usb: phy: tegra: Remove unnecessary 'dev' field
+  usb: host: tegra: Remove leftover code
+  usb: tegra: host: Remove references to plat data
+  ARM: tegra: Remove USB platform data
+  usb: phy: tegra: Register as an USB PHY.
+  usb: host: tegra: Locate a PHY via standard API
+  usb: phy: tegra: Remove custom PHY locating APIs
+  usb: phy: tegra: Use DT helpers for phy_type
+  usb: phy: tegra: Use DT helpers for dr_mode
+
+ arch/arm/mach-tegra/tegra.c             |  38 +-----------
+ drivers/usb/host/ehci-tegra.c           |  37 ++----------
+ drivers/usb/phy/phy-tegra-usb.c         | 102 ++++++++++++++++----------------
+ include/linux/platform_data/tegra_usb.h |  32 ----------
+ include/linux/usb/tegra_usb_phy.h       |  16 +----
+ 5 files changed, 59 insertions(+), 166 deletions(-)
+ delete mode 100644 include/linux/platform_data/tegra_usb.h
+
+-- 
+1.8.1.5
 
