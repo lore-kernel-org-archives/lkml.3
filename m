@@ -1,136 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3GYN45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:56:57 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53187 "EHLO mga03.intel.com"
+	id S1756340Ab3GYN5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:57:15 -0400
+Received: from mout.web.de ([212.227.15.14]:65091 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756189Ab3GYNzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:55:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,743,1367996400"; 
-   d="scan'208";a="273136967"
-From: Adrian Hunter <adrian.hunter@intel.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 4/9] perf tools: adjust the vmlinux symtab matches kallsyms test
-Date: Thu, 25 Jul 2013 17:01:25 +0300
-Message-Id: <1374760890-30558-5-git-send-email-adrian.hunter@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
-References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki, Business Identity Code: 0357606 - 4, Domiciled in Helsinki
+	id S1755847Ab3GYN44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:56:56 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: bridge@lists.linux-foundation.org
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Cong Wang <amwang@redhat.com>, Adam Baker <linux@baker-net.org.uk>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCHv2] bridge: disable snooping if there is no querier
+Date: Thu, 25 Jul 2013 15:56:20 +0200
+Message-Id: <1374760580-12920-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374757046-12463-1-git-send-email-linus.luessing@web.de>
+References: <1374757046-12463-1-git-send-email-linus.luessing@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:EU2cgq6jxuNCBA64Je0LMZJPAb6CI4RM7qzrie3Joz5jQ+UCKT5
+ fVPR/GB+OJnQIdzfuwWsSI225Wf8FOKcNPmcFFbtw2FXvokR1nJ7MuxGakjcbK8OnHoDzzf
+ E2pyVqnYuaLwmbJpHNV1Qbr3r1ntWICb2tOg0TjiO4jsvAGVPPLfCkbfR3DH+1E9GkZWxlb
+ HCjoPq9anjcImZ6iImlkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vmlinux maps now map to the dso and the symbol values
-are now file offsets.  For comparison with kallsyms
-the virtual memory address is needed which is obtained
-by unmapping the symbol value.
+If there is no querier on a link then we won't get periodic reports and
+therefore won't be able to learn about multicast listeners behind ports,
+potentially leading to lost multicast packets, especially for multicast
+listeners that joined before the creation of the bridge.
 
-The "vmlinux symtab matches kallsyms" is adjusted
-accordingly.
+These lost multicast packets can appear since c5c23260594
+("bridge: Add multicast_querier toggle and disable queries by default")
+in particular.
 
-Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+With this patch we are flooding multicast packets if our querier is
+disabled and if we didn't detect any other querier.
+
+A grace period of the Maximum Response Delay of the querier is added to
+give multicast responses enough time to arrive and to be learned from
+before disabling the flooding behaviour again.
+
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 ---
- tools/perf/tests/vmlinux-kallsyms.c | 32 +++++++++++++++++++++-----------
- 1 file changed, 21 insertions(+), 11 deletions(-)
+v2: added missing, empty br_multicast_querier_exists() to avoid
+    build failures if CONFIG_BRIDGE_IGMP_SNOOPING is not set
 
-diff --git a/tools/perf/tests/vmlinux-kallsyms.c b/tools/perf/tests/vmlinux-kallsyms.c
-index add1539..e2e1498 100644
---- a/tools/perf/tests/vmlinux-kallsyms.c
-+++ b/tools/perf/tests/vmlinux-kallsyms.c
-@@ -25,6 +25,7 @@ int test__vmlinux_matches_kallsyms(void)
- 	struct machine kallsyms, vmlinux;
- 	enum map_type type = MAP__FUNCTION;
- 	struct ref_reloc_sym ref_reloc_sym = { .name = "_stext", };
-+	u64 mem_start, mem_end;
+
+ net/bridge/br_device.c    |    3 ++-
+ net/bridge/br_input.c     |    3 ++-
+ net/bridge/br_multicast.c |   41 ++++++++++++++++++++++++++++++++---------
+ net/bridge/br_private.h   |   15 +++++++++++++++
+ 4 files changed, 51 insertions(+), 11 deletions(-)
+
+diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
+index 2ef6678..69363bd 100644
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -70,7 +70,8 @@ netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
  
- 	/*
- 	 * Step 1:
-@@ -123,10 +124,14 @@ int test__vmlinux_matches_kallsyms(void)
- 		if (sym->start == sym->end)
- 			continue;
+ 		mdst = br_mdb_get(br, skb, vid);
+-		if (mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb))
++		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
++		    br_multicast_querier_exists(br))
+ 			br_multicast_deliver(mdst, skb);
+ 		else
+ 			br_flood_deliver(br, skb, false);
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index 1b8b8b8..8c561c0 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -101,7 +101,8 @@ int br_handle_frame_finish(struct sk_buff *skb)
+ 		unicast = false;
+ 	} else if (is_multicast_ether_addr(dest)) {
+ 		mdst = br_mdb_get(br, skb, vid);
+-		if (mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) {
++		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
++		    br_multicast_querier_exists(br)) {
+ 			if ((mdst && mdst->mglist) ||
+ 			    br_multicast_is_router(br))
+ 				skb2 = skb;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 69af490..5b5b9c0 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1011,6 +1011,17 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
+ }
+ #endif
  
--		first_pair = machine__find_kernel_symbol(&kallsyms, type, sym->start, NULL, NULL);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, sym->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, sym->end);
++static void br_multicast_update_querier_timer(struct net_bridge *br,
++					      unsigned long max_delay)
++{
++	if (!timer_pending(&br->multicast_querier_timer))
++		atomic64_set(&br->multicast_querier_delay_time,
++			     jiffies + max_delay);
 +
-+		first_pair = machine__find_kernel_symbol(&kallsyms, type,
-+							 mem_start, NULL, NULL);
- 		pair = first_pair;
++	mod_timer(&br->multicast_querier_timer,
++		  jiffies + br->multicast_querier_interval);
++}
++
+ /*
+  * Add port to router_list
+  *  list is maintained ordered by pointer value
+@@ -1061,11 +1072,11 @@ timer:
  
--		if (pair && pair->start == sym->start) {
-+		if (pair && pair->start == mem_start) {
- next_pair:
- 			if (strcmp(sym->name, pair->name) == 0) {
- 				/*
-@@ -138,10 +143,11 @@ next_pair:
- 				 * off the real size. More than that and we
- 				 * _really_ have a problem.
- 				 */
--				s64 skew = sym->end - pair->end;
-+				s64 skew = mem_end - pair->end;
- 				if (llabs(skew) >= page_size)
- 					pr_debug("%#" PRIx64 ": diff end addr for %s v: %#" PRIx64 " k: %#" PRIx64 "\n",
--						 sym->start, sym->name, sym->end, pair->end);
-+						 mem_start, sym->name, mem_end,
-+						 pair->end);
+ static void br_multicast_query_received(struct net_bridge *br,
+ 					struct net_bridge_port *port,
+-					int saddr)
++					int saddr,
++					unsigned long max_delay)
+ {
+ 	if (saddr)
+-		mod_timer(&br->multicast_querier_timer,
+-			  jiffies + br->multicast_querier_interval);
++		br_multicast_update_querier_timer(br, max_delay);
+ 	else if (timer_pending(&br->multicast_querier_timer))
+ 		return;
  
- 				/*
- 				 * Do not count this as a failure, because we
-@@ -159,7 +165,7 @@ detour:
- 				if (nnd) {
- 					struct symbol *next = rb_entry(nnd, struct symbol, rb_node);
+@@ -1093,8 +1104,6 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 	    (port && port->state == BR_STATE_DISABLED))
+ 		goto out;
  
--					if (next->start == sym->start) {
-+					if (next->start == mem_start) {
- 						pair = next;
- 						goto next_pair;
- 					}
-@@ -172,10 +178,11 @@ detour:
- 				}
+-	br_multicast_query_received(br, port, !!iph->saddr);
+-
+ 	group = ih->group;
  
- 				pr_debug("%#" PRIx64 ": diff name v: %s k: %s\n",
--					 sym->start, sym->name, pair->name);
-+					 mem_start, sym->name, pair->name);
- 			}
- 		} else
--			pr_debug("%#" PRIx64 ": %s not on kallsyms\n", sym->start, sym->name);
-+			pr_debug("%#" PRIx64 ": %s not on kallsyms\n",
-+				 mem_start, sym->name);
- 
- 		err = -1;
+ 	if (skb->len == sizeof(*ih)) {
+@@ -1118,6 +1127,8 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 			    IGMPV3_MRC(ih3->code) * (HZ / IGMP_TIMER_SCALE) : 1;
  	}
-@@ -208,16 +215,19 @@ detour:
- 	for (nd = rb_first(&vmlinux.kmaps.maps[type]); nd; nd = rb_next(nd)) {
- 		struct map *pos = rb_entry(nd, struct map, rb_node), *pair;
  
--		pair = map_groups__find(&kallsyms.kmaps, type, pos->start);
-+		mem_start = vmlinux_map->unmap_ip(vmlinux_map, pos->start);
-+		mem_end = vmlinux_map->unmap_ip(vmlinux_map, pos->end);
++	br_multicast_query_received(br, port, !!iph->saddr, max_delay);
 +
-+		pair = map_groups__find(&kallsyms.kmaps, type, mem_start);
- 		if (pair == NULL || pair->priv)
- 			continue;
+ 	if (!group)
+ 		goto out;
  
--		if (pair->start == pos->start) {
-+		if (pair->start == mem_start) {
- 			pair->priv = 1;
- 			pr_info(" %" PRIx64 "-%" PRIx64 " %" PRIx64 " %s in kallsyms as",
- 				pos->start, pos->end, pos->pgoff, pos->dso->name);
--			if (pos->pgoff != pair->pgoff || pos->end != pair->end)
--				pr_info(": \n*%" PRIx64 "-%" PRIx64 " %" PRIx64 "",
-+			if (mem_end != pair->end)
-+				pr_info(":\n*%" PRIx64 "-%" PRIx64 " %" PRIx64,
- 					pair->start, pair->end, pair->pgoff);
- 			pr_info(" %s\n", pair->dso->name);
- 			pair->priv = 1;
+@@ -1174,8 +1185,6 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 	    (port && port->state == BR_STATE_DISABLED))
+ 		goto out;
+ 
+-	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr));
+-
+ 	if (skb->len == sizeof(*mld)) {
+ 		if (!pskb_may_pull(skb, sizeof(*mld))) {
+ 			err = -EINVAL;
+@@ -1196,6 +1205,9 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
+ 	}
+ 
++	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr),
++				    max_delay);
++
+ 	if (!group)
+ 		goto out;
+ 
+@@ -1642,6 +1654,8 @@ void br_multicast_init(struct net_bridge *br)
+ 	br->multicast_querier_interval = 255 * HZ;
+ 	br->multicast_membership_interval = 260 * HZ;
+ 
++	atomic64_set(&br->multicast_querier_delay_time, 0);
++
+ 	spin_lock_init(&br->multicast_lock);
+ 	setup_timer(&br->multicast_router_timer,
+ 		    br_multicast_local_router_expired, 0);
+@@ -1830,6 +1844,8 @@ unlock:
+ 
+ int br_multicast_set_querier(struct net_bridge *br, unsigned long val)
+ {
++	unsigned long max_delay;
++
+ 	val = !!val;
+ 
+ 	spin_lock_bh(&br->multicast_lock);
+@@ -1837,8 +1853,15 @@ int br_multicast_set_querier(struct net_bridge *br, unsigned long val)
+ 		goto unlock;
+ 
+ 	br->multicast_querier = val;
+-	if (val)
+-		br_multicast_start_querier(br);
++	if (!val)
++		goto unlock;
++
++	max_delay = br->multicast_query_response_interval;
++	if (!timer_pending(&br->multicast_querier_timer))
++		atomic64_set(&br->multicast_querier_delay_time,
++			     jiffies + max_delay);
++
++	br_multicast_start_querier(br);
+ 
+ unlock:
+ 	spin_unlock_bh(&br->multicast_lock);
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 3be89b3..5c04658 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -275,6 +275,7 @@ struct net_bridge
+ 	struct timer_list		multicast_router_timer;
+ 	struct timer_list		multicast_querier_timer;
+ 	struct timer_list		multicast_query_timer;
++	atomic64_t			multicast_querier_delay_time;
+ #endif
+ 
+ 	struct timer_list		hello_timer;
+@@ -501,6 +502,16 @@ static inline bool br_multicast_is_router(struct net_bridge *br)
+ 	       (br->multicast_router == 1 &&
+ 		timer_pending(&br->multicast_router_timer));
+ }
++
++static inline bool br_multicast_querier_exists(struct net_bridge *br)
++{
++	unsigned long delay_time =
++			atomic64_read(&br->multicast_querier_delay_time);
++
++	return time_is_before_jiffies(delay_time) &&
++	       (br->multicast_querier ||
++		timer_pending(&br->multicast_querier_timer));
++}
+ #else
+ static inline int br_multicast_rcv(struct net_bridge *br,
+ 				   struct net_bridge_port *port,
+@@ -557,6 +568,10 @@ static inline bool br_multicast_is_router(struct net_bridge *br)
+ {
+ 	return 0;
+ }
++static inline bool br_multicast_querier_exists(struct net_bridge *br)
++{
++	return false;
++}
+ static inline void br_mdb_init(void)
+ {
+ }
 -- 
-1.7.11.7
+1.7.10.4
 
