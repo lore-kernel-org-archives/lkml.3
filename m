@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab3GYOzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:55:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53784 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755576Ab3GYOzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:55:01 -0400
-Date: Thu, 25 Jul 2013 17:54:54 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <george.cherian@ti.com>
-Subject: Re: [PATCH 02/16] usb: phy: phy-nop: add support for am335x PHY
-Message-ID: <20130725145454.GL16106@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
- <1374516607-2705-3-git-send-email-bigeasy@linutronix.de>
- <20130725143330.GK16106@radagast>
- <20130725144529.GB5412@linutronix.de>
+	id S1756390Ab3GYO5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:57:00 -0400
+Received: from smtp-out-037.synserver.de ([212.40.185.37]:1113 "EHLO
+	smtp-out-036.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756103Ab3GYO47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 10:56:59 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 5035
+Message-ID: <51F13CEB.7030408@metafoo.de>
+Date: Thu, 25 Jul 2013 16:57:47 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="JKGvNdIvrY8Ovf7Z"
-Content-Disposition: inline
-In-Reply-To: <20130725144529.GB5412@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH 15/16] dmaengine: add transfered member to dma_async_tx_descriptor
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-16-git-send-email-bigeasy@linutronix.de>
+In-Reply-To: <1374516607-2705-16-git-send-email-bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---JKGvNdIvrY8Ovf7Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/22/2013 08:10 PM, Sebastian Andrzej Siewior wrote:
+> In USB RX path it is possible that the we receive less bytes than
+> requested. Take the following example:
+> The driver for USB-to-UART submits an URB with 256 bytes in size and the
+> dmaengine driver in turn programs a transfer of 256 bytes. The transfer
+> is programmed and the dma engine waits for the data to arrive. Once data
+> is sent on the UART the dma engine begins to move data. If there was
+> only one data byte in the USB packet received then the DMA engine will
+> only move one byte due to USB restrictions / rules. The real size of the
+> transfer has to be notified to the user / caller so he set this to the
+> caller.
+> This patch adds the transfered member to the dma_async_tx_descriptor
+> where the caller can obtain the final size.
 
-On Thu, Jul 25, 2013 at 04:45:29PM +0200, Sebastian Andrzej Siewior wrote:
-> * Felipe Balbi | 2013-07-25 17:33:30 [+0300]:
->=20
-> >On Mon, Jul 22, 2013 at 08:09:53PM +0200, Sebastian Andrzej Siewior wrot=
-e:
-> >right, I replied to the wrong series, please add a patch renaming file
-> >and functions to phy-generic.c/usb_phy_gen_
->=20
-> Sorry, I can't parse that.
-> You want to rename phy-nop.c to phy-generic.c and add the additional
-> functions in usb_phy_gen.c?
+I'm not sure that this will work. Once you've submitted the descriptor it is
+owned by the dmaengine driver and you are not allowed to dereference it
+anymore since the dmaengine driver might free the memory at any time. You
+should only reference the descriptor by the cookie returned by submit().
 
-$ git mv drivers/usb/phy/phy-nop.c drivers/usb/phy/phy-generic.c
-$ sed -i 's/\<nop_/usb_phy_gen_/g' drivers/usb/phy/phy-generic.c
-
---=20
-balbi
-
---JKGvNdIvrY8Ovf7Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8Tw+AAoJEIaOsuA1yqREEPwQALTE0hXrLO2vvcUoHTdfoPOO
-HwEfNUhy7K8zrRkrRVFaF0TzASUxxRhBBL3tvz79eUY1bKyBJaoBlJYQlga5uev9
-Jo3pOH+o4OYad7Q/z2eo0CFQfQEJ5qp5+Sh1Hws5dAvH11RzdOEMrheDIYpO3bwL
-28/uDu+vYbGPVC7GR4e3dNMpKvI2YJvCxolgTui36UVko2XY9RDOLXpXQBXk4pJx
-Orh2yiAtHO4568rMkFw+9LUml4veZM1Don8obEGPCknsGHbDPd7VXZUaCGP4hbmU
-2Bj7zN9xV5YhTmk80AAZELLtonCAMh+SaUnfPex9um0voEjkwRzpGfCp5xcbqhBg
-KN+9pCWCFzIByKS6iV8OxzldQ3CXP3ydx7Y6oj1eOj+37ETqXLM2U/OSb5uGo3x1
-0/VCxf6Vvos8Gxw8FeqPvDzQVvWTyfL9k1ywIXDSmndv9vMsOL7U3YlhqpvKuoXy
-e0WEaBI5ediB9PKofaR+pwkhRSNkIh7QwKyrOB+NuIf1EgllmVEM7rLIIspA7OPC
-zwXvcHyL3sLhGM06K2bxHwY866qLa/X0+WjLBUfugbbOn3FJgZwX+yNOhANKt2LH
-bvQgWelf92Fg+DTujhFyQG+V3O33MIVsnlh5nCVwyNjWEWQw1pdd3JEJP11cq97V
-38Rhy8+PBwub7r3DmQPN
-=8gGV
------END PGP SIGNATURE-----
-
---JKGvNdIvrY8Ovf7Z--
+- Lars
