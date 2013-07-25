@@ -1,199 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab3GYDJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:09:42 -0400
-Received: from mga11.intel.com ([192.55.52.93]:30506 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753484Ab3GYDJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:09:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,739,1367996400"; 
-   d="scan'208";a="375643134"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: RE: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
- ACPI IPMI transfers
-Thread-Topic: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
- ACPI IPMI transfers
-Thread-Index: AQHOh3wQ2mCt+ewJ/06ynzhP2RS7T5lz+KeAgAC35UA=
-Date: Thu, 25 Jul 2013 03:09:35 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E88024357A9@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <cover.1374566394.git.lv.zheng@intel.com>
- <970a8a7108e4c95ce09e34eee03eb5731645729f.1374566394.git.lv.zheng@intel.com>
- <1520893.BbRK6T3F73@vostro.rjw.lan>
-In-Reply-To: <1520893.BbRK6T3F73@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1754452Ab3GYDKw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:10:52 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:52160 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab3GYDKt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:10:49 -0400
+Message-ID: <20130724221048.129254d7cfiyvoe0@67.228.131.205>
+Date: Wed, 24 Jul 2013 22:10:48 -0500
+From: linux@roeck-us.net
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, stable@vger.kernel.org
+Subject: Re: [ 000/103] 3.10.3-stable review
+References: <20130723220418.532514378@linuxfoundation.org>
+In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
 MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6P39w1V000985
 
--stable according to the previous conversation.
+Quoting Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
 
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Thursday, July 25, 2013 7:38 AM
-> 
-> On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
-> > This patch fixes races caused by unprotected ACPI IPMI transfers.
-> >
-> > We can see the following crashes may occur:
-> > 1. There is no tx_msg_lock held for iterating tx_msg_list in
-> >    ipmi_flush_tx_msg() while it is parellel unlinked on failure in
-> >    acpi_ipmi_space_handler() under protection of tx_msg_lock.
-> > 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
-> >    while it is parellel accessed in ipmi_flush_tx_msg() and
-> >    ipmi_msg_handler().
-> >
-> > This patch enhances tx_msg_lock to protect all tx_msg accesses to
-> > solve this issue.  Then tx_msg_lock is always held around complete()
-> > and tx_msg accesses.
-> > Calling smp_wmb() before setting msg_done flag so that messages
-> > completed due to flushing will not be handled as 'done' messages while
-> > their contents are not vaild.
-> >
-> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > Cc: Zhao Yakui <yakui.zhao@intel.com>
-> > Reviewed-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  drivers/acpi/acpi_ipmi.c |   10 ++++++++--
-> >  1 file changed, 8 insertions(+), 2 deletions(-)
-> >
-> > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
-> > b37c189..527ee43 100644
-> > --- a/drivers/acpi/acpi_ipmi.c
-> > +++ b/drivers/acpi/acpi_ipmi.c
-> > @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct
-> acpi_ipmi_device *ipmi)
-> >  	struct acpi_ipmi_msg *tx_msg, *temp;
-> >  	int count = HZ / 10;
-> >  	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
-> > +	unsigned long flags;
-> >
-> > +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
-> >  	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
-> >  		/* wake up the sleep thread on the Tx msg */
-> >  		complete(&tx_msg->tx_complete);
-> >  	}
-> > +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
-> >
-> >  	/* wait for about 100ms to flush the tx message list */
-> >  	while (count--) {
-> > @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct
-> ipmi_recv_msg *msg, void *user_msg_data)
-> >  			break;
-> >  		}
-> >  	}
-> > -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
-> >
-> >  	if (!msg_found) {
-> >  		dev_warn(&pnp_dev->dev,
-> >  			 "Unexpected response (msg id %ld) is returned.\n",
-> >  			 msg->msgid);
-> > -		goto out_msg;
-> > +		goto out_lock;
-> >  	}
-> >
-> >  	/* copy the response data to Rx_data buffer */ @@ -286,10 +288,14 @@
-> > static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void
-> *user_msg_data)
-> >  	}
-> >  	tx_msg->rx_len = msg->msg.data_len;
-> >  	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
-> > +	/* tx_msg content must be valid before setting msg_done flag */
-> > +	smp_wmb();
-> 
-> That's suspicious.
-> 
-> If you need the write barrier here, you'll most likely need a read barrier
-> somewhere else.  Where's that?
+> This is the start of the stable review cycle for the 3.10.3 release.
+> There are 103 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Thu Jul 25 22:01:33 UTC 2013.
+> Anything received after that time might be too late.
+>
+Build results below. Same as with previous release.
 
-It might depend on whether the content written before the smp_wmb() is used or not by the other side codes under the condition set after the smp_wmb().
+Guenter
 
-So comment could be treated as 2 parts:
-1. do we need a paired smp_rmb().
-2. do we need a smp_wmb().
+----
+Build x86_64:defconfig passed
+Build x86_64:allyesconfig passed
+Build x86_64:allmodconfig passed
+Build x86_64:allnoconfig passed
+Build x86_64:alldefconfig passed
+Build i386:defconfig passed
+Build i386:allyesconfig passed
+Build i386:allmodconfig passed
+Build i386:allnoconfig passed
+Build i386:alldefconfig passed
+Build mips:defconfig passed
+Build mips:bcm47xx_defconfig passed
+Build mips:bcm63xx_defconfig passed
+Build mips:nlm_xlp_defconfig passed
+Build mips:ath79_defconfig passed
+Build mips:ar7_defconfig passed
+Build mips:fuloong2e_defconfig passed
+Build mips:e55_defconfig passed
+Build mips:cavium_octeon_defconfig passed
+Build mips:powertv_defconfig passed
+Build mips:malta_defconfig passed
+Build powerpc:defconfig passed
+Build powerpc:allyesconfig failed
+Build powerpc:allmodconfig passed
+Build powerpc:chroma_defconfig passed
+Build powerpc:maple_defconfig passed
+Build powerpc:ppc6xx_defconfig passed
+Build powerpc:mpc83xx_defconfig passed
+Build powerpc:mpc85xx_defconfig passed
+Build powerpc:mpc85xx_smp_defconfig passed
+Build powerpc:tqm8xx_defconfig passed
+Build powerpc:85xx/sbc8548_defconfig passed
+Build powerpc:83xx/mpc834x_mds_defconfig passed
+Build powerpc:86xx/sbc8641d_defconfig passed
+Build arm:defconfig passed
+Build arm:allyesconfig failed
+Build arm:allmodconfig failed
+Build arm:exynos4_defconfig passed
+Build arm:multi_v7_defconfig passed
+Build arm:kirkwood_defconfig passed
+Build arm:omap2plus_defconfig passed
+Build arm:tegra_defconfig passed
+Build arm:u8500_defconfig passed
+Build arm:at91sam9rl_defconfig passed
+Build arm:ap4evb_defconfig passed
+Build arm:bcm_defconfig passed
+Build arm:bonito_defconfig passed
+Build arm:pxa910_defconfig passed
+Build arm:mvebu_defconfig passed
+Build m68k:defconfig passed
+Build m68k:m5272c3_defconfig passed
+Build m68k:m5307c3_defconfig passed
+Build m68k:m5249evb_defconfig passed
+Build m68k:m5407c3_defconfig passed
+Build m68k:sun3_defconfig passed
+Build m68k:m5475evb_defconfig passed
+Build sparc:defconfig passed
+Build sparc:sparc64_defconfig passed
+Build xtensa:defconfig passed
+Build xtensa:iss_defconfig passed
+Build microblaze:mmu_defconfig passed
+Build microblaze:nommu_defconfig passe
+Build blackfin:defconfig passed
+Build parisc:defconfig passed
 
-For 1.
-If we want a paired smp_rmb(), then it will appear in this function:
+-----------------------
+Total builds: 64 Total build errors: 3
 
-186 static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-187                 acpi_integer *value, int rem_time)
-188 {
-189         struct acpi_ipmi_buffer *buffer;
-190 
-191         /*
-192          * value is also used as output parameter. It represents the response
-193          * IPMI message returned by IPMI command.
-194          */
-195         buffer = (struct acpi_ipmi_buffer *)value;
-196         if (!rem_time && !msg->msg_done) {
-197                 buffer->status = ACPI_IPMI_TIMEOUT;
-198                 return;
-199         }
-200         /*
-201          * If the flag of msg_done is not set or the recv length is zero, it
-202          * means that the IPMI command is not executed correctly.
-203          * The status code will be ACPI_IPMI_UNKNOWN.
-204          */
-205         if (!msg->msg_done || !msg->rx_len) {
-206                 buffer->status = ACPI_IPMI_UNKNOWN;
-207                 return;
-208         }
-+         smp_rmb();
-209         /*
-210          * If the IPMI response message is obtained correctly, the status code
-211          * will be ACPI_IPMI_OK
-212          */
-213         buffer->status = ACPI_IPMI_OK;
-214         buffer->length = msg->rx_len;
-215         memcpy(buffer->data, msg->rx_data, msg->rx_len);
-216 }
-
-If we don't then there will only be msg content not correctly read from msg->rx_data.
-Note that the rx_len is 0 during initialization and will never exceed the sizeof(buffer->data), so the read is safe.
-
-Being without smp_rmb() is also OK in this case, since:
-1. buffer->data will never be used when buffer->status is not ACPI_IPMI_OK and
-2. the smp_rmb()/smp_wmb() added in this patch will be deleted in [PATCH 07].
-
-So IMO, we needn't add the smp_rmb(), what do you think of this?
-
-For 2.
-If we don't add smp_wmb() in the ipmi_msg_handler(), then the codes running on other thread in the acpi_format_ipmi_response() may read wrong msg->rx_data (a timeout triggers this function, but when acpi_format_ipmi_response() is entered, the msg->msg_done flag could be seen as 1 but the msg->rx_data is not ready), this is what we want to avoid in this quick fix.
-
-Thanks and best regards
--Lv
-
-> 
-> >  	tx_msg->msg_done = 1;
-> >
-> >  out_comp:
-> >  	complete(&tx_msg->tx_complete);
-> > +out_lock:
-> > +	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
-> >  out_msg:
-> >  	ipmi_free_recv_msg(msg);
-> >  }
-> 
-> Rafael
-> 
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
