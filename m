@@ -1,265 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3GYQgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:36:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:51433 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab3GYQeM (ORCPT
+	id S1756744Ab3GYQhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:37:03 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:47021 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591Ab3GYQg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:34:12 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-94-51f1538257ac
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: [PATCH v6 3/8] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to
- work with common boost solution
-Date: Thu, 25 Jul 2013 18:33:26 +0200
-Message-id: <1374770011-22171-4-git-send-email-l.majewski@samsung.com>
-X-Mailer: git-send-email 1.7.10
-In-reply-to: <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQd2m4I+BBg33pC02zljPavG06Qe7
-	xbzPshZ9P68wW6zZ/5PJovPsE2aL3gVX2SzePOK2ePNwM6PF5V1z2Cw+9x5htLjduILNon9h
-	L5PFk4d9bBYbv3o48Hss3vOSyePOtT1sHuumvWX26NuyitHj0eIWRo/jN7YzeXzeJBfAHsVl
-	k5Kak1mWWqRvl8CVseOQScFiw4rZba9YGhgXaHQxcnJICJhIHF69hQnCFpO4cG89WxcjF4eQ
-	wHRGid99hxhBEkICXUwSW25wgdhsAnoSn+8+BWsQEZjDKHHnqDtIA7PAA2aJxd+/gDUIC+RK
-	7L15kw3EZhFQlXg2axYriM0r4CaxcsJeqG3yEk/v94HVcAq4S0yYPIURYnMTo8S/G3eZJzDy
-	LmBkWMUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHLTPpHYwrmywOMQowMGoxMOr4PQxUIg1
-	say4MvcQowQHs5IIr7klUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILU
-	IpgsEwenVAPjUrl7wqHR2Vf/u62RUHC98yruntUd5f//2ad/2Fmyg+nj2VWie0MYdG+oMm77
-	fufrwUBtteI4/jmzrvimfNzo9aP34bwfMS1+NWvOcM3JyJ0QGBD/vbw28XdAE48Y763w77Od
-	ZA7znmNONEne7rmzo/tn3vNzE/hr5A/XOjVfOiXz8VzgvmI/JZbijERDLeai4kQAC7VD/lYC	AAA=
+	Thu, 25 Jul 2013 12:36:58 -0400
+Date: Thu, 25 Jul 2013 09:36:56 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v1 02/14] clk: Add of_init_clk_data() to parse common
+ clock bindings
+Message-ID: <20130725163656.GC29694@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+ <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
+ <1714620.Z8J8zTxIRB@flatron>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1714620.Z8J8zTxIRB@flatron>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Intel's hardware based boost solution driver has been changed to cooperate with
-common cpufreq boost framework.
+On 07/25, Tomasz Figa wrote:
+> On Wednesday 24 of July 2013 17:43:30 Stephen Boyd wrote:
+> > Consolidate DT parsing for the common bits of a clock binding in
+> > one place to simplify clock drivers. This also has the added
+> > benefit of standardizing how the clock names used by the common
+> > clock framework are generated from the DT bindings. We always use
+> > the first clock-output-names string if it exists, otherwise we
+> > fall back to the node name.
+> > 
+> > To be slightly more efficient and make the caller's life easier,
+> > we introduce a shallow copy flag so that the clock core knows to
+> > just copy the pointers to the strings and not the string
+> > contents. Otherwise the callers of this function would have to
+> > free the strings allocated here which could be cumbersome.
+> > 
+> > Cc: Rob Herring <rob.herring@calxeda.com>
+> > Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> > ---
+> >  drivers/clk/clk.c            | 59
+> > +++++++++++++++++++++++++++++++++++++++++++-
+> > include/linux/clk-provider.h |  7 ++++++
+> >  2 files changed, 65 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> > index 1ed9bdd..ea8e951b 100644
+> > --- a/drivers/clk/clk.c
+> > +++ b/drivers/clk/clk.c
+> > @@ -1809,6 +1809,10 @@ static int _clk_register(struct device *dev,
+> > struct clk_hw *hw, struct clk *clk) {
+> >  	int i, ret;
+> > 
+> > +	hw->clk = clk;
+> > +	if (hw->init->flags & CLK_SHALLOW_COPY)
+> > +		return PTR_RET(__clk_register(dev, hw));
+> > +
+> >  	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
+> >  	if (!clk->name) {
+> >  		pr_err("%s: could not allocate clk->name\n", __func__);
+> > @@ -1819,7 +1823,6 @@ static int _clk_register(struct device *dev,
+> > struct clk_hw *hw, struct clk *clk) clk->hw = hw;
+> >  	clk->flags = hw->init->flags;
+> >  	clk->num_parents = hw->init->num_parents;
+> > -	hw->clk = clk;
+> > 
+> >  	/* allocate local copy in case parent_names is __initdata */
+> >  	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
+> > @@ -2232,4 +2235,58 @@ void __init of_clk_init(const struct of_device_id
+> > *matches) clk_init_cb(np);
+> >  	}
+> >  }
+> > +
+> > +/**
+> > + * of_init_clk_data() - Initialize a clk_init_data struct from a DT
+> > node + * @np: node to initialize struct from
+> > + * @init: struct to initialize
+> > + *
+> > + * Populates the clk_init_data struct by parsing the device node for
+> > + * properties matching the common clock binding. Returns 0 on success
+> > + * and a negative error code on failure.
+> > + */
+> > +int of_init_clk_data(struct device_node *np, struct clk_init_data
+> > *init) +{
+> > +	struct of_phandle_args s;
+> > +	const char **names = NULL, **p;
+> > +	const char *name;
+> > +	int i;
+> > +
+> > +	if (of_property_read_string(np, "clock-output-names", &name) < 0)
+> > +		name = np->name;
+> > +	init->name = kstrdup(name, GFP_KERNEL);
+> > +	if (!init->name)
+> > +		return -ENOMEM;
+> > +
+> > +	for (i = 0; of_parse_phandle_with_args(np, "clocks", "#clock-
+> cells",
+> > +				i, &s) == 0; i++) {
+> > +		p = krealloc(names, sizeof(*names) * (i + 1), GFP_KERNEL);
+> > +		if (!p)
+> > +			goto err;
+> 
+> What about using of_count_phandle_with_args() first to get the parent 
+> count?
 
-The global sysfs boost attribute entry code (/sys/devices/system/cpu/cpufreq/boost)
-has been moved to a core cpufreq code. This attribute is now only visible,
-when cpufreq driver supports it.
+Sure that simplifies things.
 
-The _store_boost() function has been redesigned to be used as set_boost
-callback.
+> 
+> > +		names = p;
+> > +
+> > +		if (of_property_read_string(s.np, "clock-output-names",
+> > +					&name) < 0)
+> > +			name = s.np->name;
+> 
+> You should be able to use of_clk_get_parent_name() here, instead of 
+> parsing the properties directly.
 
-Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+This must be new too. Will do in v2.
 
----
-Changes for v6:
-- Perform acpi_cpufreq_boost_init initialization before cpufreq_driver
-  registration
-- Compile store_boost() only when CONFIG_X86_ACPI_CPUFREQ_CPB defined
-- Use boost_enabled flag defined at acpi_cpufreq_driver to store information
-  about boost state
-- Instead of using cpufreq_set_boost_enabled(), modify the boost_enable in
-  the acpi driver code
-
-Changes for v5:
-- Remove acpi-cpufreq's boost_enabled global flag and reuse one defined at
-  cpufreq core
-
-Changes for v4:
-- add _store_boost to acpi_cpufreq_driver structure
-
-Changes for v3:
-- Bring back boost_enabled as a global flag
-- Move boost_supported to cpufreq_driver structure
-
-Changes for v2:
-- Replace boost_enabled and boost_supported global flags with proper entries
-  at struct cpufreq_driver.
-- Removal of struct cpufreq_boost
-
- drivers/cpufreq/acpi-cpufreq.c |   87 ++++++++++++++--------------------------
- 1 file changed, 30 insertions(+), 57 deletions(-)
-
-diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
-index 3926402..509764c 100644
---- a/drivers/cpufreq/acpi-cpufreq.c
-+++ b/drivers/cpufreq/acpi-cpufreq.c
-@@ -81,7 +81,6 @@ static struct acpi_processor_performance __percpu *acpi_perf_data;
- static struct cpufreq_driver acpi_cpufreq_driver;
- 
- static unsigned int acpi_pstate_strict;
--static bool boost_enabled, boost_supported;
- static struct msr __percpu *msrs;
- 
- static bool boost_state(unsigned int cpu)
-@@ -134,49 +133,16 @@ static void boost_set_msrs(bool enable, const struct cpumask *cpumask)
- 	wrmsr_on_cpus(cpumask, msr_addr, msrs);
- }
- 
--static ssize_t _store_boost(const char *buf, size_t count)
-+static int _store_boost(int val)
- {
--	int ret;
--	unsigned long val = 0;
--
--	if (!boost_supported)
--		return -EINVAL;
--
--	ret = kstrtoul(buf, 10, &val);
--	if (ret || (val > 1))
--		return -EINVAL;
--
--	if ((val && boost_enabled) || (!val && !boost_enabled))
--		return count;
--
- 	get_online_cpus();
--
- 	boost_set_msrs(val, cpu_online_mask);
--
- 	put_online_cpus();
--
--	boost_enabled = val;
- 	pr_debug("Core Boosting %sabled.\n", val ? "en" : "dis");
- 
--	return count;
--}
--
--static ssize_t store_global_boost(struct kobject *kobj, struct attribute *attr,
--				  const char *buf, size_t count)
--{
--	return _store_boost(buf, count);
--}
--
--static ssize_t show_global_boost(struct kobject *kobj,
--				 struct attribute *attr, char *buf)
--{
--	return sprintf(buf, "%u\n", boost_enabled);
-+	return 0;
- }
- 
--static struct global_attr global_boost = __ATTR(boost, 0644,
--						show_global_boost,
--						store_global_boost);
--
- static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
- {
- 	struct acpi_cpufreq_data *data = per_cpu(acfreq_data, policy->cpu);
-@@ -187,15 +153,32 @@ static ssize_t show_freqdomain_cpus(struct cpufreq_policy *policy, char *buf)
- cpufreq_freq_attr_ro(freqdomain_cpus);
- 
- #ifdef CONFIG_X86_ACPI_CPUFREQ_CPB
-+static ssize_t store_boost(const char *buf, size_t count)
-+{
-+	int ret;
-+	unsigned long val = 0;
-+
-+	if (!acpi_cpufreq_driver.boost_supported)
-+		return -EINVAL;
-+
-+	ret = kstrtoul(buf, 10, &val);
-+	if (ret || (val > 1))
-+		return -EINVAL;
-+
-+	_store_boost((int) val);
-+
-+	return count;
-+}
-+
- static ssize_t store_cpb(struct cpufreq_policy *policy, const char *buf,
- 			 size_t count)
- {
--	return _store_boost(buf, count);
-+	return store_boost(buf, count);
- }
- 
- static ssize_t show_cpb(struct cpufreq_policy *policy, char *buf)
- {
--	return sprintf(buf, "%u\n", boost_enabled);
-+	return sprintf(buf, "%u\n", acpi_cpufreq_driver.boost_enabled);
- }
- 
- static struct freq_attr cpb = __ATTR(cpb, 0644, show_cpb, store_cpb);
-@@ -583,7 +566,7 @@ static int boost_notify(struct notifier_block *nb, unsigned long action,
- 	switch (action) {
- 	case CPU_UP_PREPARE:
- 	case CPU_UP_PREPARE_FROZEN:
--		boost_set_msrs(boost_enabled, cpumask);
-+		boost_set_msrs(acpi_cpufreq_driver.boost_enabled, cpumask);
- 		break;
- 
- 	case CPU_DOWN_PREPARE:
-@@ -943,43 +926,34 @@ static struct cpufreq_driver acpi_cpufreq_driver = {
- 	.name		= "acpi-cpufreq",
- 	.owner		= THIS_MODULE,
- 	.attr		= acpi_cpufreq_attr,
-+	.set_boost      = _store_boost,
- };
- 
- static void __init acpi_cpufreq_boost_init(void)
- {
-+	acpi_cpufreq_driver.boost_supported = false;
- 	if (boot_cpu_has(X86_FEATURE_CPB) || boot_cpu_has(X86_FEATURE_IDA)) {
- 		msrs = msrs_alloc();
- 
- 		if (!msrs)
- 			return;
- 
--		boost_supported = true;
--		boost_enabled = boost_state(0);
--
-+		acpi_cpufreq_driver.boost_supported = true;
-+		acpi_cpufreq_driver.boost_enabled = boost_state(0);
- 		get_online_cpus();
- 
- 		/* Force all MSRs to the same value */
--		boost_set_msrs(boost_enabled, cpu_online_mask);
-+		boost_set_msrs(acpi_cpufreq_driver.boost_enabled,
-+			       cpu_online_mask);
- 
- 		register_cpu_notifier(&boost_nb);
- 
- 		put_online_cpus();
--	} else
--		global_boost.attr.mode = 0444;
--
--	/* We create the boost file in any case, though for systems without
--	 * hardware support it will be read-only and hardwired to return 0.
--	 */
--	if (cpufreq_sysfs_create_file(&(global_boost.attr)))
--		pr_warn(PFX "could not register global boost sysfs file\n");
--	else
--		pr_debug("registered global boost sysfs file\n");
-+	}
- }
- 
- static void __exit acpi_cpufreq_boost_exit(void)
- {
--	cpufreq_sysfs_remove_file(&(global_boost.attr));
--
- 	if (msrs) {
- 		unregister_cpu_notifier(&boost_nb);
- 
-@@ -1021,12 +995,11 @@ static int __init acpi_cpufreq_init(void)
- 			*iter = &cpb;
- 	}
- #endif
-+	acpi_cpufreq_boost_init();
- 
- 	ret = cpufreq_register_driver(&acpi_cpufreq_driver);
- 	if (ret)
- 		free_acpi_perf_data();
--	else
--		acpi_cpufreq_boost_init();
- 
- 	return ret;
- }
 -- 
-1.7.10.4
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
