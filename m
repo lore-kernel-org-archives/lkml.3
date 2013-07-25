@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab3GYRyl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:54:41 -0400
-Received: from mail-bk0-f52.google.com ([209.85.214.52]:36270 "EHLO
-	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757437Ab3GYRyg (ORCPT
+	id S1757411Ab3GYRyr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:54:47 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:47964 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757011Ab3GYRym (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:54:36 -0400
+	Thu, 25 Jul 2013 13:54:42 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Stephen Warren <swarren@wwwdotorg.org>
@@ -15,9 +15,9 @@ Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         Jay Agarwal <jagarwal@nvidia.com>, linux-pci@vger.kernel.org,
         linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 09/16] PCI: tegra: set up PADS_REFCLK_CFG1
-Date: Thu, 25 Jul 2013 10:53:23 -0700
-Message-Id: <1374774810-18459-10-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH v5 10/16] ARM: tegra: Add Tegra30 PCIe support
+Date: Thu, 25 Jul 2013 10:53:24 -0700
+Message-Id: <1374774810-18459-11-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
 References: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
@@ -25,68 +25,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Thierry Reding <treding@nvidia.com>
 
-The registers PADS_REFCLK_CFG are an array of 16-bit data, one entry per
-PCIe root port. For Tegra30, we therefore need to write a 3rd entry in
-this array. Doing so mays the mini-PCIe slot on Beaver operate correctly.
+Add the top-level pcie-controller node for the Tegra30 SoC. Tegra30 has
+three root ports that can use different lane layouts.
 
-While we're at it, add some #defines to partially document the fields
-within these 16-bit values.
-
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Jay Agarwal <jagarwal@nvidia.com>
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/pci/host/pci-tegra.c | 29 ++++++++++++++++++++++++-----
- 1 file changed, 24 insertions(+), 5 deletions(-)
+Changes in v5:
+- use symbolic constants for interrupts and clocks
 
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 5347d7d..0c84c67 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -196,6 +196,25 @@
- #define PADS_REFCLK_CFG0			0x000000C8
- #define PADS_REFCLK_CFG1			0x000000CC
+ arch/arm/boot/dts/tegra30.dtsi | 70 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 70 insertions(+)
+
+diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
+index d8783f0..c8facca 100644
+--- a/arch/arm/boot/dts/tegra30.dtsi
++++ b/arch/arm/boot/dts/tegra30.dtsi
+@@ -16,6 +16,76 @@
+ 		serial4 = &uarte;
+ 	};
  
-+/*
-+ * Fields in PADS_REFCLK_CFG*. Those registers form an array of 16-bit
-+ * entries, one entry per PCIe port. These field definitions and desired
-+ * values aren't in the TRM, but do come from NVIDIA.
-+ */
-+#define PADS_REFCLK_CFG_TERM_SHIFT		2  /* 6:2 */
-+#define PADS_REFCLK_CFG_E_TERM_SHIFT		7
-+#define PADS_REFCLK_CFG_PREDI_SHIFT		8  /* 11:8 */
-+#define PADS_REFCLK_CFG_DRVI_SHIFT		12 /* 15:12 */
++	pcie-controller {
++		compatible = "nvidia,tegra30-pcie";
++		device_type = "pci";
++		reg = <0x00003000 0x00000800   /* PADS registers */
++		       0x00003800 0x00000200   /* AFI registers */
++		       0x10000000 0x10000000>; /* configuration space */
++		reg-names = "pads", "afi", "cs";
++		interrupts = <GIC_SPI 98 IRQ_TYPE_LEVEL_HIGH   /* controller interrupt */
++			      GIC_SPI 99 IRQ_TYPE_LEVEL_HIGH>; /* MSI interrupt */
++		interrupt-names = "intr", "msi";
 +
-+/* Default value provided by HW engineering is 0xfa5c */
-+#define PADS_REFCLK_CFG_VALUE \
-+	( \
-+		(0x17 << PADS_REFCLK_CFG_TERM_SHIFT)   | \
-+		(0    << PADS_REFCLK_CFG_E_TERM_SHIFT) | \
-+		(0xa  << PADS_REFCLK_CFG_PREDI_SHIFT)  | \
-+		(0xf  << PADS_REFCLK_CFG_DRVI_SHIFT)     \
-+	)
++		bus-range = <0x00 0xff>;
++		#address-cells = <3>;
++		#size-cells = <2>;
 +
- struct tegra_msi {
- 	struct msi_chip chip;
- 	DECLARE_BITMAP(used, INT_PCI_MSI_NR);
-@@ -809,11 +828,11 @@ static int tegra_pcie_enable_controller(struct tegra_pcie *pcie)
- 	value |= PADS_PLL_CTL_RST_B4SM;
- 	pads_writel(pcie, value, soc->pads_pll_ctl);
- 
--	/*
--	 * Hack, set the clock voltage to the DEFAULT provided by hw folks.
--	 * This doesn't exist in the documentation.
--	 */
--	pads_writel(pcie, 0xfa5cfa5c, PADS_REFCLK_CFG0);
-+	/* Configure the reference clock driver */
-+	value = PADS_REFCLK_CFG_VALUE | (PADS_REFCLK_CFG_VALUE << 16);
-+	pads_writel(pcie, value, PADS_REFCLK_CFG0);
-+	if (soc->num_ports > 2)
-+		pads_writel(pcie, PADS_REFCLK_CFG_VALUE, PADS_REFCLK_CFG1);
- 
- 	/* wait for the PLL to lock */
- 	timeout = 300;
++		ranges = <0x82000000 0 0x00000000 0x00000000 0 0x00001000   /* port 0 configuration space */
++			  0x82000000 0 0x00001000 0x00001000 0 0x00001000   /* port 1 configuration space */
++			  0x82000000 0 0x00004000 0x00004000 0 0x00001000   /* port 2 configuration space */
++			  0x81000000 0 0          0x02000000 0 0x00010000   /* downstream I/O */
++			  0x82000000 0 0x20000000 0x20000000 0 0x10000000   /* non-prefetchable memory */
++			  0xc2000000 0 0x30000000 0x30000000 0 0x10000000>; /* prefetchable memory */
++
++		clocks = <&tegra_car TEGRA30_CLK_PCIE>,
++			 <&tegra_car TEGRA30_CLK_AFI>,
++			 <&tegra_car TEGRA30_CLK_PCIEX>,
++			 <&tegra_car TEGRA30_CLK_PLL_E>,
++			 <&tegra_car TEGRA30_CLK_CML0>;
++		clock-names = "pex", "afi", "pcie_xclk", "pll_e", "cml";
++		status = "disabled";
++
++		pci@1,0 {
++			device_type = "pci";
++			assigned-addresses = <0x82000800 0 0x00000000 0 0x1000>;
++			reg = <0x000800 0 0 0 0>;
++			status = "disabled";
++
++			#address-cells = <3>;
++			#size-cells = <2>;
++			ranges;
++
++			nvidia,num-lanes = <2>;
++		};
++
++		pci@2,0 {
++			device_type = "pci";
++			assigned-addresses = <0x82001000 0 0x00001000 0 0x1000>;
++			reg = <0x001000 0 0 0 0>;
++			status = "disabled";
++
++			#address-cells = <3>;
++			#size-cells = <2>;
++			ranges;
++
++			nvidia,num-lanes = <2>;
++		};
++
++		pci@3,0 {
++			device_type = "pci";
++			assigned-addresses = <0x82001800 0 0x00004000 0 0x1000>;
++			reg = <0x001800 0 0 0 0>;
++			status = "disabled";
++
++			#address-cells = <3>;
++			#size-cells = <2>;
++			ranges;
++
++			nvidia,num-lanes = <2>;
++		};
++	};
++
+ 	host1x {
+ 		compatible = "nvidia,tegra30-host1x", "simple-bus";
+ 		reg = <0x50000000 0x00024000>;
 -- 
 1.8.1.5
 
