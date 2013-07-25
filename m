@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab3GYTON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:14:13 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:53912 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756674Ab3GYTOI convert rfc822-to-8bit (ORCPT
+	id S1757894Ab3GYTPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:15:55 -0400
+Received: from mail-yh0-f43.google.com ([209.85.213.43]:35014 "EHLO
+	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756674Ab3GYTPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:14:08 -0400
+	Thu, 25 Jul 2013 15:15:51 -0400
+Message-ID: <51F17977.9050606@gmail.com>
+Date: Thu, 25 Jul 2013 15:16:07 -0400
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-X-Originating-IP: [212.159.75.221]
-In-Reply-To: <2218913.HKGjJcYT1G@vostro.rjw.lan>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	<CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
-	<9012759.Alzqtdvh5b@vostro.rjw.lan>
-	<2218913.HKGjJcYT1G@vostro.rjw.lan>
-Date: Thu, 25 Jul 2013 20:14:08 +0100
-Message-ID: <CAAG0J98i-XaO_3sPWsnyEGDX77T=WiNf1K=YMhe5DvkwKotorw@mail.gmail.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-From: James Hogan <james@albanarts.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Kamal Mostafa <kamal@canonical.com>, Aaron Lu <aaron.lu@intel.com>,
-        Kalle Valo <kvalo@adurom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@gmail.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tom Rini <trini@ti.com>
+CC: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Jianpeng Ma <majianpeng@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Wen Congyang <wency@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
+        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Greg KH <greg@kroah.com>, kosaki.motohiro@gmail.com
+Subject: Re: [PATCH v2] numa: Mark __node_set as __always_inline
+References: <1374776770-32361-1-git-send-email-trini@ti.com>
+In-Reply-To: <1374776770-32361-1-git-send-email-trini@ti.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 14:00, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
->> On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
->> > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > >
->> > > Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
->> >
->> > Yes, but let's wait a while. Not because I think we'll fix the problem
->> > (hey, miracles might happen), but because I think it would be useful
->> > to couple the reverts with information about the particular machines
->> > that broke (and the people who reported it). So that when we
->> > inevitably try again, we can perhaps get some testing effort with
->> > those machines/people.
->> >
->> > It doesn't seem to be a show-stopped for a large number of people, so
->> > there's no huge hurry. I'd suggest doing the revert just in time for
->> > rc3, but waiting until then to gather info about people who see
->> > breakage.
->> >
->> > Sound like a plan?
->>
->> Yes, it does.
->
-> OK, time to revert I guess.
->
-> James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
-> fixes the backlight for you.
+> +/*
+> + * The inline keyword gives the compiler room to decide to inline, or
+> + * not inline a function as it sees best.  However, as these functions
+> + * are called in both __init and non-__init functions, if they are not
+> + * inlined we will end up with a section mis-match error (of the type of
+> + * freeable items not being freed).  So we must use __always_inline here
+> + * to fix the problem.  If other functions in the future also end up in
+> + * this situation they will also need to be annotated as __always_inline
+> + */
+>   #define node_set(node, dst) __node_set((node), &(dst))
+> -static inline void __node_set(int node, volatile nodemask_t *dstp)
+> +static __always_inline void __node_set(int node, volatile nodemask_t *dstp)
+>   {
+>   	set_bit(node, dstp->bits);
+>   }
+> 
 
-Works for me
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Cheers
-James
