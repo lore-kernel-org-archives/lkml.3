@@ -1,114 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab3GYTAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:00:17 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:64380 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756279Ab3GYTAO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:00:14 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 25 Jul 2013 20:00:06 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-Message-ID: <20130725190006.GD11514@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	linux-next <linux-next@vger.kernel.org>
-References: <20130725163150.GD6493@cantiga.alporthouse.com>
- <CA+icZUWmpZK0jO_G1ec446WftzXDvSdnHLcQrkmBSHA7fSAqcw@mail.gmail.com>
- <20130725170144.GE6493@cantiga.alporthouse.com>
- <CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
- <20130725172616.GA11514@cantiga.alporthouse.com>
- <CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
- <CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
- <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
- <20130725184504.GC11514@cantiga.alporthouse.com>
- <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+	id S1757565Ab3GYTF0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:05:26 -0400
+Received: from nautica.notk.org ([91.121.71.147]:44512 "EHLO nautica.notk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756160Ab3GYTFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 15:05:23 -0400
+Date: Thu, 25 Jul 2013 21:05:06 +0200
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: Dominique Martinet <dominique.martinet@cea.fr>,
+        Latchesar Ionkov <lucho@ionkov.net>, pebolle@tiscali.nl,
+        netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        andi@etezian.org, rminnich@sandia.gov,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
+ function
+Message-ID: <20130725190506.GA32375@nautica>
+References: <1374497956-32104-1-git-send-email-andi@etezian.org>
+ <20130724.154646.2283898956674234778.davem@davemloft.net>
+ <1374707387.29835.23.camel@x61.thuisdomein>
+ <20130724.164514.393667021861625699.davem@davemloft.net>
+ <20130725061411.GA8579@nautica>
+ <20130725064802.GA12569@nautica>
+ <CAFkjPTm1FH24EfWMDrXTh7DmU8WAb0ji-jkUgkayqMzfWj9O0A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+In-Reply-To: <CAFkjPTm1FH24EfWMDrXTh7DmU8WAb0ji-jkUgkayqMzfWj9O0A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 08:50:59PM +0200, Sedat Dilek wrote:
-> Against what tree is this applicable? It is definitely not drm-intel-nightly.
+Eric Van Hensbergen wrote on Thu, Jul 25, 2013 :
+> So, the cancel function should be used to flush any pending requests that
+> haven't actually been sent yet.  Looking at the 9p RDMA code, it looks like
+> the thought was that this wasn't going to be possible.  Regardless of
+> removing unsent requests, the flush will still be sent and if the server
+> processes it before the original request and sends a flush response back
+> then we need to clear the posted buffer.  This is what rdma_cancelled is
+> supposed to be doing.  So, the fix is to hook it into the structure -- but
+> looking at the code it seems like we probably need to do something more to
+> reclaim the buffer rather than just incrementing a counter.
+> 
+> To be clear this has less to do with recovery and more to do with the
+> proper implementation of 9p flush semantics.  By and large, those semantics
+> won't impact static file system users -- but if anyone is using the
+> transport to access synthetic filesystems or files then they'll definitely
+> want to have a properly implemented flush setup.  The way to test this is
+> to get a blocking read on a remote named pipe or fifo and then ^C it.
 
-Applied cleanly to nightly here, but just in case here's a rebased version:
+Ok, I knew about the concept of flush but didn't think a ^C would cause
+a -ESYSRESTART, so didn't think of that.
+That said, reading from, say, a fifo is an entierly local operation: the
+client does a walk, getattr, doesn't do anything 9p-wise, and clunks
+when it's done with it.
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 3a5d4ba..5818fe8 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1527,30 +1527,39 @@ i915_gem_mmap_gtt(struct drm_file *file,
- 	struct drm_i915_gem_object *obj;
- 	int ret;
- 
-+	printk(KERN_ERR "Hello!\n");
-+
- 	ret = i915_mutex_lock_interruptible(dev);
--	if (ret)
-+	if (ret) {
-+		DRM_DEBUG_DRIVER("interrupted: ret=%d\n", ret);
- 		return ret;
-+	}
- 
- 	obj = to_intel_bo(drm_gem_object_lookup(dev, file, handle));
- 	if (&obj->base == NULL) {
-+		DRM_DEBUG_DRIVER("Unknown object handle %d\n", handle);
- 		ret = -ENOENT;
- 		goto unlock;
- 	}
- 
- 	if (obj->base.size > dev_priv->gtt.mappable_end) {
-+		DRM_DEBUG_DRIVER("Object (%d) larger than mappable aperture (%d) > %d\n",
-+				(int)obj->base.size, (int)dev_priv->gtt.mappable_end);
- 		ret = -E2BIG;
- 		goto out;
- 	}
- 
- 	if (obj->madv != I915_MADV_WILLNEED) {
--		DRM_ERROR("Attempting to mmap a purgeable buffer\n");
-+		DRM_DEBUG_DRIVER("Attempting to mmap a purgeable buffer\n");
- 		ret = -EINVAL;
- 		goto out;
- 	}
- 
- 	ret = i915_gem_object_create_mmap_offset(obj);
--	if (ret)
-+	if (ret) {
-+		DRM_DEBUG_DRIVER("Failed to allocate mmap offset (ret=%d)\n", ret);
- 		goto out;
-+	}
- 
- 	*offset = drm_vma_node_offset_addr(&obj->base.vma_node);
- 
-@@ -1558,6 +1567,7 @@ out:
- 	drm_gem_object_unreference(&obj->base);
- unlock:
- 	mutex_unlock(&dev->struct_mutex);
-+	DRM_DEBUG_DRIVER("done, ret=%d\n", ret);
- 	return ret;
- }
 
+
+As for the function needing a bit more work, there's a race, but on
+"normal" requests I think it is about right - the answer lays in a
+comment in rdma_request:
+
+  /* When an error occurs between posting the recv and the send,
+   * there will be a receive context posted without a pending request.
+   * Since there is no way to "un-post" it, we remember it and skip
+   * post_recv() for the next request.
+   * So here,
+   * see if we are this `next request' and need to absorb an excess rc.
+   * If yes, then drop and free our own, and do not recv_post().
+   **/
+
+Basically, receive buffers are sent in a queue, and we can't "retrieve"
+it back, so we just don't sent next one.
+
+There is one problem though - if the server handles the original request
+before getting the flush, the receive buffer will be consumed and we
+won't send a new one, so we'll starve the reception queue.
+I'm afraid I don't have any bright idea there...
+
+
+While we are on reception buffer issues, there is another problem with
+the queue of receive buffers, even without flush, in the following
+scenario:
+ - post a buffer for tag 0, on a hanging request
+ - post a buffer for tag 1
+ - reply for tag 1 will come on buffer from tag 0
+ - post another request with tag 1.. the buffer already is in the queue,
+and we don't know we can post the buffer associated with tag 0 back.
+
+I haven't found how to reproduce this perfectly yet, but a dd with
+blocksize 1MB and one with blocksize 10B in parallel brought the
+mountpoint down (and the whole server was completely unavailable for the
+duration of the dd - TCP sessions timed out, I even got IO errors on the
+local disk :D)
+
+
+Regards,
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Dominique Martinet
