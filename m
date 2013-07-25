@@ -1,203 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab3GYSMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:12:45 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:55726 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab3GYSMl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:12:41 -0400
-Message-ID: <51F16A96.6040706@acm.org>
-Date: Thu, 25 Jul 2013 13:12:38 -0500
-From: Corey Minyard <tcminyard@gmail.com>
-Reply-To: minyard@acm.org
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1757438Ab3GYSNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:13:38 -0400
+Received: from home.keithp.com ([63.227.221.253]:56168 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756367Ab3GYSNg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:13:36 -0400
+From: Keith Packard <keithp@keithp.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Daniel Vetter <daniel@ffwll.ch>, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Subject: Re: [PATCH 4/5] drm/i915: Add async page flip support for IVB
+In-Reply-To: <20130725074757.GE5939@phenom.ffwll.local>
+References: <1374544202-15496-1-git-send-email-keithp@keithp.com> <1374544202-15496-5-git-send-email-keithp@keithp.com> <20130723052856.GD5939@phenom.ffwll.local> <86li4v3ds7.fsf@miki.keithp.com> <20130724212308.GZ5939@phenom.ffwll.local> <86siz3v2m7.fsf@miki.keithp.com> <20130725074757.GE5939@phenom.ffwll.local>
+User-Agent: Notmuch/0.15.2 (http://notmuchmail.org) Emacs/23.4.1 (i486-pc-linux-gnu)
+Date: Thu, 25 Jul 2013 11:13:29 -0700
+Message-ID: <86ppu6tsmu.fsf@miki.keithp.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Zheng, Lv" <lv.zheng@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: Re: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected ACPI
- IPMI transfers
-References: <cover.1370652213.git.lv.zheng@intel.com> <1520893.BbRK6T3F73@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E88024357A9@SHSMSX101.ccr.corp.intel.com> <76401540.gtU1MiBxPY@vostro.rjw.lan>
-In-Reply-To: <76401540.gtU1MiBxPY@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 07:06 AM, Rafael J. Wysocki wrote:
-> On Thursday, July 25, 2013 03:09:35 AM Zheng, Lv wrote:
->> -stable according to the previous conversation.
->>
->>> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
->>> Sent: Thursday, July 25, 2013 7:38 AM
->>>
->>> On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
->>>> This patch fixes races caused by unprotected ACPI IPMI transfers.
->>>>
->>>> We can see the following crashes may occur:
->>>> 1. There is no tx_msg_lock held for iterating tx_msg_list in
->>>>     ipmi_flush_tx_msg() while it is parellel unlinked on failure in
->>>>     acpi_ipmi_space_handler() under protection of tx_msg_lock.
->>>> 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
->>>>     while it is parellel accessed in ipmi_flush_tx_msg() and
->>>>     ipmi_msg_handler().
->>>>
->>>> This patch enhances tx_msg_lock to protect all tx_msg accesses to
->>>> solve this issue.  Then tx_msg_lock is always held around complete()
->>>> and tx_msg accesses.
->>>> Calling smp_wmb() before setting msg_done flag so that messages
->>>> completed due to flushing will not be handled as 'done' messages while
->>>> their contents are not vaild.
->>>>
->>>> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
->>>> Cc: Zhao Yakui <yakui.zhao@intel.com>
->>>> Reviewed-by: Huang Ying <ying.huang@intel.com>
->>>> ---
->>>>   drivers/acpi/acpi_ipmi.c |   10 ++++++++--
->>>>   1 file changed, 8 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
->>>> b37c189..527ee43 100644
->>>> --- a/drivers/acpi/acpi_ipmi.c
->>>> +++ b/drivers/acpi/acpi_ipmi.c
->>>> @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct
->>> acpi_ipmi_device *ipmi)
->>>>   	struct acpi_ipmi_msg *tx_msg, *temp;
->>>>   	int count = HZ / 10;
->>>>   	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
->>>> +	unsigned long flags;
->>>>
->>>> +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
->>>>   	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
->>>>   		/* wake up the sleep thread on the Tx msg */
->>>>   		complete(&tx_msg->tx_complete);
->>>>   	}
->>>> +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
->>>>
->>>>   	/* wait for about 100ms to flush the tx message list */
->>>>   	while (count--) {
->>>> @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct
->>> ipmi_recv_msg *msg, void *user_msg_data)
->>>>   			break;
->>>>   		}
->>>>   	}
->>>> -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
->>>>
->>>>   	if (!msg_found) {
->>>>   		dev_warn(&pnp_dev->dev,
->>>>   			 "Unexpected response (msg id %ld) is returned.\n",
->>>>   			 msg->msgid);
->>>> -		goto out_msg;
->>>> +		goto out_lock;
->>>>   	}
->>>>
->>>>   	/* copy the response data to Rx_data buffer */ @@ -286,10 +288,14 @@
->>>> static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void
->>> *user_msg_data)
->>>>   	}
->>>>   	tx_msg->rx_len = msg->msg.data_len;
->>>>   	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
->>>> +	/* tx_msg content must be valid before setting msg_done flag */
->>>> +	smp_wmb();
->>> That's suspicious.
->>>
->>> If you need the write barrier here, you'll most likely need a read barrier
->>> somewhere else.  Where's that?
->> It might depend on whether the content written before the smp_wmb() is used or not by the other side codes under the condition set after the smp_wmb().
->>
->> So comment could be treated as 2 parts:
->> 1. do we need a paired smp_rmb().
->> 2. do we need a smp_wmb().
->>
->> For 1.
->> If we want a paired smp_rmb(), then it will appear in this function:
->>
->> 186 static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
->> 187                 acpi_integer *value, int rem_time)
->> 188 {
->> 189         struct acpi_ipmi_buffer *buffer;
->> 190
->> 191         /*
->> 192          * value is also used as output parameter. It represents the response
->> 193          * IPMI message returned by IPMI command.
->> 194          */
->> 195         buffer = (struct acpi_ipmi_buffer *)value;
->> 196         if (!rem_time && !msg->msg_done) {
->> 197                 buffer->status = ACPI_IPMI_TIMEOUT;
->> 198                 return;
->> 199         }
->> 200         /*
->> 201          * If the flag of msg_done is not set or the recv length is zero, it
->> 202          * means that the IPMI command is not executed correctly.
->> 203          * The status code will be ACPI_IPMI_UNKNOWN.
->> 204          */
->> 205         if (!msg->msg_done || !msg->rx_len) {
->> 206                 buffer->status = ACPI_IPMI_UNKNOWN;
->> 207                 return;
->> 208         }
->> +         smp_rmb();
->> 209         /*
->> 210          * If the IPMI response message is obtained correctly, the status code
->> 211          * will be ACPI_IPMI_OK
->> 212          */
->> 213         buffer->status = ACPI_IPMI_OK;
->> 214         buffer->length = msg->rx_len;
->> 215         memcpy(buffer->data, msg->rx_data, msg->rx_len);
->> 216 }
->>
->> If we don't then there will only be msg content not correctly read from msg->rx_data.
->> Note that the rx_len is 0 during initialization and will never exceed the sizeof(buffer->data), so the read is safe.
->>
->> Being without smp_rmb() is also OK in this case, since:
->> 1. buffer->data will never be used when buffer->status is not ACPI_IPMI_OK and
->> 2. the smp_rmb()/smp_wmb() added in this patch will be deleted in [PATCH 07].
->>
->> So IMO, we needn't add the smp_rmb(), what do you think of this?
->>
->> For 2.
->> If we don't add smp_wmb() in the ipmi_msg_handler(), then the codes running on other thread in the acpi_format_ipmi_response() may read wrong msg->rx_data (a timeout triggers this function, but when acpi_format_ipmi_response() is entered, the msg->msg_done flag could be seen as 1 but the msg->rx_data is not ready), this is what we want to avoid in this quick fix.
-> Using smp_wmb() without the complementary smp_rmb() doesn't makes sense,
-> because each of them prevents only one flow of control from being
-> speculatively reordered, either by the CPU or by the compiler.  If only one
-> of them is used without the other, then the flow of control without the
-> barrier may be reordered in a way that will effectively cancel the effect of
-> the barrier in the second flow of control.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
+
+Daniel Vetter <daniel@ffwll.ch> writes:
+
+> On Wed, Jul 24, 2013 at 06:40:16PM -0700, Keith Packard wrote:
+>> Daniel Vetter <daniel@ffwll.ch> writes:
+>>=20
+>> > We could just unconditionally increase the alignement in
+>> > intel_pin_and_fence_fb_obj - we already have more strict requirements =
+due
+>> > to a bunch of w/a in other places. So shouldn't hurt at all really.
+>>=20
+>> That seems like a fine plan; 32kB isn't that onerous. Do you want the
+>> trivial patch to do this from me then?
 >
-> So, either we need *both* smp_wmb() and smp_rmb(), or we don't need them at all.
+> Yes please, merging patches from other people is much easier than begging=
+ for
+> review for my own ;-)
+> -Daniel
 
-If I understand this correctly, the problem would be if:
+Here's a replacement for patch #4 that just adds the alignment
+requirement there. Do you want any other changes in this series?
 
-rem_time = wait_for_completion_timeout(&tx_msg->tx_complete,
-                                         IPMI_TIMEOUT);
+From=209a51e7118fce58c835cabb192f6b6e0a4a5f6660 Mon Sep 17 00:00:00 2001
+From: Keith Packard <keithp@keithp.com>
+Date: Mon, 22 Jul 2013 18:12:28 -0700
+Subject: [PATCH 4/5] drm/i915: Add async page flip support for IVB
 
-returns on a timeout, then checks msg_done and races with something 
-setting msg_done.  If that is the case, you would need the smp_rmb() 
-before checking msg_done.
+This adds the necesary register defines for async page flipping
+through the command ring, and then hooks those up for Ivybridge (gen7)
+page flipping.
 
-However, the timeout above is unnecessary.  You are using 
-ipmi_request_settime(), so you can set the timeout when the IPMI command 
-fails and returns a failure message.  The driver guarantees a return 
-message for each request.  Just remove the timeout from the completion, 
-set the timeout and retries in the ipmi request, and the completion 
-should handle the barrier issues.
+Signed-off-by: Keith Packard <keithp@keithp.com>
+=2D--
+ drivers/gpu/drm/i915/i915_reg.h      |  6 +++++
+ drivers/gpu/drm/i915/intel_display.c | 46 ++++++++++++++++++++++++++++++++=
+----
+ 2 files changed, 48 insertions(+), 4 deletions(-)
 
-Plus, from a quick glance at the code, it doesn't look like it will 
-properly handle a situation where the timeout occurs and is handled then 
-the response comes in later.
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_re=
+g.h
+index dc3d6a7..029cfb0 100644
+=2D-- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -209,6 +209,7 @@
+ #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
+ #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
+ #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
++#define   MI_DISPLAY_FLIP_ASYNC_INDICATOR	(1 << 22)
+ #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
+ /* IVB has funny definitions for which plane to flip. */
+ #define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
+@@ -217,6 +218,11 @@
+ #define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
+ #define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
+ #define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
++/* These go in the bottom of the base address value */
++#define   MI_DISPLAY_FLIP_TYPE_SYNC    (0 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_ASYNC   (1 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_STEREO  (2 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_SYNCHRONOUS	(0 << 0)
+ #define MI_ARB_ON_OFF		MI_INSTR(0x08, 0)
+ #define   MI_ARB_ENABLE			(1<<0)
+ #define   MI_ARB_DISABLE		(0<<0)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/in=
+tel_display.c
+index bdb8854..f2624a4 100644
+=2D-- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -1833,8 +1833,10 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
+ 			alignment =3D 64 * 1024;
+ 		break;
+ 	case I915_TILING_X:
+=2D		/* pin() will align the object as required by fence */
+=2D		alignment =3D 0;
++		/* Async page flipping requires X tiling and 32kB alignment, so just
++		 * make all X tiled frame buffers aligned for that
++		 */
++		alignment =3D 32 * 1024;
+ 		break;
+ 	case I915_TILING_Y:
+ 		/* Despite that we check this in framebuffer_init userspace can
+@@ -7514,6 +7516,8 @@ static int intel_gen7_queue_flip(struct drm_device *d=
+ev,
+ 	struct intel_crtc *intel_crtc =3D to_intel_crtc(crtc);
+ 	struct intel_ring_buffer *ring =3D &dev_priv->ring[BCS];
+ 	uint32_t plane_bit =3D 0;
++	uint32_t cmd;
++	uint32_t base;
+ 	int ret;
+=20
+ 	ret =3D intel_pin_and_fence_fb_obj(dev, obj, ring);
+@@ -7536,13 +7540,43 @@ static int intel_gen7_queue_flip(struct drm_device =
+*dev,
+ 		goto err_unpin;
+ 	}
+=20
++	cmd =3D MI_DISPLAY_FLIP_I915 | plane_bit;
++	base =3D i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
++
++	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
++
++		/* XXX check limitations for async flip here */
++
++		if (fb->pitches[0] !=3D I915_READ(DSPSTRIDE(intel_crtc->plane))) {
++			WARN_ONCE(1, "mismatching stride in async plane flip (%d !=3D %d)\n",
++				  fb->pitches[0], I915_READ(DSPSTRIDE(intel_crtc->plane)));
++			ret =3D -EINVAL;
++			goto err_unpin;
++		}
++
++		if (obj->tiling_mode !=3D I915_TILING_X) {
++			WARN_ONCE(1, "async plane flip requires X tiling\n");
++			ret =3D -EINVAL;
++			goto err_unpin;
++		}
++
++		if ((I915_READ(DSPCNTR(intel_crtc->plane)) & DISPPLANE_TILED) =3D=3D 0) {
++			WARN_ONCE(1, "display not currently tiled in async plane flip\n");
++			ret =3D -EINVAL;
++			goto err_unpin;
++		}
++=09=09
++		cmd |=3D MI_DISPLAY_FLIP_ASYNC_INDICATOR;
++		base |=3D MI_DISPLAY_FLIP_TYPE_ASYNC;
++	}
++
+ 	ret =3D intel_ring_begin(ring, 4);
+ 	if (ret)
+ 		goto err_unpin;
+=20
+=2D	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
++	intel_ring_emit(ring, cmd);
+ 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
+=2D	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspad=
+dr_offset);
++	intel_ring_emit(ring, base);
+ 	intel_ring_emit(ring, (MI_NOOP));
+=20
+ 	intel_mark_page_flip_active(intel_crtc);
+@@ -9705,6 +9739,10 @@ void intel_modeset_init(struct drm_device *dev)
+ 		dev->mode_config.max_width =3D 8192;
+ 		dev->mode_config.max_height =3D 8192;
+ 	}
++
++	if (IS_GEN7(dev))
++		dev->mode_config.async_page_flip =3D true;
++
+ 	dev->mode_config.fb_base =3D dev_priv->gtt.mappable_base;
+=20
+ 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
+=2D-=20
+1.8.3.2
 
--corey
 
->
-> Thanks,
-> Rafael
->
->
 
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUBUfFqyTYtFsjWk68qAQi8vw//eLIZB6G1D7cHP1L/IoNmJ05EFNBjkC5M
+c+P4rCGioOaCTboe3AR8fMbD4QxiWzleKjCmNpZgQv6OXJhVJnfiOUFFmzCVz2un
+JtzmFhFRiwgncvOPfB48twQmlGS4tD+pA2gtlnXf7Xi0pruljzS237COM9+DNCQr
+8F5SAnV5at19Bf4OVZruGDSDlUXtT+qhdxwv/vCD1crPOxjisXpKxyKJ/4GX+5V3
+F+7ctnPe0wvuyu+P+Cjy9egitxYyRlzOQ9mlwTrMcUBeFSr9Yq92Ei32OSLmryDs
+4M7ybFoVeKpEftsE8uoPStdq8UGEz2MGj8OD02KJnzBtgcUaSm7w2pggTmNAqD51
+lUFEK4Tkeudv7yPCmy6YA9DitsPVdo/d3nfleBURh7YQSy7i38RuLL78aQy1k9C6
+VcH5NSfWkro1RcUu5qu8N5fyv2YMCmepqBachqUjV7KqdW1Vhl3dkbMqQciKaWp2
+/Wpi1NTPb4hou84r0tWlOcZ4T2Q5KlYpcxmOIfOdkZs0wcoiQSuu3I+jZukYm8dF
+Ti6xNGUplHsfAWAPXr9PWXAnNMFXnCBq6aeKDu1pS3U/q7Gd7GLtnqkVmd/snopg
+99xSUGG/C6E692EpJ8n5FLxkASvx1B4G2CBvWx09WybXJXVXSix3Tdj/Xi+mJC4Y
+RtnARuz9F+s=
+=lVSc
+-----END PGP SIGNATURE-----
+--=-=-=--
