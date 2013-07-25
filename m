@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab3GYXFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:05:50 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38602 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab3GYXFt (ORCPT
+	id S1757815Ab3GYXF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:05:58 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:8701 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757317Ab3GYXFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:05:49 -0400
-Date: Fri, 26 Jul 2013 00:05:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 4/4] ASoc: kirkwood: add DT support
-Message-ID: <20130725230533.GH24642@n2100.arm.linux.org.uk>
-References: <20130725111459.145a4aa4@armhf> <20130725191905.GR9858@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130725191905.GR9858@sirena.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 25 Jul 2013 19:05:54 -0400
+From: Toshi Kani <toshi.kani@hp.com>
+To: mingo@kernel.org
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
+        kosaki.motohiro@gmail.com, isimatu.yasuaki@jp.fujitsu.com,
+        tangchen@cn.fujitsu.com, vasilis.liaskovitis@profitbricks.com,
+        Toshi Kani <toshi.kani@hp.com>
+Subject: [PATCH v3] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+Date: Thu, 25 Jul 2013 17:04:34 -0600
+Message-Id: <1374793474-11484-1-git-send-email-toshi.kani@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 08:19:05PM +0100, Mark Brown wrote:
-> On Thu, Jul 25, 2013 at 11:14:59AM +0200, Jean-Francois Moine wrote:
-> 
-> > +	if (np) {
-> > +		priv->burst = 128;		/* might be 32 or 128 */
-> > +	} else if (data) {
-> 
-> When you posted this before I queried how and why the value might vary -
-> I see the code is the same and I don't recall a reply.
+CONFIG_ARCH_MEMORY_PROBE enables the
+/sys/devices/system/memory/probe interface, which allows a given
+memory address to be hot-added as follows:
 
-This is the DMA burst size, and can be either 32 or 128 bytes according
-to the docs.  Everyone seems to pass this as 128 bytes in their platform
-data to date, which I guess is why its ended up being hard coded as 128.
+ # echo start_address_of_new_memory > /sys/devices/system/memory/probe
 
-However, whether it needs to be configurable or not is debatable - obviously
-the hardware allows it, but that doesn't mean it has to be exposed.  If
-ALSA has some kind of way of specifying a "low latency" mode where 128
-byte vs 32 byte fetches would make a significant difference, then it may
-be something to look at.
+(See Documentation/memory-hotplug.txt for more details.)
 
-I'll retract my previous comment on this (about it being a DT property) -
-given what it does, it isn't describing the hardware capabilities as I
-first thought it was.
+This probe interface is required on powerpc. On x86, however,
+ACPI notifies a memory hotplug event to the kernel, which
+performs its hotplug operation as the result.
 
-> > -	priv->clk = devm_clk_get(&pdev->dev, NULL);
-> > +	priv->clk = devm_clk_get(&pdev->dev, "internal");
-> >  	if (IS_ERR(priv->clk)) {
-> > -		dev_err(&pdev->dev, "no clock\n");
-> > +		dev_err(&pdev->dev, "no internal clock\n");
-> >  		return PTR_ERR(priv->clk);
-> >  	}
-> 
-> Does the code providing it already name the clock?  If not are updates
-> needed to do that?
-> 
-> > -	priv->extclk = clk_get(&pdev->dev, "extclk");
-> > +	priv->extclk = clk_get(&pdev->dev, "external");
-> 
-> Is the clock actually called extclk in the datasheet and so on?  If so
-> it seems better to stick with that name.  Do any boards need updates for
-> the new name?
+Therefore, regular users do not need this interface on x86. This probe
+interface is also error-prone and misleading that the kernel blindly
+adds a given memory address without checking if the memory is present
+on the system; no probing is done despite of its name.
 
-"AU_EXTCLK" is the exact name (pasted out of the documentation).
-I don't see any purpose to this name changing.
+The kernel crashes when a user requests to online a memory block
+that is not present on the system. This interface is currently
+used for testing as it can fake a hotplug event.
+
+This patch disables CONFIG_ARCH_MEMORY_PROBE by default on x86,
+adds its Kconfig menu entry on x86, and clarifies its use in
+Documentation/ memory-hotplug.txt.
+
+Signed-off-by: Toshi Kani <toshi.kani@hp.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: linux-mm@kvack.org
+Cc: dave@sr71.net
+Cc: tangchen@cn.fujitsu.com
+Cc: vasilis.liaskovitis@profitbricks.com
+---
+ Documentation/memory-hotplug.txt |   17 ++++++++++-------
+ arch/x86/Kconfig                 |    7 ++++++-
+ 2 files changed, 16 insertions(+), 8 deletions(-)
+
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+index 8e5eacb..d61e7d1 100644
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -210,13 +210,16 @@ If memory device is found, memory hotplug code will be called.
+ 
+ 4.2 Notify memory hot-add event by hand
+ ------------
+-In some environments, especially virtualized environment, firmware will not
+-notify memory hotplug event to the kernel. For such environment, "probe"
+-interface is supported. This interface depends on CONFIG_ARCH_MEMORY_PROBE.
+-
+-Now, CONFIG_ARCH_MEMORY_PROBE is supported only by powerpc but it does not
+-contain highly architecture codes. Please add config if you need "probe"
+-interface.
++On powerpc, the firmware does not notify a memory hotplug event to the kernel.
++Therefore, "probe" interface is supported to notify the event to the kernel.
++This interface depends on CONFIG_ARCH_MEMORY_PROBE.
++
++CONFIG_ARCH_MEMORY_PROBE is supported on powerpc only. On x86, this config
++option is disabled by default since ACPI notifies a memory hotplug event to
++the kernel, which performs its hotplug operation as the result. Please
++enable this option if you need the "probe" interface for testing purposes
++on x86. Note that the probe interface does not verify if a specified address
++is valid on the system. You need to be careful with this.
+ 
+ Probe interface is located at
+ /sys/devices/system/memory/probe
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b32ebf9..408ef68 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1344,8 +1344,13 @@ config ARCH_SELECT_MEMORY_MODEL
+ 	depends on ARCH_SPARSEMEM_ENABLE
+ 
+ config ARCH_MEMORY_PROBE
+-	def_bool y
++	bool "Enable sysfs memory/probe interface"
++	default n
+ 	depends on X86_64 && MEMORY_HOTPLUG
++	help
++	  This option enables a sysfs memory/probe interface for testing.
++	  See Documentation/memory-hotplug.txt for more information.
++	  If you are unsure how to answer this question, answer N.
+ 
+ config ARCH_PROC_KCORE_TEXT
+ 	def_bool y
