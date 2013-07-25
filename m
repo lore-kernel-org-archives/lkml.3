@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587Ab3GYCbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:31:18 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:58101 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab3GYCbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:31:16 -0400
-Message-ID: <51F08D4B.3010201@huawei.com>
-Date: Thu, 25 Jul 2013 10:28:27 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754646Ab3GYCcP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 22:32:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28100 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753215Ab3GYCcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 22:32:13 -0400
+X-IronPort-AV: E=Sophos;i="4.89,739,1367942400"; 
+   d="scan'208";a="8014378"
+Message-ID: <51F08ED0.9080407@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 10:34:56 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2][RESEND] tracing: Shrink the size of struct ftrace_event_field
-References: <51F08D1B.1080300@huawei.com>
-In-Reply-To: <51F08D1B.1080300@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 15/21] x86, acpi, numa: Don't reserve memory on nodes
+ the kernel resides in.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-16-git-send-email-tangchen@cn.fujitsu.com> <20130723205919.GT21100@mtj.dyndns.org>
+In-Reply-To: <20130723205919.GT21100@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 10:30:07,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 10:30:08,
+	Serialize complete at 2013/07/25 10:30:08
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/24/2013 04:59 AM, Tejun Heo wrote:
+......
+>> +static bool __init kernel_resides_in_range(phys_addr_t base, u64 length)
+>> +{
+>> +	int i;
+>> +	struct memblock_type *reserved =&memblock.reserved;
+>> +	struct memblock_region *region;
+>> +	phys_addr_t start, end;
+>> +
+>> +	for (i = 0; i<  reserved->cnt; i++) {
+>> +		region =&reserved->regions[i];
+>> +
+>> +		if (region->flags != MEMBLK_FLAGS_DEFAULT)
+>> +			continue;
+>> +
+>> +		start = region->base;
+>> +		end = region->base + region->size;
+>> +		if (end<= base || start>= base + length)
+>> +			continue;
+>> +
+>> +		return true;
+>> +	}
+>> +
+>> +	return false;
+>> +}
+>
+> This being in acpi/osl.c is rather weird.  Overall, the acpi and
+> memblock parts don't seem very well split.  It'd best if acpi just
+> indicates which regions are hotpluggable and the rest is handled by
+> x86 boot or memblock code as appropriate.
 
+OK. Will move this function out from acpi side.
 
-Use bit fields, and the size of struct ftrace_event_field can be
-shrunk from 48 bytes to 40 bytes on 64bit kernel.
-
-slab_name active_obj nr_obj size obj_per_slab
----------------------------------------------
-ftrace_event_field   1105   1105     48   85  (before)
-ftrace_event_field   1224   1224     40  102  (after)
-
-This saves a few Kbytes: (1224 * 40) - (1105 * 48) = 4080
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- kernel/trace/trace.h        | 8 ++++----
- kernel/trace/trace_events.c | 5 +++++
- 2 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 9e01458..a3365a4 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -916,10 +916,10 @@ struct ftrace_event_field {
- 	struct list_head	link;
- 	const char		*name;
- 	const char		*type;
--	int			filter_type;
--	int			offset;
--	int			size;
--	int			is_signed;
-+	unsigned int		filter_type:4;
-+	unsigned int		offset:12;
-+	unsigned int		size:12;
-+	unsigned int		is_signed:1;
- };
- 
- struct event_filter {
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 53582e9..67aee85 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -111,6 +111,11 @@ static int __trace_define_field(struct list_head *head, const char *type,
- 	field->size = size;
- 	field->is_signed = is_signed;
- 
-+	WARN_ON(offset >= (1 << 12));
-+	WARN_ON(size >= (1 << 12));
-+	WARN_ON(is_signed >= (1 << 1));
-+	WARN_ON(field->filter_type >= (1 << 4));
-+
- 	list_add(&field->link, head);
- 
- 	return 0;
--- 1.8.0.2
+Thanks.
 
