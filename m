@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab3GYVMG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:12:06 -0400
-Received: from usmamail.tilera.com ([12.216.194.151]:17548 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab3GYVMB (ORCPT
+	id S1756665Ab3GYVNd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:13:33 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:44304 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755252Ab3GYVNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:12:01 -0400
-Message-ID: <51F1949D.3000706@tilera.com>
-Date: Thu, 25 Jul 2013 17:11:57 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 17:13:30 -0400
+Message-ID: <51F194F5.8040303@gmail.com>
+Date: Thu, 25 Jul 2013 23:13:25 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 04/36] tile: srom: convert srom_class to use dev_groups
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Mike Turquette <mturquette@linaro.org>
+CC: Sylwester Nawrocki <s.nawrocki@samsung.com>, kyungmin.park@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: exynos4: Add CLK_GET_RATE_NOCACHE flag for the Exynos4x12
+ ISP clocks
+References: <1372099374-21008-1-git-send-email-s.nawrocki@samsung.com> <51ED2230.8080100@samsung.com> <20130725202337.7598.20912@quantum>
+In-Reply-To: <20130725202337.7598.20912@quantum>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/24/2013 6:13 PM, Greg Kroah-Hartman wrote:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the tile srom_class code to use
-> the correct field.
-> 
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->  drivers/char/tile-srom.c | 28 ++++++++++++++++------------
->  1 file changed, 16 insertions(+), 12 deletions(-)
+On 07/25/2013 10:23 PM, Mike Turquette wrote:
+> Quoting Sylwester Nawrocki (2013-07-22 05:14:40)
+>> On 06/24/2013 08:42 PM, Sylwester Nawrocki wrote:
+>>> The ISP clock registers belong to the ISP power domain and may change
+>>> their values if this power domain is switched off/on. Add
+>>> CLK_GET_RATE_NOCACHE flags to ensure we do not rely on invalid cached
+>>> data when setting or getting frequency of those clocks.
+>>>
+>>> Signed-off-by: Sylwester Nawrocki<s.nawrocki@samsung.com>
+>>> Signed-off-by: Kyungmin Park<kyungmin.park@samsung.com>
+>>
+>> Mike,
+>>
+>> would you consider queueing that patch for current -rc cycle ?
+>
+> Sylwester,
+>
+> Can you rebase this onto -rc2? It does not apply cleanly onto my -fixes
+> branch.
 
-I just got a failed build email from the kisskb build server:
+Sure, I've just posted an updated version.
 
-drivers/char/tile-srom.c:308:2: error: initializer element is not computable at load time
-drivers/char/tile-srom.c:308:2: error: (near initialization for 'srom_dev_attrs[0].mode')
-
-plus a bunch of warnings:
-
-drivers/char/tile-srom.c:307:2: warning: missing braces around initializer [-Wmissing-braces]
-drivers/char/tile-srom.c:307:2: warning: (near initialization for 'srom_dev_attrs[0]') [-Wmissing-braces]
-drivers/char/tile-srom.c:307:2: warning: initialization from incompatible pointer type [enabled by default]
-drivers/char/tile-srom.c:307:2: warning: (near initialization for 'srom_dev_attrs[0].name') [enabled by default]
-drivers/char/tile-srom.c:308:2: warning: initialization makes integer from pointer without a cast [enabled by default]
-drivers/char/tile-srom.c:308:2: warning: (near initialization for 'srom_dev_attrs[0].mode') [enabled by default]
-drivers/char/tile-srom.c:309:2: warning: initialization from incompatible pointer type [enabled by default]
-drivers/char/tile-srom.c:309:2: warning: (near initialization for 'srom_dev_attrs[1].name') [enabled by default]
-drivers/char/tile-srom.c:310:2: warning: initialization makes integer from pointer without a cast [enabled by default]
-drivers/char/tile-srom.c:310:2: warning: (near initialization for 'srom_dev_attrs[1].mode') [enabled by default]
-drivers/char/tile-srom.c:312:1: warning: initialization from incompatible pointer type [enabled by default]
-drivers/char/tile-srom.c:312:1: warning: (near initialization for 'srom_dev_group.attrs') [enabled by default]
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Thanks,
+Sylwester
