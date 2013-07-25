@@ -1,38 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab3GYQ2F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:28:05 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42560 "EHLO
+	id S1756199Ab3GYQ3x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:29:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42601 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755552Ab3GYQ2B (ORCPT
+	with ESMTP id S1755974Ab3GYQ3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:28:01 -0400
-Date: Thu, 25 Jul 2013 18:27:49 +0200
+	Thu, 25 Jul 2013 12:29:51 -0400
+Date: Thu, 25 Jul 2013 18:29:39 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vince@deater.net>
-Cc: Adrian Hunter <adrian.hunter@intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Update perf_event_type documentation
-Message-ID: <20130725162749.GW27075@twins.programming.kicks-ass.net>
-References: <20130716150907.GL23818@dyad.programming.kicks-ass.net>
- <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org>
- <alpine.DEB.2.02.1307241348250.7828@pianoman.cluster.toy>
- <51F0C41C.8080005@intel.com>
- <alpine.DEB.2.02.1307250832010.18434@pianoman.cluster.toy>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Anish Singh <anish198519851985@gmail.com>
+Subject: Re: [PATCH 0/8] perf: Finer grained full dynticks handling
+Message-ID: <20130725162939.GX27075@twins.programming.kicks-ass.net>
+References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
+ <20130725095938.GI27075@twins.programming.kicks-ass.net>
+ <20130725140216.GB7400@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307250832010.18434@pianoman.cluster.toy>
+In-Reply-To: <20130725140216.GB7400@somewhere>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 08:34:51AM -0400, Vince Weaver wrote:
-> Yes, I meant the addition of the sample_id fields to the existing sample 
-> values.  Though if Peter is right and those have always been there since 
-> the beginning and just not documented then that won't break anything.  
-> The commit message wasn't really as clear as it could be.
+On Thu, Jul 25, 2013 at 04:02:17PM +0200, Frederic Weisbecker wrote:
+> > Awesome, looks good, thanks Frederic!
+> > 
+> > Acked-by: Peter Zijlstra <peterz@infradead.org>
+> 
+> Great! What do you prefer? Do you want to take these or should I do a pull request
+> to Ingo directly?
 
-/me writes "I shall write better Changelogs." a hundred times.
+I had intended Ingo to pick these up; but then I remembered he's playing
+road warrior atm. So I stuck them in my queue so as not to loose them.
+
+
