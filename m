@@ -1,148 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3GYIAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:00:19 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:42023 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755149Ab3GYH7r (ORCPT
+	id S1755275Ab3GYIAf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:00:35 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:50717 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071Ab3GYIAQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:59:47 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6P7xh7G017508, This message is accepted by code: ctaloc0852
-From: Hayes Wang <hayeswang@realtek.com>
-To: <gregkh@linuxfoundation.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2 2/3] net/usb/r8152: make sure the USB buffer is DMA-able
-Date: Thu, 25 Jul 2013 15:59:03 +0800
-Message-ID: <1374739144-732-2-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1374739144-732-1-git-send-email-hayeswang@realtek.com>
-References: <20130724.174947.452272360732442554.davem@davemloft.net>
- <1374739144-732-1-git-send-email-hayeswang@realtek.com>
+	Thu, 25 Jul 2013 04:00:16 -0400
+Date: Thu, 25 Jul 2013 09:00:13 +0100
+From: Morten Rasmussen <morten.rasmussen@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "alex.shi@intel.com" <alex.shi@intel.com>,
+        "efault@gmx.de" <efault@gmx.de>, "pjt@google.com" <pjt@google.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        "corbet@lwn.net" <corbet@lwn.net>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [RFC][PATCH 0/9] sched: Power scheduler design proposal
+Message-ID: <20130725080013.GG12572@e103034-lin>
+References: <20130713064909.GW25631@dyad.programming.kicks-ass.net>
+ <20130713102350.GA8067@MacBook-Pro.local>
+ <20130715203922.GD23818@dyad.programming.kicks-ass.net>
+ <20130716124248.GB10036@arm.com>
+ <51E5655C.7050304@linux.intel.com>
+ <20130717141426.GG27948@arm.com>
+ <20130724135011.GE12572@e103034-lin>
+ <51EFEFD4.4020808@linux.intel.com>
+ <20130724164607.GF12572@e103034-lin>
+ <51F0056A.7020208@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <51F0056A.7020208@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 25 Jul 2013 08:00:12.0719 (UTC) FILETIME=[FD92C3F0:01CE890C]
+X-MC-Unique: 113072509001400201
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate the required memory before calling usb_control_msg. And
-the additional memory copy is necessary.
+On Wed, Jul 24, 2013 at 05:48:42PM +0100, Arjan van de Ven wrote:
+> >
+> > I would expect performance to be disjoint for most tasks. If there was
+> > an overlap, the big would probably be less power efficient (as in
+> > energy/instruction) than the little so you would prefer to run on the
+> > little anyway.
+> >
+> > In what way would you use the overlap?
+> 
+> if the scheduler thinks a task would be better off on the other side
+> than where it is now, it could first move it into the "overlap area" on the
+> same side by means of experiment, and if the task behaves as expected there,
+> THEN move it over.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 60 ++++++++++++++++++++++++++++---------------------
- 1 file changed, 35 insertions(+), 25 deletions(-)
+You could do that, but due to the different uarchs you wouldn't really
+know how a cpu bound task would behave on the other side. It would
+probably work for memory bound tasks.
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index ee13f9e..ef033ab 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -344,17 +344,41 @@ static const int multicast_filter_limit = 32;
- static
- int get_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
- {
--	return usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
-+	int ret;
-+	void *tmp;
-+
-+	tmp = kmalloc(size, GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
-+	ret = usb_control_msg(tp->udev, usb_rcvctrlpipe(tp->udev, 0),
- 			       RTL8152_REQ_GET_REGS, RTL8152_REQT_READ,
--			       value, index, data, size, 500);
-+			       value, index, tmp, size, 500);
-+
-+	memcpy(data, tmp, size);
-+	kfree(tmp);
-+
-+	return ret;
- }
- 
- static
- int set_registers(struct r8152 *tp, u16 value, u16 index, u16 size, void *data)
- {
--	return usb_control_msg(tp->udev, usb_sndctrlpipe(tp->udev, 0),
-+	int ret;
-+	void *tmp;
-+
-+	tmp = kmalloc(size, GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
-+	memcpy(tmp, data, size);
-+
-+	ret = usb_control_msg(tp->udev, usb_sndctrlpipe(tp->udev, 0),
- 			       RTL8152_REQ_SET_REGS, RTL8152_REQT_WRITE,
--			       value, index, data, size, 500);
-+			       value, index, tmp, size, 500);
-+
-+	kfree(tmp);
-+	return ret;
- }
- 
- static int generic_ocp_read(struct r8152 *tp, u16 index, u16 size,
-@@ -685,21 +709,14 @@ static void ocp_reg_write(struct r8152 *tp, u16 addr, u16 data)
- static inline void set_ethernet_addr(struct r8152 *tp)
- {
- 	struct net_device *dev = tp->netdev;
--	u8 *node_id;
-+	u8 node_id[8] = {0};
- 
--	node_id = kmalloc(sizeof(u8) * 8, GFP_KERNEL);
--	if (!node_id) {
--		netif_err(tp, probe, dev, "out of memory");
--		return;
--	}
--
--	if (pla_ocp_read(tp, PLA_IDR, sizeof(u8) * 8, node_id) < 0)
-+	if (pla_ocp_read(tp, PLA_IDR, sizeof(node_id), node_id) < 0)
- 		netif_notice(tp, probe, dev, "inet addr fail\n");
- 	else {
- 		memcpy(dev->dev_addr, node_id, dev->addr_len);
- 		memcpy(dev->perm_addr, dev->dev_addr, dev->addr_len);
- 	}
--	kfree(node_id);
- }
- 
- static int rtl8152_set_mac_address(struct net_device *netdev, void *p)
-@@ -882,15 +899,10 @@ static void rtl8152_set_rx_mode(struct net_device *netdev)
- static void _rtl8152_set_rx_mode(struct net_device *netdev)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
--	u32 tmp, *mc_filter;	/* Multicast hash filter */
-+	u32 mc_filter[2];	/* Multicast hash filter */
-+	__le32 tmp[2];
- 	u32 ocp_data;
- 
--	mc_filter = kmalloc(sizeof(u32) * 2, GFP_KERNEL);
--	if (!mc_filter) {
--		netif_err(tp, link, netdev, "out of memory");
--		return;
--	}
--
- 	clear_bit(RTL8152_SET_RX_MODE, &tp->flags);
- 	netif_stop_queue(netdev);
- 	ocp_data = ocp_read_dword(tp, MCU_TYPE_PLA, PLA_RCR);
-@@ -918,14 +930,12 @@ static void _rtl8152_set_rx_mode(struct net_device *netdev)
- 		}
- 	}
- 
--	tmp = mc_filter[0];
--	mc_filter[0] = __cpu_to_le32(swab32(mc_filter[1]));
--	mc_filter[1] = __cpu_to_le32(swab32(tmp));
-+	tmp[0] = __cpu_to_le32(swab32(mc_filter[1]));
-+	tmp[1] = __cpu_to_le32(swab32(mc_filter[0]));
- 
--	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(u32) * 2, mc_filter);
-+	pla_ocp_write(tp, PLA_MAR, BYTE_EN_DWORD, sizeof(tmp), tmp);
- 	ocp_write_dword(tp, MCU_TYPE_PLA, PLA_RCR, ocp_data);
- 	netif_wake_queue(netdev);
--	kfree(mc_filter);
- }
- 
- static netdev_tx_t rtl8152_start_xmit(struct sk_buff *skb,
--- 
-1.8.3.1
+Also, for interactive applications (smartphones and such) intermediate
+steps will increase latency when going little to big. Going the other
+way it would be fine.
 
