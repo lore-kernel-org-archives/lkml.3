@@ -1,162 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756401Ab3GYPFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:05:20 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:58161 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab3GYPFQ (ORCPT
+	id S1756482Ab3GYPGH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:06:07 -0400
+Received: from mail-yh0-f49.google.com ([209.85.213.49]:49960 "EHLO
+	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042Ab3GYPGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:05:16 -0400
+	Thu, 25 Jul 2013 11:06:03 -0400
+Date: Thu, 25 Jul 2013 11:05:54 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in
+ memblock.reserve with numa_meminfo.
+Message-ID: <20130725150554.GC26107@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723212548.GZ21100@mtj.dyndns.org>
+ <51F0A4F9.2060802@cn.fujitsu.com>
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
-References: <CA+icZUVHkYd6xcGe7v-zA8=f+vTF1eF2JszvFPfqzJwE34_2ig@mail.gmail.com>
-	<87ehanx9bx.fsf@intel.com>
-	<CA+icZUXX1-kz9QbY5CpU1UDU8trxgfJSS6ZnUpx9ieq5FnVNSQ@mail.gmail.com>
-	<CA+icZUWOwKH+oF4Ekrkk3pUCjz4Rc361kzdsKjb04WzsEtWPYA@mail.gmail.com>
-	<87bo5rx7m0.fsf@intel.com>
-	<CA+icZUXhW_yAie25DPVXzhi2_pYQTjJpDqa7EzRfvtQ0gFYYHQ@mail.gmail.com>
-	<20130725133651.GI5939@phenom.ffwll.local>
-	<CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
-	<20130725142705.GM5939@phenom.ffwll.local>
-	<CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
-Date: Thu, 25 Jul 2013 17:05:15 +0200
-Message-ID: <CAKMK7uG-KCF5oU2XJ5UWPJn=V3i0jBLs5a=gU9UPuJxY0v=bNw@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F0A4F9.2060802@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 5:03 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Jul 25, 2013 at 4:27 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->> On Thu, Jul 25, 2013 at 04:23:40PM +0200, Sedat Dilek wrote:
->>> On Thu, Jul 25, 2013 at 3:36 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->>> > On Thu, Jul 25, 2013 at 12:37:44PM +0200, Sedat Dilek wrote:
->>> >> On Thu, Jul 25, 2013 at 12:21 PM, Jani Nikula
->>> >> <jani.nikula@linux.intel.com> wrote:
->>> >> > On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> >> >> On Thu, Jul 25, 2013 at 12:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> >> >>> On Thu, Jul 25, 2013 at 11:44 AM, Jani Nikula
->>> >> >>> <jani.nikula@linux.intel.com> wrote:
->>> >> >>>> On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> >> >>>>> On Thu, Jul 25, 2013 at 7:12 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>> >> >>>>>> Hi all,
->>> >> >>>>>>
->>> >> >>>>>> Changes since 20130724:
->>> >> >>>>>>
->>> >> >>>>>> Removed tree:
->>> >> >>>>>>         arm-dt (at maintainer's request)
->>> >> >>>>>>
->>> >> >>>>>> The wireless-next tree lost its build failure and gained a conflict
->>> >> >>>>>> against Linus' tree.
->>> >> >>>>>>
->>> >> >>>>>> The tty tree lost its build failure.
->>> >> >>>>>>
->>> >> >>>>>> The staging tree gained a build failure for which I disabled a driver.
->>> >> >>>>>>
->>> >> >>>>>> ----------------------------------------------------------------------------
->>> >> >>>>>>
->>> >> >>>>>
->>> >> >>>>> [ CCing drm and drm-intel folks ]
->>> >> >>>>>
->>> >> >>>>> With today's next-20130725 I see the following:
->>> >> >>>>
->>> >> >>>> Use of dev_priv->gt_lock in I915_WRITE through
->>> >> >>>> intel_disable_gt_powersave before spin lock init, caused by
->>> >> >>>>
->>> >> >>>> commit 181d1b9e31c668259d3798c521672afb8edd355c
->>> >> >>>> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->>> >> >>>> Date:   Sun Jul 21 13:16:24 2013 +0200
->>> >> >>>>
->>> >> >>>>     drm/i915: fix up gt init sequence fallout
->>> >> >>>>
->>> >> >>>
->>> >> >>> Ah, cool.
->>> >> >>>
->>> >> >>> I assumed/tested "drm/i915: fix the racy object accounting", but this
->>> >> >>> does not fix it.
->>> >> >>> Will try with yours.
->>> >> >>>
->>> >> >>
->>> >> >> Sorry, Jani.
->>> >> >>
->>> >> >> next-20130725 ships the patch you pointed, too.
->>> >> >
->>> >> > Confused. I meant that the above mentioned commit "drm/i915: fix up gt
->>> >> > init sequence fallout" causes the problem. The patch I included in my
->>> >> > mail should fix it. Could you try that please?
->>> >> >
->>> >>
->>> >> [ Note2myself: Do not read half of the message... ]
->>> >>
->>> >> The bad... Your patch needed some refresh against next-20130725 (guess
->>> >> it's against drm-intel-nightly).
->>> >>
->>> >> The good... YES, your patch fixes the issue for me!
->>> >>
->>> >> The ugly... /me.
->>> >>
->>> >> Feel free to add my:
->>> >>
->>> >>        Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->>> >>
->>> >> Thanks for the quick fix!
->>> >
->>> > Thanks a lot for the report, since this should be something I should have
->>> > caught. And for added insult the offending patch is already in Linus' tree
->>> > :( Patch merged to -fixes.
->>>
->>> Hmmm, don't you merge -fixes into -nightly?
->>
->> I do, but it seems to only blow up with spinlock debugging enabling I
->> think. Our QA should run full debug buils in the -nightly testing, but
->> apparently they didn't catch this. I'm looking into what went wrong here
->> and fix up the process.
->
-> First, I thought I made my merge wrong, but there is no
->
-> $ grep spin_lock_init linux-next/drivers/gpu/drm/i915/i915_dma.c | grep gt_lock
->
-> Same in [1]:
-> ...
->         spin_lock_init(&dev_priv->irq_lock);
->         spin_lock_init(&dev_priv->gpu_error.lock);
->         spin_lock_init(&dev_priv->backlight.lock);
->         spin_lock_init(&dev_priv->uncore.lock);
+Hello, Tang.
 
-It's hiding in plain sight here ;-) -next has it renamed to
-uncore.lock, so I've applied the patch to -fixes only. I've also
-changed the patch in -fixes to cause an explicit conflict here, makes
-merging a bit easier.
--Daniel
+On Thu, Jul 25, 2013 at 12:09:29PM +0800, Tang Chen wrote:
+> And as in [patch 14/21], when reserving hotpluggable memory, we use
+> pxm. So my
 
->         spin_lock_init(&dev_priv->mm.object_stat_lock);
-> ...
->
-> - Sedat -
->
-> [1] http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly#n1477
->
->
->> -Daniel
->> --
->> Daniel Vetter
->> Software Engineer, Intel Corporation
->> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Which is kinda nasty.
 
+> idea was to do a nid sync in numa_init(). After this, memblock will
+> set nid when
+> it allocates memory.
 
+Sure, that's the only place we can set the numa node IDs but my point
+is that you don't need to add another interface.  Jet let
+memblock_set_node() handle both memblock.memory and .reserved ranges.
+That way, you can make memblock simpler to use and less error-prone.
 
---
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> If we want to let memblock_set_node() and alloc functions set nid on
+> the reserved
+> regions, we should setup nid <-> pxm mapping when we parst SRAT for
+> the first time.
+
+I don't follow why it has to be different.  Why do you need to do
+anything differently?  What am I missing here?
+
+Thanks.
+
+-- 
+tejun
