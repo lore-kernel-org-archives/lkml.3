@@ -1,112 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3GYSGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:06:00 -0400
-Received: from mga03.intel.com ([143.182.124.21]:45362 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757488Ab3GYSEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:04:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,744,1367996400"; 
-   d="scan'208";a="336820710"
-Subject: Re: [PATCH 4/5] Intel MIC Card Driver Changes for Virtio Devices.
-From: Sudeep Dutt <sudeep.dutt@intel.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org,
-        Nikhil Rao <nikhil.rao@intel.com>,
-        Ashutosh Dixit <ashutosh.dixit@intel.com>,
-        Caz Yokoyama <Caz.Yokoyama@intel.com>,
-        Dasaratharaman Chandramouli 
-	<dasaratharaman.chandramouli@intel.com>,
-        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
-        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Sudeep Dutt <sudeep.dutt@intel.com>
-In-Reply-To: <20130725044106.GB11906@kroah.com>
-References: <cover.1374717252.git.sudeep.dutt@intel.com>
-	 <ff721c257100467e8f78421ba9055b97e447551e.1374717252.git.sudeep.dutt@intel.com>
-	 <20130725044106.GB11906@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 25 Jul 2013 11:00:08 -0700
-Message-ID: <1374775208.32254.9.camel@blbiskey-desk1.amr.corp.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-30.el6) 
-Content-Transfer-Encoding: 7bit
+	id S1757870Ab3GYSGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:06:24 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:33954 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757774Ab3GYSGC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:06:02 -0400
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: James Hogan <james.hogan@imgtec.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <51F1202D.9060403@imgtec.com>
+Cc: <linux-arm-kernel@lists.infradead.org>,
+        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Doug Anderson <dianders@chromium.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Chao Xie <xiechao.mail@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        =?utf-8?q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        Joseph Lo <josephl@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+References: <1371139562-305-1-git-send-email-james.hogan@imgtec.com>
+ <1371139562-305-5-git-send-email-james.hogan@imgtec.com>
+ <51F11B46.7010900@samsung.com> <51F1202D.9060403@imgtec.com>
+Message-ID: <20130725180557.7598.20285@quantum>
+User-Agent: alot/0.3.4
+Subject: Re: [PATCH v5 4/5] clk: add CLK_SET_RATE_NO_REPARENT flag
+Date: Thu, 25 Jul 2013 11:05:57 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 21:41 -0700, Greg Kroah-Hartman wrote:
-> On Wed, Jul 24, 2013 at 08:31:35PM -0700, Sudeep Dutt wrote:
-> > +/*
-> > + * Intel MIC Platform Software Stack (MPSS)
-> > + *
-> > + * Copyright(c) 2013 Intel Corporation.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License, version 2, as
-> > + * published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful, but
-> > + * WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-> > + * General Public License for more details.
-> > + *
-> > + * You should have received a copy of the GNU General Public License
-> > + * along with this program; if not, write to the Free Software
-> > + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301
-> > + * USA.
-> > + *
-> > + * The full GNU General Public License is included in this distribution in
-> > + * the file called "COPYING".
+Quoting James Hogan (2013-07-25 05:55:09)
+> Hi Sylwester
 > 
-> Someone needs to tell Intel to take out the address paragraph of thier
-> "standard template" as it's annoying.  Please remove it, unless you
-> personally want to keep the file up to date with the address movements
-> of the FSF for the next 40+ years.
+> On 25/07/13 13:34, Sylwester Nawrocki wrote:
+> > On 06/13/2013 06:06 PM, James Hogan wrote:
+> >> Add a CLK_SET_RATE_NO_REPARENT clock flag, which will prevent muxes
+> >> being reparented during clk_set_rate.
+> >>
+> >> To avoid breaking existing platforms, all callers of clk_register_mux()
+> >> are adjusted to pass the new flag. Platform maintainers are encouraged
+> >> to remove the flag if they wish to allow mux reparenting on set_rate.
+> > [..]
+> >> Changes in v3:
+> >>
+> >> * rename/invert CLK_SET_RATE_REMUX to CLK_SET_RATE_NO_REPARENT and move
+> >>   to this new patch.
+> >> * patch 3: add CLK_SET_RATE_NO_REPARENT flag to all callers of
+> >>   clk_register_mux. If you don't mind your clocks being reparented in
+> >>   response to set_rate please let me know and I'll drop the relevant
+> >>   portion of the patch.
+> > 
+> > Why is this better to change current behaviour of the clock core
+> > and modify all drivers instead of having, e.g. CLK_SET_RATE_REPARENT
+> > set in drivers of hardware that supports clock re-parenting while
+> > setting clock rate ?
 > 
-Sure, will delete the paragraph with the FSF address across all the
-files in the next revision.
+> See this message from Mike Turquette which first suggested it:
+> 
+> http://marc.info/?l=linux-kernel&m=136847508109344&w=2
+> 
+> > Is there intention to just have the automatic clock re-parenting
+> > as a default feature in the common clock API ?
+> 
+> Yes, that would be the result (except where explicitly disallowed).
+> Unfortunately where such policy should ideally be defined is still up in
+> the air.
+> 
+> It's not a property of the hardware, but then it is arguably a property
+> of the environment the bootloader has configured (like the stuff in the
+> /chosen device tree node).
 
-> > + * Disclaimer: The codes contained in these modules may be specific to
-> > + * the Intel Software Development Platform codenamed: Knights Ferry, and
-> > + * the Intel product codenamed: Knights Corner, and are not backward
-> > + * compatible with other Intel products. Additionally, Intel will NOT
-> > + * support the codes or instruction set in future products.
-> 
-> What does this mean?  That's a new one to me...
-> 
-Although the card driver does not contain any Knights Corner (x100)
-specific instructions in the source code, we have been asked to include
-this disclaimer only in the card driver patches 2 and 4; because the
-x100 device has a slightly unique instruction set documented @
-http://software.intel.com/en-us/mic-developer. The next generation of
-MIC devices should not require this disclaimer in the card driver as
-they will use standard x86_64 ISA.  The disclaimer is not present in the
-host driver patches 1, 3 and 5 since it is not applicable.
+I'm happy to get feedback on this decision. Looking back on
+CLK_SET_RATE_PARENT flag I wish I had made that behavior the default.
+Instead there would only be a flag for the case where you explicitly do
+not wish to propagate the rate change request up the tree.
 
-> > +static inline struct device *dev(struct mic_vdev *mvdev)
-> > +{
-> > +	return mvdev->vdev.dev.parent;
-> > +}
-> 
-> Can you pick a worse name?  And you aren't returning the "device", you
-> are returning the parent, so the name (as short as it is), is wrong.
-> 
-Agreed, will rename in the next revision. We will also review the driver
-to ensure that we do not have a similar problem in other files before
-posting again.
+Another thing to consider here is that only users of .determine_rate are
+affected. If your mux clock implements .set_parent and .round_rate, but
+not .determine_rate then you are not affected by this change.
 
-Thanks,
-Sudeep Dutt
+The whole thing gets messy because we're pushing policy into the clock
+framework, but there is no way to avoid that if we're going to achieve
+the goal of having drivers know only about the leaf clocks they consume
+and not requiring those drivers to understand the greater clock tree
+topology.
+
+Regards,
+Mike
 
 > 
-> ick.
+> Presuming that the usual reason not to reparent a mux is because other
+> important clocks depend on it, the kernel might know enough to work out
+> whether it's safe (unless of course there are other cores/threads in the
+> SoC using the clock that Linux isn't aware of, which brings us back to
+> it being a bootloader environment thing).
 > 
-> greg k-h
+> > My apologies if this has already been answered, I haven't been
+> > following this thread.
 > 
-
-
+> No problem :)
+> 
+> Cheers
+> James
