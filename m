@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab3GYVJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:09:38 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:49675 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781Ab3GYVJf (ORCPT
+	id S1755350Ab3GYVMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:12:06 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:17548 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754857Ab3GYVMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:09:35 -0400
-Date: Thu, 25 Jul 2013 14:09:33 -0700 (PDT)
-Message-Id: <20130725.140933.1460349218585474906.davem@davemloft.net>
-To: sony.chacko@qlogic.com
-Cc: gregkh@linuxfoundation.org, rajesh.borundia@qlogic.com,
-        shahed.shaikh@qlogic.com, jitendra.kalsaria@qlogic.com,
-        Linux-Driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: qlcnic binary sysfs file abuse
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <0EA5B226BC5C7B45A71BF612AA8A019E355A3BD4@AVMB1.qlogic.org>
-References: <20130707002949.GA15822@kroah.com>
-	<0EA5B226BC5C7B45A71BF612AA8A019E355A3BD4@AVMB1.qlogic.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Thu, 25 Jul 2013 17:12:01 -0400
+Message-ID: <51F1949D.3000706@tilera.com>
+Date: Thu, 25 Jul 2013 17:11:57 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 04/36] tile: srom: convert srom_class to use dev_groups
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1374703539-9705-5-git-send-email-gregkh@linuxfoundation.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 25 Jul 2013 14:09:35 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sony Chacko <sony.chacko@qlogic.com>
-Date: Thu, 25 Jul 2013 19:37:46 +0000
-
->> -----Original Message-----
->> From: Greg KH [mailto:gregkh@linuxfoundation.org]
->> Sent: Saturday, July 06, 2013 5:30 PM
->> To: Rajesh Borundia; Shahed Shaikh; Jitendra Kalsaria; Sony Chacko; Dept-Eng
->> Linux Driver
->> Cc: netdev; linux-kernel
->> Subject: qlcnic binary sysfs file abuse
->> 
->> I was doing a kernel-wide audit on all of the binary sysfs files, and noticed a
->> metric ton of them in the qlcnic driver.
->> 
->> So, any objection to me just deleting these entirely?  Or, if they really are
->> needed, can I just move them to debugfs, which is where I think they should
->> have been from the beginning?
+On 7/24/2013 6:13 PM, Greg Kroah-Hartman wrote:
+> The dev_attrs field of struct class is going away soon, dev_groups
+> should be used instead.  This converts the tile srom_class code to use
+> the correct field.
 > 
-> Some applications are using these files, please move them to debugfs.
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>  drivers/char/tile-srom.c | 28 ++++++++++++++++------------
+>  1 file changed, 16 insertions(+), 12 deletions(-)
 
-This is quite a mess, and I've complained about all of the crazy
-files created by qlcnic in the past.
+I just got a failed build email from the kisskb build server:
 
-debugfs is for things that do not create a ABI which the kernel has to
-maintain forever.
+drivers/char/tile-srom.c:308:2: error: initializer element is not computable at load time
+drivers/char/tile-srom.c:308:2: error: (near initialization for 'srom_dev_attrs[0].mode')
 
+plus a bunch of warnings:
+
+drivers/char/tile-srom.c:307:2: warning: missing braces around initializer [-Wmissing-braces]
+drivers/char/tile-srom.c:307:2: warning: (near initialization for 'srom_dev_attrs[0]') [-Wmissing-braces]
+drivers/char/tile-srom.c:307:2: warning: initialization from incompatible pointer type [enabled by default]
+drivers/char/tile-srom.c:307:2: warning: (near initialization for 'srom_dev_attrs[0].name') [enabled by default]
+drivers/char/tile-srom.c:308:2: warning: initialization makes integer from pointer without a cast [enabled by default]
+drivers/char/tile-srom.c:308:2: warning: (near initialization for 'srom_dev_attrs[0].mode') [enabled by default]
+drivers/char/tile-srom.c:309:2: warning: initialization from incompatible pointer type [enabled by default]
+drivers/char/tile-srom.c:309:2: warning: (near initialization for 'srom_dev_attrs[1].name') [enabled by default]
+drivers/char/tile-srom.c:310:2: warning: initialization makes integer from pointer without a cast [enabled by default]
+drivers/char/tile-srom.c:310:2: warning: (near initialization for 'srom_dev_attrs[1].mode') [enabled by default]
+drivers/char/tile-srom.c:312:1: warning: initialization from incompatible pointer type [enabled by default]
+drivers/char/tile-srom.c:312:1: warning: (near initialization for 'srom_dev_group.attrs') [enabled by default]
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
