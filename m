@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab3GYSGw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:06:52 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:2955 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757846Ab3GYSGs (ORCPT
+	id S932360Ab3GYSE0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:04:26 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19897 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756978Ab3GYRwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:06:48 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 11:06:46 -0700
-Message-ID: <51F16935.6000600@nvidia.com>
-Date: Thu, 25 Jul 2013 14:06:45 -0400
-From: Rhyland Klein <rklein@nvidia.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Liam Girdwood <lgirdwood@gmail.com>, Joseph Lo <josephl@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [v2 PATCH] regulator: palmas: Store pdata pointer in palmas struct
-References: <1374771899-5037-1-git-send-email-rklein@nvidia.com> <20130725180246.GM9858@sirena.org.uk>
-In-Reply-To: <20130725180246.GM9858@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Jul 2013 13:52:02 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V8 02/33] iov_iter: iov_iter_copy_from_user() should use non-atomic copy
+Date: Thu, 25 Jul 2013 12:50:28 -0500
+Message-Id: <1374774659-13121-3-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/25/2013 2:02 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
-> 
-> On Thu, Jul 25, 2013 at 01:04:59PM -0400, Rhyland Klein wrote:
->> Store a pointer to the pdata so that if it needs to be used after
->> probe it can be. In the case of booting from DeviceTree, the
->> dev.platform_data may be null, so we need to store this pointer
->> explicitly.
-> 
-> This doesn't seem to adjust any places where pdata is used to refer to
-> the new pointer so does it actually have any effect?
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ fs/iov-iter.c | 17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
-I was thinking the same thing after I sent this. Right now, no this has
-no effect. The expectation is that when ldo8-tracking support is posted,
-it needs to have access to the pdata. I suppose it could make sense then
-to either make this part of that series, or to flatten this directly
-into it.
-
-I think it can be fine to merge on its own, but it might make sense then
-to include the ldo8 tracking support. Let me see how ready that is to be
-posted, and if it is close, this can join it in a patchset.
-
--rhyland
-
-> 
-> * Unknown Key
-> * 0x7EA229BD
-> 
-
-
+diff --git a/fs/iov-iter.c b/fs/iov-iter.c
+index 52c23d9..563a6ba 100644
+--- a/fs/iov-iter.c
++++ b/fs/iov-iter.c
+@@ -6,8 +6,8 @@
+ #include <linux/highmem.h>
+ #include <linux/pagemap.h>
+ 
+-static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+-			const struct iovec *iov, size_t base, size_t bytes)
++static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
++				     size_t base, size_t bytes, int atomic)
+ {
+ 	size_t copied = 0, left = 0;
+ 
+@@ -16,7 +16,10 @@ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
+ 		int copy = min(bytes, iov->iov_len - base);
+ 
+ 		base = 0;
+-		left = __copy_from_user_inatomic(vaddr, buf, copy);
++		if (atomic)
++			left = __copy_from_user_inatomic(vaddr, buf, copy);
++		else
++			left = __copy_from_user(vaddr, buf, copy);
+ 		copied += copy;
+ 		bytes -= copy;
+ 		vaddr += copy;
+@@ -47,8 +50,8 @@ size_t iov_iter_copy_from_user_atomic(struct page *page,
+ 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
+-						i->iov, i->iov_offset, bytes);
++		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++						i->iov_offset, bytes, 1);
+ 	}
+ 	kunmap_atomic(kaddr);
+ 
+@@ -75,8 +78,8 @@ size_t iov_iter_copy_from_user(struct page *page,
+ 		left = __copy_from_user(kaddr + offset, buf, bytes);
+ 		copied = bytes - left;
+ 	} else {
+-		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
+-						i->iov, i->iov_offset, bytes);
++		copied = __iovec_copy_from_user(kaddr + offset, i->iov,
++						i->iov_offset, bytes, 0);
+ 	}
+ 	kunmap(page);
+ 	return copied;
 -- 
-nvpublic
+1.8.3.4
+
