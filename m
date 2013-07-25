@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab3GYAnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:43:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34888 "EHLO
+	id S1754835Ab3GYAny (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:43:54 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34880 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754509Ab3GYAnr (ORCPT
+	with ESMTP id S1754565Ab3GYAnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:43:47 -0400
+	Wed, 24 Jul 2013 20:43:46 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        James Hogan <james.hogan@imgtec.com>
-Subject: [PATCH v1 04/14] clk: Add set_rate_and_parent() op
-Date: Wed, 24 Jul 2013 17:43:32 -0700
-Message-Id: <1374713022-6049-5-git-send-email-sboyd@codeaurora.org>
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v1 03/14] clk: Add of_clk_match() for device drivers
+Date: Wed, 24 Jul 2013 17:43:31 -0700
+Message-Id: <1374713022-6049-4-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
 References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
@@ -22,195 +21,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of Qualcomm's clocks can change their parent and rate at the
-same time with a single register write. Add support for this
-hardware to the common clock framework by adding a new
-set_rate_and_parent() op. When the clock framework determines
-that both the parent and the rate are going to change during
-clk_set_rate() it will call the .set_rate_and_parent() op if
-available and fall back to calling .set_parent() followed by
-.set_rate() otherwise.
+In similar fashion as of_regulator_match() add an of_clk_match()
+function that finds an initializes clock init_data structs from
+devicetree. Drivers should use this API to find clocks that their
+device is providing and then iterate over their match table
+registering the clocks with the init data parsed.
 
-Cc: James Hogan <james.hogan@imgtec.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/clk.txt        |  3 ++
- drivers/clk/clk.c            | 78 +++++++++++++++++++++++++++++++++-----------
- include/linux/clk-provider.h | 15 +++++++++
- 3 files changed, 77 insertions(+), 19 deletions(-)
+ drivers/clk/clk.c            | 64 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/clk-provider.h | 16 +++++++++++
+ 2 files changed, 80 insertions(+)
 
-diff --git a/Documentation/clk.txt b/Documentation/clk.txt
-index 3aeb5c4..79700ea 100644
---- a/Documentation/clk.txt
-+++ b/Documentation/clk.txt
-@@ -77,6 +77,9 @@ the operations defined in clk.h:
- 		int		(*set_parent)(struct clk_hw *hw, u8 index);
- 		u8		(*get_parent)(struct clk_hw *hw);
- 		int		(*set_rate)(struct clk_hw *hw, unsigned long);
-+		int		(*set_rate_and_parent)(struct clk_hw *hw,
-+					    unsigned long rate,
-+					    unsigned long parent_rate, u8 index);
- 		void		(*init)(struct clk_hw *hw);
- 	};
- 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 1e3e0db..73de07c 100644
+index ea8e951b..1e3e0db 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
-@@ -1121,10 +1121,9 @@ static void clk_reparent(struct clk *clk, struct clk *new_parent)
- 	clk->parent = new_parent;
+@@ -2289,4 +2289,68 @@ err:
+ 	return -ENOMEM;
  }
- 
--static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-+static struct clk *__clk_set_parent_before(struct clk *clk, struct clk *parent)
- {
- 	unsigned long flags;
--	int ret = 0;
- 	struct clk *old_parent = clk->parent;
- 
- 	/*
-@@ -1155,6 +1154,34 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
- 	clk_reparent(clk, parent);
- 	clk_enable_unlock(flags);
- 
-+	return old_parent;
-+}
+ EXPORT_SYMBOL_GPL(of_init_clk_data);
 +
-+static void __clk_set_parent_after(struct clk *clk, struct clk *parent,
-+		struct clk *old_parent)
++/**
++ * of_clk_match() - Scan and match clock providers from the DT node of a device
++ * @dev: device initializing clock providers
++ * @matches: match table of clocks
++ * @num_matches: number of entries in @matches
++ *
++ * This function uses a match table specified by the clock driver to parse
++ * clock init data from the device tree. @dev is expected to be a device with
++ * a 'clocks' child node containing a set of child nodes, each providing the
++ * init data for one clock. The data parsed from a child node will be matched
++ * to a clock based on the child node's name. Note that the match table is
++ * modified in place.
++ *
++ * Returns the number of matches found or a negative error code on failure.
++ */
++int of_clk_match(struct device *dev, struct of_clk_match *matches,
++		 int num_matches)
 +{
-+	/*
-+	 * Finish the migration of prepare state and undo the changes done
-+	 * for preventing a race with clk_enable().
-+	 */
-+	if (clk->prepare_count) {
-+		clk_disable(clk);
-+		clk_disable(old_parent);
-+		__clk_unprepare(old_parent);
++	int count = 0;
++	int err, i;
++	struct device_node *np, *clocks;
++	struct clk_init_data *init;
++
++	clocks = of_find_node_by_name(dev->of_node, "clocks");
++	if (!clocks)
++		return -EINVAL;
++
++	for (i = 0; i < num_matches; i++) {
++		struct of_clk_match *match = &matches[i];
++		match->init_data = NULL;
++		match->of_node = NULL;
 +	}
 +
-+	/* update debugfs with new clk tree topology */
-+	clk_debug_reparent(clk, parent);
-+}
++	for_each_available_child_of_node(clocks, np) {
++		for (i = 0; i < num_matches; i++) {
++			struct of_clk_match *match = &matches[i];
++			if (match->of_node)
++				continue;
 +
-+static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
-+{
-+	unsigned long flags;
-+	int ret = 0;
-+	struct clk *old_parent;
++			if (strcmp(match->name, np->name))
++				continue;
 +
-+	old_parent = __clk_set_parent_before(clk, parent);
++			init = devm_kzalloc(dev, sizeof(*init), GFP_KERNEL);
++			if (!init)
++				return -ENOMEM;
 +
- 	/* change clock input source */
- 	if (parent && clk->ops->set_parent)
- 		ret = clk->ops->set_parent(clk->hw, p_index);
-@@ -1172,18 +1199,8 @@ static int __clk_set_parent(struct clk *clk, struct clk *parent, u8 p_index)
- 		return ret;
- 	}
- 
--	/*
--	 * Finish the migration of prepare state and undo the changes done
--	 * for preventing a race with clk_enable().
--	 */
--	if (clk->prepare_count) {
--		clk_disable(clk);
--		clk_disable(old_parent);
--		__clk_unprepare(old_parent);
--	}
-+	__clk_set_parent_after(clk, parent, old_parent);
- 
--	/* update debugfs with new clk tree topology */
--	clk_debug_reparent(clk, parent);
- 	return 0;
- }
- 
-@@ -1368,17 +1385,32 @@ static void clk_change_rate(struct clk *clk)
- 	struct clk *child;
- 	unsigned long old_rate;
- 	unsigned long best_parent_rate = 0;
-+	bool skip_set_rate = false;
-+	struct clk *old_parent;
- 
- 	old_rate = clk->rate;
- 
--	/* set parent */
--	if (clk->new_parent && clk->new_parent != clk->parent)
--		__clk_set_parent(clk, clk->new_parent, clk->new_parent_index);
--
--	if (clk->parent)
-+	if (clk->new_parent)
-+		best_parent_rate = clk->new_parent->rate;
-+	else if (clk->parent)
- 		best_parent_rate = clk->parent->rate;
- 
--	if (clk->ops->set_rate)
-+	if (clk->new_parent && clk->new_parent != clk->parent) {
-+		old_parent = __clk_set_parent_before(clk, clk->new_parent);
-+
-+		if (clk->ops->set_rate_and_parent) {
-+			skip_set_rate = true;
-+			clk->ops->set_rate_and_parent(clk->hw, clk->new_rate,
-+					best_parent_rate,
-+					clk->new_parent_index);
-+		} else if (clk->ops->set_parent) {
-+			clk->ops->set_parent(clk->hw, clk->new_parent_index);
++			err = of_init_clk_data(np, init);
++			if (err) {
++				dev_err(dev,
++					"failed to parse DT for clock %s\n",
++					np->name);
++				return err;
++			}
++			match->of_node = np;
++			match->init_data = init;
++			count++;
++			break;
 +		}
-+
-+		__clk_set_parent_after(clk, clk->new_parent, old_parent);
 +	}
 +
-+	if (!skip_set_rate && clk->ops->set_rate)
- 		clk->ops->set_rate(clk->hw, clk->new_rate, best_parent_rate);
- 
- 	if (clk->ops->recalc_rate)
-@@ -1664,6 +1696,14 @@ int __clk_init(struct device *dev, struct clk *clk)
- 		goto out;
- 	}
- 
-+	if (clk->ops->set_rate_and_parent &&
-+			!(clk->ops->set_parent && clk->ops->set_rate)) {
-+		pr_warning("%s: %s must implement .set_parent & .set_rate\n",
-+				__func__, clk->name);
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
- 	/* throw a WARN if any entries in parent_names are NULL */
- 	for (i = 0; i < clk->num_parents; i++)
- 		WARN(!clk->parent_names[i],
++	return count;
++}
++EXPORT_SYMBOL_GPL(of_clk_match);
+ #endif
 diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 484f8ad..1f7eabb 100644
+index 18d6362..484f8ad 100644
 --- a/include/linux/clk-provider.h
 +++ b/include/linux/clk-provider.h
-@@ -108,6 +108,18 @@ struct clk_hw;
-  *		which is likely helpful for most .set_rate implementation.
-  *		Returns 0 on success, -EERROR otherwise.
-  *
-+ * @set_rate_and_parent: Change the rate and the parent of this clock. The
-+ *		requested rate is specified by the second argument, which
-+ *		should typically be the return of .round_rate call.  The
-+ *		third argument gives the parent rate which is likely helpful
-+ *		for most .set_rate_and_parent implementation. The fourth
-+ *		argument gives the parent index. It is optional (and
-+ *		unnecessary) for clocks with 0 or 1 parents as well as
-+ *		for clocks that can tolerate switching the rate and the parent
-+ *		separately via calls to .set_parent and .set_rate.
-+ *		Returns 0 on success, -EERROR otherwise.
-+ *
-+ *
-  * The clk_enable/clk_disable and clk_prepare/clk_unprepare pairs allow
-  * implementations to split any work between atomic (enable) and sleepable
-  * (prepare) contexts.  If enabling a clock requires code that might sleep,
-@@ -139,6 +151,9 @@ struct clk_ops {
- 	u8		(*get_parent)(struct clk_hw *hw);
- 	int		(*set_rate)(struct clk_hw *hw, unsigned long,
- 				    unsigned long);
-+	int		(*set_rate_and_parent)(struct clk_hw *hw,
-+				    unsigned long rate,
-+				    unsigned long parent_rate, u8 index);
- 	void		(*init)(struct clk_hw *hw);
- };
+@@ -461,6 +461,13 @@ struct clk_onecell_data {
+ 		__used __section(__clk_of_table)		\
+ 		= { .compatible = compat, .data = fn };
  
++struct of_clk_match {
++	const char *name;
++	void *driver_data;
++	struct clk_init_data *init_data;
++	struct device_node *of_node;
++};
++
+ #ifdef CONFIG_OF
+ int of_clk_add_provider(struct device_node *np,
+ 			struct clk *(*clk_src_get)(struct of_phandle_args *args,
+@@ -475,6 +482,9 @@ const char *of_clk_get_parent_name(struct device_node *np, int index);
+ void of_clk_init(const struct of_device_id *matches);
+ int of_init_clk_data(struct device_node *np, struct clk_init_data *init);
+ 
++int of_clk_match(struct device *dev, struct of_clk_match *matches,
++		 int num_matches);
++
+ #else /* !CONFIG_OF */
+ 
+ static inline int of_clk_add_provider(struct device_node *np,
+@@ -508,6 +518,12 @@ of_init_clk_data(struct device_node *np, struct clk_init_data *init)
+ {
+ 	return 0;
+ }
++static inline int
++of_clk_match(struct device *dev, struct of_clk_match *matches, int num_matches)
++{
++
++	return 0;
++}
+ #endif /* CONFIG_OF */
+ #endif /* CONFIG_COMMON_CLK */
+ #endif /* CLK_PROVIDER_H */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
