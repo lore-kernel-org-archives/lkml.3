@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab3GYRxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:53:42 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:33628 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757175Ab3GYRxj (ORCPT
+	id S1757292Ab3GYRxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:53:53 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:46059 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757010Ab3GYRxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:53:39 -0400
+	Thu, 25 Jul 2013 13:53:45 -0400
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Stephen Warren <swarren@wwwdotorg.org>
@@ -15,115 +15,149 @@ Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
         Jay Agarwal <jagarwal@nvidia.com>, linux-pci@vger.kernel.org,
         linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 00/16] Rewrite Tegra PCIe driver
-Date: Thu, 25 Jul 2013 10:53:14 -0700
-Message-Id: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH v5 01/16] ARM: tegra: Move tegra_pcie_xclk_clamp() to PMC
+Date: Thu, 25 Jul 2013 10:53:15 -0700
+Message-Id: <1374774810-18459-2-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
+References: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+From: Thierry Reding <thierry.reding@avionic-design.de>
 
-This patch series contains an almost complete rewrite of the Tegra PCIe
-driver. The code is moved to the drivers/pci/host directory and turned
-into a proper platform driver, adding MSI and DT support while at it.
+The PMC code already accesses to PMC registers so it makes sense to
+move this function there as well. While at it, rename the function to
+tegra_pmc_pcie_xclk_clamp() for consistency.
 
-Patches 1 and 2 move some of the Tegra specific code around to allow it
-to be used from outside the arch/arm/mach-tegra directory.
+Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+Acked-by: Stephen Warren <swarren@wwwdotorg.org>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+---
+ arch/arm/mach-tegra/pcie.c | 30 ++++--------------------------
+ arch/arm/mach-tegra/pmc.c  | 16 ++++++++++++++++
+ arch/arm/mach-tegra/pmc.h  |  1 +
+ 3 files changed, 21 insertions(+), 26 deletions(-)
 
-Patch 3 moves the Tegra PCIe controller driver to the drivers/pci/host
-directory and turns it into a proper platform driver while adding MSI
-(based on patches from NVIDIA) and DT support.
-
-Patches 4 to 7 add Tegra20 board support for PCIe via DT.
-
-Patch 8 adds Tegra30 PCIe support to the driver, which is fixed up by
-patch 9. These haven't been squashed to keep the history since most of
-this work has been done over several months.
-
-Patch 10 adds DT support for Tegra30 and patches 11 to 13 enable PCIe
-support on Tegra30-based Cardhu and Beaver boards.
-
-Patch 14 enables PCI in the Tegra default configuration. Patch 15
-increases the prefetchable memory size to accomodate more use-cases and
-patch 16 finally adds me as the maintainer of the Tegra PCIe driver in
-the MAINTAINERS file.
-
-Note that this patch series depends on patches posted by Thomas
-Petazzoni for Marvell PCIe support. They can be found here:
-
-  - [PATCHv5 02/11] PCI: use weak functions for MSI arch-specific functions
-    http://www.spinics.net/lists/linux-pci/msg23802.html
-
-  - [PATCHv5 04/11] PCI: Introduce new MSI chip infrastructure
-    http://www.spinics.net/lists/linux-pci/msg23797.html
-
-  - [PATCHv5 08/11] ARM: pci: add ->add_bus() and ->remove_bus() hooks to hw_pci
-    http://www.spinics.net/lists/linux-pci/msg23801.html
-
-So it would be great if we could set up a stable branch that contains
-those three, which could then be pulled into the Marvell and Tegra
-branches.
-
-For this series, patches 3, 8 and 9 will require Bjorn's Acked-by so
-that Stephen can take them through the Tegra tree, which I think both of
-them already agreed on to being the best solution.
-
-Thierry
-
-Jay Agarwal (3):
-  PCI: tegra: Add Tegra 30 PCIe support
-  ARM: tegra: Enable PCIe controller on Cardhu
-  ARM: dts: tegra: Increase prefetchable PCI memory space
-
-Stephen Warren (2):
-  PCI: tegra: set up PADS_REFCLK_CFG1
-  ARM: tegra: Fix Beaver's PCIe lane configuration
-
-Thierry Reding (11):
-  ARM: tegra: Move tegra_pcie_xclk_clamp() to PMC
-  ARM: tegra: Move pmc.h to include/linux/tegra-pmc.h
-  PCI: tegra: Move PCIe driver to drivers/pci/host
-  ARM: tegra: tamonten: Add PCIe support
-  ARM: tegra: tec: Add PCIe support
-  ARM: tegra: harmony: Initialize PCIe from DT
-  ARM: tegra: trimslice: Initialize PCIe from DT
-  ARM: tegra: Add Tegra30 PCIe support
-  ARM: tegra: Enable PCIe controller on Beaver
-  ARM: tegra: Update default configuration (PCIe)
-  MAINTAINERS: Add myself as Tegra PCIe maintainer
-
- .../bindings/pci/nvidia,tegra20-pcie.txt           |  163 ++
- MAINTAINERS                                        |    7 +
- arch/arm/boot/dts/tegra20-harmony.dts              |   20 +-
- arch/arm/boot/dts/tegra20-tamonten.dtsi            |   17 +-
- arch/arm/boot/dts/tegra20-tec.dts                  |    8 +
- arch/arm/boot/dts/tegra20-trimslice.dts            |   28 +
- arch/arm/boot/dts/tegra20.dtsi                     |   55 +
- arch/arm/boot/dts/tegra30-beaver.dts               |   21 +
- arch/arm/boot/dts/tegra30-cardhu.dtsi              |   20 +
- arch/arm/boot/dts/tegra30.dtsi                     |   70 +
- arch/arm/configs/tegra_defconfig                   |    5 +-
- arch/arm/mach-tegra/Kconfig                        |    7 +-
- arch/arm/mach-tegra/Makefile                       |    3 -
- arch/arm/mach-tegra/board-harmony-pcie.c           |   89 -
- arch/arm/mach-tegra/board.h                        |    8 -
- arch/arm/mach-tegra/iomap.h                        |    3 -
- arch/arm/mach-tegra/pcie.c                         |  886 ----------
- arch/arm/mach-tegra/pmc.c                          |   16 +
- arch/arm/mach-tegra/tegra.c                        |   24 -
- drivers/pci/host/Kconfig                           |    4 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/pci-tegra.c                       | 1702 ++++++++++++++++++++
- include/linux/tegra-pmc.h                          |   23 +
- 23 files changed, 2156 insertions(+), 1024 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/nvidia,tegra20-pcie.txt
- delete mode 100644 arch/arm/mach-tegra/board-harmony-pcie.c
- delete mode 100644 arch/arm/mach-tegra/pcie.c
- create mode 100644 drivers/pci/host/pci-tegra.c
- create mode 100644 include/linux/tegra-pmc.h
-
+diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+index 46144a1..6c1989b 100644
+--- a/arch/arm/mach-tegra/pcie.c
++++ b/arch/arm/mach-tegra/pcie.c
+@@ -41,6 +41,7 @@
+ 
+ #include "board.h"
+ #include "iomap.h"
++#include "pmc.h"
+ 
+ /* Hack - need to parse this from DT */
+ #define INT_PCIE_INTR 130
+@@ -147,17 +148,6 @@
+ #define  PADS_PLL_CTL_TXCLKREF_DIV10		(0 << 20)
+ #define  PADS_PLL_CTL_TXCLKREF_DIV5		(1 << 20)
+ 
+-/* PMC access is required for PCIE xclk (un)clamping */
+-#define PMC_SCRATCH42		0x144
+-#define PMC_SCRATCH42_PCX_CLAMP	(1 << 0)
+-
+-static void __iomem *reg_pmc_base = IO_ADDRESS(TEGRA_PMC_BASE);
+-
+-#define pmc_writel(value, reg) \
+-	__raw_writel(value, reg_pmc_base + (reg))
+-#define pmc_readl(reg) \
+-	__raw_readl(reg_pmc_base + (reg))
+-
+ /*
+  * Tegra2 defines 1GB in the AXI address map for PCIe.
+  *
+@@ -639,18 +629,6 @@ static int tegra_pcie_enable_controller(void)
+ 	return 0;
+ }
+ 
+-static void tegra_pcie_xclk_clamp(bool clamp)
+-{
+-	u32 reg;
+-
+-	reg = pmc_readl(PMC_SCRATCH42) & ~PMC_SCRATCH42_PCX_CLAMP;
+-
+-	if (clamp)
+-		reg |= PMC_SCRATCH42_PCX_CLAMP;
+-
+-	pmc_writel(reg, PMC_SCRATCH42);
+-}
+-
+ static void tegra_pcie_power_off(void)
+ {
+ 	tegra_periph_reset_assert(tegra_pcie.pcie_xclk);
+@@ -658,7 +636,7 @@ static void tegra_pcie_power_off(void)
+ 	tegra_periph_reset_assert(tegra_pcie.pex_clk);
+ 
+ 	tegra_powergate_power_off(TEGRA_POWERGATE_PCIE);
+-	tegra_pcie_xclk_clamp(true);
++	tegra_pmc_pcie_xclk_clamp(true);
+ }
+ 
+ static int tegra_pcie_power_regate(void)
+@@ -667,7 +645,7 @@ static int tegra_pcie_power_regate(void)
+ 
+ 	tegra_pcie_power_off();
+ 
+-	tegra_pcie_xclk_clamp(true);
++	tegra_pmc_pcie_xclk_clamp(true);
+ 
+ 	tegra_periph_reset_assert(tegra_pcie.pcie_xclk);
+ 	tegra_periph_reset_assert(tegra_pcie.afi_clk);
+@@ -681,7 +659,7 @@ static int tegra_pcie_power_regate(void)
+ 
+ 	tegra_periph_reset_deassert(tegra_pcie.afi_clk);
+ 
+-	tegra_pcie_xclk_clamp(false);
++	tegra_pmc_pcie_xclk_clamp(false);
+ 
+ 	clk_prepare_enable(tegra_pcie.afi_clk);
+ 	clk_prepare_enable(tegra_pcie.pex_clk);
+diff --git a/arch/arm/mach-tegra/pmc.c b/arch/arm/mach-tegra/pmc.c
+index 8345fcd..db72297 100644
+--- a/arch/arm/mach-tegra/pmc.c
++++ b/arch/arm/mach-tegra/pmc.c
+@@ -75,6 +75,10 @@ struct pmc_pm_data {
+ };
+ static struct pmc_pm_data pmc_pm_data;
+ 
++/* PMC access is required for PCIE xclk (un)clamping */
++#define PMC_SCRATCH42		0x144
++#define PMC_SCRATCH42_PCX_CLAMP	(1 << 0)
++
+ static inline u32 tegra_pmc_readl(u32 reg)
+ {
+ 	return readl(tegra_pmc_base + reg);
+@@ -342,3 +346,15 @@ void __init tegra_pmc_init(void)
+ 		val &= ~PMC_CTRL_INTR_LOW;
+ 	tegra_pmc_writel(val, PMC_CTRL);
+ }
++
++void tegra_pmc_pcie_xclk_clamp(bool clamp)
++{
++	u32 reg;
++
++	reg = tegra_pmc_readl(PMC_SCRATCH42) & ~PMC_SCRATCH42_PCX_CLAMP;
++
++	if (clamp)
++		reg |= PMC_SCRATCH42_PCX_CLAMP;
++
++	tegra_pmc_writel(reg, PMC_SCRATCH42);
++}
+diff --git a/arch/arm/mach-tegra/pmc.h b/arch/arm/mach-tegra/pmc.h
+index e1c2df2..cdb08a1 100644
+--- a/arch/arm/mach-tegra/pmc.h
++++ b/arch/arm/mach-tegra/pmc.h
+@@ -37,5 +37,6 @@ int tegra_pmc_cpu_power_on(int cpuid);
+ int tegra_pmc_cpu_remove_clamping(int cpuid);
+ 
+ void tegra_pmc_init(void);
++void tegra_pmc_pcie_xclk_clamp(bool clamp);
+ 
+ #endif
 -- 
 1.8.1.5
 
