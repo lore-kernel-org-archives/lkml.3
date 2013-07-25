@@ -1,169 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab3GYMmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 08:42:47 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:56605 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab3GYMmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 08:42:44 -0400
+	id S1755904Ab3GYMpy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 08:45:54 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:40505
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755674Ab3GYMpw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 08:45:52 -0400
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC104.redmond.corp.microsoft.com;RD:autodiscover.service.exchange.microsoft.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz9371I542I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097h8275bh8275dhz2fh2a8h683h839h944hd24hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h19ceh1b0ah1d07h1d0ch1d2eh1d3fh1de9h1dfeh1dffh1e1dh9a9j1155h)
+X-Forefront-Antispam-Report-Untrusted: CIP:157.56.240.21;KIP:(null);UIP:(null);(null);H:BL2PRD0310HT005.namprd03.prod.outlook.com;R:internal;EFV:INT
+X-Forefront-Antispam-Report-Untrusted: SFV:NSPM;SFS:(377454003)(199002)(189002)(51704005)(13464003)(74502001)(53806001)(76482001)(50986001)(56816003)(81542001)(47976001)(80022001)(74366001)(33646001)(4396001)(76786001)(54356001)(77096001)(19580405001)(47446002)(54316002)(65816001)(74662001)(49866001)(79102001)(83072001)(69226001)(16406001)(83322001)(76796001)(76576001)(19580395003)(51856001)(46102001)(66066001)(63696002)(74706001)(77982001)(59766001)(47736001)(74316001)(31966008)(56776001)(81342001)(74876001)(24736002);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR03MB064;H:SN2PR03MB061.namprd03.prod.outlook.com;CLIP:173.61.119.57;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+From: KY Srinivasan <kys@microsoft.com>
+To: Olaf Hering <olaf@aepfle.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] Drivers: hv: remove HV_DRV_VERSION
+Thread-Topic: [PATCH] Drivers: hv: remove HV_DRV_VERSION
+Thread-Index: AQHOXE8x4taQvJKyL0KIqc/Iu67A7Zl1rJwA
+Date: Thu, 25 Jul 2013 12:29:59 +0000
+Message-ID: <7397849146654b9dadf8fb85a3807a32@SN2PR03MB061.namprd03.prod.outlook.com>
+References: <1369819747-6218-1-git-send-email-olaf@aepfle.de>
+In-Reply-To: <1369819747-6218-1-git-send-email-olaf@aepfle.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [173.61.119.57]
+x-forefront-prvs: 0918748D70
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20130724230111.GA25446@linux.vnet.ibm.com>
-References: <20130723162835.GA20430@redhat.com>
-	<20130724123312.GY21367@linux.vnet.ibm.com>
-	<20130724230111.GA25446@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 08:42:43 -0400
-Message-ID: <CA+5PVA7W9TKCc+MNyo3n2VMn6L9UUh4ATjm-rDYZndF1yRdZGA@mail.gmail.com>
-Subject: Re: spinlock lockup, rcu stalls etc.
-From: Josh Boyer <jwboyer@gmail.com>
-To: Paul McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-OrganizationHeadersPreserved: SN2PR03MB064.namprd03.prod.outlook.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%VGER.KERNEL.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%LINUXFOUNDATION.ORG$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-FOPE-CONNECTOR: Id%59$Dn%AEPFLE.DE$RO%2$TLS%6$FQDN%corpf5vips-237160.customer.frontbridge.com$TlsDn%
+X-CrossPremisesHeadersPromoted: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-CrossPremisesHeadersFiltered: TK5EX14HUBC104.redmond.corp.microsoft.com
+X-OriginatorOrg: microsoft.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 7:01 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Jul 24, 2013 at 05:33:12AM -0700, Paul E. McKenney wrote:
->> On Tue, Jul 23, 2013 at 12:28:35PM -0400, Dave Jones wrote:
->> > Woke up to a box that I could log into, but would hang as soon as I tried to
->> > do any disk IO.  This is what hit the logs before that.
->> >
->> > [28853.503179] hrtimer: interrupt took 4847 ns
->> > [28918.966734] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=6502 jiffies, g=655835, c=655834, q=0)
->> > [28918.968079] INFO: Stall ended before state dump start
->> > [28932.599607] BUG: spinlock lockup suspected on CPU#0, trinity-child2/6990
->> > [28932.600419]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
->> > [28932.601597] CPU: 0 PID: 6990 Comm: trinity-child2 Not tainted 3.11.0-rc2+ #54
->> > [28932.604385]  0000000088c64840 ffff88022a567eb0 ffffffff81701c14 ffff8801f6cd5500
->> > [28932.605322]  ffff88022a567ed0 ffffffff81701cd4 ffffffff81c04640 0000000088c64840
->> > [28932.606666] BUG: spinlock lockup suspected on CPU#2, trinity-child2/6764
->> > [28932.606669]  lock: inode_sb_list_lock+0x0/0x80, .magic: dead4ead, .owner: trinity-child1/6763, .owner_cpu: 1
->> > [28932.606259]  ffff88022a567ef8 ffffffff81328e07 ffffffff81c04640 ffffffff81c04658
->> > [28932.609238] Call Trace:
->> > [28932.609545]  [<ffffffff81701c14>] dump_stack+0x4e/0x82
->> > [28932.610167]  [<ffffffff81701cd4>] spin_dump+0x8c/0x91
->> > [28932.610781]  [<ffffffff81328e07>] do_raw_spin_lock+0x67/0x130
->> > [28932.611476]  [<ffffffff811f2a70>] ? fdatawait_one_bdev+0x20/0x20
->> > [28932.612202]  [<ffffffff8170b620>] _raw_spin_lock+0x60/0x80
->> > [28932.612866]  [<ffffffff811fe5fc>] ? iterate_bdevs+0x2c/0x120
->> > [28932.613550]  [<ffffffff811fe5fc>] iterate_bdevs+0x2c/0x120
->> > [28932.614213]  [<ffffffff811f2ce3>] sys_sync+0x63/0x90
->>
->> Lots and lots of concurrent sync() system calls.  But one actual sync()
->> execution would serve any number of sync() requests, as long as each
->> request was initiated prior to the start of the sync() execution.
->> Would it make sense to enable concurrent sync() system calls to take
->> advantage of each others' work?
->
-> More specifically, something like the (untested) patch shown below?
->
->                                                         Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> fs: Make sync() satisfy many requests with one invocation
->
-> Dave Jones reported RCU stalls, overly long hrtimer interrupts, and
-> amazingly long NMI handlers from a trinity-induced workload involving
-> lots of concurrent sync() calls (https://lkml.org/lkml/2013/7/23/369).
-> There are any number of things that one might do to make sync() behave
-> better under high levels of contention, but it is also the case that
-> multiple concurrent sync() system calls can be satisfied by a single
-> sys_sync() invocation.
->
-> Given that this situation is reminiscent of rcu_barrier(), this commit
-> applies the rcu_barrier() approach to sys_sync().  This approach uses
-> a global mutex and a sequence counter.  The mutex is held across the
-> sync() operation, which eliminates contention between concurrent sync()
-> operations.  The counter is incremented at the beginning and end of
-> each sync() operation, so that it is odd while a sync() operation is in
-> progress and odd otherwise, just like sequence locks.
 
-I think you mean "... and even otherwise..." above?
 
-> The code that used to be in sys_sync() is now in do_sync(), and sys_sync()
-> now handles the concurrency.  The sys_sync() function first takes a
-> snapshot of the counter, then acquires the mutex, and then takes another
-> snapshot of the counter.  If the values of the two snapshots indicate that
-> a full do_sync() executed during the mutex acquisition, the sys_sync()
-> function releases the mutex and returns ("Our work is done!").  Otherwise,
-> sys_sync() increments the counter, invokes do_sync(), and increments
-> the counter again.
->
-> This approach allows a single call to do_sync() to satisfy an arbitrarily
-> large number of sync() system calls, which should eliminate issues due
-> to large numbers of concurrent invocations of the sync() system call.
->
-> Reported-by: Dave Jones <davej@redhat.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/fs/sync.c b/fs/sync.c
-> index 905f3f6..dcc2962 100644
-> --- a/fs/sync.c
-> +++ b/fs/sync.c
-> @@ -99,7 +99,7 @@ static void fdatawait_one_bdev(struct block_device *bdev, void *arg)
->   * just write metadata (such as inodes or bitmaps) to block device page cache
->   * and do not sync it on their own in ->sync_fs().
->   */
-> -SYSCALL_DEFINE0(sync)
-> +static void do_sync(void)
->  {
->         int nowait = 0, wait = 1;
->
-> @@ -111,6 +111,47 @@ SYSCALL_DEFINE0(sync)
->         iterate_bdevs(fdatawait_one_bdev, NULL);
->         if (unlikely(laptop_mode))
->                 laptop_sync_completion();
-> +       return;
-> +}
-> +
-> +static DEFINE_MUTEX(sync_mutex);       /* One do_sync() at a time. */
-> +static unsigned long sync_seq;         /* Many sync()s from one do_sync(). */
-> +                                       /*  Overflow harmless, extra wait. */
-> +
-> +/*
-> + * Only allow one task to do sync() at a time, and further allow
-> + * concurrent sync() calls to be satisfied by a single do_sync()
-> + * invocation.
-> + */
-> +SYSCALL_DEFINE0(sync)
-> +{
-> +       unsigned long snap;
-> +       unsigned long snap_done;
-> +
-> +       snap = ACCESS_ONCE(sync_seq);
-> +       smp_mb();  /* Prevent above from bleeding into critical section. */
-> +       mutex_lock(&sync_mutex);
-> +       snap_done = ACCESS_ONCE(sync_seq);
-> +       if (ULONG_CMP_GE(snap_done, ((snap + 1) & ~0x1) + 2)) {
-> +               /*
-> +                * A full do_sync() executed between our two fetches from
-> +                * sync_seq, so our work is done!
-> +                */
-> +               smp_mb(); /* Order test with caller's subsequent code. */
-> +               mutex_unlock(&sync_mutex);
-> +               return 0;
-> +       }
-> +
-> +       /* Record the start of do_sync(). */
-> +       ACCESS_ONCE(sync_seq)++;
-> +       WARN_ON_ONCE((sync_seq & 0x1) != 1);
-> +
-> +       do_sync();
-> +
-> +       /* Record the end of do_sync(). */
-> +       ACCESS_ONCE(sync_seq)++;
-> +       WARN_ON_ONCE((sync_seq & 0x1) != 0);
-> +       mutex_unlock(&sync_mutex);
->         return 0;
+> -----Original Message-----
+> From: Olaf Hering [mailto:olaf@aepfle.de]
+> Sent: Wednesday, May 29, 2013 5:29 AM
+> To: KY Srinivasan; gregkh@linuxfoundation.org
+> Cc: linux-kernel@vger.kernel.org; Olaf Hering
+> Subject: [PATCH] Drivers: hv: remove HV_DRV_VERSION
+> 
+> Remove HV_DRV_VERSION, it has no meaning for upstream drivers.
+> 
+> Initially it was supposed to show the "Linux Integration Services"
+> version, now it is not in sync anymore with the out-of-tree drivers
+> available from the MSFT website.
+> 
+> The only place where a version string is still required is the KVP
+> command "IntegrationServicesVersion" which is handled by
+> tools/hv/hv_kvp_daemon.c. To satisfy such KVP request from the host pass
+> the current string to the daemon during KVP userland registration.
+> 
+> Signed-off-by: Olaf Hering <olaf@aepfle.de>
+Acked-by:  K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hid/hid-hyperv.c        |  1 -
+>  drivers/hv/hv_balloon.c         |  1 -
+>  drivers/hv/hv_kvp.c             |  2 ++
+>  drivers/hv/hv_util.c            |  1 -
+>  drivers/hv/vmbus_drv.c          |  1 -
+>  drivers/net/hyperv/netvsc_drv.c |  2 --
+>  drivers/scsi/storvsc_drv.c      |  1 -
+>  drivers/video/hyperv_fb.c       |  1 -
+>  include/linux/hyperv.h          | 21 ---------------------
+>  9 files changed, 2 insertions(+), 29 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
+> index aa3fec0..05f3e96 100644
+> --- a/drivers/hid/hid-hyperv.c
+> +++ b/drivers/hid/hid-hyperv.c
+> @@ -592,6 +592,5 @@ static void __exit mousevsc_exit(void)
 >  }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+>  MODULE_LICENSE("GPL");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  module_init(mousevsc_init);
+>  module_exit(mousevsc_exit);
+> diff --git a/drivers/hv/hv_balloon.c b/drivers/hv/hv_balloon.c
+> index 4c605c7..c4b50a5 100644
+> --- a/drivers/hv/hv_balloon.c
+> +++ b/drivers/hv/hv_balloon.c
+> @@ -1521,5 +1521,4 @@ static int __init init_balloon_drv(void)
+>  module_init(init_balloon_drv);
+> 
+>  MODULE_DESCRIPTION("Hyper-V Balloon");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  MODULE_LICENSE("GPL");
+> diff --git a/drivers/hv/hv_kvp.c b/drivers/hv/hv_kvp.c
+> index ed50e9e..296c16e 100644
+> --- a/drivers/hv/hv_kvp.c
+> +++ b/drivers/hv/hv_kvp.c
+> @@ -76,7 +76,9 @@ static u8 *recv_buffer;
+>  /*
+>   * Register the kernel component with the user-level daemon.
+>   * As part of this registration, pass the LIC version number.
+> + * This number has no meaning, it satisfies the registration protocol.
+>   */
+> +#define HV_DRV_VERSION           "3.1"
+> 
+>  static void
+>  kvp_register(int reg_value)
+> diff --git a/drivers/hv/hv_util.c b/drivers/hv/hv_util.c
+> index 2f561c5..c59cc8b 100644
+> --- a/drivers/hv/hv_util.c
+> +++ b/drivers/hv/hv_util.c
+> @@ -380,5 +380,4 @@ module_init(init_hyperv_utils);
+>  module_exit(exit_hyperv_utils);
+> 
+>  MODULE_DESCRIPTION("Hyper-V Utilities");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  MODULE_LICENSE("GPL");
+> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
+> index bf421e0..7ef9585 100644
+> --- a/drivers/hv/vmbus_drv.c
+> +++ b/drivers/hv/vmbus_drv.c
+> @@ -812,7 +812,6 @@ static void __exit vmbus_exit(void)
+> 
+> 
+>  MODULE_LICENSE("GPL");
+> -MODULE_VERSION(HV_DRV_VERSION);
+> 
+>  subsys_initcall(hv_acpi_init);
+>  module_exit(vmbus_exit);
+> diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
+> index 088c554..e50ca64 100644
+> --- a/drivers/net/hyperv/netvsc_drv.c
+> +++ b/drivers/net/hyperv/netvsc_drv.c
+> @@ -303,7 +303,6 @@ static void netvsc_get_drvinfo(struct net_device *net,
+>  			       struct ethtool_drvinfo *info)
+>  {
+>  	strlcpy(info->driver, KBUILD_MODNAME, sizeof(info->driver));
+> -	strlcpy(info->version, HV_DRV_VERSION, sizeof(info->version));
+>  	strlcpy(info->fw_version, "N/A", sizeof(info->fw_version));
+>  }
+> 
+> @@ -526,7 +525,6 @@ static int __init netvsc_drv_init(void)
+>  }
+> 
+>  MODULE_LICENSE("GPL");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  MODULE_DESCRIPTION("Microsoft Hyper-V network driver");
+> 
+>  module_init(netvsc_drv_init);
+> diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
+> index 16a3a0c..1a720cf 100644
+> --- a/drivers/scsi/storvsc_drv.c
+> +++ b/drivers/scsi/storvsc_drv.c
+> @@ -1610,7 +1610,6 @@ static void __exit storvsc_drv_exit(void)
+>  }
+> 
+>  MODULE_LICENSE("GPL");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  MODULE_DESCRIPTION("Microsoft Hyper-V virtual storage driver");
+>  module_init(storvsc_drv_init);
+>  module_exit(storvsc_drv_exit);
+> diff --git a/drivers/video/hyperv_fb.c b/drivers/video/hyperv_fb.c
+> index d4d2c5f..8ac99b8 100644
+> --- a/drivers/video/hyperv_fb.c
+> +++ b/drivers/video/hyperv_fb.c
+> @@ -825,5 +825,4 @@ module_init(hvfb_drv_init);
+>  module_exit(hvfb_drv_exit);
+> 
+>  MODULE_LICENSE("GPL");
+> -MODULE_VERSION(HV_DRV_VERSION);
+>  MODULE_DESCRIPTION("Microsoft Hyper-V Synthetic Video Frame Buffer
+> Driver");
+> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h
+> index c255984..e294ad7 100644
+> --- a/include/linux/hyperv.h
+> +++ b/include/linux/hyperv.h
+> @@ -455,27 +455,6 @@ hv_get_ringbuffer_availbytes(struct
+> hv_ring_buffer_info *rbi,
+>  	*read = dsize - *write;
+>  }
+> 
+> -
+> -/*
+> - * We use the same version numbering for all Hyper-V modules.
+> - *
+> - * Definition of versioning is as follows;
+> - *
+> - *	Major Number	Changes for these scenarios;
+> - *			1.	When a new version of Windows Hyper-V
+> - *				is released.
+> - *			2.	A Major change has occurred in the
+> - *				Linux IC's.
+> - *			(For example the merge for the first time
+> - *			into the kernel) Every time the Major Number
+> - *			changes, the Revision number is reset to 0.
+> - *	Minor Number	Changes when new functionality is added
+> - *			to the Linux IC's that is not a bug fix.
+> - *
+> - * 3.1 - Added completed hv_utils driver. Shutdown/Heartbeat/Timesync
+> - */
+> -#define HV_DRV_VERSION           "3.1"
+> -
+>  /*
+>   * VMBUS version is 32 bit entity broken up into
+>   * two 16 bit quantities: major_number. minor_number.
+> 
+
+
+
