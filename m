@@ -1,186 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab3GYJqA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:46:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:59866 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab3GYJp4 (ORCPT
+	id S1755273Ab3GYJw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:52:58 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:33653 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750Ab3GYJwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:45:56 -0400
-From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Sudeep.KarkadaNagesha@arm.com, Mark Rutland <mark.rutland@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Mathieu Poirier <mathieu.poirier@linaro.org>
-Subject: [PATCH v3 1/3] drivers: clocksource: configure event stream for ARM arch timer
-Date: Thu, 25 Jul 2013 10:45:37 +0100
-Message-Id: <1374745537-30389-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374492082-13686-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-References: <1374492082-13686-2-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-X-OriginalArrivalTime: 25 Jul 2013 09:45:51.0934 (UTC) FILETIME=[C00A35E0:01CE891B]
-X-MC-Unique: 113072510455407201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Thu, 25 Jul 2013 05:52:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374687963.3356.145.camel@gandalf.local.home>
+References: <20130723220418.532514378@linuxfoundation.org>
+	<CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
+	<B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
+	<20130724145506.GC15095@kroah.com>
+	<CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
+	<1374686174.3356.135.camel@gandalf.local.home>
+	<CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
+	<1374687963.3356.145.camel@gandalf.local.home>
+Date: Thu, 25 Jul 2013 11:52:53 +0200
+X-Google-Sender-Auth: LKoC1wMvReU5FadXd1k9g5q81bo
+Message-ID: <CAMuHMdX3783c_HcB6eVJ5Tn-n8DVmgSi9F0LtYBZUk67HY9EcQ@mail.gmail.com>
+Subject: Re: [ 000/103] 3.10.3-stable review
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
+	<gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by mail.home.local id r6P9k5iL003040
 
-From: Will Deacon <will.deacon@arm.com>
+On Wed, Jul 24, 2013 at 7:46 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Wed, 2013-07-24 at 10:24 -0700, Linus Torvalds wrote:
+>> On Wed, Jul 24, 2013 at 10:16 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+>>  - "git apply" is actually also designed to be a *replacement* for
+>> "patch". In particular, you can use it outside a git repository,
+>
+> OK, this makes more sense.
+>
+>> exactly like you'd use the standard "patch" program. Except unlike the
+>> standard "patch" program, "git apply" doesn't accept fuzz by default
+>> (which to me is a huge deal - I hate how "patch" tries to apply stuff
+>> that clearly isn't valid any more) and also knows about things like
+>> file modes and renames etc.
+>
+>> That second part is something not enough people use, and when I make
+>> patches and tar-balls I still generate the old-style non-rename
+>> patches etc for that reason. But basically the command is designed to
+>> also be used in non-git environments, so the "standard usage" is very
+>> much not the "involve git details" behavior.
+>
+> I just find it funny to use git outside of a git environment. Perhaps
+> "git apply" should have another name? "pit"?
 
-The ARM architected timer can generate events (used for waking up
-CPUs executing the wfe instruction) at a frequency represented as a
-power-of-2 divisor of the clock rate.
+alias pit="git apply"?
 
-This patch configures the event stream, aiming for a period of 100us
-between events. This can be used to implement wfe-based timeouts for
-userspace locking implementations.
+Hmm, I never used "git apply". I more find myself using plain patch if
+"git am" doesn't want to take a patch due to the fuzz. Is there a fuzz
+parameter for "git am"? Is this "-C 2" or "-C 1"?
 
-This patch also adds the hwcaps for the same, so that userspace can
-detect this feature.
+>> Most "true git" workflows end up using "git am" (or, better yet, "git
+>> pull" etc) to apply patches, which obviously not only does the --index
+>> thing, but also applies the changelog etc.
+>
+> I'm still somewhat old school, and my workflow uses git + quilt a bit. I
+> do a bunch of changes, then I do:
+>
+> git diff > foo.patch
+> patch -p1 -R < foo.patch
+> quilt import foo.patch
+> rm foo.patch
 
-Cc: Mathieu Poirier <mathieu.poirier@linaro.org>
-Reviewed-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
----
- arch/arm/include/asm/arch_timer.h    | 6 ++++--
- arch/arm/include/uapi/asm/hwcap.h    | 1 +
- arch/arm/kernel/setup.c              | 1 +
- arch/arm64/include/asm/arch_timer.h  | 6 +++---
- drivers/clocksource/arm_arch_timer.c | 9 ++++++++-
- include/clocksource/arm_arch_timer.h | 2 ++
- 6 files changed, 19 insertions(+), 6 deletions(-)
+git commit -a
 
------------->8---------------------
+> And save off those changes to another time. When I get back to the
+> patch, I do:
+>
+> quilt push
+> <make final fixes>
+> quilt refresh
+> quilt pop
 
-Hi,
+git commit -a --amend
 
-This version adds the hwcaps for publishing the event stream feature to the
-userspace.
+> git apply --index < patches/foo.patch
+>
+> Sometimes I just leave off the pop and apply to do a git commit -a, but
+> then when I do a quilt pop I need to do a "git reset --hard" to reset
+> things. Having the patch in quilt gives me a nice record of what I did,
+> instead of searching through git history.
+>
+> Note, I do know about git quiltimport, but my quilt queue contains lots
+> of debug patches and things that are still pending (I modify the series
 
-This patch is now rebased on rmk's fixes branch as it conflicts with ab8d46c0 
-"ARM: 7788/1: elf: fix lpae hwcap feature reporting in proc/cpuinfo"
+git rebase -i
 
-Regards,
-Sudeep
+My git "queue" contains 85 commits, some of them are 4 years old.
+I commit almost everything I do, and rework it until it's ready for submission.
 
-diff --git a/arch/arm/include/asm/arch_timer.h b/arch/arm/include/asm/arch_timer.h
-index e406d57..8963877 100644
---- a/arch/arm/include/asm/arch_timer.h
-+++ b/arch/arm/include/asm/arch_timer.h
-@@ -89,16 +89,18 @@ static inline u64 arch_counter_get_cntvct(void)
- 	return cval;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline void arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
- 	asm volatile("mrc p15, 0, %0, c14, c1, 0" : "=r" (cntkctl));
- 
- 	/* disable user access to everything */
--	cntkctl &= ~((3 << 8) | (7 << 0));
-+	cntkctl &= ~((3 << 8) | (0xf << 4) | (3 << 0));
-+	cntkctl |= (divider << 4) | (1 << 2);
- 
- 	asm volatile("mcr p15, 0, %0, c14, c1, 0" : : "r" (cntkctl));
-+	elf_hwcap |= HWCAP_EVTSTRM;
- }
- #endif
- 
-diff --git a/arch/arm/include/uapi/asm/hwcap.h b/arch/arm/include/uapi/asm/hwcap.h
-index 6d34d08..7dcc10d 100644
---- a/arch/arm/include/uapi/asm/hwcap.h
-+++ b/arch/arm/include/uapi/asm/hwcap.h
-@@ -26,5 +26,6 @@
- #define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
- #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
- #define HWCAP_LPAE	(1 << 20)
-+#define HWCAP_EVTSTRM	(1 << 21)
- 
- #endif /* _UAPI__ASMARM_HWCAP_H */
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 96286cb..5191956 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -973,6 +973,7 @@ static const char *hwcap_str[] = {
- 	"idivt",
- 	"vfpd32",
- 	"lpae",
-+	"evtstrm",
- 	NULL
- };
- 
-diff --git a/arch/arm64/include/asm/arch_timer.h b/arch/arm64/include/asm/arch_timer.h
-index 98abd47..8c1e42f 100644
---- a/arch/arm64/include/asm/arch_timer.h
-+++ b/arch/arm64/include/asm/arch_timer.h
-@@ -97,16 +97,16 @@ static inline u32 arch_timer_get_cntfrq(void)
- 	return val;
- }
- 
--static inline void arch_counter_set_user_access(void)
-+static inline void arch_counter_set_user_access(int divider)
- {
- 	u32 cntkctl;
- 
- 	/* Disable user access to the timers and the physical counter. */
- 	asm volatile("mrs	%0, cntkctl_el1" : "=r" (cntkctl));
--	cntkctl &= ~((3 << 8) | (1 << 0));
-+	cntkctl &= ~((3 << 8) | (0xf << 4) | (1 << 0));
- 
- 	/* Enable user access to the virtual counter and frequency. */
--	cntkctl |= (1 << 1);
-+	cntkctl |= (divider << 4) | (1 << 2) | (1 << 1);
- 	asm volatile("msr	cntkctl_el1, %0" : : "r" (cntkctl));
- }
- 
-diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index ffadd83..6301ee5 100644
---- a/drivers/clocksource/arm_arch_timer.c
-+++ b/drivers/clocksource/arm_arch_timer.c
-@@ -125,6 +125,8 @@ static int arch_timer_set_next_event_phys(unsigned long evt,
- 
- static int arch_timer_setup(struct clock_event_device *clk)
- {
-+	int evt_stream_div, pos;
-+
- 	clk->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_C3STOP;
- 	clk->name = "arch_sys_timer";
- 	clk->rating = 450;
-@@ -153,7 +155,12 @@ static int arch_timer_setup(struct clock_event_device *clk)
- 			enable_percpu_irq(arch_timer_ppi[PHYS_NONSECURE_PPI], 0);
- 	}
- 
--	arch_counter_set_user_access();
-+	/* Find the closest power of two to the divisor */
-+	evt_stream_div = arch_timer_rate / ARCH_TIMER_EVT_STREAM_FREQ;
-+	pos = fls(evt_stream_div);
-+	if (pos > 1 && !(evt_stream_div & (1 << (pos - 2))))
-+		pos--;
-+	arch_counter_set_user_access(min(pos, 15));
- 
- 	return 0;
- }
-diff --git a/include/clocksource/arm_arch_timer.h b/include/clocksource/arm_arch_timer.h
-index c463ce9..24dc140 100644
---- a/include/clocksource/arm_arch_timer.h
-+++ b/include/clocksource/arm_arch_timer.h
-@@ -29,6 +29,8 @@
- #define ARCH_TIMER_PHYS_ACCESS		0
- #define ARCH_TIMER_VIRT_ACCESS		1
- 
-+#define ARCH_TIMER_EVT_STREAM_FREQ	10000	/* 100us */
-+
- #ifdef CONFIG_ARM_ARCH_TIMER
- 
- extern u32 arch_timer_get_rate(void);
--- 
-1.8.1.2
+> file a lot). What would help is to add an option to git quiltimport that
+> will limit the number of patches it imports.
+>
+> git quiltimport -c 1
 
+vi series
+go to the first patch you don't want to apply
+dG
+:w
+CTRL-Z
+run quiltimpirt
+fg
+u
+:w
 
+I never regretted the move from quilt (+ git) to git. To me quilt feels like
+having the disadvantages of "git rebase", without having its advantages.
+
+The only feature from quilt I miss is the ability to put comments (mostly
+markers "for x.y", and separators and blank lines) in the series file.
+Managing the order of patches (and only that) in a quilt series file is still
+a bit more user-friendly than in a "git rebase -i" session.
+
+Guess I should start using "git commit --allow-empty" to add markers?
+Hmm, probably git will complain again and again about empty commits
+when rebasing?
+
+Andrew: Anything else why you're still using quilt?
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
