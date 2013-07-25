@@ -1,101 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab3GYMzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 08:55:21 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:21411 "EHLO multi.imgtec.com"
+	id S1755681Ab3GYM7U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 08:59:20 -0400
+Received: from mout.web.de ([212.227.17.11]:63369 "EHLO mout.web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755526Ab3GYMzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 08:55:17 -0400
-Message-ID: <51F1202D.9060403@imgtec.com>
-Date: Thu, 25 Jul 2013 13:55:09 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755438Ab3GYM7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 08:59:17 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: bridge@lists.linux-foundation.org
+Cc: Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Cong Wang <amwang@redhat.com>, Adam Baker <linux@baker-net.org.uk>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCH] bridge: disable snooping if there is no querier
+Date: Thu, 25 Jul 2013 14:57:26 +0200
+Message-Id: <1374757046-12463-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chao Xie <xiechao.mail@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        =?UTF-8?B?RW1pbGlvIEzDs3Bleg==?= <emilio@elopez.com.ar>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>,
-        Joseph Lo <josephl@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        "Pawel Moll" <pawel.moll@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCH v5 4/5] clk: add CLK_SET_RATE_NO_REPARENT flag
-References: <1371139562-305-1-git-send-email-james.hogan@imgtec.com> <1371139562-305-5-git-send-email-james.hogan@imgtec.com> <51F11B46.7010900@samsung.com>
-In-Reply-To: <51F11B46.7010900@samsung.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_25_13_55_10
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:s+OgKCu7mZ0WYo6l9mrIZZnEc7+HydmUfiQgSxN++KDIr8cwOnM
+ R7OXzR39MTH6eAyzn34UCqcRn9GPJOwXr2C3+bQmM+Wo0cI7jlYyoVgw3arZY0ESyvXbT86
+ XjmYL0T1tWkBSAtrezKvTXPvLeibpGieozD0XsanMFSBJRjSNnOjKVYsES/lvcnHeBmk/9X
+ Oi4zf2PEtZkhv5gpseMZw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sylwester
+If there is no querier on a link then we won't get periodic reports and
+therefore won't be able to learn about multicast listeners behind ports,
+potentially leading to lost multicast packets, especially for multicast
+listeners that joined before the creation of the bridge.
 
-On 25/07/13 13:34, Sylwester Nawrocki wrote:
-> On 06/13/2013 06:06 PM, James Hogan wrote:
->> Add a CLK_SET_RATE_NO_REPARENT clock flag, which will prevent muxes
->> being reparented during clk_set_rate.
->>
->> To avoid breaking existing platforms, all callers of clk_register_mux()
->> are adjusted to pass the new flag. Platform maintainers are encouraged
->> to remove the flag if they wish to allow mux reparenting on set_rate.
-> [..]
->> Changes in v3:
->>
->> * rename/invert CLK_SET_RATE_REMUX to CLK_SET_RATE_NO_REPARENT and move
->>   to this new patch.
->> * patch 3: add CLK_SET_RATE_NO_REPARENT flag to all callers of
->>   clk_register_mux. If you don't mind your clocks being reparented in
->>   response to set_rate please let me know and I'll drop the relevant
->>   portion of the patch.
-> 
-> Why is this better to change current behaviour of the clock core
-> and modify all drivers instead of having, e.g. CLK_SET_RATE_REPARENT
-> set in drivers of hardware that supports clock re-parenting while
-> setting clock rate ?
+These lost multicast packets can appear since c5c23260594
+("bridge: Add multicast_querier toggle and disable queries by default")
+in particular.
 
-See this message from Mike Turquette which first suggested it:
+With this patch we are flooding multicast packets if our querier is
+disabled and if we didn't detect any other querier.
 
-http://marc.info/?l=linux-kernel&m=136847508109344&w=2
+A grace period of the Maximum Response Delay of the querier is added to
+give multicast responses enough time to arrive and to be learned from
+before disabling the flooding behaviour again.
 
-> Is there intention to just have the automatic clock re-parenting
-> as a default feature in the common clock API ?
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+---
+ net/bridge/br_device.c    |    3 ++-
+ net/bridge/br_input.c     |    3 ++-
+ net/bridge/br_multicast.c |   41 ++++++++++++++++++++++++++++++++---------
+ net/bridge/br_private.h   |   11 +++++++++++
+ 4 files changed, 47 insertions(+), 11 deletions(-)
 
-Yes, that would be the result (except where explicitly disallowed).
-Unfortunately where such policy should ideally be defined is still up in
-the air.
-
-It's not a property of the hardware, but then it is arguably a property
-of the environment the bootloader has configured (like the stuff in the
-/chosen device tree node).
-
-Presuming that the usual reason not to reparent a mux is because other
-important clocks depend on it, the kernel might know enough to work out
-whether it's safe (unless of course there are other cores/threads in the
-SoC using the clock that Linux isn't aware of, which brings us back to
-it being a bootloader environment thing).
-
-> My apologies if this has already been answered, I haven't been
-> following this thread.
-
-No problem :)
-
-Cheers
-James
+diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
+index 2ef6678..69363bd 100644
+--- a/net/bridge/br_device.c
++++ b/net/bridge/br_device.c
+@@ -70,7 +70,8 @@ netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		}
+ 
+ 		mdst = br_mdb_get(br, skb, vid);
+-		if (mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb))
++		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
++		    br_multicast_querier_exists(br))
+ 			br_multicast_deliver(mdst, skb);
+ 		else
+ 			br_flood_deliver(br, skb, false);
+diff --git a/net/bridge/br_input.c b/net/bridge/br_input.c
+index 1b8b8b8..8c561c0 100644
+--- a/net/bridge/br_input.c
++++ b/net/bridge/br_input.c
+@@ -101,7 +101,8 @@ int br_handle_frame_finish(struct sk_buff *skb)
+ 		unicast = false;
+ 	} else if (is_multicast_ether_addr(dest)) {
+ 		mdst = br_mdb_get(br, skb, vid);
+-		if (mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) {
++		if ((mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb)) &&
++		    br_multicast_querier_exists(br)) {
+ 			if ((mdst && mdst->mglist) ||
+ 			    br_multicast_is_router(br))
+ 				skb2 = skb;
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 69af490..5b5b9c0 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1011,6 +1011,17 @@ static int br_ip6_multicast_mld2_report(struct net_bridge *br,
+ }
+ #endif
+ 
++static void br_multicast_update_querier_timer(struct net_bridge *br,
++					      unsigned long max_delay)
++{
++	if (!timer_pending(&br->multicast_querier_timer))
++		atomic64_set(&br->multicast_querier_delay_time,
++			     jiffies + max_delay);
++
++	mod_timer(&br->multicast_querier_timer,
++		  jiffies + br->multicast_querier_interval);
++}
++
+ /*
+  * Add port to router_list
+  *  list is maintained ordered by pointer value
+@@ -1061,11 +1072,11 @@ timer:
+ 
+ static void br_multicast_query_received(struct net_bridge *br,
+ 					struct net_bridge_port *port,
+-					int saddr)
++					int saddr,
++					unsigned long max_delay)
+ {
+ 	if (saddr)
+-		mod_timer(&br->multicast_querier_timer,
+-			  jiffies + br->multicast_querier_interval);
++		br_multicast_update_querier_timer(br, max_delay);
+ 	else if (timer_pending(&br->multicast_querier_timer))
+ 		return;
+ 
+@@ -1093,8 +1104,6 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 	    (port && port->state == BR_STATE_DISABLED))
+ 		goto out;
+ 
+-	br_multicast_query_received(br, port, !!iph->saddr);
+-
+ 	group = ih->group;
+ 
+ 	if (skb->len == sizeof(*ih)) {
+@@ -1118,6 +1127,8 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 			    IGMPV3_MRC(ih3->code) * (HZ / IGMP_TIMER_SCALE) : 1;
+ 	}
+ 
++	br_multicast_query_received(br, port, !!iph->saddr, max_delay);
++
+ 	if (!group)
+ 		goto out;
+ 
+@@ -1174,8 +1185,6 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 	    (port && port->state == BR_STATE_DISABLED))
+ 		goto out;
+ 
+-	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr));
+-
+ 	if (skb->len == sizeof(*mld)) {
+ 		if (!pskb_may_pull(skb, sizeof(*mld))) {
+ 			err = -EINVAL;
+@@ -1196,6 +1205,9 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		max_delay = mld2q->mld2q_mrc ? MLDV2_MRC(ntohs(mld2q->mld2q_mrc)) : 1;
+ 	}
+ 
++	br_multicast_query_received(br, port, !ipv6_addr_any(&ip6h->saddr),
++				    max_delay);
++
+ 	if (!group)
+ 		goto out;
+ 
+@@ -1642,6 +1654,8 @@ void br_multicast_init(struct net_bridge *br)
+ 	br->multicast_querier_interval = 255 * HZ;
+ 	br->multicast_membership_interval = 260 * HZ;
+ 
++	atomic64_set(&br->multicast_querier_delay_time, 0);
++
+ 	spin_lock_init(&br->multicast_lock);
+ 	setup_timer(&br->multicast_router_timer,
+ 		    br_multicast_local_router_expired, 0);
+@@ -1830,6 +1844,8 @@ unlock:
+ 
+ int br_multicast_set_querier(struct net_bridge *br, unsigned long val)
+ {
++	unsigned long max_delay;
++
+ 	val = !!val;
+ 
+ 	spin_lock_bh(&br->multicast_lock);
+@@ -1837,8 +1853,15 @@ int br_multicast_set_querier(struct net_bridge *br, unsigned long val)
+ 		goto unlock;
+ 
+ 	br->multicast_querier = val;
+-	if (val)
+-		br_multicast_start_querier(br);
++	if (!val)
++		goto unlock;
++
++	max_delay = br->multicast_query_response_interval;
++	if (!timer_pending(&br->multicast_querier_timer))
++		atomic64_set(&br->multicast_querier_delay_time,
++			     jiffies + max_delay);
++
++	br_multicast_start_querier(br);
+ 
+ unlock:
+ 	spin_unlock_bh(&br->multicast_lock);
+diff --git a/net/bridge/br_private.h b/net/bridge/br_private.h
+index 3be89b3..bbf5173 100644
+--- a/net/bridge/br_private.h
++++ b/net/bridge/br_private.h
+@@ -275,6 +275,7 @@ struct net_bridge
+ 	struct timer_list		multicast_router_timer;
+ 	struct timer_list		multicast_querier_timer;
+ 	struct timer_list		multicast_query_timer;
++	atomic64_t			multicast_querier_delay_time;
+ #endif
+ 
+ 	struct timer_list		hello_timer;
+@@ -501,6 +502,16 @@ static inline bool br_multicast_is_router(struct net_bridge *br)
+ 	       (br->multicast_router == 1 &&
+ 		timer_pending(&br->multicast_router_timer));
+ }
++
++static inline bool br_multicast_querier_exists(struct net_bridge *br)
++{
++	unsigned long delay_time =
++			atomic64_read(&br->multicast_querier_delay_time);
++
++	return time_is_before_jiffies(delay_time) &&
++	       (br->multicast_querier ||
++		timer_pending(&br->multicast_querier_timer));
++}
+ #else
+ static inline int br_multicast_rcv(struct net_bridge *br,
+ 				   struct net_bridge_port *port,
+-- 
+1.7.10.4
 
