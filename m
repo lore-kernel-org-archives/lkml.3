@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab3GYUJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 16:09:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756465Ab3GYUJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 16:09:45 -0400
-Date: Thu, 25 Jul 2013 13:09:39 -0700
-From: Zach Brown <zab@redhat.com>
-To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Dhaval Giani <dgiani@mozilla.com>, linux-kernel@vger.kernel.org,
-        tytso@mit.edu, tglek@mozilla.com, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130725200939.GH26554@lenny.home.zabbo.net>
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
- <20130725180545.GB15590@logfs.org>
+	id S1758137Ab3GYUKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 16:10:33 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:65197 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756465Ab3GYUKc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 16:10:32 -0400
+Date: Thu, 25 Jul 2013 22:10:27 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/9] perf tools: load kernel maps before using
+Message-ID: <20130725201027.GB16719@gmail.com>
+References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
+ <1374760890-30558-3-git-send-email-adrian.hunter@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130725180545.GB15590@logfs.org>
+In-Reply-To: <1374760890-30558-3-git-send-email-adrian.hunter@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > What about introducing a new flag, O_COMPR which tells the
-> > kernel, btw, we want this file to be decompressed if it can be. It
-> > can fallback to O_RDONLY or something like that? That gets rid of
-> > the chattr ugliness.
-> 
-> How is that different from chattr ugliness, which also comes down to a
-> single flag? ;)
 
-It's much worse because it's per fd instead of per inode.
+* Adrian Hunter <adrian.hunter@intel.com> wrote:
 
-The page cache, where the undisclosed complexity of this proposal lurks,
-where compressed and uncompressed cached copies of the data need to be
-managed somehow, is per inode.
+> In order to use kernel maps to read object code, those
+> maps must be adjusted to map to the dso file offset.
+> Because lazy-initialzation is used, that is not done
 
-- z
-(Hi Taras! :))
+s/initialization
+
+> until symbols are loaded.  However the maps are first
+> used by thread__find_addr_map() before symbols are loaded.
+> So this patch changes thread__find_addr() to "load" kernel
+> maps before using them.
+
+Thanks,
+
+	Ingo
