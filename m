@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757951Ab3GYTbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:31:43 -0400
-Received: from mout.web.de ([212.227.15.4]:53694 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756367Ab3GYTbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:31:41 -0400
-Date: Thu, 25 Jul 2013 21:31:26 +0200
-From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: bridge@lists.linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Cong Wang <amwang@redhat.com>, Adam Baker <linux@baker-net.org.uk>,
-        Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-Subject: Re: [PATCHv2] bridge: disable snooping if there is no querier
-Message-ID: <20130725193126.GC11914@Linus-Debian>
-References: <1374757046-12463-1-git-send-email-linus.luessing@web.de>
- <1374760580-12920-1-git-send-email-linus.luessing@web.de>
- <20130725090140.658f33f7@nehalam.linuxnetplumber.net>
+	id S1758106Ab3GYTcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:32:13 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:19721 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756625Ab3GYTcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 15:32:10 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18eC8GaScPqIMX39XJkutQKqkSET0W29bw=
+Date: Thu, 25 Jul 2013 15:31:35 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in
+ device tree janitoring / cleanup?]
+Message-ID: <20130725193135.GT23879@titan.lakedaemon.net>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130725090140.658f33f7@nehalam.linuxnetplumber.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:+J1H3M0bH8anQLSyCFuxQXnZl4Qk9tUi1ZJMFPNWV+Vi8y9PmZ3
- jl8OU+zkHtmJMO3qYXjxBiNwalqJqY5wh3xNWenTDEId7EKniym7fmBdm/Z73yCnjg5ncV1
- W2dXRB2l4VMzG0r2Kr5b5smKuRbxn+70dhrd7ANwqKLgJQNo/WlwAH3pOLDyF3g0ezbbF1W
- EWzAonHQ3J3BGXFWjhoiw==
+In-Reply-To: <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:01:40AM -0700, Stephen Hemminger wrote:
-> On Thu, 25 Jul 2013 15:56:20 +0200
-> Linus Lüssing <linus.luessing@web.de> wrote:
+On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
+> On Thu, Jul 25, 2013 at 11:09 AM, Olof Johansson <olof@lixom.net> wrote:
+
+> > One problem that needs to be solved is obviously how a binding
+> > graduates from tentative to locked. This work isn't going to be very
+> > interesting to most people, I suspect. Think standards committee type
+> > work.
 > 
-> >  
-> > +static void br_multicast_update_querier_timer(struct net_bridge *br,
-> > +					      unsigned long max_delay)
-> > +{
-> > +	if (!timer_pending(&br->multicast_querier_timer))
-> > +		atomic64_set(&br->multicast_querier_delay_time,
-> > +			     jiffies + max_delay);
-> > +
-> > +	mod_timer(&br->multicast_querier_timer,
-> > +		  jiffies + br->multicast_querier_interval);
-> > +}
-> > +
-> 
-> Isn't this test racing with timer expiration.
-> 
-> static void br_multicast_update_querier_timer(struct net_bridge *br,
-> 					      unsigned long max_delay)
-> {
-> 	if (!timer_pending(&br->multicast_querier_timer))
-> 		atomic64_set(&br->multicast_querier_delay_time,
-> 			     jiffies + max_delay);
-> What if timer completes here?
+> I think a time based stabilization period would be better than a
+> separate directory to apply bindings too. Or time plus periodic review
+> perhaps.
 
-If the timer completes here, then for one thing this means that
-the query message is very late (we were supposed to have heard
-at least two query messages by now, query messages should by
-default arrive every 125 seconds, we are at 255 seconds now).
+The only problem with a time-based versus separate directory is how do
+users who've downloaded the tree determine which bindings are stable?
+If they pull a tarball, or receive an SDK, there is most likely no git
+history attached.
 
-Which in most cases would have the reason of the original querier
-having left.
+I think the idea of a 'tentative' directory (or 'locked') is churnish,
+but necessary.  If I DL'd a tarball and had to type 'tentative' to get
+to the binding doc I wanted, that would be a pretty clear clue to be
+delicate about how I trust/use/plan with that binding.
 
-Not resetting the newly introduced
-br->multicast_querier_delay_time means that we won't switch back
-to flooding for a grace period (which we would have done if the
-timer had completed three lines earlier).
+thx,
 
-So the question is, does refraining from switching back to
-flooding for the grace period result in any packet loss in this
-scenario?
-
-Yes and no. Our current records from the previous multicast
-listener reports are still valid until
-br->multicast_membership_interval, so for another 5 seconds.
-So in the worst case we can have lost multicast packets for
-up to five seconds for some listeners.
-
-However, normal multicast routers would have the same issue for
-this five seconds period. So to me it looks like this is
-actually a bug in RFC2710, section 7.4 - Multicast Listener
-Interval: We and multicast routers wouldn't have that problem if
-it were 'plus (one _and a half_ Query Response Interval)' instead.
-
-So maybe we could just increase br->multicast_membership_interval
-from 260 to 265 with another patch?
-
-
-Despite from that I don't see which other issues could arise from
-the race you pointed out here.
-
-> 
-> 	mod_timer(&br->multicast_querier_timer,
-> 		  jiffies + br->multicast_querier_interval);
-> }
-> 
-> 
-> And another race if timer goes off?
-> 
-> static void br_multicast_update_querier_timer(struct net_bridge *br,
-> 					      unsigned long max_delay)
-> {
-> 	if (!timer_pending(&br->multicast_querier_timer))
-> 		atomic64_set(&br->multicast_querier_delay_time,
-> 			     jiffies + max_delay);
-> Timer fires here...?
-> 
-> 	mod_timer(&br->multicast_querier_timer,
-> 		  jiffies + br->multicast_querier_interval);
-> }
-
-Hm? Sorry, I don't quite see how this race differs from the one
-you pointed out before.
-
-
-Thanks for looking at this patch so far!
-
-Cheers, Linus
+Jason.
