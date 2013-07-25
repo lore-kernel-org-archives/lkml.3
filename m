@@ -1,228 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab3GYIXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:23:15 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:57895 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755121Ab3GYIXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:23:09 -0400
-From: zwu.kernel@gmail.com
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] xfs: introduce object readahead to log recovery
-Date: Thu, 25 Jul 2013 16:23:39 +0800
-Message-Id: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072508-5806-0000-0000-0000222F1B5C
+	id S1755328Ab3GYI0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:26:04 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:19996 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755098Ab3GYIZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:25:59 -0400
+X-IronPort-AV: E=Sophos;i="4.89,742,1367942400"; 
+   d="scan'208";a="8018419"
+Message-ID: <51F0E150.6080203@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 16:26:56 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: bo.li.liu@oracle.com
+CC: Andi Shyti <andi@etezian.org>, chris.mason@fusionio.com,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] btrfs: raid56: avoid double allocation
+References: <1374710980-5707-1-git-send-email-andi@etezian.org> <20130725081840.GB5202@localhost.localdomain>
+In-Reply-To: <20130725081840.GB5202@localhost.localdomain>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 16:23:53,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 16:23:54,
+	Serialize complete at 2013/07/25 16:23:54
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On 	thu, 25 Jul 2013 16:18:41 +0800, Liu Bo wrote:
+> On Thu, Jul 25, 2013 at 02:09:40AM +0200, Andi Shyti wrote:
+>> alloc_rbio frees already bbio and raid_map, therefore they don't
+>> need to be freed in case it fails
+>>
+> 
+> Looks good to me.
+> 
+> Reviewed-by: Liu Bo <bo.li.liu@oracle.com>
 
-  It can take a long time to run log recovery operation because it is
-single threaded and is bound by read latency. We can find that it took
-most of the time to wait for the read IO to occur, so if one object
-readahead is introduced to log recovery, it will obviously reduce the
-log recovery time.
+Dan Carpenter has fixed this problem in patch
+https://patchwork.kernel.org/patch/2831091/
 
-  In dirty log case as below:
-    data device: 0xfd10
-    log device: 0xfd10 daddr: 20480032 length: 20480
+Thanks
+Miao
 
-    log tail: 7941 head: 11077 state: <DIRTY>
-
-This dirty ratio is about 15%. I am trying to do tests in larger scale
-and dirtier filesystem environment.
-
-Log recovery time stat:
-
-            w/o this patch        w/ this patch
-  real         0m1.051s             0m0.965s
-  sys          0m0.033s             0m0.035s
-
-  iowait       0m1.018s             0m0.930s
-
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/xfs/xfs_log_recover.c | 131 +++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 127 insertions(+), 4 deletions(-)
-
-diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
-index 6fcc910a..f07e5e0 100644
---- a/fs/xfs/xfs_log_recover.c
-+++ b/fs/xfs/xfs_log_recover.c
-@@ -3107,6 +3107,121 @@ xlog_recover_free_trans(
- 	kmem_free(trans);
- }
- 
-+STATIC void
-+xlog_recover_buffer_ra_pass2(
-+	struct xlog                     *log,
-+	struct xlog_recover_item        *item)
-+{
-+	xfs_buf_log_format_t	*buf_f = item->ri_buf[0].i_addr;
-+	xfs_mount_t		*mp = log->l_mp;
-+
-+	if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
-+			buf_f->blf_len, buf_f->blf_flags)) {
-+		return;
-+	}
-+
-+	xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
-+			buf_f->blf_len, NULL);
-+}
-+
-+STATIC void
-+xlog_recover_inode_ra_pass2(
-+	struct xlog                     *log,
-+	struct xlog_recover_item        *item)
-+{
-+	xfs_inode_log_format_t	*in_f;
-+	xfs_mount_t		*mp = log->l_mp;
-+	int			error;
-+	int			need_free = 0;
-+
-+	if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
-+		in_f = item->ri_buf[0].i_addr;
-+	} else {
-+		in_f = kmem_alloc(sizeof(xfs_inode_log_format_t), KM_SLEEP);
-+		need_free = 1;
-+		error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
-+		if (error)
-+			goto error;
-+	}
-+
-+	if (xlog_check_buffer_cancelled(log, in_f->ilf_blkno,
-+					in_f->ilf_len, 0)) {
-+		goto error;
-+	}
-+
-+	xfs_buf_readahead(mp->m_ddev_targp, in_f->ilf_blkno,
-+			in_f->ilf_len, &xfs_inode_buf_ops);
-+
-+error:
-+	if (need_free)
-+		kmem_free(in_f);
-+}
-+
-+STATIC void
-+xlog_recover_dquot_ra_pass2(
-+	struct xlog			*log,
-+	struct xlog_recover_item	*item)
-+{
-+	xfs_mount_t		*mp = log->l_mp;
-+	xfs_buf_t		*bp;
-+	struct xfs_disk_dquot	*recddq;
-+	int			error;
-+	xfs_dq_logformat_t	*dq_f;
-+	uint			type;
-+
-+
-+	if (mp->m_qflags == 0)
-+		return;
-+
-+	recddq = item->ri_buf[1].i_addr;
-+	if (recddq == NULL)
-+		return;
-+	if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
-+		return;
-+
-+	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
-+	ASSERT(type);
-+	if (log->l_quotaoffs_flag & type)
-+		return;
-+
-+	dq_f = item->ri_buf[0].i_addr;
-+	ASSERT(dq_f);
-+	error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
-+			   "xlog_recover_dquot_ra_pass2 (log copy)");
-+	if (error)
-+		return;
-+	ASSERT(dq_f->qlf_len == 1);
-+
-+	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dq_f->qlf_blkno,
-+				   XFS_FSB_TO_BB(mp, dq_f->qlf_len), 0, &bp,
-+				   NULL);
-+	if (!error)
-+		xfs_buf_relse(bp);
-+}
-+
-+STATIC void
-+xlog_recover_ra_pass2(
-+	struct xlog			*log,
-+	struct xlog_recover_item	*item)
-+{
-+	switch (ITEM_TYPE(item)) {
-+	case XFS_LI_BUF:
-+		xlog_recover_buffer_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_INODE:
-+		xlog_recover_inode_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_DQUOT:
-+		xlog_recover_dquot_ra_pass2(log, item);
-+		break;
-+	case XFS_LI_EFI:
-+	case XFS_LI_EFD:
-+	case XFS_LI_QUOTAOFF:
-+	default:
-+		break;
-+	}
-+}
-+
- STATIC int
- xlog_recover_commit_pass1(
- 	struct xlog			*log,
-@@ -3140,10 +3255,14 @@ xlog_recover_commit_pass2(
- 	struct xlog			*log,
- 	struct xlog_recover		*trans,
- 	struct list_head		*buffer_list,
--	struct xlog_recover_item	*item)
-+	struct xlog_recover_item	*item,
-+	struct xlog_recover_item	*next_item)
- {
- 	trace_xfs_log_recover_item_recover(log, trans, item, XLOG_RECOVER_PASS2);
- 
-+	if (next_item)
-+		xlog_recover_ra_pass2(log, next_item);
-+
- 	switch (ITEM_TYPE(item)) {
- 	case XFS_LI_BUF:
- 		return xlog_recover_buffer_pass2(log, buffer_list, item);
-@@ -3181,7 +3300,7 @@ xlog_recover_commit_trans(
- 	int			pass)
- {
- 	int			error = 0, error2;
--	xlog_recover_item_t	*item;
-+	xlog_recover_item_t	*item, *next_item, *temp_item;
- 	LIST_HEAD		(buffer_list);
- 
- 	hlist_del(&trans->r_list);
-@@ -3190,14 +3309,18 @@ xlog_recover_commit_trans(
- 	if (error)
- 		return error;
- 
--	list_for_each_entry(item, &trans->r_itemq, ri_list) {
-+	list_for_each_entry_safe(item, temp_item, &trans->r_itemq, ri_list) {
- 		switch (pass) {
- 		case XLOG_RECOVER_PASS1:
- 			error = xlog_recover_commit_pass1(log, trans, item);
- 			break;
- 		case XLOG_RECOVER_PASS2:
-+			if (&temp_item->ri_list != &trans->r_itemq)
-+				next_item = temp_item;
-+			else
-+				next_item = NULL;
- 			error = xlog_recover_commit_pass2(log, trans,
--							  &buffer_list, item);
-+					  &buffer_list, item, next_item);
- 			break;
- 		default:
- 			ASSERT(0);
--- 
-1.7.11.7
+> 
+>> Signed-off-by: Andi Shyti <andi@etezian.org>
+>> ---
+>>  fs/btrfs/raid56.c | 6 ++----
+>>  1 file changed, 2 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
+>> index 0525e13..35fe775 100644
+>> --- a/fs/btrfs/raid56.c
+>> +++ b/fs/btrfs/raid56.c
+>> @@ -1687,11 +1687,9 @@ int raid56_parity_write(struct btrfs_root *root, struct bio *bio,
+>>  	struct blk_plug_cb *cb;
+>>  
+>>  	rbio = alloc_rbio(root, bbio, raid_map, stripe_len);
+>> -	if (IS_ERR(rbio)) {
+>> -		kfree(raid_map);
+>> -		kfree(bbio);
+>> +	if (IS_ERR(rbio))
+>>  		return PTR_ERR(rbio);
+>> -	}
+>> +
+>>  	bio_list_add(&rbio->bio_list, bio);
+>>  	rbio->bio_list_bytes = bio->bi_size;
+>>  
+>> -- 
+>> 1.8.3.2
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> -liubo
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
