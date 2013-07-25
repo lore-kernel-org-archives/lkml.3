@@ -1,157 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab3GYGRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:17:31 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:60078 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751705Ab3GYGR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:17:27 -0400
+	id S1755005Ab3GYGUx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:20:53 -0400
+Received: from nautica.notk.org ([91.121.71.147]:42822 "EHLO nautica.notk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753005Ab3GYGUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:20:49 -0400
+X-Greylist: delayed 382 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Jul 2013 02:20:49 EDT
+Date: Thu, 25 Jul 2013 08:14:11 +0200
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: David Miller <davem@davemloft.net>
+Cc: pebolle@tiscali.nl, lucho@ionkov.net, ericvh@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, andi@etezian.org,
+        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
+Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
+ function
+Message-ID: <20130725061411.GA8579@nautica>
+References: <1374497956-32104-1-git-send-email-andi@etezian.org>
+ <20130724.154646.2283898956674234778.davem@davemloft.net>
+ <1374707387.29835.23.camel@x61.thuisdomein>
+ <20130724.164514.393667021861625699.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <1374728103-17468-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1374728103-17468-4-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Thu, 25 Jul 2013 14:17:25 +0800
-Message-ID: <CAJd=RBDdsyNfMx-WtZTFX7HuPsRvcb1Mduv=dO-EnC+hMA+FRw@mail.gmail.com>
-Subject: Re: [PATCH 3/8] migrate: add hugepage migration code to migrate_pages()
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130724.164514.393667021861625699.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:54 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> This patch extends check_range() to handle vma with VM_HUGETLB set.
-> We will be able to migrate hugepage with migrate_pages(2) after
-> applying the enablement patch which comes later in this series.
->
-> Note that for larger hugepages (covered by pud entries, 1GB for
-> x86_64 for example), we simply skip it now.
->
-> Note that using pmd_huge/pud_huge assumes that hugepages are pointed to
-> by pmd/pud. This is not true in some architectures implementing hugepage
-> with other mechanisms like ia64, but it's OK because pmd_huge/pud_huge
-> simply return 0 in such arch and page walker simply ignores such hugepages.
->
-> ChangeLog v4:
->  - refactored check_hugetlb_pmd_range for better readability
->
-> ChangeLog v3:
->  - revert introducing migrate_movable_pages
->  - use isolate_huge_page
->
-> ChangeLog v2:
->  - remove unnecessary extern
->  - fix page table lock in check_hugetlb_pmd_range
->  - updated description and renamed patch title
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Andi Kleen <ak@linux.intel.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Hi,
 
->  mm/mempolicy.c | 42 +++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 37 insertions(+), 5 deletions(-)
->
-> diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
-> index 7431001..d96afc1 100644
-> --- v3.11-rc1.orig/mm/mempolicy.c
-> +++ v3.11-rc1/mm/mempolicy.c
-> @@ -512,6 +512,30 @@ static int check_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
->         return addr != end;
->  }
->
-> +static void check_hugetlb_pmd_range(struct vm_area_struct *vma, pmd_t *pmd,
-> +               const nodemask_t *nodes, unsigned long flags,
-> +                                   void *private)
-> +{
-> +#ifdef CONFIG_HUGETLB_PAGE
-> +       int nid;
-> +       struct page *page;
-> +
-> +       spin_lock(&vma->vm_mm->page_table_lock);
-> +       page = pte_page(huge_ptep_get((pte_t *)pmd));
-> +       nid = page_to_nid(page);
-> +       if (node_isset(nid, *nodes) == !!(flags & MPOL_MF_INVERT))
-> +               goto unlock;
-> +       /* With MPOL_MF_MOVE, we migrate only unshared hugepage. */
-> +       if (flags & (MPOL_MF_MOVE_ALL) ||
-> +           (flags & MPOL_MF_MOVE && page_mapcount(page) == 1))
-> +               isolate_huge_page(page, private);
-> +unlock:
-> +       spin_unlock(&vma->vm_mm->page_table_lock);
-> +#else
-> +       BUG();
-> +#endif
-> +}
-> +
->  static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->                 unsigned long addr, unsigned long end,
->                 const nodemask_t *nodes, unsigned long flags,
-> @@ -523,6 +547,11 @@ static inline int check_pmd_range(struct vm_area_struct *vma, pud_t *pud,
->         pmd = pmd_offset(pud, addr);
->         do {
->                 next = pmd_addr_end(addr, end);
-> +               if (pmd_huge(*pmd) && is_vm_hugetlb_page(vma)) {
-> +                       check_hugetlb_pmd_range(vma, pmd, nodes,
-> +                                               flags, private);
-> +                       continue;
-> +               }
->                 split_huge_page_pmd(vma, addr, pmd);
->                 if (pmd_none_or_trans_huge_or_clear_bad(pmd))
->                         continue;
-> @@ -544,6 +573,8 @@ static inline int check_pud_range(struct vm_area_struct *vma, pgd_t *pgd,
->         pud = pud_offset(pgd, addr);
->         do {
->                 next = pud_addr_end(addr, end);
-> +               if (pud_huge(*pud) && is_vm_hugetlb_page(vma))
-> +                       continue;
->                 if (pud_none_or_clear_bad(pud))
->                         continue;
->                 if (check_pmd_range(vma, pud, addr, next, nodes,
-> @@ -635,9 +666,6 @@ check_range(struct mm_struct *mm, unsigned long start, unsigned long end,
->                                 return ERR_PTR(-EFAULT);
->                 }
->
-> -               if (is_vm_hugetlb_page(vma))
-> -                       goto next;
-> -
->                 if (flags & MPOL_MF_LAZY) {
->                         change_prot_numa(vma, start, endvma);
->                         goto next;
-> @@ -986,7 +1014,11 @@ static void migrate_page_add(struct page *page, struct list_head *pagelist,
->
->  static struct page *new_node_page(struct page *page, unsigned long node, int **x)
->  {
-> -       return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
-> +       if (PageHuge(page))
-> +               return alloc_huge_page_node(page_hstate(compound_head(page)),
-> +                                       node);
-> +       else
-> +               return alloc_pages_exact_node(node, GFP_HIGHUSER_MOVABLE, 0);
->  }
->
->  /*
-> @@ -1016,7 +1048,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->                 err = migrate_pages(&pagelist, new_node_page, dest,
->                                         MIGRATE_SYNC, MR_SYSCALL);
->                 if (err)
-> -                       putback_lru_pages(&pagelist);
-> +                       putback_movable_pages(&pagelist);
->         }
->
->         return err;
-> --
-> 1.8.3.1
->
+David Miller wrote on Wed, Jul 24, 2013 :
+> From: Paul Bolle <pebolle@tiscali.nl>
+> Date: Thu, 25 Jul 2013 01:09:47 +0200
+> > After this patch one might as well revert the rest of commit
+> > 80b45261a0b2 ("9P: Add cancelled() to the transport functions.") too. It
+> > seems the entire cancelled callback stuff is now pointless.
+> > 
+> > As I already asked in https://lkml.org/lkml/2013/7/15/87 : did that
+> > commit "forget to actually hook up rdma_cancelled() into
+> > p9_rdma_trans()?". It does look so to me.
+> 
+> If nobody responds to this in the next day or so, feel free to send me
+> a patch which rips it all out.
+> 
+> No response means they don't care, and neither, therefore, should we.
+
+Well, I do care - but I couldn't find where the trans->cancelled member
+function was supposed to be called anyway...
+So adding it to the struct and fixing the warning is well and fine, but
+if it's still never called in the end I don't see much point and there's
+nothing to test.
+
+It's on my loooong todo list of things to look at, but as no other reply
+came and the patch was never picked up it kind of dropped in priority.
+I'll have another look next week
+
+I guess the worst that could happen would be submitting the
+rdma_cancelled function again when this is sorted out :)
+
+Regards,
+-- 
+Dominique Martinet
