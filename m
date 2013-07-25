@@ -1,177 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab3GYNwU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:52:20 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:36227 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755882Ab3GYNwQ (ORCPT
+	id S1756061Ab3GYNxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:53:45 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:40168 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755814Ab3GYNxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:52:16 -0400
+	Thu, 25 Jul 2013 09:53:42 -0400
+Date: Thu, 25 Jul 2013 14:53:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130725135319.GF9858@sirena.org.uk>
+References: <1624911.6TtmtVmU1T@avalon>
+ <CACRpkdazPX3EbVbLvXQZh0oRBpHoWPK+EkFO75v9zfAXSPCkHA@mail.gmail.com>
+ <1408178.cxAUTUGJc5@avalon>
+ <20130725131556.GD9858@sirena.org.uk>
+ <CACRpkdY-mdLbMY16aMqR9Jwu8qs9q4KNyxOxnwhXiGrAAxpKjg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130725134227.GT3421@sgi.com>
-References: <1373594635-131067-1-git-send-email-holt@sgi.com>
-	<1373594635-131067-5-git-send-email-holt@sgi.com>
-	<CAE9FiQW1s2UwCY6OjzD3+2wG8SjCr1QyCpajhZbk_XhmnFQW4Q@mail.gmail.com>
-	<20130725022543.GR3421@sgi.com>
-	<CAE9FiQV7Va8iAESoXsPCFJo8-jeA=-7SW2b9BmKnUrVonLV1=g@mail.gmail.com>
-	<20130725134227.GT3421@sgi.com>
-Date: Thu, 25 Jul 2013 06:52:15 -0700
-X-Google-Sender-Auth: wod5VkvBGZqQik8bN-EHGy2apic
-Message-ID: <CAE9FiQUkbWNK7unUYJVCvdPypa0TkfybSm-Jtv917MNV=vok6w@mail.gmail.com>
-Subject: Re: [RFC 4/4] Sparse initialization of struct page array.
-From: Yinghai Lu <yinghai@kernel.org>
-To: Robin Holt <holt@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Nate Zimmer <nzimmer@sgi.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux MM <linux-mm@kvack.org>, Rob Landley <rob@landley.net>,
-        Mike Travis <travis@sgi.com>,
-        Daniel J Blueman <daniel@numascale-asia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CpYjv1NmbuaesVen"
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY-mdLbMY16aMqR9Jwu8qs9q4KNyxOxnwhXiGrAAxpKjg@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control
+ its IRQ domain ?
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 6:42 AM, Robin Holt <holt@sgi.com> wrote:
-> On Thu, Jul 25, 2013 at 05:50:57AM -0700, Yinghai Lu wrote:
->> On Wed, Jul 24, 2013 at 7:25 PM, Robin Holt <holt@sgi.com> wrote:
->> >>
->> >> How about holes that is not in memblock.reserved?
->> >>
->> >> before this patch:
->> >> free_area_init_node/free_area_init_core/memmap_init_zone
->> >> will mark all page in node range to Reserved in struct page, at first.
->> >>
->> >> but those holes is not mapped via kernel low mapping.
->> >> so it should be ok not touch "struct page" for them.
->> >>
->> >> Now you only mark reserved for memblock.reserved at first, and later
->> >> mark {memblock.memory} - { memblock.reserved} to be available.
->> >> And that is ok.
->> >>
->> >> but should split that change to another patch and add some comment
->> >> and change log for the change.
->> >> in case there is some user like UEFI etc do weird thing.
->> >
->> > Nate and I talked this over today.  Sorry for the delay, but it was the
->> > first time we were both free.  Neither of us quite understands what you
->> > are asking for here.  My interpretation is that you would like us to
->> > change the use of the PageReserved flag such that during boot, we do not
->> > set the flag at all from memmap_init_zone, and then only set it on pages
->> > which, at the time of free_all_bootmem, have been allocated/reserved in
->> > the memblock allocator.  Is that correct?  I will start to work that up
->> > on the assumption that is what you are asking for.
->>
->> Not exactly.
->>
->> your change should be right, but there is some subtle change about
->> holes handling.
->>
->> before mem holes between memory ranges in memblock.memory, get struct page,
->> and initialized with to Reserved in memmap_init_zone.
->> Those holes is not in memory.reserved, with your patches, those hole's
->> struct page
->> will still have all 0.
->>
->> Please separate change about set page to reserved according to memory.reserved
->> to another patch.
->
->
-> Just want to make sure this is where you want me to go.  Here is my
-> currently untested patch.  Is that what you were expecting to have done?
-> One thing I don't like about this patch is it seems to slow down boot in
-> my simulator environment.  I think I am going to look at restructuring
-> things a bit to see if I can eliminate that performance penalty.
-> Otherwise, I think I am following your directions.
 
->
-> From bdd2fefa59af18f283af6f066bc644ddfa5c7da8 Mon Sep 17 00:00:00 2001
-> From: Robin Holt <holt@sgi.com>
-> Date: Thu, 25 Jul 2013 04:25:15 -0500
-> Subject: [RFC -v2-pre2 4/5] ZZZ Only SegPageReserved() on memblock reserved
->  pages.
+--CpYjv1NmbuaesVen
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-yes.
+On Thu, Jul 25, 2013 at 03:21:35PM +0200, Linus Walleij wrote:
+> On Thu, Jul 25, 2013 at 3:15 PM, Mark Brown <broonie@kernel.org> wrote:
 
->
-> ---
->  include/linux/mm.h |  2 ++
->  mm/nobootmem.c     |  3 +++
->  mm/page_alloc.c    | 18 +++++++++++-------
->  3 files changed, 16 insertions(+), 7 deletions(-)
->
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index e0c8528..b264a26 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1322,6 +1322,8 @@ static inline void adjust_managed_page_count(struct page *page, long count)
->         totalram_pages += count;
->  }
->
-> +extern void reserve_bootmem_region(unsigned long start, unsigned long end);
-> +
->  /* Free the reserved page into the buddy system, so it gets managed. */
->  static inline void __free_reserved_page(struct page *page)
->  {
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index 2159e68..0840af2 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -117,6 +117,9 @@ static unsigned long __init free_low_memory_core_early(void)
->         phys_addr_t start, end, size;
->         u64 i;
->
-> +       for_each_reserved_mem_region(i, &start, &end)
-> +               reserve_bootmem_region(start, end);
-> +
->         for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
->                 count += __free_memory_core(start, end);
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 048e166..3aa30b7 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -698,7 +698,7 @@ static void free_one_page(struct zone *zone, struct page *page, int order,
->  }
->
->  static void __init_single_page(unsigned long pfn, unsigned long zone,
-> -                              int nid, int reserved)
-> +                              int nid, int page_count)
->  {
->         struct page *page = pfn_to_page(pfn);
->         struct zone *z = &NODE_DATA(nid)->node_zones[zone];
-> @@ -708,12 +708,9 @@ static void __init_single_page(unsigned long pfn, unsigned long zone,
->         init_page_count(page);
->         page_mapcount_reset(page);
->         page_nid_reset_last(page);
-> -       if (reserved) {
-> -               SetPageReserved(page);
-> -       } else {
-> -               ClearPageReserved(page);
-> -               set_page_count(page, 0);
-> -       }
-> +       ClearPageReserved(page);
-> +       set_page_count(page, page_count);
-> +
->         /*
->          * Mark the block movable so that blocks are reserved for
->          * movable at startup. This will force kernel allocations
-> @@ -741,6 +738,13 @@ static void __init_single_page(unsigned long pfn, unsigned long zone,
->  #endif
->  }
->
-> +void reserve_bootmem_region(unsigned long start, unsigned long end)
-> +{
-> +       for (; start < end; start++)
-> +               if (pfn_valid(start))
-> +                       SetPageReserved(pfn_to_page(start));
-> +}
-> +
->  static bool free_pages_prepare(struct page *page, unsigned int order)
->  {
->         int i;
-> --
-> 1.8.2.1
->
+> > Are the interrupts in a contiguous block in the controller so you can
+> > just pass around the controller and a base number?
+
+> That works with platform data and in-kernel structures, but AFAICT
+> device tree has no such "bulk" concept but expects you to list
+> each and every line individually in cases like this.
+
+It works fine with domains as well - the domains all have a hwirq number
+which is local to the domain context and doesn't correspond to a Linux
+interrupt number.  If you can say "the X interrupts in this domain
+starting at Y correspond to these X GPIOs" then you should be able to
+cope.  Hopefully.
+
+--CpYjv1NmbuaesVen
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8S3MAAoJELSic+t+oim94EYQAIYI56pkZM0keswLufghLH27
+nxhbKPacDImJHnFaCLtW0w+lPSPq7n8TSxK/UovBJPi1WS4CJKA/SXG1IbFQuQ8s
+TkqH24paaviGXq5Vnh7PznKG4zV8gskPQjPct7en7hobEKiJBOis6x69263zhKjZ
+UfCGryusLzYw3X2vujK4HSfvFuVWNYpxxEf5O2sWTzo1qpbd9i8Hc6Jf6xr4DeBG
+f0r8TZQF9X1uxSFdpCWyg3R5MATwFkf/CwkH/wJ0gWztyQV25s15dntUpsr4OzCo
+5HXuAi1T+bsCIxg4bhkTOI6eL93Q52UQ0FdgLGInNPnu29b+uM7DGR5LN3JXSUsX
+rAqcCpxZ+SFUgj+7dMT2tsKhiMzZZPyKIvXJG1nUyTUJTnKhmx2gM0gYVQyTOLrx
+Vhu7weXTNIDq3+xzcH32egP5HYRfSqd3MD+aDTpYH0downc6xoSv8g6dSjSNSar8
+JG9IeSeX7Z9Uu42dwTrrcM8ajbegwAEk4jKMM0/jpPUH/bjzJrbroxX7KbIodQOz
+LfH0Z6XaLjHc3/oBgXGYeWaOv/5mzRBPI6y0zASldim5Ce+QP5yzbms1R9YyA5N1
+beQnQMj6d6iF+43+CfRGemBOXEaMIIp5Ce/hPyCb3miyNyB6r0PsaxDrb+J20sMi
+tKkcCbTRWOff+tx+ia5f
+=AoxK
+-----END PGP SIGNATURE-----
+
+--CpYjv1NmbuaesVen--
