@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117Ab3GYPMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:12:17 -0400
-Received: from www.linutronix.de ([62.245.132.108]:59565 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3GYPMP (ORCPT
+	id S1756165Ab3GYPMi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:12:38 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:40343 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3GYPMg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:12:15 -0400
-Message-ID: <51F1404B.7070207@linutronix.de>
-Date: Thu, 25 Jul 2013 17:12:11 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	Thu, 25 Jul 2013 11:12:36 -0400
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <djbw@fb.com>
-Subject: Re: [PATCH 15/16] dmaengine: add transfered member to dma_async_tx_descriptor
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-16-git-send-email-bigeasy@linutronix.de> <51F13CEB.7030408@metafoo.de>
-In-Reply-To: <51F13CEB.7030408@metafoo.de>
-X-Enigmail-Version: 1.5.1
+In-Reply-To: <20130725144118.GA5412@linutronix.de>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+	<1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
+	<CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
+	<20130725144118.GA5412@linutronix.de>
+Date: Thu, 25 Jul 2013 10:12:34 -0500
+Message-ID: <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
+Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to am33xx_driver_data
+From: Bin Liu <binmlist@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 04:57 PM, Lars-Peter Clausen wrote:
-> I'm not sure that this will work. Once you've submitted the descriptor it is
-> owned by the dmaengine driver and you are not allowed to dereference it
-> anymore since the dmaengine driver might free the memory at any time. You
-> should only reference the descriptor by the cookie returned by submit().
+Sebastian,
 
-I see. But it can't be reused before calling the callback if it is
-going to call the callback, right?
-So if this is a no-no, I'm left with an additional argument to the
-complete callback?
+On Thu, Jul 25, 2013 at 9:41 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> * Bin Liu | 2013-07-23 13:23:57 [-0500]:
+>
+>>Hi Sebastian,
+> Hi Liu,
+>
+>>On Mon, Jul 22, 2013 at 1:09 PM, Sebastian Andrzej Siewior <
+>>bigeasy@linutronix.de> wrote:
+>>
+>>> This patch renames the type struct from ti81xx_driver_data to
+>>> am33xx_driver_data since it is not used for ti81xx anymore. The EOI
+>>> member is also removed since the am33xx SoC does not have such register.
+>>> The interrupt is acknowledged by writting into the stat register.
+>>>
+>>I guess the EOI register is removed from the TRM because AM33xx does not
+>>use it, there is no need to write to it to acknowledge. It does not hurt to
+>>write to it though since the register still exists, it just does nothing, I
+>>guess.
+>
+> Is it really there or was it never there and it has been added to TRM by
+> accident?
+The EOI register IS in the USB subsystem of AM33xx, but the SoC does
+not use it because it uses level triggering for USB interrupt.
 
-> - Lars
+>
+>>But I am not sure if it is a good idea to remove eoi from the musb_dsps
+>>driver. If the intension is to merge the support for other SoC, such as
+>>AM35xx, AM18xx, then EOI handling might be still needed. I just don't know
+>>how those devices use EOI.
+>
+> If one of the architectures gets added which need an EOI then the offset
+> can be 0 and the EOI will happen only if it is != 0.
+This patch cleaned up the use of EOI. Do you mean EOI handling will be
+added back with condition EOI offset != 0, when the support of new
+device which uses EIO is added?
 
-Sebastian
+Regards,
+-Bin.
+
+>
+>>
+>>Regards,
+>>-Bin.
+>
+> Sebastian
