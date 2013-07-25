@@ -1,126 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab3GYGdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:33:12 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:42555 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753142Ab3GYGdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:33:08 -0400
+	id S1752618Ab3GYGkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:40:47 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:40238 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751436Ab3GYGko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:40:44 -0400
+X-IronPort-AV: E=Sophos;i="4.89,741,1367942400"; 
+   d="scan'208";a="8016998"
+Message-ID: <51F0C8ED.3070200@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 14:42:53 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-In-Reply-To: <1374728103-17468-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1374728103-17468-6-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Thu, 25 Jul 2013 14:33:06 +0800
-Message-ID: <CAJd=RBCzdiV1gDY_ySjNqZkyUMuG54grqtZqrOEcjvocRu2uuQ@mail.gmail.com>
-Subject: Re: [PATCH 5/8] mbind: add hugepage migration code to mbind()
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 02/21] memblock, numa: Introduce flag into memblock.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-3-git-send-email-tangchen@cn.fujitsu.com> <20130723190928.GH21100@mtj.dyndns.org> <51EF4196.8050303@cn.fujitsu.com> <20130724155458.GA20377@mtj.dyndns.org>
+In-Reply-To: <20130724155458.GA20377@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 14:38:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 14:38:28,
+	Serialize complete at 2013/07/25 14:38:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:55 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> This patch extends do_mbind() to handle vma with VM_HUGETLB set.
-> We will be able to migrate hugepage with mbind(2) after
-> applying the enablement patch which comes later in this series.
+On 07/24/2013 11:54 PM, Tejun Heo wrote:
+> On Wed, Jul 24, 2013 at 10:53:10AM +0800, Tang Chen wrote:
+>>> Let's please drop "with" and do we really need to print full 16
+>>> digits?
+>>
+>> Sure, will remove "with". But I think printing out the full flags is batter.
+>> The output seems more tidy.
 >
-> ChangeLog v3:
->  - revert introducing migrate_movable_pages
->  - added alloc_huge_page_noerr free from ERR_VALUE
->
-> ChangeLog v2:
->  - updated description and renamed patch title
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Andi Kleen <ak@linux.intel.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
-Acked-by: Hillf Danton <dhillf@gmail.com>
+> I mean, padding is fine but you can just print out 4 or even 2 digits
+> and will be fine for the foreseeable future.
 
->  include/linux/hugetlb.h |  3 +++
->  mm/hugetlb.c            | 14 ++++++++++++++
->  mm/mempolicy.c          |  4 +++-
->  3 files changed, 20 insertions(+), 1 deletion(-)
->
-> diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
-> index c7a14a4..cae5539 100644
-> --- v3.11-rc1.orig/include/linux/hugetlb.h
-> +++ v3.11-rc1/include/linux/hugetlb.h
-> @@ -267,6 +267,8 @@ struct huge_bootmem_page {
->  };
->
->  struct page *alloc_huge_page_node(struct hstate *h, int nid);
-> +struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-> +                               unsigned long addr, int avoid_reserve);
->
->  /* arch callback */
->  int __init alloc_bootmem_huge_page(struct hstate *h);
-> @@ -380,6 +382,7 @@ static inline pgoff_t basepage_index(struct page *page)
->  #else  /* CONFIG_HUGETLB_PAGE */
->  struct hstate {};
->  #define alloc_huge_page_node(h, nid) NULL
-> +#define alloc_huge_page_noerr(v, a, r) NULL
->  #define alloc_bootmem_huge_page(h) NULL
->  #define hstate_file(f) NULL
->  #define hstate_sizelog(s) NULL
-> diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
-> index 506d195..f6d8d67 100644
-> --- v3.11-rc1.orig/mm/hugetlb.c
-> +++ v3.11-rc1/mm/hugetlb.c
-> @@ -1195,6 +1195,20 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->         return page;
->  }
->
-> +/*
-> + * alloc_huge_page()'s wrapper which simply returns the page if allocation
-> + * succeeds, otherwise NULL. This function is called from new_vma_page(),
-> + * where no ERR_VALUE is expected to be returned.
-> + */
-> +struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-> +                               unsigned long addr, int avoid_reserve)
-> +{
-> +       struct page *page = alloc_huge_page(vma, addr, avoid_reserve);
-> +       if (IS_ERR(page))
-> +               page = NULL;
-> +       return page;
-> +}
-> +
->  int __weak alloc_bootmem_huge_page(struct hstate *h)
->  {
->         struct huge_bootmem_page *m;
-> diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
-> index d96afc1..4a03c14 100644
-> --- v3.11-rc1.orig/mm/mempolicy.c
-> +++ v3.11-rc1/mm/mempolicy.c
-> @@ -1183,6 +1183,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
->                 vma = vma->vm_next;
->         }
->
-> +       if (PageHuge(page))
-> +               return alloc_huge_page_noerr(vma, address, 1);
->         /*
->          * if !vma, alloc_page_vma() will use task or system default policy
->          */
-> @@ -1293,7 +1295,7 @@ static long do_mbind(unsigned long start, unsigned long len,
->                                         (unsigned long)vma,
->                                         MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
->                         if (nr_failed)
-> -                               putback_lru_pages(&pagelist);
-> +                               putback_movable_pages(&pagelist);
->                 }
->
->                 if (nr_failed && (flags & MPOL_MF_STRICT))
-> --
-> 1.8.3.1
->
+OK. In this patch-set, there won't more than two flags. I think one 
+hexadecimal
+number is enough. I'll print two digits for the foreseeable future.
+
+Thanks.
+
