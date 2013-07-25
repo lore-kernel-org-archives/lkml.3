@@ -1,132 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab3GYO7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:59:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47229 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994Ab3GYO7o (ORCPT
+	id S1756336Ab3GYPAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:00:42 -0400
+Received: from webmail.solarflare.com ([12.187.104.25]:15922 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755457Ab3GYPAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:59:44 -0400
-Message-ID: <1374764373.5374.42.camel@fourier>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-From: Kamal Mostafa <kamal@canonical.com>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, James Hogan <james@albanarts.com>,
-        Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Date: Thu, 25 Jul 2013 07:59:33 -0700
-In-Reply-To: <20130725144625.GO5939@phenom.ffwll.local>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	 <CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
-	 <9012759.Alzqtdvh5b@vostro.rjw.lan> <2218913.HKGjJcYT1G@vostro.rjw.lan>
-	 <1374763397.5374.30.camel@fourier>
-	 <20130725144625.GO5939@phenom.ffwll.local>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-ylRWJXiniZUHIcCQ9j2b"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 25 Jul 2013 11:00:40 -0400
+Message-ID: <1374764435.3058.4.camel@bwh-desktop.uk.level5networks.com>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Ming Lei <tom.leiming@gmail.com>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, Oliver Neukum <oliver@neukum.org>,
+        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
+	<louis@asix.com.tw>,
+        "Allan Chou" <allan@asix.com.tw>
+Date: Thu, 25 Jul 2013 16:00:35 +0100
+In-Reply-To: <CACVXFVNre5SsJhaVqFNRcop7ahqxabWqHZkjBZccj1ZqOAUZ9A@mail.gmail.com>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+	 <1374512879.4990.19.camel@edumazet-glaptop>
+	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
+	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
+	 <1374518841.4990.26.camel@edumazet-glaptop>
+	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	 <1374559827.4990.143.camel@edumazet-glaptop>
+	 <CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
+	 <1374729058.23313.8.camel@edumazet-glaptop>
+	 <CACVXFVNyFk0Zpi4tC0ENiq8RcrtrjYW-Dhs+A56+Pw4BKm8y8A@mail.gmail.com>
+	 <1374750101.23313.16.camel@edumazet-glaptop>
+	 <CACVXFVNre5SsJhaVqFNRcop7ahqxabWqHZkjBZccj1ZqOAUZ9A@mail.gmail.com>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-20036.004
+X-TM-AS-Result: No--17.961000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2013-07-25 at 22:52 +0800, Ming Lei wrote:
+[...]
+> On Thu, Jul 25, 2013 at 9:34 PM, Ben Hutchings
+> <bhutchings@solarflare.com> wrote:
+> >
+> > Not that I have any experience with USB drivers, but perhaps
+> > usb_sg_init()?
+> 
+> USB SG library doesn't support submitting SG URB asynchronously, but that isn't
+> a big deal.  The problem is that many USB host controllers can't build
+> one single
+> packet from two buffers, what is why USB stack requires size of all
+> buffers(except
+> for last one) in sg list can be divided by max endpoint packet
+> size.(1024 for usbnet)
 
---=-ylRWJXiniZUHIcCQ9j2b
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ugh.  Maybe the USB stack should allow drivers to find out about and
+take advantage of a more flexible host controller.  Sounds like it could
+be a big job, though.
 
-On Thu, 2013-07-25 at 16:46 +0200, Daniel Vetter wrote:
-> On Thu, Jul 25, 2013 at 07:43:17AM -0700, Kamal Mostafa wrote:
-> > On Thu, 2013-07-25 at 15:00 +0200, Rafael J. Wysocki wrote:
-> > > On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
-> > > > On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
-> > > > > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> =
-wrote:
-> > > > > >
-> > > > > > Linus, do you want me to send a pull request reverting 8c5bd7a =
-and efaa14c?
-> > > > >=20
-> > > > > Yes, but let's wait a while. Not because I think we'll fix the pr=
-oblem
-> > > > > (hey, miracles might happen), but because I think it would be use=
-ful
-> > > > > to couple the reverts with information about the particular machi=
-nes
-> > > > > that broke (and the people who reported it). So that when we
-> > > > > inevitably try again, we can perhaps get some testing effort with
-> > > > > those machines/people.
-> > > > >=20
-> > > > > It doesn't seem to be a show-stopped for a large number of people=
-, so
-> > > > > there's no huge hurry. I'd suggest doing the revert just in time =
-for
-> > > > > rc3, but waiting until then to gather info about people who see
-> > > > > breakage.
-> > > > >=20
-> > > > > Sound like a plan?
-> > > >=20
-> > > > Yes, it does.
-> > >=20
-> > > OK, time to revert I guess.
-> > >=20
-> > > James, Kamal, Steven, J=C3=B6rg, Martin, Kalle, please check if the a=
-pppended patch
-> > > fixes the backlight for you.
-> >=20
-> > Yes, this revert patch does re-enable backlight control for the affecte=
-d
-> > Dell XPS13 models.
->=20
-> Are these the same models that neeed the special quirk to not write
-> PCH_PWM_ENABLE? Or do they need both?
+Ben. (glad not to be using any USB net devices)
 
-Hi Daniel-
-
-Yes, these are the same models (Dell XPS13) that need the PCH_PWM_ENABLE
-quirk, but that's not related to this ACPI problem...
-
-All of the XPS13 models still need the PCH_PWM_ENABLE quirk which is now
-present in mainline (e85843b "drm/i915: quirk no PCH_PWM_ENABLE for Dell
-XPS13 backlight").
-
-Separately from that, some of the XPS13 models were _also_ adversely
-affected (as were some other machines) by the ACPI changes that are
-about to be reverted.
-
- -Kamal
-
-
---=-ylRWJXiniZUHIcCQ9j2b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAABCAAGBQJR8T1VAAoJEHqwmdxYrXhZ3BcP/361yS+awomMVvSAQK0NnkC2
-a1MbWxrlK1Ck1KXvkk0Xx5JZrQ7X+Kfsjc8apDaX+WAYmAnymzAH5NmMF7PEKQaP
-mtJ6RGZOAO6K/I/pZpNGTPXcUic+r51E/dkjlfFTe1kDYGVXe5T76urx1UoeCemS
-kX+WfsJZYHxfA/1yXAgyDK0wcAwSDNgcT9jL0KE7EWLwawmzrdXNAiF3HgKSSyz3
-EjMSAAVLj8dMeitQE1V9oIH3d5Ig43aWHI7D1wi2ZFGRn2Q7XZ5ORm5AvZVqGa+9
-JOMjIdZ//4HXcgLxv5n4UHSRxNn50Mm15NWSjNhsfx+z3nbZcRi/2V9lglB2yhhk
-bT4QxkfmYwlmYbEoSRZk6bTjeJxAeCli+BLYyDmHyiXmhz19uPbs+N5JLh4DlBea
-0/O+1pemW3Z+8qGO88F+mSgsxip1nEbcqtuuY40NHfWquPo9R6LXRgTXSy3g3tsh
-AvZ5KXQsIteLCNgv2veiBV1GUhLaLtwdw63vSgsVpsLYZDUfmVqzNi+9O9bUVRpI
-oOdmTg1TlyVzIJH4pQaskxbi0o/J+CgyWt0KAHKiCel5bmbdExotrao870A5yk9b
-5IOBVMMxtyLka12QcjxSvup01OTt+7DxbHMChWMxWpVMvQqW9h7Bd47rpRV8/UJ1
-ZeNL1Df3eRW6lK9DX/NV
-=wJNb
------END PGP SIGNATURE-----
-
---=-ylRWJXiniZUHIcCQ9j2b--
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
