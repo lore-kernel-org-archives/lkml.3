@@ -1,79 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab3GYTQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:16:33 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:32957 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab3GYTQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:16:30 -0400
-Date: Thu, 25 Jul 2013 20:16:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20130725191604.GQ9858@sirena.org.uk>
-References: <20130725111428.419ee278@armhf>
+	id S1757962Ab3GYTRk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:17:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39157 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756883Ab3GYTRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 15:17:39 -0400
+Date: Thu, 25 Jul 2013 22:17:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: <balbi@ti.com>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 8/9] usb: phy: tegra: Use DT helpers for phy_type
+Message-ID: <20130725191734.GB26858@radagast>
+Reply-To: <balbi@ti.com>
+References: <20130725190023.GA26858@radagast>
+ <1374779476-16025-1-git-send-email-ttynkkynen@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uXqDGoDRqNOsF677"
+	protocol="application/pgp-signature"; boundary="jho1yZJdad60DJr+"
 Content-Disposition: inline
-In-Reply-To: <20130725111428.419ee278@armhf>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <1374779476-16025-1-git-send-email-ttynkkynen@nvidia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] ASoc: kirkwood: merge kirkwood-i2c and kirkwood-dma
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---uXqDGoDRqNOsF677
+--jho1yZJdad60DJr+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 25, 2013 at 11:14:28AM +0200, Jean-Francois Moine wrote:
-> To avoid the declaration of a 'kirkwood-pcm-audio' device in the DT,
-> this patch merges the kirkwood-i2c and kirkwood-dma drivers into one
-> module.
+Hi,
 
-This seems mostly fine, though it may be best to keep kirkwood-dma as a
-separate module for the benefit of the S/PDIF support when it gets added
-- I had a look at the implementation Russell has and it looks like it
-can be added as a separate interface.
+On Thu, Jul 25, 2013 at 10:11:16PM +0300, Tuomas Tynkkynen wrote:
+> Use the new of_usb_get_phy_mode helper function for parsing phy_type
+> from the device tree.
+>=20
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Here's the version with switch().
 
-> -	.platform_name = "kirkwood-pcm-audio",
-> +	.platform_name = "kirkwood-i2s",
+I guess you misunderstood me, I have applied your original patch,
+conversion to switch is a separate patch since it has nothing to do with
+use usb_of_get_phy_mode() ;-)
 
-Should the name be done as dev_name() for the interface (I don't know if
-there is ever more than one)?
+an interdiff between this and the previous version should be enough to
+generate a patch converting to switch.
 
---uXqDGoDRqNOsF677
+--=20
+balbi
+
+--jho1yZJdad60DJr+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR8XlxAAoJELSic+t+oim96KkQAI1ZCIRwUCURAg2+SoDxHgqq
-rLrcVNf2D7a9yMw1z3muobdHvvIkXaFnQBaszyOP/eHjEfoZap7ilyCU+SB0Ho6o
-5BzPG8HKGrBiiDovAxmVvqwJgLpi34mMhKd01Ay+z+Y2GvQdx7hiUpcGL05F8yKg
-Yi9JxORKtAWp/NGDGzlZ3EKGE/vHudX28WeNYwrecC5sJOssW2Qov/mYgBvBWdyH
-z8Geb9778/FpVaDmOh9e5YdnSy6fEL3fOXn0DfptKySEwKvkfC5tkOoKb8ikh1ad
-SoFW/xpjMNHb5HaLuV6ta4cUQ8QK3JlZhlZOKcOSKcGPhrAOAnEb4FVa0KbNME2j
-5xwXFe6CAVkqy+FPxD6b5YE2pmDrw7LJwYXXf89rZJ3EiF4Ldapfk1NVa5tKRN4m
-2D3wfX7eVWGJNJC/N8sIpQRrIv0uMqfH4spuu0IDgxiCNBrvhrxGNZbwCswCatf9
-i2VFe6bbKh4eT8iep7gWL3QHk6Z0JonV54duulaYLf5ZX2eSjh+JXJeGyydkacII
-ir3R1q+ERGBcXZvtHz9L8P4uxq1jYfg2s0N7g3c6qVO12hbiOBN2UScuVv8/rqxa
-01KK7td9OxzDcLForwe09qU1p1eCmfKgLeTGCctof15LAMkQX7Gq1ZSQqbh+rNO6
-+rDMcuBTCpdO/zsrqkFt
-=UvGR
+iQIcBAEBAgAGBQJR8XnOAAoJEIaOsuA1yqREy6EP/RlqIabyzy8tkrEUsCg+v2Dr
+JqNaCNU7JHvwNWD7qredlTh6ahfYqmY1gq6AxsB3V+ooXZaVIft/GUEJMxpuv7Nb
+6GWcs2O6dABkwnpF2P52pRtKxjuQKHWNKP6QkZcPaprgVUIjgxfkfx53z7HPuIW8
+nGDU08T/MElUfz33wGoQ9oI0eRDuIKcJGOScOed60q7jU9F18+I82kpYq9NOrCYv
+Ekseg+b2qV3LXIgX9H3VrlkNM0dwRjvP5Ren9pYCrWpaoHi3k27swjPcnx3Plwdu
+c2eOeKQ+/FLgpL3ga2/Si13pf1RCs4wO8Bjr+4HpfbR7tHur/tmDK1CkHIF7K7GU
+H01fyxT/GbqgdU0aS5n90+AY9UbX/G6/2STM9oblA+D3F6bdFKYxO03IeAE3a1dP
+KyOstBbfxW4qr4j6VYCUNEoVcknDOUocLT6jLfNUSiIJAHLQTLqLLAOSGqSzk19n
+wSqYUBHgtT9j2rW17AlV6WdzMMucV3Q7bYEaHYiE79pXGZ5PoRXDDlKqXaSeeUvU
+gr43wwId7p4rbqOC0M4Kpa1AtUuFYVJ+UX9gx1OBXIfo/hGePO44FLsJw5rsFWjB
+LV0fI8GIbKHc5WIewBW+8ea4PksYN39lXz9tyg1PlEUl/do6DFTbGj6zhzFJEDH+
+z6f/eQWstFV44bvGjb9q
+=D/q1
 -----END PGP SIGNATURE-----
 
---uXqDGoDRqNOsF677--
+--jho1yZJdad60DJr+--
