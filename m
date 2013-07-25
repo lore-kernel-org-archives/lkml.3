@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab3GYThK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:37:10 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:40185 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754806Ab3GYThH convert rfc822-to-8bit (ORCPT
+	id S1757059Ab3GYTho (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:37:44 -0400
+Received: from longford.logfs.org ([213.229.74.203]:59911 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756430Ab3GYThm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:37:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>
-Cc: Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-Date: Thu, 25 Jul 2013 21:47:10 +0200
-Message-ID: <9711528.yIoJy2i1iX@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAAG0J98i-XaO_3sPWsnyEGDX77T=WiNf1K=YMhe5DvkwKotorw@mail.gmail.com>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <2218913.HKGjJcYT1G@vostro.rjw.lan> <CAAG0J98i-XaO_3sPWsnyEGDX77T=WiNf1K=YMhe5DvkwKotorw@mail.gmail.com>
+	Thu, 25 Jul 2013 15:37:42 -0400
+Date: Thu, 25 Jul 2013 14:05:45 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Dhaval Giani <dgiani@mozilla.com>
+Cc: linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
+        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
+Message-ID: <20130725180545.GB15590@logfs.org>
+References: <1374699833.7083.2.camel@localhost>
+ <20130724233628.GD3641@logfs.org>
+ <51F14136.30409@mozilla.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51F14136.30409@mozilla.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 25, 2013 08:14:08 PM James Hogan wrote:
-> On 25 July 2013 14:00, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
-> >> On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
-> >> > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> > >
-> >> > > Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
-> >> >
-> >> > Yes, but let's wait a while. Not because I think we'll fix the problem
-> >> > (hey, miracles might happen), but because I think it would be useful
-> >> > to couple the reverts with information about the particular machines
-> >> > that broke (and the people who reported it). So that when we
-> >> > inevitably try again, we can perhaps get some testing effort with
-> >> > those machines/people.
-> >> >
-> >> > It doesn't seem to be a show-stopped for a large number of people, so
-> >> > there's no huge hurry. I'd suggest doing the revert just in time for
-> >> > rc3, but waiting until then to gather info about people who see
-> >> > breakage.
-> >> >
-> >> > Sound like a plan?
-> >>
-> >> Yes, it does.
+On Thu, 25 July 2013 11:16:06 -0400, Dhaval Giani wrote:
 > >
-> > OK, time to revert I guess.
-> >
-> > James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
-> > fixes the backlight for you.
-> 
-> Works for me
+> >If you want to follow some other approach where userspace has one
+> >interface to write the compressed data to a file and some other
+> >interface to read the file uncompressed, you are likely in a world of
+> >pain.
+> Why? If it is going to only be a few applications who know the file
+> is compressed, and read it to get decompressed data, why would it be
+> painful?
 
-Great!
+It would likely require an ABI extention.  Your immediate pain would
+be to get past a wall of NAK when you propose the extention.  You have
+to make a rather convincing case that the ABI extention cannot cause
+VFS or filesystem maintainers future pain in some dark cornercase.
 
-James, Kamal, Jörg, thanks for confirmations.  I'll tentatively put the revert
-into linux-next in a while.
+Just because the one application you care about only wants to use
+compression on write-once files doesn't prevent the next person from
+abusing the new ABI.  Such abuse should be strictly limited,
+preferrably impossible.
 
-Other people who experienced problems with backlight in 3.11-rc2, please let me
-know whether or not the revert works for you too if you can.
+I am not saying that I object.  Just warning you to brace yourself for
+impact.
 
-Rafael
+> What about introducing a new flag, O_COMPR which tells the
+> kernel, btw, we want this file to be decompressed if it can be. It
+> can fallback to O_RDONLY or something like that? That gets rid of
+> the chattr ugliness.
 
+How is that different from chattr ugliness, which also comes down to a
+single flag? ;)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jörn
+
+--
+/* Keep these two variables together */
+int bar;
