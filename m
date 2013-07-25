@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3GYEz6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:55:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751106Ab3GYEzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752628Ab3GYEzw (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 25 Jul 2013 00:55:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43194 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab3GYEzv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 00:55:51 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
 Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
@@ -15,103 +15,148 @@ Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
         Naoya Horiguchi <nao.horiguchi@gmail.com>
-Subject: [PATCH 5/8] mbind: add hugepage migration code to mbind()
-Date: Thu, 25 Jul 2013 00:55:00 -0400
-Message-Id: <1374728103-17468-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 2/8] soft-offline: use migrate_pages() instead of migrate_huge_page()
+Date: Thu, 25 Jul 2013 00:54:57 -0400
+Message-Id: <1374728103-17468-3-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch extends do_mbind() to handle vma with VM_HUGETLB set.
-We will be able to migrate hugepage with mbind(2) after
-applying the enablement patch which comes later in this series.
+Currently migrate_huge_page() takes a pointer to a hugepage to be
+migrated as an argument, instead of taking a pointer to the list of
+hugepages to be migrated. This behavior was introduced in commit
+189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
+because until now hugepage migration is enabled only for soft-offlining
+which migrates only one hugepage in a single call.
+
+But the situation will change in the later patches in this series
+which enable other users of page migration to support hugepage migration.
+They can kick migration for both of normal pages and hugepages
+in a single call, so we need to go back to original implementation
+which uses linked lists to collect the hugepages to be migrated.
+
+With this patch, soft_offline_huge_page() switches to use migrate_pages(),
+and migrate_huge_page() is not used any more. So let's remove it.
 
 ChangeLog v3:
- - revert introducing migrate_movable_pages
- - added alloc_huge_page_noerr free from ERR_VALUE
-
-ChangeLog v2:
- - updated description and renamed patch title
+ - Merged with another cleanup patch (4/10 in previous version)
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Acked-by: Andi Kleen <ak@linux.intel.com>
 Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
 ---
- include/linux/hugetlb.h |  3 +++
- mm/hugetlb.c            | 14 ++++++++++++++
- mm/mempolicy.c          |  4 +++-
- 3 files changed, 20 insertions(+), 1 deletion(-)
+ include/linux/migrate.h |  5 -----
+ mm/memory-failure.c     | 15 ++++++++++++---
+ mm/migrate.c            | 28 ++--------------------------
+ 3 files changed, 14 insertions(+), 34 deletions(-)
 
-diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
-index c7a14a4..cae5539 100644
---- v3.11-rc1.orig/include/linux/hugetlb.h
-+++ v3.11-rc1/include/linux/hugetlb.h
-@@ -267,6 +267,8 @@ struct huge_bootmem_page {
- };
+diff --git v3.11-rc1.orig/include/linux/migrate.h v3.11-rc1/include/linux/migrate.h
+index a405d3dc..6fe5214 100644
+--- v3.11-rc1.orig/include/linux/migrate.h
++++ v3.11-rc1/include/linux/migrate.h
+@@ -41,8 +41,6 @@ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *, enum migrate_mode);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason);
+-extern int migrate_huge_page(struct page *, new_page_t x,
+-		unsigned long private, enum migrate_mode mode);
  
- struct page *alloc_huge_page_node(struct hstate *h, int nid);
-+struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-+				unsigned long addr, int avoid_reserve);
+ extern int fail_migrate_page(struct address_space *,
+ 			struct page *, struct page *);
+@@ -62,9 +60,6 @@ static inline void putback_movable_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+ 		unsigned long private, enum migrate_mode mode, int reason)
+ 	{ return -ENOSYS; }
+-static inline int migrate_huge_page(struct page *page, new_page_t x,
+-		unsigned long private, enum migrate_mode mode)
+-	{ return -ENOSYS; }
  
- /* arch callback */
- int __init alloc_bootmem_huge_page(struct hstate *h);
-@@ -380,6 +382,7 @@ static inline pgoff_t basepage_index(struct page *page)
- #else	/* CONFIG_HUGETLB_PAGE */
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-+#define alloc_huge_page_noerr(v, a, r) NULL
- #define alloc_bootmem_huge_page(h) NULL
- #define hstate_file(f) NULL
- #define hstate_sizelog(s) NULL
-diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
-index 506d195..f6d8d67 100644
---- v3.11-rc1.orig/mm/hugetlb.c
-+++ v3.11-rc1/mm/hugetlb.c
-@@ -1195,6 +1195,20 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
- 	return page;
+ static inline int migrate_prep(void) { return -ENOSYS; }
+ static inline int migrate_prep_local(void) { return -ENOSYS; }
+diff --git v3.11-rc1.orig/mm/memory-failure.c v3.11-rc1/mm/memory-failure.c
+index 2c13aa7..af6f61c 100644
+--- v3.11-rc1.orig/mm/memory-failure.c
++++ v3.11-rc1/mm/memory-failure.c
+@@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	int ret;
+ 	unsigned long pfn = page_to_pfn(page);
+ 	struct page *hpage = compound_head(page);
++	LIST_HEAD(pagelist);
+ 
+ 	/*
+ 	 * This double-check of PageHWPoison is to avoid the race with
+@@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
+ 	unlock_page(hpage);
+ 
+ 	/* Keep page count to indicate a given hugepage is isolated. */
+-	ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
+-				MIGRATE_SYNC);
+-	put_page(hpage);
++	list_move(&hpage->lru, &pagelist);
++	ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
++				MIGRATE_SYNC, MR_MEMORY_FAILURE);
+ 	if (ret) {
+ 		pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 			pfn, ret, page->flags);
++		/*
++		 * We know that soft_offline_huge_page() tries to migrate
++		 * only one hugepage pointed to by hpage, so we need not
++		 * run through the pagelist here.
++		 */
++		putback_active_hugepage(hpage);
++		if (ret > 0)
++			ret = -EIO;
+ 	} else {
+ 		set_page_hwpoison_huge_page(hpage);
+ 		dequeue_hwpoisoned_huge_page(hpage);
+diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
+index b44a067..3ec47d3 100644
+--- v3.11-rc1.orig/mm/migrate.c
++++ v3.11-rc1/mm/migrate.c
+@@ -979,6 +979,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 
+ 	unlock_page(hpage);
+ out:
++	if (rc != -EAGAIN)
++		putback_active_hugepage(hpage);
+ 	put_page(new_hpage);
+ 	if (result) {
+ 		if (rc)
+@@ -1066,32 +1068,6 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+ 	return rc;
  }
  
-+/*
-+ * alloc_huge_page()'s wrapper which simply returns the page if allocation
-+ * succeeds, otherwise NULL. This function is called from new_vma_page(),
-+ * where no ERR_VALUE is expected to be returned.
-+ */
-+struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
-+				unsigned long addr, int avoid_reserve)
-+{
-+	struct page *page = alloc_huge_page(vma, addr, avoid_reserve);
-+	if (IS_ERR(page))
-+		page = NULL;
-+	return page;
-+}
-+
- int __weak alloc_bootmem_huge_page(struct hstate *h)
- {
- 	struct huge_bootmem_page *m;
-diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
-index d96afc1..4a03c14 100644
---- v3.11-rc1.orig/mm/mempolicy.c
-+++ v3.11-rc1/mm/mempolicy.c
-@@ -1183,6 +1183,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
- 		vma = vma->vm_next;
- 	}
- 
-+	if (PageHuge(page))
-+		return alloc_huge_page_noerr(vma, address, 1);
- 	/*
- 	 * if !vma, alloc_page_vma() will use task or system default policy
- 	 */
-@@ -1293,7 +1295,7 @@ static long do_mbind(unsigned long start, unsigned long len,
- 					(unsigned long)vma,
- 					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
- 			if (nr_failed)
--				putback_lru_pages(&pagelist);
-+				putback_movable_pages(&pagelist);
- 		}
- 
- 		if (nr_failed && (flags & MPOL_MF_STRICT))
+-int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
+-		      unsigned long private, enum migrate_mode mode)
+-{
+-	int pass, rc;
+-
+-	for (pass = 0; pass < 10; pass++) {
+-		rc = unmap_and_move_huge_page(get_new_page, private,
+-						hpage, pass > 2, mode);
+-		switch (rc) {
+-		case -ENOMEM:
+-			goto out;
+-		case -EAGAIN:
+-			/* try again */
+-			cond_resched();
+-			break;
+-		case MIGRATEPAGE_SUCCESS:
+-			goto out;
+-		default:
+-			rc = -EIO;
+-			goto out;
+-		}
+-	}
+-out:
+-	return rc;
+-}
+-
+ #ifdef CONFIG_NUMA
+ /*
+  * Move a list of individual pages
 -- 
 1.8.3.1
 
