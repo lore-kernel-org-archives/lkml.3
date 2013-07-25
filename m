@@ -1,159 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755115Ab3GYJQR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:16:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753142Ab3GYJQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:16:12 -0400
-Date: Thu, 25 Jul 2013 12:15:09 +0300
-From: Gleb Natapov <gleb@redhat.com>
-To: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Cc: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-Message-ID: <20130725091509.GA22735@redhat.com>
-References: <20130722061631.24737.75508.sendpatchset@codeblue>
- <20130722062016.24737.54554.sendpatchset@codeblue>
- <20130723150748.GC6029@redhat.com>
- <51EFA24E.2060103@linux.vnet.ibm.com>
- <20130724103907.GF16400@redhat.com>
- <51EFC1D4.9060800@linux.vnet.ibm.com>
- <20130724120647.GG16400@redhat.com>
- <51EFCA42.5020009@linux.vnet.ibm.com>
- <51F0ED31.3040200@linux.vnet.ibm.com>
+	id S1755197Ab3GYJQy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:16:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56534 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3GYJQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 05:16:51 -0400
+Date: Thu, 25 Jul 2013 10:16:42 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: Shawn Guo <shawn.guo@linaro.org>, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, lgirdwood@gmail.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, s.trumtrar@pengutronix.de
+Message-ID: <20130725091642.GT9858@sirena.org.uk>
+References: <1374723198-9716-1-git-send-email-b38343@freescale.com>
+ <20130725084042.GA19368@S2101-09.ap.freescale.net>
+ <20130725085809.GA10765@Robin-OptiPlex-780>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="B/Lq21QA8i0npSXU"
 Content-Disposition: inline
-In-Reply-To: <51F0ED31.3040200@linux.vnet.ibm.com>
+In-Reply-To: <20130725085809.GA10765@Robin-OptiPlex-780>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
-> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
-> >On 07/24/2013 05:36 PM, Gleb Natapov wrote:
-> >>On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
-> >>>On 07/24/2013 04:09 PM, Gleb Natapov wrote:
-> >>>>On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
-> >>>>>On 07/23/2013 08:37 PM, Gleb Natapov wrote:
-> >>>>>>On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
-> >>>>>>>+static void kvm_lock_spinning(struct arch_spinlock *lock,
-> >>>>>>>__ticket_t want)
-> >>>>>[...]
-> >>>>>>>+
-> >>>>>>>+    /*
-> >>>>>>>+     * halt until it's our turn and kicked. Note that we do safe
-> >>>>>>>halt
-> >>>>>>>+     * for irq enabled case to avoid hang when lock info is
-> >>>>>>>overwritten
-> >>>>>>>+     * in irq spinlock slowpath and no spurious interrupt occur
-> >>>>>>>to save us.
-> >>>>>>>+     */
-> >>>>>>>+    if (arch_irqs_disabled_flags(flags))
-> >>>>>>>+        halt();
-> >>>>>>>+    else
-> >>>>>>>+        safe_halt();
-> >>>>>>>+
-> >>>>>>>+out:
-> >>>>>>So here now interrupts can be either disabled or enabled. Previous
-> >>>>>>version disabled interrupts here, so are we sure it is safe to
-> >>>>>>have them
-> >>>>>>enabled at this point? I do not see any problem yet, will keep
-> >>>>>>thinking.
-> >>>>>
-> >>>>>If we enable interrupt here, then
-> >>>>>
-> >>>>>
-> >>>>>>>+    cpumask_clear_cpu(cpu, &waiting_cpus);
-> >>>>>
-> >>>>>and if we start serving lock for an interrupt that came here,
-> >>>>>cpumask clear and w->lock=null may not happen atomically.
-> >>>>>if irq spinlock does not take slow path we would have non null value
-> >>>>>for lock, but with no information in waitingcpu.
-> >>>>>
-> >>>>>I am still thinking what would be problem with that.
-> >>>>>
-> >>>>Exactly, for kicker waiting_cpus and w->lock updates are
-> >>>>non atomic anyway.
-> >>>>
-> >>>>>>>+    w->lock = NULL;
-> >>>>>>>+    local_irq_restore(flags);
-> >>>>>>>+    spin_time_accum_blocked(start);
-> >>>>>>>+}
-> >>>>>>>+PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
-> >>>>>>>+
-> >>>>>>>+/* Kick vcpu waiting on @lock->head to reach value @ticket */
-> >>>>>>>+static void kvm_unlock_kick(struct arch_spinlock *lock,
-> >>>>>>>__ticket_t ticket)
-> >>>>>>>+{
-> >>>>>>>+    int cpu;
-> >>>>>>>+
-> >>>>>>>+    add_stats(RELEASED_SLOW, 1);
-> >>>>>>>+    for_each_cpu(cpu, &waiting_cpus) {
-> >>>>>>>+        const struct kvm_lock_waiting *w =
-> >>>>>>>&per_cpu(lock_waiting, cpu);
-> >>>>>>>+        if (ACCESS_ONCE(w->lock) == lock &&
-> >>>>>>>+            ACCESS_ONCE(w->want) == ticket) {
-> >>>>>>>+            add_stats(RELEASED_SLOW_KICKED, 1);
-> >>>>>>>+            kvm_kick_cpu(cpu);
-> >>>>>>What about using NMI to wake sleepers? I think it was discussed, but
-> >>>>>>forgot why it was dismissed.
-> >>>>>
-> >>>>>I think I have missed that discussion. 'll go back and check. so
-> >>>>>what is the idea here? we can easily wake up the halted vcpus that
-> >>>>>have interrupt disabled?
-> >>>>We can of course. IIRC the objection was that NMI handling path is very
-> >>>>fragile and handling NMI on each wakeup will be more expensive then
-> >>>>waking up a guest without injecting an event, but it is still
-> >>>>interesting
-> >>>>to see the numbers.
-> >>>>
-> >>>
-> >>>Haam, now I remember, We had tried request based mechanism. (new
-> >>>request like REQ_UNHALT) and process that. It had worked, but had some
-> >>>complex hacks in vcpu_enter_guest to avoid guest hang in case of
-> >>>request cleared.  So had left it there..
-> >>>
-> >>>https://lkml.org/lkml/2012/4/30/67
-> >>>
-> >>>But I do not remember performance impact though.
-> >>No, this is something different. Wakeup with NMI does not need KVM
-> >>changes at
-> >>all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
-> >>
-> >
-> >True. It was not NMI.
-> >just to confirm, are you talking about something like this to be tried ?
-> >
-> >apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
-> 
-> When I started benchmark, I started seeing
-> "Dazed and confused, but trying to continue" from unknown nmi error
-> handling.
-> Did I miss anything (because we did not register any NMI handler)? or
-> is it that spurious NMIs are trouble because we could get spurious NMIs
-> if next waiter already acquired the lock.
-There is a default NMI handler that tries to detect the reason why NMI
-happened (which is no so easy on x86) and prints this message if it
-fails. You need to add logic to detect spinlock slow path there. Check
-bit in waiting_cpus for instance.
 
-> 
-> (note: I tried sending APIC_DM_REMRD IPI directly, which worked fine
-> but hypercall way of handling still performed well from the results I
-> saw).
-You mean better? This is strange. Have you ran guest with x2apic?
+--B/Lq21QA8i0npSXU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
---
-			Gleb.
+On Thu, Jul 25, 2013 at 04:58:10PM +0800, Robin Gong wrote:
+
+> Shawn, I notice there are the same descriptions in the many docs of regul=
+ator
+> drivers, can we consider the 'regulators' child node as one of special pr=
+operty
+> ? Sorry for missing the information in the last mail..=20
+
+No, it's just people using the wrong language to refer to them.
+
+--B/Lq21QA8i0npSXU
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8Oz3AAoJELSic+t+oim9pl0P/0ziiHxb3VVKALnnVHZ9wboR
+hZSj4fFsRHRg96NdExXIsTweGVa7HanQRNjPQC0Ww1tJjJDvHpQK21gMuNtM9Pdb
+nzoAAsMd42oxinTorwgT6eVfSYcQs5qV8EeNILJp6LnYXOZCB9B2lVYwZO0zi9vy
+5D9XFO+jO/svAsaz2IkIrbl7EftUqJT/JD0nSk+GBta4B4rRNZxW93eLJXSN0gH7
+RA+bs84Cma3Ceg0lRExN4ENECf32T5Rvzi1PiXjSYCr7F6qkCY4kJhNUywvmbUpz
+udYBea4fuY+aHXTBKGBp6WmDZOHc25cd5bggr9eUjUIBvARAvs/AooqDwqm3o6Z1
+cJvEC/cWEQSWk5DJzWwdqDYaoWpOfTL1y82uHx97sygrgHmlp5T4mYKq1Ta6YRJu
+VtOyIhZLZQkpgB1wwNLYYqGXhVNuzGFyQA6UMC8C/Q5K7PCTYJegxhp7ffRIetmL
+RNu8aQMRRz6CuZksbqvyxrf+XqdNcaFjxW+dOpY1sZcvZFxUAYF/3Te+FE//IRwb
+5X4J0Z/WprWLY+LLRY4piUrSt2/Nx06G9ubB+wgCAiDMRk8G3FIFNfQMZFdQ0MBl
+Oh9U192t1FjepPb2pVYTkaVRD2eNIgEhW6wA2XSqLI/WgP0Z5cHYivRrKsbYq+gH
+ocgu5Z9fqgje7gEB7g0N
+=f0sI
+-----END PGP SIGNATURE-----
+
+--B/Lq21QA8i0npSXU--
