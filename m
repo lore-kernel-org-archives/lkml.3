@@ -1,162 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754350Ab3GYDJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:09:20 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57414 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab3GYDJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:09:10 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
-X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
-Message-ID: <51F0969C.8000001@jp.fujitsu.com>
-Date: Thu, 25 Jul 2013 12:08:12 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754596Ab3GYDJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:09:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:30506 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753484Ab3GYDJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:09:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,739,1367996400"; 
+   d="scan'208";a="375643134"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: RE: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
+ ACPI IPMI transfers
+Thread-Topic: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
+ ACPI IPMI transfers
+Thread-Index: AQHOh3wQ2mCt+ewJ/06ynzhP2RS7T5lz+KeAgAC35UA=
+Date: Thu, 25 Jul 2013 03:09:35 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88024357A9@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com>
+ <cover.1374566394.git.lv.zheng@intel.com>
+ <970a8a7108e4c95ce09e34eee03eb5731645729f.1374566394.git.lv.zheng@intel.com>
+ <1520893.BbRK6T3F73@vostro.rjw.lan>
+In-Reply-To: <1520893.BbRK6T3F73@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Hush Bensen <hush.bensen@gmail.com>
-CC: Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <x86@kernel.org>, <dave@sr71.net>,
-        <kosaki.motohiro@gmail.com>, <tangchen@cn.fujitsu.com>,
-        <vasilis.liaskovitis@profitbricks.com>
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com> <51F077AE.7080307@gmail.com>
-In-Reply-To: <51F077AE.7080307@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6P39w1V000985
 
-(2013/07/25 9:56), Hush Bensen wrote:
-> On 07/25/2013 12:02 AM, Toshi Kani wrote:
->> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
->>> On 07/24/2013 04:45 AM, Toshi Kani wrote:
->>>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
->>>>> * Toshi Kani <toshi.kani@hp.com> wrote:
->>>>>
->>>>>>> Could we please also fix it to never crash the kernel, even if stupid
->>>>>>> ranges are provided?
->>>>>> Yes, this probe interface can be enhanced to verify the firmware
->>>>>> information before adding a given memory address.  However, such change
->>>>>> would interfere its test use of "fake" hotplug, which is only the known
->>>>>> use-case of this interface on x86.
->>>>> Not crashing the kernel is not a novel concept even for test interfaces...
->>>> Agreed.
->>>>
->>>>> Where does the possible crash come from - from using invalid RAM ranges,
->>>>> right? I.e. on x86 to fix the crash we need to check the RAM is present in
->>>>> the e820 maps, is marked RAM there, and is not already registered with the
->>>>> kernel, or so?
->>>> Yes, the crash comes from using invalid RAM ranges.  How to check if the
->>>> RAM is present is different if the system supports hotplug or not.
->>> Could you explain different methods to check the RAM is present if the
->>> system supports hotplkug or not?
->> e820 and UEFI memory descriptor tables are the boot-time interfaces.
->> These interfaces are not required to reflect any run-time changes.
->>
->> ACPI memory device objects can be used at both boot-time and run-time,
->> which reflect any run-time changes.  But they are optional to implement.
->> They typically are not implemented unless the system supports hotplug.
->>
->>>>>> In order to verify if a given memory address is enabled at run-time (as
->>>>>> opposed to boot-time), we need to check with ACPI memory device objects
->>>>>> on x86.  However, system vendors tend to not implement memory device
->>>>>> objects unless their systems support memory hotplug.  Dave Hansen is
->>>>>> using this interface for his testing as a way to fake a hotplug event on
->>>>>> a system that does not support memory hotplug.
->>>>> All vendors implement e820 maps for the memory present at boot time.
->>>> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
->>>> new memory added.  Here is a quote from ACPI spec.
->>>>
->>>> ===
->>>> 15.1 INT 15H, E820H - Query System Address Map
->>>>    :
->>>> The memory map conveyed by this interface is not required to reflect any
->>>> changes in available physical memory that have occurred after the BIOS
->>>> has initially passed control to the operating system. For example, if
->>>> memory is added dynamically, this interface is not required to reflect
->>>> the new system memory configuration.
->>>> ===
->>>>
->>>> By definition, the "probe" interface is used for the kernel to recognize
->>>> a new memory added at run-time.  So, it should check ACPI memory device
->>>> objects (which represents run-time state) for the verification.  On x86,
->>>> however, ACPI also sends a hotplug event to the kernel, which triggers
->>>> the kernel to recognize the new physical memory properly.  Hence, users
->>>> do not need this "probe" interface.
->>>>
->>>>> How is the testing done by Dave Hansen? If it's done by booting with less
->>>>> RAM than available (via say the mem=1g boot parameter), and then
->>>>> hot-adding some of the missing RAM, then this could be made safe via the
->>>>> e820 maps and by consultig the physical memory maps (to avoid double
->>>>> registry), right?
->>>> If we focus on this test scenario on a system that does not support
->>>> hotplug, yes, I agree that we can check with e820 since it is safe to
->>>> assume that the system has no change after boot.  IOW, it is unsafe to
->>>> check with e820 if the system supports hotplug, but there is no use in
->>>> this interface for testing if the system supports hotplug.  So, this may
->>>> be a good idea.
->>>>
->>>> Dave, is this how you are testing?  Do you always specify a valid memory
->>>> address for your testing?
->>>>
->>>>> How does the hotplug event based approach solve double adds? Relies on the
->>>>> hardware not sending a hot-add event twice for the same memory area or for
->>>>> an invalid memory area, or does it include fail-safes and double checks as
->>>>> well to avoid double adds and adding invalid memory? If yes then that
->>>>> could be utilized here as well.
->>>> In high-level, here is how ACPI memory hotplug works:
->>>>
->>>> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
->>>> hot-added.
->>>> 2. The kernel is notified, and verifies if the new memory device object
->>>> has not been attached by any handler yet.
->>>> 3. The memory handler is called, and obtains a new memory range from the
->>>> ACPI memory device object.
->>>> 4. The memory handler calls add_memory() with the new address range.
->>>>
->>>> The above step 1-4 proceeds automatically within the kernel.  No user
->>>> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
->>>> and step 3 gets a valid address range from the firmware directly.  Step
->>>> 4 is basically the same as the "probe" interface, but with all the
->>>> verification up front, this step is safe.
->>> This is hot-added part, could you also explain how ACPI memory hotplug
->>> works for hot-remove?
->> Sure.  Here is high-level.
->>
->> 1. ACPI sends a hotplug event to an ACPI memory device object that is
->> requested to hot-remove.
->> 2. The kernel is notified, and verifies if the memory device object is
->> attached by a handler.
->> 3. The memory handler is called (which is being attached), and obtains
->> its memory range.
->> 4. The memory handler calls remove_memory() with the address range.
->> 5. The kernel calls eject method of the ACPI memory device object.
->
-> If hot remove the memory device by the hardware, or writing 1 to
-> /sys/bus/acpi/devices/PNP0C80:XX/eject both will call eject method?
+-stable according to the previous conversation.
 
-Yes.
-Both operations will call eject method.
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Thursday, July 25, 2013 7:38 AM
+> 
+> On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
+> > This patch fixes races caused by unprotected ACPI IPMI transfers.
+> >
+> > We can see the following crashes may occur:
+> > 1. There is no tx_msg_lock held for iterating tx_msg_list in
+> >    ipmi_flush_tx_msg() while it is parellel unlinked on failure in
+> >    acpi_ipmi_space_handler() under protection of tx_msg_lock.
+> > 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
+> >    while it is parellel accessed in ipmi_flush_tx_msg() and
+> >    ipmi_msg_handler().
+> >
+> > This patch enhances tx_msg_lock to protect all tx_msg accesses to
+> > solve this issue.  Then tx_msg_lock is always held around complete()
+> > and tx_msg accesses.
+> > Calling smp_wmb() before setting msg_done flag so that messages
+> > completed due to flushing will not be handled as 'done' messages while
+> > their contents are not vaild.
+> >
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Cc: Zhao Yakui <yakui.zhao@intel.com>
+> > Reviewed-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/acpi/acpi_ipmi.c |   10 ++++++++--
+> >  1 file changed, 8 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
+> > b37c189..527ee43 100644
+> > --- a/drivers/acpi/acpi_ipmi.c
+> > +++ b/drivers/acpi/acpi_ipmi.c
+> > @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct
+> acpi_ipmi_device *ipmi)
+> >  	struct acpi_ipmi_msg *tx_msg, *temp;
+> >  	int count = HZ / 10;
+> >  	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
+> > +	unsigned long flags;
+> >
+> > +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+> >  	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
+> >  		/* wake up the sleep thread on the Tx msg */
+> >  		complete(&tx_msg->tx_complete);
+> >  	}
+> > +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+> >
+> >  	/* wait for about 100ms to flush the tx message list */
+> >  	while (count--) {
+> > @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct
+> ipmi_recv_msg *msg, void *user_msg_data)
+> >  			break;
+> >  		}
+> >  	}
+> > -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> >
+> >  	if (!msg_found) {
+> >  		dev_warn(&pnp_dev->dev,
+> >  			 "Unexpected response (msg id %ld) is returned.\n",
+> >  			 msg->msgid);
+> > -		goto out_msg;
+> > +		goto out_lock;
+> >  	}
+> >
+> >  	/* copy the response data to Rx_data buffer */ @@ -286,10 +288,14 @@
+> > static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void
+> *user_msg_data)
+> >  	}
+> >  	tx_msg->rx_len = msg->msg.data_len;
+> >  	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
+> > +	/* tx_msg content must be valid before setting msg_done flag */
+> > +	smp_wmb();
+> 
+> That's suspicious.
+> 
+> If you need the write barrier here, you'll most likely need a read barrier
+> somewhere else.  Where's that?
 
-> What's the difference between these two methods? I guess the former will send SCI and the latter won't.
+It might depend on whether the content written before the smp_wmb() is used or not by the other side codes under the condition set after the smp_wmb().
 
-Triggers are different. Former is triggered by SCI, latter is triggered by
-writing sysfs.
+So comment could be treated as 2 parts:
+1. do we need a paired smp_rmb().
+2. do we need a smp_wmb().
 
-Thanks,
-Yasuaki Ishimatsu
+For 1.
+If we want a paired smp_rmb(), then it will appear in this function:
 
+186 static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
+187                 acpi_integer *value, int rem_time)
+188 {
+189         struct acpi_ipmi_buffer *buffer;
+190 
+191         /*
+192          * value is also used as output parameter. It represents the response
+193          * IPMI message returned by IPMI command.
+194          */
+195         buffer = (struct acpi_ipmi_buffer *)value;
+196         if (!rem_time && !msg->msg_done) {
+197                 buffer->status = ACPI_IPMI_TIMEOUT;
+198                 return;
+199         }
+200         /*
+201          * If the flag of msg_done is not set or the recv length is zero, it
+202          * means that the IPMI command is not executed correctly.
+203          * The status code will be ACPI_IPMI_UNKNOWN.
+204          */
+205         if (!msg->msg_done || !msg->rx_len) {
+206                 buffer->status = ACPI_IPMI_UNKNOWN;
+207                 return;
+208         }
++         smp_rmb();
+209         /*
+210          * If the IPMI response message is obtained correctly, the status code
+211          * will be ACPI_IPMI_OK
+212          */
+213         buffer->status = ACPI_IPMI_OK;
+214         buffer->length = msg->rx_len;
+215         memcpy(buffer->data, msg->rx_data, msg->rx_len);
+216 }
 
->
->>
->> Thanks,
->> -Toshi
->>
->>
->
+If we don't then there will only be msg content not correctly read from msg->rx_data.
+Note that the rx_len is 0 during initialization and will never exceed the sizeof(buffer->data), so the read is safe.
 
+Being without smp_rmb() is also OK in this case, since:
+1. buffer->data will never be used when buffer->status is not ACPI_IPMI_OK and
+2. the smp_rmb()/smp_wmb() added in this patch will be deleted in [PATCH 07].
 
+So IMO, we needn't add the smp_rmb(), what do you think of this?
+
+For 2.
+If we don't add smp_wmb() in the ipmi_msg_handler(), then the codes running on other thread in the acpi_format_ipmi_response() may read wrong msg->rx_data (a timeout triggers this function, but when acpi_format_ipmi_response() is entered, the msg->msg_done flag could be seen as 1 but the msg->rx_data is not ready), this is what we want to avoid in this quick fix.
+
+Thanks and best regards
+-Lv
+
+> 
+> >  	tx_msg->msg_done = 1;
+> >
+> >  out_comp:
+> >  	complete(&tx_msg->tx_complete);
+> > +out_lock:
+> > +	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> >  out_msg:
+> >  	ipmi_free_recv_msg(msg);
+> >  }
+> 
+> Rafael
+> 
+> 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
