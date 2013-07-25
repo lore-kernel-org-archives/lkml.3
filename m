@@ -1,78 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab3GYSuR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:50:17 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38309 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756683Ab3GYSuN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:50:13 -0400
-Message-ID: <51F17360.90802@ti.com>
-Date: Thu, 25 Jul 2013 14:50:08 -0400
-From: Tom Rini <trini@ti.com>
-Organization: Texas Instruments
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1757520Ab3GYSvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:51:04 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:50062 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230Ab3GYSvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:51:00 -0400
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        Jianpeng Ma <majianpeng@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Wen Congyang <wency@cn.fujitsu.com>, Jiang Liu <jiang.liu@huawei.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mgorman@suse.de>,
-        David Rientjes <rientjes@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] numa: Mark __node_set as __always_inline
-References: <1374754489-4559-1-git-send-email-trini@ti.com> <51F169A7.7030307@gmail.com>
-In-Reply-To: <51F169A7.7030307@gmail.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130725184504.GC11514@cantiga.alporthouse.com>
+References: <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+	<CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
+	<20130725163150.GD6493@cantiga.alporthouse.com>
+	<CA+icZUWmpZK0jO_G1ec446WftzXDvSdnHLcQrkmBSHA7fSAqcw@mail.gmail.com>
+	<20130725170144.GE6493@cantiga.alporthouse.com>
+	<CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
+	<20130725172616.GA11514@cantiga.alporthouse.com>
+	<CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
+	<CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
+	<CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
+	<20130725184504.GC11514@cantiga.alporthouse.com>
+Date: Thu, 25 Jul 2013 20:50:59 +0200
+Message-ID: <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 02:08 PM, KOSAKI Motohiro wrote:
-> (7/25/13 8:14 AM), Tom Rini wrote:
->> It is posible for some compilers to decide that __node_set does not need
->> to be made turned into an inline function.  When the compiler does this
->> on an __init function calling it on __initdata we get a section mismatch
->> warning now.
+On Thu, Jul 25, 2013 at 8:45 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Thu, Jul 25, 2013 at 08:03:06PM +0200, Sedat Dilek wrote:
+>> On Thu, Jul 25, 2013 at 7:55 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>> > F*ck. Wrong patch refreshed.
+>> >
 >>
->> Reported-by: Paul Bolle <pebolle@tiscali.nl>
->> Cc: Jianpeng Ma <majianpeng@gmail.com>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
->> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
->> Cc: Wen Congyang <wency@cn.fujitsu.com>
->> Cc: Jiang Liu <jiang.liu@huawei.com>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
->> Cc: Minchan Kim <minchan.kim@gmail.com>
->> Cc: Mel Gorman <mgorman@suse.de>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Yinghai Lu <yinghai@kernel.org>
->> Cc: Greg KH <greg@kroah.com>
->> Signed-off-by: Tom Rini <trini@ti.com>
->> ---
->>   include/linux/nodemask.h |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
->> index 4e2cbfa..10d0fd9 100644
->> --- a/include/linux/nodemask.h
->> +++ b/include/linux/nodemask.h
->> @@ -99,7 +99,7 @@ typedef struct { DECLARE_BITMAP(bits, MAX_NUMNODES); } nodemask_t;
->>   extern nodemask_t _unused_nodemask_arg_;
->>   
->>   #define node_set(node, dst) __node_set((node), &(dst))
->> -static inline void __node_set(int node, volatile nodemask_t *dstp)
->> +static __always_inline void __node_set(int node, volatile nodemask_t *dstp)
-> 
-> The change looks ok. But, this code doesn't tell us why you changed. Please write
-> down proper comments here.
+>> New dmesg attached.
+>
+> Hmm, not seeing any difference, so let's add a couple more lines just to
+> be sure:
+>
+> (apologies I didn't stash the previous debug patch)
+>
+> diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> index 0563661..4d21f37 100644
+> --- a/drivers/gpu/drm/i915/i915_gem.c
+> +++ b/drivers/gpu/drm/i915/i915_gem.c
+> @@ -1624,30 +1624,39 @@ i915_gem_mmap_gtt(struct drm_file *file,
+>         struct drm_i915_gem_object *obj;
+>         int ret;
+>
+> +       printk(KERN_ERR "Hello!\n");
+> +
+>         ret = i915_mutex_lock_interruptible(dev);
+> -       if (ret)
+> +       if (ret) {
+> +               DRM_DEBUG_DRIVER("interrupted: ret=%d\n", ret);
+>                 return ret;
+> +       }
+>
+>         obj = to_intel_bo(drm_gem_object_lookup(dev, file, handle));
+>         if (&obj->base == NULL) {
+> +               DRM_DEBUG_DRIVER("Unknown object handle %d\n", handle);
+>                 ret = -ENOENT;
+>                 goto unlock;
+>         }
+>
+>         if (obj->base.size > dev_priv->gtt.mappable_end) {
+> +               DRM_DEBUG_DRIVER("Object (%d) larger than mappable aperture (%d) > %d\n",
+> +                               (int)obj->base.size, (int)dev_priv->gtt.mappable_end);
+>                 ret = -E2BIG;
+>                 goto out;
+>         }
+>
+>         if (obj->madv != I915_MADV_WILLNEED) {
+> -               DRM_ERROR("Attempting to mmap a purgeable buffer\n");
+> +               DRM_DEBUG_DRIVER("Attempting to mmap a purgeable buffer\n");
+>                 ret = -EINVAL;
+>                 goto out;
+>         }
+>
+>         ret = i915_gem_object_create_mmap_offset(obj);
+> -       if (ret)
+> +       if (ret) {
+> +               DRM_DEBUG_DRIVER("Failed to allocate mmap offset (ret=%d)\n", ret);
+>                 goto out;
+> +       }
+>
+>         *offset = (u64)obj->base.map_list.hash.key << PAGE_SHIFT;
+>
+> @@ -1655,6 +1664,7 @@ out:
+>         drm_gem_object_unreference(&obj->base);
+>  unlock:
+>         mutex_unlock(&dev->struct_mutex);
+> +       DRM_DEBUG_DRIVER("done, ret=%d\n", ret);
+>         return ret;
+>  }
+>
+>
+> --
 
-Done, v2 submitted.
+Against what tree is this applicable? It is definitely not drm-intel-nightly.
 
--- 
-Tom
+- S.
+> Chris Wilson, Intel Open Source Technology Centre
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
