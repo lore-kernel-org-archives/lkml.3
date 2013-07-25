@@ -1,192 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756708Ab3GYRSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:18:09 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1335 "EHLO mga01.intel.com"
+	id S1756733Ab3GYRT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:19:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:34418 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755251Ab3GYRSG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:18:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,744,1367996400"; 
-   d="scan'208";a="370983486"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 2/3 V2] mei: don't get stuck in select during reset
-Date: Thu, 25 Jul 2013 20:15:53 +0300
-Message-Id: <1374772553-20336-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1754862Ab3GYRTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:19:55 -0400
+Date: Thu, 25 Jul 2013 20:19:51 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Olof Johansson <olof@lixom.net>
+CC: Felipe Balbi <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: gadget: at91_udc: Check gpio lookup results
+Message-ID: <20130725171951.GD25415@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374605750-29565-1-git-send-email-olof@lixom.net>
+ <20130725161406.GD31835@radagast>
+ <CAOesGMiupSqpqfyuJ_abr4UQj9Ot77aGJZTsCEY63v-XttgPgw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kR3zbvD4cgoYnS/6"
+Content-Disposition: inline
+In-Reply-To: <CAOesGMiupSqpqfyuJ_abr4UQj9Ot77aGJZTsCEY63v-XttgPgw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clear pending connection after hw reset but before hw start
-and wake up the waiting task in poll. Signal POLLERR in select
-when device went through reset.
+--kR3zbvD4cgoYnS/6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Add wrapper mei_cl_is_connected for checking if
-the device and client are connected.
+On Thu, Jul 25, 2013 at 09:18:39AM -0700, Olof Johansson wrote:
+> On Thu, Jul 25, 2013 at 9:14 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Tue, Jul 23, 2013 at 11:55:50AM -0700, Olof Johansson wrote:
+> >> This resolves the following valid build warning:
+> >>
+> >> drivers/usb/gadget/at91_udc.c:1685:34: warning: 'flags' may be used un=
+initialized in this function [-Wmaybe-uninitialized]
+> >>
+> >> I switched from ? : to !! mostly to save from wrapping the lines while
+> >> I was at it.
+> >>
+> >> Signed-off-by: Olof Johansson <olof@lixom.net>
+> >> ---
+> >>
+> >> Felipe, this would be nice to see fixed for 3.11 but I'd argue that it=
+'s
+> >> been here long enough to not really be needed for -stable.
+> >>
+> >>  drivers/usb/gadget/at91_udc.c |   12 ++++++++++--
+> >>  1 file changed, 10 insertions(+), 2 deletions(-)
+> >>
+> >> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_u=
+dc.c
+> >> index 073b938..f3dbcd0 100644
+> >> --- a/drivers/usb/gadget/at91_udc.c
+> >> +++ b/drivers/usb/gadget/at91_udc.c
+> >> @@ -1682,12 +1682,20 @@ static void at91udc_of_init(struct at91_udc *u=
+dc,
+> >>
+> >>       board->vbus_pin =3D of_get_named_gpio_flags(np, "atmel,vbus-gpio=
+", 0,
+> >>                                                 &flags);
+> >> -     board->vbus_active_low =3D (flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0;
+> >> +     if (board->vbus_pin < 0)
+> >> +             pr_err("%s: Failed to get atmel,vbus-gpio property\n",
+> >> +                    np->full_name);
+> >> +     else
+> >> +             board->vbus_active_low =3D !!(flags & OF_GPIO_ACTIVE_LOW=
+);
+> >
+> > should you even continue if you can't get the gpio ? If this gpio is
+> > optional, then it's not really and error, rather a debugging or
+> > informational message.
+>=20
+> That's what the code does today, and I wasn't trying to second-guess
+> their decisions on that. Chances are firmware, in some instances, have
+> left power on so continuing might do no harm.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
-V2:
-1. rebased over char-misc-next
-2. typo in the subject stack -> stuck
+fair enough, then let's just decrease the error message level to debug
+or info.
 
- drivers/misc/mei/amthif.c | 14 +++++++++++---
- drivers/misc/mei/client.c |  5 +----
- drivers/misc/mei/client.h |  7 +++++++
- drivers/misc/mei/init.c   | 13 ++++++++-----
- drivers/misc/mei/main.c   | 22 +++++++++++++++-------
- 5 files changed, 42 insertions(+), 19 deletions(-)
+--=20
+balbi
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 749452f..d0fdc13 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -418,15 +418,23 @@ unsigned int mei_amthif_poll(struct mei_device *dev,
- 		struct file *file, poll_table *wait)
- {
- 	unsigned int mask = 0;
--	mutex_unlock(&dev->device_lock);
-+
- 	poll_wait(file, &dev->iamthif_cl.wait, wait);
-+
- 	mutex_lock(&dev->device_lock);
--	if (dev->iamthif_state == MEI_IAMTHIF_READ_COMPLETE &&
--		dev->iamthif_file_object == file) {
-+	if (!mei_cl_is_connected(&dev->iamthif_cl)) {
-+
-+		mask = POLLERR;
-+
-+	} else if (dev->iamthif_state == MEI_IAMTHIF_READ_COMPLETE &&
-+		   dev->iamthif_file_object == file) {
-+
- 		mask |= (POLLIN | POLLRDNORM);
- 		dev_dbg(&dev->pdev->dev, "run next amthif cb\n");
- 		mei_amthif_run_next_cmd(dev);
- 	}
-+	mutex_unlock(&dev->device_lock);
-+
- 	return mask;
- }
- 
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index af1e602..e0684b4 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -635,10 +635,7 @@ int mei_cl_read_start(struct mei_cl *cl, size_t length)
- 
- 	dev = cl->dev;
- 
--	if (cl->state != MEI_FILE_CONNECTED)
--		return -ENODEV;
--
--	if (dev->dev_state != MEI_DEV_ENABLED)
-+	if (!mei_cl_is_connected(cl))
- 		return -ENODEV;
- 
- 	if (cl->read_cb) {
-diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-index 9bae4c7..9eb031e 100644
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -84,6 +84,13 @@ int mei_cl_flow_ctrl_reduce(struct mei_cl *cl);
- /*
-  *  MEI input output function prototype
-  */
-+static inline bool mei_cl_is_connected(struct mei_cl *cl)
-+{
-+	return (cl->dev &&
-+		cl->dev->dev_state == MEI_DEV_ENABLED &&
-+		cl->state == MEI_FILE_CONNECTED);
-+}
-+
- bool mei_cl_is_other_connecting(struct mei_cl *cl);
- int mei_cl_disconnect(struct mei_cl *cl);
- int mei_cl_connect(struct mei_cl *cl, struct file *file);
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 7929e14..557eed2 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -149,12 +149,20 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- 	dev->hbm_state = MEI_HBM_IDLE;
- 
- 	if (dev->dev_state != MEI_DEV_INITIALIZING) {
-+
- 		if (dev->dev_state != MEI_DEV_DISABLED &&
- 		    dev->dev_state != MEI_DEV_POWER_DOWN)
- 			dev->dev_state = MEI_DEV_RESETTING;
- 
-+
-+		/* remove all waiting requests */
-+		mei_cl_all_write_clear(dev);
-+
- 		mei_cl_all_disconnect(dev);
- 
-+		/* wake up all readings so they can be interrupted */
-+		mei_cl_all_wakeup(dev);
-+
- 		/* remove entry if already in list */
- 		dev_dbg(&dev->pdev->dev, "remove iamthif and wd from the file list.\n");
- 		mei_cl_unlink(&dev->wd_cl);
-@@ -195,11 +203,6 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
- 
- 	mei_hbm_start_req(dev);
- 
--	/* wake up all readings so they can be interrupted */
--	mei_cl_all_wakeup(dev);
--
--	/* remove all waiting requests */
--	mei_cl_all_write_clear(dev);
- }
- EXPORT_SYMBOL_GPL(mei_reset);
- 
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 5e11b5b..173ff09 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -625,24 +625,32 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
- 	unsigned int mask = 0;
- 
- 	if (WARN_ON(!cl || !cl->dev))
--		return mask;
-+		return POLLERR;
- 
- 	dev = cl->dev;
- 
- 	mutex_lock(&dev->device_lock);
- 
--	if (dev->dev_state != MEI_DEV_ENABLED)
--		goto out;
--
--
--	if (cl == &dev->iamthif_cl) {
--		mask = mei_amthif_poll(dev, file, wait);
-+	if (!mei_cl_is_connected(cl)) {
-+		mask = POLLERR;
- 		goto out;
- 	}
- 
- 	mutex_unlock(&dev->device_lock);
-+
-+
-+	if (cl == &dev->iamthif_cl)
-+		return mei_amthif_poll(dev, file, wait);
-+
- 	poll_wait(file, &cl->tx_wait, wait);
-+
- 	mutex_lock(&dev->device_lock);
-+
-+	if (!mei_cl_is_connected(cl)) {
-+		mask = POLLERR;
-+		goto out;
-+	}
-+
- 	if (MEI_WRITE_COMPLETE == cl->writing_state)
- 		mask |= (POLLIN | POLLRDNORM);
- 
--- 
-1.8.1.2
+--kR3zbvD4cgoYnS/6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8V43AAoJEIaOsuA1yqREYmEP/jXPH+4YOTJFNg05MOwMoBTu
+lFVGol5gvPUXBJ/v08gj1C8t2QhCmY/dnINpv8QZfaGbMDgypeRmzwuikk9kI2KW
+iPOrufoL1su/kf4iqoLxSSykMR7XLCRYMgWEo+BbYXRxOx3qjrhrA+gOAWPES0pN
+YtMA7hcRmAKVlmEQEMqcfD9IxOp1IeQx4kopyVSOI1eAWWgK2w8MtBgbr19CfVnh
+i+9rYPrdsG4oX9eRcFD3FzIZwdvGEdbawVLTcggSW5IE8nsyIiXKoIgigMW6ohFb
+mxDojaCIAmj8imZrK5lu22H8+uUzlWtyY/cDhQZ0ZKpyUhETtGMEU7AIjWEaZBHU
++4sr08vdRVBxSIbdXH7kKfiHrkP6cQhGc+SZmQziLnvG9dLpSBFekbRKdavgaq+1
+DrzsBeq6iH/iRvSJW6wVtA4MxLQU3QbkA/IDGy0GXAYAi/5TzrFP+iML+YUxZj7Q
+IupyahvOP22wVObAhewxM6bfwzfukl8sHoFwzwHIO+ka2QR3sUbz+qyaAJ+GB/bH
+bjcxVK8wF7Enr3U712l7+80SYsqH4vI63GIsQA7n0m19ll+L0LFy++Nd2BsU6UOR
+CBxYVNr7JcPTf3S8Dqe4X4YPcODobvwObY7cxhNbfALqaPbllWfahAxyvhEnVvNr
+oNnFNrpNaBaiZDviuUO2
+=IaYm
+-----END PGP SIGNATURE-----
+
+--kR3zbvD4cgoYnS/6--
