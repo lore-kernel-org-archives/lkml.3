@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab3GYN4U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:56:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:40319 "EHLO mga14.intel.com"
+	id S1756378Ab3GYN4g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:56:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53187 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab3GYNz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:55:29 -0400
+	id S1756216Ab3GYNzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:55:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,743,1367996400"; 
-   d="scan'208";a="273137123"
+   d="scan'208";a="273137010"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 9/9] perf tools: allow annotation using /proc/kcore
-Date: Thu, 25 Jul 2013 17:01:30 +0300
-Message-Id: <1374760890-30558-10-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 6/9] perf tools: make it possible to read object code from kernel modules
+Date: Thu, 25 Jul 2013 17:01:27 +0300
+Message-Id: <1374760890-30558-7-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
 References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
@@ -28,81 +28,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Annotation with /proc/kcore is possible so the logic
-is adjusted to allow it.  The main difference is that
-/proc/kcore had no symbols so the parsing logic needed
-a tweak to read jump offsets.
+The new "object code reading" test shows that it is not possible
+to read object code from kernel modules.  That is because the mappings
+do not map to the dsos.  This patch fixes that.
 
-The other difference is that objdump cannot always
-read from kcore.  That seems to be a bug with objdump.
+This involves identifying and flagging relocatable (ELF type ET_REL) files
+(e.g. kernel modules) for symbol adjustment and updating map__rip_2objdump()
+accordingly.  The kmodule parameter of dso__load_sym() is taken into use
+and the module map altered to map to the dso.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-top.c   |  3 ++-
- tools/perf/util/annotate.c | 13 +++++++++----
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ tools/perf/util/dso.c        |  1 +
+ tools/perf/util/dso.h        |  1 +
+ tools/perf/util/map.c        | 14 +++++++++-----
+ tools/perf/util/symbol-elf.c | 15 +++++++++++++++
+ tools/perf/util/symbol.c     | 11 ++++++++---
+ 5 files changed, 34 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 0ecec5f..4585c08 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -103,7 +103,8 @@ static int perf_top__parse_source(struct perf_top *top, struct hist_entry *he)
- 	/*
- 	 * We can't annotate with just /proc/kallsyms
- 	 */
--	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
-+	if (map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
-+	    !dso__is_kcore(map->dso)) {
- 		pr_err("Can't annotate %s: No vmlinux file was found in the "
- 		       "path\n", sym->name);
- 		sleep(1);
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index d102716..4ab2f11 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -110,10 +110,10 @@ static int jump__parse(struct ins_operands *ops)
+diff --git a/tools/perf/util/dso.c b/tools/perf/util/dso.c
+index 121583d..1955804 100644
+--- a/tools/perf/util/dso.c
++++ b/tools/perf/util/dso.c
+@@ -419,6 +419,7 @@ struct dso *dso__new(const char *name)
+ 		dso->symtab_type = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->data_type   = DSO_BINARY_TYPE__NOT_FOUND;
+ 		dso->loaded = 0;
++		dso->rel = 0;
+ 		dso->sorted_by_name = 0;
+ 		dso->has_build_id = 0;
+ 		dso->kernel = DSO_TYPE_USER;
+diff --git a/tools/perf/util/dso.h b/tools/perf/util/dso.h
+index 02aadaf..735a837 100644
+--- a/tools/perf/util/dso.h
++++ b/tools/perf/util/dso.h
+@@ -85,6 +85,7 @@ struct dso {
+ 	u8		 lname_alloc:1;
+ 	u8		 sorted_by_name;
+ 	u8		 loaded;
++	u8		 rel;
+ 	u8		 build_id[BUILD_ID_SIZE];
+ 	const char	 *short_name;
+ 	char		 *long_name;
+diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
+index 5f662a3..4d599fe 100644
+--- a/tools/perf/util/map.c
++++ b/tools/perf/util/map.c
+@@ -248,14 +248,18 @@ size_t map__fprintf_dsoname(struct map *map, FILE *fp)
+ 
+ /*
+  * objdump wants/reports absolute IPs for ET_EXEC, and RIPs for ET_DYN.
+- * map->dso->adjust_symbols==1 for ET_EXEC-like cases.
++ * map->dso->adjust_symbols==1 for ET_EXEC-like cases except ET_REL which is
++ * relative to section start.
+  */
+ u64 map__rip_2objdump(struct map *map, u64 rip)
  {
- 	const char *s = strchr(ops->raw, '+');
- 
--	ops->target.addr = strtoll(ops->raw, NULL, 16);
-+	ops->target.addr = strtoull(ops->raw, NULL, 16);
- 
- 	if (s++ != NULL)
--		ops->target.offset = strtoll(s, NULL, 16);
-+		ops->target.offset = strtoull(s, NULL, 16);
- 	else
- 		ops->target.offset = UINT64_MAX;
- 
-@@ -821,6 +821,10 @@ static int symbol__parse_objdump_line(struct symbol *sym, struct map *map,
- 	if (dl == NULL)
- 		return -1;
- 
-+	if (dl->ops.target.offset == UINT64_MAX)
-+		dl->ops.target.offset = dl->ops.target.addr -
-+					map__rip_2objdump(map, sym->start);
+-	u64 addr = map->dso->adjust_symbols ?
+-			map->unmap_ip(map, rip) :	/* RIP -> IP */
+-			rip;
+-	return addr;
++	if (!map->dso->adjust_symbols)
++		return rip;
 +
- 	disasm__add(&notes->src->source, dl);
++	if (map->dso->rel)
++		return rip - map->pgoff;
++
++	return map->unmap_ip(map, rip);
+ }
  
- 	return 0;
-@@ -864,7 +868,8 @@ fallback:
- 		free_filename = false;
- 	}
+ void map_groups__init(struct map_groups *mg)
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index ed6f443..f00596f 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -599,6 +599,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 	if (dso->kernel == DSO_TYPE_USER) {
+ 		GElf_Shdr shdr;
+ 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
++				ehdr.e_type == ET_REL ||
+ 				elf_section_by_name(elf, &ehdr, &shdr,
+ 						     ".gnu.prelink_undo",
+ 						     NULL) != NULL);
+@@ -676,6 +677,7 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 	bool remap_kernel = false, adjust_kernel_syms = false;
  
--	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
-+	if (dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
-+	    !dso__is_kcore(dso)) {
- 		char bf[BUILD_ID_SIZE * 2 + 16] = " with build id ";
- 		char *build_id_msg = NULL;
+ 	dso->symtab_type = syms_ss->type;
++	dso->rel = syms_ss->ehdr.e_type == ET_REL;
  
-@@ -898,7 +903,7 @@ fallback:
- 	snprintf(command, sizeof(command),
- 		 "%s %s%s --start-address=0x%016" PRIx64
- 		 " --stop-address=0x%016" PRIx64
--		 " -d %s %s -C %s|grep -v %s|expand",
-+		 " -d %s %s -C %s 2>/dev/null|grep -v %s|expand",
- 		 objdump_path ? objdump_path : "objdump",
- 		 disassembler_style ? "-M " : "",
- 		 disassembler_style ? disassembler_style : "",
+ 	if (!syms_ss->symtab) {
+ 		syms_ss->symtab  = syms_ss->dynsym;
+@@ -828,11 +830,24 @@ int dso__load_sym(struct dso *dso, struct map *map,
+ 					map_groups__insert(kmap->kmaps, map);
+ 				}
+ 
++				/*
++				 * The initial module mapping is based on
++				 * /proc/modules mapped to offset zero.
++				 * Overwrite it to map to the module dso.
++				 */
++				if (remap_kernel && kmodule) {
++					remap_kernel = false;
++					map->pgoff = shdr.sh_offset;
++				}
++
+ 				curr_map = map;
+ 				curr_dso = dso;
+ 				goto new_symbol;
+ 			}
+ 
++			if (!kmap)
++				goto new_symbol;
++
+ 			snprintf(dso_name, sizeof(dso_name),
+ 				 "%s%s", dso->short_name, section_name);
+ 
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 1b97088..7080ef0 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -854,10 +854,15 @@ int dso__load(struct dso *dso, struct map *map, symbol_filter_t filter)
+ 	if (!runtime_ss && syms_ss)
+ 		runtime_ss = syms_ss;
+ 
+-	if (syms_ss)
+-		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, 0);
+-	else
++	if (syms_ss) {
++		int km;
++
++		km = dso->symtab_type == DSO_BINARY_TYPE__SYSTEM_PATH_KMODULE ||
++		     dso->symtab_type == DSO_BINARY_TYPE__GUEST_KMODULE;
++		ret = dso__load_sym(dso, map, syms_ss, runtime_ss, filter, km);
++	} else {
+ 		ret = -1;
++	}
+ 
+ 	if (ret > 0) {
+ 		int nr_plt;
 -- 
 1.7.11.7
 
