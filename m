@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756247Ab3GYOgR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:36:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35225 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab3GYOgQ (ORCPT
+	id S1756222Ab3GYOlW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:41:22 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59352 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab3GYOlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:36:16 -0400
-Date: Thu, 25 Jul 2013 07:37:29 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Anders Hammarquist <iko@iko.pp.se>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH 2/2] Remove static sizing of usb_device_id arrays
-Message-ID: <20130725143729.GA1897@kroah.com>
-References: <20130621235603.GA1603@kroah.com>
- <1371927359-13977-1-git-send-email-iko@iko.pp.se>
- <1371927359-13977-2-git-send-email-iko@iko.pp.se>
- <20130724225208.GA3140@kroah.com>
- <201307251415.r6PEFoO1015986@eskarina.iko.pp.se>
+	Thu, 25 Jul 2013 10:41:19 -0400
+Date: Thu, 25 Jul 2013 16:41:18 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Bin Liu <binmlist@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to
+ am33xx_driver_data
+Message-ID: <20130725144118.GA5412@linutronix.de>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
+ <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201307251415.r6PEFoO1015986@eskarina.iko.pp.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 04:15:49PM +0200, Anders Hammarquist wrote:
-> In a message of Wed, 24 Jul 2013 15:52:08 -0700, Greg KH writes:
-> >On Sat, Jun 22, 2013 at 08:55:59PM +0200, Anders Hammarquist wrote:
-> >> 
-> >> Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
-> >> ---
-> >>  drivers/usb/serial/ti_usb_3410_5052.c |   29 ++++++++++++++++++++++++-----
-> >>  1 file changed, 24 insertions(+), 5 deletions(-)
-> >
-> >This patch, and your previous one, are no longer needed, right?
-> 
-> They are needed until the module params for adding vendor and
-> product ids are removed, and it sounded like the consensus was
-> to keep them for a while.
+* Bin Liu | 2013-07-23 13:23:57 [-0500]:
 
-No, they will be removed for 3.12, the patches are already queued up.
+>Hi Sebastian,
+Hi Liu,
 
-thanks,
+>On Mon, Jul 22, 2013 at 1:09 PM, Sebastian Andrzej Siewior <
+>bigeasy@linutronix.de> wrote:
+>
+>> This patch renames the type struct from ti81xx_driver_data to
+>> am33xx_driver_data since it is not used for ti81xx anymore. The EOI
+>> member is also removed since the am33xx SoC does not have such register.
+>> The interrupt is acknowledged by writting into the stat register.
+>>
+>I guess the EOI register is removed from the TRM because AM33xx does not
+>use it, there is no need to write to it to acknowledge. It does not hurt to
+>write to it though since the register still exists, it just does nothing, I
+>guess.
 
-greg k-h
+Is it really there or was it never there and it has been added to TRM by
+accident?
+
+>But I am not sure if it is a good idea to remove eoi from the musb_dsps
+>driver. If the intension is to merge the support for other SoC, such as
+>AM35xx, AM18xx, then EOI handling might be still needed. I just don't know
+>how those devices use EOI.
+
+If one of the architectures gets added which need an EOI then the offset
+can be 0 and the EOI will happen only if it is != 0.
+
+>
+>Regards,
+>-Bin.
+
+Sebastian
