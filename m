@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755640Ab3GYVXc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:23:32 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:37300 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab3GYVXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:23:31 -0400
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS fix for 3.11-rc3
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20130725212326.D02C84266DC@whiskey.americas.sgi.com>
-Date: Thu, 25 Jul 2013 16:23:26 -0500 (CDT)
-From: bpm@sgi.com (Ben Myers)
+	id S1756530Ab3GYVdQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:33:16 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:35938 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755942Ab3GYVdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 17:33:12 -0400
+Date: Thu, 25 Jul 2013 23:33:02 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+To: linux-kernel@vger.kernel.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org
+Subject: hpsa - BUG: using smp_processor_id() in preemptible [00000000
+ 00000000] code: kworker/u:0/6
+Message-ID: <alpine.LFD.2.03.1307252312310.28787@tycho>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull this fix for XFS in 3.11-rc3.  This resolves a regression
-introduced in the 3.11-rc1 merge window with commit cca9f93a52d2 which
-results in recovery corrupting filesystems after crashes.
+Hi
 
-Thanks,
-	Ben
+We're seeing this on a 3.6 kernel with the real-time patch applied, but it 
+looks like it is relevant with the real-time patch in the latest kernel 
+too.
 
-The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
+[   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
+[   49.749928] scsi0 : hpsa
+[   49.784437] BUG: using smp_processor_id() in preemptible [00000000 
+00000000] code: kworker/u:0/6
+[   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+[   49.784468] Pid: 6, comm: kworker/u:0 Not tainted 
+3.6.11.5-rt37.52.el6rt.x86_64.debug #1
+[   49.784471] Call Trace:
+[   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
+[   49.784520]  [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100 
+[hpsa]
+[   49.784529]  [<ffffffffa00905cb>] 
+hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
+[   49.784537]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+[   49.784544]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+[   49.784553]  [<ffffffffa0090701>] 
+hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
+[   49.784562]  [<ffffffffa0093558>] 
+hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
+[   49.784571]  [<ffffffffa00935ea>] 
+hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
+[   49.784580]  [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0 
+[hpsa]
+[   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
+[   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
+[   49.784613]  [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
+[   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
+[   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
+[   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
+[   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
+[   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
+[   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
+[   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
+[   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
+[   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
+[   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
+[   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
+[   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
+[   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
+[   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
+[   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
 
-  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
+-------
 
-are available in the git repository at:
+When I look at the code I see this call chain
+enqueue_cmd_and_start_io()->
+	set_performant_mode()->
+		smp_processor_id()
+Which if you have debugging enabled calls debug_processor_id() and 
+triggers the warning.
 
-  git://oss.sgi.com/xfs/xfs.git tags/for-linus-v3.11-rc3
+I'm not very familiar with the hpsa code, so I'm not entirely sure what 
+the purpose of this line is
 
-for you to fetch changes up to e1b4271ac261b290fdab51446996fb13e68a57be:
+c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
 
-  xfs: di_flushiter considered harmful (2013-07-25 10:41:42 -0500)
+Is the purpose to simply try to get a range of ReplyQueue numbers, but 
+somewhat arbitrary? Or is it necessary that the current processor_id 
+is used? If it is the former, and you're not accessing per cpu structures, 
+or pinning a cpu, or anything like that then I would think it is safe to 
+change this to a raw_smp_processor_id() to get rid of a false positive 
+warning.
 
-----------------------------------------------------------------
-xfs: fix for 3.11-rc3
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 7f4f790..4e19267 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
+ 		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+ 		if (likely(h->msix_vector))
+ 			c->Header.ReplyQueue =
+-				smp_processor_id() % h->nreply_queues;
++				raw_smp_processor_id() % h->nreply_queues;
+ 	}
+ }
+ 
 
-- fix for regression in commit cca9f93a52d2, recovery causing filesystem
-  corruption after a crash
+Thanks
 
-----------------------------------------------------------------
-Dave Chinner (1):
-      xfs: di_flushiter considered harmful
-
- fs/xfs/xfs_dinode.h      |  3 +++
- fs/xfs/xfs_inode.c       | 31 ++++++++++++++++++++++---------
- fs/xfs/xfs_log_recover.c | 13 +++++++++++--
- 3 files changed, 36 insertions(+), 11 deletions(-)
+John Kacur
