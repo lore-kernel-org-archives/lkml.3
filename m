@@ -1,288 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab3GYAot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:44:49 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34896 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669Ab3GYAnt (ORCPT
+	id S1755118Ab3GYAo5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:44:57 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:52806 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708Ab3GYAoy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:43:49 -0400
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org
-Subject: [PATCH v1 10/14] clk: msm: Add support for MSM8960's multimedia clock controller (MMCC)
-Date: Wed, 24 Jul 2013 17:43:38 -0700
-Message-Id: <1374713022-6049-11-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.3.4.840.g6a90778
-In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 24 Jul 2013 20:44:54 -0400
+Message-ID: <51F074FA.3010703@gmail.com>
+Date: Thu, 25 Jul 2013 08:44:42 +0800
+From: Hush Bensen <hush.bensen@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Toshi Kani <toshi.kani@hp.com>
+CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        dave@sr71.net, kosaki.motohiro@gmail.com,
+        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
+        vasilis.liaskovitis@profitbricks.com
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com>
+In-Reply-To: <1374681742.16322.180.camel@misato.fc.hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fill in the data and wire up the multimedia clock controller to
-the MSM clock driver. This should allow multimedia device drivers
-to control their clocks on 8960 based platforms.
+On 07/25/2013 12:02 AM, Toshi Kani wrote:
+> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
+>> On 07/24/2013 04:45 AM, Toshi Kani wrote:
+>>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
+>>>> * Toshi Kani <toshi.kani@hp.com> wrote:
+>>>>
+>>>>>> Could we please also fix it to never crash the kernel, even if stupid
+>>>>>> ranges are provided?
+>>>>> Yes, this probe interface can be enhanced to verify the firmware
+>>>>> information before adding a given memory address.  However, such change
+>>>>> would interfere its test use of "fake" hotplug, which is only the known
+>>>>> use-case of this interface on x86.
+>>>> Not crashing the kernel is not a novel concept even for test interfaces...
+>>> Agreed.
+>>>
+>>>> Where does the possible crash come from - from using invalid RAM ranges,
+>>>> right? I.e. on x86 to fix the crash we need to check the RAM is present in
+>>>> the e820 maps, is marked RAM there, and is not already registered with the
+>>>> kernel, or so?
+>>> Yes, the crash comes from using invalid RAM ranges.  How to check if the
+>>> RAM is present is different if the system supports hotplug or not.
+>> Could you explain different methods to check the RAM is present if the
+>> system supports hotplkug or not?
+> e820 and UEFI memory descriptor tables are the boot-time interfaces.
+> These interfaces are not required to reflect any run-time changes.
+>
+> ACPI memory device objects can be used at both boot-time and run-time,
+> which reflect any run-time changes.  But they are optional to implement.
+> They typically are not implemented unless the system supports hotplug.
+>
+>>>>> In order to verify if a given memory address is enabled at run-time (as
+>>>>> opposed to boot-time), we need to check with ACPI memory device objects
+>>>>> on x86.  However, system vendors tend to not implement memory device
+>>>>> objects unless their systems support memory hotplug.  Dave Hansen is
+>>>>> using this interface for his testing as a way to fake a hotplug event on
+>>>>> a system that does not support memory hotplug.
+>>>> All vendors implement e820 maps for the memory present at boot time.
+>>> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
+>>> new memory added.  Here is a quote from ACPI spec.
+>>>
+>>> ===
+>>> 15.1 INT 15H, E820H - Query System Address Map
+>>>    :
+>>> The memory map conveyed by this interface is not required to reflect any
+>>> changes in available physical memory that have occurred after the BIOS
+>>> has initially passed control to the operating system. For example, if
+>>> memory is added dynamically, this interface is not required to reflect
+>>> the new system memory configuration.
+>>> ===
+>>>
+>>> By definition, the "probe" interface is used for the kernel to recognize
+>>> a new memory added at run-time.  So, it should check ACPI memory device
+>>> objects (which represents run-time state) for the verification.  On x86,
+>>> however, ACPI also sends a hotplug event to the kernel, which triggers
+>>> the kernel to recognize the new physical memory properly.  Hence, users
+>>> do not need this "probe" interface.
+>>>
+>>>> How is the testing done by Dave Hansen? If it's done by booting with less
+>>>> RAM than available (via say the mem=1g boot parameter), and then
+>>>> hot-adding some of the missing RAM, then this could be made safe via the
+>>>> e820 maps and by consultig the physical memory maps (to avoid double
+>>>> registry), right?
+>>> If we focus on this test scenario on a system that does not support
+>>> hotplug, yes, I agree that we can check with e820 since it is safe to
+>>> assume that the system has no change after boot.  IOW, it is unsafe to
+>>> check with e820 if the system supports hotplug, but there is no use in
+>>> this interface for testing if the system supports hotplug.  So, this may
+>>> be a good idea.
+>>>
+>>> Dave, is this how you are testing?  Do you always specify a valid memory
+>>> address for your testing?
+>>>
+>>>> How does the hotplug event based approach solve double adds? Relies on the
+>>>> hardware not sending a hot-add event twice for the same memory area or for
+>>>> an invalid memory area, or does it include fail-safes and double checks as
+>>>> well to avoid double adds and adding invalid memory? If yes then that
+>>>> could be utilized here as well.
+>>> In high-level, here is how ACPI memory hotplug works:
+>>>
+>>> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
+>>> hot-added.
+>>> 2. The kernel is notified, and verifies if the new memory device object
+>>> has not been attached by any handler yet.
+>>> 3. The memory handler is called, and obtains a new memory range from the
+>>> ACPI memory device object.
+>>> 4. The memory handler calls add_memory() with the new address range.
+>>>
+>>> The above step 1-4 proceeds automatically within the kernel.  No user
+>>> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
+>>> and step 3 gets a valid address range from the firmware directly.  Step
+>>> 4 is basically the same as the "probe" interface, but with all the
+>>> verification up front, this step is safe.
+>> This is hot-added part, could you also explain how ACPI memory hotplug
+>> works for hot-remove?
+> Sure.  Here is high-level.
+>
+> 1. ACPI sends a hotplug event to an ACPI memory device object that is
+> requested to hot-remove.
+> 2. The kernel is notified, and verifies if the memory device object is
+> attached by a handler.
+> 3. The memory handler is called (which is being attached), and obtains
+> its memory range.
+> 4. The memory handler calls remove_memory() with the address range.
+> 5. The kernel calls eject method of the ACPI memory device object.
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- .../devicetree/bindings/clock/qcom,mmcc.txt        |  38 ++++++
- drivers/clk/msm/Kconfig                            |   8 ++
- drivers/clk/msm/Makefile                           |   1 +
- drivers/clk/msm/core.c                             |   3 +
- drivers/clk/msm/internal.h                         |   1 +
- drivers/clk/msm/mmcc-8960.c                        | 142 +++++++++++++++++++++
- 6 files changed, 193 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/qcom,mmcc.txt
- create mode 100644 drivers/clk/msm/mmcc-8960.c
+Could you give me the calltrace of add_memory and remove_memory? I don't 
+have machine support hotplug, but I hope to investigate how ACPI part 
+works for memory hotplug. ;-)
 
-diff --git a/Documentation/devicetree/bindings/clock/qcom,mmcc.txt b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-new file mode 100644
-index 0000000..e06577e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/qcom,mmcc.txt
-@@ -0,0 +1,38 @@
-+MSM Multimedia Clock Controller Binding
-+-----------------------------------------
-+
-+Required properties :
-+- compatible : shall contain at least "qcom,mmcc" and only one of the
-+	       following:
-+
-+			"qcom,mmcc-8660"
-+			"qcom,mmcc-8960"
-+
-+- reg : shall contain base register location and length
-+- clocks : shall contain clocks supplied by the clock controller
-+
-+Example:
-+	clock-controller@4000000 {
-+		compatible = "qcom,mmcc-8960", "qcom,mmcc";
-+		reg = <0x4000000 0x1000>;
-+
-+		clocks {
-+			pll2: pll2 {
-+				#clock-cells = <0>;
-+				compatible = "qcom,pll";
-+				clocks = <&pxo>;
-+			};
-+
-+			mdp_rcg: mdp_rcg {
-+				#clock-cells = <0>;
-+				compatible = "qcom,mn8-dyn-clock";
-+				clocks = <&pxo>, <&pll2>, <&vpll8>;
-+			};
-+
-+			mdp_cxc: mdp_cxc {
-+				#clock-cells = <0>;
-+				compatible = "qcom,cxc-clock";
-+				clocks = <&mdp_rcg>;
-+			};
-+		};
-+	};
-diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
-index 3eaffb6..6147380 100644
---- a/drivers/clk/msm/Kconfig
-+++ b/drivers/clk/msm/Kconfig
-@@ -11,4 +11,12 @@ config MSM_GCC_8960
- 	  Say Y if you want to use peripheral devices such as UART, SPI,
- 	  i2c, USB, SD/eMMC, SATA, PCIe, etc.
- 
-+config MSM_MMCC_8960
-+	bool "MSM8960 Multimedia Clock Controller"
-+	select MSM_GCC_8960
-+	help
-+	  Support for the multimedia clock controller on msm8960 devices.
-+	  Say Y if you want to support multimedia devices such as display,
-+	  graphics, video encode/decode, camera, etc.
-+
- endif
-diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-index c785943..ae199f5 100644
---- a/drivers/clk/msm/Makefile
-+++ b/drivers/clk/msm/Makefile
-@@ -8,3 +8,4 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
- 
- clk-msm-$(CONFIG_MSM_GCC_8960) += gcc-8960.o
-+clk-msm-$(CONFIG_MSM_MMCC_8960) += mmcc-8960.o
-diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-index b8e702b..4e8b8d0 100644
---- a/drivers/clk/msm/core.c
-+++ b/drivers/clk/msm/core.c
-@@ -176,6 +176,9 @@ static const struct of_device_id msm_cc_match_table[] = {
- #ifdef CONFIG_MSM_GCC_8960
- 	{ .compatible = "qcom,gcc-8960", .data = &msm_gcc_8960_matches },
- #endif
-+#ifdef CONFIG_MSM_MMCC_8960
-+	{ .compatible = "qcom,mmcc-8960", .data = &msm_mmcc_8960_matches },
-+#endif
- 	{ }
- };
- MODULE_DEVICE_TABLE(of, msm_cc_match_table);
-diff --git a/drivers/clk/msm/internal.h b/drivers/clk/msm/internal.h
-index b0ffda7..45435a8 100644
---- a/drivers/clk/msm/internal.h
-+++ b/drivers/clk/msm/internal.h
-@@ -22,5 +22,6 @@ struct msm_clk_match {
- };
- 
- extern const struct msm_clk_match msm_gcc_8960_matches;
-+extern const struct msm_clk_match msm_mmcc_8960_matches;
- 
- #endif
-diff --git a/drivers/clk/msm/mmcc-8960.c b/drivers/clk/msm/mmcc-8960.c
-new file mode 100644
-index 0000000..e7b7867
---- /dev/null
-+++ b/drivers/clk/msm/mmcc-8960.c
-@@ -0,0 +1,142 @@
-+/*
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/clk-provider.h>
-+
-+#include "internal.h"
-+#include "clk-pll.h"
-+#include "clk-rcg.h"
-+#include "clk-branch.h"
-+
-+static struct pll_desc pll2_desc = {
-+	.l_reg = 0x320,
-+	.m_reg = 0x324,
-+	.n_reg = 0x328,
-+	.config_reg = 0x32c,
-+	.mode_reg = 0x31c,
-+	.status_reg = 0x334,
-+	.status_bit = 16,
-+};
-+
-+#define PXO	0
-+#define PLL2	1
-+#define PLL8	2
-+
-+static u8 mmcc_pxo_pll2_pll8_map[] = {
-+	[PXO]	= 0,
-+	[PLL2]	= 1,
-+	[PLL8]	= 2,
-+};
-+
-+static struct freq_tbl clk_tbl_mdp[] = {
-+	{   9600000, PLL8, 0, 1, 40 },
-+	{  13710000, PLL8, 0, 1, 28 },
-+	{  27000000, PXO,  0, 0,  0 },
-+	{  29540000, PLL8, 0, 1, 13 },
-+	{  34910000, PLL8, 0, 1, 11 },
-+	{  38400000, PLL8, 0, 1, 10 },
-+	{  59080000, PLL8, 0, 2, 13 },
-+	{  76800000, PLL8, 0, 1,  5 },
-+	{  85330000, PLL8, 0, 2,  9 },
-+	{  96000000, PLL8, 0, 1,  4 },
-+	{ 128000000, PLL8, 0, 1,  3 },
-+	{ 160000000, PLL2, 0, 1,  5 },
-+	{ 177780000, PLL2, 0, 2,  9 },
-+	{ 200000000, PLL2, 0, 1,  4 },
-+	{ 228571000, PLL2, 0, 2,  7 },
-+	{ 266667000, PLL2, 0, 1,  3 },
-+	{ }
-+};
-+
-+static struct rcg_dyn_desc mdp_rcg = {
-+	.ctl_reg = 0xc0,
-+	.ns_reg = 0xd0,
-+	.md0_reg = 0xc4,
-+	.md1_reg = 0xc8,
-+	.ctl_bit = 2,
-+	.mnctr0_en_bit = 8,
-+	.mnctr1_en_bit = 5,
-+	.mnctr0_reset_bit = 31,
-+	.mnctr1_reset_bit = 30,
-+	.mnctr0_mode_shift = 9,
-+	.mnctr1_mode_shift = 6,
-+	.src0_sel_shift = 3,
-+	.src1_sel_shift = 0,
-+	.n0_val_shift = 22,
-+	.n1_val_shift = 14,
-+	.m0_val_shift = 8,
-+	.m1_val_shift = 8,
-+	.mux_sel_bit = 11,
-+	.parent_map = mmcc_pxo_pll2_pll8_map,
-+	.freq_tbl = clk_tbl_mdp,
-+};
-+
-+static struct branch_desc mdp_cxc = {
-+	.ctl_reg = 0xc0,
-+	.halt_reg = 0x1d0,
-+	.ctl_bit = 0,
-+	.halt_bit = 10,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct freq_tbl clk_tbl_rot[] = {
-+	{  27000000, PXO,   1 },
-+	{  29540000, PLL8, 13 },
-+	{  32000000, PLL8, 12 },
-+	{  38400000, PLL8, 10 },
-+	{  48000000, PLL8,  8 },
-+	{  54860000, PLL8,  7 },
-+	{  64000000, PLL8,  6 },
-+	{  76800000, PLL8,  5 },
-+	{  96000000, PLL8,  4 },
-+	{ 100000000, PLL2,  8 },
-+	{ 114290000, PLL2,  7 },
-+	{ 133330000, PLL2,  6 },
-+	{ 160000000, PLL2,  5 },
-+	{ 200000000, PLL2,  4 },
-+	{ }
-+};
-+
-+static struct rcg_dyn_desc rot_rcg = {
-+	.ctl_reg = 0xe0,
-+	.ns_reg = 0xe8,
-+	.ctl_bit = 2,
-+	.pre_div0_shift = 22,
-+	.pre_div1_shift = 26,
-+	.src0_sel_shift = 16,
-+	.src1_sel_shift = 19,
-+	.mux_sel_bit = 30,
-+	.parent_map = mmcc_pxo_pll2_pll8_map,
-+	.freq_tbl = clk_tbl_rot,
-+};
-+
-+static struct branch_desc rot_cxc = {
-+	.ctl_reg = 0xe0,
-+	.halt_reg = 0x1d0,
-+	.ctl_bit = 0,
-+	.halt_bit = 15,
-+	.halt_check = BRANCH_HALT,
-+};
-+
-+static struct of_clk_match msm_mmcc_clk_match[] = {
-+	{ .name = "pll2", .driver_data = &pll2_desc },
-+	{ .name = "mdp_rcg", .driver_data = &mdp_rcg },
-+	{ .name = "mdp_cxc", .driver_data = &mdp_cxc },
-+	{ .name = "rot_rcg", .driver_data = &rot_rcg },
-+	{ .name = "rot_cxc", .driver_data = &rot_cxc },
-+};
-+
-+const struct msm_clk_match msm_mmcc_8960_matches = {
-+	.matches = msm_mmcc_clk_match,
-+	.size = ARRAY_SIZE(msm_mmcc_clk_match)
-+};
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+>
+> Thanks,
+> -Toshi
+>
+>
 
