@@ -1,87 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab3GYQka (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:40:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab3GYQk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:40:28 -0400
-Message-ID: <51F154F2.20400@redhat.com>
-Date: Fri, 26 Jul 2013 00:40:18 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756565Ab3GYQmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:42:22 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:32022 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab3GYQmT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:42:19 -0400
+Message-ID: <201307251642.r6PGgHx2002404@farm-0012.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Thu, 25 Jul 2013 12:41:15 -0400
+Subject: [PATCH v2] tile: handle 64-bit statistics in tilepro network driver
+In-Reply-To: <20130724.023126.792508581970927723.davem@davemloft.net>
+References: <20130724.023126.792508581970927723.davem@davemloft.net>
+	<cover.1374609948.git.cmetcalf@tilera.com>
+	<40362053a9f02d56a4f0c07a9982d96203723ec8.1374609948.git.cmetcalf@tilera.com>
+To: David Miller <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
 MIME-Version: 1.0
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [s390x] build error: undefined reference to `sie_exit'
-References: <209887675.5191065.1374718087774.JavaMail.root@redhat.com> <1999182864.5191140.1374718153443.JavaMail.root@redhat.com> <20130725092123.GD4288@osiris>
-In-Reply-To: <20130725092123.GD4288@osiris>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 05:21 PM, Heiko Carstens wrote:
-> On Wed, Jul 24, 2013 at 10:09:13PM -0400, Zhouping Liu wrote:
->> Hello All,
->>
->> I met the below error on b3a3a9c441 with s390x arch:
->> arch/s390/built-in.o: In function `sys_call_table_emu':
->> (.rodata+0x2b98): undefined reference to `sie_exit'
->> arch/s390/built-in.o: In function `sys_call_table_emu':
->> (.rodata+0x2ba0): undefined reference to `sie_exit'
->> make: *** [vmlinux] Error 1
-> Thanks for reporting, I just committed the patch below to our
-> local branch:
->
->  From c073dc1f474094b5610739e752d83bcb547b1d7d Mon Sep 17 00:00:00 2001
-> From: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Date: Thu, 25 Jul 2013 11:16:48 +0200
-> Subject: [PATCH] s390/perf: fix compile error (undefined reference sie_exit)
->
-> The perf_event code references sie_exit even if KVM is not available.
-> So add proper ifdefs to fix this one:
->
-> arch/s390/built-in.o: In function `sys_call_table_emu':
-> (.rodata+0x2b98): undefined reference to `sie_exit'
-> arch/s390/built-in.o: In function `sys_call_table_emu':
-> (.rodata+0x2ba0): undefined reference to `sie_exit'
-> make: *** [vmlinux] Error 1
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+v2: use <linux/u64_stats_sync.h> primitives
 
-The patch is good for me.
+ drivers/net/ethernet/tile/tilepro.c | 77 ++++++++++++++++++++++++++-----------
+ 1 file changed, 54 insertions(+), 23 deletions(-)
 
-Tested-by: Zhouping Liu <zliu@redhat.com>
-
-Thanks,
-Zhouping
-
-> Reported-by: Zhouping Liu <zliu@redhat.com>
-> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-> ---
->   arch/s390/kernel/perf_event.c | 9 +++++----
->   1 file changed, 5 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/s390/kernel/perf_event.c b/arch/s390/kernel/perf_event.c
-> index a6fc037..500aa10 100644
-> --- a/arch/s390/kernel/perf_event.c
-> +++ b/arch/s390/kernel/perf_event.c
-> @@ -52,12 +52,13 @@ static struct kvm_s390_sie_block *sie_block(struct pt_regs *regs)
->   
->   static bool is_in_guest(struct pt_regs *regs)
->   {
-> -	unsigned long ip = instruction_pointer(regs);
-> -
->   	if (user_mode(regs))
->   		return false;
-> -
-> -	return ip == (unsigned long) &sie_exit;
-> +#if defined(CONFIG_KVM) || defined(CONFIG_KVM_MODULE)
-> +	return instruction_pointer(regs) == (unsigned long) &sie_exit;
-> +#else
-> +	return false;
-> +#endif
->   }
->   
->   static unsigned long guest_is_user_mode(struct pt_regs *regs)
+diff --git a/drivers/net/ethernet/tile/tilepro.c b/drivers/net/ethernet/tile/tilepro.c
+index 3643549..f66ac20 100644
+--- a/drivers/net/ethernet/tile/tilepro.c
++++ b/drivers/net/ethernet/tile/tilepro.c
+@@ -31,6 +31,7 @@
+ #include <linux/in6.h>
+ #include <linux/timer.h>
+ #include <linux/io.h>
++#include <linux/u64_stats_sync.h>
+ #include <asm/checksum.h>
+ #include <asm/homecache.h>
+ 
+@@ -156,10 +157,13 @@ struct tile_netio_queue {
+  * Statistics counters for a specific cpu and device.
+  */
+ struct tile_net_stats_t {
+-	u32 rx_packets;
+-	u32 rx_bytes;
+-	u32 tx_packets;
+-	u32 tx_bytes;
++	struct u64_stats_sync syncp;
++	u64 rx_packets;		/* total packets received	*/
++	u64 tx_packets;		/* total packets transmitted	*/
++	u64 rx_bytes;		/* total bytes received 	*/
++	u64 tx_bytes;		/* total bytes transmitted	*/
++	u64 rx_errors;		/* packets truncated or marked bad by hw */
++	u64 rx_dropped;		/* packets not for us or intf not up */
+ };
+ 
+ 
+@@ -218,8 +222,6 @@ struct tile_net_priv {
+ 	int network_cpus_count;
+ 	/* Credits per network cpu. */
+ 	int network_cpus_credits;
+-	/* Network stats. */
+-	struct net_device_stats stats;
+ 	/* For NetIO bringup retries. */
+ 	struct delayed_work retry_work;
+ 	/* Quick access to per cpu data. */
+@@ -847,6 +849,8 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
+ 		}
+ 	}
+ 
++	u64_stats_update_begin(&stats->syncp);
++
+ 	if (filter) {
+ 
+ 		/* ISSUE: Update "drop" statistics? */
+@@ -881,6 +885,8 @@ static bool tile_net_poll_aux(struct tile_net_cpu *info, int index)
+ 		stats->rx_bytes += len;
+ 	}
+ 
++	u64_stats_update_end(&stats->syncp);
++
+ 	/* ISSUE: It would be nice to defer this until the packet has */
+ 	/* actually been processed. */
+ 	tile_net_return_credit(info);
+@@ -1907,8 +1913,10 @@ busy:
+ 		kfree_skb(olds[i]);
+ 
+ 	/* Update stats. */
++	u64_stats_update_begin(&stats->syncp);
+ 	stats->tx_packets += num_segs;
+ 	stats->tx_bytes += (num_segs * sh_len) + d_len;
++	u64_stats_update_end(&stats->syncp);
+ 
+ 	/* Make sure the egress timer is scheduled. */
+ 	tile_net_schedule_egress_timer(info);
+@@ -2089,8 +2097,10 @@ busy:
+ 		kfree_skb(olds[i]);
+ 
+ 	/* HACK: Track "expanded" size for short packets (e.g. 42 < 60). */
++	u64_stats_update_begin(&stats->syncp);
+ 	stats->tx_packets++;
+ 	stats->tx_bytes += ((len >= ETH_ZLEN) ? len : ETH_ZLEN);
++	u64_stats_update_end(&stats->syncp);
+ 
+ 	/* Make sure the egress timer is scheduled. */
+ 	tile_net_schedule_egress_timer(info);
+@@ -2127,30 +2137,51 @@ static int tile_net_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+  *
+  * Returns the address of the device statistics structure.
+  */
+-static struct net_device_stats *tile_net_get_stats(struct net_device *dev)
++static struct rtnl_link_stats64 *tile_net_get_stats64(struct net_device *dev,
++		struct rtnl_link_stats64 *stats)
+ {
+ 	struct tile_net_priv *priv = netdev_priv(dev);
+-	u32 rx_packets = 0;
+-	u32 tx_packets = 0;
+-	u32 rx_bytes = 0;
+-	u32 tx_bytes = 0;
++	u64 rx_packets = 0, tx_packets = 0;
++	u64 rx_bytes = 0, tx_bytes = 0;
++	u64 rx_errors = 0, rx_dropped = 0;
+ 	int i;
+ 
+ 	for_each_online_cpu(i) {
+-		if (priv->cpu[i]) {
+-			rx_packets += priv->cpu[i]->stats.rx_packets;
+-			rx_bytes += priv->cpu[i]->stats.rx_bytes;
+-			tx_packets += priv->cpu[i]->stats.tx_packets;
+-			tx_bytes += priv->cpu[i]->stats.tx_bytes;
+-		}
++		struct tile_net_stats_t *cpu_stats;
++		u64 trx_packets, ttx_packets, trx_bytes, ttx_bytes;
++		u64 trx_errors, trx_dropped;
++		unsigned int start;
++
++		if (priv->cpu[i] == NULL)
++			continue;
++		cpu_stats = &priv->cpu[i]->stats;
++
++		do {
++			start = u64_stats_fetch_begin_bh(&cpu_stats->syncp);
++			trx_packets = cpu_stats->rx_packets;
++			ttx_packets = cpu_stats->tx_packets;
++			trx_bytes   = cpu_stats->rx_bytes;
++			ttx_bytes   = cpu_stats->tx_bytes;
++			trx_errors  = cpu_stats->rx_errors;
++			trx_dropped = cpu_stats->rx_dropped;
++		} while (u64_stats_fetch_retry_bh(&cpu_stats->syncp, start));
++
++		rx_packets += trx_packets;
++		tx_packets += ttx_packets;
++		rx_bytes   += trx_bytes;
++		tx_bytes   += ttx_bytes;
++		rx_errors  += trx_errors;
++		rx_dropped += trx_dropped;
+ 	}
+ 
+-	priv->stats.rx_packets = rx_packets;
+-	priv->stats.rx_bytes = rx_bytes;
+-	priv->stats.tx_packets = tx_packets;
+-	priv->stats.tx_bytes = tx_bytes;
++	stats->rx_packets = rx_packets;
++	stats->tx_packets = tx_packets;
++	stats->rx_bytes   = rx_bytes;
++	stats->tx_bytes   = tx_bytes;
++	stats->rx_errors  = rx_errors;
++	stats->rx_dropped = rx_dropped;
+ 
+-	return &priv->stats;
++	return stats;
+ }
+ 
+ 
+@@ -2287,7 +2318,7 @@ static const struct net_device_ops tile_net_ops = {
+ 	.ndo_stop = tile_net_stop,
+ 	.ndo_start_xmit = tile_net_tx,
+ 	.ndo_do_ioctl = tile_net_ioctl,
+-	.ndo_get_stats = tile_net_get_stats,
++	.ndo_get_stats64 = tile_net_get_stats64,
+ 	.ndo_change_mtu = tile_net_change_mtu,
+ 	.ndo_tx_timeout = tile_net_tx_timeout,
+ 	.ndo_set_mac_address = tile_net_set_mac_address,
+-- 
+1.8.3.1
 
