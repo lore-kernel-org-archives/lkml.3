@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537Ab3GYEPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:15:14 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:58648 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab3GYEPI (ORCPT
+	id S1753250Ab3GYEP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:15:57 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:41844 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479Ab3GYEPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:15:08 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: The future of DT binding maintainership
-To: Jon Loeliger <jdl@jdl.com>, Tomasz Figa <tomasz.figa@gmail.com>
-Cc: "Chaiken, Alison" <Alison_Chaiken@mentor.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <E1V1Nkn-00072x-Df@jdl.com>
-References: <CACxGe6vtJPbbqwpH8Th5S36Hx50f39j1P4OpLb-Um9xQie6Lng@mail.gmail.com> <2962401.WRRoYlXkRr@flatron> <60BA5429A0E1584BA3633194F6F993B502B21362@NA-MBX-03.mgc.mentorg.com> <1925583.R0td2pS6as@flatron> <E1V1Nkn-00072x-Df@jdl.com>
-Date: Wed, 24 Jul 2013 21:26:16 +0100
-Message-Id: <20130724202617.049E33E13AF@localhost>
+	Thu, 25 Jul 2013 00:15:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130724220631.GA10541@kroah.com>
+References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
+	<1374690977-10877-1-git-send-email-wonkang@gctsemi.com>
+	<20130724215340.GY5585@mwanda>
+	<20130724220631.GA10541@kroah.com>
+Date: Thu, 25 Jul 2013 13:15:07 +0900
+Message-ID: <CABe_0=+bXAuXhG+XG4ObUO_2MYD_XWxF_wbTVrpKagmHi8_CDQ@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
+From: Won Kang <wkang77@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        wonkang@gctsemi.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Jul 2013 16:34:49 -0500, Jon Loeliger <jdl@jdl.com> wrote:
-> 
-> > > Is there a schema out there in the wild that exemplifies what you mean?
-> > 
-> > Not really. The format of schemas is currently in design stage. I'm 
-> > currently rethinking some details of what I have in my mind. Give me some 
-> > more time and I will post an RFC to the ML with all that written down.
-> 
-> ...and...
-> 
-> > > The schema-check idea reminds me of the W3C HTML validators:
-> > > 
-> > >       http://validator.w3.org/
-> > > 
-> > > Since device-tree source looks a bit like XML (or maybe more like JSON),
-> > > will be the schemas be similar in spirit to DTDs, and is it helpful to
-> > > think of the validator in this spirit?   Or will the checker be more
-> > > like "gcc -Wall", since it will be invoked by a compiler?
-> > 
-> > My idea is to implement compile time verification in dtc, so I guess it 
-> > will be more like the latter. Since dts is what dtc can already parse, my 
-> > plan is to keep the schemas in spirit to dts, just modifying/extending it 
-> > to allow specifying bindings with them, rather than static values.
-> > 
-> > Best regards,
-> > Tomasz
-> 
-> It is possible to add some-damn XML DTD parsing and
+GDM7240 is in LE where as GDM7243 (currently under development) is in BE.
 
-/me runs screaming.
+User space applications needs to discover the endianess to properly
+encode/decode LTE control protocols. We have existing customers
+already deploying units in large volume, and want to avoid forcing
+them to change SDK APIs along with kernel updates.
+At some point, It will have to be fixed with SDK API can interoperate properly.
 
-g.
+On Thu, Jul 25, 2013 at 7:06 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Thu, Jul 25, 2013 at 12:53:40AM +0300, Dan Carpenter wrote:
+>> > +static int gdm_lte_ioctl_get_data(struct wm_req_t *req, struct net_device *dev)
+>> > +{
+>> > +   u16 id = req->data_id;
+>> > +
+>> > +   switch (id) {
+>> > +   case GET_ENDIAN_INFO:
+>> > +           /* required for the user space application to find out device endian */
+>> > +           get_dev_endian(&req->data, dev);
+>> > +           break;
+>> > +   default:
+>> > +           printk(KERN_ERR "glte: ioctl - unknown type %d\n", id);
+>> > +           break;
+>> > +   }
+>> > +   return 0;
+>> > +}
+>>
+>> This should be a sysfs file not an ioctl.  What would break if we
+>> fixed this right now (as opposed to waiting until we can't change
+>> the API?).
+>>
+>> Otherwise if we can't change this, then it should return an error
+>> code instead of printing a message.
+>
+> It should just be removed, why would you care about the endian-ness of
+> the device at all?
+>
+> thanks,
+>
+> greg k-h
