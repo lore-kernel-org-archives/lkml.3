@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758204Ab3GYXQN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:16:13 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:49494 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756722Ab3GYXQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:16:11 -0400
-Message-ID: <51F1B17F.30902@ti.com>
-Date: Thu, 25 Jul 2013 19:15:11 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-References: <1372467663-31425-1-git-send-email-santosh.shilimkar@ti.com> <20130629152959.GB31339@mtj.dyndns.org> <20130629172123.GA3353@n2100.arm.linux.org.uk> <20130629175743.GA382@mtj.dyndns.org> <CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com> <20130629195549.GE3353@n2100.arm.linux.org.uk> <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com> <51D18DBA.6090608@ti.com> <51F1A7AA.8080700@ti.com> <20130725223658.GJ26107@mtj.dyndns.org>
-In-Reply-To: <20130725223658.GJ26107@mtj.dyndns.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1758230Ab3GYXRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:17:30 -0400
+Received: from oproxy13-pub.unifiedlayer.com ([69.89.16.30]:50624 "HELO
+	oproxy13-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757262Ab3GYXR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 19:17:29 -0400
+Date: Thu, 25 Jul 2013 16:17:15 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@kernel.org>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        torvalds@linux-foundation.org
+Subject: Re: Ugly patches for stolen reservation
+Message-ID: <20130725161715.50d85926@jbarnes-desktop>
+In-Reply-To: <5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
+References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
+	<20130725200551.GA16719@gmail.com>
+	<5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 25 July 2013 06:36 PM, Tejun Heo wrote:
-> Hello,
+Well, it's ok if the boot loader writes to this memory, the worst
+that'll happen is you'll see garbage on the screen.  If the boot loader
+tries to do MMIO mapping on top it'll get into trouble... but why would
+it do that?
+
+Jesse
+
+On Thu, 25 Jul 2013 15:42:25 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> So the bootloader is just as likely to step on things... what happens when/if it does?
 > 
-> On Thu, Jul 25, 2013 at 06:33:14PM -0400, Santosh Shilimkar wrote:
->> Any comments here. I would like to know your plan for the new
->> API. You might have seen on the ARM no-bootmem thread, we started to
->> move ARM to nobootmem with Russell's help.
+> Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> >* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >
+> >> Patch 2/2 has the description, but suffice it to say I'm 
+> >> not really pleased with this, though it does solve a 
+> >> problem we have.  On some machines, we get MMIO space 
+> >> allocated on top of this hidden memory, which can cause 
+> >> problems.  I'm not sure if there are similar problems for 
+> >> other hunks of the address space; if so it's possible 
+> >> this could be made more general (though the bits for 
+> >> looking up the address of this region are definitely 
+> >> Intel graphics specific).
+> >
+> >It looks pretty hardware specific. Discovering it the hard 
+> >way and marking it e820 reserved in an early quirk is what 
+> >the firmware should have done to begin with - and I doubt 
+> >the kernel could do anything significantly cleaner.
+> >
+> >How does Windows manage to not crash? By luckily never 
+> >allocating PCI resources on top of the RAM? Or does it have 
+> >a quirk?
+> >
+> >> Chris has some patches on top to add a new E820 type so 
+> >> we can look up the region later, which removes some 
+> >> redundant code in the i915 driver at least.
+> >> 
+> >> Any comments?  I assume no one likes this, but maybe it's 
+> >> just another early quirk we'll have to live with...
+> >
+> >No strong feelings against it - my only suggestion would be 
+> >to make this more visible - right now it's added as e820 
+> >reserved which hides amongst other areas already marked 
+> >reserved - would a low-key printk() of the range added make 
+> >it more apparent that a kernel quirk activated here?
+> >
+> >Just so that people know that it came from the kernel, not 
+> >the firmware.
+> >
+> >But in any case:
+> >
+> >Acked-by: Ingo Molnar <mingo@kernel.org>
+> >
+> >Thanks,
+> >
+> >	Ingo
 > 
-> Ooh, the plan sounds good to me and I was thinking you were gonna do
-> it?
-> 
-Wooo..
-
-Sorry if I wasn't clear before, but I need help to at least have new
-memblock API support since I am not familiar with memblock code. 
-I could help in adaptation to the new API for ARM arch and
-core kernel code.
-
-Let me know your thoughts.
-
-Regards,
-Santosh
 
 
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
