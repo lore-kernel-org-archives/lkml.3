@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab3GYICR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:02:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34043 "EHLO mx2.suse.de"
+	id S1754996Ab3GYICo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:02:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:16845 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab3GYICI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:02:08 -0400
-Date: Thu, 25 Jul 2013 10:02:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Cgroups <cgroups@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] memcg: remove redundant code in
- mem_cgroup_force_empty_write()
-Message-ID: <20130725080205.GE12818@dhcp22.suse.cz>
-References: <51F08505.6050402@huawei.com>
+	id S1754862Ab3GYIC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:02:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,742,1367996400"; 
+   d="scan'208";a="351296248"
+Date: Thu, 25 Jul 2013 12:53:51 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Joel Fernandes <joelf@ti.com>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Dan Williams <djbw@fb.com>,
+        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+        "Nayak, Rajendra" <rnayak@ti.com>,
+        "Vutla, Lokesh" <lokeshvutla@ti.com>,
+        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
+        Matt Porter <matt@ohporter.com>, Rob Herring <rob.herring@calxeda.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Koen Kooi <koen@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
+Message-ID: <20130725072351.GJ18642@intel.com>
+References: <1374597804-3961-1-git-send-email-joelf@ti.com>
+ <51EF8A52.90902@metafoo.de>
+ <51EF8C2B.2030409@ti.com>
+ <51EF8F4E.8080806@metafoo.de>
+ <FB20353E-4890-4462-A671-3587A3841B4A@ti.com>
+ <51EF92F2.3030405@metafoo.de>
+ <51F0231C.7000401@ti.com>
+ <20130724183329.GH18642@intel.com>
+ <51F02CBA.5060704@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F08505.6050402@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51F02CBA.5060704@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25-07-13 09:53:09, Li Zefan wrote:
-> vfs guarantees the cgroup won't be destroyed, so it's redundant
-> to get a css reference.
+On Wed, Jul 24, 2013 at 02:36:26PM -0500, Joel Fernandes wrote:
+> > Also another point worth considering is the approach Russell suggested, I havent
+> > gotten a chance to dig deeper but if I understood it correctly then programming
+> > the device_dma_parameters should be the right thing to do. Again I need to look
+> > deeper and esp wrt edma
 > 
-> Signed-off-by: Li Zefan <lizefan@huawei.com>
-
-Acked-by: Michal Hocko <mhocko@suse.cz>
-
-Thanks!
-
-> ---
->  mm/memcontrol.c | 7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
+> OK. I have some patches sitting in my tree too that I'm working on. With
+> that I don't need to know about maximum number of allowed segments and
+> can send along any number of segment. I will rework them and post them.
+> fwiw, I will also implement caps API incase like Lars did populating the
+> other fields though these will not be unused.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 03c8bf7..aa3e478 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -5015,15 +5015,10 @@ static int mem_cgroup_force_empty(struct mem_cgroup *memcg)
->  static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
-> -	int ret;
->  
->  	if (mem_cgroup_is_root(memcg))
->  		return -EINVAL;
-> -	css_get(&memcg->css);
-> -	ret = mem_cgroup_force_empty(memcg);
-> -	css_put(&memcg->css);
-> -
-> -	return ret;
-> +	return mem_cgroup_force_empty(memcg);
->  }
->  
->  
-> -- 
-> 1.8.0.2
+> For segment size, at this time I don't know any driver that uses it
+> other than davinci-pcm. For this reason the calculations can be done as
+> Lars suggested (for minimum of maximum). Do you know in advance if
+> you're going to amend to drop segment size if we go with what Russell
+> suggested, or are you going to leave the seg-size in the caps API anyway.
+I am just back and havent really done my work on this. Let me check and as I
+said if my understanding is right I would be inclined to remove these fields...
 
+~Vinod
 -- 
-Michal Hocko
-SUSE Labs
