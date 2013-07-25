@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab3GYSDZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:03:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:20303 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756252Ab3GYSDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:03:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,744,1367996400"; 
-   d="scan'208";a="376059376"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>
-CC: "bp@suse.de" <bp@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-Thread-Topic: [PATCH] x86/mce: Pay no attention to 'F' bit in MCACOD when
- parsing 'UC' errors.
-Thread-Index: AQHOiSMYpPjuX7YEhUa+bD/+CCcJ8Jl1roDA
-Date: Thu, 25 Jul 2013 18:01:33 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F31C9F32B@ORSMSX106.amr.corp.intel.com>
-References: <20130724061626.GA18995@gchen.bj.intel.com>
- <20130725103647.5009.92648.stgit@localhost.localdomain>
-In-Reply-To: <20130725103647.5009.92648.stgit@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757323Ab3GYSEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:04:31 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19892 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756972Ab3GYRwC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:52:02 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        fuse-devel@lists.sourceforge.net
+Subject: [PATCH V8 05/33] fuse: convert fuse to use iov_iter_copy_[to|from]_user
+Date: Thu, 25 Jul 2013 12:50:31 -0500
+Message-Id: <1374774659-13121-6-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6PI3vWZ005909
 
-	MCESEV(
-+		PANIC, "Action required but kernel thread is not continuable",
-+		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR, MCI_UC_SAR|MCI_ADDR),
-+		MCGMASK(MCG_STATUS_RIPV|MCG_STATUS_EIPV, MCG_STATUS_RIPV|MCG_STATUS_EIPV),
-+		KERNEL
-+		),
-+	MCESEV(
- 		AR, "Action required: data load error in a user process",
- 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|MCACOD_DATA),
- 		USER
+A future patch hides the internals of struct iov_iter, so fuse should
+be using the supported interface.
 
-This just gives us a better panic message. Right?  Without this we'd keep walking the
-severity table until we hit the "Action required: unknown MCACOD" entry which will
-match and force a panic anyway.
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+Cc: fuse-devel@lists.sourceforge.net
+---
+ fs/fuse/file.c | 29 ++++++++---------------------
+ 1 file changed, 8 insertions(+), 21 deletions(-)
 
-So I might look for better wording.  As far as the h/w is concerned the thread is continuable.
-Linux is just not smart enough (yet) to take the required recovery action.
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 5c121fe..633766c 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1861,30 +1861,17 @@ static int fuse_ioctl_copy_user(struct page **pages, struct iovec *iov,
+ 	while (iov_iter_count(&ii)) {
+ 		struct page *page = pages[page_idx++];
+ 		size_t todo = min_t(size_t, PAGE_SIZE, iov_iter_count(&ii));
+-		void *kaddr;
++		size_t left;
+ 
+-		kaddr = kmap(page);
+-
+-		while (todo) {
+-			char __user *uaddr = ii.iov->iov_base + ii.iov_offset;
+-			size_t iov_len = ii.iov->iov_len - ii.iov_offset;
+-			size_t copy = min(todo, iov_len);
+-			size_t left;
+-
+-			if (!to_user)
+-				left = copy_from_user(kaddr, uaddr, copy);
+-			else
+-				left = copy_to_user(uaddr, kaddr, copy);
+-
+-			if (unlikely(left))
+-				return -EFAULT;
++		if (!to_user)
++			left = iov_iter_copy_from_user(page, &ii, 0, todo);
++		else
++			left = iov_iter_copy_to_user(page, &ii, 0, todo);
+ 
+-			iov_iter_advance(&ii, copy);
+-			todo -= copy;
+-			kaddr += copy;
+-		}
++		if (unlikely(left))
++			return -EFAULT;
+ 
+-		kunmap(page);
++		iov_iter_advance(&ii, todo);
+ 	}
+ 
+ 	return 0;
+-- 
+1.8.3.4
 
--Tony
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
