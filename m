@@ -1,52 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab3GYJ7v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:59:51 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34002 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753121Ab3GYJ7u (ORCPT
+	id S1755392Ab3GYKAo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:00:44 -0400
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:47951 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753121Ab3GYKAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:59:50 -0400
-Date: Thu, 25 Jul 2013 11:59:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 0/8] perf: Finer grained full dynticks handling
-Message-ID: <20130725095938.GI27075@twins.programming.kicks-ass.net>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 25 Jul 2013 06:00:41 -0400
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@gmail.com>
+Subject: [PATCH v2] mac80211: use oneshot blink API for LED triggers
+Date: Thu, 25 Jul 2013 12:00:26 +0200
+Message-Id: <1374746426-22030-1-git-send-email-fabio.baltieri@gmail.com>
+X-Mailer: git-send-email 1.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 02:30:58AM +0200, Frederic Weisbecker wrote:
-> Hi,
-> 
-> This patchset inspires from Peterz patch in http://marc.info/?l=linux-kernel&m=137155182121860
-> to make perf retain the timer tick less often, ie: only when there are freq events
-> or when one throttles.
-> 
-> The main purpose is to make the lockup detector work with full dynticks, as I suspect
-> that distros want to enable both...
-> 
-> 
-> You can fetch from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
-> 	perf/nohz
-> 
-> Thanks,
-> 	Frederic
+Change mac80211 LED trigger code to use the generic
+led_trigger_blink_oneshot() API for transmit and receive activity
+indication.
 
-Awesome, looks good, thanks Frederic!
+This gives a better feedback to the user, as with the new API each
+activity event results in a visible blink, while a constant traffic
+results in a continuous blink at constant rate.
 
-Acked-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Fabio Baltieri <fabio.baltieri@gmail.com>
+---
+
+Changes from v1:
+- fixed some wrong indentations
+
+ net/mac80211/ieee80211_i.h |  1 -
+ net/mac80211/led.c         | 19 +++++++------------
+ net/mac80211/led.h         |  2 +-
+ net/mac80211/status.c      |  2 +-
+ net/mac80211/tx.c          |  1 -
+ 5 files changed, 9 insertions(+), 16 deletions(-)
+
+diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
+index 8412a30..1178139 100644
+--- a/net/mac80211/ieee80211_i.h
++++ b/net/mac80211/ieee80211_i.h
+@@ -1063,7 +1063,6 @@ struct ieee80211_local {
+ 	u32 dot11TransmittedFrameCount;
+ 
+ #ifdef CONFIG_MAC80211_LEDS
+-	int tx_led_counter, rx_led_counter;
+ 	struct led_trigger *tx_led, *rx_led, *assoc_led, *radio_led;
+ 	struct tpt_led_trigger *tpt_led_trigger;
+ 	char tx_led_name[32], rx_led_name[32],
+diff --git a/net/mac80211/led.c b/net/mac80211/led.c
+index bcffa69..e2b8364 100644
+--- a/net/mac80211/led.c
++++ b/net/mac80211/led.c
+@@ -12,27 +12,22 @@
+ #include <linux/export.h>
+ #include "led.h"
+ 
++#define MAC80211_BLINK_DELAY 50 /* ms */
++
+ void ieee80211_led_rx(struct ieee80211_local *local)
+ {
++	unsigned long led_delay = MAC80211_BLINK_DELAY;
+ 	if (unlikely(!local->rx_led))
+ 		return;
+-	if (local->rx_led_counter++ % 2 == 0)
+-		led_trigger_event(local->rx_led, LED_OFF);
+-	else
+-		led_trigger_event(local->rx_led, LED_FULL);
++	led_trigger_blink_oneshot(local->rx_led, &led_delay, &led_delay, 0);
+ }
+ 
+-/* q is 1 if a packet was enqueued, 0 if it has been transmitted */
+-void ieee80211_led_tx(struct ieee80211_local *local, int q)
++void ieee80211_led_tx(struct ieee80211_local *local)
+ {
++	unsigned long led_delay = MAC80211_BLINK_DELAY;
+ 	if (unlikely(!local->tx_led))
+ 		return;
+-	/* not sure how this is supposed to work ... */
+-	local->tx_led_counter += 2*q-1;
+-	if (local->tx_led_counter % 2 == 0)
+-		led_trigger_event(local->tx_led, LED_OFF);
+-	else
+-		led_trigger_event(local->tx_led, LED_FULL);
++	led_trigger_blink_oneshot(local->tx_led, &led_delay, &led_delay, 0);
+ }
+ 
+ void ieee80211_led_assoc(struct ieee80211_local *local, bool associated)
+diff --git a/net/mac80211/led.h b/net/mac80211/led.h
+index e0275d9..6ca2f29 100644
+--- a/net/mac80211/led.h
++++ b/net/mac80211/led.h
+@@ -13,7 +13,7 @@
+ 
+ #ifdef CONFIG_MAC80211_LEDS
+ void ieee80211_led_rx(struct ieee80211_local *local);
+-void ieee80211_led_tx(struct ieee80211_local *local, int q);
++void ieee80211_led_tx(struct ieee80211_local *local);
+ void ieee80211_led_assoc(struct ieee80211_local *local,
+ 			 bool associated);
+ void ieee80211_led_radio(struct ieee80211_local *local,
+diff --git a/net/mac80211/status.c b/net/mac80211/status.c
+index 4343920..e3c889b 100644
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -557,7 +557,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
+ 
+ 	rcu_read_unlock();
+ 
+-	ieee80211_led_tx(local, 0);
++	ieee80211_led_tx(local);
+ 
+ 	/* SNMP counters
+ 	 * Fragments are passed to low-level drivers as separate skbs, so these
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 4105d0c..6c4e60d 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -1281,7 +1281,6 @@ static bool __ieee80211_tx(struct ieee80211_local *local,
+ 				    txpending);
+ 
+ 	ieee80211_tpt_led_trig_tx(local, fc, led_len);
+-	ieee80211_led_tx(local, 1);
+ 
+ 	WARN_ON_ONCE(!skb_queue_empty(skbs));
+ 
+-- 
+1.8.2
+
