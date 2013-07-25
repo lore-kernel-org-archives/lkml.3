@@ -1,179 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757862Ab3GYSLR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:11:17 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19808 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab3GYRvy (ORCPT
+	id S1757940Ab3GYSMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:12:45 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:55726 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab3GYSMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:51:54 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
-Date: Thu, 25 Jul 2013 12:50:26 -0500
-Message-Id: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.3.4
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Thu, 25 Jul 2013 14:12:41 -0400
+Message-ID: <51F16A96.6040706@acm.org>
+Date: Thu, 25 Jul 2013 13:12:38 -0500
+From: Corey Minyard <tcminyard@gmail.com>
+Reply-To: minyard@acm.org
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Zheng, Lv" <lv.zheng@intel.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected ACPI
+ IPMI transfers
+References: <cover.1370652213.git.lv.zheng@intel.com> <1520893.BbRK6T3F73@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E88024357A9@SHSMSX101.ccr.corp.intel.com> <76401540.gtU1MiBxPY@vostro.rjw.lan>
+In-Reply-To: <76401540.gtU1MiBxPY@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds a kernel interface to fs/aio.c so that kernel code can
-issue concurrent asynchronous IO to file systems.  It adds an aio command and
-file system methods which specify io memory with pages instead of userspace
-addresses.
+On 07/25/2013 07:06 AM, Rafael J. Wysocki wrote:
+> On Thursday, July 25, 2013 03:09:35 AM Zheng, Lv wrote:
+>> -stable according to the previous conversation.
+>>
+>>> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+>>> Sent: Thursday, July 25, 2013 7:38 AM
+>>>
+>>> On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
+>>>> This patch fixes races caused by unprotected ACPI IPMI transfers.
+>>>>
+>>>> We can see the following crashes may occur:
+>>>> 1. There is no tx_msg_lock held for iterating tx_msg_list in
+>>>>     ipmi_flush_tx_msg() while it is parellel unlinked on failure in
+>>>>     acpi_ipmi_space_handler() under protection of tx_msg_lock.
+>>>> 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
+>>>>     while it is parellel accessed in ipmi_flush_tx_msg() and
+>>>>     ipmi_msg_handler().
+>>>>
+>>>> This patch enhances tx_msg_lock to protect all tx_msg accesses to
+>>>> solve this issue.  Then tx_msg_lock is always held around complete()
+>>>> and tx_msg accesses.
+>>>> Calling smp_wmb() before setting msg_done flag so that messages
+>>>> completed due to flushing will not be handled as 'done' messages while
+>>>> their contents are not vaild.
+>>>>
+>>>> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+>>>> Cc: Zhao Yakui <yakui.zhao@intel.com>
+>>>> Reviewed-by: Huang Ying <ying.huang@intel.com>
+>>>> ---
+>>>>   drivers/acpi/acpi_ipmi.c |   10 ++++++++--
+>>>>   1 file changed, 8 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
+>>>> b37c189..527ee43 100644
+>>>> --- a/drivers/acpi/acpi_ipmi.c
+>>>> +++ b/drivers/acpi/acpi_ipmi.c
+>>>> @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct
+>>> acpi_ipmi_device *ipmi)
+>>>>   	struct acpi_ipmi_msg *tx_msg, *temp;
+>>>>   	int count = HZ / 10;
+>>>>   	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
+>>>> +	unsigned long flags;
+>>>>
+>>>> +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+>>>>   	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list, head) {
+>>>>   		/* wake up the sleep thread on the Tx msg */
+>>>>   		complete(&tx_msg->tx_complete);
+>>>>   	}
+>>>> +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+>>>>
+>>>>   	/* wait for about 100ms to flush the tx message list */
+>>>>   	while (count--) {
+>>>> @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct
+>>> ipmi_recv_msg *msg, void *user_msg_data)
+>>>>   			break;
+>>>>   		}
+>>>>   	}
+>>>> -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+>>>>
+>>>>   	if (!msg_found) {
+>>>>   		dev_warn(&pnp_dev->dev,
+>>>>   			 "Unexpected response (msg id %ld) is returned.\n",
+>>>>   			 msg->msgid);
+>>>> -		goto out_msg;
+>>>> +		goto out_lock;
+>>>>   	}
+>>>>
+>>>>   	/* copy the response data to Rx_data buffer */ @@ -286,10 +288,14 @@
+>>>> static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void
+>>> *user_msg_data)
+>>>>   	}
+>>>>   	tx_msg->rx_len = msg->msg.data_len;
+>>>>   	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
+>>>> +	/* tx_msg content must be valid before setting msg_done flag */
+>>>> +	smp_wmb();
+>>> That's suspicious.
+>>>
+>>> If you need the write barrier here, you'll most likely need a read barrier
+>>> somewhere else.  Where's that?
+>> It might depend on whether the content written before the smp_wmb() is used or not by the other side codes under the condition set after the smp_wmb().
+>>
+>> So comment could be treated as 2 parts:
+>> 1. do we need a paired smp_rmb().
+>> 2. do we need a smp_wmb().
+>>
+>> For 1.
+>> If we want a paired smp_rmb(), then it will appear in this function:
+>>
+>> 186 static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
+>> 187                 acpi_integer *value, int rem_time)
+>> 188 {
+>> 189         struct acpi_ipmi_buffer *buffer;
+>> 190
+>> 191         /*
+>> 192          * value is also used as output parameter. It represents the response
+>> 193          * IPMI message returned by IPMI command.
+>> 194          */
+>> 195         buffer = (struct acpi_ipmi_buffer *)value;
+>> 196         if (!rem_time && !msg->msg_done) {
+>> 197                 buffer->status = ACPI_IPMI_TIMEOUT;
+>> 198                 return;
+>> 199         }
+>> 200         /*
+>> 201          * If the flag of msg_done is not set or the recv length is zero, it
+>> 202          * means that the IPMI command is not executed correctly.
+>> 203          * The status code will be ACPI_IPMI_UNKNOWN.
+>> 204          */
+>> 205         if (!msg->msg_done || !msg->rx_len) {
+>> 206                 buffer->status = ACPI_IPMI_UNKNOWN;
+>> 207                 return;
+>> 208         }
+>> +         smp_rmb();
+>> 209         /*
+>> 210          * If the IPMI response message is obtained correctly, the status code
+>> 211          * will be ACPI_IPMI_OK
+>> 212          */
+>> 213         buffer->status = ACPI_IPMI_OK;
+>> 214         buffer->length = msg->rx_len;
+>> 215         memcpy(buffer->data, msg->rx_data, msg->rx_len);
+>> 216 }
+>>
+>> If we don't then there will only be msg content not correctly read from msg->rx_data.
+>> Note that the rx_len is 0 during initialization and will never exceed the sizeof(buffer->data), so the read is safe.
+>>
+>> Being without smp_rmb() is also OK in this case, since:
+>> 1. buffer->data will never be used when buffer->status is not ACPI_IPMI_OK and
+>> 2. the smp_rmb()/smp_wmb() added in this patch will be deleted in [PATCH 07].
+>>
+>> So IMO, we needn't add the smp_rmb(), what do you think of this?
+>>
+>> For 2.
+>> If we don't add smp_wmb() in the ipmi_msg_handler(), then the codes running on other thread in the acpi_format_ipmi_response() may read wrong msg->rx_data (a timeout triggers this function, but when acpi_format_ipmi_response() is entered, the msg->msg_done flag could be seen as 1 but the msg->rx_data is not ready), this is what we want to avoid in this quick fix.
+> Using smp_wmb() without the complementary smp_rmb() doesn't makes sense,
+> because each of them prevents only one flow of control from being
+> speculatively reordered, either by the CPU or by the compiler.  If only one
+> of them is used without the other, then the flow of control without the
+> barrier may be reordered in a way that will effectively cancel the effect of
+> the barrier in the second flow of control.
+>
+> So, either we need *both* smp_wmb() and smp_rmb(), or we don't need them at all.
 
-This series was written to reduce the current overhead loop imposes by
-performing synchronus buffered file system IO from a kernel thread.  These
-patches turn loop into a light weight layer that translates bios into iocbs.
+If I understand this correctly, the problem would be if:
 
-It introduces new file ops, read_iter() and write_iter(), that replace the
-aio_read() and aio_write() operations. The iov_iter structure can now contain
-either a user-space iovec or a kernel-space bio_vec. Since it would be
-overly complicated to replace every instance of aio_read() and aio_write(),
-the old operations are not removed, but file systems implementing the new
-ones need not keep the old ones.
+rem_time = wait_for_completion_timeout(&tx_msg->tx_complete,
+                                         IPMI_TIMEOUT);
 
-Verion 8 is little changed from Version 7 that I send out in March, just
-updated to the latest kernel. These patches apply to 3.11-rc2 and can
-also be found at:
+returns on a timeout, then checks msg_done and races with something 
+setting msg_done.  If that is the case, you would need the smp_rmb() 
+before checking msg_done.
 
-git://github.com/kleikamp/linux-shaggy.git aio_loop
+However, the timeout above is unnecessary.  You are using 
+ipmi_request_settime(), so you can set the timeout when the IPMI command 
+fails and returns a failure message.  The driver guarantees a return 
+message for each request.  Just remove the timeout from the completion, 
+set the timeout and retries in the ipmi request, and the completion 
+should handle the barrier issues.
 
-Asias He (1):
-  block_dev: add support for read_iter, write_iter
+Plus, from a quick glance at the code, it doesn't look like it will 
+properly handle a situation where the timeout occurs and is handled then 
+the response comes in later.
 
-Dave Kleikamp (22):
-  iov_iter: iov_iter_copy_from_user() should use non-atomic copy
-  iov_iter: add __iovec_copy_to_user()
-  fuse: convert fuse to use iov_iter_copy_[to|from]_user
-  iov_iter: ii_iovec_copy_to_user should pre-fault user pages
-  dio: Convert direct_IO to use iov_iter
-  dio: add bio_vec support to __blockdev_direct_IO()
-  aio: add aio_kernel_() interface
-  aio: add aio support for iov_iter arguments
-  fs: create file_readable() and file_writable() functions
-  fs: use read_iter and write_iter rather than aio_read and aio_write
-  fs: add read_iter and write_iter to several file systems
-  ocfs2: add support for read_iter and  write_iter
-  ext4: add support for read_iter and write_iter
-  nfs: add support for read_iter, write_iter
-  nfs: simplify swap
-  btrfs: add support for read_iter and write_iter
-  xfs: add support for read_iter and write_iter
-  gfs2: Convert aio_read/write ops to read/write_iter
-  udf: convert file ops from aio_read/write to read/write_iter
-  afs: add support for read_iter and write_iter
-  ecrpytfs: Convert aio_read/write ops to read/write_iter
-  ubifs: convert file ops from aio_read/write to read/write_iter
+-corey
 
-Hugh Dickins (1):
-  tmpfs: add support for read_iter and write_iter
-
-Zach Brown (9):
-  iov_iter: move into its own file
-  iov_iter: add copy_to_user support
-  iov_iter: hide iovec details behind ops function pointers
-  iov_iter: add bvec support
-  iov_iter: add a shorten call
-  iov_iter: let callers extract iovecs and bio_vecs
-  fs: pull iov_iter use higher up the stack
-  bio: add bvec_length(), like iov_length()
-  loop: use aio to perform io on the underlying file
-
- Documentation/filesystems/Locking   |   6 +-
- Documentation/filesystems/vfs.txt   |  12 +-
- drivers/block/loop.c                | 148 ++++++++----
- drivers/char/raw.c                  |   4 +-
- drivers/mtd/nand/nandsim.c          |   4 +-
- drivers/usb/gadget/storage_common.c |   4 +-
- fs/9p/vfs_addr.c                    |  12 +-
- fs/9p/vfs_file.c                    |   8 +-
- fs/Makefile                         |   2 +-
- fs/adfs/file.c                      |   4 +-
- fs/affs/file.c                      |   4 +-
- fs/afs/file.c                       |   4 +-
- fs/afs/internal.h                   |   3 +-
- fs/afs/write.c                      |   9 +-
- fs/aio.c                            | 152 ++++++++++++-
- fs/bad_inode.c                      |  14 ++
- fs/bfs/file.c                       |   4 +-
- fs/block_dev.c                      |  27 ++-
- fs/btrfs/file.c                     |  42 ++--
- fs/btrfs/inode.c                    |  63 +++---
- fs/ceph/addr.c                      |   3 +-
- fs/cifs/file.c                      |   4 +-
- fs/direct-io.c                      | 223 +++++++++++++------
- fs/ecryptfs/file.c                  |  15 +-
- fs/exofs/file.c                     |   4 +-
- fs/ext2/file.c                      |   4 +-
- fs/ext2/inode.c                     |   8 +-
- fs/ext3/file.c                      |   4 +-
- fs/ext3/inode.c                     |  15 +-
- fs/ext4/ext4.h                      |   3 +-
- fs/ext4/file.c                      |  34 +--
- fs/ext4/indirect.c                  |  16 +-
- fs/ext4/inode.c                     |  23 +-
- fs/f2fs/data.c                      |   4 +-
- fs/f2fs/file.c                      |   4 +-
- fs/fat/file.c                       |   4 +-
- fs/fat/inode.c                      |  10 +-
- fs/fuse/cuse.c                      |  10 +-
- fs/fuse/file.c                      |  90 ++++----
- fs/fuse/fuse_i.h                    |   5 +-
- fs/gfs2/aops.c                      |   7 +-
- fs/gfs2/file.c                      |  21 +-
- fs/hfs/inode.c                      |  11 +-
- fs/hfsplus/inode.c                  |  10 +-
- fs/hostfs/hostfs_kern.c             |   4 +-
- fs/hpfs/file.c                      |   4 +-
- fs/internal.h                       |   4 +
- fs/iov-iter.c                       | 411 ++++++++++++++++++++++++++++++++++
- fs/jffs2/file.c                     |   8 +-
- fs/jfs/file.c                       |   4 +-
- fs/jfs/inode.c                      |   7 +-
- fs/logfs/file.c                     |   4 +-
- fs/minix/file.c                     |   4 +-
- fs/nfs/direct.c                     | 302 ++++++++++++++++---------
- fs/nfs/file.c                       |  33 ++-
- fs/nfs/internal.h                   |   4 +-
- fs/nfs/nfs4file.c                   |   4 +-
- fs/nilfs2/file.c                    |   4 +-
- fs/nilfs2/inode.c                   |   8 +-
- fs/ocfs2/aops.c                     |   8 +-
- fs/ocfs2/aops.h                     |   2 +-
- fs/ocfs2/file.c                     |  55 ++---
- fs/ocfs2/ocfs2_trace.h              |   6 +-
- fs/omfs/file.c                      |   4 +-
- fs/ramfs/file-mmu.c                 |   4 +-
- fs/ramfs/file-nommu.c               |   4 +-
- fs/read_write.c                     |  78 +++++--
- fs/reiserfs/file.c                  |   4 +-
- fs/reiserfs/inode.c                 |   7 +-
- fs/romfs/mmap-nommu.c               |   2 +-
- fs/sysv/file.c                      |   4 +-
- fs/ubifs/file.c                     |  12 +-
- fs/udf/file.c                       |  13 +-
- fs/udf/inode.c                      |  10 +-
- fs/ufs/file.c                       |   4 +-
- fs/xfs/xfs_aops.c                   |  13 +-
- fs/xfs/xfs_file.c                   |  51 ++---
- include/linux/aio.h                 |  20 +-
- include/linux/bio.h                 |   8 +
- include/linux/blk_types.h           |   2 -
- include/linux/fs.h                  | 165 ++++++++++++--
- include/linux/nfs_fs.h              |  13 +-
- include/uapi/linux/aio_abi.h        |   2 +
- include/uapi/linux/loop.h           |   1 +
- mm/filemap.c                        | 433 ++++++++++++++----------------------
- mm/page_io.c                        |  15 +-
- mm/shmem.c                          |  61 ++---
- 87 files changed, 1862 insertions(+), 1002 deletions(-)
- create mode 100644 fs/iov-iter.c
-
--- 
-1.8.3.4
+>
+> Thanks,
+> Rafael
+>
+>
 
