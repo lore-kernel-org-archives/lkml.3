@@ -1,40 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab3GYSjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:39:13 -0400
-Received: from nm34-vm3.bullet.mail.bf1.yahoo.com ([72.30.239.75]:24265 "EHLO
-	nm34-vm3.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757824Ab3GYSin convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:38:43 -0400
-X-Greylist: delayed 334 seconds by postgrey-1.27 at vger.kernel.org; Thu, 25 Jul 2013 14:38:42 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 773771.9530.bm@omp1041.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com.au;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=KiPAYbizx1w0PdkUxQef3h/bCxWM2JQpZ0Kk9gMTwpYe3E3fyBic62u/7lL9QGfLWqXm/j4faW71xIr1x6W0XyCjuJ1K2THzgLswB39d15s6Bq3fEVomOw3nkKCW2IM1INL0Dvi1R4gPmJj26E0+8JbZEhP3UVhuSZ7mvF4M1fg=;
-X-YMail-OSG: v11xupQVM1nzKkop1srZ6AB_pyrMYIgs3_OwYotR49DbNXS
- 9qUVbwyzYn4ND8TD6JhkG
-X-Rocket-MIMEInfo: 002.001,DQpHcmVldGluZ3MgZnJvbSBCVVJLSU5BIEZBU086DQpMZXQgbWUgc3RhcnQgYnkgaW50cm9kdWNlIG15c2VsZixJIGFtIE1ycyBEb3JpcyBPbWFyLCBCSUxMIEFORCBFWENIQU5HRSBNQU5BR0VSIChCYW5rIG9mIEFmcmljYSkgT3VhZ2Fkb3Vnb3UsIEJ1cmtpbmEgRmFzby5JIGFtIHdyaXR0aW5nIHlvdSB0aGlzIGxldHRlciBiYXNlZCBvbiB0aGUgbGF0ZXN0IGRldmVsb3BtZW50IGF0IG91ciBiYW5rIHdoaWNoIEkgd2lsbCBsaWtlIHRvIGJyaW5nIHRvIHlvdXIgcGVyc29uYWwgZWRpZmljYXRpb24uICQxMiwBMAEBAQE-
-X-RocketYMMF: dorisomar952
-X-Mailer: YahooMailClassic/280 YahooMailWebService/0.8.150.561
-Message-ID: <1374777187.73556.YahooMailBasic@web162704.mail.bf1.yahoo.com>
-Date: Thu, 25 Jul 2013 11:33:07 -0700 (PDT)
-From: Doris Omar <1735963831@qq.com>
-Reply-To: doris_mrx@qq.com
-Subject: Re: Very Urgent!!!
-To: undisclosed recipients:;
+	id S1757716Ab3GYSig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:38:36 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4255 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757368Ab3GYSi3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:38:29 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 25 Jul 2013 11:37:17 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH v3 4/9] ARM: tegra: Remove USB platform data
+Date: Thu, 25 Jul 2013 21:38:04 +0300
+Message-ID: <1374777489-13093-5-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
+References: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+USB-related platform data is not used anymore in the Tegra USB drivers,
+so remove all of it.
 
-Greetings from BURKINA FASO:
-Let me start by introduce myself,I am Mrs Doris Omar, BILL AND EXCHANGE MANAGER (Bank of Africa) Ouagadougou, Burkina Faso.I am writting you this letter based on the latest development at our bank which I will like to bring to your personal edification. $12,250million transfer claims. this is a legitimate transaction and I agreed to offer you 40% of this money as my foreign partner after confirmation of the fund in your bank account,If you are interested, please get back to me.
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/mach-tegra/tegra.c             | 38 +--------------------------------
+ include/linux/platform_data/tegra_usb.h | 32 ---------------------------
+ include/linux/usb/tegra_usb_phy.h       |  5 -----
+ 3 files changed, 1 insertion(+), 74 deletions(-)
+ delete mode 100644 include/linux/platform_data/tegra_usb.h
 
-Yours faithful,
-Mrs Doris Omar.
+diff --git a/arch/arm/mach-tegra/tegra.c b/arch/arm/mach-tegra/tegra.c
+index 0d1e412..fc97cfd 100644
+--- a/arch/arm/mach-tegra/tegra.c
++++ b/arch/arm/mach-tegra/tegra.c
+@@ -29,7 +29,6 @@
+ #include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+ #include <linux/pda_power.h>
+-#include <linux/platform_data/tegra_usb.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
+ #include <linux/sys_soc.h>
+@@ -46,40 +45,6 @@
+ #include "fuse.h"
+ #include "iomap.h"
+ 
+-static struct tegra_ehci_platform_data tegra_ehci1_pdata = {
+-	.operating_mode = TEGRA_USB_OTG,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct tegra_ulpi_config tegra_ehci2_ulpi_phy_config = {
+-	.reset_gpio = -1,
+-	.clk = "cdev2",
+-};
+-
+-static struct tegra_ehci_platform_data tegra_ehci2_pdata = {
+-	.phy_config = &tegra_ehci2_ulpi_phy_config,
+-	.operating_mode = TEGRA_USB_HOST,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct tegra_ehci_platform_data tegra_ehci3_pdata = {
+-	.operating_mode = TEGRA_USB_HOST,
+-	.power_down_on_bus_suspend = 1,
+-	.vbus_gpio = -1,
+-};
+-
+-static struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5000000, "tegra-ehci.0",
+-		       &tegra_ehci1_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5004000, "tegra-ehci.1",
+-		       &tegra_ehci2_pdata),
+-	OF_DEV_AUXDATA("nvidia,tegra20-ehci", 0xC5008000, "tegra-ehci.2",
+-		       &tegra_ehci3_pdata),
+-	{}
+-};
+-
+ static void __init tegra_dt_init(void)
+ {
+ 	struct soc_device_attribute *soc_dev_attr;
+@@ -112,8 +77,7 @@ static void __init tegra_dt_init(void)
+ 	 * devices
+ 	 */
+ out:
+-	of_platform_populate(NULL, of_default_bus_match_table,
+-				tegra20_auxdata_lookup, parent);
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, parent);
+ }
+ 
+ static void __init trimslice_init(void)
+diff --git a/include/linux/platform_data/tegra_usb.h b/include/linux/platform_data/tegra_usb.h
+deleted file mode 100644
+index 66c673f..0000000
+--- a/include/linux/platform_data/tegra_usb.h
++++ /dev/null
+@@ -1,32 +0,0 @@
+-/*
+- * Copyright (C) 2010 Google, Inc.
+- *
+- * This software is licensed under the terms of the GNU General Public
+- * License version 2, as published by the Free Software Foundation, and
+- * may be copied, distributed, and modified under those terms.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- */
+-
+-#ifndef _TEGRA_USB_H_
+-#define _TEGRA_USB_H_
+-
+-enum tegra_usb_operating_modes {
+-	TEGRA_USB_DEVICE,
+-	TEGRA_USB_HOST,
+-	TEGRA_USB_OTG,
+-};
+-
+-struct tegra_ehci_platform_data {
+-	enum tegra_usb_operating_modes operating_mode;
+-	/* power down the phy on bus suspend */
+-	int power_down_on_bus_suspend;
+-	void *phy_config;
+-	int vbus_gpio;
+-};
+-
+-#endif /* _TEGRA_USB_H_ */
+diff --git a/include/linux/usb/tegra_usb_phy.h b/include/linux/usb/tegra_usb_phy.h
+index c2bc710..8474153 100644
+--- a/include/linux/usb/tegra_usb_phy.h
++++ b/include/linux/usb/tegra_usb_phy.h
+@@ -28,11 +28,6 @@ struct tegra_utmip_config {
+ 	u8 xcvr_lsrslew;
+ };
+ 
+-struct tegra_ulpi_config {
+-	int reset_gpio;
+-	const char *clk;
+-};
+-
+ enum tegra_usb_phy_port_speed {
+ 	TEGRA_USB_PHY_PORT_SPEED_FULL = 0,
+ 	TEGRA_USB_PHY_PORT_SPEED_LOW,
+-- 
+1.8.1.5
+
