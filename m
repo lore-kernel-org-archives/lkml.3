@@ -1,171 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754853Ab3GYGJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:09:18 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:52572 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3GYGJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:09:14 -0400
+	id S1754958Ab3GYGJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:09:49 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58030 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753005Ab3GYGJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:09:46 -0400
+Date: Thu, 25 Jul 2013 09:08:48 +0300
+From: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+To: Jonathan Cameron <jic23@kernel.org>
+CC: <tony@atomide.com>, <benoit.cousson@linaro.org>, <rnayak@ti.com>,
+        <peter.ujfalusi@ti.com>, <kishon@ti.com>, <jic23@cam.ac.uk>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <lars@metafoo.de>, <sameo@linux.intel.com>, <ch.naveen@samsung.com>,
+        <poeschel@lemonage.de>, <milo.kim@ti.com>, <balajitk@ti.com>,
+        <gg@slimlogic.co.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-iio@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v6 2/2] iio: twl6030-gpadc: TWL6030, TWL6032 GPADC driver
+Message-ID: <20130725060848.GA16521@uglx0158319>
+References: <1374226039-16943-1-git-send-email-oleksandr.kozaruk@ti.com>
+ <1374226039-16943-3-git-send-email-oleksandr.kozaruk@ti.com>
+ <51EA69DE.4080908@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <1374728103-17468-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1374728103-17468-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-Date: Thu, 25 Jul 2013 14:09:13 +0800
-Message-ID: <CAJd=RBCV=R8y8Obx8_zvD8qYLdhpzbvTCo2v5qbukA9GwHTfig@mail.gmail.com>
-Subject: Re: [PATCH 2/8] soft-offline: use migrate_pages() instead of migrate_huge_page()
-From: Hillf Danton <dhillf@gmail.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
-        Rik van Riel <riel@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <nao.horiguchi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <51EA69DE.4080908@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:54 PM, Naoya Horiguchi
-<n-horiguchi@ah.jp.nec.com> wrote:
-> Currently migrate_huge_page() takes a pointer to a hugepage to be
-> migrated as an argument, instead of taking a pointer to the list of
-> hugepages to be migrated. This behavior was introduced in commit
-> 189ebff28 ("hugetlb: simplify migrate_huge_page()"), and was OK
-> because until now hugepage migration is enabled only for soft-offlining
-> which migrates only one hugepage in a single call.
->
-> But the situation will change in the later patches in this series
-> which enable other users of page migration to support hugepage migration.
-> They can kick migration for both of normal pages and hugepages
-> in a single call, so we need to go back to original implementation
-> which uses linked lists to collect the hugepages to be migrated.
->
-> With this patch, soft_offline_huge_page() switches to use migrate_pages(),
-> and migrate_huge_page() is not used any more. So let's remove it.
->
-> ChangeLog v3:
->  - Merged with another cleanup patch (4/10 in previous version)
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Acked-by: Andi Kleen <ak@linux.intel.com>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> ---
-Acked-by: Hillf Danton <dhillf@gmail.com>
+On Sat, Jul 20, 2013 at 11:43:42AM +0100, Jonathan Cameron wrote:
+> On 07/19/2013 10:27 AM, Oleksandr Kozaruk wrote:
+> > The GPADC is general purpose ADC found on TWL6030, and TWL6032 PMIC,
+> > known also as Phoenix and PhoenixLite.
+> >
+> > The TWL6030 and TWL6032 have GPADC with 17 and 19 channels
+> > respectively. Some channels have current source and are used for
+> > measuring voltage drop on resistive load for detecting battery ID
+> > resistance, or measuring voltage drop on NTC resistors for external
+> > temperature measurements. Some channels measure voltage, (i.e. battery
+> > voltage), and have voltage dividers, thus, capable to scale voltage.
+> > Some channels are dedicated for measuring die temperature.
+> >
+> > Some channels are calibrated in 2 points, having offsets from ideal
+> > values kept in trim registers. This is used to correct measurements.
+> >
+> > The differences between GPADC in TWL6030 and TWL6032:
+> > - 10 bit vs 12 bit ADC;
+> > - 17 vs 19 channels;
+> > - channels have different purpose(i.e. battery voltage
+> >   channel 8 vs channel 18);
+> > - trim values are interpreted differently.
+> >
+> > Based on the driver patched from Balaji TK, Graeme Gregory, Ambresh K,
+> > Girish S Ghongdemath.
+> >
+> > Signed-off-by: Balaji T K <balajitk@ti.com>
+> > Signed-off-by: Graeme Gregory <gg@slimlogic.co.uk>
+> > Signed-off-by: Oleksandr Kozaruk <oleksandr.kozaruk@ti.com>
+> A few little bits and bobs inline.
+> 
+> My only major query is about the lack of info for the temperature
+> channels.  How do you convert these to useful real world units?
 
->  include/linux/migrate.h |  5 -----
->  mm/memory-failure.c     | 15 ++++++++++++---
->  mm/migrate.c            | 28 ++--------------------------
->  3 files changed, 14 insertions(+), 34 deletions(-)
->
-> diff --git v3.11-rc1.orig/include/linux/migrate.h v3.11-rc1/include/linux/migrate.h
-> index a405d3dc..6fe5214 100644
-> --- v3.11-rc1.orig/include/linux/migrate.h
-> +++ v3.11-rc1/include/linux/migrate.h
-> @@ -41,8 +41,6 @@ extern int migrate_page(struct address_space *,
->                         struct page *, struct page *, enum migrate_mode);
->  extern int migrate_pages(struct list_head *l, new_page_t x,
->                 unsigned long private, enum migrate_mode mode, int reason);
-> -extern int migrate_huge_page(struct page *, new_page_t x,
-> -               unsigned long private, enum migrate_mode mode);
->
->  extern int fail_migrate_page(struct address_space *,
->                         struct page *, struct page *);
-> @@ -62,9 +60,6 @@ static inline void putback_movable_pages(struct list_head *l) {}
->  static inline int migrate_pages(struct list_head *l, new_page_t x,
->                 unsigned long private, enum migrate_mode mode, int reason)
->         { return -ENOSYS; }
-> -static inline int migrate_huge_page(struct page *page, new_page_t x,
-> -               unsigned long private, enum migrate_mode mode)
-> -       { return -ENOSYS; }
->
->  static inline int migrate_prep(void) { return -ENOSYS; }
->  static inline int migrate_prep_local(void) { return -ENOSYS; }
-> diff --git v3.11-rc1.orig/mm/memory-failure.c v3.11-rc1/mm/memory-failure.c
-> index 2c13aa7..af6f61c 100644
-> --- v3.11-rc1.orig/mm/memory-failure.c
-> +++ v3.11-rc1/mm/memory-failure.c
-> @@ -1467,6 +1467,7 @@ static int soft_offline_huge_page(struct page *page, int flags)
->         int ret;
->         unsigned long pfn = page_to_pfn(page);
->         struct page *hpage = compound_head(page);
-> +       LIST_HEAD(pagelist);
->
->         /*
->          * This double-check of PageHWPoison is to avoid the race with
-> @@ -1482,12 +1483,20 @@ static int soft_offline_huge_page(struct page *page, int flags)
->         unlock_page(hpage);
->
->         /* Keep page count to indicate a given hugepage is isolated. */
-> -       ret = migrate_huge_page(hpage, new_page, MPOL_MF_MOVE_ALL,
-> -                               MIGRATE_SYNC);
-> -       put_page(hpage);
-> +       list_move(&hpage->lru, &pagelist);
-> +       ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
-> +                               MIGRATE_SYNC, MR_MEMORY_FAILURE);
->         if (ret) {
->                 pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
->                         pfn, ret, page->flags);
-> +               /*
-> +                * We know that soft_offline_huge_page() tries to migrate
-> +                * only one hugepage pointed to by hpage, so we need not
-> +                * run through the pagelist here.
-> +                */
-> +               putback_active_hugepage(hpage);
-> +               if (ret > 0)
-> +                       ret = -EIO;
->         } else {
->                 set_page_hwpoison_huge_page(hpage);
->                 dequeue_hwpoisoned_huge_page(hpage);
-> diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
-> index b44a067..3ec47d3 100644
-> --- v3.11-rc1.orig/mm/migrate.c
-> +++ v3.11-rc1/mm/migrate.c
-> @@ -979,6 +979,8 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
->
->         unlock_page(hpage);
->  out:
-> +       if (rc != -EAGAIN)
-> +               putback_active_hugepage(hpage);
->         put_page(new_hpage);
->         if (result) {
->                 if (rc)
-> @@ -1066,32 +1068,6 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
->         return rc;
->  }
->
-> -int migrate_huge_page(struct page *hpage, new_page_t get_new_page,
-> -                     unsigned long private, enum migrate_mode mode)
-> -{
-> -       int pass, rc;
-> -
-> -       for (pass = 0; pass < 10; pass++) {
-> -               rc = unmap_and_move_huge_page(get_new_page, private,
-> -                                               hpage, pass > 2, mode);
-> -               switch (rc) {
-> -               case -ENOMEM:
-> -                       goto out;
-> -               case -EAGAIN:
-> -                       /* try again */
-> -                       cond_resched();
-> -                       break;
-> -               case MIGRATEPAGE_SUCCESS:
-> -                       goto out;
-> -               default:
-> -                       rc = -EIO;
-> -                       goto out;
-> -               }
-> -       }
-> -out:
-> -       return rc;
-> -}
-> -
->  #ifdef CONFIG_NUMA
->  /*
->   * Move a list of individual pages
-> --
-> 1.8.3.1
->
+On blaze tablet platform(OMAP 4) temperature channels were used by
+thermal framework and battery driver.
+Thermal was using channel 4 [1]
+
+Here is the comment from the driver:
+
+* NTC termistor (NCP15WB473F) schematic connection for OMAP4460 board:
+*
+*          [Vref]
+*            |
+*            $ (Rpu)
+*            |
+*            +----+-----------[Vin]
+*            |    |
+*           [Rt]  $ (Rpd)
+*            |    |
+*           -------- (ground)
+*
+* NTC termistor resistanse (Rt, k) calculated from following formula:
+*
+* Rt = Rpd * Rpu * Vin / (Rpd * (Vref - Vin) - Rpu * Vin)
+*
+* where       Vref (GPADC_VREF4) - reference voltage, Vref = 1250 mV;
+*                     Vin (GPADC_IN4) - measuring voltage, Vin = 0...1250 mV;
+*                     Rpu (R1041) - pullup resistor, Rpu = 10 k;
+*                     Rpd (R1043) - pulldown resistor, Rpd = 220 k;
+*
+* Pcb temp sensor temperature (t, C) calculated from following formula:
+*
+* t = 1 / (ln(Rt / Rt0) / B + 1 / T0) - 273
+*
+* where       Rt0 - NTC termistor resistance at 25 C, Rt0 = 47 k;
+*                     B - specific constant, B = 4131 K;
+*                     T0 - temperature, T0 = 298 K
+[..]
+
+And then there is a table for conversion:
+/*
+ * Temperature values in degrees celsius,
+ * voltage values from 156 to 1191 milli volts
+*/
+static s8 mvolt_to_temp[] = {
+               125, 125, 125, 124, 124, 124, 124, 123, 123, 123, 122, 122,
+               122, 122, 121, 121, 121, 121, 120, 120, 120, 120, 119, 119,
+[..]
+
+The battery driver was using channel 1, dedicated for measuring battery
+temperature.
+static void twl6030_bci_battery_work(struct work_struct *work)
+{
+[..]
+	for (temp = 0; temp < di->platform_data->tblsize; temp++) {
+		if (adc_code >= di->platform_data->
+				battery_tmp_tbl[temp])
+			break;
+	}
+
+	/* first 2 values are for negative temperature */
+	di->temp_C = (temp - 2) * 10; * /* in tenths of degree Celsius */
+	[..]
+}
+static int omap4_batt_table[] = {
+/* adc code for temperature in degree C */
+	929, 925, /* -2 ,-1 */
+	920, 917, 912, 908, 904, 899, 895, 890, 885, 880, /* 00 - 09 */
+	875, 869, 864, 858, 853, 847, 841, 835, 829, 823, /* 10 - 19 */
+[..]
+	591, 583, 575, 567, 559, 551, 543, 535, 527, 519, /* 50 - 59 */
+	511, 504, 496 /* 60 - 62 */
+};
+
+So, one driver was using millivolts and the other ADC code,
+Though converting to millivolts and the to temperature, seems,
+to be redundant, as code can be converted to temperature.
+If I recollect correctly the previous driver version was using just
+ADC code.
+
+Regards,
+Sasha.
+
+[1] http://git.omapzoom.org/?p=kernel/omap.git;a=blob;f=drivers/staging/thermal_framework/sensor/thermistor_sensor.c;h=828d8010579b55ec4a122c49a2e5b547b1e41e63;hb=decb3fd22223ddf207e0118d0d558459acc7094e
+
