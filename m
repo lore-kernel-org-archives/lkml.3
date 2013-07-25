@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3GYGqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:46:55 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:52894 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab3GYGqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:46:53 -0400
-X-SENDER-IP: [85.230.171.181]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApB+AP7I8FFV5qu1PGdsb2JhbABagwaDKCOFALYQBAMBgRcXAwEBAQE4NYIkAQEEATocIwULCAMhJQ8FJQoaiB0KuggWj2cHgxJuA5dehjOOMTo
-X-IronPort-AV: E=Sophos;i="4.89,741,1367964000"; 
-   d="scan'208";a="367481261"
-From: rydberg@euromail.se
-Date: Thu, 25 Jul 2013 08:48:47 +0200
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [63/85] Input: bcm5974 - add support for the 2013 MacBook Air
-Message-ID: <20130725064847.GA3581@polaris.bitmath.org>
-References: <lsq.1374674564.753305150@decadent.org.uk>
- <lsq.1374674565.258792026@decadent.org.uk>
+	id S1754321Ab3GYGsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:48:21 -0400
+Received: from nautica.notk.org ([91.121.71.147]:34879 "EHLO nautica.notk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745Ab3GYGsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:48:19 -0400
+Date: Thu, 25 Jul 2013 08:48:02 +0200
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: David Miller <davem@davemloft.net>
+Cc: pebolle@tiscali.nl, lucho@ionkov.net, ericvh@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, andi@etezian.org,
+        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
+Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
+ function
+Message-ID: <20130725064802.GA12569@nautica>
+References: <1374497956-32104-1-git-send-email-andi@etezian.org>
+ <20130724.154646.2283898956674234778.davem@davemloft.net>
+ <1374707387.29835.23.camel@x61.thuisdomein>
+ <20130724.164514.393667021861625699.davem@davemloft.net>
+ <20130725061411.GA8579@nautica>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <lsq.1374674565.258792026@decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130725061411.GA8579@nautica>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+Hard morning, sorry for the double mail.
 
-> 3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
+Dominique Martinet wrote on Thu, Jul 25, 2013 :
+> Well, I do care - but I couldn't find where the trans->cancelled member
+> function was supposed to be called anyway...
+> So adding it to the struct and fixing the warning is well and fine, but
+> if it's still never called in the end I don't see much point and there's
+> nothing to test.
 
-Unfortunately, kernels before 3.7 are missing a patch needed for this
-to work. As is, the driver will crash during urb setup because the bt
-endpoint no longer exists. Therefore, please remove this patch from
-the 3.2 queue.
+To be more precise, there's a single call to c->trans_mode->cancelled in
+net/9p/client.c, in p9_client_flush, which is called on subfunction returning
+-ERESTARTSYS... which never happens as far as I could see.
 
-Thanks,
-Henrik
+This will be useful once/if we start working on client recovery, though
+- so the function in itself definitely does interest me, and I guess
+that thinking about I would have preferred to have the hook added rather
+than the function removed.
+But there definitely is no hurry to add this cancelled function till
+then.
+
+
+Regards,
+-- 
+Dominique Martinet
