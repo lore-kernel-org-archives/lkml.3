@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754374Ab3GYAG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:06:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17407 "EHLO mx1.redhat.com"
+	id S1754341Ab3GYAJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:09:56 -0400
+Received: from etezian.org ([198.101.225.253]:40087 "EHLO mail.etezian.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872Ab3GYAGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:06:55 -0400
-Message-ID: <51F06C17.50306@redhat.com>
-Date: Wed, 24 Jul 2013 17:06:47 -0700
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Ritesh Raj Sarraf <rrs@debian.org>,
-        targetcli-fb-devel@lists.fedorahosted.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: targetcli -fb now also Apache 2.0 licensed
-References: <51EF73EF.1040305@redhat.com>  <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>  <1374697264.7382.39.camel@dabdike> <1374699289.7397.1309.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1374699289.7397.1309.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752685Ab3GYAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 20:09:55 -0400
+From: Andi Shyti <andi@etezian.org>
+To: chris.mason@fusionio.com
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        andi@etezian.org
+Subject: [PATCH] btrfs: raid56: avoid double allocation
+Date: Thu, 25 Jul 2013 02:09:40 +0200
+Message-Id: <1374710980-5707-1-git-send-email-andi@etezian.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 01:54 PM, Nicholas A. Bellinger wrote:
-> Yes, which is why I've been accepting his kernel patches the entire time
-> that user-space has been forked into -fb.  Now that the user-space code
-> has been relicensed as promised, there is no longer any reason for a
-> separate -fb fork to exist.
->
-> That said, it's time to start moving forward toward a single set of
-> source trees for upstream userspace, so that all distributions can
-> mutually benefit from the effort.  As mentioned above, this has so far
-> not been enough to get -fb reconciled with upstream.
->
-> So I don't consider the above 'holding for ransom' or any nonsense like
-> that, considering the end goal is for everyone (not just Fedora) to
-> benefit from -fb.
+alloc_rbio frees already bbio and raid_map, therefore they don't
+need to be freed in case it fails
 
-There's nothing stopping any other distro (or commercial entity) from 
-adopting targetcli-fb. I don't know why they haven't, except that 
-there's a default attitude that the originator of the project is the 
-"upstream" forever.
+Signed-off-by: Andi Shyti <andi@etezian.org>
+---
+ fs/btrfs/raid56.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-I think I've done a pretty good job maintaining -fb over the past two 
-years -- -fb has bug tracking, a list, tarballs, and is actively 
-maintained and improved, all things that are not true of upstream.
-
-My question to you (Nick) is, why don't we all just unify on -fb?
-
-Regards -- Andy
-(at oscon this week, replies may be delayed)
+diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
+index 0525e13..35fe775 100644
+--- a/fs/btrfs/raid56.c
++++ b/fs/btrfs/raid56.c
+@@ -1687,11 +1687,9 @@ int raid56_parity_write(struct btrfs_root *root, struct bio *bio,
+ 	struct blk_plug_cb *cb;
+ 
+ 	rbio = alloc_rbio(root, bbio, raid_map, stripe_len);
+-	if (IS_ERR(rbio)) {
+-		kfree(raid_map);
+-		kfree(bbio);
++	if (IS_ERR(rbio))
+ 		return PTR_ERR(rbio);
+-	}
++
+ 	bio_list_add(&rbio->bio_list, bio);
+ 	rbio->bio_list_bytes = bio->bi_size;
+ 
+-- 
+1.8.3.2
 
