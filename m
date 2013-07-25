@@ -1,78 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab3GYH3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 03:29:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54807 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753096Ab3GYH3l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:29:41 -0400
-Message-ID: <51F0D3CA.3080902@parallels.com>
-Date: Thu, 25 Jul 2013 11:29:14 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1754479Ab3GYHj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 03:39:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33387 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751194Ab3GYHjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 03:39:55 -0400
+Date: Thu, 25 Jul 2013 09:39:52 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        konrad.wilk@oracle.com,
+        Cristian =?iso-8859-1?Q?Rodr=EDguez?= <crrodriguez@opensuse.org>,
+        Piotr Sarna <p.sarna@partner.samsung.com>,
+        linux-kernel@vger.kernel.org, bob.liu@oracle.com,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCH staging] zcache: fix "zcache=" kernel parameter
+Message-ID: <20130725073952.GA12818@dhcp22.suse.cz>
+References: <1954608.bCh4ljCYe6@amdc1032>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-CC: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-References: <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com> <20130724163734.GE24851@moon> <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com> <20130724171728.GH8508@moon> <1374687373.7382.22.camel@dabdike> <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com> <20130724181516.GI8508@moon> <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com> <20130724185256.GA24365@moon> <51F0232D.6060306@parallels.com> <20130724190453.GJ8508@moon> <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com>
-In-Reply-To: <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1954608.bCh4ljCYe6@amdc1032>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 11:40 PM, Andy Lutomirski wrote:
-> On Wed, Jul 24, 2013 at 12:04 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> On Wed, Jul 24, 2013 at 10:55:41PM +0400, Pavel Emelyanov wrote:
->>>>
->>>> Well, some part of information already lays in pte (such as 'file' bit,
->>>> swap entries) so it looks natural i think to work on this level. but
->>>> letme think if use page struct for that be more convenient...
->>>
->>> It hardly will be. Consider we have a page shared between two tasks,
->>> then first one "touches" it and soft-dirty is put onto his PTE and,
->>> subsequently, the page itself. The we go and clear sofr-dirty for the
->>> 2nd task. What should we do with the soft-dirty bit on the page?
->>
->> Indeed, this won't help. Well then, bippidy-boppidy-boo, our
->> pants are metaphorically on fire (c)
+On Wed 24-07-13 19:04:14, Bartlomiej Zolnierkiewicz wrote:
+> From: Piotr Sarna <p.sarna@partner.samsung.com>
+> Subject: [PATCH] zcache: fix "zcache=" kernel parameter
 > 
-> Hmm.  So there are at least three kinds of memory:
+> Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
+> a module") introduced an incorrect handling of "zcache=" parameter.
 > 
-> Anonymous pages: soft-dirty works
-> Shared file-backed pages: soft-dirty does not work
-> Private file-backed pages: soft-dirty works (but see below)
-
-The shared file-backed pages case works, but unmap-map case doesn't
-preserve the soft-dirty bit. Just like the private file did. We'll
-fix this case next.
-
-> Perhaps another bit should be allocated to expose to userspace either
-> "soft-dirty", "soft-clean", or "soft-dirty unsupported"?
+> Inside zcache_comp_init() function, zcache_comp_name variable is
+> checked for being empty. If not empty, the above variable is tested
+> for being compatible with Crypto API. Unfortunately, after that
+> function ends unconditionally (by the "goto out" directive) and returns:
+> - non-zero value if verification succeeded, wrongly indicating an error
+> - zero value if verification failed, falsely informing that function
+>   zcache_comp_init() ended properly.
 > 
-> There's another possible issue with private file-backed pages, though:
-> how do you distinguish clean-and-not-cowed from cowed-but-soft-clean?
-> (The former will reflect changes in the underlying file, I think, but
-> the latter won't.)
+> A solution to this problem is as following:
+> 1. Move the "goto out" directive inside the "if (!ret)" statement
+> 2. In case that crypto_has_comp() returned 0, change the value of ret
+>    to non-zero before "goto out" to indicate an error.
+> 
+> This patch replaces an earlier one from Michal Hocko (based on report
+> from Cristian Rodríguez):
+> 
+> 	http://permalink.gmane.org/gmane.linux.kernel.mm/102484
+> 
+> It also addressed the same issue but didn't fix the zcache_comp_init()
+> for case when the compressor data passed to "zcache=" option was invalid
+> or unsupported.
+> 
+> Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+> [bzolnier: updated patch description]
+> Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Cristian Rodríguez <crrodriguez@opensuse.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Bob Liu <bob.liu@oracle.com>
 
-There's a bit called PAGE_FILE bit in /proc/pagemap file introduced with
-the 052fb0d635df5d49dfc85687d94e1a87bf09378d commit.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Plz, refer to Documentation/vm/pagemap.txt and soft-dirty.txt, all this
-is described there pretty well.
+Thanks!
 
-> --Andy
+> ---
+>  drivers/staging/zcache/zcache-main.c |    6 ++++--
+>  1 file changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+> index dcceed2..81972fa 100644
+> --- a/drivers/staging/zcache/zcache-main.c
+> +++ b/drivers/staging/zcache/zcache-main.c
+> @@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+>  #else
+>  	if (*zcache_comp_name != '\0') {
+>  		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+> -		if (!ret)
+> +		if (!ret) {
+>  			pr_info("zcache: %s not supported\n",
+>  					zcache_comp_name);
+> -		goto out;
+> +			ret = 1;
+> +			goto out;
+> +		}
+>  	}
+>  	if (!ret)
+>  		strcpy(zcache_comp_name, "lzo");
+> -- 
+> 1.7.9.5
+> 
+> 
+> 
 
-Thanks,
-Pavel
+-- 
+Michal Hocko
+SUSE Labs
