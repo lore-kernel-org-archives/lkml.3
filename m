@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab3GYNhI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:37:08 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:60572 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab3GYNg4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:36:56 -0400
-MIME-Version: 1.0
-In-Reply-To: <204d93f8a9dffef6ff00d961f91be0b465f21841.1374751310.git.michal.simek@xilinx.com>
-References: <204d93f8a9dffef6ff00d961f91be0b465f21841.1374751310.git.michal.simek@xilinx.com>
-Date: Thu, 25 Jul 2013 15:36:55 +0200
-X-Google-Sender-Auth: r9mHtk9AArRgoejqnfRzr6wgtuY
-Message-ID: <CAMuHMdX2mKANduZO9HaBHRZ13V0PztOc-uYxTymUsH8-NE5FEQ@mail.gmail.com>
-Subject: Re: [PATCH v2] video: xilinxfb: Fix compilation warning
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>, Michal Simek <monstr@monstr.eu>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1756071Ab3GYNiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:38:21 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:46002 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755936Ab3GYNiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:38:17 -0400
+From: zwu.kernel@gmail.com
+To: xfs@oss.sgi.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        david@fromorbit.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] xfs: fix an assertion failure
+Date: Thu, 25 Jul 2013 21:38:44 +0800
+Message-Id: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072513-7182-0000-0000-000007DAC6FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 1:21 PM, Michal Simek <michal.simek@xilinx.com> wrote:
-> regs_phys is phys_addr_t (u32 or u64).
-> Lets retype it to u64.
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-This no longer matches the actual patch?
+  When running the compilebench, one assertion failure was found.
+This related line of code was introduced by commit 5f6bed76c0.
 
-> Fixes compilation warning introduced by:
-> video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-> (sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
->
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> Changes in v2:
-> - Use %pa instead of casting
+commit 5f6bed76c0c85cb4d04885a5de00b629deee550b
+Author: Dave Chinner <david@fromorbit.com>
+Date:   Thu Jun 27 16:04:52 2013 +1000
 
-Gr{oetje,eeting}s,
+    xfs: Introduce an ordered buffer item
 
-                        Geert
+[  500.464036] XFS: Assertion failed: !(bip->bli_item.li_flags & XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 942
+[  500.465602] ------------[ cut here ]------------
+[  500.466258] kernel BUG at fs/xfs/xfs_message.c:108!
+[  500.466440] invalid opcode: 0000 [#1] SMP
+[  500.466440] Modules linked in:
+[  500.466440] CPU: 0 PID: 40 Comm: kworker/u2:1 Not tainted 3.11.0-rc2+ #955
+[  500.466440] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[  500.466440] Workqueue: writeback bdi_writeback_workfn (flush-8:0)
+[  500.466440] task: ffff880292260000 ti: ffff880292250000 task.ti: ffff880292250000
+[  500.466440] RIP: 0010:[<ffffffff812dc6f2>]  [<ffffffff812dc6f2>] assfail+0x22/0x30
+[  500.466440] RSP: 0018:ffff8802922515f8  EFLAGS: 00010292
+[  500.466440] RAX: 0000000000000068 RBX: ffff880289b4a570 RCX: 0000000000000006
+[  500.466440] RDX: 0000000000000006 RSI: ffff880292260788 RDI: ffff880292260000
+[  500.466440] RBP: ffff8802922515f8 R08: 0000000000000000 R09: 0000000000000001
+[  500.466440] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880291828000
+[  500.466440] R13: ffff880289b4a570 R14: ffffffff81342aeb R15: ffff88025f344220
+[  500.466440] FS:  0000000000000000(0000) GS:ffff88029fc00000(0000) knlGS:0000000000000000
+[  500.466440] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[  500.466440] CR2: 0000000009b01008 CR3: 0000000291874000 CR4: 00000000000006f0
+[  500.466440] Stack:
+[  500.466440]  ffff880292251628 ffffffff813428df ffff880289b4a570 0000000000000002
+[  500.466440]  ffff880291828000 0000000000000001 ffff880292251668 ffffffff81342aeb
+[  500.466440]  0000000000000000 ffff880289b4a570 ffff8802762070a0 ffffffffffffffff
+[  500.466440] Call Trace:
+[  500.466440]  [<ffffffff813428df>] xfs_buf_item_relse+0x4f/0xd0
+[  500.466440]  [<ffffffff81342aeb>] xfs_buf_item_unlock+0x18b/0x1e0
+[  500.466440]  [<ffffffff8133ac3d>] xfs_trans_free_items+0x7d/0xb0
+[  500.466440]  [<ffffffff8133b35c>] xfs_trans_cancel+0x13c/0x1b0
+[  500.466440]  [<ffffffff812d8d89>] xfs_iomap_write_allocate+0x249/0x350
+[  500.466440]  [<ffffffff812c6af2>] xfs_map_blocks+0x2e2/0x350
+[  500.466440]  [<ffffffff812c7a76>] xfs_vm_writepage+0x236/0x5e0
+[  500.466440]  [<ffffffff8115174a>] __writepage+0x1a/0x50
+[  500.466440]  [<ffffffff81152065>] write_cache_pages+0x225/0x4a0
+[  500.466440]  [<ffffffff81151730>] ? mapping_tagged+0x20/0x20
+[  500.466440]  [<ffffffff812c5e45>] ? xfs_vm_writepages+0x35/0x70
+[  500.466440]  [<ffffffff8115232d>] generic_writepages+0x4d/0x70
+[  500.466440]  [<ffffffff812c5e60>] xfs_vm_writepages+0x50/0x70
+[  500.466440]  [<ffffffff81153cb1>] do_writepages+0x21/0x50
+[  500.466440]  [<ffffffff811d4050>] __writeback_single_inode+0x40/0x230
+[  500.466440]  [<ffffffff811d52b1>] writeback_sb_inodes+0x291/0x460
+[  500.466440]  [<ffffffff811d551f>] __writeback_inodes_wb+0x9f/0xd0
+[  500.466440]  [<ffffffff811d579b>] wb_writeback+0x24b/0x2e0
+[  500.466440]  [<ffffffff8115185a>] ? global_dirtyable_memory+0x1a/0x60
+[  500.466440]  [<ffffffff811d7386>] bdi_writeback_workfn+0x1d6/0x3d0
+[  500.466440]  [<ffffffff8107734b>] process_one_work+0x1eb/0x4f0
+[  500.466440]  [<ffffffff810772e9>] ? process_one_work+0x189/0x4f0
+[  500.466440]  [<ffffffff81077adb>] worker_thread+0x11b/0x370
+[  500.466440]  [<ffffffff810779c0>] ? rescuer_thread+0x330/0x330
+[  500.466440]  [<ffffffff8107ff8a>] kthread+0xea/0xf0
+[  500.466440]  [<ffffffff8107fea0>] ? flush_kthread_work+0x1b0/0x1b0
+[  500.466440]  [<ffffffff818b6c5c>] ret_from_fork+0x7c/0xb0
+[  500.466440]  [<ffffffff8107fea0>] ? flush_kthread_work+0x1b0/0x1b0
+[  500.466440] Code: 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 f1 41 89 d0 48 c7 c6 48 b7 c7 81 48 89 fa 31 c0 48 89 e5 31 ff e8 de fb ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48
+[  500.466440] RIP  [<ffffffff812dc6f2>] assfail+0x22/0x30
+[  500.466440]  RSP <ffff8802922515f8>
+[  500.510159] ---[ end trace 48b882d5f764ca11 ]---
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/xfs/xfs_buf_item.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
+index bfc4e0c..b4d42ae 100644
+--- a/fs/xfs/xfs_buf_item.c
++++ b/fs/xfs/xfs_buf_item.c
+@@ -939,7 +939,6 @@ xfs_buf_item_relse(
+ 	xfs_buf_log_item_t	*bip = bp->b_fspriv;
+ 
+ 	trace_xfs_buf_item_relse(bp, _RET_IP_);
+-	ASSERT(!(bip->bli_item.li_flags & XFS_LI_IN_AIL));
+ 
+ 	bp->b_fspriv = bip->bli_item.li_bio_list;
+ 	if (bp->b_fspriv == NULL)
+-- 
+1.7.11.7
+
