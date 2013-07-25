@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab3GYNnP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:43:15 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:40818 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755417Ab3GYNnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:43:13 -0400
-Message-ID: <1374759740.1956.30.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH v2 2/7] usb: phy: msm: Migrate to Managed Device
- Resource allocation
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Thu, 25 Jul 2013 16:42:20 +0300
-In-Reply-To: <20130724123822.GH17962@radagast>
-References: <1373384833-18077-1-git-send-email-iivanov@mm-sol.com>
-	 <1373384833-18077-3-git-send-email-iivanov@mm-sol.com>
-	 <20130724123822.GH17962@radagast>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756142Ab3GYNn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:43:57 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:50464 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755953Ab3GYNnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:43:53 -0400
+Message-ID: <51F12B91.4010303@monstr.eu>
+Date: Thu, 25 Jul 2013 15:43:45 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] video: xilinxfb: Fix compilation warning
+References: <204d93f8a9dffef6ff00d961f91be0b465f21841.1374751310.git.michal.simek@xilinx.com> <CAMuHMdX2mKANduZO9HaBHRZ13V0PztOc-uYxTymUsH8-NE5FEQ@mail.gmail.com>
+In-Reply-To: <CAMuHMdX2mKANduZO9HaBHRZ13V0PztOc-uYxTymUsH8-NE5FEQ@mail.gmail.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="bsbIoiPehSIJfpXVhMAsAXBxEA7NUSamd"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--bsbIoiPehSIJfpXVhMAsAXBxEA7NUSamd
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hi, 
+On 07/25/2013 03:36 PM, Geert Uytterhoeven wrote:
+> On Thu, Jul 25, 2013 at 1:21 PM, Michal Simek <michal.simek@xilinx.com>=
+ wrote:
+>> regs_phys is phys_addr_t (u32 or u64).
+>> Lets retype it to u64.
+>=20
+> This no longer matches the actual patch?
 
-On Wed, 2013-07-24 at 15:38 +0300, Felipe Balbi wrote:
-> Hi,
-> 
-> On Tue, Jul 09, 2013 at 06:47:08PM +0300, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > 
-> > Use managed device resources to clean up the probe/remove
-> > and get DT support for free.
-> > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  drivers/usb/phy/phy-msm-usb.c |   78 +++++++++++------------------------------
-> >  1 file changed, 20 insertions(+), 58 deletions(-)
-> > 
-> > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-> > index ab1b880..cc37f5e 100644
-> > --- a/drivers/usb/phy/phy-msm-usb.c
-> > +++ b/drivers/usb/phy/phy-msm-usb.c
-> > @@ -1458,30 +1455,27 @@ static int __init msm_otg_probe(struct platform_device *pdev)
-> >  	 * clock is introduced to remove the dependency on AXI
-> >  	 * bus frequency.
-> >  	 */
-> > -	motg->core_clk = clk_get(&pdev->dev, "usb_hs_core_clk");
-> > +	motg->core_clk = devm_clk_get(&pdev->dev, "usb_hs_core_clk");
-> >  	if (IS_ERR(motg->core_clk))
-> >  		motg->core_clk = NULL;
-> >  
-> >  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> >  	if (!res) {
-> 
-> no need to check for the resource when using devm_ioremap_resource()
-> 
-> >  		dev_err(&pdev->dev, "failed to get platform resource mem\n");
-> > -		ret = -ENODEV;
-> > -		goto put_core_clk;
-> > +		return -ENODEV;
-> >  	}
-> >  
-> > -	motg->regs = ioremap(res->start, resource_size(res));
-> > +	motg->regs = devm_ioremap_resource(&pdev->dev, res);
-> >  	if (!motg->regs) {
-> >  		dev_err(&pdev->dev, "ioremap failed\n");
-> 
-> don't print error messages when using devm_ioremap_resource()
+I need some holidays.
 
-Will fix these places and re-send,
+Will send v3.
 
-Thank you,
-Ivan
+Sorry,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
+--bsbIoiPehSIJfpXVhMAsAXBxEA7NUSamd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlHxK5EACgkQykllyylKDCGxoACfW6HQQri8K3P6jDKV1FFi6pcM
+nf4An0c1VDuj8xgxuCAADXigcHtMoS0S
+=P5d8
+-----END PGP SIGNATURE-----
+
+--bsbIoiPehSIJfpXVhMAsAXBxEA7NUSamd--
