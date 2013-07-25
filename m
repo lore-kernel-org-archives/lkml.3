@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398Ab3GYIc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:32:28 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:4957 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755317Ab3GYIcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:32:21 -0400
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-Message-ID: <51F0E288.80501@broadcom.com>
-Date: Thu, 25 Jul 2013 10:32:08 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Steven Rostedt" <rostedt@goodmis.org>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Oleg Nesterov" <oleg@redhat.com>,
-        "Masami Hiramatsu" <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: regression 3.11-rc1: rmmod hangs after tracing module
-References: <51EEC646.7070306@broadcom.com>
- <1374605077.3356.128.camel@gandalf.local.home>
-In-Reply-To: <1374605077.3356.128.camel@gandalf.local.home>
-X-WSS-ID: 7DEE3FC92L851964710-02-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
+	id S1755317Ab3GYIf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:35:57 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:40452 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab3GYIfy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:35:54 -0400
+Date: Thu, 25 Jul 2013 01:35:50 -0700 (PDT)
+Message-Id: <20130725.013550.930278380548483073.davem@davemloft.net>
+To: andi@etezian.org
+Cc: dominique.martinet@cea.fr, pebolle@tiscali.nl, lucho@ionkov.net,
+        ericvh@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
+Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
+ function
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130725082741.GB4295@jack.whiskey>
+References: <20130725061411.GA8579@nautica>
+	<20130725064802.GA12569@nautica>
+	<20130725082741.GB4295@jack.whiskey>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Thu, 25 Jul 2013 01:35:53 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 08:44 PM, Steven Rostedt wrote:
-> On Tue, 2013-07-23 at 20:07 +0200, Arend van Spriel wrote:
->> Hi Steven,
->>
->> During testing of our brcmfmac wireless driver I had a trace-cmd running
->> along (trace-cmd record -e brcmfmac:*). After the test I stopped the
->> trace, unplugged my usb device and did a rmmod resulting in the attached
->> lockdep splat. Hope you have an idea what is going wrong here.
->
-> Thanks for the report!
->
-> Does this fix you bug?
+From: Andi Shyti <andi@etezian.org>
+Date: Thu, 25 Jul 2013 10:27:41 +0200
 
-Thanks Steve,
+> I would prefer to NACK my patch, it messes up things more than
+> fixes.
 
-Tested your patch and it indeed fixes my deadlock.
+Your patch it already applied to my tree, so you must send me
+something which fixes things.
 
-Regards,
-Arend
+> If we really want to get rid of this function we should
+> completely revert this patch:
+> 
+> 80b45261a0b263536b043c5ccfc4ba4fc27c2acc
 
-> -- Steve
->
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 69cba47..882ec1d 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1224,18 +1224,17 @@ void tracing_reset_current(int cpu)
->   	tracing_reset(&global_trace.trace_buffer, cpu);
->   }
->
-> +/* Must have trace_types_lock held */
->   void tracing_reset_all_online_cpus(void)
->   {
->   	struct trace_array *tr;
->
-> -	mutex_lock(&trace_types_lock);
->   	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
->   		tracing_reset_online_cpus(&tr->trace_buffer);
->   #ifdef CONFIG_TRACER_MAX_TRACE
->   		tracing_reset_online_cpus(&tr->max_buffer);
->   #endif
->   	}
-> -	mutex_unlock(&trace_types_lock);
->   }
->
->   #define SAVED_CMDLINES 128
->
->
->
-
-
+Such as this.
