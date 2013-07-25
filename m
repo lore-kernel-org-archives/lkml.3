@@ -1,126 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab3GYIVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:21:13 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:56765 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab3GYIVH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:21:07 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 02/14] clk: Add of_init_clk_data() to parse common clock bindings
-Date: Thu, 25 Jul 2013 10:21:02 +0200
-Message-ID: <1714620.Z8J8zTxIRB@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755300Ab3GYIXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:23:15 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:57895 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755121Ab3GYIXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:23:09 -0400
+From: zwu.kernel@gmail.com
+To: xfs@oss.sgi.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: [PATCH] xfs: introduce object readahead to log recovery
+Date: Thu, 25 Jul 2013 16:23:39 +0800
+Message-Id: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072508-5806-0000-0000-0000222F1B5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-Pretty good idea, but I have some comments inline.
+  It can take a long time to run log recovery operation because it is
+single threaded and is bound by read latency. We can find that it took
+most of the time to wait for the read IO to occur, so if one object
+readahead is introduced to log recovery, it will obviously reduce the
+log recovery time.
 
-On Wednesday 24 of July 2013 17:43:30 Stephen Boyd wrote:
-> Consolidate DT parsing for the common bits of a clock binding in
-> one place to simplify clock drivers. This also has the added
-> benefit of standardizing how the clock names used by the common
-> clock framework are generated from the DT bindings. We always use
-> the first clock-output-names string if it exists, otherwise we
-> fall back to the node name.
-> 
-> To be slightly more efficient and make the caller's life easier,
-> we introduce a shallow copy flag so that the clock core knows to
-> just copy the pointers to the strings and not the string
-> contents. Otherwise the callers of this function would have to
-> free the strings allocated here which could be cumbersome.
-> 
-> Cc: Rob Herring <rob.herring@calxeda.com>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/clk/clk.c            | 59
-> +++++++++++++++++++++++++++++++++++++++++++-
-> include/linux/clk-provider.h |  7 ++++++
->  2 files changed, 65 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 1ed9bdd..ea8e951b 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -1809,6 +1809,10 @@ static int _clk_register(struct device *dev,
-> struct clk_hw *hw, struct clk *clk) {
->  	int i, ret;
-> 
-> +	hw->clk = clk;
-> +	if (hw->init->flags & CLK_SHALLOW_COPY)
-> +		return PTR_RET(__clk_register(dev, hw));
-> +
->  	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
->  	if (!clk->name) {
->  		pr_err("%s: could not allocate clk->name\n", __func__);
-> @@ -1819,7 +1823,6 @@ static int _clk_register(struct device *dev,
-> struct clk_hw *hw, struct clk *clk) clk->hw = hw;
->  	clk->flags = hw->init->flags;
->  	clk->num_parents = hw->init->num_parents;
-> -	hw->clk = clk;
-> 
->  	/* allocate local copy in case parent_names is __initdata */
->  	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
-> @@ -2232,4 +2235,58 @@ void __init of_clk_init(const struct of_device_id
-> *matches) clk_init_cb(np);
->  	}
->  }
-> +
-> +/**
-> + * of_init_clk_data() - Initialize a clk_init_data struct from a DT
-> node + * @np: node to initialize struct from
-> + * @init: struct to initialize
-> + *
-> + * Populates the clk_init_data struct by parsing the device node for
-> + * properties matching the common clock binding. Returns 0 on success
-> + * and a negative error code on failure.
-> + */
-> +int of_init_clk_data(struct device_node *np, struct clk_init_data
-> *init) +{
-> +	struct of_phandle_args s;
-> +	const char **names = NULL, **p;
-> +	const char *name;
-> +	int i;
-> +
-> +	if (of_property_read_string(np, "clock-output-names", &name) < 0)
-> +		name = np->name;
-> +	init->name = kstrdup(name, GFP_KERNEL);
-> +	if (!init->name)
-> +		return -ENOMEM;
-> +
-> +	for (i = 0; of_parse_phandle_with_args(np, "clocks", "#clock-
-cells",
-> +				i, &s) == 0; i++) {
-> +		p = krealloc(names, sizeof(*names) * (i + 1), GFP_KERNEL);
-> +		if (!p)
-> +			goto err;
+  In dirty log case as below:
+    data device: 0xfd10
+    log device: 0xfd10 daddr: 20480032 length: 20480
 
-What about using of_count_phandle_with_args() first to get the parent 
-count?
+    log tail: 7941 head: 11077 state: <DIRTY>
 
-> +		names = p;
-> +
-> +		if (of_property_read_string(s.np, "clock-output-names",
-> +					&name) < 0)
-> +			name = s.np->name;
+This dirty ratio is about 15%. I am trying to do tests in larger scale
+and dirtier filesystem environment.
 
-You should be able to use of_clk_get_parent_name() here, instead of 
-parsing the properties directly.
+Log recovery time stat:
 
-Best regards,
-Tomasz
+            w/o this patch        w/ this patch
+  real         0m1.051s             0m0.965s
+  sys          0m0.033s             0m0.035s
+
+  iowait       0m1.018s             0m0.930s
+
+Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+---
+ fs/xfs/xfs_log_recover.c | 131 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 127 insertions(+), 4 deletions(-)
+
+diff --git a/fs/xfs/xfs_log_recover.c b/fs/xfs/xfs_log_recover.c
+index 6fcc910a..f07e5e0 100644
+--- a/fs/xfs/xfs_log_recover.c
++++ b/fs/xfs/xfs_log_recover.c
+@@ -3107,6 +3107,121 @@ xlog_recover_free_trans(
+ 	kmem_free(trans);
+ }
+ 
++STATIC void
++xlog_recover_buffer_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	xfs_buf_log_format_t	*buf_f = item->ri_buf[0].i_addr;
++	xfs_mount_t		*mp = log->l_mp;
++
++	if (xlog_check_buffer_cancelled(log, buf_f->blf_blkno,
++			buf_f->blf_len, buf_f->blf_flags)) {
++		return;
++	}
++
++	xfs_buf_readahead(mp->m_ddev_targp, buf_f->blf_blkno,
++			buf_f->blf_len, NULL);
++}
++
++STATIC void
++xlog_recover_inode_ra_pass2(
++	struct xlog                     *log,
++	struct xlog_recover_item        *item)
++{
++	xfs_inode_log_format_t	*in_f;
++	xfs_mount_t		*mp = log->l_mp;
++	int			error;
++	int			need_free = 0;
++
++	if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
++		in_f = item->ri_buf[0].i_addr;
++	} else {
++		in_f = kmem_alloc(sizeof(xfs_inode_log_format_t), KM_SLEEP);
++		need_free = 1;
++		error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
++		if (error)
++			goto error;
++	}
++
++	if (xlog_check_buffer_cancelled(log, in_f->ilf_blkno,
++					in_f->ilf_len, 0)) {
++		goto error;
++	}
++
++	xfs_buf_readahead(mp->m_ddev_targp, in_f->ilf_blkno,
++			in_f->ilf_len, &xfs_inode_buf_ops);
++
++error:
++	if (need_free)
++		kmem_free(in_f);
++}
++
++STATIC void
++xlog_recover_dquot_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	xfs_mount_t		*mp = log->l_mp;
++	xfs_buf_t		*bp;
++	struct xfs_disk_dquot	*recddq;
++	int			error;
++	xfs_dq_logformat_t	*dq_f;
++	uint			type;
++
++
++	if (mp->m_qflags == 0)
++		return;
++
++	recddq = item->ri_buf[1].i_addr;
++	if (recddq == NULL)
++		return;
++	if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
++		return;
++
++	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
++	ASSERT(type);
++	if (log->l_quotaoffs_flag & type)
++		return;
++
++	dq_f = item->ri_buf[0].i_addr;
++	ASSERT(dq_f);
++	error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
++			   "xlog_recover_dquot_ra_pass2 (log copy)");
++	if (error)
++		return;
++	ASSERT(dq_f->qlf_len == 1);
++
++	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dq_f->qlf_blkno,
++				   XFS_FSB_TO_BB(mp, dq_f->qlf_len), 0, &bp,
++				   NULL);
++	if (!error)
++		xfs_buf_relse(bp);
++}
++
++STATIC void
++xlog_recover_ra_pass2(
++	struct xlog			*log,
++	struct xlog_recover_item	*item)
++{
++	switch (ITEM_TYPE(item)) {
++	case XFS_LI_BUF:
++		xlog_recover_buffer_ra_pass2(log, item);
++		break;
++	case XFS_LI_INODE:
++		xlog_recover_inode_ra_pass2(log, item);
++		break;
++	case XFS_LI_DQUOT:
++		xlog_recover_dquot_ra_pass2(log, item);
++		break;
++	case XFS_LI_EFI:
++	case XFS_LI_EFD:
++	case XFS_LI_QUOTAOFF:
++	default:
++		break;
++	}
++}
++
+ STATIC int
+ xlog_recover_commit_pass1(
+ 	struct xlog			*log,
+@@ -3140,10 +3255,14 @@ xlog_recover_commit_pass2(
+ 	struct xlog			*log,
+ 	struct xlog_recover		*trans,
+ 	struct list_head		*buffer_list,
+-	struct xlog_recover_item	*item)
++	struct xlog_recover_item	*item,
++	struct xlog_recover_item	*next_item)
+ {
+ 	trace_xfs_log_recover_item_recover(log, trans, item, XLOG_RECOVER_PASS2);
+ 
++	if (next_item)
++		xlog_recover_ra_pass2(log, next_item);
++
+ 	switch (ITEM_TYPE(item)) {
+ 	case XFS_LI_BUF:
+ 		return xlog_recover_buffer_pass2(log, buffer_list, item);
+@@ -3181,7 +3300,7 @@ xlog_recover_commit_trans(
+ 	int			pass)
+ {
+ 	int			error = 0, error2;
+-	xlog_recover_item_t	*item;
++	xlog_recover_item_t	*item, *next_item, *temp_item;
+ 	LIST_HEAD		(buffer_list);
+ 
+ 	hlist_del(&trans->r_list);
+@@ -3190,14 +3309,18 @@ xlog_recover_commit_trans(
+ 	if (error)
+ 		return error;
+ 
+-	list_for_each_entry(item, &trans->r_itemq, ri_list) {
++	list_for_each_entry_safe(item, temp_item, &trans->r_itemq, ri_list) {
+ 		switch (pass) {
+ 		case XLOG_RECOVER_PASS1:
+ 			error = xlog_recover_commit_pass1(log, trans, item);
+ 			break;
+ 		case XLOG_RECOVER_PASS2:
++			if (&temp_item->ri_list != &trans->r_itemq)
++				next_item = temp_item;
++			else
++				next_item = NULL;
+ 			error = xlog_recover_commit_pass2(log, trans,
+-							  &buffer_list, item);
++					  &buffer_list, item, next_item);
+ 			break;
+ 		default:
+ 			ASSERT(0);
+-- 
+1.7.11.7
 
