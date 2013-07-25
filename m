@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab3GYI3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:29:21 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:55193 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754591Ab3GYI3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:29:17 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH v1 05/14] clk: msm: Add support for phase locked loops (PLLs)
-Date: Thu, 25 Jul 2013 10:29:13 +0200
-Message-ID: <6003715.TMZ71jDUbL@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1374713022-6049-6-git-send-email-sboyd@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-6-git-send-email-sboyd@codeaurora.org>
+	id S1755282Ab3GYIbA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:31:00 -0400
+Received: from smtp209.alice.it ([82.57.200.105]:48755 "EHLO smtp209.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662Ab3GYIay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:30:54 -0400
+Date: Thu, 25 Jul 2013 10:30:28 +0200
+From: Gianluca Anzolin <gianluca@sottospazio.it>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: gregkh@linuxfoundation.org, gustavo@padovan.org, peter@hurleysoftware.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] tty_port: Fix refcounting leak in tty_port_tty_hangup()
+Message-ID: <20130725083028.GA8203@sottospazio.it>
+References: <1374729977-7164-1-git-send-email-gianluca@sottospazio.it>
+ <51F0C525.8080506@suse.cz>
+ <20130725081436.GA8057@sottospazio.it>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725081436.GA8057@sottospazio.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
-
-On Wednesday 24 of July 2013 17:43:33 Stephen Boyd wrote:
-> Add support for MSM's PLLs (phase locked loops). This is
-> sufficient enough to be able to determine the rate the PLL is
-> running at. We can add rate setting support later when it's
-> needed.
+On Thu, Jul 25, 2013 at 10:14:36AM +0200, Gianluca Anzolin wrote:
+> On Thu, Jul 25, 2013 at 08:26:45AM +0200, Jiri Slaby wrote:
+> > On 07/25/2013 07:26 AM, Gianluca Anzolin wrote:
+> > > The function tty_port_tty_hangup() could leak a reference to the tty_struct:
+> > > 
+> > >         struct tty_struct *tty = tty_port_tty_get(port);
+> > > 
+> > >         if (tty && (!check_clocal || !C_CLOCAL(tty))) {
+> > >                 tty_hangup(tty);
+> > >                 tty_kref_put(tty);
+> > >         }
+> > > 
+> > > If tty != NULL and the second condition is false we never call tty_kref_put and
+> > > the reference is leaked.
+> > > 
+> > > Fix by always calling tty_kref_put() which accepts a NULL argument.
+> > > 
+> > > The patch fixes a regression introduced by commit aa27a094.
+> > > 
+> > > Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+> > > Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
+> > 
+> > Acked-by: Jiri Slaby <jslaby@suse.cz>
+> > 
+> > Thanks for the fix.
+> > 
 > 
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  Documentation/devicetree/bindings/clock/msm.txt |  40 ++++
->  drivers/clk/Kconfig                             |   2 +
->  drivers/clk/Makefile                            |   1 +
->  drivers/clk/msm/Kconfig                         |   4 +
->  drivers/clk/msm/Makefile                        |   3 +
->  drivers/clk/msm/clk-pll.c                       | 233
-> ++++++++++++++++++++++++ drivers/clk/msm/clk-pll.h                     
->  |  43 +++++
->  7 files changed, 326 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/msm.txt
->  create mode 100644 drivers/clk/msm/Kconfig
->  create mode 100644 drivers/clk/msm/Makefile
->  create mode 100644 drivers/clk/msm/clk-pll.c
->  create mode 100644 drivers/clk/msm/clk-pll.h
-[snip]
-> diff --git a/drivers/clk/msm/clk-pll.h b/drivers/clk/msm/clk-pll.h
-> new file mode 100644
-> index 0000000..4e63a5e
-> --- /dev/null
-> +++ b/drivers/clk/msm/clk-pll.h
-> @@ -0,0 +1,43 @@
-> +/*
-> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms. + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef __MSM_CLK_PLL_H__
-> +#define __MSM_CLK_PLL_H__
-> +
-> +struct device;
-> +struct clk;
-> +struct clk_init_data;
-> +
-> +struct pll_desc {
-> +	void __iomem *base;
-> +	u16 l_reg;
-> +	u16 m_reg;
-> +	u16 n_reg;
-> +	u16 config_reg;
-> +	u16 mode_reg;
-> +	u16 status_reg;
-> +	u8 status_bit;
-> +};
-> +
-> +struct pll_vote_desc {
-> +	void __iomem *base;
-> +	u16 vote_reg;
-> +	u8 vote_bit;
-> +};
-> +
-> +extern struct clk *pll_clk_register(struct device *dev, struct pll_desc
-> *desc, +		struct clk_init_data *init);
-> +extern struct clk *pll_vote_clk_register(struct device *dev,
-> +		struct pll_vote_desc *desc, struct clk_init_data *init);
+> Hi,
+> 
+> I sent this morning a newer fix changed following the instructions of Peter
+> Hurley. Could you apply that fix instead?
+> 
+> Thank you,
+> 
+> Gianluca
 
-I don't think such generic name is good here. What about prefixing them 
-with msm_ or qcom_ string?
+Disregard that, that one was the right fix.
 
-Best regards,
-Tomasz
-
+Thanks,
+Gianluca
