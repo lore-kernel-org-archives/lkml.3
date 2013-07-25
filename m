@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab3GYWPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 18:15:35 -0400
-Received: from home.keithp.com ([63.227.221.253]:57133 "EHLO keithp.com"
+	id S1757087Ab3GYWPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 18:15:37 -0400
+Received: from home.keithp.com ([63.227.221.253]:57127 "EHLO keithp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755521Ab3GYWPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754881Ab3GYWPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 18:15:32 -0400
 From: Keith Packard <keithp@keithp.com>
 To: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>
 Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
         Keith Packard <keithp@keithp.com>
-Subject: [PATCH 2/2] drm/i915: Add async page flip support for SNB
-Date: Thu, 25 Jul 2013 15:15:15 -0700
-Message-Id: <1374790515-29657-3-git-send-email-keithp@keithp.com>
+Subject: [PATCH 1/2] drm/i915: Add async page flip support for IVB
+Date: Thu, 25 Jul 2013 15:15:14 -0700
+Message-Id: <1374790515-29657-2-git-send-email-keithp@keithp.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374790515-29657-1-git-send-email-keithp@keithp.com>
 References: <CAKMK7uFiL+p48Phwc=jmWtsOgjNOYJzTCWmHe3Bp7-jWMpTtTA@mail.gmail.com>
@@ -21,30 +21,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just copies the IVB code
+This adds the necesary register defines for async page flipping
+through the command ring, and then hooks those up for Ivybridge (gen7)
+page flipping.
 
 Signed-off-by: Keith Packard <keithp@keithp.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |  6 ++++++
+ drivers/gpu/drm/i915/intel_display.c | 37 ++++++++++++++++++++++++++++++++----
+ 2 files changed, 39 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index dc3d6a7..029cfb0 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -209,6 +209,7 @@
+ #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
+ #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
+ #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
++#define   MI_DISPLAY_FLIP_ASYNC_INDICATOR	(1 << 22)
+ #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
+ /* IVB has funny definitions for which plane to flip. */
+ #define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
+@@ -217,6 +218,11 @@
+ #define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
+ #define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
+ #define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
++/* These go in the bottom of the base address value */
++#define   MI_DISPLAY_FLIP_TYPE_SYNC    (0 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_ASYNC   (1 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_STEREO  (2 << 0)
++#define   MI_DISPLAY_FLIP_TYPE_SYNCHRONOUS	(0 << 0)
+ #define MI_ARB_ON_OFF		MI_INSTR(0x08, 0)
+ #define   MI_ARB_ENABLE			(1<<0)
+ #define   MI_ARB_DISABLE		(0<<0)
 diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 166aa2c..4a118c3 100644
+index bdb8854..166aa2c 100644
 --- a/drivers/gpu/drm/i915/intel_display.c
 +++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7465,20 +7465,29 @@ static int intel_gen6_queue_flip(struct drm_device *dev,
+@@ -1833,8 +1833,10 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
+ 			alignment = 64 * 1024;
+ 		break;
+ 	case I915_TILING_X:
+-		/* pin() will align the object as required by fence */
+-		alignment = 0;
++		/* Async page flipping requires X tiling and 32kB alignment, so just
++		 * make all X tiled frame buffers aligned for that
++		 */
++		alignment = 32 * 1024;
+ 		break;
+ 	case I915_TILING_Y:
+ 		/* Despite that we check this in framebuffer_init userspace can
+@@ -7514,6 +7516,8 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
  	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_ring_buffer *ring = &dev_priv->ring[RCS];
- 	uint32_t pf, pipesrc;
+ 	struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
+ 	uint32_t plane_bit = 0;
 +	uint32_t cmd;
 +	uint32_t base;
  	int ret;
  
  	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
- 	if (ret)
- 		goto err;
+@@ -7536,13 +7540,21 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+ 		goto err_unpin;
+ 	}
  
-+	cmd = MI_DISPLAY_FLIP | MI_DISPLAY_FLIP_PLANE(intel_crtc->plane);
++	cmd = MI_DISPLAY_FLIP_I915 | plane_bit;
 +	base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
 +
 +	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
@@ -56,24 +97,45 @@ index 166aa2c..4a118c3 100644
  	if (ret)
  		goto err_unpin;
  
--	intel_ring_emit(ring, MI_DISPLAY_FLIP |
--			MI_DISPLAY_FLIP_PLANE(intel_crtc->plane));
+-	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
 +	intel_ring_emit(ring, cmd);
- 	intel_ring_emit(ring, fb->pitches[0] | obj->tiling_mode);
+ 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
 -	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
 +	intel_ring_emit(ring, base);
+ 	intel_ring_emit(ring, (MI_NOOP));
  
- 	/* Contrary to the suggestions in the documentation,
- 	 * "Enable Panel Fitter" does not seem to be required when page
-@@ -9731,7 +9740,7 @@ void intel_modeset_init(struct drm_device *dev)
+ 	intel_mark_page_flip_active(intel_crtc);
+@@ -7591,6 +7603,19 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
+ 	     fb->pitches[0] != crtc->fb->pitches[0]))
+ 		return -EINVAL;
+ 
++	/* Check tiling restrictions specific to asynchronous flips
++	 */
++	if (page_flip_flags & DRM_MODE_PAGE_FLIP_ASYNC) {
++
++		/* New FB must be X tiled */
++		if (obj->tiling_mode != I915_TILING_X)
++			return -EINVAL;
++
++		/* Current FB must be X tiled */
++		if (to_intel_framebuffer(old_fb)->obj->tiling_mode != I915_TILING_X)
++			return -EINVAL;
++	}
++
+ 	work = kzalloc(sizeof *work, GFP_KERNEL);
+ 	if (work == NULL)
+ 		return -ENOMEM;
+@@ -9705,6 +9730,10 @@ void intel_modeset_init(struct drm_device *dev)
+ 		dev->mode_config.max_width = 8192;
  		dev->mode_config.max_height = 8192;
  	}
- 
--	if (IS_GEN7(dev))
-+	if (IS_GEN6(dev) || IS_GEN7(dev))
- 		dev->mode_config.async_page_flip = true;
- 
++
++	if (IS_GEN7(dev))
++		dev->mode_config.async_page_flip = true;
++
  	dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
+ 
+ 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
 -- 
 1.8.3.2
 
