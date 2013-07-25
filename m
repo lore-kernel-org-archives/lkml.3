@@ -1,83 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab3GYRG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:06:27 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:8382 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756520Ab3GYRGZ (ORCPT
+	id S1756586Ab3GYRL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:11:26 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13622 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755983Ab3GYRLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:06:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 10:06:25 -0700
-From: Rhyland Klein <rklein@nvidia.com>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: Joseph Lo <josephl@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        <linux-kernel@vger.kernel.org>, Rhyland Klein <rklein@nvidia.com>
-Subject: [v2 PATCH] regulator: palmas: Store pdata pointer in palmas struct
-Date: Thu, 25 Jul 2013 13:04:59 -0400
-Message-ID: <1374771899-5037-1-git-send-email-rklein@nvidia.com>
-X-Mailer: git-send-email 1.7.9.5
-X-NVConfidentiality: public
+	Thu, 25 Jul 2013 13:11:23 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18CZTiIITOkDDqH6zjwAXtii32Md00s1vM=
+Date: Thu, 25 Jul 2013 13:11:06 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6 0/7] ARM: mvebu: switch to DT probed mv643xx_eth
+Message-ID: <20130725171106.GM23879@titan.lakedaemon.net>
+References: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1372762824-12202-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store a pointer to the pdata so that if it needs to be used after
-probe it can be. In the case of booting from DeviceTree, the
-dev.platform_data may be null, so we need to store this pointer
-explicitly.
+On Tue, Jul 02, 2013 at 01:00:17PM +0200, Sebastian Hesselbarth wrote:
+> This patch set converts Marvell Dove, Kirkwood, and Orion5x DT enabled
+> boards to probe mv643xx_eth by DT. The corresponding DT support patches
+> for mv643xx_eth driver have already been taked by David Miller and are
+> available in next-20130701. This only contains the ARM part of
+> mv643xx_eth DT support patches and therefore patch counting is
+> continued as v6 with respect to the combined patch set.
+> 
+> The first three patches add nodes for ethernet-controller, mdio-bus,
+> and ethernet PHYs found on the three SoCs and their boards.
+> 
+> The last four patches convert DT boards for each SoC from platform_device
+> registration to DT based probing by removing the corresponding calls.
+> For Kirkwood this makes almost all DT board setup (except board-dnskw)
+> obsolete. Therefore, patch 5 removes board setup files, Kconfig, Makefile,
+> and defconfig entries for those boards.
+> 
+> This patch set has been tested on Marvell Dove, and compile-tested for
+> Kirkwood and Orion5x defconfig on top of next-20130701 with some fixes
+> sent earlier applied (DMA_MEMSET fixes and missing include on edmini_v2).
+> 
+> netdev is added on Cc for completeness, this is all Marvell related and
+> should go through Jason Cooper's branch if there are no objections.
+> 
+> Sebastian Hesselbarth (7):
+>   ARM: dove: add gigabit ethernet and mvmdio device tree nodes
+>   ARM: kirkwood: add gigabit ethernet and mvmdio device tree nodes
+>   ARM: orion5x: add gigabit ethernet and mvmdio device tree nodes
+>   ARM: dove: remove legacy mv643xx_eth setup
+>   ARM: kirkwood: remove redundant DT board files
+>   ARM: kirkwood: remove legacy clk alias for mv643xx_eth
+>   ARM: orion5x: remove legacy mv643xx_eth board setup
+> 
+>  arch/arm/boot/dts/dove-cubox.dts                   |    7 +
+>  arch/arm/boot/dts/dove.dtsi                        |   35 +++++
+>  arch/arm/boot/dts/kirkwood-cloudbox.dts            |   16 ++
+>  arch/arm/boot/dts/kirkwood-db.dtsi                 |   16 ++
+>  arch/arm/boot/dts/kirkwood-dnskw.dtsi              |   16 ++
+>  arch/arm/boot/dts/kirkwood-dockstar.dts            |   17 ++
+>  arch/arm/boot/dts/kirkwood-dreamplug.dts           |   28 ++++
+>  arch/arm/boot/dts/kirkwood-goflexnet.dts           |   16 ++
+>  .../arm/boot/dts/kirkwood-guruplug-server-plus.dts |   30 ++++
+>  arch/arm/boot/dts/kirkwood-ib62x0.dts              |   16 ++
+>  arch/arm/boot/dts/kirkwood-iconnect.dts            |   16 ++
+>  arch/arm/boot/dts/kirkwood-iomega_ix2_200.dts      |   24 +++
+>  arch/arm/boot/dts/kirkwood-is2.dts                 |    2 +
+>  arch/arm/boot/dts/kirkwood-km_kirkwood.dts         |   16 ++
+>  arch/arm/boot/dts/kirkwood-lsxl.dtsi               |   28 ++++
+>  arch/arm/boot/dts/kirkwood-mplcec4.dts             |   27 ++++
+>  .../boot/dts/kirkwood-netgear_readynas_duo_v2.dts  |   16 ++
+>  arch/arm/boot/dts/kirkwood-ns2-common.dtsi         |   16 ++
+>  arch/arm/boot/dts/kirkwood-ns2.dts                 |    2 +
+>  arch/arm/boot/dts/kirkwood-ns2lite.dts             |    2 +
+>  arch/arm/boot/dts/kirkwood-ns2max.dts              |    2 +
+>  arch/arm/boot/dts/kirkwood-ns2mini.dts             |    2 +
+>  arch/arm/boot/dts/kirkwood-openblocks_a6.dts       |   16 ++
+>  arch/arm/boot/dts/kirkwood-sheevaplug-common.dtsi  |   16 ++
+>  arch/arm/boot/dts/kirkwood-topkick.dts             |   16 ++
+>  arch/arm/boot/dts/kirkwood-ts219-6281.dts          |    4 +-
+>  arch/arm/boot/dts/kirkwood-ts219-6282.dts          |    4 +-
+>  arch/arm/boot/dts/kirkwood-ts219.dtsi              |   16 ++
+>  arch/arm/boot/dts/kirkwood.dtsi                    |   52 +++++++
+>  .../dts/orion5x-lacie-ethernet-disk-mini-v2.dts    |   17 ++
+>  arch/arm/boot/dts/orion5x.dtsi                     |   29 ++++
+>  arch/arm/configs/kirkwood_defconfig                |   22 ---
+>  arch/arm/mach-dove/board-dt.c                      |    9 -
+>  arch/arm/mach-kirkwood/Kconfig                     |  156 --------------------
+>  arch/arm/mach-kirkwood/Makefile                    |   23 +---
+>  arch/arm/mach-kirkwood/board-db88f628x-bp.c        |   24 ---
+>  arch/arm/mach-kirkwood/board-dnskw.c               |    7 -
+>  arch/arm/mach-kirkwood/board-dockstar.c            |   32 ----
+>  arch/arm/mach-kirkwood/board-dreamplug.c           |   35 -----
+>  arch/arm/mach-kirkwood/board-dt.c                  |   86 +-----------
+>  arch/arm/mach-kirkwood/board-goflexnet.c           |   34 -----
+>  arch/arm/mach-kirkwood/board-guruplug.c            |   33 ----
+>  arch/arm/mach-kirkwood/board-ib62x0.c              |   29 ----
+>  arch/arm/mach-kirkwood/board-iconnect.c            |   24 ---
+>  arch/arm/mach-kirkwood/board-iomega_ix2_200.c      |   34 -----
+>  arch/arm/mach-kirkwood/board-km_kirkwood.c         |   44 ------
+>  arch/arm/mach-kirkwood/board-lsxl.c                |   36 -----
+>  arch/arm/mach-kirkwood/board-mplcec4.c             |   35 -----
+>  arch/arm/mach-kirkwood/board-ns2.c                 |   35 -----
+>  arch/arm/mach-kirkwood/board-openblocks_a6.c       |   26 ----
+>  arch/arm/mach-kirkwood/board-readynas.c            |   27 ----
+>  arch/arm/mach-kirkwood/board-sheevaplug.c          |   27 ----
+>  arch/arm/mach-kirkwood/board-ts219.c               |   40 -----
+>  arch/arm/mach-kirkwood/board-usi_topkick.c         |   29 ----
+>  arch/arm/mach-orion5x/edmini_v2-setup.c            |   10 --
+>  55 files changed, 520 insertions(+), 857 deletions(-)
+>  delete mode 100644 arch/arm/mach-kirkwood/board-db88f628x-bp.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-dockstar.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-dreamplug.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-goflexnet.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-guruplug.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-ib62x0.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-iconnect.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-iomega_ix2_200.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-km_kirkwood.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-lsxl.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-mplcec4.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-ns2.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-openblocks_a6.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-readynas.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-sheevaplug.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-ts219.c
+>  delete mode 100644 arch/arm/mach-kirkwood/board-usi_topkick.c
 
-Based on work by Joseph Lo.
+Applied whole series to mvebu/boards (v7 of #2 and #5)
 
-Cc: Joseph Lo <josephl@nvidia.com>
-Signed-off-by: Rhyland Klein <rklein@nvidia.com>
----
+thx,
 
-v2:
- - Renamed patch from "regulator: palmas: fix pdata ptr not be updated
-   after it has been allocated" to be appropriate to the current change.
- - Instead of updating dev.platform_data, store the pdata pointer in the
-   pmic struct which we already have access to via drvdata.
-
- drivers/regulator/palmas-regulator.c |    2 +-
- include/linux/mfd/palmas.h           |    2 ++
- 2 files changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
-index d0c8785..750ce55 100644
---- a/drivers/regulator/palmas-regulator.c
-+++ b/drivers/regulator/palmas-regulator.c
-@@ -761,7 +761,6 @@ static void palmas_dt_to_pdata(struct device *dev,
- 	pdata->ldo6_vibrator = of_property_read_bool(node, "ti,ldo6-vibrator");
- }
- 
--
- static int palmas_regulators_probe(struct platform_device *pdev)
- {
- 	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-@@ -789,6 +788,7 @@ static int palmas_regulators_probe(struct platform_device *pdev)
- 
- 	pmic->dev = &pdev->dev;
- 	pmic->palmas = palmas;
-+	pmic->pdata = pdata;
- 	palmas->pmic = pmic;
- 	platform_set_drvdata(pdev, pmic);
- 
-diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
-index 1a8dd7a..1703f18 100644
---- a/include/linux/mfd/palmas.h
-+++ b/include/linux/mfd/palmas.h
-@@ -352,6 +352,8 @@ struct palmas_pmic {
- 	struct regulator_dev *rdev[PALMAS_NUM_REGS];
- 	struct mutex mutex;
- 
-+	struct palmas_pmic_platform_data *pdata;
-+
- 	int smps123;
- 	int smps457;
- 
--- 
-1.7.9.5
-
+Jason.
