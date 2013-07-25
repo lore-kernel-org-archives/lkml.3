@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3GYTho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:37:44 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59911 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756430Ab3GYThm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:37:42 -0400
-Date: Thu, 25 Jul 2013 14:05:45 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Dhaval Giani <dgiani@mozilla.com>
-Cc: linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
-        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130725180545.GB15590@logfs.org>
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
+	id S1757581Ab3GYTiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:38:00 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:46243
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757290Ab3GYTh4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 15:37:56 -0400
+X-Forefront-Antispam-Report: CIP:198.70.193.115;KIP:(null);UIP:(null);IPV:NLI;H:avcashub1.qlogic.com;RD:avcashub1.qlogic.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zz9371I542I1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2fh2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1155h)
+From: Sony Chacko <sony.chacko@qlogic.com>
+To: Greg KH <gregkh@linuxfoundation.org>,
+        Rajesh Borundia <rajesh.borundia@qlogic.com>,
+        Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Dept-Eng Linux Driver <Linux-Driver@qlogic.com>
+CC: netdev <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: qlcnic binary sysfs file abuse
+Thread-Topic: qlcnic binary sysfs file abuse
+Thread-Index: AQHOeqj4K/uLYp7XaU+9RohCU6cBE5l15LRw
+Date: Thu, 25 Jul 2013 19:37:46 +0000
+Message-ID: <0EA5B226BC5C7B45A71BF612AA8A019E355A3BD4@AVMB1.qlogic.org>
+References: <20130707002949.GA15822@kroah.com>
+In-Reply-To: <20130707002949.GA15822@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.4.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51F14136.30409@mozilla.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginatorOrg: qlogic.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 July 2013 11:16:06 -0400, Dhaval Giani wrote:
-> >
-> >If you want to follow some other approach where userspace has one
-> >interface to write the compressed data to a file and some other
-> >interface to read the file uncompressed, you are likely in a world of
-> >pain.
-> Why? If it is going to only be a few applications who know the file
-> is compressed, and read it to get decompressed data, why would it be
-> painful?
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Saturday, July 06, 2013 5:30 PM
+> To: Rajesh Borundia; Shahed Shaikh; Jitendra Kalsaria; Sony Chacko; Dept-Eng
+> Linux Driver
+> Cc: netdev; linux-kernel
+> Subject: qlcnic binary sysfs file abuse
+> 
+> I was doing a kernel-wide audit on all of the binary sysfs files, and noticed a
+> metric ton of them in the qlcnic driver.
+> 
+> So, any objection to me just deleting these entirely?  Or, if they really are
+> needed, can I just move them to debugfs, which is where I think they should
+> have been from the beginning?
 
-It would likely require an ABI extention.  Your immediate pain would
-be to get past a wall of NAK when you propose the extention.  You have
-to make a rather convincing case that the ABI extention cannot cause
-VFS or filesystem maintainers future pain in some dark cornercase.
+Some applications are using these files, please move them to debugfs.
 
-Just because the one application you care about only wants to use
-compression on write-once files doesn't prevent the next person from
-abusing the new ABI.  Such abuse should be strictly limited,
-preferrably impossible.
+Thanks,
+Sony
 
-I am not saying that I object.  Just warning you to brace yourself for
-impact.
 
-> What about introducing a new flag, O_COMPR which tells the
-> kernel, btw, we want this file to be decompressed if it can be. It
-> can fallback to O_RDONLY or something like that? That gets rid of
-> the chattr ugliness.
-
-How is that different from chattr ugliness, which also comes down to a
-single flag? ;)
-
-Jörn
-
---
-/* Keep these two variables together */
-int bar;
