@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab3GYNPR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:15:17 -0400
-Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:52448 "EHLO
-	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755438Ab3GYNPN (ORCPT
+	id S1755973Ab3GYNPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:15:31 -0400
+Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:44171 "EHLO
+	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755894Ab3GYNP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:15:13 -0400
+	Thu, 25 Jul 2013 09:15:27 -0400
 From: Shuah Khan <shuah.kh@samsung.com>
 To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         aik@ozlabs.ru, joe@perches.com, rostedt@goodmis.org,
@@ -14,19 +14,20 @@ To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         ohad@wizery.com, andreas.herrmann@calxeda.com, will.deacon@arm.com
 Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: [PATCH 0/4] iommu: Add event tracing feature to iommu 
-Date: Thu, 25 Jul 2013 07:15:01 -0600
-Message-Id: <cover.1374711464.git.shuah.kh@samsung.com>
+Subject: [PATCH 1/4] iommu: Add event tracing feature to iommu - Add iommu trace events
+Date: Thu, 25 Jul 2013 07:15:02 -0600
+Message-Id: <7b0b388ea2e8f1d245450a8ec34755f608618224.1374711464.git.shuah.kh@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
+References: <cover.1374711464.git.shuah.kh@samsung.com>
+In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
+References: <cover.1374711464.git.shuah.kh@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-iommu: Add event tracing feature to iommu
-
-This patch set adds tracing feature to iommu driver to report various
-iommu events. Classes iommu_group, iommu_device, iommu_map_unmap, and
-iommu_amd_event are defined.
+Add tracing feature to iommu driver to report various iommu events. Classes
+iommu_group, iommu_device, iommu_map_unmap, and iommu_amd_event are defined.
 
 iommu_group class events can be enabled to trigger when devices get added
 to and removed from an iommu group. Trace information includes iommu group
@@ -42,8 +43,8 @@ iommu:attach_device_to_domain
 iommu:detach_device_from_domain
 
 iommu_map_unmap class events can be enabled to trigger when iommu map and
-unmap iommu ops complete. Trace information includes iova, physical address
-(map event only), and size.
+unmap iommu ops. Trace information includes iova, physical address (map event
+only), and size.
 
 iommu:unmap
 iommu:map
@@ -56,58 +57,192 @@ and function number), address associated with the event, and flags.
 
 iommu:amd_event
 
-In addition to defining the new traces, iommu and amd_iommu drivers are changed
-to call trace events.
-
-Testing:
-The following is trace is generated when intel-iommu driver adds devices to
-to iommu groups during boot-time during its initialization:
-
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-       swapper/0-1     [003] ....     1.854793: add_device_to_group: IOMMU: groupID=0 device=0000:00:00.0
-       swapper/0-1     [003] ....     1.854797: add_device_to_group: IOMMU: groupID=1 device=0000:00:02.0
-       swapper/0-1     [003] ....     1.854802: add_device_to_group: IOMMU: groupID=2 device=0000:00:16.0
-       swapper/0-1     [003] ....     1.854803: add_device_to_group: IOMMU: groupID=2 device=0000:00:16.3
-       swapper/0-1     [003] ....     1.854805: add_device_to_group: IOMMU: groupID=3 device=0000:00:19.0
-       swapper/0-1     [003] ....     1.854807: add_device_to_group: IOMMU: groupID=4 device=0000:00:1a.0
-       swapper/0-1     [003] ....     1.854810: add_device_to_group: IOMMU: groupID=5 device=0000:00:1b.0
-       swapper/0-1     [003] ....     1.854817: add_device_to_group: IOMMU: groupID=6 device=0000:00:1c.0
-       swapper/0-1     [003] ....     1.854821: add_device_to_group: IOMMU: groupID=6 device=0000:00:1c.2
-       swapper/0-1     [003] ....     1.854823: add_device_to_group: IOMMU: groupID=7 device=0000:00:1d.0
-       swapper/0-1     [003] ....     1.854825: add_device_to_group: IOMMU: groupID=8 device=0000:00:1e.0
-       swapper/0-1     [003] ....     1.854828: add_device_to_group: IOMMU: groupID=9 device=0000:00:1f.0
-       swapper/0-1     [003] ....     1.854830: add_device_to_group: IOMMU: groupID=9 device=0000:00:1f.2
-       swapper/0-1     [003] ....     1.854831: add_device_to_group: IOMMU: groupID=9 device=0000:00:1f.3
-
-Added trace calls to iommu_prepare_identity_map() for testing some of the
-conditions that are hard to trigger. Here is the trace from the testing:
-
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-       swapper/0-1     [003] ....     1.854099: amd_event: IOMMU:Event 0x01 00:00.0 d=0x0010 a=0x00000000cb800000 f=0x0002
-       swapper/0-1     [003] ....     1.854101: remove_device_from_group: IOMMU: groupID=0 device=0000:00:02.0
-       swapper/0-1     [003] ....     1.854102: attach_device_to_domain: IOMMU: device=0000:00:02.0
-       swapper/0-1     [003] ....     1.854102: detach_device_from_domain: IOMMU: device=0000:00:02.0
-       swapper/0-1     [003] ....     1.854102: map: IOMMU: iova=0x00000000cb800000 paddr=0x00000000cf9fffff size=0x400
-       swapper/0-1     [003] ....     1.854102: unmap: IOMMU: iova=0x00000000cb800000 size=0x400
-
-Shuah Khan (4):
-  iommu: Add event tracing feature to iommu - Add iommu trace events
-  iommu: Add event tracing feature to iommu - export trace events
-  iommu: Add event tracing feature to iommu - amd_iommu driver trace
-    events
-  iommu: Add event tracing feature to iommu - iommu driver trace events
-
- drivers/iommu/Makefile       |    1 +
- drivers/iommu/amd_iommu.c    |   19 +++++
- drivers/iommu/iommu-traces.c |   27 +++++++
- drivers/iommu/iommu.c        |   17 ++++-
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
  include/trace/events/iommu.h |  174 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 237 insertions(+), 1 deletion(-)
- create mode 100644 drivers/iommu/iommu-traces.c
+ 1 file changed, 174 insertions(+)
  create mode 100644 include/trace/events/iommu.h
 
+diff --git a/include/trace/events/iommu.h b/include/trace/events/iommu.h
+new file mode 100644
+index 0000000..3d8d5e8
+--- /dev/null
++++ b/include/trace/events/iommu.h
+@@ -0,0 +1,174 @@
++/*
++ * iommu trace points
++ *
++ * Copyright (C) 2013 Shuah Khan <shuah.kh@samsung.com>
++ *
++ */
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM iommu
++
++#if !defined(_TRACE_IOMMU_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_IOMMU_H
++
++#include <linux/tracepoint.h>
++#include <linux/pci.h>
++
++struct device;
++
++DECLARE_EVENT_CLASS(iommu_group_event,
++
++	TP_PROTO(int group_id, struct device *dev),
++
++	TP_ARGS(group_id, dev),
++
++	TP_STRUCT__entry(
++		__field(int, gid)
++		__string(device, dev_name(dev))
++	),
++
++	TP_fast_assign(
++		__entry->gid = group_id;
++		__assign_str(device, dev_name(dev));
++	),
++
++	TP_printk("IOMMU: groupID=%d device=%s",
++			__entry->gid, __get_str(device)
++	)
++);
++
++DEFINE_EVENT(iommu_group_event, add_device_to_group,
++
++	TP_PROTO(int group_id, struct device *dev),
++
++	TP_ARGS(group_id, dev)
++
++);
++
++DEFINE_EVENT(iommu_group_event, remove_device_from_group,
++
++	TP_PROTO(int group_id, struct device *dev),
++
++	TP_ARGS(group_id, dev)
++);
++
++DECLARE_EVENT_CLASS(iommu_device_event,
++
++	TP_PROTO(struct device *dev),
++
++	TP_ARGS(dev),
++
++	TP_STRUCT__entry(
++		__string(device, dev_name(dev))
++	),
++
++	TP_fast_assign(
++		__assign_str(device, dev_name(dev));
++	),
++
++	TP_printk("IOMMU: device=%s", __get_str(device)
++	)
++);
++
++DEFINE_EVENT(iommu_device_event, attach_device_to_domain,
++
++	TP_PROTO(struct device *dev),
++
++	TP_ARGS(dev)
++);
++
++DEFINE_EVENT(iommu_device_event, detach_device_from_domain,
++
++	TP_PROTO(struct device *dev),
++
++	TP_ARGS(dev)
++);
++
++DECLARE_EVENT_CLASS(iommu_map_unmap,
++
++	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
++
++	TP_ARGS(iova, paddr, size),
++
++	TP_STRUCT__entry(
++		__field(u64, iova)
++		__field(u64, paddr)
++		__field(int, size)
++	),
++
++	TP_fast_assign(
++		__entry->iova = iova;
++		__entry->paddr = paddr;
++		__entry->size = size;
++	),
++
++	TP_printk("IOMMU: iova=0x%016llx paddr=0x%016llx size=0x%x",
++			__entry->iova, __entry->paddr, __entry->size
++	)
++);
++
++DEFINE_EVENT(iommu_map_unmap, map,
++
++	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
++
++	TP_ARGS(iova, paddr, size)
++);
++
++DEFINE_EVENT_PRINT(iommu_map_unmap, unmap,
++
++	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
++
++	TP_ARGS(iova, paddr, size),
++
++	TP_printk("IOMMU: iova=0x%016llx size=0x%x",
++			__entry->iova, __entry->size
++	)
++);
++
++DECLARE_EVENT_CLASS(iommu_amd_event,
++
++	TP_PROTO(char *event_str, int type, int domain_id, int device_id,
++		 u64 address, int flags),
++
++	TP_ARGS(event_str, type, domain_id, device_id, address, flags),
++
++	TP_STRUCT__entry(
++		__string(event_str, event_str)
++		__field(int, type)
++		__field(int, domain_id)
++		__field(int, device_id)
++		__field(u64, address)
++		__field(int, flags)
++	),
++
++	TP_fast_assign(
++		__assign_str(event_str, event_str);
++		__entry->type = type;
++		__entry->domain_id = domain_id;
++		__entry->device_id = device_id;
++		__entry->address = address;
++		__entry->flags = flags;
++	),
++
++	TP_printk("IOMMU:%s 0x%02x %02x:%02x.%x d=0x%04x a=0x%016llx f=0x%04x",
++			__get_str(event_str),
++			__entry->type,
++			PCI_BUS_NUM(__entry->device_id),
++			PCI_SLOT(__entry->device_id),
++			PCI_FUNC(__entry->device_id),
++			__entry->domain_id,
++			__entry->address, __entry->flags
++	)
++);
++
++DEFINE_EVENT(iommu_amd_event, amd_event,
++
++	TP_PROTO(char *event_str, int type, int domain_id, int device_id,
++		 u64 address, int flags),
++
++	TP_ARGS(event_str, type, domain_id, device_id, address, flags)
++);
++
++#endif /* _TRACE_IOMMU_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 -- 
 1.7.10.4
 
