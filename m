@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab3GYXRa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:17:30 -0400
-Received: from oproxy13-pub.unifiedlayer.com ([69.89.16.30]:50624 "HELO
-	oproxy13-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757262Ab3GYXR3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:17:29 -0400
-Date: Thu, 25 Jul 2013 16:17:15 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: Re: Ugly patches for stolen reservation
-Message-ID: <20130725161715.50d85926@jbarnes-desktop>
-In-Reply-To: <5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20130725200551.GA16719@gmail.com>
-	<5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S932152Ab3GYXRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:17:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:2828 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756602Ab3GYXRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 19:17:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,746,1367996400"; 
+   d="scan'208";a="376248197"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Xiong Zhou <jencce.kernel@gmail.com>, Peng Tao <bergwolf@gmail.com>
+CC: Jiri Kosina <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging/lustre: add BLOCK depends in Kconfig
+Thread-Topic: [PATCH] staging/lustre: add BLOCK depends in Kconfig
+Thread-Index: AQHOiQWa6Ypo0E8Su0K9tUbRNoTVL5l2GQ6A
+Date: Thu, 25 Jul 2013 23:17:46 +0000
+Message-ID: <CE170DA9.57BC6%andreas.dilger@intel.com>
+In-Reply-To: <alpine.DEB.2.02.1307251458330.31610@M2420>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.106.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <2DA4052B0AF936449A81B3BB3FA3F87B@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6PNHtvH007852
 
-Well, it's ok if the boot loader writes to this memory, the worst
-that'll happen is you'll see garbage on the screen.  If the boot loader
-tries to do MMIO mapping on top it'll get into trouble... but why would
-it do that?
+On 2013/07/25 1:06 AM, "Xiong Zhou" <jencce.kernel@gmail.com> wrote:
 
-Jesse
+>From: Xiong Zhou <jencce.kernel@gmail.com>
+>
+>Add BLOCK depends in Kconfig for LUSTRE to fix this:
+>drivers/staging/lustre/lustre/fid/../include/linux/lustre_compat25.h:117:2
+>: 
+>error: implicit declaration of function Ê½unregister_blkdevÊ¼
+>
+>Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+>---
+> drivers/staging/lustre/lustre/Kconfig |    2 +-
+> 1 file changed, 1 insertion(+), 1 deletion(-)
+>
+>diff --git a/drivers/staging/lustre/lustre/Kconfig
+>b/drivers/staging/lustre/lustre/Kconfig
+>index 9ae7fa8..0b45de0 100644
+>--- a/drivers/staging/lustre/lustre/Kconfig
+>+++ b/drivers/staging/lustre/lustre/Kconfig
+>@@ -1,6 +1,6 @@
+> config LUSTRE_FS
+> 	tristate "Lustre file system client support"
+>-	depends on STAGING && INET && m
+>+	depends on STAGING && INET && BLOCK && m
+> 	select LNET
+> 	select CRYPTO
+> 	select CRYPTO_CRC32
 
-On Thu, 25 Jul 2013 15:42:25 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+The Lustre client does not need a block device - it is a network
+filesystem.
+The one piece of code that is relevant here relates to a Lustre-optimized
+"loop" device that bypasses the VFS, data copying, and DLM locking for use
+by swap and such.  It would be better instead to make that code conditional
+and add a new CONFIG_LUSTRE_LLOOP or similar, and only make that part
+dependent
+on BLOCK.
 
-> So the bootloader is just as likely to step on things... what happens when/if it does?
-> 
-> Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> >* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> >> Patch 2/2 has the description, but suffice it to say I'm 
-> >> not really pleased with this, though it does solve a 
-> >> problem we have.  On some machines, we get MMIO space 
-> >> allocated on top of this hidden memory, which can cause 
-> >> problems.  I'm not sure if there are similar problems for 
-> >> other hunks of the address space; if so it's possible 
-> >> this could be made more general (though the bits for 
-> >> looking up the address of this region are definitely 
-> >> Intel graphics specific).
-> >
-> >It looks pretty hardware specific. Discovering it the hard 
-> >way and marking it e820 reserved in an early quirk is what 
-> >the firmware should have done to begin with - and I doubt 
-> >the kernel could do anything significantly cleaner.
-> >
-> >How does Windows manage to not crash? By luckily never 
-> >allocating PCI resources on top of the RAM? Or does it have 
-> >a quirk?
-> >
-> >> Chris has some patches on top to add a new E820 type so 
-> >> we can look up the region later, which removes some 
-> >> redundant code in the i915 driver at least.
-> >> 
-> >> Any comments?  I assume no one likes this, but maybe it's 
-> >> just another early quirk we'll have to live with...
-> >
-> >No strong feelings against it - my only suggestion would be 
-> >to make this more visible - right now it's added as e820 
-> >reserved which hides amongst other areas already marked 
-> >reserved - would a low-key printk() of the range added make 
-> >it more apparent that a kernel quirk activated here?
-> >
-> >Just so that people know that it came from the kernel, not 
-> >the firmware.
-> >
-> >But in any case:
-> >
-> >Acked-by: Ingo Molnar <mingo@kernel.org>
-> >
-> >Thanks,
-> >
-> >	Ingo
-> 
-
-
+Cheers, Andreas
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
