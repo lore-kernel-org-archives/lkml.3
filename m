@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756199Ab3GYQ3x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:29:53 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42601 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755974Ab3GYQ3v (ORCPT
+	id S1756182Ab3GYQcL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:32:11 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:57313 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754591Ab3GYQcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:29:51 -0400
-Date: Thu, 25 Jul 2013 18:29:39 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>, Don Zickus <dzickus@redhat.com>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Anish Singh <anish198519851985@gmail.com>
-Subject: Re: [PATCH 0/8] perf: Finer grained full dynticks handling
-Message-ID: <20130725162939.GX27075@twins.programming.kicks-ass.net>
-References: <1374539466-4799-1-git-send-email-fweisbec@gmail.com>
- <20130725095938.GI27075@twins.programming.kicks-ass.net>
- <20130725140216.GB7400@somewhere>
+	Thu, 25 Jul 2013 12:32:04 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Thu, 25 Jul 2013 17:31:50 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+Message-ID: <20130725163150.GD6493@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	linux-next <linux-next@vger.kernel.org>
+References: <CA+icZUWOwKH+oF4Ekrkk3pUCjz4Rc361kzdsKjb04WzsEtWPYA@mail.gmail.com>
+ <87bo5rx7m0.fsf@intel.com>
+ <CA+icZUXhW_yAie25DPVXzhi2_pYQTjJpDqa7EzRfvtQ0gFYYHQ@mail.gmail.com>
+ <20130725133651.GI5939@phenom.ffwll.local>
+ <CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
+ <20130725142705.GM5939@phenom.ffwll.local>
+ <CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
+ <CAKMK7uG-KCF5oU2XJ5UWPJn=V3i0jBLs5a=gU9UPuJxY0v=bNw@mail.gmail.com>
+ <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
+ <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130725140216.GB7400@somewhere>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 04:02:17PM +0200, Frederic Weisbecker wrote:
-> > Awesome, looks good, thanks Frederic!
-> > 
-> > Acked-by: Peter Zijlstra <peterz@infradead.org>
+On Thu, Jul 25, 2013 at 06:11:18PM +0200, Sedat Dilek wrote:
+> Might be OT, but I cannot use my X graphics stack containing
+> libdrm-2.4.46, mesa-9.1.5 and intel-ddx 2.21.12-git (tried also
+> v2.21.11).
+> Switching back to the one from Ubuntu/precise lets my X start.
 > 
-> Great! What do you prefer? Do you want to take these or should I do a pull request
-> to Ingo directly?
+> 
+> [    40.379] (II) AIGLX: enabled GLX_MESA_copy_sub_buffer
+> [    40.379] (II) AIGLX: enabled GLX_INTEL_swap_event
+> [    40.380] (II) AIGLX: enabled GLX_SGI_swap_control and GLX_MESA_swap_control
+> [    40.380] (II) AIGLX: GLX_EXT_texture_from_pixmap backed by buffer objects
+> [    40.380] (II) AIGLX: Loaded and initialized i965
+> [    40.380] (II) GLX: Initialized DRI2 GL provider for screen 0
+> [    40.380]
+> Fatal server error:
+> [    40.380] failed to create screen resources
+> [    40.380]
+> Please consult the The X.Org Foundation support
+>          at http://wiki.x.org
+>  for help.
+> [    40.380] Please also check the log file at "/var/log/Xorg.0.log"
+> for additional information.
+> [    40.380]
+> [    40.380] (II) AIGLX: Suspending AIGLX clients for VT switch
+> [    40.396]  ddxSigGiveUp: Closing log
+> [    40.398] Server terminated with error (1). Closing log file.
 
-I had intended Ingo to pick these up; but then I remembered he's playing
-road warrior atm. So I stuck them in my queue so as not to loose them.
+Please attach the full Xorg.0.log so that I can make a few guesses.
+-Chris
 
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
