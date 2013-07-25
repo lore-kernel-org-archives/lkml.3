@@ -1,115 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab3GYO7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:59:44 -0400
-Received: from mail-qe0-f48.google.com ([209.85.128.48]:40297 "EHLO
-	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755994Ab3GYO7l (ORCPT
+	id S1756457Ab3GYO7s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:59:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47229 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755994Ab3GYO7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:59:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130724163021.GD5289@xanatos>
-References: <1372656552-18824-1-git-send-email-george.cherian@ti.com>
- <20130702032712.GD6262@xanatos> <CANqatMA869UoTFDvSAO1P4OKsiVf+qyXbCrpHDOhm4+TMZ2cGA@mail.gmail.com>
- <51ECDDE3.1040209@ti.com> <CANqatMDrfV9+3ONnuZLN7xsp-TOoxHG2TV4a01EH2p8Z+zefWA@mail.gmail.com>
- <20130724163021.GD5289@xanatos>
-From: Shuduo Sang <sangshuduo@gmail.com>
-Date: Thu, 25 Jul 2013 22:59:00 +0800
-Message-ID: <CANqatMDHhaiLzgpQ0foYGGaW1p8BjhFJ1+Bj_B0cccWA4omqUQ@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: host: xhci: Enable XHCI_SPURIOUS_SUCCESS for all
- controllers with xhci 1.0
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: George Cherian <george.cherian@ti.com>,
-        linux-usb <linux-usb@vger.kernel.org>, balbi <balbi@ti.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        gregkh <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 25 Jul 2013 10:59:44 -0400
+Message-ID: <1374764373.5374.42.camel@fourier>
+Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
+From: Kamal Mostafa <kamal@canonical.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, James Hogan <james@albanarts.com>,
+        Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Steven Newbury <steve@snewbury.org.uk>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Date: Thu, 25 Jul 2013 07:59:33 -0700
+In-Reply-To: <20130725144625.GO5939@phenom.ffwll.local>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	 <CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
+	 <9012759.Alzqtdvh5b@vostro.rjw.lan> <2218913.HKGjJcYT1G@vostro.rjw.lan>
+	 <1374763397.5374.30.camel@fourier>
+	 <20130725144625.GO5939@phenom.ffwll.local>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-ylRWJXiniZUHIcCQ9j2b"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:30 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
-> On Mon, Jul 22, 2013 at 03:58:19PM +0800, Shuduo Sang wrote:
->> On Mon, Jul 22, 2013 at 3:23 PM, George Cherian <george.cherian@ti.com> wrote:
->> Yes, I run below script to capture picture.
->>
->> #!/bin/bash
->> # camera_stress.sh
->> # Testing the camera by BinLi
->>
->> for ((i=0; i<10 ; i++))
->> do
->>         fswebcam --no-banner -r 352x288 -d /dev/video0 test_$i.jpg
->> done
->>
->> It will randomly fail at later loops. The fail rate about 20%~30%. When it fail,
->> I can see error messages by dmesg as below:
->>
->> [ 68.171039] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
->> not part of current TD
->> [ 68.175030] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
->> not part of current TD
->> [ 68.179026] xhci_hcd 0000:00:14.0: ERROR Transfer event TRB DMA ptr
->> not part of current TD
->> [ 68.180082] usb 3-12: USB disconnect, device number 4
->> [ 68.450459] usb 3-12: new high-speed USB device number 5 using xhci_hcd
->> [ 68.477960] usb 3-12: New USB device found, idVendor=5986, idProduct=0397
->> [ 68.477964] usb 3-12: New USB device strings: Mfr=1, Product=2, SerialNumber=0
->> [ 68.477966] usb 3-12: Product: Integrated Camera
->> [ 68.477968] usb 3-12: Manufacturer: Vimicro corp.
->> [ 68.479107] uvcvideo: Found UVC 1.00 device Integrated Camera (5986:0397)
->> [ 68.479821] input: Integrated Camera as
->> /devices/pci0000:00/0000:00:14.0/usb3/3-12/3-12:1.0/input/input15
->> [ 321.389721] type=1400 audit(1374214638.182:29): apparmor="DENIED"
->> operation="capable" parent=1 profile="/usr/sbin/cupsd" pid=1232
->> comm="cupsd" pid=1232 comm="cupsd" c
->> apability=36 capname="block_suspend"
->
-> That's a different issue.  The log shows that your USB webcam
-> disconnects, and that's why your script fails.  Then the device
-> re-connects.
->
 
-Hmm, I think you are right. I tried my script on another laptop with
-Lynx Point host and same webcam, it works very well. Sorry if my
-information misled you and George.
+--=-ylRWJXiniZUHIcCQ9j2b
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Do other USB devices work after the camera disconnects?  Does the webcam
-> itself work (at least for a while) after you stop and restart the
-> script?  (Note that after a disconnect, the webcam may be present on
-> /dev/video1 instead of /dev/video0, because your script had /dev/video0
-> open when the webcam re-connected.)
->
->> >> Then I manually applied George's patch against 3.10.0 but the issue
->> >> still happen when I use
->> >> camera to capture picture.
->> >
->> > Can you explain what is the exact issue you face after applying the patch?
->> > Are you still getting
->> >
->> > "ERROR Transfer event TRB DMA ptr not part of current TD"
->>
->> Yes, after I applied your patch manually, I still getting this error.
->> Seems fail rate is same.
->
-> I'm still going to apply George's patch, because it does fix a different
-> issue.
->
+On Thu, 2013-07-25 at 16:46 +0200, Daniel Vetter wrote:
+> On Thu, Jul 25, 2013 at 07:43:17AM -0700, Kamal Mostafa wrote:
+> > On Thu, 2013-07-25 at 15:00 +0200, Rafael J. Wysocki wrote:
+> > > On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
+> > > > On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
+> > > > > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> =
+wrote:
+> > > > > >
+> > > > > > Linus, do you want me to send a pull request reverting 8c5bd7a =
+and efaa14c?
+> > > > >=20
+> > > > > Yes, but let's wait a while. Not because I think we'll fix the pr=
+oblem
+> > > > > (hey, miracles might happen), but because I think it would be use=
+ful
+> > > > > to couple the reverts with information about the particular machi=
+nes
+> > > > > that broke (and the people who reported it). So that when we
+> > > > > inevitably try again, we can perhaps get some testing effort with
+> > > > > those machines/people.
+> > > > >=20
+> > > > > It doesn't seem to be a show-stopped for a large number of people=
+, so
+> > > > > there's no huge hurry. I'd suggest doing the revert just in time =
+for
+> > > > > rc3, but waiting until then to gather info about people who see
+> > > > > breakage.
+> > > > >=20
+> > > > > Sound like a plan?
+> > > >=20
+> > > > Yes, it does.
+> > >=20
+> > > OK, time to revert I guess.
+> > >=20
+> > > James, Kamal, Steven, J=C3=B6rg, Martin, Kalle, please check if the a=
+pppended patch
+> > > fixes the backlight for you.
+> >=20
+> > Yes, this revert patch does re-enable backlight control for the affecte=
+d
+> > Dell XPS13 models.
+>=20
+> Are these the same models that neeed the special quirk to not write
+> PCH_PWM_ENABLE? Or do they need both?
 
-Is there any code piece to triage the issue George's patch fix? Then I can
-do some verification with George's patch or without.
+Hi Daniel-
 
-> I'm not sure if there's anything software can do if the webcam keeps
-> disconnecting.  That's usually an electrical issue.  Have you tried a
-> different USB cable?  If the webcam is behind a hub, have you tried
-> connecting it directly to the computer's roothub?  If it's attached to
-> the roothub, have you tried putting it behind an external hub?
->
-> If none of that works, I can look at your logs, and try to figure out if
-> there's anything software can do.  Can you recompile your kernel with
-> George's patch and CONFIG_USB_DEBUG and CONFIG_USB_XHCI_HCD_DEBUGGING
-> turned on?  Please send me the log from just before you start your
-> script to when the device disconnects.
->
-> Sarah Sharp
+Yes, these are the same models (Dell XPS13) that need the PCH_PWM_ENABLE
+quirk, but that's not related to this ACPI problem...
+
+All of the XPS13 models still need the PCH_PWM_ENABLE quirk which is now
+present in mainline (e85843b "drm/i915: quirk no PCH_PWM_ENABLE for Dell
+XPS13 backlight").
+
+Separately from that, some of the XPS13 models were _also_ adversely
+affected (as were some other machines) by the ACPI changes that are
+about to be reverted.
+
+ -Kamal
+
+
+--=-ylRWJXiniZUHIcCQ9j2b
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAABCAAGBQJR8T1VAAoJEHqwmdxYrXhZ3BcP/361yS+awomMVvSAQK0NnkC2
+a1MbWxrlK1Ck1KXvkk0Xx5JZrQ7X+Kfsjc8apDaX+WAYmAnymzAH5NmMF7PEKQaP
+mtJ6RGZOAO6K/I/pZpNGTPXcUic+r51E/dkjlfFTe1kDYGVXe5T76urx1UoeCemS
+kX+WfsJZYHxfA/1yXAgyDK0wcAwSDNgcT9jL0KE7EWLwawmzrdXNAiF3HgKSSyz3
+EjMSAAVLj8dMeitQE1V9oIH3d5Ig43aWHI7D1wi2ZFGRn2Q7XZ5ORm5AvZVqGa+9
+JOMjIdZ//4HXcgLxv5n4UHSRxNn50Mm15NWSjNhsfx+z3nbZcRi/2V9lglB2yhhk
+bT4QxkfmYwlmYbEoSRZk6bTjeJxAeCli+BLYyDmHyiXmhz19uPbs+N5JLh4DlBea
+0/O+1pemW3Z+8qGO88F+mSgsxip1nEbcqtuuY40NHfWquPo9R6LXRgTXSy3g3tsh
+AvZ5KXQsIteLCNgv2veiBV1GUhLaLtwdw63vSgsVpsLYZDUfmVqzNi+9O9bUVRpI
+oOdmTg1TlyVzIJH4pQaskxbi0o/J+CgyWt0KAHKiCel5bmbdExotrao870A5yk9b
+5IOBVMMxtyLka12QcjxSvup01OTt+7DxbHMChWMxWpVMvQqW9h7Bd47rpRV8/UJ1
+ZeNL1Df3eRW6lK9DX/NV
+=wJNb
+-----END PGP SIGNATURE-----
+
+--=-ylRWJXiniZUHIcCQ9j2b--
+
