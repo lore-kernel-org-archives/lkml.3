@@ -1,144 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab3GYAo5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:44:57 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:52806 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754708Ab3GYAoy (ORCPT
+	id S1755074Ab3GYAox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:44:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34928 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708Ab3GYAnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:44:54 -0400
-Message-ID: <51F074FA.3010703@gmail.com>
-Date: Thu, 25 Jul 2013 08:44:42 +0800
-From: Hush Bensen <hush.bensen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Toshi Kani <toshi.kani@hp.com>
-CC: Ingo Molnar <mingo@kernel.org>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        dave@sr71.net, kosaki.motohiro@gmail.com,
-        isimatu.yasuaki@jp.fujitsu.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com>
-In-Reply-To: <1374681742.16322.180.camel@misato.fc.hp.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 24 Jul 2013 20:43:49 -0400
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v1 12/14] ARM: dts: msm: Add MSM8960 MMCC DT nodes
+Date: Wed, 24 Jul 2013 17:43:40 -0700
+Message-Id: <1374713022-6049-13-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.8.3.4.840.g6a90778
+In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
+References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 12:02 AM, Toshi Kani wrote:
-> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
->> On 07/24/2013 04:45 AM, Toshi Kani wrote:
->>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
->>>> * Toshi Kani <toshi.kani@hp.com> wrote:
->>>>
->>>>>> Could we please also fix it to never crash the kernel, even if stupid
->>>>>> ranges are provided?
->>>>> Yes, this probe interface can be enhanced to verify the firmware
->>>>> information before adding a given memory address.  However, such change
->>>>> would interfere its test use of "fake" hotplug, which is only the known
->>>>> use-case of this interface on x86.
->>>> Not crashing the kernel is not a novel concept even for test interfaces...
->>> Agreed.
->>>
->>>> Where does the possible crash come from - from using invalid RAM ranges,
->>>> right? I.e. on x86 to fix the crash we need to check the RAM is present in
->>>> the e820 maps, is marked RAM there, and is not already registered with the
->>>> kernel, or so?
->>> Yes, the crash comes from using invalid RAM ranges.  How to check if the
->>> RAM is present is different if the system supports hotplug or not.
->> Could you explain different methods to check the RAM is present if the
->> system supports hotplkug or not?
-> e820 and UEFI memory descriptor tables are the boot-time interfaces.
-> These interfaces are not required to reflect any run-time changes.
->
-> ACPI memory device objects can be used at both boot-time and run-time,
-> which reflect any run-time changes.  But they are optional to implement.
-> They typically are not implemented unless the system supports hotplug.
->
->>>>> In order to verify if a given memory address is enabled at run-time (as
->>>>> opposed to boot-time), we need to check with ACPI memory device objects
->>>>> on x86.  However, system vendors tend to not implement memory device
->>>>> objects unless their systems support memory hotplug.  Dave Hansen is
->>>>> using this interface for his testing as a way to fake a hotplug event on
->>>>> a system that does not support memory hotplug.
->>>> All vendors implement e820 maps for the memory present at boot time.
->>> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
->>> new memory added.  Here is a quote from ACPI spec.
->>>
->>> ===
->>> 15.1 INT 15H, E820H - Query System Address Map
->>>    :
->>> The memory map conveyed by this interface is not required to reflect any
->>> changes in available physical memory that have occurred after the BIOS
->>> has initially passed control to the operating system. For example, if
->>> memory is added dynamically, this interface is not required to reflect
->>> the new system memory configuration.
->>> ===
->>>
->>> By definition, the "probe" interface is used for the kernel to recognize
->>> a new memory added at run-time.  So, it should check ACPI memory device
->>> objects (which represents run-time state) for the verification.  On x86,
->>> however, ACPI also sends a hotplug event to the kernel, which triggers
->>> the kernel to recognize the new physical memory properly.  Hence, users
->>> do not need this "probe" interface.
->>>
->>>> How is the testing done by Dave Hansen? If it's done by booting with less
->>>> RAM than available (via say the mem=1g boot parameter), and then
->>>> hot-adding some of the missing RAM, then this could be made safe via the
->>>> e820 maps and by consultig the physical memory maps (to avoid double
->>>> registry), right?
->>> If we focus on this test scenario on a system that does not support
->>> hotplug, yes, I agree that we can check with e820 since it is safe to
->>> assume that the system has no change after boot.  IOW, it is unsafe to
->>> check with e820 if the system supports hotplug, but there is no use in
->>> this interface for testing if the system supports hotplug.  So, this may
->>> be a good idea.
->>>
->>> Dave, is this how you are testing?  Do you always specify a valid memory
->>> address for your testing?
->>>
->>>> How does the hotplug event based approach solve double adds? Relies on the
->>>> hardware not sending a hot-add event twice for the same memory area or for
->>>> an invalid memory area, or does it include fail-safes and double checks as
->>>> well to avoid double adds and adding invalid memory? If yes then that
->>>> could be utilized here as well.
->>> In high-level, here is how ACPI memory hotplug works:
->>>
->>> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
->>> hot-added.
->>> 2. The kernel is notified, and verifies if the new memory device object
->>> has not been attached by any handler yet.
->>> 3. The memory handler is called, and obtains a new memory range from the
->>> ACPI memory device object.
->>> 4. The memory handler calls add_memory() with the new address range.
->>>
->>> The above step 1-4 proceeds automatically within the kernel.  No user
->>> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
->>> and step 3 gets a valid address range from the firmware directly.  Step
->>> 4 is basically the same as the "probe" interface, but with all the
->>> verification up front, this step is safe.
->> This is hot-added part, could you also explain how ACPI memory hotplug
->> works for hot-remove?
-> Sure.  Here is high-level.
->
-> 1. ACPI sends a hotplug event to an ACPI memory device object that is
-> requested to hot-remove.
-> 2. The kernel is notified, and verifies if the memory device object is
-> attached by a handler.
-> 3. The memory handler is called (which is being attached), and obtains
-> its memory range.
-> 4. The memory handler calls remove_memory() with the address range.
-> 5. The kernel calls eject method of the ACPI memory device object.
+Add the necessary DT data to probe the multimedia clock controller
+on MSM8960 devices.
 
-Could you give me the calltrace of add_memory and remove_memory? I don't 
-have machine support hotplug, but I hope to investigate how ACPI part 
-works for memory hotplug. ;-)
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+---
+ arch/arm/boot/dts/msm8960-cdp.dts | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
->
-> Thanks,
-> -Toshi
->
->
+diff --git a/arch/arm/boot/dts/msm8960-cdp.dts b/arch/arm/boot/dts/msm8960-cdp.dts
+index 76a1817..be8d947 100644
+--- a/arch/arm/boot/dts/msm8960-cdp.dts
++++ b/arch/arm/boot/dts/msm8960-cdp.dts
+@@ -109,6 +109,43 @@
+ 		};
+ 	};
+ 
++	clock-controller@4000000 {
++		compatible = "qcom,mmcc-8960", "qcom,mmcc";
++		reg = <0x4000000 0x1000>;
++
++		clocks {
++			pll2: pll2 {
++				#clock-cells = <0>;
++				compatible = "qcom,pll";
++				clocks = <&pxo>;
++			};
++
++			mdp_rcg: mdp_rcg {
++				#clock-cells = <0>;
++				compatible = "qcom,mn8-dyn-clock";
++				clocks = <&pxo>, <&pll2>, <&vpll8>;
++			};
++
++			mdp_cxc: mdp_cxc {
++				#clock-cells = <0>;
++				compatible = "qcom,cxc-clock";
++				clocks = <&mdp_rcg>;
++			};
++
++			rot_rcg: rot_rcg {
++				#clock-cells = <0>;
++				compatible = "qcom,p4-dyn-clock";
++				clocks = <&pxo>, <&pll2>, <&vpll8>;
++			};
++
++			rot_cxc: rot_cxc {
++				#clock-cells = <0>;
++				compatible = "qcom,cxc-clock";
++				clocks = <&rot_rcg>;
++			};
++		};
++	};
++
+ 	serial@16440000 {
+ 		compatible = "qcom,msm-hsuart", "qcom,msm-uart";
+ 		reg = <0x16440000 0x1000>,
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
