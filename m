@@ -1,209 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab3GYK0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:26:33 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:40311 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754994Ab3GYK0b (ORCPT
+	id S1755509Ab3GYK3C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:29:02 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36618 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab3GYK27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:26:31 -0400
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: Alexey Kardashevskiy <aik@ozlabs.ru>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH] powerpc: Prepare to support kernel handling of IOMMU map/unmap
-Date: Thu, 25 Jul 2013 20:26:01 +1000
-Message-Id: <1374747961-28501-1-git-send-email-aik@ozlabs.ru>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374707624.6142.16.camel@pasglop>
-References: <1374707624.6142.16.camel@pasglop>
+	Thu, 25 Jul 2013 06:28:59 -0400
+Date: Thu, 25 Jul 2013 11:28:52 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Robin Gong <b38343@freescale.com>
+Cc: shawn.guo@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
+        rob@landley.net, lgirdwood@gmail.com, s.trumtrar@pengutronix.de,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <20130725102852.GA9858@sirena.org.uk>
+References: <1374747799-11100-1-git-send-email-b38343@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ihaM1hUd25+qoVgS"
+Content-Disposition: inline
+In-Reply-To: <1374747799-11100-1-git-send-email-b38343@freescale.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH V6] regulator: pfuze100: add pfuze100 regulator driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current VFIO-on-POWER implementation supports only user mode
-driven mapping, i.e. QEMU is sending requests to map/unmap pages.
-However this approach is really slow, so we want to move that to KVM.
-Since H_PUT_TCE can be extremely performance sensitive (especially with
-network adapters where each packet needs to be mapped/unmapped) we chose
-to implement that as a "fast" hypercall directly in "real
-mode" (processor still in the guest context but MMU off).
 
-To be able to do that, we need to provide some facilities to
-access the struct page count within that real mode environment as things
-like the sparsemem vmemmap mappings aren't accessible.
+--ihaM1hUd25+qoVgS
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This adds an API to get page struct when MMU is off.
+On Thu, Jul 25, 2013 at 06:23:19PM +0800, Robin Gong wrote:
+> Add pfuze100 regulator driver.
 
-This adds to MM a new function put_page_unless_one() which drops a page
-if counter is bigger than 1. It is going to be used when MMU is off
-(real mode on PPC64 is the first user) and we want to make sure that page
-release will not happen in real mode as it may crash the kernel in
-a horrible way.
+Send incremental fixes for patches that have already been applied.
 
-CONFIG_SPARSEMEM_VMEMMAP and CONFIG_FLATMEM are supported.
+--ihaM1hUd25+qoVgS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Cc: linux-mm@kvack.org
-Reviewed-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
----
+iQIcBAEBAgAGBQJR8P3gAAoJELSic+t+oim9RTMP/1mbEcUpqaRivfPRhU5mCzD8
+au2poTZ6vJ8PYnIgxrPssUJIE4CYMLT4dsrjOSr3PXzTFufhnDHSykPOmgPDy9ua
+mlvThI5I7E0FwlrIT3XpNQy4XqVI9fmSaxIMAdSgpZmhJHQsrOpRSymSe0nThdN3
+fQwOEkIksuOPXdnA4vReZlPOGcgYfUuVb5uW+AVW5uoClqiAJR4JKLVFzlPUA16g
+C6QLVX3Y7eJZoZbFd6DQF+ZB/1CA9TFPkanGjbs64y3IqRlzjpx53qLwyKHoDYub
+7LNe8hca1dBeRiWPFNF582L+CVWoN+koa1frQwrMbYde2Y+sZnZcM01qMcxH/zFd
+GNJ2UelD1EnOzDSOHG088sEkNTfS9Ba8ryNZ9kcgeEn/KTbIyKE/h1j2tmZA0EuJ
+i5PJpDnRt16wHCLzAdlgIG09ubYui+6KGCipNqp0KX4/nFAC9stmPI+7KYJ0fxQo
+c9JByEUYrPwlw2jX2Gzl7y4ZnrcHstV6m4/K/M1WS1xOXLiOCq519mu/SYhcnriA
+BStdY5oZ44sRrWJNA/cV6ETOauAtX52eSHwsc1JwSm6Gsto+6bpcMZ1+inwB4rLZ
++Rhls913kIr3dLA5ZWKQrNKfFMs4hNU+vs/5nGCqJ4QVBCI3Q6UmpuywTyD4XEJ2
+6n6iKaa5GlmMemQTXM0M
+=woer
+-----END PGP SIGNATURE-----
 
-Changes:
-2013/07/25:
-* removed realmode_put_page and added put_page_unless_one() instead.
-The name has been chosen to conform the already existing get_page_unless_zero().
-* removed realmode_get_page. Instead, get_page_unless_zero() will be used
-* realmode_pfn_to_page fixed to return NULL for compound pages
-
-2013/07/10:
-* adjusted comment (removed sentence about virtual mode)
-* get_page_unless_zero replaced with atomic_inc_not_zero to minimize
-effect of a possible get_page_unless_zero() rework (if it ever happens).
-
-2013/06/27:
-* realmode_get_page() fixed to use get_page_unless_zero(). If failed,
-the call will be passed from real to virtual mode and safely handled.
-* added comment to PageCompound() in include/linux/page-flags.h.
-
-2013/05/20:
-* PageTail() is replaced by PageCompound() in order to have the same checks
-for whether the page is huge in realmode_get_page() and realmode_put_page()
-
-Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
----
- arch/powerpc/include/asm/pgtable-ppc64.h |  2 ++
- arch/powerpc/mm/init_64.c                | 54 +++++++++++++++++++++++++++++++-
- include/linux/mm.h                       | 14 +++++++++
- include/linux/page-flags.h               |  4 ++-
- 4 files changed, 72 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/include/asm/pgtable-ppc64.h b/arch/powerpc/include/asm/pgtable-ppc64.h
-index 46db094..4a191c4 100644
---- a/arch/powerpc/include/asm/pgtable-ppc64.h
-+++ b/arch/powerpc/include/asm/pgtable-ppc64.h
-@@ -394,6 +394,8 @@ static inline void mark_hpte_slot_valid(unsigned char *hpte_slot_array,
- 	hpte_slot_array[index] = hidx << 4 | 0x1 << 3;
- }
- 
-+struct page *realmode_pfn_to_page(unsigned long pfn);
-+
- static inline char *get_hpte_slot_array(pmd_t *pmdp)
- {
- 	/*
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index d0cd9e4..d2bb97c 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -300,5 +300,57 @@ void vmemmap_free(unsigned long start, unsigned long end)
- {
- }
- 
--#endif /* CONFIG_SPARSEMEM_VMEMMAP */
-+/*
-+ * We do not have access to the sparsemem vmemmap, so we fallback to
-+ * walking the list of sparsemem blocks which we already maintain for
-+ * the sake of crashdump. In the long run, we might want to maintain
-+ * a tree if performance of that linear walk becomes a problem.
-+ *
-+ * realmode_pfn_to_page functions can fail due to:
-+ * 1) As real sparsemem blocks do not lay in RAM continously (they
-+ * are in virtual address space which is not available in the real mode),
-+ * the requested page struct can be split between blocks so get_page/put_page
-+ * may fail.
-+ * 2) When huge pages are used, the get_page/put_page API will fail
-+ * in real mode as the linked addresses in the page struct are virtual
-+ * too.
-+ */
-+struct page *realmode_pfn_to_page(unsigned long pfn)
-+{
-+	struct vmemmap_backing *vmem_back;
-+	struct page *page;
-+	unsigned long page_size = 1 << mmu_psize_defs[mmu_vmemmap_psize].shift;
-+	unsigned long pg_va = (unsigned long) pfn_to_page(pfn);
- 
-+	for (vmem_back = vmemmap_list; vmem_back; vmem_back = vmem_back->list) {
-+		if (pg_va < vmem_back->virt_addr)
-+			continue;
-+
-+		/* Check that page struct is not split between real pages */
-+		if ((pg_va + sizeof(struct page)) >
-+				(vmem_back->virt_addr + page_size))
-+			return NULL;
-+
-+		page = (struct page *) (vmem_back->phys + pg_va -
-+				vmem_back->virt_addr);
-+
-+		if (PageCompound(page))
-+			return NULL;
-+
-+		return page;
-+	}
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
-+
-+#elif defined(CONFIG_FLATMEM)
-+
-+struct page *realmode_pfn_to_page(unsigned long pfn)
-+{
-+	struct page *page = pfn_to_page(pfn);
-+	return page;
-+}
-+EXPORT_SYMBOL_GPL(realmode_pfn_to_page);
-+
-+#endif /* CONFIG_SPARSEMEM_VMEMMAP/CONFIG_FLATMEM */
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index f022460..ef07aea 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -290,12 +290,26 @@ static inline int put_page_testzero(struct page *page)
- /*
-  * Try to grab a ref unless the page has a refcount of zero, return false if
-  * that is the case.
-+ * This can be called when MMU is off so it must not to access
-+ * any of the virtual mappings.
-  */
- static inline int get_page_unless_zero(struct page *page)
- {
- 	return atomic_inc_not_zero(&page->_count);
- }
- 
-+/*
-+ * Try to drop a ref unless the page has a refcount of one, return false if
-+ * that is the case.
-+ * This is to make sure that the refcount won't become zero after this drop.
-+ * This can be called when MMU is off so it must not to access
-+ * any of the virtual mappings.
-+ */
-+static inline int put_page_unless_one(struct page *page)
-+{
-+	return atomic_add_unless(&page->_count, -1, 1);
-+}
-+
- extern int page_is_ram(unsigned long pfn);
- 
- /* Support for virtually mapped pages */
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index 6d53675..98ada58 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -329,7 +329,9 @@ static inline void set_page_writeback(struct page *page)
-  * System with lots of page flags available. This allows separate
-  * flags for PageHead() and PageTail() checks of compound pages so that bit
-  * tests can be used in performance sensitive paths. PageCompound is
-- * generally not used in hot code paths.
-+ * generally not used in hot code paths except arch/powerpc/mm/init_64.c
-+ * and arch/powerpc/kvm/book3s_64_vio_hv.c which use it to detect huge pages
-+ * and avoid handling those in real mode.
-  */
- __PAGEFLAG(Head, head) CLEARPAGEFLAG(Head, head)
- __PAGEFLAG(Tail, tail)
--- 
-1.8.3.2
-
+--ihaM1hUd25+qoVgS--
