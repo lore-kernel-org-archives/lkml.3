@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab3GYR3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:29:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:34797 "EHLO arroyo.ext.ti.com"
+	id S1756838Ab3GYRa3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:30:29 -0400
+Received: from www.sr71.net ([198.145.64.142]:35798 "EHLO blackbird.sr71.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756699Ab3GYR32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:29:28 -0400
-Date: Thu, 25 Jul 2013 20:28:55 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <benoit.cousson@linaro.org>, <p.zabel@pengutronix.de>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] usb: phy-nop: Use RESET Controller for managing the
- reset line
-Message-ID: <20130725172855.GJ25415@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374137590-17865-1-git-send-email-rogerq@ti.com>
- <1374137590-17865-2-git-send-email-rogerq@ti.com>
+	id S1756678Ab3GYRaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:30:25 -0400
+Message-ID: <51F160A5.2040004@sr71.net>
+Date: Thu, 25 Jul 2013 10:30:13 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nhAUiXSLan16V5i8"
-Content-Disposition: inline
-In-Reply-To: <1374137590-17865-2-git-send-email-rogerq@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robert Jennings <rcj@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 1/2] vmsplice unmap gifted pages for recipient
+References: <1374772906-21511-1-git-send-email-rcj@linux.vnet.ibm.com> <1374772906-21511-2-git-send-email-rcj@linux.vnet.ibm.com>
+In-Reply-To: <1374772906-21511-2-git-send-email-rcj@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nhAUiXSLan16V5i8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/25/2013 10:21 AM, Robert Jennings wrote:
+> +static void zap_buf_page(unsigned long useraddr)
+> +{
+> +	struct vm_area_struct *vma;
+> +
+> +	down_read(&current->mm->mmap_sem);
+> +	vma = find_vma_intersection(current->mm, useraddr,
+> +			useraddr + PAGE_SIZE);
+> +	if (!IS_ERR_OR_NULL(vma))
+> +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
+> +	up_read(&current->mm->mmap_sem);
+> +}
+> +
+>  /**
+>   * splice_to_pipe - fill passed data into a pipe
+>   * @pipe:	pipe to fill
+> @@ -212,8 +224,16 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+>  			buf->len = spd->partial[page_nr].len;
+>  			buf->private = spd->partial[page_nr].private;
+>  			buf->ops = spd->ops;
+> -			if (spd->flags & SPLICE_F_GIFT)
+> +			if (spd->flags & SPLICE_F_GIFT) {
+> +				unsigned long useraddr =
+> +						spd->partial[page_nr].useraddr;
+> +
+> +				if ((spd->flags & SPLICE_F_MOVE) &&
+> +				    !buf->offset && (buf->len == PAGE_SIZE))
+> +					/* Can move page aligned buf */
+> +					zap_buf_page(useraddr);
+>  				buf->flags |= PIPE_BUF_FLAG_GIFT;
+> +			}
 
-On Thu, Jul 18, 2013 at 11:53:05AM +0300, Roger Quadros wrote:
-> Till now we were modelling the RESET line as a voltage regulator and
-> using the regulator framework to manage it.
->=20
-> [1] introduces a GPIO based reset controller driver. We use that
-> to manage the PHY reset line, at least for DT boots. For legacy boots,
-> will still need to use the regulator framework for reset lines.
->=20
-> [1] - http://thread.gmane.org/gmane.linux.drivers.devicetree/41348
->=20
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
-
-that's not in mainline yet, right ? Is it guaranteed that it will hit
-v3.12 merge window ?
-
---=20
-balbi
-
---nhAUiXSLan16V5i8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8WBWAAoJEIaOsuA1yqRE8YAQAKmrsoVWo9oxn0i8AyLUDTZ9
-tGW/gmR9kgVwYAzEP2BPIUXkICUJO36u4rcWUiC8bPdEgRt2m6wMw8kYccIeVPdE
-M7uvw2NdYaJv0WepU96MXErHyFSCkSitJ2SwXZzOJINOZapm3wOIOSxzfoQFuWhl
-vKPbW4eD1biBf7yIrIuVUFE5YkdRp6kOg7+UFMkaYySF4sedHezjvQNmUzvxcCkI
-jI90k5z4YwjUgtcL9VIacUO1bWc12NumZZstwrb33z51qxQWHxbBGmncaNTQy3YZ
-gWu4qiLjs8i7U/Riedf5/0nBYQPQj+YIlkgl9ielbPNqPAstcmLQFEQ4+pglR3Hc
-M7HlisziiO4ihM/9c+Y1zRfHhV2qmgpZWieL/GjHIR4tHIZhxkC3m9wAH5Ho8Fxo
-1lCzi28UBWeL8/i/Z/361dIqSSs8AZMOITY/bvmbpsX93vHZhhuIqq7M/C/XMtI9
-Ab4jTgCF6ATDxEIOL79UX0kOa86OSbQPVFzpj7HQncd0ewbsT+CpqUHvACWdIkp2
-Pbcp0Kh+Vdc4Kffxys2HNaDQbY4zsRBvq5Xyp2uOjAHG64geqq8ZWx70bvE/n9nZ
-bj00QjTq0F3R4o2je+dttIzbFlJXWP59zNGcOiSSWuPJrJS7P8vA9Up3eTIp2vZ2
-agYOaluw0L017s8y9+6X
-=KYMJ
------END PGP SIGNATURE-----
-
---nhAUiXSLan16V5i8--
+There isn't quite enough context here, but is it going to do this
+zap_buf_page() very often?  Seems a bit wasteful to do the up/down and
+find_vma() every trip through the loop.
