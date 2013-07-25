@@ -1,83 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab3GYR7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:59:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19907 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757002Ab3GYRwE (ORCPT
+	id S932229Ab3GYR7v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:59:51 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43459 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757000Ab3GYRwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 13:52:04 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <dustin.kirkland@gazzang.com>,
-        ecryptfs@vger.kernel.org
-Subject: [PATCH V8 31/33] ecrpytfs: Convert aio_read/write ops to read/write_iter
-Date: Thu, 25 Jul 2013 12:50:57 -0500
-Message-Id: <1374774659-13121-32-git-send-email-dave.kleikamp@oracle.com>
+        Zach Brown <zab@zabbo.net>, Hugh Dickins <hughd@google.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V8 33/33] tmpfs: add support for read_iter and write_iter
+Date: Thu, 25 Jul 2013 12:50:59 -0500
+Message-Id: <1374774659-13121-34-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Tyler Hicks <tyhicks@canonical.com>
-Cc: Dustin Kirkland <dustin.kirkland@gazzang.com>
-Cc: ecryptfs@vger.kernel.org
----
- fs/ecryptfs/file.c | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+From: Hugh Dickins <hughd@google.com>
 
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index 992cf95..3ed6e5f 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -37,22 +37,21 @@
- /**
-  * ecryptfs_read_update_atime
-  *
-- * generic_file_read updates the atime of upper layer inode.  But, it
-+ * generic_file_read_iter updates the atime of upper layer inode.  But, it
-  * doesn't give us a chance to update the atime of the lower layer
-- * inode.  This function is a wrapper to generic_file_read.  It
-- * updates the atime of the lower level inode if generic_file_read
-+ * inode.  This function is a wrapper to generic_file_read_iter.  It
-+ * updates the atime of the lower level inode if generic_file_read_iter
-  * returns without any errors. This is to be used only for file reads.
-  * The function to be used for directory reads is ecryptfs_read.
-  */
- static ssize_t ecryptfs_read_update_atime(struct kiocb *iocb,
--				const struct iovec *iov,
--				unsigned long nr_segs, loff_t pos)
-+				struct iov_iter *iter, loff_t pos)
- {
- 	ssize_t rc;
- 	struct path *path;
- 	struct file *file = iocb->ki_filp;
+Convert tmpfs do_shmem_file_read() to shmem_file_read_iter().
+Make file_read_iter_actor() global so tmpfs can use it too: delete
+file_read_actor(), which was made global in 2.4.4 for use by tmpfs.
+Replace tmpfs generic_file_aio_write() by generic_file_write_iter().
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+---
+ include/linux/fs.h |  5 +++--
+ mm/filemap.c       | 42 ++-----------------------------------
+ mm/shmem.c         | 61 +++++++++++++++++-------------------------------------
+ 3 files changed, 24 insertions(+), 84 deletions(-)
+
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 269ef07..48209c8 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2499,8 +2499,9 @@ extern int sb_min_blocksize(struct super_block *, int);
+ extern int generic_file_mmap(struct file *, struct vm_area_struct *);
+ extern int generic_file_readonly_mmap(struct file *, struct vm_area_struct *);
+ extern int generic_file_remap_pages(struct vm_area_struct *, unsigned long addr,
+-		unsigned long size, pgoff_t pgoff);
+-extern int file_read_actor(read_descriptor_t * desc, struct page *page, unsigned long offset, unsigned long size);
++				unsigned long size, pgoff_t pgoff);
++extern int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
++				unsigned long offset, unsigned long size);
+ int generic_write_checks(struct file *file, loff_t *pos, size_t *count, int isblk);
+ extern ssize_t generic_file_aio_read(struct kiocb *, const struct iovec *, unsigned long, loff_t);
+ extern ssize_t generic_file_read_iter(struct kiocb *, struct iov_iter *,
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 41b9672..45cfcfc 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1313,44 +1313,6 @@ out:
+ 	file_accessed(filp);
+ }
  
--	rc = generic_file_aio_read(iocb, iov, nr_segs, pos);
-+	rc = generic_file_read_iter(iocb, iter, pos);
+-int file_read_actor(read_descriptor_t *desc, struct page *page,
+-			unsigned long offset, unsigned long size)
+-{
+-	char *kaddr;
+-	unsigned long left, count = desc->count;
+-
+-	if (size > count)
+-		size = count;
+-
+-	/*
+-	 * Faults on the destination of a read are common, so do it before
+-	 * taking the kmap.
+-	 */
+-	if (!fault_in_pages_writeable(desc->arg.buf, size)) {
+-		kaddr = kmap_atomic(page);
+-		left = __copy_to_user_inatomic(desc->arg.buf,
+-						kaddr + offset, size);
+-		kunmap_atomic(kaddr);
+-		if (left == 0)
+-			goto success;
+-	}
+-
+-	/* Do it the slow way */
+-	kaddr = kmap(page);
+-	left = __copy_to_user(desc->arg.buf, kaddr + offset, size);
+-	kunmap(page);
+-
+-	if (left) {
+-		size -= left;
+-		desc->error = -EFAULT;
+-	}
+-success:
+-	desc->count = count - size;
+-	desc->written += size;
+-	desc->arg.buf += size;
+-	return size;
+-}
+-
+ /*
+  * Performs necessary checks before doing a write
+  * @iov:	io vector request
+@@ -1390,8 +1352,8 @@ int generic_segment_checks(const struct iovec *iov,
+ }
+ EXPORT_SYMBOL(generic_segment_checks);
+ 
+-static int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
+-				unsigned long offset, unsigned long size)
++int file_read_iter_actor(read_descriptor_t *desc, struct page *page,
++			 unsigned long offset, unsigned long size)
+ {
+ 	struct iov_iter *iter = desc->arg.data;
+ 	unsigned long copied = 0;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index a87990c..67cd5e5 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1464,14 +1464,23 @@ shmem_write_end(struct file *file, struct address_space *mapping,
+ 	return copied;
+ }
+ 
+-static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_t *desc, read_actor_t actor)
++static ssize_t shmem_file_read_iter(struct kiocb *iocb,
++				    struct iov_iter *iter, loff_t pos)
+ {
++	read_descriptor_t desc;
++	loff_t *ppos = &iocb->ki_pos;
++	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = file_inode(filp);
+ 	struct address_space *mapping = inode->i_mapping;
+ 	pgoff_t index;
+ 	unsigned long offset;
+ 	enum sgp_type sgp = SGP_READ;
+ 
++	desc.written = 0;
++	desc.count = iov_iter_count(iter);
++	desc.arg.data = iter;
++	desc.error = 0;
++
  	/*
- 	 * Even though this is a async interface, we need to wait
- 	 * for IO to finish to update atime
-@@ -357,9 +356,9 @@ const struct file_operations ecryptfs_dir_fops = {
- const struct file_operations ecryptfs_main_fops = {
- 	.llseek = generic_file_llseek,
- 	.read = do_sync_read,
--	.aio_read = ecryptfs_read_update_atime,
-+	.read_iter = ecryptfs_read_update_atime,
- 	.write = do_sync_write,
--	.aio_write = generic_file_aio_write,
-+	.write_iter = generic_file_write_iter,
- 	.iterate = ecryptfs_readdir,
- 	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
- #ifdef CONFIG_COMPAT
+ 	 * Might this read be for a stacking filesystem?  Then when reading
+ 	 * holes of a sparse file, we actually need to allocate those pages,
+@@ -1498,10 +1507,10 @@ static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_
+ 				break;
+ 		}
+ 
+-		desc->error = shmem_getpage(inode, index, &page, sgp, NULL);
+-		if (desc->error) {
+-			if (desc->error == -EINVAL)
+-				desc->error = 0;
++		desc.error = shmem_getpage(inode, index, &page, sgp, NULL);
++		if (desc.error) {
++			if (desc.error == -EINVAL)
++				desc.error = 0;
+ 			break;
+ 		}
+ 		if (page)
+@@ -1552,13 +1561,13 @@ static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_
+ 		 * "pos" here (the actor routine has to update the user buffer
+ 		 * pointers and the remaining count).
+ 		 */
+-		ret = actor(desc, page, offset, nr);
++		ret = file_read_iter_actor(&desc, page, offset, nr);
+ 		offset += ret;
+ 		index += offset >> PAGE_CACHE_SHIFT;
+ 		offset &= ~PAGE_CACHE_MASK;
+ 
+ 		page_cache_release(page);
+-		if (ret != nr || !desc->count)
++		if (ret != nr || !desc.count)
+ 			break;
+ 
+ 		cond_resched();
+@@ -1566,40 +1575,8 @@ static void do_shmem_file_read(struct file *filp, loff_t *ppos, read_descriptor_
+ 
+ 	*ppos = ((loff_t) index << PAGE_CACHE_SHIFT) + offset;
+ 	file_accessed(filp);
+-}
+-
+-static ssize_t shmem_file_aio_read(struct kiocb *iocb,
+-		const struct iovec *iov, unsigned long nr_segs, loff_t pos)
+-{
+-	struct file *filp = iocb->ki_filp;
+-	ssize_t retval;
+-	unsigned long seg;
+-	size_t count;
+-	loff_t *ppos = &iocb->ki_pos;
+ 
+-	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
+-	if (retval)
+-		return retval;
+-
+-	for (seg = 0; seg < nr_segs; seg++) {
+-		read_descriptor_t desc;
+-
+-		desc.written = 0;
+-		desc.arg.buf = iov[seg].iov_base;
+-		desc.count = iov[seg].iov_len;
+-		if (desc.count == 0)
+-			continue;
+-		desc.error = 0;
+-		do_shmem_file_read(filp, ppos, &desc, file_read_actor);
+-		retval += desc.written;
+-		if (desc.error) {
+-			retval = retval ?: desc.error;
+-			break;
+-		}
+-		if (desc.count > 0)
+-			break;
+-	}
+-	return retval;
++	return desc.written ? desc.written : desc.error;
+ }
+ 
+ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
+@@ -2721,8 +2698,8 @@ static const struct file_operations shmem_file_operations = {
+ 	.llseek		= shmem_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= shmem_file_aio_read,
+-	.aio_write	= generic_file_aio_write,
++	.read_iter	= shmem_file_read_iter,
++	.write_iter	= generic_file_write_iter,
+ 	.fsync		= noop_fsync,
+ 	.splice_read	= shmem_file_splice_read,
+ 	.splice_write	= generic_file_splice_write,
 -- 
 1.8.3.4
 
