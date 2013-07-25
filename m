@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab3GYQCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:02:55 -0400
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:56706 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755778Ab3GYQCy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:02:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F0D3CA.3080902@parallels.com>
-References: <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com>
- <20130724163734.GE24851@moon> <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com>
- <20130724171728.GH8508@moon> <1374687373.7382.22.camel@dabdike>
- <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com>
- <20130724181516.GI8508@moon> <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com>
- <20130724185256.GA24365@moon> <51F0232D.6060306@parallels.com>
- <20130724190453.GJ8508@moon> <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com>
- <51F0D3CA.3080902@parallels.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 25 Jul 2013 09:02:32 -0700
-Message-ID: <CALCETrVPyHLid246Pw66cCENxM2L75Gm5kUR8fH549W_M1OAWA@mail.gmail.com>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-To: Pavel Emelyanov <xemul@parallels.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756220Ab3GYQEP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:04:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51962 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755778Ab3GYQEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:04:13 -0400
+Subject: Re: [PATCH 0/7] rapidio: modularize rapidio subsystem
+From: Jean Delvare <jdelvare@suse.de>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>,
+        Stef van Os <stef.van.os@Prodrive.nl>
+In-Reply-To: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
+References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Thu, 25 Jul 2013 18:03:43 +0200
+Message-ID: <1374768223.4604.207.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:29 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
-> On 07/24/2013 11:40 PM, Andy Lutomirski wrote:
->> On Wed, Jul 24, 2013 at 12:04 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>> On Wed, Jul 24, 2013 at 10:55:41PM +0400, Pavel Emelyanov wrote:
->>>>>
->
->> Perhaps another bit should be allocated to expose to userspace either
->> "soft-dirty", "soft-clean", or "soft-dirty unsupported"?
->>
->> There's another possible issue with private file-backed pages, though:
->> how do you distinguish clean-and-not-cowed from cowed-but-soft-clean?
->> (The former will reflect changes in the underlying file, I think, but
->> the latter won't.)
->
-> There's a bit called PAGE_FILE bit in /proc/pagemap file introduced with
-> the 052fb0d635df5d49dfc85687d94e1a87bf09378d commit.
->
-> Plz, refer to Documentation/vm/pagemap.txt and soft-dirty.txt, all this
-> is described there pretty well.
->
+Hi Alexandre,
 
-Fair enough.  I'm still a little bit concerned that it will be hard
-for userspace to distinguish between things for which soft-dirty works
-(which will be more things once the patches are in) and things for
-which soft-dirty doesn't work, assuming any are left.  But maybe this
-is silly.
+Le Friday 28 June 2013 à 15:18 -0400, Alexandre Bounine a écrit :
+> The following set of patches modifies kernel RapidIO subsystem to enable build
+> and use of its components as loadable kernel modules. Combinations of statically
+> linked and modular components are also supported.
+> (...)
 
---Andy
+Thanks to this patch set, I was finally able to make all RapidIO support
+modular in openSUSE kernels. This is very appreciated, thanks a lot!
+
+-- 
+Jean Delvare
+Suse L3
+
