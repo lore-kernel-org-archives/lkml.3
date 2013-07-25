@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab3GYPPf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:15:35 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:38010 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3GYPPd (ORCPT
+	id S1756157Ab3GYPQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:16:11 -0400
+Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:55046 "EHLO
+	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3GYPQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:15:33 -0400
+	Thu, 25 Jul 2013 11:16:09 -0400
+Message-ID: <51F14136.30409@mozilla.com>
+Date: Thu, 25 Jul 2013 11:16:06 -0400
+From: Dhaval Giani <dgiani@mozilla.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <51F13E51.7040808@sr71.net>
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
- <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
- <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com>
- <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
- <51F00415.8070104@sr71.net> <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
- <51F040E8.1030507@intel.com> <20130725075705.GD12818@dhcp22.suse.cz>
- <4f440c8d96f34711a3f06fb18702a297@SN2PR03MB061.namprd03.prod.outlook.com> <51F13E51.7040808@sr71.net>
-From: Kay Sievers <kay@vrfy.org>
-Date: Thu, 25 Jul 2013 17:15:11 +0200
-Message-ID: <CAPXgP10BqFoYLOS+e=aTMqM6mAZrtuWHsrsSJ4+44m+LuzRwiQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-To: Dave Hansen <dave@sr71.net>
-Cc: KY Srinivasan <kys@microsoft.com>, Michal Hocko <mhocko@suse.cz>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
+CC: linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
+        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
+References: <1374699833.7083.2.camel@localhost> <20130724233628.GD3641@logfs.org>
+In-Reply-To: <20130724233628.GD3641@logfs.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 5:03 PM, Dave Hansen <dave@sr71.net> wrote:
-> On 07/25/2013 04:14 AM, KY Srinivasan wrote:
->> As promised, I have sent out the patches for (a) an implementation of an in-kernel API
->> for onlining  and a consumer for this API. While I don't know the exact reason why the
->> user mode code is delayed (under some low memory conditions), what is the harm in having
->> a mechanism to online memory that has been hot added without involving user space code.
->
-> KY, your potential problem, not being able to online more memory because
-> of a shortage of memory, is a serious one.
->
-> However, this potential issue exists in long-standing code, and
-> potentially affects all users of memory hotplug.  The problem has not
-> been described in sufficient detail for the rest of the developers to
-> tell if you are facing a new problem, or whether *any* proposed solution
-> will help the problem you face.
->
-> Your propsed solution changes the semantics of existing user/kernel
-> interfaces, duplicates existing functionality, and adds code complexity
-> to the kernel.
+On 07/24/2013 07:36 PM, Jörn Engel wrote:
+> On Wed, 24 July 2013 17:03:53 -0400, Dhaval Giani wrote:
+>> I am posting this series early in its development phase to solicit some
+>> feedback.
+> At this state, a good description of the format would be nice.
 
-Complexity, well, it's just a bit of code which belongs in the kernel.
-The mentioned unconditional hotplug loop through userspace is
-absolutely pointless. Such defaults never belong in userspace tools if
-they do not involve data that is only available in userspace and
-something would make a decision about that. Saying "hello" to
-userspace and usrspace has a hardcoded "yes" in return makes no sense
-at all. The kernel can just go ahead and do its job, like it does for
-all other devices it finds too.
+Sure. The format is quite simple. There is a 20 byte header followed by 
+an offset table giving us the offsets of 16k compressed zlib chunks (The 
+16k is the default number, it can be changed with the use of szip tool, 
+the kernel should still decompress it as that data is in the header). I 
+am not tied to the format. I used it as that is what being used here. My 
+final goal is the have the filesystem agnostic of the compression format 
+as long as it is seekable.
 
-Kay
+>
+>> We are implementing transparent decompression with a focus on ext4. One
+>> of the main usecases is that of Firefox on Android. Currently libxul.so
+>> is compressed and it is loaded into memory by a custom linker on
+>> demand. With the use of transparent decompression, we can make do
+>> without the custom linker. More details (i.e. code) about the linker can
+>> be found at https://github.com/glandium/faulty.lib
+> It is not quite clear what you want to achieve here.
+
+To introduce transparent decompression. Let someone else do the 
+compression for us, and supply decompressed data on demand  (in this 
+case a read call). Reduces the complexity which would otherwise have to 
+be brought into the filesystem.
+
+>    One approach is
+> to create an empty file, chattr it to enable compression, then write
+> uncompressed data to it.  Nothing in userspace will ever know the file
+> is compressed, unless you explicitly call lsattr.
+>
+> If you want to follow some other approach where userspace has one
+> interface to write the compressed data to a file and some other
+> interface to read the file uncompressed, you are likely in a world of
+> pain.
+Why? If it is going to only be a few applications who know the file is 
+compressed, and read it to get decompressed data, why would it be 
+painful? What about introducing a new flag, O_COMPR which tells the 
+kernel, btw, we want this file to be decompressed if it can be. It can 
+fallback to O_RDONLY or something like that? That gets rid of the chattr 
+ugliness.
+
+> Assuming you use the chattr approach, that pretty much comes down to
+> adding compression support to ext4.  There have been old patches for
+> ext2 around that never got merged.  Reading up on the problems
+> encountered by those patches might be instructive.
+
+Do you have subjects for these? When I googled for ext4 compression, I 
+found http://code.google.com/p/e4z/ which doesn't seem to exist, and 
+checking in my LKML archives gives too many false positives.
+
+Thanks!
+Dhaval
