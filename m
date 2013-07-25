@@ -1,209 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab3GYQLX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:11:23 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:54260 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910Ab3GYQLT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:11:19 -0400
+	id S1756317Ab3GYQLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:11:36 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58443 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755847Ab3GYQLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:11:33 -0400
+Date: Thu, 25 Jul 2013 19:11:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Bin Liu <binmlist@gmail.com>
+CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <george.cherian@ti.com>
+Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to
+ am33xx_driver_data
+Message-ID: <20130725161120.GC31835@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
+ <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
+ <20130725144118.GA5412@linutronix.de>
+ <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
+ <51F14165.3060803@linutronix.de>
+ <CADYTM3Z1aoTx_99xCj9XOQCUj63GeCcekL6ECajWQWKoQD4n0Q@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
-References: <CA+icZUVHkYd6xcGe7v-zA8=f+vTF1eF2JszvFPfqzJwE34_2ig@mail.gmail.com>
-	<87ehanx9bx.fsf@intel.com>
-	<CA+icZUXX1-kz9QbY5CpU1UDU8trxgfJSS6ZnUpx9ieq5FnVNSQ@mail.gmail.com>
-	<CA+icZUWOwKH+oF4Ekrkk3pUCjz4Rc361kzdsKjb04WzsEtWPYA@mail.gmail.com>
-	<87bo5rx7m0.fsf@intel.com>
-	<CA+icZUXhW_yAie25DPVXzhi2_pYQTjJpDqa7EzRfvtQ0gFYYHQ@mail.gmail.com>
-	<20130725133651.GI5939@phenom.ffwll.local>
-	<CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
-	<20130725142705.GM5939@phenom.ffwll.local>
-	<CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
-	<CAKMK7uG-KCF5oU2XJ5UWPJn=V3i0jBLs5a=gU9UPuJxY0v=bNw@mail.gmail.com>
-	<CA+icZUV-UM_9OSfGfYyb0-qZrFSuqeX-7BiPQ0NbyF7bADW-qA@mail.gmail.com>
-Date: Thu, 25 Jul 2013 18:11:18 +0200
-Message-ID: <CA+icZUWJDp6XQZs8hojVJOVyjC8NeV7QoQeFopNoUgwCaYHnSQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
+Content-Disposition: inline
+In-Reply-To: <CADYTM3Z1aoTx_99xCj9XOQCUj63GeCcekL6ECajWQWKoQD4n0Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 5:34 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Thu, Jul 25, 2013 at 5:05 PM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
->> On Thu, Jul 25, 2013 at 5:03 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>> On Thu, Jul 25, 2013 at 4:27 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->>>> On Thu, Jul 25, 2013 at 04:23:40PM +0200, Sedat Dilek wrote:
->>>>> On Thu, Jul 25, 2013 at 3:36 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->>>>> > On Thu, Jul 25, 2013 at 12:37:44PM +0200, Sedat Dilek wrote:
->>>>> >> On Thu, Jul 25, 2013 at 12:21 PM, Jani Nikula
->>>>> >> <jani.nikula@linux.intel.com> wrote:
->>>>> >> > On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>> >> >> On Thu, Jul 25, 2013 at 12:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>> >> >>> On Thu, Jul 25, 2013 at 11:44 AM, Jani Nikula
->>>>> >> >>> <jani.nikula@linux.intel.com> wrote:
->>>>> >> >>>> On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->>>>> >> >>>>> On Thu, Jul 25, 2013 at 7:12 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>>>> >> >>>>>> Hi all,
->>>>> >> >>>>>>
->>>>> >> >>>>>> Changes since 20130724:
->>>>> >> >>>>>>
->>>>> >> >>>>>> Removed tree:
->>>>> >> >>>>>>         arm-dt (at maintainer's request)
->>>>> >> >>>>>>
->>>>> >> >>>>>> The wireless-next tree lost its build failure and gained a conflict
->>>>> >> >>>>>> against Linus' tree.
->>>>> >> >>>>>>
->>>>> >> >>>>>> The tty tree lost its build failure.
->>>>> >> >>>>>>
->>>>> >> >>>>>> The staging tree gained a build failure for which I disabled a driver.
->>>>> >> >>>>>>
->>>>> >> >>>>>> ----------------------------------------------------------------------------
->>>>> >> >>>>>>
->>>>> >> >>>>>
->>>>> >> >>>>> [ CCing drm and drm-intel folks ]
->>>>> >> >>>>>
->>>>> >> >>>>> With today's next-20130725 I see the following:
->>>>> >> >>>>
->>>>> >> >>>> Use of dev_priv->gt_lock in I915_WRITE through
->>>>> >> >>>> intel_disable_gt_powersave before spin lock init, caused by
->>>>> >> >>>>
->>>>> >> >>>> commit 181d1b9e31c668259d3798c521672afb8edd355c
->>>>> >> >>>> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->>>>> >> >>>> Date:   Sun Jul 21 13:16:24 2013 +0200
->>>>> >> >>>>
->>>>> >> >>>>     drm/i915: fix up gt init sequence fallout
->>>>> >> >>>>
->>>>> >> >>>
->>>>> >> >>> Ah, cool.
->>>>> >> >>>
->>>>> >> >>> I assumed/tested "drm/i915: fix the racy object accounting", but this
->>>>> >> >>> does not fix it.
->>>>> >> >>> Will try with yours.
->>>>> >> >>>
->>>>> >> >>
->>>>> >> >> Sorry, Jani.
->>>>> >> >>
->>>>> >> >> next-20130725 ships the patch you pointed, too.
->>>>> >> >
->>>>> >> > Confused. I meant that the above mentioned commit "drm/i915: fix up gt
->>>>> >> > init sequence fallout" causes the problem. The patch I included in my
->>>>> >> > mail should fix it. Could you try that please?
->>>>> >> >
->>>>> >>
->>>>> >> [ Note2myself: Do not read half of the message... ]
->>>>> >>
->>>>> >> The bad... Your patch needed some refresh against next-20130725 (guess
->>>>> >> it's against drm-intel-nightly).
->>>>> >>
->>>>> >> The good... YES, your patch fixes the issue for me!
->>>>> >>
->>>>> >> The ugly... /me.
->>>>> >>
->>>>> >> Feel free to add my:
->>>>> >>
->>>>> >>        Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->>>>> >>
->>>>> >> Thanks for the quick fix!
->>>>> >
->>>>> > Thanks a lot for the report, since this should be something I should have
->>>>> > caught. And for added insult the offending patch is already in Linus' tree
->>>>> > :( Patch merged to -fixes.
->>>>>
->>>>> Hmmm, don't you merge -fixes into -nightly?
->>>>
->>>> I do, but it seems to only blow up with spinlock debugging enabling I
->>>> think. Our QA should run full debug buils in the -nightly testing, but
->>>> apparently they didn't catch this. I'm looking into what went wrong here
->>>> and fix up the process.
->>>
->>> First, I thought I made my merge wrong, but there is no
->>>
->>> $ grep spin_lock_init linux-next/drivers/gpu/drm/i915/i915_dma.c | grep gt_lock
->>>
->>> Same in [1]:
->>> ...
->>>         spin_lock_init(&dev_priv->irq_lock);
->>>         spin_lock_init(&dev_priv->gpu_error.lock);
->>>         spin_lock_init(&dev_priv->backlight.lock);
->>>         spin_lock_init(&dev_priv->uncore.lock);
->>
->> It's hiding in plain sight here ;-) -next has it renamed to
->> uncore.lock, so I've applied the patch to -fixes only. I've also
->> changed the patch in -fixes to cause an explicit conflict here, makes
->> merging a bit easier.
->
-> Ah, I see... "drm/i915: Colocate all GT access routines in the same file"
->
-> @@ -1493,7 +1477,7 @@ int i915_driver_load(struct drm_device *dev,
-> unsigned long flags)
-> ...
-> - spin_lock_init(&dev_priv->gt_lock);
-> + spin_lock_init(&dev_priv->uncore.lock);
-> ...
->
+--sXc4Kmr5FA7axrvy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Might be OT, but I cannot use my X graphics stack containing
-libdrm-2.4.46, mesa-9.1.5 and intel-ddx 2.21.12-git (tried also
-v2.21.11).
-Switching back to the one from Ubuntu/precise lets my X start.
+Hi,
 
+On Thu, Jul 25, 2013 at 10:28:37AM -0500, Bin Liu wrote:
+> Sebastian,
+>=20
+> On Thu, Jul 25, 2013 at 10:16 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+> > On 07/25/2013 05:12 PM, Bin Liu wrote:
+> >> Sebastian,
+> >
+> > Hi Bin,
+> >
+> >>> Is it really there or was it never there and it has been added to TRM=
+ by
+> >>> accident?
+> >> The EOI register IS in the USB subsystem of AM33xx, but the SoC does
+> >> not use it because it uses level triggering for USB interrupt.
+> >
+> > I see.
+> >
+> >>>> But I am not sure if it is a good idea to remove eoi from the musb_d=
+sps
+> >>>> driver. If the intension is to merge the support for other SoC, such=
+ as
+> >>>> AM35xx, AM18xx, then EOI handling might be still needed. I just don'=
+t know
+> >>>> how those devices use EOI.
+> >>>
+> >>> If one of the architectures gets added which need an EOI then the off=
+set
+> >>> can be 0 and the EOI will happen only if it is !=3D 0.
+> >> This patch cleaned up the use of EOI. Do you mean EOI handling will be
+> >> added back with condition EOI offset !=3D 0, when the support of new
+> >> device which uses EIO is added?
+> >
+> > That is my intention.
+> Then should something like EOI cleanup be added into the commit
+> message for better git log searching experience? I would think the EOI
+> cleanup is more important then variable renaming in this patch. Or
+> even better to separate the changes into two patches.
 
-[    40.379] (II) AIGLX: enabled GLX_MESA_copy_sub_buffer
-[    40.379] (II) AIGLX: enabled GLX_INTEL_swap_event
-[    40.380] (II) AIGLX: enabled GLX_SGI_swap_control and GLX_MESA_swap_control
-[    40.380] (II) AIGLX: GLX_EXT_texture_from_pixmap backed by buffer objects
-[    40.380] (II) AIGLX: Loaded and initialized i965
-[    40.380] (II) GLX: Initialized DRI2 GL provider for screen 0
-[    40.380]
-Fatal server error:
-[    40.380] failed to create screen resources
-[    40.380]
-Please consult the The X.Org Foundation support
-         at http://wiki.x.org
- for help.
-[    40.380] Please also check the log file at "/var/log/Xorg.0.log"
-for additional information.
-[    40.380]
-[    40.380] (II) AIGLX: Suspending AIGLX clients for VT switch
-[    40.396]  ddxSigGiveUp: Closing log
-[    40.398] Server terminated with error (1). Closing log file.
+perhaps two separate patches would be best, indeed. At least it would
+make it simpler to track regressions.
 
-- Sedat -
+--=20
+balbi
 
-> - Sedat -
->
-> http://cgit.freedesktop.org/~danvet/drm-intel/commit/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly&id=907b28c56ea40629aa6595ddfa414ec2fc7da41c
->
->> -Daniel
->>
->>>         spin_lock_init(&dev_priv->mm.object_stat_lock);
->>> ...
->>>
->>> - Sedat -
->>>
->>> [1] http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly#n1477
->>>
->>>
->>>> -Daniel
->>>> --
->>>> Daniel Vetter
->>>> Software Engineer, Intel Corporation
->>>> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
->>
->>
->>
->> --
->> Daniel Vetter
->> Software Engineer, Intel Corporation
->> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+--sXc4Kmr5FA7axrvy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8U4oAAoJEIaOsuA1yqREJlQP/jbWOi+hdwhxPMyLB0Da+y0W
+7ZpniVhWdUfw0rtNs9EbT+cJNYEKm+VsTdQBSL6R7KlkoJFJlO76DRTa/+r/v25m
+tIof8qmia0kjxRdHNfcctBR6GBNg5ftvzZjnm7d+pZQnIyv9L9485jenekDmmSYe
+kkYvPtlBqNg3civyRn/iXFDj66htGncBEKik812Z7YlnOTE4/neMs1GD+UsFwhdR
+zr3PI1zG8lajtfoVZZ0aFgUoeEWu2Kwn2X6UOtu7/5FwYC3nN1NwfS60xE3ImPFu
+xqN/3ggRc+Jvl/8c4ZvCR+yg3i93gHQ0Tk3w995Bi+pHIiWpoUnGCeCeI1R8dDqJ
+zfp1hOuUq8JHfMR7JlmgPR5KOPzD8fO7s5QQZUWRoMls6+Mqp2Gm0qfX2Q/2YAMP
+lWy64nblMcg71H4MYKt/Tm7szVt4v3ZOmJvlL1dkMmWbRMjnbe/n51Jp3GkJ9NWJ
+ZETXJNZdl651PUGjAmrGQGLZCH5ZAaPRPeNnS19IfyEY5PrATPsms7Ocg/gEJ6xf
+c0B8rZbTQq43DritDhANtpPup3VawFRaYNClkWg2d94w5+NoAO9cJ2boWS6cZE5Z
+Pk3H8iiaGoAujzivv+x/q1ODeXcILHsiHHnVJwWhqJMdZ48+iGsFg0O6DqQ1zPxX
+pZlt329ZS1x7LB9sWomu
+=0Ejw
+-----END PGP SIGNATURE-----
+
+--sXc4Kmr5FA7axrvy--
