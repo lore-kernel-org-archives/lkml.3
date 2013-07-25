@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab3GYNzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:55:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:14403 "EHLO mga03.intel.com"
+	id S1756238Ab3GYNzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:55:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53187 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755953Ab3GYNzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:55:02 -0400
+	id S1756174Ab3GYNzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:55:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,743,1367996400"; 
-   d="scan'208";a="273136910"
+   d="scan'208";a="273136995"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 2/9] perf tools: load kernel maps before using
-Date: Thu, 25 Jul 2013 17:01:23 +0300
-Message-Id: <1374760890-30558-3-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH 5/9] perf tools: avoid SyS kernel syscall aliases
+Date: Thu, 25 Jul 2013 17:01:26 +0300
+Message-Id: <1374760890-30558-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
 References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
@@ -28,181 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to use kernel maps to read object code, those
-maps must be adjusted to map to the dso file offset.
-Because lazy-initialzation is used, that is not done
-until symbols are loaded.  However the maps are first
-used by thread__find_addr_map() before symbols are loaded.
-So this patch changes thread__find_addr() to "load" kernel
-maps before using them.
+When removing duplicate symbols, prefer to remove
+syscall aliases starting with SyS or compat_SyS.
+
+A side-effect of that is that it results in slightly
+improved results for the "vmlinux symtab matches kallsyms"
+test.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/builtin-inject.c     |  2 +-
- tools/perf/builtin-script.c     |  4 ++--
- tools/perf/tests/code-reading.c |  2 +-
- tools/perf/util/build-id.c      |  2 +-
- tools/perf/util/event.c         | 18 ++++++++++++++----
- tools/perf/util/thread.h        |  2 +-
- tools/perf/util/unwind.c        |  4 ++--
- 7 files changed, 22 insertions(+), 12 deletions(-)
+ tools/perf/util/symbol.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
-index eb33da6..178660f 100644
---- a/tools/perf/builtin-inject.c
-+++ b/tools/perf/builtin-inject.c
-@@ -206,7 +206,7 @@ static int perf_event__inject_buildid(struct perf_tool *tool,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->ip, &al);
-+			      sample->ip, &al, NULL);
- 
- 	if (al.map != NULL) {
- 		if (!al.map->dso->hit) {
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 05e1db2..54456a9 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -341,10 +341,10 @@ static void print_sample_addr(union perf_event *event,
- 		return;
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->addr, &al);
-+			      sample->addr, &al, NULL);
- 	if (!al.map)
- 		thread__find_addr_map(thread, machine, cpumode, MAP__VARIABLE,
--				      sample->addr, &al);
-+				      sample->addr, &al, NULL);
- 
- 	al.cpu = sample->cpu;
- 	al.sym = NULL;
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index dba66d5..087e6cf 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -140,7 +140,7 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 	pr_debug("Reading object code for memory address: %#"PRIx64"\n", addr);
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION, addr,
--			      &al);
-+			      &al, NULL);
- 	if (!al.map || !al.map->dso) {
- 		pr_debug("thread__find_addr_map failed\n");
- 		return -1;
-diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
-index fb58409..c6862ce 100644
---- a/tools/perf/util/build-id.c
-+++ b/tools/perf/util/build-id.c
-@@ -34,7 +34,7 @@ int build_id__mark_dso_hit(struct perf_tool *tool __maybe_unused,
- 	}
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->ip, &al);
-+			      sample->ip, &al, NULL);
- 
- 	if (al.map != NULL)
- 		al.map->dso->hit = 1;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 6861d19..c4148f3 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -592,9 +592,10 @@ int perf_event__process(struct perf_tool *tool __maybe_unused,
- void thread__find_addr_map(struct thread *self,
- 			   struct machine *machine, u8 cpumode,
- 			   enum map_type type, u64 addr,
--			   struct addr_location *al)
-+			   struct addr_location *al, symbol_filter_t filter)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index aaeaaaa..1b97088 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -87,6 +87,7 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
  {
- 	struct map_groups *mg = &self->mg;
-+	bool load_map = false;
+ 	s64 a;
+ 	s64 b;
++	size_t na, nb;
  
- 	al->thread = self;
- 	al->addr = addr;
-@@ -609,11 +610,13 @@ void thread__find_addr_map(struct thread *self,
- 	if (cpumode == PERF_RECORD_MISC_KERNEL && perf_host) {
- 		al->level = 'k';
- 		mg = &machine->kmaps;
-+		load_map = true;
- 	} else if (cpumode == PERF_RECORD_MISC_USER && perf_host) {
- 		al->level = '.';
- 	} else if (cpumode == PERF_RECORD_MISC_GUEST_KERNEL && perf_guest) {
- 		al->level = 'g';
- 		mg = &machine->kmaps;
-+		load_map = true;
- 	} else {
- 		/*
- 		 * 'u' means guest os user space.
-@@ -654,8 +657,15 @@ try_again:
- 			mg = &machine->kmaps;
- 			goto try_again;
- 		}
--	} else
-+	} else {
-+		/*
-+		 * Kernel maps might be changed when loading symbols so loading
-+		 * must be done prior to using kernel maps.
-+		 */
-+		if (load_map)
-+			map__load(al->map, filter);
- 		al->addr = al->map->map_ip(al->map, al->addr);
-+	}
+ 	/* Prefer a symbol with non zero length */
+ 	a = syma->end - syma->start;
+@@ -120,11 +121,21 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ 	else if (a > b)
+ 		return SYMBOL_B;
+ 
+-	/* If all else fails, choose the symbol with the longest name */
+-	if (strlen(syma->name) >= strlen(symb->name))
++	/* Choose the symbol with the longest name */
++	na = strlen(syma->name);
++	nb = strlen(symb->name);
++	if (na > nb)
+ 		return SYMBOL_A;
+-	else
++	else if (na < nb)
++		return SYMBOL_B;
++
++	/* Avoid "SyS" kernel syscall aliases */
++	if (na >= 3 && !strncmp(syma->name, "SyS", 3))
+ 		return SYMBOL_B;
++	if (na >= 10 && !strncmp(syma->name, "compat_SyS", 10))
++		return SYMBOL_B;
++
++	return SYMBOL_A;
  }
  
- void thread__find_addr_location(struct thread *thread, struct machine *machine,
-@@ -663,7 +673,7 @@ void thread__find_addr_location(struct thread *thread, struct machine *machine,
- 				struct addr_location *al,
- 				symbol_filter_t filter)
- {
--	thread__find_addr_map(thread, machine, cpumode, type, addr, al);
-+	thread__find_addr_map(thread, machine, cpumode, type, addr, al, filter);
- 	if (al->map != NULL)
- 		al->sym = map__find_symbol(al->map, al->addr, filter);
- 	else
-@@ -700,7 +710,7 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 		machine__create_kernel_maps(machine);
- 
- 	thread__find_addr_map(thread, machine, cpumode, MAP__FUNCTION,
--			      sample->ip, al);
-+			      sample->ip, al, filter);
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-diff --git a/tools/perf/util/thread.h b/tools/perf/util/thread.h
-index fc464bc..69ee2b9 100644
---- a/tools/perf/util/thread.h
-+++ b/tools/perf/util/thread.h
-@@ -42,7 +42,7 @@ static inline struct map *thread__find_map(struct thread *self,
- 
- void thread__find_addr_map(struct thread *thread, struct machine *machine,
- 			   u8 cpumode, enum map_type type, u64 addr,
--			   struct addr_location *al);
-+			   struct addr_location *al, symbol_filter_t filter);
- 
- void thread__find_addr_location(struct thread *thread, struct machine *machine,
- 				u8 cpumode, enum map_type type, u64 addr,
-diff --git a/tools/perf/util/unwind.c b/tools/perf/util/unwind.c
-index 958723b..5bbd494 100644
---- a/tools/perf/util/unwind.c
-+++ b/tools/perf/util/unwind.c
-@@ -272,7 +272,7 @@ static struct map *find_map(unw_word_t ip, struct unwind_info *ui)
- 	struct addr_location al;
- 
- 	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
--			      MAP__FUNCTION, ip, &al);
-+			      MAP__FUNCTION, ip, &al, NULL);
- 	return al.map;
- }
- 
-@@ -349,7 +349,7 @@ static int access_dso_mem(struct unwind_info *ui, unw_word_t addr,
- 	ssize_t size;
- 
- 	thread__find_addr_map(ui->thread, ui->machine, PERF_RECORD_MISC_USER,
--			      MAP__FUNCTION, addr, &al);
-+			      MAP__FUNCTION, addr, &al, NULL);
- 	if (!al.map) {
- 		pr_debug("unwind: no map for %lx\n", (unsigned long)addr);
- 		return -1;
+ void symbols__fixup_duplicate(struct rb_root *symbols)
 -- 
 1.7.11.7
 
