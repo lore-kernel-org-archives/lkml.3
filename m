@@ -1,141 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab3GYWPh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 18:15:37 -0400
-Received: from home.keithp.com ([63.227.221.253]:57127 "EHLO keithp.com"
+	id S1757580Ab3GYWPt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 18:15:49 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40489 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881Ab3GYWPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 18:15:32 -0400
-From: Keith Packard <keithp@keithp.com>
-To: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH 1/2] drm/i915: Add async page flip support for IVB
-Date: Thu, 25 Jul 2013 15:15:14 -0700
-Message-Id: <1374790515-29657-2-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374790515-29657-1-git-send-email-keithp@keithp.com>
-References: <CAKMK7uFiL+p48Phwc=jmWtsOgjNOYJzTCWmHe3Bp7-jWMpTtTA@mail.gmail.com>
- <1374790515-29657-1-git-send-email-keithp@keithp.com>
+	id S1756803Ab3GYWPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 18:15:45 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lv Zheng <lv.zheng@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        Zhao Yakui <yakui.zhao@intel.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: Re: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device members
+Date: Fri, 26 Jul 2013 00:25:50 +0200
+Message-ID: <1882662.xsnVH6Carz@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <b70ad0fe8c19e25eae9cef6fba21dfce237051bb.1374566394.git.lv.zheng@intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <cover.1374566394.git.lv.zheng@intel.com> <b70ad0fe8c19e25eae9cef6fba21dfce237051bb.1374566394.git.lv.zheng@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds the necesary register defines for async page flipping
-through the command ring, and then hooks those up for Ivybridge (gen7)
-page flipping.
+On Tuesday, July 23, 2013 04:10:06 PM Lv Zheng wrote:
+> This is a trivial patch:
+> 1. Deletes a member of the acpi_ipmi_device - smi_data which is not
+>    actually used.
+> 2. Updates a member of the acpi_ipmi_device - pnp_dev which is only used
+>    by dev_warn() invocations, so changes it to struct device.
+> 
+> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> Reviewed-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  drivers/acpi/acpi_ipmi.c |   30 ++++++++++++++----------------
+>  1 file changed, 14 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
+> index 0ee1ea6..7f93ffd 100644
+> --- a/drivers/acpi/acpi_ipmi.c
+> +++ b/drivers/acpi/acpi_ipmi.c
+> @@ -63,11 +63,10 @@ struct acpi_ipmi_device {
+>  	struct list_head tx_msg_list;
+>  	spinlock_t	tx_msg_lock;
+>  	acpi_handle handle;
+> -	struct pnp_dev *pnp_dev;
+> +	struct device *dev;
+>  	ipmi_user_t	user_interface;
+>  	int ipmi_ifnum; /* IPMI interface number */
+>  	long curr_msgid;
+> -	struct ipmi_smi_info smi_data;
+>  	atomic_t refcnt;
+>  };
+>  
+> @@ -132,7 +131,7 @@ static struct ipmi_driver_data driver_data = {
+>  };
+>  
+>  static struct acpi_ipmi_device *
+> -ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
+> +ipmi_dev_alloc(int iface, struct device *pdev, acpi_handle handle)
 
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/i915_reg.h      |  6 ++++++
- drivers/gpu/drm/i915/intel_display.c | 37 ++++++++++++++++++++++++++++++++----
- 2 files changed, 39 insertions(+), 4 deletions(-)
+Why is the second arg called pdev?
 
-diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
-index dc3d6a7..029cfb0 100644
---- a/drivers/gpu/drm/i915/i915_reg.h
-+++ b/drivers/gpu/drm/i915/i915_reg.h
-@@ -209,6 +209,7 @@
- #define MI_LOAD_SCAN_LINES_INCL MI_INSTR(0x12, 0)
- #define MI_DISPLAY_FLIP		MI_INSTR(0x14, 2)
- #define MI_DISPLAY_FLIP_I915	MI_INSTR(0x14, 1)
-+#define   MI_DISPLAY_FLIP_ASYNC_INDICATOR	(1 << 22)
- #define   MI_DISPLAY_FLIP_PLANE(n) ((n) << 20)
- /* IVB has funny definitions for which plane to flip. */
- #define   MI_DISPLAY_FLIP_IVB_PLANE_A  (0 << 19)
-@@ -217,6 +218,11 @@
- #define   MI_DISPLAY_FLIP_IVB_SPRITE_B (3 << 19)
- #define   MI_DISPLAY_FLIP_IVB_PLANE_C  (4 << 19)
- #define   MI_DISPLAY_FLIP_IVB_SPRITE_C (5 << 19)
-+/* These go in the bottom of the base address value */
-+#define   MI_DISPLAY_FLIP_TYPE_SYNC    (0 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_ASYNC   (1 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_STEREO  (2 << 0)
-+#define   MI_DISPLAY_FLIP_TYPE_SYNCHRONOUS	(0 << 0)
- #define MI_ARB_ON_OFF		MI_INSTR(0x08, 0)
- #define   MI_ARB_ENABLE			(1<<0)
- #define   MI_ARB_DISABLE		(0<<0)
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index bdb8854..166aa2c 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -1833,8 +1833,10 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
- 			alignment = 64 * 1024;
- 		break;
- 	case I915_TILING_X:
--		/* pin() will align the object as required by fence */
--		alignment = 0;
-+		/* Async page flipping requires X tiling and 32kB alignment, so just
-+		 * make all X tiled frame buffers aligned for that
-+		 */
-+		alignment = 32 * 1024;
- 		break;
- 	case I915_TILING_Y:
- 		/* Despite that we check this in framebuffer_init userspace can
-@@ -7514,6 +7516,8 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
- 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
- 	struct intel_ring_buffer *ring = &dev_priv->ring[BCS];
- 	uint32_t plane_bit = 0;
-+	uint32_t cmd;
-+	uint32_t base;
- 	int ret;
- 
- 	ret = intel_pin_and_fence_fb_obj(dev, obj, ring);
-@@ -7536,13 +7540,21 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
- 		goto err_unpin;
- 	}
- 
-+	cmd = MI_DISPLAY_FLIP_I915 | plane_bit;
-+	base = i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset;
-+
-+	if (flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-+		cmd |= MI_DISPLAY_FLIP_ASYNC_INDICATOR;
-+		base |= MI_DISPLAY_FLIP_TYPE_ASYNC;
-+	}
-+
- 	ret = intel_ring_begin(ring, 4);
- 	if (ret)
- 		goto err_unpin;
- 
--	intel_ring_emit(ring, MI_DISPLAY_FLIP_I915 | plane_bit);
-+	intel_ring_emit(ring, cmd);
- 	intel_ring_emit(ring, (fb->pitches[0] | obj->tiling_mode));
--	intel_ring_emit(ring, i915_gem_obj_ggtt_offset(obj) + intel_crtc->dspaddr_offset);
-+	intel_ring_emit(ring, base);
- 	intel_ring_emit(ring, (MI_NOOP));
- 
- 	intel_mark_page_flip_active(intel_crtc);
-@@ -7591,6 +7603,19 @@ static int intel_crtc_page_flip(struct drm_crtc *crtc,
- 	     fb->pitches[0] != crtc->fb->pitches[0]))
- 		return -EINVAL;
- 
-+	/* Check tiling restrictions specific to asynchronous flips
-+	 */
-+	if (page_flip_flags & DRM_MODE_PAGE_FLIP_ASYNC) {
-+
-+		/* New FB must be X tiled */
-+		if (obj->tiling_mode != I915_TILING_X)
-+			return -EINVAL;
-+
-+		/* Current FB must be X tiled */
-+		if (to_intel_framebuffer(old_fb)->obj->tiling_mode != I915_TILING_X)
-+			return -EINVAL;
-+	}
-+
- 	work = kzalloc(sizeof *work, GFP_KERNEL);
- 	if (work == NULL)
- 		return -ENOMEM;
-@@ -9705,6 +9730,10 @@ void intel_modeset_init(struct drm_device *dev)
- 		dev->mode_config.max_width = 8192;
- 		dev->mode_config.max_height = 8192;
- 	}
-+
-+	if (IS_GEN7(dev))
-+		dev->mode_config.async_page_flip = true;
-+
- 	dev->mode_config.fb_base = dev_priv->gtt.mappable_base;
- 
- 	DRM_DEBUG_KMS("%d display pipe%s available.\n",
+>  {
+>  	struct acpi_ipmi_device *ipmi_device;
+>  	int err;
+> @@ -148,14 +147,13 @@ ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle handle)
+>  	spin_lock_init(&ipmi_device->tx_msg_lock);
+>  
+>  	ipmi_device->handle = handle;
+> -	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
+> -	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct ipmi_smi_info));
+> +	ipmi_device->dev = get_device(pdev);
+>  	ipmi_device->ipmi_ifnum = iface;
+>  
+>  	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
+>  			       ipmi_device, &user);
+>  	if (err) {
+> -		put_device(smi_data->dev);
+> +		put_device(pdev);
+>  		kfree(ipmi_device);
+>  		return NULL;
+>  	}
+> @@ -175,7 +173,7 @@ acpi_ipmi_dev_get(struct acpi_ipmi_device *ipmi_device)
+>  static void ipmi_dev_release(struct acpi_ipmi_device *ipmi_device)
+>  {
+>  	ipmi_destroy_user(ipmi_device->user_interface);
+> -	put_device(ipmi_device->smi_data.dev);
+> +	put_device(ipmi_device->dev);
+>  	kfree(ipmi_device);
+>  }
+>  
+> @@ -263,7 +261,7 @@ static int acpi_format_ipmi_request(struct acpi_ipmi_msg *tx_msg,
+>  	buffer = (struct acpi_ipmi_buffer *)value;
+>  	/* copy the tx message data */
+>  	if (buffer->length > ACPI_IPMI_MAX_MSG_LENGTH) {
+> -		dev_WARN_ONCE(&tx_msg->device->pnp_dev->dev, true,
+> +		dev_WARN_ONCE(tx_msg->device->dev, true,
+>  			      "Unexpected request (msg len %d).\n",
+>  			      buffer->length);
+>  		return -EINVAL;
+> @@ -382,11 +380,11 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  	struct acpi_ipmi_device *ipmi_device = user_msg_data;
+>  	int msg_found = 0;
+>  	struct acpi_ipmi_msg *tx_msg;
+> -	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
+> +	struct device *dev = ipmi_device->dev;
+>  	unsigned long flags;
+>  
+>  	if (msg->user != ipmi_device->user_interface) {
+> -		dev_warn(&pnp_dev->dev,
+> +		dev_warn(dev,
+>  			 "Unexpected response is returned. returned user %p, expected user %p\n",
+>  			 msg->user, ipmi_device->user_interface);
+>  		goto out_msg;
+> @@ -404,7 +402,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+>  
+>  	if (!msg_found) {
+> -		dev_warn(&pnp_dev->dev,
+> +		dev_warn(dev,
+>  			 "Unexpected response (msg id %ld) is returned.\n",
+>  			 msg->msgid);
+>  		goto out_msg;
+> @@ -412,7 +410,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void *user_msg_data)
+>  
+>  	/* copy the response data to Rx_data buffer */
+>  	if (msg->msg.data_len > ACPI_IPMI_MAX_MSG_LENGTH) {
+> -		dev_WARN_ONCE(&pnp_dev->dev, true,
+> +		dev_WARN_ONCE(dev, true,
+>  			      "Unexpected response (msg len %d).\n",
+>  			      msg->msg.data_len);
+>  		goto out_comp;
+> @@ -431,7 +429,7 @@ out_msg:
+>  static void ipmi_register_bmc(int iface, struct device *dev)
+>  {
+>  	struct acpi_ipmi_device *ipmi_device, *temp;
+> -	struct pnp_dev *pnp_dev;
+> +	struct device *pdev;
+
+And here?
+
+>  	int err;
+>  	struct ipmi_smi_info smi_data;
+>  	acpi_handle handle;
+> @@ -445,11 +443,11 @@ static void ipmi_register_bmc(int iface, struct device *dev)
+>  	handle = smi_data.addr_info.acpi_info.acpi_handle;
+>  	if (!handle)
+>  		goto err_ref;
+> -	pnp_dev = to_pnp_dev(smi_data.dev);
+> +	pdev = smi_data.dev;
+>  
+> -	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
+> +	ipmi_device = ipmi_dev_alloc(iface, pdev, handle);
+>  	if (!ipmi_device) {
+> -		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
+> +		dev_warn(pdev, "Can't create IPMI user interface\n");
+>  		goto err_ref;
+>  	}
+>  
+> 
 -- 
-1.8.3.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
