@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756804Ab3GYQwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:52:01 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:42651 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756382Ab3GYQv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:51:59 -0400
-Message-ID: <1374771118.1957.8.camel@joe-AO722>
-Subject: Re: [RESEND RFC PATCH 0/5] Add a hash value for each line in
- /dev/kmsg
-From: Joe Perches <joe@perches.com>
-To: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, kay@vrfy.org,
-        davem@davemloft.net, itoukzo@nttdata.co.jp
-Date: Thu, 25 Jul 2013 09:51:58 -0700
-In-Reply-To: <20130725083730.20349.50797.stgit@localhost.localdomain>
-References: <20130725083730.20349.50797.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756483Ab3GYRBK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:01:10 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:53405 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab3GYRBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:01:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <51EF7466.20703@jp.fujitsu.com>
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com>
+ <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com>
+ <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com>
+ <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com>
+ <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com>
+ <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Jul 2013 11:00:46 -0600
+Message-ID: <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "open list:INTEL IOMMU (VT-d)" <iommu@lists.linux-foundation.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "ishii.hironobu@jp.fujitsu.com" <ishii.hironobu@jp.fujitsu.com>,
+        Don Dutile <ddutile@redhat.com>,
+        "Sumner, William" <bill.sumner@hp.com>,
+        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
+        Vivek Goyal <vgoyal@redhat.com>, Haren Myneni <hbabu@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 17:37 +0900, Hidehiro Kawai wrote:
-> ================
-> This patch series adds hash values of printk format strings into
-> each line of /dev/kmsg outputs as follows:
-> 
->         6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
-> 
-> These hash values allow use space to identify messages easily and
-> do valuable things.  There is no guarantee that the hash values
-> are unique.  However, user space can know which one collides to
-> others from a message-and-hash catalog generated at build time, so
-> finally it should be able to identify the messages.  User space
-> can also use filename:lineno information to do that, although the
-> information is not portable among various kernel versions.
-> 
-> 
-> Background
-> ==========
-> We sometimes want to identify each kernel message automatically
-> because of the following purposes:
-> 
-> (1) Show more detailed information about the message by cooperating
->     with external system
-> (2) Take actions automatically depending on the message, for example
->     trigger a fail over or collect related information to analyze the
->     problem
+On Wed, Jul 24, 2013 at 12:29 AM, Takao Indoh
+<indou.takao@jp.fujitsu.com> wrote:
+> Sorry for letting this discussion slide, I was busy on other works:-(
+> Anyway, the summary of previous discussion is:
+> - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
+>   boot. This expects PCI enumeration is done before IOMMU
+>   initialization as follows.
+>     (1) PCI enumeration
+>     (2) fs_initcall ---> device reset
+>     (3) IOMMU initialization
+> - This works on x86, but does not work on other architecture because
+>   IOMMU is initialized before PCI enumeration on some architectures. So,
+>   device reset should be done where IOMMU is initialized instead of
+>   initcall.
+> - Or, as another idea, we can reset devices in first kernel(panic kernel)
+>
+> Resetting devices in panic kernel is against kdump policy and seems not to
+> be good idea. So I think adding reset code into iommu initialization is
+> better. I'll post patches for that.
 
-If there are really "take action" uses, perhaps
-it'd be better to mark the specific areas of code
-where this needs to be done and add a notifier
-function there instead of depending on post effect
-processing.
+Of course nobody *wants* to do anything in the panic kernel.  But
+simply saying "it's against kdump policy and seems not to be a good
+idea" is not a technical argument.  There are things that are
+impractical to do in the kdump kernel, so they have to be done in the
+panic kernel even though we know the kernel is unreliable and the
+attempt may fail.
 
+My point about IOMMU and PCI initialization order doesn't go away just
+because it doesn't fit "kdump policy."  Having system initialization
+occur in a logical order is far more important than making kdump work.
 
+Bjorn
