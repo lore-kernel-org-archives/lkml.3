@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab3GYAqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:46:53 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34907 "EHLO
+	id S1755022Ab3GYArn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:47:43 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34896 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab3GYAns (ORCPT
+	with ESMTP id S1754611Ab3GYAnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:43:48 -0400
+	Wed, 24 Jul 2013 20:43:47 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org
-Subject: [PATCH v1 07/14] clk: msm: Add support for branches/gate clocks
-Date: Wed, 24 Jul 2013 17:43:35 -0700
-Message-Id: <1374713022-6049-8-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH v1 05/14] clk: msm: Add support for phase locked loops (PLLs)
+Date: Wed, 24 Jul 2013 17:43:33 -0700
+Message-Id: <1374713022-6049-6-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
 References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
@@ -22,68 +22,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add support for MSM's PLLs (phase locked loops). This is
+sufficient enough to be able to determine the rate the PLL is
+running at. We can add rate setting support later when it's
+needed.
+
 Cc: devicetree@vger.kernel.org
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- Documentation/devicetree/bindings/clock/msm.txt |  28 ++++
- drivers/clk/msm/Makefile                        |   1 +
- drivers/clk/msm/clk-branch.c                    | 190 ++++++++++++++++++++++++
- drivers/clk/msm/clk-branch.h                    |  48 ++++++
- 4 files changed, 267 insertions(+)
- create mode 100644 drivers/clk/msm/clk-branch.c
- create mode 100644 drivers/clk/msm/clk-branch.h
+ Documentation/devicetree/bindings/clock/msm.txt |  40 ++++
+ drivers/clk/Kconfig                             |   2 +
+ drivers/clk/Makefile                            |   1 +
+ drivers/clk/msm/Kconfig                         |   4 +
+ drivers/clk/msm/Makefile                        |   3 +
+ drivers/clk/msm/clk-pll.c                       | 233 ++++++++++++++++++++++++
+ drivers/clk/msm/clk-pll.h                       |  43 +++++
+ 7 files changed, 326 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/msm.txt
+ create mode 100644 drivers/clk/msm/Kconfig
+ create mode 100644 drivers/clk/msm/Makefile
+ create mode 100644 drivers/clk/msm/clk-pll.c
+ create mode 100644 drivers/clk/msm/clk-pll.h
 
 diff --git a/Documentation/devicetree/bindings/clock/msm.txt b/Documentation/devicetree/bindings/clock/msm.txt
-index f4595fa..6840398 100644
---- a/Documentation/devicetree/bindings/clock/msm.txt
+new file mode 100644
+index 0000000..2192621
+--- /dev/null
 +++ b/Documentation/devicetree/bindings/clock/msm.txt
-@@ -69,3 +69,31 @@ Example:
- 		clocks = <&pxo>, <&pll2>, <&pll8>;
- 	};
- 
-+CXC Binding
+@@ -0,0 +1,40 @@
++Bindings for Qualcomm's clock controllers
++
++These bindings use the common clock binding
++Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++PLL Binding
 +-----------
 +
 +Required properties:
-+- compatible : shall be "qcom,cxc-clock".
++- compatible : shall be "qcom,pll".
 +- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : from common clock binding; shall be set to the source being gated
++- clocks : from common clock binding; shall be set to the reference clock
 +
 +Example:
-+	gsbi5_uart_clk: gsbi5_uart_cxc {
++	pll8: pll8 {
 +		#clock-cells = <0>;
-+		compatible = "qcom,cxc-clock";
-+		clocks = <&gsbi5_uart_rcg>;
++		compatible = "qcom,pll";
++		clocks = <&pxo>;
 +	};
 +
-+CXC With Hardware Gating Binding
-+--------------------------------
++Voteable PLL Binding
++--------------------
++
++Voteable PLLs are PLLs surrounded by a voting wrapper that aggregates
++votes from multiple masters in the system and enables or disables the
++PLL according to the current vote.
 +
 +Required properties:
-+- compatible : shall be "qcom,cxc-hg-clock".
++- compatible: shall be "qcom,pll-vote"
 +- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : from common clock binding; shall be set to the source being gated
++- clocks : from common clock binding; shall be set to the pll that is wrapped
++  in voting logic
 +
-+	gsbi5_uart_ahb: gsbi5_uart_ahb {
++Example:
++	vpll8: vpll8 {
 +		#clock-cells = <0>;
-+		compatible = "qcom,cxc-hg-clock";
-+		clocks = <&cfpb_clk>;
++		compatible = "qcom,pll-vote";
++		clocks = <&pll8>;
 +	};
-diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-index fb78ac9..e1cee29 100644
---- a/drivers/clk/msm/Makefile
-+++ b/drivers/clk/msm/Makefile
-@@ -3,3 +3,4 @@ obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
-+clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
-diff --git a/drivers/clk/msm/clk-branch.c b/drivers/clk/msm/clk-branch.c
++
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 51380d6..fad596b8 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -87,6 +87,8 @@ config CLK_PPC_CORENET
+ 	  This adds the clock driver support for Freescale PowerPC corenet
+ 	  platforms using common clock framework.
+ 
++source "drivers/clk/msm/Kconfig"
++
+ endmenu
+ 
+ source "drivers/clk/mvebu/Kconfig"
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 4038c2b..67df66f 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_PLAT_SPEAR)	+= spear/
+ obj-$(CONFIG_ARCH_U300)		+= clk-u300.o
+ obj-$(CONFIG_COMMON_CLK_VERSATILE) += versatile/
+ obj-$(CONFIG_ARCH_SIRF)		+= clk-prima2.o
++obj-$(CONFIG_COMMON_CLK_MSM)	+= msm/
+ obj-$(CONFIG_PLAT_ORION)	+= mvebu/
+ ifeq ($(CONFIG_COMMON_CLK), y)
+ obj-$(CONFIG_ARCH_MMP)		+= mmp/
+diff --git a/drivers/clk/msm/Kconfig b/drivers/clk/msm/Kconfig
 new file mode 100644
-index 0000000..ff2e599
+index 0000000..bf7e3d2
 --- /dev/null
-+++ b/drivers/clk/msm/clk-branch.c
-@@ -0,0 +1,190 @@
++++ b/drivers/clk/msm/Kconfig
+@@ -0,0 +1,4 @@
++menuconfig COMMON_CLK_MSM
++	tristate "Support for Qualcomm's MSM designs"
++	depends on OF
++
+diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
+new file mode 100644
+index 0000000..16b750f
+--- /dev/null
++++ b/drivers/clk/msm/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
++
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+diff --git a/drivers/clk/msm/clk-pll.c b/drivers/clk/msm/clk-pll.c
+new file mode 100644
+index 0000000..03c2c41
+--- /dev/null
++++ b/drivers/clk/msm/clk-pll.c
+@@ -0,0 +1,233 @@
 +/*
 + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
@@ -106,180 +162,223 @@ index 0000000..ff2e599
 +#include <linux/slab.h>
 +#include <linux/device.h>
 +
-+#include "clk-branch.h"
++#include <asm/div64.h>
++
++#include "clk-pll.h"
 +
 +/**
-+ * struct clk_branch - gating clock with status bit and dynamic hardware gating
-+ *
-+ * @ctl_reg: clock control register
-+ * @ctl_bit: ORed with @ctl_reg to enable the clock
-+ * @hwcg_reg: dynamic hardware clock gating register
-+ * @hwcg_bit: ORed with @hwcg_reg to enable dynamic hardware clock gating
-+ * @halt_reg: halt register
-+ * @halt_bit: ANDed with @halt_reg to test for clock halted
-+ * @halt_check: type of halt checking to perform
++ * struct clk_pll - phase locked loop (PLL)
++ * @l_reg: L register
++ * @m_reg: M register
++ * @n_reg: N register
++ * @config_reg: config register
++ * @mode_reg: mode register
++ * @status_reg: status register
++ * @status_bit: ANDed with @status_reg to determine if PLL is enabled
 + * @hw: handle between common and hardware-specific interfaces
-+ * @lock: register lock
-+ *
-+ * Clock which can gate its output.
 + */
-+struct clk_branch {
-+	void __iomem	*ctl_reg;
-+	void __iomem	*hwcg_reg;
-+	void __iomem	*halt_reg;
-+
-+	u8		ctl_bit;
-+	u8		hwcg_bit;
-+	u8		halt_bit;
-+	u8		halt_check;
++struct clk_pll {
++	void __iomem *l_reg;
++	void __iomem *m_reg;
++	void __iomem *n_reg;
++	void __iomem *config_reg;
++	void __iomem *mode_reg;
++	void __iomem *status_reg;
++	u8 status_bit;
 +
 +	struct clk_hw	hw;
-+	spinlock_t	*lock;
 +};
 +
-+#define to_clk_branch(_hw) container_of(_hw, struct clk_branch, hw)
++#define to_clk_pll(_hw) container_of(_hw, struct clk_pll, hw)
 +
-+static bool clk_branch_is_halted(const struct clk_branch *br)
++#define PLL_OUTCTRL	BIT(0)
++#define PLL_BYPASSNL	BIT(1)
++#define PLL_RESET_N	BIT(2)
++
++static int clk_pll_enable(struct clk_hw *hw)
 +{
-+	bool invert = (br->halt_check == BRANCH_HALT_ENABLE);
-+	u32 status_bit = readl_relaxed(br->halt_reg) & BIT(br->halt_bit);
-+	return invert ? !status_bit : status_bit;
-+}
++	struct clk_pll *pll = to_clk_pll(hw);
++	u32 mode;
 +
-+static bool clk_branch_in_hwcg_mode(const struct clk_branch *br)
-+{
-+	if (!br->hwcg_reg)
-+		return 0;
++	mode = readl_relaxed(pll->mode_reg);
++	/* Disable PLL bypass mode. */
++	mode |= PLL_BYPASSNL;
++	writel(mode, pll->mode_reg);
 +
-+	return !!(readl_relaxed(br->hwcg_reg) & BIT(br->hwcg_bit));
-+}
++	/*
++	 * H/W requires a 5us delay between disabling the bypass and
++	 * de-asserting the reset. Delay 10us just to be safe.
++	 */
++	udelay(10);
 +
-+static int clk_branch_wait(const struct clk_branch *br, bool enabling)
-+{
-+	bool voted = br->halt_check & BRANCH_VOTED;
-+	const char *name = __clk_get_name(br->hw.clk);
++	/* De-assert active-low PLL reset. */
++	mode |= PLL_RESET_N;
++	writel(mode, pll->mode_reg);
 +
-+	/* Skip checking halt bit if the clock is in hardware gated mode */
-+	if (clk_branch_in_hwcg_mode(br))
-+		return 0;
++	/* Wait until PLL is locked. */
++	udelay(50);
 +
-+	if (br->halt_check == BRANCH_HALT_DELAY || (!enabling && voted)) {
-+		udelay(10);
-+	} else if (br->halt_check == BRANCH_HALT_ENABLE ||
-+		   br->halt_check == BRANCH_HALT ||
-+		   (enabling && voted)) {
-+		int count = 200;
++	/* Enable PLL output. */
++	mode |= PLL_OUTCTRL;
++	writel(mode, pll->mode_reg);
 +
-+		while (count-- > 0) {
-+			if (clk_branch_is_halted(br) == !enabling)
-+				return 0;
-+			udelay(1);
-+		}
-+		WARN("%s status stuck at 'o%s'", name, enabling ? "ff" : "n");
-+		return -EBUSY;
-+	}
 +	return 0;
 +}
 +
-+static int clk_branch_toggle(const struct clk_hw *hw, bool en)
++static void clk_pll_disable(struct clk_hw *hw)
 +{
-+	struct clk_branch *br = to_clk_branch(hw);
-+	unsigned long flags;
-+	u32 val;
++	struct clk_pll *pll = to_clk_pll(hw);
++	u32 mode;
 +
-+	spin_lock_irqsave(br->lock, flags);
-+
-+	val = readl_relaxed(br->ctl_reg);
-+	if (en)
-+		val |= BIT(br->ctl_bit);
-+	else
-+		val &= ~BIT(br->ctl_bit);
-+	writel(val, br->ctl_reg);
-+
-+	spin_unlock_irqrestore(br->lock, flags);
-+
-+	return clk_branch_wait(br, en);
++	mode = readl_relaxed(pll->mode_reg);
++	mode &= ~(PLL_OUTCTRL | PLL_RESET_N | PLL_BYPASSNL);
++	writel_relaxed(mode, pll->mode_reg);
 +}
 +
-+static int clk_branch_enable(struct clk_hw *hw)
++static unsigned long
++clk_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 +{
-+	return clk_branch_toggle(hw, true);
++	struct clk_pll *pll = to_clk_pll(hw);
++	u32 l, m, n;
++	unsigned long rate;
++	u64 tmp;
++
++	l = readl_relaxed(pll->l_reg) & 0x3ff;
++	m = readl_relaxed(pll->m_reg) & 0x7ffff;
++	n = readl_relaxed(pll->n_reg) & 0x7ffff;
++
++	rate = parent_rate * l;
++	if (n) {
++		tmp = parent_rate;
++		tmp *= m;
++		do_div(tmp, n);
++		rate += tmp;
++	}
++	return rate;
 +}
 +
-+static void clk_branch_disable(struct clk_hw *hw)
-+{
-+	clk_branch_toggle(hw, false);
-+}
-+
-+static int clk_branch_is_enabled(struct clk_hw *hw)
-+{
-+	struct clk_branch *br = to_clk_branch(hw);
-+	u32 val;
-+
-+	val = readl_relaxed(br->ctl_reg);
-+	val &= BIT(br->ctl_bit);
-+
-+	return val ? 1 : 0;
-+}
-+
-+static const struct clk_ops clk_branch_ops = {
-+	.enable = clk_branch_enable,
-+	.is_enabled = clk_branch_is_enabled,
-+	.disable = clk_branch_disable,
++static const struct clk_ops clk_pll_ops = {
++	.enable = clk_pll_enable,
++	.disable = clk_pll_disable,
++	.recalc_rate = clk_pll_recalc_rate,
 +};
 +
-+struct clk *branch_clk_register(struct device *dev, struct branch_desc *desc,
-+		spinlock_t *lock, struct clk_init_data *init)
++struct clk *pll_clk_register(struct device *dev, struct pll_desc *desc,
++		struct clk_init_data *init)
 +{
-+	struct clk_branch *b;
++	struct clk_pll *p;
 +
-+	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
-+	if (!b)
++	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
++	if (!p)
 +		return ERR_PTR(-ENOMEM);
 +
-+	b->ctl_reg = desc->base + desc->ctl_reg;
-+	b->halt_reg = desc->base + desc->halt_reg;
-+	b->ctl_bit = desc->ctl_bit;
-+	b->halt_bit = desc->halt_bit;
-+	b->halt_check = desc->halt_check;
-+	b->lock = lock;
++	p->l_reg = desc->base + desc->l_reg;
++	p->m_reg = desc->base + desc->m_reg;
++	p->n_reg = desc->base + desc->n_reg;
++	p->config_reg = desc->base + desc->config_reg;
++	p->mode_reg = desc->base + desc->mode_reg;
++	p->status_reg = desc->base + desc->status_reg;
++	p->status_bit = desc->status_bit;
 +
-+	init->ops = &clk_branch_ops;
-+	init->flags |= CLK_SET_RATE_PARENT;
-+	b->hw.init = init;
++	init->ops = &clk_pll_ops;
++	p->hw.init = init;
 +
-+	return devm_clk_register(dev, &b->hw);
++	return devm_clk_register(dev, &p->hw);
 +}
 +
-+struct clk *branch_hg_clk_register(struct device *dev, struct branch_desc *desc,
-+		spinlock_t *lock, struct clk_init_data *init)
-+{
-+	struct clk_branch *b;
++/**
++ * struct clk_pll_vote - phase locked loop (PLL) with hardware voting wrapper
++ * @vote_reg: Voting register
++ * @vote_bit: ORed into @vote_reg to enable PLL
++ * @hw: handle between common and hardware-specific interfaces
++ */
++struct clk_pll_vote {
++	void __iomem	*vote_reg;
++	u8		vote_bit;
++	struct clk_hw	hw;
++};
 +
-+	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
-+	if (!b)
++#define to_clk_pll_vote(_hw) container_of(_hw, struct clk_pll_vote, hw)
++
++static DEFINE_SPINLOCK(pll_vote_lock);
++
++static int wait_for_pll(struct clk_pll *pll)
++{
++	int count;
++	const char *name = __clk_get_name(pll->hw.clk);
++
++	/* Wait for pll to enable. */
++	for (count = 200; count > 0; count--) {
++		if (readl_relaxed(pll->status_reg) & BIT(pll->status_bit))
++			return 0;
++		udelay(1);
++	}
++
++	WARN("%s didn't enable after voting for it!\n", name);
++	return -ETIMEDOUT;
++}
++
++static int clk_pll_vote_enable(struct clk_hw *hw)
++{
++	u32 val;
++	unsigned long flags;
++	struct clk_pll_vote *pll = to_clk_pll_vote(hw);
++	struct clk_pll *p = to_clk_pll(__clk_get_hw(__clk_get_parent(hw->clk)));
++
++	spin_lock_irqsave(&pll_vote_lock, flags);
++
++	val = readl_relaxed(pll->vote_reg);
++	val |= BIT(pll->vote_bit);
++	writel(val, pll->vote_reg);
++
++	spin_unlock_irqrestore(&pll_vote_lock, flags);
++
++	return wait_for_pll(p);
++}
++
++static void clk_pll_vote_disable(struct clk_hw *hw)
++{
++	u32 val;
++	unsigned long flags;
++	struct clk_pll_vote *pll = to_clk_pll_vote(hw);
++
++	spin_lock_irqsave(&pll_vote_lock, flags);
++
++	val = readl_relaxed(pll->vote_reg);
++	val &= ~BIT(pll->vote_bit);
++	writel_relaxed(val, pll->vote_reg);
++
++	spin_unlock_irqrestore(&pll_vote_lock, flags);
++}
++
++static const struct clk_ops clk_pll_vote_ops = {
++	.enable = clk_pll_vote_enable,
++	.disable = clk_pll_vote_disable,
++};
++
++struct clk *pll_vote_clk_register(struct device *dev,
++		struct pll_vote_desc *desc, struct clk_init_data *init)
++{
++	struct clk_pll_vote *p;
++
++	p = devm_kzalloc(dev, sizeof(*p), GFP_KERNEL);
++	if (!p)
 +		return ERR_PTR(-ENOMEM);
 +
-+	b->ctl_reg = desc->base + desc->ctl_reg;
-+	b->halt_reg = desc->base + desc->halt_reg;
-+	b->hwcg_reg = desc->base + desc->hwcg_reg;
-+	b->ctl_bit = desc->ctl_bit;
-+	b->halt_bit = desc->halt_bit;
-+	b->halt_check = desc->halt_check;
-+	b->lock = lock;
++	p->vote_reg = desc->base + desc->vote_reg;
++	p->vote_bit = desc->vote_bit;
 +
-+	init->ops = &clk_branch_ops;
-+	init->flags |= CLK_SET_RATE_PARENT;
-+	b->hw.init = init;
++	init->ops = &clk_pll_vote_ops;
++	p->hw.init = init;
 +
-+	return devm_clk_register(dev, &b->hw);
++	return devm_clk_register(dev, &p->hw);
 +}
-diff --git a/drivers/clk/msm/clk-branch.h b/drivers/clk/msm/clk-branch.h
+diff --git a/drivers/clk/msm/clk-pll.h b/drivers/clk/msm/clk-pll.h
 new file mode 100644
-index 0000000..bcb7345
+index 0000000..4e63a5e
 --- /dev/null
-+++ b/drivers/clk/msm/clk-branch.h
-@@ -0,0 +1,48 @@
++++ b/drivers/clk/msm/clk-pll.h
+@@ -0,0 +1,43 @@
 +/*
 + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
@@ -293,39 +392,34 @@ index 0000000..bcb7345
 + * GNU General Public License for more details.
 + */
 +
-+#ifndef __MSM_CLK_BRANCH_H__
-+#define __MSM_CLK_BRANCH_H__
-+
-+#include <linux/spinlock.h>
++#ifndef __MSM_CLK_PLL_H__
++#define __MSM_CLK_PLL_H__
 +
 +struct device;
 +struct clk;
 +struct clk_init_data;
 +
-+struct branch_desc {
++struct pll_desc {
 +	void __iomem *base;
-+	u32 ctl_reg;
-+	u32 hwcg_reg;
-+	u32 halt_reg;
-+
-+	u8 ctl_bit;
-+	u8 hwcg_bit;
-+	u8 halt_bit;
-+	u8 halt_check;
-+#define BRANCH_VOTED			BIT(7) /* Delay on disable */
-+#define BRANCH_HALT			0 /* pol: 1 = halt */
-+#define BRANCH_HALT_VOTED		(BRANCH_HALT | BRANCH_VOTED)
-+#define BRANCH_HALT_ENABLE		1 /* pol: 0 = halt */
-+#define BRANCH_HALT_ENABLE_VOTED	(BRANCH_HALT_ENABLE | BRANCH_VOTED)
-+#define BRANCH_HALT_DELAY		2 /* No bit to check; just delay */
++	u16 l_reg;
++	u16 m_reg;
++	u16 n_reg;
++	u16 config_reg;
++	u16 mode_reg;
++	u16 status_reg;
++	u8 status_bit;
 +};
 +
-+extern struct clk *branch_clk_register(struct device *dev,
-+		struct branch_desc *desc, spinlock_t *lock,
++struct pll_vote_desc {
++	void __iomem *base;
++	u16 vote_reg;
++	u8 vote_bit;
++};
++
++extern struct clk *pll_clk_register(struct device *dev, struct pll_desc *desc,
 +		struct clk_init_data *init);
-+extern struct clk *branch_hg_clk_register(struct device *dev,
-+		struct branch_desc *desc, spinlock_t *lock,
-+		struct clk_init_data *init);
++extern struct clk *pll_vote_clk_register(struct device *dev,
++		struct pll_vote_desc *desc, struct clk_init_data *init);
 +
 +#endif
 -- 
