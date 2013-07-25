@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab3GYVAu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:00:50 -0400
-Received: from mail-qe0-f50.google.com ([209.85.128.50]:65477 "EHLO
-	mail-qe0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab3GYVAs (ORCPT
+	id S1755491Ab3GYVD2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:03:28 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:38423 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754618Ab3GYVD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:00:48 -0400
+	Thu, 25 Jul 2013 17:03:26 -0400
+X-Sasl-enc: PiKps3CT7k29idh5fNJCGZzyJeAJ/fdBmCsbnygjX0+W 1374786205
+Date: Thu, 25 Jul 2013 14:03:24 -0700
+From: Greg KH <greg@kroah.com>
+To: David Miller <davem@davemloft.net>
+Cc: luis.henriques@canonical.com, ben@decadent.org.uk,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, shangw@linux.vnet.ibm.com
+Subject: Re: [40/85] net/tg3: Avoid delay during MMIO access
+Message-ID: <20130725210324.GA6089@kroah.com>
+References: <lsq.1374674565.832521875@decadent.org.uk>
+ <87zjtbzz8j.fsf@canonical.com>
+ <20130724.124504.1663757440011643606.davem@davemloft.net>
+ <20130724.140907.326515349808465987.davem@davemloft.net>
 MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
-In-Reply-To: <000401ce88d4$33773de0$9a65b9a0$@samsung.com>
-References: <1374680547-5336-1-git-send-email-olof@lixom.net>
-	<000401ce88d4$33773de0$9a65b9a0$@samsung.com>
-Date: Thu, 25 Jul 2013 14:00:47 -0700
-Message-ID: <CAOesGMh5-aRR+eZVimNnZJ++f74tbURWOeri-46GNQfK_r3JuA@mail.gmail.com>
-Subject: Re: [PATCH] mfd: max8925: fix dt code for backlight
-From: Olof Johansson <olof@lixom.net>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Qing Xu <qingx@marvell.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130724.140907.326515349808465987.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 6:13 PM, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Thursday, July 25, 2013 12:42 AM, Olof Johansson wrote:
->>
->> The device-tree enablement for max8925 has several problems, but besides
->> the bindings being wrong (and not having seen review) there's also some
->> bad coding practices on how to fill in the platform_data from device tree.
->>
->> I came across this since it causes a warning when compiling
->> mmp2_defconfig, and instead of doing the minimal fix to silence the
->> warning, I restructured the code a bit.
->>
->> This silences the warning:
->> drivers/video/backlight/max8925_bl.c: In function 'max8925_backlight_probe':
->> drivers/video/backlight/max8925_bl.c:177:3: warning: statement with no effect [-Wunused-value]
->>
->> Note that the bindings themselves need to be revisited too, but that will
->> affect more than just the backlight driver and is best done separately;
->> this just fixes the bad code for the backlight driver.
->>
->> Signed-off-by: Olof Johansson <olof@lixom.net>
->> ---
->>
->> Richard, Jingoo, this would be good to see go into 3.11 if you're
->> comfortable with it.
->
-> CC'ed Andrew Morton
->
->
-> Hi Olof Johansson,
->
-> Currently, there is not git tree for Backlight subsystem.
-> I hope that this would go into 3.11 through one of other trees
-> with my Ack.
->
-> If not, it will go into 3.12-rc1 through mm-tree.
->
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
+On Wed, Jul 24, 2013 at 02:09:07PM -0700, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Wed, 24 Jul 2013 12:45:04 -0700 (PDT)
+> 
+> > From: Luis Henriques <luis.henriques@canonical.com>
+> > Date: Wed, 24 Jul 2013 17:42:04 +0100
+> > 
+> >> I believe you didn't want to have these two invocations to the
+> >> pci_channel_offline() function.  i guess you wanted to have one of
+> >> these moved to the other branch of the 'if' statement.
+> >> 
+> >> [ btw, I've just replied to an email by David S. Miller about his
+> >>   backport to 3.4 (and 3.2) of this commit. ]
+> > 
+> > Yes, indeed, both of these backports were done incorrectly.
+> 
+> Greg/Ben, please drop the tg3 patch of my networking bits from your
+> queues, I'll send a fixed up version soon.
 
-Ok, if you don't mind I can take it through arm-soc for 3.11 with your ack then.
+Now dropped from my 3.4-stable queue, thanks.
 
-Thanks!
-
--Olof
+greg k-h
