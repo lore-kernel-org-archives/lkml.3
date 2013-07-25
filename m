@@ -1,76 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817Ab3GYLBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 07:01:48 -0400
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:53044 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755591Ab3GYLBp (ORCPT
+	id S1755821Ab3GYLCu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 07:02:50 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:47750 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab3GYLCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 07:01:45 -0400
-Message-ID: <1374750101.23313.16.camel@edumazet-glaptop>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        ASIX Louis =?UTF-8?Q?=5B=E8=98=87=E5=A8=81=E9=99=B8=5D?= 
-	<louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Date: Thu, 25 Jul 2013 04:01:41 -0700
-In-Reply-To: <CACVXFVNyFk0Zpi4tC0ENiq8RcrtrjYW-Dhs+A56+Pw4BKm8y8A@mail.gmail.com>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	 <1374512879.4990.19.camel@edumazet-glaptop>
-	 <CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-	 <1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-	 <1374518841.4990.26.camel@edumazet-glaptop>
-	 <1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-	 <1374559827.4990.143.camel@edumazet-glaptop>
-	 <CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
-	 <1374729058.23313.8.camel@edumazet-glaptop>
-	 <CACVXFVNyFk0Zpi4tC0ENiq8RcrtrjYW-Dhs+A56+Pw4BKm8y8A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 25 Jul 2013 07:02:48 -0400
+From: Jamie Iles <jamie.iles@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jamie Iles <jamie.iles@oracle.com>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH] scripts/sortextable: support objects with more than 64K sections.
+Date: Thu, 25 Jul 2013 12:02:35 +0100
+Message-Id: <1374750155-21096-1-git-send-email-jamie.iles@oracle.com>
+X-Mailer: git-send-email 1.8.3.4
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 13:25 +0800, Ming Lei wrote:
-> On Thu, Jul 25, 2013 at 1:10 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > On Thu, 2013-07-25 at 10:28 +0800, Ming Lei wrote:
-> >
-> >>
-> >> It depends if size of sg buffer(except for last one) in the sg list can be
-> >> divided by usb endpoint's max packet size(512 or 1024), at least there
-> >> is the constraint:
-> >>
-> >> http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=10e232c597ac757e7f8600649f7e872e86de190f
-> >>
-> >> I am wondering if network stack can meet that.  If not, it might be a
-> >> bit difficult
-> >> because lots of USB host controller don't support that, and driver may have
-> >> to support SG and non-SG at the same time for working well on all HCs.
-> >
-> > I do not see the problem.
-> >
-> > If one skb has 2 fragments of 32KB, couldn't they be split into 64 1K
-> > segments by the device driver ?
-> 
-> OK, if length of fragments of all SKBs from network stack can always guarantee
-> to be divided by 1024, that is fine,  seems I worry about too much, :-)
+Building with a large config and -ffunction-sections results in a large
+number of sections and sortextable needs to be able to handle that.
+Implement support for > 64K sections as modpost does.
 
-Unfortunately, there is no such guarantee. TSO permits sendfile() zero
-copy operation, so the frags can be of any size, any offset...
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Jamie Iles <jamie.iles@oracle.com>
+---
+ scripts/sortextable.c | 24 ++++++++++++++++++++++++
+ scripts/sortextable.h | 26 +++++++++++++++++++++++---
+ 2 files changed, 47 insertions(+), 3 deletions(-)
 
-In this mode, the first element (skb->head) will typically contains the
-headers, and there are way below 512 bytes.
-
-So even with lowering netdev->gso_max_size under PAGE_SIZE, most of the
-packets will need to be copied into a single segment.
-
-
+diff --git a/scripts/sortextable.c b/scripts/sortextable.c
+index 1f10e89..8682791 100644
+--- a/scripts/sortextable.c
++++ b/scripts/sortextable.c
+@@ -156,6 +156,30 @@ static void (*w2)(uint16_t, uint16_t *);
+ 
+ typedef void (*table_sort_t)(char *, int);
+ 
++/*
++ * Move reserved section indices SHN_LORESERVE..SHN_HIRESERVE out of
++ * the way to -256..-1, to avoid conflicting with real section
++ * indices.
++ */
++#define SPECIAL(i) ((i) - (SHN_HIRESERVE + 1))
++
++static inline int is_shndx_special(unsigned int i)
++{
++	return i != SHN_XINDEX && i >= SHN_LORESERVE && i <= SHN_HIRESERVE;
++}
++
++/* Accessor for sym->st_shndx, hides ugliness of "64k sections" */
++static inline unsigned int get_secindex(unsigned int shndx,
++					unsigned int sym_offs,
++					const Elf32_Word *symtab_shndx_start)
++{
++	if (is_shndx_special(shndx))
++		return SPECIAL(shndx);
++	if (shndx != SHN_XINDEX)
++		return shndx;
++	return r(&symtab_shndx_start[sym_offs]);
++}
++
+ /* 32 bit and 64 bit are very similar */
+ #include "sortextable.h"
+ #define SORTEXTABLE_64
+diff --git a/scripts/sortextable.h b/scripts/sortextable.h
+index f5eb43d..8fac3fd 100644
+--- a/scripts/sortextable.h
++++ b/scripts/sortextable.h
+@@ -98,6 +98,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	Elf_Shdr *symtab_sec = NULL;
+ 	Elf_Shdr *extab_sec = NULL;
+ 	Elf_Sym *sym;
++	const Elf_Sym *symtab;
++	Elf32_Word *symtab_shndx_start = NULL;
+ 	Elf_Sym *sort_needed_sym;
+ 	Elf_Shdr *sort_needed_sec;
+ 	Elf_Rel *relocs = NULL;
+@@ -109,11 +111,22 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 	int extab_index = 0;
+ 	int i;
+ 	int idx;
++	unsigned int num_sections;
++	unsigned int secindex_strings;
+ 
+ 	shdr = (Elf_Shdr *)((char *)ehdr + _r(&ehdr->e_shoff));
+-	shstrtab_sec = shdr + r2(&ehdr->e_shstrndx);
++
++	num_sections = r2(&ehdr->e_shnum);
++	if (num_sections == SHN_UNDEF)
++		num_sections = _r(&shdr[0].sh_size);
++
++	secindex_strings = r2(&ehdr->e_shstrndx);
++	if (secindex_strings == SHN_XINDEX)
++		secindex_strings = r(&shdr[0].sh_link);
++
++	shstrtab_sec = shdr + secindex_strings;
+ 	secstrtab = (const char *)ehdr + _r(&shstrtab_sec->sh_offset);
+-	for (i = 0; i < r2(&ehdr->e_shnum); i++) {
++	for (i = 0; i < num_sections; i++) {
+ 		idx = r(&shdr[i].sh_name);
+ 		if (strcmp(secstrtab + idx, "__ex_table") == 0) {
+ 			extab_sec = shdr + i;
+@@ -129,6 +142,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 			symtab_sec = shdr + i;
+ 		if (strcmp(secstrtab + idx, ".strtab") == 0)
+ 			strtab_sec = shdr + i;
++		if (r(&shdr[i].sh_type) == SHT_SYMTAB_SHNDX)
++			symtab_shndx_start = (Elf32_Word *)(
++				(const char *)ehdr + _r(&shdr[i].sh_offset));
+ 	}
+ 	if (strtab_sec == NULL) {
+ 		fprintf(stderr,	"no .strtab in  file: %s\n", fname);
+@@ -138,6 +154,8 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 		fprintf(stderr,	"no .symtab in  file: %s\n", fname);
+ 		fail_file();
+ 	}
++	symtab = (const Elf_Sym *)((const char *)ehdr +
++				   _r(&symtab_sec->sh_offset));
+ 	if (extab_sec == NULL) {
+ 		fprintf(stderr,	"no __ex_table in  file: %s\n", fname);
+ 		fail_file();
+@@ -176,7 +194,9 @@ do_func(Elf_Ehdr *ehdr, char const *const fname, table_sort_t custom_sort)
+ 			fname);
+ 		fail_file();
+ 	}
+-	sort_needed_sec = &shdr[r2(&sort_needed_sym->st_shndx)];
++	sort_needed_sec = &shdr[get_secindex(r2(&sym->st_shndx),
++					     sort_needed_sym - symtab,
++					     symtab_shndx_start)];
+ 	sort_done_location = (void *)ehdr +
+ 		_r(&sort_needed_sec->sh_offset) +
+ 		_r(&sort_needed_sym->st_value) -
+-- 
+1.8.3.4
 
