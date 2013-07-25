@@ -1,49 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab3GYKk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:40:56 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:53972 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584Ab3GYKkx (ORCPT
+	id S1755709Ab3GYKln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:41:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34854 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754994Ab3GYKlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:40:53 -0400
-Message-ID: <51F100A3.4030302@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 16:10:35 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 06:41:42 -0400
+Date: Thu, 25 Jul 2013 12:41:30 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched, numa: Improve scanner
+Message-ID: <20130725104130.GP27075@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
 MIME-Version: 1.0
-To: Tony Luck <tony.luck@intel.com>
-CC: linux-kernel@vger.kernel.org, Borislav Petkov <bp@suse.de>,
-        Chen Gong <gong.chen@linux.intel.com>
-Subject: Re: [PATCH 0/2] machine check decode fixes
-References: <cover.1374699492.git.tony.luck@intel.com>
-In-Reply-To: <cover.1374699492.git.tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072510-2674-0000-0000-000009F487C9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 02:28 AM, Tony Luck wrote:
-> V2 of this:
-> * Broken into two patches - by suggestion of Chen Gong
-> * Just change MCACOD #define value - by suggestion of Naveen
->
-> Tony Luck (2):
->    x86/mce: Fix mce regression from recent cleanup
->    x86/mce: Pay no attention to 'F' bit in MCACOD when parsing 'UC'
->      errors
->
->   arch/x86/include/asm/mce.h                | 13 +++++++++++--
->   arch/x86/kernel/cpu/mcheck/mce-severity.c |  4 ++--
->   2 files changed, 13 insertions(+), 4 deletions(-)
->
 
-Series Acked-by: Naveen N. Rao <naveen.n.rao@linux.vnet.ibm.com>
+Subject: sched, numa: Improve scanner
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue Jul 23 17:02:38 CEST 2013
 
+With a trace_printk("working\n"); right after the cmpxchg in
+task_numa_work() we can see that of a 4 thread process, its always the
+same task winning the race and doing the protection change.
 
-- Naveen
+This is a problem since the task doing the protection change has a
+penalty for taking faults -- it is busy when marking the PTEs. If its
+always the same task the ->numa_faults[] get severely skewed.
 
+Avoid this by delaying the task doing the protection change such that
+it is unlikely to win the privilege again.
+
+Before:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3232  [022] ....   212.787402: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.888473: task_numa_work: working
+      thread 0/0-3232  [022] ....   212.989538: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.090602: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.191667: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.292734: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.393804: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.494869: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.596937: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.699000: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.801067: task_numa_work: working
+      thread 0/0-3232  [022] ....   213.903155: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.005201: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.107266: task_numa_work: working
+      thread 0/0-3232  [022] ....   214.209342: task_numa_work: working
+
+After:
+
+root@interlagos:~# grep "thread 0/.*working" /debug/tracing/trace | tail -15
+      thread 0/0-3253  [005] ....   136.865051: task_numa_work: working
+      thread 0/2-3255  [026] ....   136.965134: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.065217: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.165302: task_numa_work: working
+      thread 0/3-3256  [024] ....   137.265382: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.366465: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.466549: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.566629: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.666711: task_numa_work: working
+      thread 0/1-3254  [028] ....   137.766799: task_numa_work: working
+      thread 0/0-3253  [004] ....   137.866876: task_numa_work: working
+      thread 0/2-3255  [026] ....   137.966960: task_numa_work: working
+      thread 0/1-3254  [028] ....   138.067041: task_numa_work: working
+      thread 0/2-3255  [026] ....   138.167123: task_numa_work: working
+      thread 0/3-3256  [024] ....   138.267207: task_numa_work: working
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/fair.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1316,6 +1316,12 @@ void task_numa_work(struct callback_head
+ 		return;
+ 
+ 	/*
++	 * Delay this task enough that another task of this mm will likely win
++	 * the next time around.
++	 */
++	p->node_stamp += 2 * TICK_NSEC;
++
++	/*
+ 	 * Do not set pte_numa if the current running node is rate-limited.
+ 	 * This loses statistics on the fault but if we are unwilling to
+ 	 * migrate to this node, it is less likely we can do useful work
+@@ -1405,7 +1411,7 @@ void task_tick_numa(struct rq *rq, struc
+ 	if (now - curr->node_stamp > period) {
+ 		if (!curr->node_stamp)
+ 			curr->numa_scan_period = task_scan_min(curr);
+-		curr->node_stamp = now;
++		curr->node_stamp += period;
+ 
+ 		if (!time_before(jiffies, curr->mm->numa_next_scan)) {
+ 			init_task_work(work, task_numa_work); /* TODO: move this into sched_fork() */
