@@ -1,97 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab3GYJa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:30:27 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8370 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755331Ab3GYJ3w (ORCPT
+	id S1755487Ab3GYJc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:32:28 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59456 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755224Ab3GYJc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:29:52 -0400
-X-AuditID: cbfec7f5-b7f376d000001ec6-b4-51f0f00d61d1
-Message-id: <51F0F00A.1040907@samsung.com>
-Date: Thu, 25 Jul 2013 11:29:46 +0200
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Tomasz Figa <t.figa@samsung.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        broonie@kernel.org, Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>, kyungmin.park@samsung.com,
-        balbi@ti.com, jg1.han@samsung.com, kgene.kim@samsung.com,
-        grant.likely@linaro.org, tony@atomide.com, swarren@nvidia.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, akpm@linux-foundation.org,
-        balajitk@ti.com, george.cherian@ti.com, nsekhar@ti.com, olof@lixom.net,
-        Stephen Warren <swarren@wwwdotorg.org>, b.zolnierkie@samsung.com,
-        Daniel Lezcano <daniel.lezcano@linaro.org>
-Subject: Re: [PATCH 01/15] drivers: phy: add generic PHY framework
-References: <Pine.LNX.4.44L0.1307231708020.1304-100000@iolanthe.rowland.org>
- <5977067.8rykRgjgre@flatron> <201307242032.03597.arnd@arndb.de>
-In-reply-to: <201307242032.03597.arnd@arndb.de>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA03SW0iTYRzH8Z69h83V7PXIg5DlIgIzTwg+ilTYhS/dpHQhCVJv+qKSm7ap
-	eCA1T+Rp6mw5N0vNWSnCbBYeOujE1MxMN09Emp3LPAxF8zArp11497n48vz+Fw8Ps13FnXgx
-	4gRWImZihSQff/2nb+ykwGQK8dT3OaIqbROJtuS9XPRIqSWQoryVRPoPGUjx8QuJ7i4fQtU9
-	QwQa0D8gUJe5DaDsOi2JjLUGAhXXjJFo+GsRid5kzXFRfpmGi3SfxwlUm6fBUb/MRCBjRxWJ
-	ipqfEEitKcGR8u0LDrp3PxdDncXNHDQwsbw93arDUenmMIkmK3IINKvPw7dn2zlIq/yFo8YO
-	M0Cdo+fOCOnNDTmgV1fkON2umuLS6puVBK1rzCfp9+PPSLpfuYnTnXeauHSLJoMe7c8i6OLs
-	BZIu2fKk1VNrgJY9bgR032Qrh17WOQfbhPEDItnYmCRW4nHqMj/a3LSAxRusk825OdxMYNxf
-	AKx4kPKB+WvrxK4d4fC0lrTYlqoH8NM6UwD4214CUJ3dgxUAHk9AucLZQV9Lg1PHYM9QNmYx
-	SXnB4pcyYLEDFQzrNENciwWUDVwrn8YttqdcoOLHN8zyJkatcOH3wbGdyI4KhPO5c9jusAzA
-	GbW/xVaUBzQ1bOwchFFusDP39n8fhi1N81gpoFR7NlR7MtWerAZgjcCBTYyIl16JEnm7SxmR
-	NFEc5R4RJ9KB3b+y0gbqe/27AcUDwgOCh78XQ2wJJkmaIuoGkIcJ7QXhyaYQW0Ekk5LKSuIu
-	SRJjWWk34PCsnDJBJXv1eTrr/jNtXB3kEtlQZ2D01Yx3V0FhYVdb+HWB3TWzSGq8MOHzqsPX
-	ECq5YUxWaqMDb8nPvhte/lsmlpnl6U/rgtgQa054ldFvUZLKPzE5MSFKDBPZJ4CDLn4jp6tc
-	lxLqKWKu1PlIQ8VRP0Va5HG30Jjx8zP74MjFgC0hLo1mvFwxiZT5BywC6TsJAwAA
+	Thu, 25 Jul 2013 05:32:26 -0400
+Message-ID: <51F0F202.5090001@linux.vnet.ibm.com>
+Date: Thu, 25 Jul 2013 15:08:10 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
+        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
+        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
+        peterz@infradead.org, mtosatti@redhat.com,
+        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
+        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
+        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
+        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
+        virtualization@lists.linux-foundation.org,
+        srivatsa.vaddagiri@gmail.com
+Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
+ linux guests running on KVM hypervisor
+References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com> <51F0ED31.3040200@linux.vnet.ibm.com> <20130725091509.GA22735@redhat.com>
+In-Reply-To: <20130725091509.GA22735@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072509-5140-0000-0000-000003937F02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 08:32 PM, Arnd Bergmann wrote:
-> On Tuesday 23 July 2013, Tomasz Figa wrote:
->> On Tuesday 23 of July 2013 17:14:20 Alan Stern wrote:
->>> On Tue, 23 Jul 2013, Tomasz Figa wrote:
->>>> Where would you want to have those phy_address arrays stored? There
->>>> are no board files when booting with DT. Not even saying that you
->>>> don't need to use any hacky schemes like this when you have DT that
->>>> nicely specifies relations between devices.
+On 07/25/2013 02:45 PM, Gleb Natapov wrote:
+> On Thu, Jul 25, 2013 at 02:47:37PM +0530, Raghavendra K T wrote:
+>> On 07/24/2013 06:06 PM, Raghavendra K T wrote:
+>>> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
+>>>> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
+>>>>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
+>>>>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
+>>>>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
+>>>>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
+>>>>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
+>>>>>>>>> __ticket_t want)
+>>>>>>> [...]
+>>>>>>>>> +
+>>>>>>>>> +    /*
+>>>>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
+>>>>>>>>> halt
+>>>>>>>>> +     * for irq enabled case to avoid hang when lock info is
+>>>>>>>>> overwritten
+>>>>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
+>>>>>>>>> to save us.
+>>>>>>>>> +     */
+>>>>>>>>> +    if (arch_irqs_disabled_flags(flags))
+>>>>>>>>> +        halt();
+>>>>>>>>> +    else
+>>>>>>>>> +        safe_halt();
+>>>>>>>>> +
+>>>>>>>>> +out:
+>>>>>>>> So here now interrupts can be either disabled or enabled. Previous
+>>>>>>>> version disabled interrupts here, so are we sure it is safe to
+>>>>>>>> have them
+>>>>>>>> enabled at this point? I do not see any problem yet, will keep
+>>>>>>>> thinking.
+>>>>>>>
+>>>>>>> If we enable interrupt here, then
+>>>>>>>
+>>>>>>>
+>>>>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
+>>>>>>>
+>>>>>>> and if we start serving lock for an interrupt that came here,
+>>>>>>> cpumask clear and w->lock=null may not happen atomically.
+>>>>>>> if irq spinlock does not take slow path we would have non null value
+>>>>>>> for lock, but with no information in waitingcpu.
+>>>>>>>
+>>>>>>> I am still thinking what would be problem with that.
+>>>>>>>
+>>>>>> Exactly, for kicker waiting_cpus and w->lock updates are
+>>>>>> non atomic anyway.
+>>>>>>
+>>>>>>>>> +    w->lock = NULL;
+>>>>>>>>> +    local_irq_restore(flags);
+>>>>>>>>> +    spin_time_accum_blocked(start);
+>>>>>>>>> +}
+>>>>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
+>>>>>>>>> +
+>>>>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
+>>>>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
+>>>>>>>>> __ticket_t ticket)
+>>>>>>>>> +{
+>>>>>>>>> +    int cpu;
+>>>>>>>>> +
+>>>>>>>>> +    add_stats(RELEASED_SLOW, 1);
+>>>>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
+>>>>>>>>> +        const struct kvm_lock_waiting *w =
+>>>>>>>>> &per_cpu(lock_waiting, cpu);
+>>>>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
+>>>>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
+>>>>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
+>>>>>>>>> +            kvm_kick_cpu(cpu);
+>>>>>>>> What about using NMI to wake sleepers? I think it was discussed, but
+>>>>>>>> forgot why it was dismissed.
+>>>>>>>
+>>>>>>> I think I have missed that discussion. 'll go back and check. so
+>>>>>>> what is the idea here? we can easily wake up the halted vcpus that
+>>>>>>> have interrupt disabled?
+>>>>>> We can of course. IIRC the objection was that NMI handling path is very
+>>>>>> fragile and handling NMI on each wakeup will be more expensive then
+>>>>>> waking up a guest without injecting an event, but it is still
+>>>>>> interesting
+>>>>>> to see the numbers.
+>>>>>>
+>>>>>
+>>>>> Haam, now I remember, We had tried request based mechanism. (new
+>>>>> request like REQ_UNHALT) and process that. It had worked, but had some
+>>>>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
+>>>>> request cleared.  So had left it there..
+>>>>>
+>>>>> https://lkml.org/lkml/2012/4/30/67
+>>>>>
+>>>>> But I do not remember performance impact though.
+>>>> No, this is something different. Wakeup with NMI does not need KVM
+>>>> changes at
+>>>> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
+>>>>
 >>>
->>> If everybody agrees DT has a nice scheme for specifying relations
->>> between devices, why not use that same scheme in the PHY core?
+>>> True. It was not NMI.
+>>> just to confirm, are you talking about something like this to be tried ?
+>>>
+>>> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
 >>
->> It is already used, for cases when consumer device has a DT node attached. 
->> In non-DT case this kind lookup translates loosely to something that is 
->> being done in regulator framework - you can't bind devices by pointers, 
->> because you don't have those pointers, so you need to use device names.
+>> When I started benchmark, I started seeing
+>> "Dazed and confused, but trying to continue" from unknown nmi error
+>> handling.
+>> Did I miss anything (because we did not register any NMI handler)? or
+>> is it that spurious NMIs are trouble because we could get spurious NMIs
+>> if next waiter already acquired the lock.
+> There is a default NMI handler that tries to detect the reason why NMI
+> happened (which is no so easy on x86) and prints this message if it
+> fails. You need to add logic to detect spinlock slow path there. Check
+> bit in waiting_cpus for instance.
+
+aha.. Okay. will check that.
+
+>
 >>
-> 
-> Sorry for jumping in to the middle of the discussion, but why does a *new*
-> framework even bother defining an interface for board files?
-> 
-> Can't we just drop any interfaces for platform data passing in the phy
-> framework and put the burden of adding those to anyone who actually needs
-> them? All the platforms we are concerned with here (exynos and omap,
-> plus new platforms) can be booted using DT anyway.
+>> (note: I tried sending APIC_DM_REMRD IPI directly, which worked fine
+>> but hypercall way of handling still performed well from the results I
+>> saw).
+> You mean better? This is strange. Have you ran guest with x2apic?
+>
 
-Indeed, I was also a bit surprised we still need non-dt support, since
-migration to this generic PHY framework in case of exynos was solely
-part of migration of the whole platform to DT.
+Had the same doubt. So ran the full benchmark for dbench.
+So here is what I saw now. 1x was neck to neck (0.9% for hypercall vs 
+0.7% for IPI which should boil to no difference considering the noise
+factors) but otherwise, by sending IPI I see few percentage gain in 
+overcommit cases.
 
-Two of the drivers that are being converted are also used on s5pv210,
-but there is currently no boards in mainline that would use devices
-covered by those drivers and s5pv210 will very likely get DT support
-in v3.13 anyway.
 
-But it seems omap still needs non-dt support in the PHY framework.
 
----
-Thanks,
-Sylwester
+
