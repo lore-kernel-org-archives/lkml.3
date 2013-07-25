@@ -1,106 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab3GYMrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 08:47:53 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:39697 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755450Ab3GYMrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 08:47:48 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jani Nikula <jani.nikula@linux.intel.com>
+	id S1755933Ab3GYMr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 08:47:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26664 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755890Ab3GYMrw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 08:47:52 -0400
+X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=X7p0W-CcHCoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=zNXoGfytzK0A:10 a=HTVI5EbAh76FNvT-uyEA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374756468.3356.172.camel@gandalf.local.home>
+Subject: Re: [ 000/103] 3.10.3-stable review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        * =?ISO-8859-1?Q?SAM=CD?= * <miaousami@hotmail.com>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-Date: Thu, 25 Jul 2013 14:57:52 +0200
-Message-ID: <5730704.o2aLKRMvVz@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <877ggeyg1p.fsf@intel.com>
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl> <2024506.rXjN91yI0W@vostro.rjw.lan> <877ggeyg1p.fsf@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+        "gregkh@linuxfoundation.org >> Kroah-Hartman, Greg" 
+	<gregkh@linuxfoundation.org>,
+        Shuah Khan <shuah.kh@samsung.com>, Shuah Khan <shuahkhan@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Date: Thu, 25 Jul 2013 08:47:48 -0400
+In-Reply-To: <CAMuHMdX3783c_HcB6eVJ5Tn-n8DVmgSi9F0LtYBZUk67HY9EcQ@mail.gmail.com>
+References: <20130723220418.532514378@linuxfoundation.org>
+	 <CAKocOOPO61YUj5kTL7k1HuEeDdB_x=sxWga007nBSiLD4Px5Mg@mail.gmail.com>
+	 <B8EFE96D1287C24090BAD9D858E15E61748BEA@sisaex01sj>
+	 <20130724145506.GC15095@kroah.com>
+	 <CA+55aFxdz6X8BfdzM5CwH_5Jmz=R1JMuLoo=r1yhWST+tKA7bw@mail.gmail.com>
+	 <1374686174.3356.135.camel@gandalf.local.home>
+	 <CA+55aFyKRRDaohVPDSXZ5BRCHqAXAJv16EHS=aCj4B09VYrr6A@mail.gmail.com>
+	 <1374687963.3356.145.camel@gandalf.local.home>
+	 <CAMuHMdX3783c_HcB6eVJ5Tn-n8DVmgSi9F0LtYBZUk67HY9EcQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 25, 2013 03:34:10 PM Jani Nikula wrote:
-> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > On Thursday, July 25, 2013 11:09:27 AM Jani Nikula wrote:
-> >> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> >> > Well, I wonder what about the appended (untested) patch?
-> >> 
-> >> Rafael, before going there, I've been trying to wrap my (poor, rusty
-> >> after vacation) head around
-> >> 
-> >> commit 8c5bd7adb2ce47e6aa39d17b2375f69b0c0aa255
-> >> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> >> Date:   Thu Jul 18 02:08:06 2013 +0200
-> >> 
-> >>     ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
-> >> 
-> >> and I can't see how it could work.
-> >
-> > Well, if it didn't work, people wouldn't see either improvement or breakage
-> > from it, but they do see that, so it evidently works. :-)
+On Thu, 2013-07-25 at 11:52 +0200, Geert Uytterhoeven wrote:
+
+> > I just find it funny to use git outside of a git environment. Perhaps
+> > "git apply" should have another name? "pit"?
 > 
-> I didn't claim it didn't work, just that *I* didn't see how it could. ;)
+> alias pit="git apply"?
+
+I have no problem using patch.
+
 > 
-> >> First, the ACPI_VIDEO_SKIP_BACKLIGHT flag seems to be checked before
-> >> it's actually set anywhere.
-> >
-> > Are you sure about that?
-> >
-> > acpi_video_bus_add() is the .add() callback routine for acpi_video_bus which
-> > in fact is an ACPI driver (the naming sucks, but I didn't invent it).  This
-> > means that acpi_video_bus_add() can only be called *after* acpi_video_bus
-> > has been registered with the ACPI subsystem (and the driver core).  That
-> > is done by acpi_bus_register_driver() and, guess what?, this happens in
-> > __acpi_video_register().  So clearly, acpi_video_bus_add() *cannot* run before
-> > __acpi_video_register().
+> Hmm, I never used "git apply". I more find myself using plain patch if
+> "git am" doesn't want to take a patch due to the fuzz. Is there a fuzz
+> parameter for "git am"? Is this "-C 2" or "-C 1"?
 > 
-> Right. I totally missed the call within the ternary operator. Thanks for
-> the explanation, and apologies for the noise.
-> 
-> >> Second, with i915 that has opregion support, __acpi_video_register()
-> >> should only ever get called once. Which means the acpi_walk_namespace()
-> >> with video_unregister_backlight() should never get called in register.
-> >> 
-> >> Please enlighten me.
+> >> Most "true git" workflows end up using "git am" (or, better yet, "git
+> >> pull" etc) to apply patches, which obviously not only does the --index
+> >> thing, but also applies the changelog etc.
 > >
-> > Actually, that's correct, so we don't need the whole
-> > video_unregister_backlight() thing, calling acpi_video_backlight_quirks() would
-> > be sufficient.
+> > I'm still somewhat old school, and my workflow uses git + quilt a bit. I
+> > do a bunch of changes, then I do:
 > >
-> > Ah, one more reason to do a full revert.  I'm thinking, though, that I'll leave
-> > acpi_video_backlight_quirks() as is so that it can be used by
-> > acpi_video_bus_(start)|(stop)_devices(), because that doesn't seem to cause
-> > problems to happen.
+> > git diff > foo.patch
+> > patch -p1 -R < foo.patch
+> > quilt import foo.patch
+> > rm foo.patch
 > 
-> I observe that for the regular non-quirk acpi_video_register() call,
-> acpi_video_backlight_quirks() won't be called during register, but it
-> will get called later. This might have subtle effects later on, don't
-> you think?
+> git commit -a
+> 
+> > And save off those changes to another time. When I get back to the
+> > patch, I do:
+> >
+> > quilt push
+> > <make final fixes>
+> > quilt refresh
+> > quilt pop
+> 
+> git commit -a --amend
 
-Yes, it might, but after dropping ACPI_VIDEO_SKIP_BACKLIGHT it should be OK.
-
-> As to the original problem, and your patch in this thread, what do you
-> think about having another value in acpi_backlight kernel parameter for
-> it? Having an i915 module parameter to tell acpi to use or not use
-> quirks seems odd, since the i915 is not really taking over
-> anything. It's just passing the info on to acpi.
-
-I agree, I'm going to send a full revert in a while and we'll think what to
-do about all that later.
-
-Thanks,
-Rafael
+I think you missed my point. I don't want to save the changes into git.
+I do changes and store them away. It's much easier to search a patches
+directory in git. Yeah, I can make a separate branch, but that becomes
+unscalable rather quickly:
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+$ git branch | wc -l
+296
+
+> 
+> > git apply --index < patches/foo.patch
+> >
+> > Sometimes I just leave off the pop and apply to do a git commit -a, but
+> > then when I do a quilt pop I need to do a "git reset --hard" to reset
+> > things. Having the patch in quilt gives me a nice record of what I did,
+> > instead of searching through git history.
+> >
+> > Note, I do know about git quiltimport, but my quilt queue contains lots
+> > of debug patches and things that are still pending (I modify the series
+> 
+> git rebase -i
+
+What does that do for me?
+
+> 
+> My git "queue" contains 85 commits, some of them are 4 years old.
+> I commit almost everything I do, and rework it until it's ready for submission.
+
+quilt is a hell of a lot faster than git. And I deal with a bit more
+than 85 commits:
+
+$ ls patches | wc -l
+313
+
+Also, it becomes a pain to apply the same debug commits to different
+branches. Sure, you can do git cherrypick, but that's all rather tedious
+and awkward. quilt is much more appropriate for such a task.
+
+> 
+> > file a lot). What would help is to add an option to git quiltimport that
+> > will limit the number of patches it imports.
+> >
+> > git quiltimport -c 1
+> 
+> vi series
+> go to the first patch you don't want to apply
+> dG
+> :w
+> CTRL-Z
+> run quiltimpirt
+> fg
+> u
+> :w
+> 
+> I never regretted the move from quilt (+ git) to git. To me quilt feels like
+> having the disadvantages of "git rebase", without having its advantages.
+
+I use both heavily. I use git for a lot of my workflow. I was only
+stating some of my workflow sucks with git and works better with quilt.
+
+> 
+> The only feature from quilt I miss is the ability to put comments (mostly
+> markers "for x.y", and separators and blank lines) in the series file.
+> Managing the order of patches (and only that) in a quilt series file is still
+> a bit more user-friendly than in a "git rebase -i" session.
+> 
+> Guess I should start using "git commit --allow-empty" to add markers?
+> Hmm, probably git will complain again and again about empty commits
+> when rebasing?
+
+I use git rebase daily. But for other reasons. Clean ups, added tags,
+late fixes, etc. All this before I push to next, as once I do that, I
+try to avoid rebasing.
+
+I don't think git is a replacement for quilt. To me, quilt is a very
+nice complement to git.
+
+-- Steve
+
+
