@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab3GYVxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 17:53:15 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:56597 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754001Ab3GYVxM (ORCPT
+	id S1756706Ab3GYVx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 17:53:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50795 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754001Ab3GYVx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 17:53:12 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 25 Jul 2013 22:52:59 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-Message-ID: <20130725215259.GB13295@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	linux-next <linux-next@vger.kernel.org>
-References: <CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
- <CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
- <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
- <20130725184504.GC11514@cantiga.alporthouse.com>
- <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
- <20130725190006.GD11514@cantiga.alporthouse.com>
- <CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
- <20130725192248.GA13295@cantiga.alporthouse.com>
- <CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
- <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+	Thu, 25 Jul 2013 17:53:26 -0400
+Date: Thu, 25 Jul 2013 22:53:15 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130725215315.GV7729@decadent.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
+ <20130725193135.GT23879@titan.lakedaemon.net>
+ <CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
+ <20130725203228.GX23879@titan.lakedaemon.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+In-Reply-To: <20130725203228.GX23879@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 10:07:02PM +0200, Sedat Dilek wrote:
-> What means the bang line?
+On Thu, Jul 25, 2013 at 04:32:28PM -0400, Jason Cooper wrote:
+[...]
+> One of the things I've been trying to square up in my head is how to
+> retain the history of the binding when moving to the new tree.  My
+> current idea was to clone the kernel tree, add one patch deleting
+> everything but the bindings and dts files, and one more patch moving
+> things where we want them (arch/{powerpc,arm}/boot/dts -> dts).
 > 
-> [    54.564] (II) GLX: Initialized DRI2 GL provider for screen 0
-> [    54.565] bang: 1159
-> [    54.565]
-> Fatal server error:
-> [    54.565] failed to create screen resources
+> Then, as needed, we could merge a kernel version tag and delete
+> everything we don't need (code) in the merge commit.
+> 
+> The downside of this is it would be messy, the upside is that we could
+> closely track the kernel tree (until the bindings and dts are moved
+> out), and retain the history of the bindings and dts files.
+[...]
 
-That means between the kernel reporting success for
-DRM_IOCTL_I915_GEM_MMAP_GTT and libdrm returning from
-drm_intel_gem_bo_map_gtt(), something went wrong. This implies that the
-call to mmap() failed.
+It's *extremely* messy, but 'git filter-branch' might help to make a
+clean tracking branch preserving history of just DT files.  David
+Woodhouse did something like that for the linux-firmware repo
+initially.
 
-I don't see how changing versions of the ddx would unmask the bug, nor
-why the mmap() should suddenly start failing. Anybody have any
-suggestions other than
-
-diff --git a/src/intel_uxa.c b/src/intel_uxa.c
-index 2f14173..3872258 100644
---- a/src/intel_uxa.c
-+++ b/src/intel_uxa.c
-@@ -1149,12 +1149,15 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
-        PixmapPtr pixmap;
-        intel_screen_private *intel = intel_get_screen_private(scrn);
-        dri_bo *bo = intel->front_buffer;
-+       int ret;
- 
-        if (!uxa_resources_init(screen))
-                return FALSE;
- 
--       if (drm_intel_gem_bo_map_gtt(bo))
-+       if ((ret = drm_intel_gem_bo_map_gtt(bo))) {
-+               ErrorF("%s:%d bang, errno=%d\n", __func__, __LINE__, -ret);
-                return FALSE;
-+       }
- 
-        pixmap = screen->GetScreenPixmap(screen);
-        intel_set_pixmap_bo(pixmap, bo);
-
-which is most likely to report EINVAL (22)?
--Chris
+Ben.
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Ben Hutchings
+We get into the habit of living before acquiring the habit of thinking.
+                                                              - Albert Camus
