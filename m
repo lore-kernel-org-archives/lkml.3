@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3GYPQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:16:11 -0400
-Received: from mx2.corp.phx1.mozilla.com ([63.245.216.70]:55046 "EHLO
-	smtp.mozilla.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3GYPQJ (ORCPT
+	id S1756210Ab3GYPQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:16:58 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59597 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3GYPQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:16:09 -0400
-Message-ID: <51F14136.30409@mozilla.com>
-Date: Thu, 25 Jul 2013 11:16:06 -0400
-From: Dhaval Giani <dgiani@mozilla.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 11:16:55 -0400
+Message-ID: <51F14165.3060803@linutronix.de>
+Date: Thu, 25 Jul 2013 17:16:53 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-To: =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>
-CC: linux-kernel@vger.kernel.org, tytso@mit.edu, tglek@mozilla.com,
-        vdjeric@mozilla.com, glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-References: <1374699833.7083.2.camel@localhost> <20130724233628.GD3641@logfs.org>
-In-Reply-To: <20130724233628.GD3641@logfs.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Bin Liu <binmlist@gmail.com>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to am33xx_driver_data
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de> <1374516607-2705-7-git-send-email-bigeasy@linutronix.de> <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com> <20130725144118.GA5412@linutronix.de> <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
+In-Reply-To: <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 07:36 PM, Jörn Engel wrote:
-> On Wed, 24 July 2013 17:03:53 -0400, Dhaval Giani wrote:
->> I am posting this series early in its development phase to solicit some
->> feedback.
-> At this state, a good description of the format would be nice.
+On 07/25/2013 05:12 PM, Bin Liu wrote:
+> Sebastian,
 
-Sure. The format is quite simple. There is a 20 byte header followed by 
-an offset table giving us the offsets of 16k compressed zlib chunks (The 
-16k is the default number, it can be changed with the use of szip tool, 
-the kernel should still decompress it as that data is in the header). I 
-am not tied to the format. I used it as that is what being used here. My 
-final goal is the have the filesystem agnostic of the compression format 
-as long as it is seekable.
+Hi Bin,
 
->
->> We are implementing transparent decompression with a focus on ext4. One
->> of the main usecases is that of Firefox on Android. Currently libxul.so
->> is compressed and it is loaded into memory by a custom linker on
->> demand. With the use of transparent decompression, we can make do
->> without the custom linker. More details (i.e. code) about the linker can
->> be found at https://github.com/glandium/faulty.lib
-> It is not quite clear what you want to achieve here.
+>> Is it really there or was it never there and it has been added to TRM by
+>> accident?
+> The EOI register IS in the USB subsystem of AM33xx, but the SoC does
+> not use it because it uses level triggering for USB interrupt.
 
-To introduce transparent decompression. Let someone else do the 
-compression for us, and supply decompressed data on demand  (in this 
-case a read call). Reduces the complexity which would otherwise have to 
-be brought into the filesystem.
+I see.
 
->    One approach is
-> to create an empty file, chattr it to enable compression, then write
-> uncompressed data to it.  Nothing in userspace will ever know the file
-> is compressed, unless you explicitly call lsattr.
->
-> If you want to follow some other approach where userspace has one
-> interface to write the compressed data to a file and some other
-> interface to read the file uncompressed, you are likely in a world of
-> pain.
-Why? If it is going to only be a few applications who know the file is 
-compressed, and read it to get decompressed data, why would it be 
-painful? What about introducing a new flag, O_COMPR which tells the 
-kernel, btw, we want this file to be decompressed if it can be. It can 
-fallback to O_RDONLY or something like that? That gets rid of the chattr 
-ugliness.
+>>> But I am not sure if it is a good idea to remove eoi from the musb_dsps
+>>> driver. If the intension is to merge the support for other SoC, such as
+>>> AM35xx, AM18xx, then EOI handling might be still needed. I just don't know
+>>> how those devices use EOI.
+>>
+>> If one of the architectures gets added which need an EOI then the offset
+>> can be 0 and the EOI will happen only if it is != 0.
+> This patch cleaned up the use of EOI. Do you mean EOI handling will be
+> added back with condition EOI offset != 0, when the support of new
+> device which uses EIO is added?
 
-> Assuming you use the chattr approach, that pretty much comes down to
-> adding compression support to ext4.  There have been old patches for
-> ext2 around that never got merged.  Reading up on the problems
-> encountered by those patches might be instructive.
+That is my intention.
 
-Do you have subjects for these? When I googled for ext4 compression, I 
-found http://code.google.com/p/e4z/ which doesn't seem to exist, and 
-checking in my LKML archives gives too many false positives.
+> Regards,
+> -Bin.
 
-Thanks!
-Dhaval
+Sebastian
