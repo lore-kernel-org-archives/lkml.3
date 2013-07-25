@@ -1,147 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757736Ab3GYSEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:04:35 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19893 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756975Ab3GYRwC (ORCPT
+	id S1757809Ab3GYSGE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:06:04 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34283 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757016Ab3GYSFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:52:02 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Chris Mason <chris.mason@fusionio.com>, linux-btrfs@vger.kernel.org
-Subject: [PATCH V8 25/33] btrfs: add support for read_iter and write_iter
-Date: Thu, 25 Jul 2013 12:50:51 -0500
-Message-Id: <1374774659-13121-26-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 25 Jul 2013 14:05:52 -0400
+Message-ID: <51F168FC.9070906@wwwdotorg.org>
+Date: Thu, 25 Jul 2013 11:05:48 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: Olof Johansson <olof@lixom.net>, Catalin Marinas <Catalin.Marinas@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs can use generic_file_read_iter(). Base btrfs_file_write_iter()
-on btrfs_file_aio_write(), then have the latter call the former.
+On 07/25/2013 10:57 AM, Mark Rutland wrote:
+> On Thu, Jul 25, 2013 at 05:09:19PM +0100, Olof Johansson wrote:
+...
+>> So, there really seems to be a need for a layered approach, one in
+>> which a binding "graduates" from being tentative to being locked in.
+>> I'm refraining from using the terms "staging" and "stable" here, since
+>> they have overloaded meaning in the kernel world that doesn't apply
+>> here.
+> 
+> I'm not sure how realistic it is to have drivers in the kernel using
+> unstable bindings, and expect people to not rely on them, but I don't
+> have a better option to give. We need a big fat warning that an unstable
+> binding is in use.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: Chris Mason <chris.mason@fusionio.com>
-Cc: linux-btrfs@vger.kernel.org
----
- fs/btrfs/file.c | 42 ++++++++++++++----------------------------
- 1 file changed, 14 insertions(+), 28 deletions(-)
+I don't think having people "rely" on the bindings is the issue so much
+as the awareness that if they do, there will be compatibility issues for
+unstable bindings.
 
-diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
-index a005fe2..ca28faa 100644
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -453,7 +453,7 @@ static noinline int btrfs_copy_from_user(loff_t pos, int num_pages,
- 		write_bytes -= copied;
- 		total_copied += copied;
- 
--		/* Return to btrfs_file_aio_write to fault page */
-+		/* Return to btrfs_file_write_iter to fault page */
- 		if (unlikely(copied == 0))
- 			break;
- 
-@@ -1548,27 +1548,23 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
- }
- 
- static ssize_t __btrfs_direct_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos,
--				    loff_t *ppos, size_t count, size_t ocount)
-+				     struct iov_iter *iter, loff_t pos,
-+				    loff_t *ppos, size_t count)
- {
- 	struct file *file = iocb->ki_filp;
--	struct iov_iter i;
- 	ssize_t written;
- 	ssize_t written_buffered;
- 	loff_t endbyte;
- 	int err;
- 
--	written = generic_file_direct_write(iocb, iov, &nr_segs, pos, ppos,
--					    count, ocount);
-+	written = generic_file_direct_write_iter(iocb, iter, pos, ppos, count);
- 
- 	if (written < 0 || written == count)
- 		return written;
- 
- 	pos += written;
- 	count -= written;
--	iov_iter_init(&i, iov, nr_segs, count, written);
--	written_buffered = __btrfs_buffered_write(file, &i, pos);
-+	written_buffered = __btrfs_buffered_write(file, iter, pos);
- 	if (written_buffered < 0) {
- 		err = written_buffered;
- 		goto out;
-@@ -1603,9 +1599,8 @@ static void update_time_for_write(struct inode *inode)
- 		inode_inc_iversion(inode);
- }
- 
--static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
--				    const struct iovec *iov,
--				    unsigned long nr_segs, loff_t pos)
-+static ssize_t btrfs_file_write_iter(struct kiocb *iocb,
-+				     struct iov_iter *iter, loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file_inode(file);
-@@ -1614,17 +1609,12 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 	u64 start_pos;
- 	ssize_t num_written = 0;
- 	ssize_t err = 0;
--	size_t count, ocount;
-+	size_t count;
- 	bool sync = (file->f_flags & O_DSYNC) || IS_SYNC(file->f_mapping->host);
- 
- 	mutex_lock(&inode->i_mutex);
- 
--	err = generic_segment_checks(iov, &nr_segs, &ocount, VERIFY_READ);
--	if (err) {
--		mutex_unlock(&inode->i_mutex);
--		goto out;
--	}
--	count = ocount;
-+	count = iov_iter_count(iter);
- 
- 	current->backing_dev_info = inode->i_mapping->backing_dev_info;
- 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
-@@ -1677,14 +1667,10 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
- 		atomic_inc(&BTRFS_I(inode)->sync_writers);
- 
- 	if (unlikely(file->f_flags & O_DIRECT)) {
--		num_written = __btrfs_direct_write(iocb, iov, nr_segs,
--						   pos, ppos, count, ocount);
-+		num_written = __btrfs_direct_write(iocb, iter, pos, ppos,
-+						   count);
- 	} else {
--		struct iov_iter i;
--
--		iov_iter_init(&i, iov, nr_segs, count, num_written);
--
--		num_written = __btrfs_buffered_write(file, &i, pos);
-+		num_written = __btrfs_buffered_write(file, iter, pos);
- 		if (num_written > 0)
- 			*ppos = pos + num_written;
- 	}
-@@ -2543,9 +2529,9 @@ const struct file_operations btrfs_file_operations = {
- 	.llseek		= btrfs_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read       = generic_file_aio_read,
- 	.splice_read	= generic_file_splice_read,
--	.aio_write	= btrfs_file_aio_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= btrfs_file_write_iter,
- 	.mmap		= btrfs_file_mmap,
- 	.open		= generic_file_open,
- 	.release	= btrfs_release_file,
--- 
-1.8.3.4
+>> One problem that needs to be solved is obviously how a binding
+>> graduates from tentative to locked. This work isn't going to be very
+>> interesting to most people, I suspect. Think standards committee type
+>> work.
+>>
+>> A possible way to handle this is to have exactly that: A group of
+>> people that essentially constitute the "standards committee" that meet
+>> on a regular basis to review and approve new bindings. They should be
+>> people not just doing ARM Linux work, but other stakeholders in these
+>> bindings too. One of the things they should probably do is sift
+>> through our current in-kernel bindings and select those who seem ready
+>> to be locked in, review/discuss/decide upon that and once the decision
+>> is made, that specific binding does become part of the static,
+>> never-ever-change ABI of firmware-to-kernel interfaces.   That might
+>> also be the time that the binding is moved from the kernel to a
+>> separate repo, but that's a technicality that we'll let the DT
+>> maintainers decide among themselves, IMHO.
+> 
+> We're going to need input from other OSs too, or the bindings will
+> remain Linux-specific regardless of how far away the bindings and dts
+> repo(s) is/are.
 
+And bootloaders too. Some U-Boot platforms are starting to use DT for
+exactly the same reason that the kernel does; to allow a single
+bootloader binary to run on a variety of different boards, with all
+configuration coming from DT.
+
+On another related topic, something that may be useful for the DT
+bindings reviewer team is a basic checklist for new DT bindings.
+Something similar to Fedora's package review checklist. Perhaps also
+(yet another?) document on a bit of DT philosophy. If this sounds
+useful, I could try and take a stab at some basic initial version.
+
+We also need to decide (or just document) exactly what "describes the
+HW" means; see the thread on thermal limits, and consider the extension
+of describing hard/absolute thermal limits to describing use-cased base
+thermal profiles using the same schema, or not allowing that.
