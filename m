@@ -1,123 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137Ab3GYH7l (ORCPT <rfc822;w@1wt.eu>);
+	id S1755210Ab3GYH7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 03:59:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755091Ab3GYH7l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 03:59:41 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:42019 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab3GYH7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:59:37 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6P7xWko016948, This message is accepted by code: ctaloc0852
-From: Hayes Wang <hayeswang@realtek.com>
-To: <gregkh@linuxfoundation.org>
-CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH v2 1/3] net/usb/r815x: replace USB buffer from stack to DMA-able
-Date: Thu, 25 Jul 2013 15:59:02 +0800
-Message-ID: <1374739144-732-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <20130724.174947.452272360732442554.davem@davemloft.net>
-References: <20130724.174947.452272360732442554.davem@davemloft.net>
+Message-ID: <51F0DAD1.8080108@redhat.com>
+Date: Thu, 25 Jul 2013 09:59:13 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: KY Srinivasan <kys@microsoft.com>, Jason Wang <jasowang@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "x86@kernel.org" <x86@kernel.org>, "gleb@redhat.com" <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] x86: properly handle kvm emulation of hyperv
+References: <1374572465-15278-1-git-send-email-jasowang@redhat.com> <1374572465-15278-4-git-send-email-jasowang@redhat.com> <bd93bc49300a4d99996cc4f57c19a008@SN2PR03MB061.namprd03.prod.outlook.com> <51EE97BD.4050402@zytor.com> <51EF59FB.8040207@redhat.com> <51EF5C9C.6070403@zytor.com> <51EF7A2A.6040003@redhat.com> <51EF7CFB.8030104@redhat.com> <ddd4ff1d4b124faeb18e6a0ba8ae2128@BLUPR03MB050.namprd03.prod.outlook.com> <ba894640-b367-44f0-a5e2-89a2edf4951a@email.android.com> <f69678c6673e4168ae244fb6325060bc@BLUPR03MB050.namprd03.prod.outlook.com> <889e20ee-7655-4fdc-b30a-150b8604ca0f@email.android.com>
+In-Reply-To: <889e20ee-7655-4fdc-b30a-150b8604ca0f@email.android.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some USB buffers use stack which may not be DMA-able.
-Use the buffers from kmalloc to replace those one.
+Il 24/07/2013 23:37, H. Peter Anvin ha scritto:
+> What I'm suggesting is exactly that except that the native hypervisor is later in CPUID space.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r815x.c | 44 +++++++++++++++++++++++++++-----------------
- 1 file changed, 27 insertions(+), 17 deletions(-)
+Me too actually.
 
-diff --git a/drivers/net/usb/r815x.c b/drivers/net/usb/r815x.c
-index 8523922..e9b99ba 100644
---- a/drivers/net/usb/r815x.c
-+++ b/drivers/net/usb/r815x.c
-@@ -24,34 +24,43 @@
- 
- static int pla_read_word(struct usb_device *udev, u16 index)
- {
--	int data, ret;
-+	int ret;
- 	u8 shift = index & 2;
--	__le32 ocp_data;
-+	__le32 *tmp;
-+
-+	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
- 
- 	index &= ~3;
- 
- 	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
- 			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
--			      index, MCU_TYPE_PLA, &ocp_data, sizeof(ocp_data),
--			      500);
-+			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
- 	if (ret < 0)
--		return ret;
-+		goto out2;
- 
--	data = __le32_to_cpu(ocp_data);
--	data >>= (shift * 8);
--	data &= 0xffff;
-+	ret = __le32_to_cpu(*tmp);
-+	ret >>= (shift * 8);
-+	ret &= 0xffff;
- 
--	return data;
-+out2:
-+	kfree(tmp);
-+	return ret;
- }
- 
- static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
- {
--	__le32 ocp_data;
-+	__le32 *tmp;
- 	u32 mask = 0xffff;
- 	u16 byen = BYTE_EN_WORD;
- 	u8 shift = index & 2;
- 	int ret;
- 
-+	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
-+	if (!tmp)
-+		return -ENOMEM;
-+
- 	data &= mask;
- 
- 	if (shift) {
-@@ -63,19 +72,20 @@ static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
- 
- 	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
- 			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
--			      index, MCU_TYPE_PLA, &ocp_data, sizeof(ocp_data),
--			      500);
-+			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
- 	if (ret < 0)
--		return ret;
-+		goto out3;
- 
--	data |= __le32_to_cpu(ocp_data) & ~mask;
--	ocp_data = __cpu_to_le32(data);
-+	data |= __le32_to_cpu(*tmp) & ~mask;
-+	*tmp = __cpu_to_le32(data);
- 
- 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
- 			      RTL815x_REQ_SET_REGS, RTL815x_REQT_WRITE,
--			      index, MCU_TYPE_PLA | byen, &ocp_data,
--			      sizeof(ocp_data), 500);
-+			      index, MCU_TYPE_PLA | byen, tmp, sizeof(*tmp),
-+			      500);
- 
-+out3:
-+	kfree(tmp);
- 	return ret;
- }
- 
--- 
-1.8.3.1
+I was just suggesting an implementation of the idea (that takes into
+account hypervisors detected by other means than CPUID).
+
+Paolo
+
+> KY Srinivasan <kys@microsoft.com> wrote:
+>> As Paolo suggested if there were some priority encoded, the guest could make an
+>> informed decision. If the guest under question can run on both hypervisors A and B,
+>> we would rather the guest discover hypervisor A when running on A and
+>> hypervisor B when running on B. The priority encoding could be as simple as
+>> surfacing the native hypervisor signature earlier in the CPUID space.
 
