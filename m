@@ -1,156 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab3GYEAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:00:38 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:48152 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab3GYEAg (ORCPT
+	id S1751757Ab3GYEDp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:03:45 -0400
+Received: from mail-vb0-f53.google.com ([209.85.212.53]:37474 "EHLO
+	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab3GYEDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:00:36 -0400
+	Thu, 25 Jul 2013 00:03:42 -0400
+Date: Thu, 25 Jul 2013 00:09:36 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>, Vince Weaver <vincent.weaver@maine.edu>,
+        Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        acme@redhat.com, Stephane Eranian <eranian@gmail.com>
+Subject: [PATCH 1/2] Update perf_event ABI documentation: format and events
+Message-ID: <alpine.DEB.2.10.1307250004590.25162@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <51F07623.4070904@schaufler-ca.com>
-References: <51F07623.4070904@schaufler-ca.com>
-Date: Thu, 25 Jul 2013 13:00:34 +0900
-X-Google-Sender-Auth: yMzJExC8eqF6NgsbUaoUwft0MWQ
-Message-ID: <CAH9JG2UyajGL6LyPS8jv+3z=JbafCfKqEV6X8afJpyz-VHK5cw@mail.gmail.com>
-Subject: Re: [PATCH] Smack: IPv6 casting error fix
-From: Kyungmin Park <kmpark@infradead.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 9:49 AM, Casey Schaufler <casey@schaufler-ca.com> wrote:
-> Subject: [PATCH] Smack: IPv6 casting error fix
->
-> The original implementation of the Smack IPv6 port based
-> local controls works most of the time using a sockaddr as
-> a temporary variable, but not always as it overflows in
-> some circumstances. The correct data is a sockaddr_in6.
-> A struct sockaddr isn't as large as a struct sockaddr_in6.
-> There would need to be casting one way or the other. This
-> patch gets it the right way.
->
-> This problem required some effort to make occur in development
-> with 3.10, but hits every time in 3.11. This patch should go
-> into 3.11.
->
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
->
-> ---
->  security/smack/smack_lsm.c |   24 +++++++++++-------------
->  1 files changed, 11 insertions(+), 13 deletions(-)
->
-> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-> index 3f7682a..eefbd10 100644
-> --- a/security/smack/smack_lsm.c
-> +++ b/security/smack/smack_lsm.c
-> @@ -1998,12 +1998,11 @@ static void smk_ipv6_port_label(struct socket *sock, struct sockaddr *address)
->   *
->   * Create or update the port list entry
->   */
-> -static int smk_ipv6_port_check(struct sock *sk, struct sockaddr *address,
-> +static int smk_ipv6_port_check(struct sock *sk, struct sockaddr_in6 *address,
->                                 int act)
->  {
->         __be16 *bep;
->         __be32 *be32p;
-> -       struct sockaddr_in6 *addr6;
->         struct smk_port_label *spp;
->         struct socket_smack *ssp = sk->sk_security;
->         struct smack_known *skp;
-> @@ -2025,10 +2024,9 @@ static int smk_ipv6_port_check(struct sock *sk, struct sockaddr *address,
->         /*
->          * Get the IP address and port from the address.
->          */
-> -       addr6 = (struct sockaddr_in6 *)address;
-> -       port = ntohs(addr6->sin6_port);
-> -       bep = (__be16 *)(&addr6->sin6_addr);
-> -       be32p = (__be32 *)(&addr6->sin6_addr);
-> +       port = ntohs(address->sin6_port);
-> +       bep = (__be16 *)(&address->sin6_addr);
-> +       be32p = (__be32 *)(&address->sin6_addr);
->
->         /*
->          * It's remote, so port lookup does no good.
-> @@ -2060,9 +2058,9 @@ auditout:
->         ad.a.u.net->family = sk->sk_family;
->         ad.a.u.net->dport = port;
->         if (act == SMK_RECEIVING)
-> -               ad.a.u.net->v6info.saddr = addr6->sin6_addr;
-> +               ad.a.u.net->v6info.saddr = address->sin6_addr;
->         else
-> -               ad.a.u.net->v6info.daddr = addr6->sin6_addr;
-> +               ad.a.u.net->v6info.daddr = address->sin6_addr;
->  #endif
->         return smk_access(skp, object, MAY_WRITE, &ad);
->  }
-> @@ -2201,7 +2199,8 @@ static int smack_socket_connect(struct socket *sock, struct sockaddr *sap,
->         case PF_INET6:
->                 if (addrlen < sizeof(struct sockaddr_in6))
->                         return -EINVAL;
-> -               rc = smk_ipv6_port_check(sock->sk, sap, SMK_CONNECTING);
-> +               rc = smk_ipv6_port_check(sock->sk, (struct sockaddr_in6 *)sap,
 
-I reviewed ipv4 and ipv6 codes at smack. the variable 'sap' is used
-for both 'struct sockaddr' and 'struct sockaddr_in6'.
-It's very confusing to know what's the exact usage. so I suggest to
-use separate variable for each cases.
+This clarifies some of the ABI, as there has been some confusion
+and minor breakages lately.  Most notably it documents that as of
+3.10 the events entries can contain decimal values in addition to
+hex.
 
-as you know, the sizeof(struct sockaddr_in6) is bigger than
-sizeof(struct sockaddr). now it valid cast it as above.
-but other case it corrupts the stack.
+This is version 2 containing whitespace fixes suggested by
+Jiri Olsa.
 
-> +                                               SMK_CONNECTING);
->                 break;
->         }
->         return rc;
-> @@ -3034,7 +3033,7 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
->                                 int size)
->  {
->         struct sockaddr_in *sip = (struct sockaddr_in *) msg->msg_name;
-> -       struct sockaddr *sap = (struct sockaddr *) msg->msg_name;
-> +       struct sockaddr_in6 *sap = (struct sockaddr_in6 *) msg->msg_name;
-sap is used for struct sockaddr_in6.
->         int rc = 0;
->
->         /*
-> @@ -3121,9 +3120,8 @@ static struct smack_known *smack_from_secattr(struct netlbl_lsm_secattr *sap,
->         return smack_net_ambient;
->  }
->
-> -static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr *sap)
-> +static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
 
-'sip' is used for struct sockaddr_in6.
-
->  {
-> -       struct sockaddr_in6 *sip = (struct sockaddr_in6 *)sap;
->         u8 nexthdr;
->         int offset;
->         int proto = -EINVAL;
-> @@ -3181,7 +3179,7 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
->         struct netlbl_lsm_secattr secattr;
->         struct socket_smack *ssp = sk->sk_security;
->         struct smack_known *skp;
-> -       struct sockaddr sadd;
-> +       struct sockaddr_in6 sadd;
-
-'sadd' is used for struct sockaddr_in6.
-
-Thank you,
-Kyungmin Park
->         int rc = 0;
->         struct smk_audit_info ad;
->  #ifdef CONFIG_AUDIT
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+index 3c1cc24..16d9107 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-events
+@@ -1,30 +1,52 @@
+-What:		/sys/devices/cpu/events/
++What:		/sys/bus/event_source/devices/<dev>/events
++
++Date:		2013/01/08
++
++Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
++
++Description:	Generic performance monitoring events
++
++		A collection of performance monitoring events that are
++		supported by the PMU (performance monitoring unit)
++		specified by "<dev>". These events can be monitored
++		using the 'perf(1)' tool.
++
++		The contents of each file is a list of attribute names
++		(as found in the corresponding
++			/sys/bus/event_source/devices/<dev>/format
++		file) separated by commas.  Each entry has
++		an optional value (either hex or decimal).  If no
++		value is specified than it is assumed to be a single-bit
++		field with a value of 1.
++
++		An example of what you might find:
++			event=0x2,inv,ldlat=3
++
++
++What:		/sys/devices/cpu/events/branch-instructions
+ 		/sys/devices/cpu/events/branch-misses
+-		/sys/devices/cpu/events/cache-references
++		/sys/devices/cpu/events/bus-cycles
+ 		/sys/devices/cpu/events/cache-misses
+-		/sys/devices/cpu/events/stalled-cycles-frontend
+-		/sys/devices/cpu/events/branch-instructions
+-		/sys/devices/cpu/events/stalled-cycles-backend
+-		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/cache-references
+ 		/sys/devices/cpu/events/cpu-cycles
++		/sys/devices/cpu/events/instructions
++		/sys/devices/cpu/events/ref-cycles
++		/sys/devices/cpu/events/stalled-cycles-backend
++		/sys/devices/cpu/events/stalled-cycles-frontend
+ 
+ Date:		2013/01/08
+ 
+ Contact:	Linux kernel mailing list <linux-kernel@vger.kernel.org>
+ 
+-Description:	Generic performance monitoring events
++Description:	Generic CPU performance monitoring events
+ 
+ 		A collection of performance monitoring events that may be
+ 		supported by many/most CPUs. These events can be monitored
+ 		using the 'perf(1)' tool.
+ 
+-		The contents of each file would look like:
+-
+-			event=0xNNNN
+-
+-		where 'N' is a hex digit and the number '0xNNNN' shows the
+-		"raw code" for the perf event identified by the file's
+-		"basename".
++		The format of these files matches that of
++		/sys/bus/event_source/devices/<dev>/events as described
++		previously in this file.
+ 
+ 
+ What: 		/sys/devices/cpu/events/PM_1PLUS_PPC_CMPL
+diff --git a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+index 77f47ff..8f4c13f 100644
+--- a/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
++++ b/Documentation/ABI/testing/sysfs-bus-event_source-devices-format
+@@ -15,6 +15,12 @@ Description:
+ 			attr2 = 'config:0-7'
+ 			attr3 = 'config:12-35'
+ 
+-		Example: 'config1:1,6-10,44'
++		Example: event = 'config1:1,6-10,44'
+ 		Defines contents of attribute that occupies bits 1,6-10,44 of
+ 		perf_event_attr::config1.
++
++		In this example, the events file would have the value
++			event=0x7f
++		to set all of the specified bits (they will be split up).
++		You would not use 0x10000007c2 (which is what the bits
++		actually passed into config1 would look like).
