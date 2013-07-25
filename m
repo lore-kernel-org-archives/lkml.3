@@ -1,495 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755779Ab3GYKqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:46:54 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34937 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab3GYKqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:46:49 -0400
-Date: Thu, 25 Jul 2013 12:46:33 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mm, sched, numa: Create a per-task MPOL_INTERLEAVE policy
-Message-ID: <20130725104633.GQ27075@twins.programming.kicks-ass.net>
-References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1755582Ab3GYKsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:48:31 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:22987 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753394Ab3GYKs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 06:48:29 -0400
+X-IronPort-AV: E=Sophos;i="4.89,742,1367942400"; 
+   d="scan'208";a="8021025"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] workqueue: clear workers of a pool after the CPU is offline
+Date: Thu, 25 Jul 2013 18:52:02 +0800
+Message-Id: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 18:46:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 18:46:24,
+	Serialize complete at 2013/07/25 18:46:24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The unbound pools and their workers can be destroyed/cleared
+when their refcnt become zero. But the cpu pool can't be destroyed
+due to they are always referenced, their refcnt are always > 0.
 
-Subject: mm, sched, numa: Create a per-task MPOL_INTERLEAVE policy
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Mon Jul 22 10:42:38 CEST 2013
+We don't want to destroy the cpu pools, but we want to destroy
+the workers of the pool when the pool is full idle after the cpu
+is offline. This is the default behavior in old days until
+we removed the trustee_thread().
 
-Just an idea.. the rest of the code doesn't work good enough for this to
-matter, also there's something sickly with it since it makes my box
-explode. But wanted to put the idea out there anyway.
+We need to find a new way to restore this behavior,
+We add offline_pool() and POOL_OFFLINE flag to do so.
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+1) Before we try to clear workers, we set the POOL_OFFLINE to the pool,
+   and pool will not serve to works, any work which is tried to be queued
+   on that pool will be rejected except chained works.
+
+2) when all the pending works are finished and all workers are idle, worker
+   thread will schedule offline_pool() to clear workers.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
- include/linux/mempolicy.h |    5 +-
- kernel/sched/fair.c       |   44 +++++++++++++++++++++
- kernel/sched/features.h   |    1 
- mm/huge_memory.c          |   28 +++++++------
- mm/memory.c               |   33 ++++++++++------
- mm/mempolicy.c            |   94 +++++++++++++++++++++++++++++-----------------
- 6 files changed, 145 insertions(+), 60 deletions(-)
+ kernel/workqueue.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 85 insertions(+), 4 deletions(-)
 
---- a/include/linux/mempolicy.h
-+++ b/include/linux/mempolicy.h
-@@ -60,6 +60,7 @@ struct mempolicy {
-  * The default fast path of a NULL MPOL_DEFAULT policy is always inlined.
-  */
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f02c4a4..2617895 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -63,13 +63,18 @@ enum {
+ 	 * %WORKER_UNBOUND set and concurrency management disabled, and may
+ 	 * be executing on any CPU.  The pool behaves as an unbound one.
+ 	 *
+-	 * Note that DISASSOCIATED should be flipped only while holding
+-	 * manager_mutex to avoid changing binding state while
++	 * OFFLINE is a further state of DISASSOCIATED when the cpu had
++	 * finished offline and all the workers will exit after they
++	 * finish the last works of the pool.
++	 *
++	 * Note that DISASSOCIATED and OFFLINE should be flipped only while
++	 * holding manager_mutex to avoid changing binding state while
+ 	 * create_worker() is in progress.
+ 	 */
+ 	POOL_MANAGE_WORKERS	= 1 << 0,	/* need to manage workers */
+-	POOL_DISASSOCIATED	= 1 << 2,	/* cpu can't serve workers */
++	POOL_DISASSOCIATED	= 1 << 2,	/* pool dissociates its cpu */
+ 	POOL_FREEZING		= 1 << 3,	/* freeze in progress */
++	POOL_OFFLINE		= 1 << 4,	/* pool can't serve work */
  
-+extern struct mempolicy *__mpol_new(unsigned short, unsigned short);
- extern void __mpol_put(struct mempolicy *pol);
- static inline void mpol_put(struct mempolicy *pol)
- {
-@@ -187,7 +188,7 @@ static inline int vma_migratable(struct
- 	return 1;
+ 	/* worker flags */
+ 	WORKER_STARTED		= 1 << 0,	/* started */
+@@ -164,6 +169,7 @@ struct worker_pool {
+ 	struct mutex		manager_arb;	/* manager arbitration */
+ 	struct mutex		manager_mutex;	/* manager exclusion */
+ 	struct idr		worker_idr;	/* MG: worker IDs and iteration */
++	struct work_struct	offline_work;	/* offline the pool */
+ 
+ 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+ 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
+@@ -1372,6 +1378,12 @@ retry:
+ 			  wq->name, cpu);
+ 	}
+ 
++	if (unlikely(pwq->pool->flags & POOL_OFFLINE) &&
++	    WARN_ON_ONCE(!is_chained_work(wq))) {
++		spin_unlock(&pwq->pool->lock);
++		return;
++	}
++
+ 	/* pwq determined, queue */
+ 	trace_workqueue_queue_work(req_cpu, pwq, work);
+ 
+@@ -1784,7 +1796,7 @@ static void start_worker(struct worker *worker)
  }
  
--extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long);
-+extern int mpol_misplaced(struct page *, struct vm_area_struct *, unsigned long, int *);
- 
- #else
- 
-@@ -307,7 +308,7 @@ static inline int mpol_to_str(char *buff
+ /**
+- * create_and_start_worker - create and start a worker for a pool
++ * create_and_start_worker - create and start the initial worker for a pool
+  * @pool: the target pool
+  *
+  * Grab the managership of @pool and create and start a new worker for it.
+@@ -1798,6 +1810,7 @@ static int create_and_start_worker(struct worker_pool *pool)
+ 	worker = create_worker(pool);
+ 	if (worker) {
+ 		spin_lock_irq(&pool->lock);
++		pool->flags &= ~POOL_OFFLINE;
+ 		start_worker(worker);
+ 		spin_unlock_irq(&pool->lock);
+ 	}
+@@ -2091,6 +2104,54 @@ static bool manage_workers(struct worker *worker)
  }
  
- static inline int mpol_misplaced(struct page *page, struct vm_area_struct *vma,
--				 unsigned long address)
-+				 unsigned long address, int *account_node)
- {
- 	return -1; /* no node preference */
- }
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -893,6 +893,47 @@ static inline unsigned long task_faults(
- 	return p->numa_faults[2*nid] + p->numa_faults[2*nid+1];
- }
- 
-+/*
-+ * Create/Update p->mempolicy MPOL_INTERLEAVE to match p->numa_faults[].
+ /**
++ * offline_pool - try to offline a pool
++ * @work: embedded offline work item of the target pool
++ *
++ * Try to offline a pool by destroying all its workers.
++ *
++ * offline_pool() only destroys workers which are idle on the idle_list.
++ * If any worker leaves idle by some reasons, it can not be destroyed,
++ * but this work item will be rescheduled by the worker's worker_thread()
++ * again in this case. So offline_pool() may be called multi times
++ * to finish offline pool in this rare case.
++ *
++ * offline_pool() is always scheduled by system_unbound_wq even the pool
++ * is high priority pool:
++ *  1) The pool of system_unbound_wq is always online.
++ *  2) The latency of offline_pool() doesn't matter.
 + */
-+static void task_numa_mempol(struct task_struct *p, long max_faults)
++static void offline_pool(struct work_struct *work)
 +{
-+	struct mempolicy *pol = p->mempolicy, *new = NULL;
-+	nodemask_t nodes = NODE_MASK_NONE;
-+	int node;
++	struct worker_pool *pool;
++	struct worker *worker;
 +
-+	if (!pol) {
-+		new = __mpol_new(MPOL_INTERLEAVE, MPOL_F_MOF | MPOL_F_MORON);
-+		if (IS_ERR(new))
-+			return;
++	pool = container_of(work, struct worker_pool, offline_work);
++
++	mutex_lock(&pool->manager_mutex);
++	if (!(pool->flags & POOL_OFFLINE)) {
++		/* the pool is back online, cancel offline */
++		mutex_unlock(&pool->manager_mutex);
++		return;
 +	}
 +
-+	task_lock(p);
-+
-+	pol = p->mempolicy; /* lock forces a re-read */
-+	if (!pol) {
-+		pol = p->mempolicy = new;
-+		new = NULL;
++	spin_lock_irq(&pool->lock);
++	while (!list_empty(&pool->idle_list)) {
++		worker = list_first_entry(&pool->idle_list,
++					  struct worker, entry);
++		destroy_worker(worker);
 +	}
++	spin_unlock_irq(&pool->lock);
 +
-+	if (!(pol->flags & MPOL_F_MORON))
-+		goto unlock;
-+
-+	for_each_node(node) {
-+		if (task_faults(p, node) > max_faults/2)
-+			node_set(node, nodes);
-+	}
-+
-+	mpol_rebind_task(p, &nodes, MPOL_REBIND_STEP1);
-+	mpol_rebind_task(p, &nodes, MPOL_REBIND_STEP2);
-+
-+unlock:
-+	task_unlock(p);
-+
-+	if (new)
-+		__mpol_put(new);
++	mutex_unlock(&pool->manager_mutex);
 +}
 +
- static unsigned long weighted_cpuload(const int cpu);
- static unsigned long source_load(int cpu, int type);
- static unsigned long target_load(int cpu, int type);
-@@ -1106,6 +1147,9 @@ static void task_numa_placement(struct t
- 		}
- 	}
- 
-+	if (sched_feat(NUMA_INTERLEAVE))
-+		task_numa_mempol(p, max_faults);
-+
- 	/* Preferred node as the node with the most faults */
- 	if (max_faults && max_nid != p->numa_preferred_nid) {
- 
---- a/kernel/sched/features.h
-+++ b/kernel/sched/features.h
-@@ -72,4 +72,5 @@ SCHED_FEAT(NUMA_FORCE,	false)
- SCHED_FEAT(NUMA_BALANCE, true)
- SCHED_FEAT(NUMA_FAULTS_UP, true)
- SCHED_FEAT(NUMA_FAULTS_DOWN, true)
-+SCHED_FEAT(NUMA_INTERLEAVE, false)
- #endif
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1292,7 +1292,7 @@ int do_huge_pmd_numa_page(struct mm_stru
- {
- 	struct page *page;
- 	unsigned long haddr = addr & HPAGE_PMD_MASK;
--	int page_nid = -1, this_nid = numa_node_id();
-+	int page_nid = -1, account_nid = -1, this_nid = numa_node_id();
- 	int target_nid, last_nidpid;
- 	bool migrated = false;
- 
-@@ -1301,7 +1301,6 @@ int do_huge_pmd_numa_page(struct mm_stru
- 		goto out_unlock;
- 
- 	page = pmd_page(pmd);
--	get_page(page);
- 
- 	/*
- 	 * Do not account for faults against the huge zero page. The read-only
-@@ -1317,13 +1316,12 @@ int do_huge_pmd_numa_page(struct mm_stru
- 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
- 
- 	last_nidpid = page_nidpid_last(page);
--	target_nid = mpol_misplaced(page, vma, haddr);
--	if (target_nid == -1) {
--		put_page(page);
-+	target_nid = mpol_misplaced(page, vma, haddr, &account_nid);
-+	if (target_nid == -1)
- 		goto clear_pmdnuma;
--	}
- 
- 	/* Acquire the page lock to serialise THP migrations */
-+	get_page(page);
- 	spin_unlock(&mm->page_table_lock);
- 	lock_page(page);
- 
-@@ -1332,6 +1330,7 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	if (unlikely(!pmd_same(pmd, *pmdp))) {
- 		unlock_page(page);
- 		put_page(page);
-+		account_nid = page_nid = -1; /* someone else took our fault */
- 		goto out_unlock;
- 	}
- 	spin_unlock(&mm->page_table_lock);
-@@ -1339,17 +1338,20 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	/* Migrate the THP to the requested node */
- 	migrated = migrate_misplaced_transhuge_page(mm, vma,
- 				pmdp, pmd, addr, page, target_nid);
--	if (migrated)
--		page_nid = target_nid;
--	else
-+	if (!migrated) {
-+		account_nid = -1; /* account against the old page */
- 		goto check_same;
-+	}
- 
-+	page_nid = target_nid;
- 	goto out;
- 
- check_same:
- 	spin_lock(&mm->page_table_lock);
--	if (unlikely(!pmd_same(pmd, *pmdp)))
-+	if (unlikely(!pmd_same(pmd, *pmdp))) {
-+		page_nid = -1; /* someone else took our fault */
- 		goto out_unlock;
-+	}
- clear_pmdnuma:
- 	pmd = pmd_mknonnuma(pmd);
- 	set_pmd_at(mm, haddr, pmdp, pmd);
-@@ -1359,8 +1361,10 @@ int do_huge_pmd_numa_page(struct mm_stru
- 	spin_unlock(&mm->page_table_lock);
- 
- out:
--	if (page_nid != -1)
--		task_numa_fault(last_nidpid, page_nid, HPAGE_PMD_NR, migrated);
-+	if (account_nid == -1)
-+		account_nid = page_nid;
-+	if (account_nid != -1)
-+		task_numa_fault(last_nidpid, account_nid, HPAGE_PMD_NR, migrated);
- 
- 	return 0;
- }
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3516,16 +3516,17 @@ static int do_nonlinear_fault(struct mm_
- 	return __do_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);
- }
- 
--int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
--				unsigned long addr, int current_nid)
-+static int numa_migrate_prep(struct page *page, struct vm_area_struct *vma,
-+			     unsigned long addr, int page_nid,
-+			     int *account_nid)
- {
- 	get_page(page);
- 
- 	count_vm_numa_event(NUMA_HINT_FAULTS);
--	if (current_nid == numa_node_id())
-+	if (page_nid == numa_node_id())
- 		count_vm_numa_event(NUMA_HINT_FAULTS_LOCAL);
- 
--	return mpol_misplaced(page, vma, addr);
-+	return mpol_misplaced(page, vma, addr, account_nid);
- }
- 
- int do_numa_page(struct mm_struct *mm, struct vm_area_struct *vma,
-@@ -3533,7 +3534,7 @@ int do_numa_page(struct mm_struct *mm, s
- {
- 	struct page *page = NULL;
- 	spinlock_t *ptl;
--	int page_nid = -1;
-+	int page_nid = -1, account_nid = -1;
- 	int target_nid, last_nidpid;
- 	bool migrated = false;
- 
-@@ -3570,7 +3571,7 @@ int do_numa_page(struct mm_struct *mm, s
- 
- 	last_nidpid = page_nidpid_last(page);
- 	page_nid = page_to_nid(page);
--	target_nid = numa_migrate_prep(page, vma, addr, page_nid);
-+	target_nid = numa_migrate_prep(page, vma, addr, page_nid, &account_nid);
- 	pte_unmap_unlock(ptep, ptl);
- 	if (target_nid == -1) {
- 		put_page(page);
-@@ -3583,8 +3584,10 @@ int do_numa_page(struct mm_struct *mm, s
- 		page_nid = target_nid;
- 
- out:
--	if (page_nid != -1)
--		task_numa_fault(last_nidpid, page_nid, 1, migrated);
-+	if (account_nid == -1)
-+		account_nid = page_nid;
-+	if (account_nid != -1)
-+		task_numa_fault(last_nidpid, account_nid, 1, migrated);
- 
- 	return 0;
- }
-@@ -3623,7 +3626,7 @@ static int do_pmd_numa_page(struct mm_st
- 	for (addr = _addr + offset; addr < _addr + PMD_SIZE; pte++, addr += PAGE_SIZE) {
- 		pte_t pteval = *pte;
- 		struct page *page;
--		int page_nid = -1;
-+		int page_nid = -1, account_nid = -1;
- 		int target_nid;
- 		bool migrated = false;
- 
-@@ -3648,19 +3651,25 @@ static int do_pmd_numa_page(struct mm_st
- 		last_nidpid = page_nidpid_last(page);
- 		page_nid = page_to_nid(page);
- 		target_nid = numa_migrate_prep(page, vma, addr,
--				               page_nid);
-+				               page_nid, &account_nid);
- 		pte_unmap_unlock(pte, ptl);
- 
- 		if (target_nid != -1) {
- 			migrated = migrate_misplaced_page(page, vma, target_nid);
- 			if (migrated)
- 				page_nid = target_nid;
-+			else
-+				account_nid = -1;
- 		} else {
- 			put_page(page);
- 		}
- 
--		if (page_nid != -1)
--			task_numa_fault(last_nidpid, page_nid, 1, migrated);
-+		if (account_nid == -1)
-+			account_nid = page_nid;
-+		if (account_nid != -1)
-+			task_numa_fault(last_nidpid, account_nid, 1, migrated);
-+
-+		cond_resched();
- 
- 		pte = pte_offset_map_lock(mm, pmdp, addr, &ptl);
- 	}
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -118,22 +118,18 @@ static struct mempolicy default_policy =
- 	.flags = MPOL_F_LOCAL,
- };
- 
--static struct mempolicy preferred_node_policy[MAX_NUMNODES];
-+static struct mempolicy numa_policy = {
-+	.refcnt = ATOMIC_INIT(1), /* never free it */
-+	.mode = MPOL_PREFERRED,
-+	.flags = MPOL_F_LOCAL | MPOL_F_MOF | MPOL_F_MORON,
-+};
- 
- static struct mempolicy *get_task_policy(struct task_struct *p)
- {
- 	struct mempolicy *pol = p->mempolicy;
--	int node;
- 
--	if (!pol) {
--		node = numa_node_id();
--		if (node != NUMA_NO_NODE)
--			pol = &preferred_node_policy[node];
--
--		/* preferred_node_policy is not initialised early in boot */
--		if (!pol->mode)
--			pol = NULL;
--	}
-+	if (!pol)
-+		pol = &numa_policy;
- 
- 	return pol;
- }
-@@ -248,6 +244,20 @@ static int mpol_set_nodemask(struct memp
- 	return ret;
- }
- 
-+struct mempolicy *__mpol_new(unsigned short mode, unsigned short flags)
++static inline bool need_to_offline_pool(struct worker_pool *pool)
 +{
-+	struct mempolicy *policy;
-+
-+	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
-+	if (!policy)
-+		return ERR_PTR(-ENOMEM);
-+	atomic_set(&policy->refcnt, 1);
-+	policy->mode = mode;
-+	policy->flags = flags;
-+
-+	return policy;
++	return (pool->flags & POOL_OFFLINE) &&
++	       (pool->nr_workers == pool->nr_idle);
 +}
 +
- /*
-  * This function just creates a new policy, does some check and simple
-  * initialization. You must invoke mpol_set_nodemask() to set nodes.
-@@ -255,8 +265,6 @@ static int mpol_set_nodemask(struct memp
- static struct mempolicy *mpol_new(unsigned short mode, unsigned short flags,
- 				  nodemask_t *nodes)
++/**
+  * process_one_work - process single work
+  * @worker: self
+  * @work: work to process
+@@ -2251,6 +2312,7 @@ static int worker_thread(void *__worker)
  {
--	struct mempolicy *policy;
--
- 	pr_debug("setting mode %d flags %d nodes[0] %lx\n",
- 		 mode, flags, nodes ? nodes_addr(*nodes)[0] : NUMA_NO_NODE);
+ 	struct worker *worker = __worker;
+ 	struct worker_pool *pool = worker->pool;
++	bool pool_offline;
  
-@@ -284,14 +292,8 @@ static struct mempolicy *mpol_new(unsign
- 		mode = MPOL_PREFERRED;
- 	} else if (nodes_empty(*nodes))
- 		return ERR_PTR(-EINVAL);
--	policy = kmem_cache_alloc(policy_cache, GFP_KERNEL);
--	if (!policy)
--		return ERR_PTR(-ENOMEM);
--	atomic_set(&policy->refcnt, 1);
--	policy->mode = mode;
--	policy->flags = flags;
- 
--	return policy;
-+	return __mpol_new(mode, flags);
+ 	/* tell the scheduler that this is a workqueue worker */
+ 	worker->task->flags |= PF_WQ_WORKER;
+@@ -2320,8 +2382,11 @@ sleep:
+ 	 * event.
+ 	 */
+ 	worker_enter_idle(worker);
++	pool_offline = need_to_offline_pool(pool);
+ 	__set_current_state(TASK_INTERRUPTIBLE);
+ 	spin_unlock_irq(&pool->lock);
++	if (pool_offline)
++		queue_work(system_unbound_wq, &pool->offline_work);
+ 	schedule();
+ 	goto woke_up;
  }
+@@ -3451,6 +3516,7 @@ static int init_worker_pool(struct worker_pool *pool)
+ 	pool->cpu = -1;
+ 	pool->node = NUMA_NO_NODE;
+ 	pool->flags |= POOL_DISASSOCIATED;
++	pool->flags |= POOL_OFFLINE;
+ 	INIT_LIST_HEAD(&pool->worklist);
+ 	INIT_LIST_HEAD(&pool->idle_list);
+ 	hash_init(pool->busy_hash);
+@@ -3465,6 +3531,7 @@ static int init_worker_pool(struct worker_pool *pool)
+ 	mutex_init(&pool->manager_arb);
+ 	mutex_init(&pool->manager_mutex);
+ 	idr_init(&pool->worker_idr);
++	INIT_WORK(&pool->offline_work, offline_pool);
  
- /* Slow path of a mpol destructor. */
-@@ -2234,12 +2236,13 @@ static void sp_free(struct sp_node *n)
-  * Policy determination "mimics" alloc_page_vma().
-  * Called from fault path where we know the vma and faulting address.
-  */
--int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
-+int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr, int *account_node)
+ 	INIT_HLIST_NODE(&pool->hash_node);
+ 	pool->refcnt = 1;
+@@ -4702,6 +4769,7 @@ static int __cpuinit workqueue_cpu_down_callback(struct notifier_block *nfb,
+ 						 void *hcpu)
  {
- 	struct mempolicy *pol;
- 	struct zone *zone;
- 	int curnid = page_to_nid(page);
- 	unsigned long pgoff;
-+	int thisnid = numa_node_id();
- 	int polnid = -1;
- 	int ret = -1;
+ 	int cpu = (unsigned long)hcpu;
++	struct worker_pool *pool;
+ 	struct work_struct unbind_work;
+ 	struct workqueue_struct *wq;
  
-@@ -2261,7 +2264,7 @@ int mpol_misplaced(struct page *page, st
- 
- 	case MPOL_PREFERRED:
- 		if (pol->flags & MPOL_F_LOCAL)
--			polnid = numa_node_id();
-+			polnid = thisnid;
- 		else
- 			polnid = pol->v.preferred_node;
+@@ -4720,6 +4788,19 @@ static int __cpuinit workqueue_cpu_down_callback(struct notifier_block *nfb,
+ 		/* wait for per-cpu unbinding to finish */
+ 		flush_work(&unbind_work);
  		break;
-@@ -2276,7 +2279,7 @@ int mpol_misplaced(struct page *page, st
- 		if (node_isset(curnid, pol->v.nodes))
- 			goto out;
- 		(void)first_zones_zonelist(
--				node_zonelist(numa_node_id(), GFP_HIGHUSER),
-+				node_zonelist(thisnid, GFP_HIGHUSER),
- 				gfp_zone(GFP_HIGHUSER),
- 				&pol->v.nodes, &zone);
- 		polnid = zone->node;
-@@ -2291,8 +2294,7 @@ int mpol_misplaced(struct page *page, st
- 		int last_nidpid;
- 		int this_nidpid;
- 
--		polnid = numa_node_id();
--		this_nidpid = nid_pid_to_nidpid(polnid, current->pid);;
-+		this_nidpid = nid_pid_to_nidpid(thisnid, current->pid);;
- 
- 		/*
- 		 * Multi-stage node selection is used in conjunction
-@@ -2318,6 +2320,39 @@ int mpol_misplaced(struct page *page, st
- 		last_nidpid = page_nidpid_xchg_last(page, this_nidpid);
- 		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != polnid)
- 			goto out;
++	case CPU_UP_CANCELED:
++	case CPU_POST_DEAD:
++		for_each_cpu_worker_pool(pool, cpu) {
++			mutex_lock(&pool->manager_mutex);
++			spin_lock_irq(&pool->lock);
 +
-+		/*
-+		 * Preserve interleave pages while allowing useful
-+		 * ->numa_faults[] statistics.
-+		 *
-+		 * When migrating into an interleave set, migrate to
-+		 * the correct interleaved node but account against the
-+		 * current node (where the task is running).
-+		 *
-+		 * Not doing this would result in ->numa_faults[] being
-+		 * flat across the interleaved nodes, making it
-+		 * impossible to shrink the node list even when all
-+		 * tasks are running on a single node.
-+		 *
-+		 * src dst    migrate      account
-+		 *  0   0  -- this_node    $page_node
-+		 *  0   1  -- policy_node  this_node
-+		 *  1   0  -- this_node    $page_node
-+		 *  1   1  -- policy_node  this_node
-+		 *
-+		 */
-+		switch (pol->mode) {
-+		case MPOL_INTERLEAVE:
-+			if (node_isset(thisnid, pol->v.nodes)) {
-+				if (account_node)
-+					*account_node = thisnid;
-+			}
-+			break;
++			pool->flags |= POOL_OFFLINE;
++			wake_up_worker(pool);
 +
-+		default:
-+			polnid = thisnid;
-+			break;
++			spin_unlock_irq(&pool->lock);
++			mutex_unlock(&pool->manager_mutex);
 +		}
++		break;
  	}
- 
- 	if (curnid != polnid)
-@@ -2580,15 +2615,6 @@ void __init numa_policy_init(void)
- 				     sizeof(struct sp_node),
- 				     0, SLAB_PANIC, NULL);
- 
--	for_each_node(nid) {
--		preferred_node_policy[nid] = (struct mempolicy) {
--			.refcnt = ATOMIC_INIT(1),
--			.mode = MPOL_PREFERRED,
--			.flags = MPOL_F_MOF | MPOL_F_MORON,
--			.v = { .preferred_node = nid, },
--		};
--	}
--
- 	/*
- 	 * Set interleaving policy for system init. Interleaving is only
- 	 * enabled across suitably sized nodes (default is >= 16MB), or
+ 	return NOTIFY_OK;
+ }
+-- 
+1.7.4.4
+
