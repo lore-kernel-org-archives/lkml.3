@@ -1,68 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab3GYJci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:32:38 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36189 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab3GYJce (ORCPT
+	id S1755423Ab3GYJfR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:35:17 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:36610 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755135Ab3GYJfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:32:34 -0400
-Date: Thu, 25 Jul 2013 10:32:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Robin Gong <b38343@freescale.com>
-Cc: shawn.guo@linaro.org, grant.likely@linaro.org, rob.herring@calxeda.com,
-        rob@landley.net, lgirdwood@gmail.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, s.trumtrar@pengutronix.de
-Message-ID: <20130725093209.GX9858@sirena.org.uk>
-References: <1374723198-9716-1-git-send-email-b38343@freescale.com>
+	Thu, 25 Jul 2013 05:35:11 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6ISAYjCz29ajFyjn"
-Content-Disposition: inline
-In-Reply-To: <1374723198-9716-1-git-send-email-b38343@freescale.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v5] regulator: pfuze100: add pfuze100 regulator driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130724224126.GA27678@codeaurora.org>
+References: <1374178035-19943-1-git-send-email-davidb@codeaurora.org>
+	<CACRpkdbOO8fFEx+PxsdJ9F1dqD6V4_RPZThvTufo9+XhhyuHOg@mail.gmail.com>
+	<20130724224126.GA27678@codeaurora.org>
+Date: Thu, 25 Jul 2013 11:35:10 +0200
+Message-ID: <CACRpkdb6N-i5cSTSmaB9XCLT6hoYwVRRTxZvuzPw6erCD5P4SQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] MSM gpio fixes
+From: Linus Walleij <linus.walleij@linaro.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 25, 2013 at 12:41 AM, David Brown <davidb@codeaurora.org> wrote:
+> On Sat, Jul 20, 2013 at 10:54:42PM +0200, Linus Walleij wrote:
 
---6ISAYjCz29ajFyjn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>>>   ARM: msm: Consolidate gpiomux for older architectures
+>>
+>> This does not look like a fix? Surely this can wait for v3.12?
+>
+> It fixes compilation.  But, it could also wait for v3.12.
 
-On Thu, Jul 25, 2013 at 11:33:18AM +0800, Robin Gong wrote:
-> Add pfuze100 regulator driver.
+Well it's up to you. The GPIO patch is in Torvalds tree now, so the
+rest goes through ARM SoC I guess...
 
-Applied, thanks.  Fixing the language about the regulators being a
-property would be good, please send a followup for that.
-
---6ISAYjCz29ajFyjn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8PCWAAoJELSic+t+oim9iIwP/jzxQZ6aPor+AjsWN9c4q20i
-mr3ajfxGc70RPw2HUcXCU3joGgXUotGhNK4wTrIWKDsGAni8EC/kdR8BVH4vVHQE
-VKI+a6Dt41yQQX2hbgGxAi6bctmXl6FrJMbmawWsAqGsFS/E8s/OJ4cCeLzqQjYB
-lXxpiQtDH2V5BYvISR5GX3uH5C4+IDjGfEiRjTtG7jAmnZ1ktIpefZ1+jZWzPmAY
-VorVe+nh3XZv92tBJuHCPykNJST8lRoWp1NL4WvDPjUjwLpv1wzEceXANuuMGHZ+
-7cXBq9+48mJKTkz3LY0bV4/DrBdPZ8vn2FXfdJGSza/cF/NuBK1gp2z7z6sWF8eK
-XRz8seIjr/J3wYJ60w3JZLc4LqjXCK1Vo3WeAvG9oYdzwdCX6FRVniCtXWYlEOXa
-V1/Me+RxGL/6iH6XE1pAjSfYAsWp2E3TTwUtKfNoH+XKVdSwgwAW4KNNoLgtInQ7
-mHvkd03mLDIJqeuY9RvPhOh6b6KvMNHQ2Ge6D0+HgbzhTQove2zs2ZczTQS7ZBD3
-S4Czmj/d4BcTY1utDiGp4HhBPkK1FGeRzOkbU+xdpkblYpg+lhuP7TSATQ/QYZU7
-S/m3dE+VNcxRUxt4u13YX5PiGbnMRdROyBBNqUdoAXrNL8Erc7RZLoR/7hTM1OtS
-pdwthLFm0JZdmVJxVc0D
-=zSAA
------END PGP SIGNATURE-----
-
---6ISAYjCz29ajFyjn--
+Yours,
+Linus Walleij
