@@ -1,111 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab3GYNiV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:38:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46002 "EHLO e9.ny.us.ibm.com"
+	id S1756021Ab3GYNll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:41:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:60933 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755936Ab3GYNiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:38:17 -0400
-From: zwu.kernel@gmail.com
-To: xfs@oss.sgi.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        david@fromorbit.com, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: [PATCH] xfs: fix an assertion failure
-Date: Thu, 25 Jul 2013 21:38:44 +0800
-Message-Id: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072513-7182-0000-0000-000007DAC6FF
+	id S1755510Ab3GYNlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:41:39 -0400
+Date: Thu, 25 Jul 2013 23:41:36 +1000
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Vince Weaver <vince@deater.net>
+Cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, acme@redhat.com,
+        runzhen@linux.vnet.ibm.com, runzhew@clemson.edu,
+        xiaoguangrong@linux.vnet.ibm.com, sukadev@linux.vnet.ibm.com,
+        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [tip:perf/core] perf tools: Make Power7 events available for perf
+Message-ID: <20130725134135.GA14744@concordia>
+References: <1372407297-6996-3-git-send-email-runzhen@linux.vnet.ibm.com>
+ <tip-cfe0d8ba14a1d98245b371e486c68f37eba1ca52@git.kernel.org>
+ <alpine.DEB.2.02.1307230129350.18266@pianoman.cluster.toy>
+ <1374558969.5545.30.camel@concordia>
+ <alpine.DEB.2.02.1307231731020.27628@pianoman.cluster.toy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1307231731020.27628@pianoman.cluster.toy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+On Tue, Jul 23, 2013 at 05:38:21PM -0400, Vince Weaver wrote:
+> 
+> I wish I were as good as cursing as Linus, ccing him in case he's willing 
+> to donate a few choice expressions.
 
-  When running the compilebench, one assertion failure was found.
-This related line of code was introduced by commit 5f6bed76c0.
+Well cursing is what witches do, but if you need someone to swear a bit
+I can help you out, I am fuckin Australian after all.
 
-commit 5f6bed76c0c85cb4d04885a5de00b629deee550b
-Author: Dave Chinner <david@fromorbit.com>
-Date:   Thu Jun 27 16:04:52 2013 +1000
+> On Tue, 23 Jul 2013, Michael Ellerman wrote:
+> 
+> > On Tue, 2013-07-23 at 01:33 -0400, Vince Weaver wrote:
+> 
+> > > > $ size arch/powerpc/perf/power7-pmu.o
+> > > >    text          data     bss     dec     hex filename
+> > > >    3073          2720       0    5793    16a1 arch/powerpc/perf/power7-pmu.o
+> > > > 
+> > > > and after the patch is applied, it is:
+> > > > 
+> > > > $ size arch/powerpc/perf/power7-pmu.o
+> > > >    text          data     bss     dec     hex filename
+> > > >   15950         31112       0   47062    b7d6 arch/powerpc/perf/power7-pmu.o
+> > > 
+> > > 
+> > > so we're really going down this road?
+> > 
+> > _We_ are going down this road, at least until there is a better
+> > solution. You'll notice I haven't merged any events for power8.
+> 
+> No, you are going down this road permanently, because if you commit this, 
+> it becomes ABI, and we have to maintain it forever.
 
-    xfs: Introduce an ordered buffer item
+Yes I understand what an ABI is. What I meant is we have only added the
+events for the Power7 PMU, and hopefully we will not have to add any for
+future PMUs.
 
-[  500.464036] XFS: Assertion failed: !(bip->bli_item.li_flags & XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 942
-[  500.465602] ------------[ cut here ]------------
-[  500.466258] kernel BUG at fs/xfs/xfs_message.c:108!
-[  500.466440] invalid opcode: 0000 [#1] SMP
-[  500.466440] Modules linked in:
-[  500.466440] CPU: 0 PID: 40 Comm: kworker/u2:1 Not tainted 3.11.0-rc2+ #955
-[  500.466440] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-[  500.466440] Workqueue: writeback bdi_writeback_workfn (flush-8:0)
-[  500.466440] task: ffff880292260000 ti: ffff880292250000 task.ti: ffff880292250000
-[  500.466440] RIP: 0010:[<ffffffff812dc6f2>]  [<ffffffff812dc6f2>] assfail+0x22/0x30
-[  500.466440] RSP: 0018:ffff8802922515f8  EFLAGS: 00010292
-[  500.466440] RAX: 0000000000000068 RBX: ffff880289b4a570 RCX: 0000000000000006
-[  500.466440] RDX: 0000000000000006 RSI: ffff880292260788 RDI: ffff880292260000
-[  500.466440] RBP: ffff8802922515f8 R08: 0000000000000000 R09: 0000000000000001
-[  500.466440] R10: 0000000000000000 R11: 0000000000000000 R12: ffff880291828000
-[  500.466440] R13: ffff880289b4a570 R14: ffffffff81342aeb R15: ffff88025f344220
-[  500.466440] FS:  0000000000000000(0000) GS:ffff88029fc00000(0000) knlGS:0000000000000000
-[  500.466440] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  500.466440] CR2: 0000000009b01008 CR3: 0000000291874000 CR4: 00000000000006f0
-[  500.466440] Stack:
-[  500.466440]  ffff880292251628 ffffffff813428df ffff880289b4a570 0000000000000002
-[  500.466440]  ffff880291828000 0000000000000001 ffff880292251668 ffffffff81342aeb
-[  500.466440]  0000000000000000 ffff880289b4a570 ffff8802762070a0 ffffffffffffffff
-[  500.466440] Call Trace:
-[  500.466440]  [<ffffffff813428df>] xfs_buf_item_relse+0x4f/0xd0
-[  500.466440]  [<ffffffff81342aeb>] xfs_buf_item_unlock+0x18b/0x1e0
-[  500.466440]  [<ffffffff8133ac3d>] xfs_trans_free_items+0x7d/0xb0
-[  500.466440]  [<ffffffff8133b35c>] xfs_trans_cancel+0x13c/0x1b0
-[  500.466440]  [<ffffffff812d8d89>] xfs_iomap_write_allocate+0x249/0x350
-[  500.466440]  [<ffffffff812c6af2>] xfs_map_blocks+0x2e2/0x350
-[  500.466440]  [<ffffffff812c7a76>] xfs_vm_writepage+0x236/0x5e0
-[  500.466440]  [<ffffffff8115174a>] __writepage+0x1a/0x50
-[  500.466440]  [<ffffffff81152065>] write_cache_pages+0x225/0x4a0
-[  500.466440]  [<ffffffff81151730>] ? mapping_tagged+0x20/0x20
-[  500.466440]  [<ffffffff812c5e45>] ? xfs_vm_writepages+0x35/0x70
-[  500.466440]  [<ffffffff8115232d>] generic_writepages+0x4d/0x70
-[  500.466440]  [<ffffffff812c5e60>] xfs_vm_writepages+0x50/0x70
-[  500.466440]  [<ffffffff81153cb1>] do_writepages+0x21/0x50
-[  500.466440]  [<ffffffff811d4050>] __writeback_single_inode+0x40/0x230
-[  500.466440]  [<ffffffff811d52b1>] writeback_sb_inodes+0x291/0x460
-[  500.466440]  [<ffffffff811d551f>] __writeback_inodes_wb+0x9f/0xd0
-[  500.466440]  [<ffffffff811d579b>] wb_writeback+0x24b/0x2e0
-[  500.466440]  [<ffffffff8115185a>] ? global_dirtyable_memory+0x1a/0x60
-[  500.466440]  [<ffffffff811d7386>] bdi_writeback_workfn+0x1d6/0x3d0
-[  500.466440]  [<ffffffff8107734b>] process_one_work+0x1eb/0x4f0
-[  500.466440]  [<ffffffff810772e9>] ? process_one_work+0x189/0x4f0
-[  500.466440]  [<ffffffff81077adb>] worker_thread+0x11b/0x370
-[  500.466440]  [<ffffffff810779c0>] ? rescuer_thread+0x330/0x330
-[  500.466440]  [<ffffffff8107ff8a>] kthread+0xea/0xf0
-[  500.466440]  [<ffffffff8107fea0>] ? flush_kthread_work+0x1b0/0x1b0
-[  500.466440]  [<ffffffff818b6c5c>] ret_from_fork+0x7c/0xb0
-[  500.466440]  [<ffffffff8107fea0>] ? flush_kthread_work+0x1b0/0x1b0
-[  500.466440] Code: 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48 89 f1 41 89 d0 48 c7 c6 48 b7 c7 81 48 89 fa 31 c0 48 89 e5 31 ff e8 de fb ff ff <0f> 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 0f 1f 44 00 00 55 48
-[  500.466440] RIP  [<ffffffff812dc6f2>] assfail+0x22/0x30
-[  500.466440]  RSP <ffff8802922515f8>
-[  500.510159] ---[ end trace 48b882d5f764ca11 ]---
+> > x86 can do what it wants. I don't think anyone in x86 land has proposed
+> > putting all the events in the kernel, so you can stop worrying about
+> > your 300k of memory.
+> 
+> I thought the prime directive of perf_event was nothing in the kernel that 
+> wasn't generic and applied to all architectures?  Why is Power7 special?
 
-Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
----
- fs/xfs/xfs_buf_item.c | 1 -
- 1 file changed, 1 deletion(-)
+Sure perf tries to abstract things, and for the vast majority of users
+that's all they want or need.
 
-diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
-index bfc4e0c..b4d42ae 100644
---- a/fs/xfs/xfs_buf_item.c
-+++ b/fs/xfs/xfs_buf_item.c
-@@ -939,7 +939,6 @@ xfs_buf_item_relse(
- 	xfs_buf_log_item_t	*bip = bp->b_fspriv;
- 
- 	trace_xfs_buf_item_relse(bp, _RET_IP_);
--	ASSERT(!(bip->bli_item.li_flags & XFS_LI_IN_AIL));
- 
- 	bp->b_fspriv = bip->bli_item.li_bio_list;
- 	if (bp->b_fspriv == NULL)
--- 
-1.7.11.7
+But there are ~50 generic events in Linux, and our PMU supports ~500.
+And our hardware designers use perf, and they need to test all 500
+events. And they're getting sick of using raw event codes.
 
+> Abusing sysfs to waste 100k of non-swappable kernel memory on every 
+> running Linux kernel everwhere 
+
+It's great that you're so concerned about memory wastage on _powerpc_
+systems.
+
+> to hold static event tables that could be a 
+> simple CSV file in the perf tools directory is crazy.
+
+I agree 100% that it could be a CSV file in the perf directory. But up
+until we sent this patch every attempt to do something like that had
+been NAKed.
+
+> Especially as it's likely this becomes stable ABI, and then you'll 
+> promptly break it as has already happenend in the last kernel release 
+> with the existing in-kernel powerpc events.
+
+You're becoming the boy who cried "ABI break" Vince. Yes we renamed one
+event, we knew full well that nothing was using it - not even trinity.
+
+> > I thought it was pretty clear from the last thread that folks agreed the
+> > event _lists_ should be in userspace. The discovery of the PMUs should
+> > be done in the kernel, and that should be communicated to userspace via
+> > something in sys.
+> 
+> I agree.  So why is this patch in tip?
+
+Because acme picked it up before that thread got going.
+
+> > What it needs now is someone with some free time to actually code it up.
+> > Right now that's not me.
+> 
+> The code exists; it's called libpfm4.  Just becase you're lazy doesn't 
+> mean we commit garbage code into the kenrel.
+
+Don't call me lazy.
+
+If the code is called libpfm4 why doesn't perf use it? There are patches
+out there to integrate the two, why don't you get them merged?
