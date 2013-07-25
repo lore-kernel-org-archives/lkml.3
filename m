@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3GYBdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 21:33:10 -0400
-Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:45504 "EHLO
-	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753484Ab3GYBdI (ORCPT
+	id S1754430Ab3GYBhY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 21:37:24 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:44225 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab3GYBhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 21:33:08 -0400
-Message-ID: <51F08050.40207@hurleysoftware.com>
-Date: Wed, 24 Jul 2013 21:33:04 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH v2 6/9] n_tty: Process echoes in blocks
-References: <1371303376-5028-1-git-send-email-peter@hurleysoftware.com> <1371305069-5366-1-git-send-email-peter@hurleysoftware.com> <1371305069-5366-7-git-send-email-peter@hurleysoftware.com> <20130723235329.GA14499@kroah.com>
-In-Reply-To: <20130723235329.GA14499@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
+	Wed, 24 Jul 2013 21:37:21 -0400
+Date: Thu, 25 Jul 2013 11:37:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hauke Mehrtens <hauke@hauke-m.de>, David Miller <davem@davemloft.net>
+Subject: linux-next: manual merge of the wireless-next tree with Linus' tree
+Message-Id: <20130725113709.210d2157219410a4ff119510@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__25_Jul_2013_11_37_09_+1000_yk=H6WhbomfUl.Vl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 07:53 PM, Greg Kroah-Hartman wrote:
-> On Sat, Jun 15, 2013 at 10:04:26AM -0400, Peter Hurley wrote:
->> Byte-by-byte echo output is painfully slow, requiring a lock/unlock
->> cycle for every input byte.
->>
->> Instead, perform the echo output in blocks of 256 characters, and
->> at least once per flip buffer receive. Enough space is reserved in
->> the echo buffer to guarantee a full block can be saved without
->> overrunning the echo output. Overrun is prevented by discarding
->> the oldest echoes until enough space exists in the echo buffer
->> to receive at least a full block of new echoes.
->
-> I'm a bit worried about this, I wonder if anything is expecting the
-> echos to not come in "bursts" like this, but I really can't think of why
-> they would want that.
+--Signature=_Thu__25_Jul_2013_11_37_09_+1000_yk=H6WhbomfUl.Vl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The block size for echoes is trivially settable so if you'd prefer a
-smaller value than every 256 chars, I could send a patch for a value
-you are more comfortable with - 64 chars, 32 chars, whatever.
+Hi John,
 
-I picked that value from casual performance testing and that it
-coincides with the smallest possible flip buffer; ie., echo blocks are
-retired at the same rate as flip buffers when receiving is not
-saturated.
+Today's linux-next merge of the wireless-next tree got a conflict in
+drivers/net/ethernet/broadcom/Kconfig between commit 31bd29776b85
+("bgmac: add dependency to phylib") from Linus' tree and commit
+72bb2f267887 ("bgmac: make bgmac depend on bcm47xx") from the
+wireless-next tree.
 
-> So let's apply it and see what breaks!  :)
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-I'm ready :)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Regards,
-Peter Hurley
+diff --cc drivers/net/ethernet/broadcom/Kconfig
+index 52c9603,7b839bf..0000000
+--- a/drivers/net/ethernet/broadcom/Kconfig
++++ b/drivers/net/ethernet/broadcom/Kconfig
+@@@ -130,8 -130,7 +130,8 @@@ config BNX2X_SRIO
+ =20
+  config BGMAC
+  	tristate "BCMA bus GBit core support"
+- 	depends on BCMA_HOST_SOC && HAS_DMA
++ 	depends on BCMA_HOST_SOC && HAS_DMA && BCM47XX
+ +	select PHYLIB
+  	---help---
+  	  This driver supports GBit MAC and BCM4706 GBit MAC cores on BCMA bus.
+  	  They can be found on BCM47xx SoCs and provide gigabit ethernet.
 
+--Signature=_Thu__25_Jul_2013_11_37_09_+1000_yk=H6WhbomfUl.Vl
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR8IFJAAoJEECxmPOUX5FE/xcP/2GnWYTcYgyVHqjNwr6t1AoE
+NrKHLTMYFivfnCGZJ6JXq1PsZ9msthQo0nKpnCSDleIjQlWr6wF9CkE1u5qMpw8M
+PhoSTm4JEILfCInTfrdP34O0LXyMGsDWZC0yZU2U0To3pcmzTgL7zMYedajQBvQL
+TG4O4gufGqLA7O4jQvJ7utROyp1BFiih08kjmfqRk6JXItMXueZsjBsDq9r3IcS/
+avNLyqidLOVRpbfPU9y0MYHFuhxmfZ7phOA7DWrr2NXY32FHycexy7a7tkcq9dHw
+xi/1YwKzl0AF+HoFa1JLtqSJQq7w//ojHPAbDkCRIjqSmMDkBzJNgwpfCqVFinA6
+dOF9al3LumxB3dXByfA4/Q4HRLJ4mKT/rgKXO7sCmph//Y1ZWdCpJ/WRlm/+0V99
+mlnfdYRKjEBwPT0qnyiTFjfZm+HacV2BcFGJJTg+NsuXewkPLZg3Edfmk79iU1u1
+z6hmfQDUrsljUvMeCIcIbjTQZisQXO07faU+ACSDHQ/4Hv/lj3eEF+54tapRN9J+
+Xo6CIJunCgNnXO5zqAUXYbHclCDSg8PQTexzgn4HSdSIL8oc8jRHVhNGqlSVeM0m
+k9mezQQfYBxNLNg/Ik5PRv5lB1LQjZbpxCOBCmacQY7S7MjMcK2CBBoIAcnExo0M
+qNN126T3ie411ku8o3gk
+=jgH4
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__25_Jul_2013_11_37_09_+1000_yk=H6WhbomfUl.Vl--
