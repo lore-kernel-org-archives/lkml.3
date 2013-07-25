@@ -1,89 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3GYC7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:59:14 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:36251 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752668Ab3GYC7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:59:12 -0400
-Message-ID: <1374721150.1924.26.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Warn when using extern with function prototypes
- in .h files
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Cong Wang <xiyou.wangcong@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Wed, 24 Jul 2013 19:59:10 -0700
-In-Reply-To: <20130725014732.GA10036@order.stressinduktion.org>
-References: <1374602291.3387.17.camel@joe-AO722>
-	 <kspuuk$k2v$1@ger.gmane.org> <1374716480.1924.18.camel@joe-AO722>
-	 <20130725014732.GA10036@order.stressinduktion.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1754350Ab3GYDJU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:09:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57414 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab3GYDJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:09:10 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <51F0969C.8000001@jp.fujitsu.com>
+Date: Thu, 25 Jul 2013 12:08:12 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Hush Bensen <hush.bensen@gmail.com>
+CC: Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>,
+        <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <x86@kernel.org>, <dave@sr71.net>,
+        <kosaki.motohiro@gmail.com>, <tangchen@cn.fujitsu.com>,
+        <vasilis.liaskovitis@profitbricks.com>
+Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
+References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com> <51F077AE.7080307@gmail.com>
+In-Reply-To: <51F077AE.7080307@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the extern keyword on function prototypes is superfluous
-visual noise so suggest removing it.
+(2013/07/25 9:56), Hush Bensen wrote:
+> On 07/25/2013 12:02 AM, Toshi Kani wrote:
+>> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
+>>> On 07/24/2013 04:45 AM, Toshi Kani wrote:
+>>>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
+>>>>> * Toshi Kani <toshi.kani@hp.com> wrote:
+>>>>>
+>>>>>>> Could we please also fix it to never crash the kernel, even if stupid
+>>>>>>> ranges are provided?
+>>>>>> Yes, this probe interface can be enhanced to verify the firmware
+>>>>>> information before adding a given memory address.  However, such change
+>>>>>> would interfere its test use of "fake" hotplug, which is only the known
+>>>>>> use-case of this interface on x86.
+>>>>> Not crashing the kernel is not a novel concept even for test interfaces...
+>>>> Agreed.
+>>>>
+>>>>> Where does the possible crash come from - from using invalid RAM ranges,
+>>>>> right? I.e. on x86 to fix the crash we need to check the RAM is present in
+>>>>> the e820 maps, is marked RAM there, and is not already registered with the
+>>>>> kernel, or so?
+>>>> Yes, the crash comes from using invalid RAM ranges.  How to check if the
+>>>> RAM is present is different if the system supports hotplug or not.
+>>> Could you explain different methods to check the RAM is present if the
+>>> system supports hotplkug or not?
+>> e820 and UEFI memory descriptor tables are the boot-time interfaces.
+>> These interfaces are not required to reflect any run-time changes.
+>>
+>> ACPI memory device objects can be used at both boot-time and run-time,
+>> which reflect any run-time changes.  But they are optional to implement.
+>> They typically are not implemented unless the system supports hotplug.
+>>
+>>>>>> In order to verify if a given memory address is enabled at run-time (as
+>>>>>> opposed to boot-time), we need to check with ACPI memory device objects
+>>>>>> on x86.  However, system vendors tend to not implement memory device
+>>>>>> objects unless their systems support memory hotplug.  Dave Hansen is
+>>>>>> using this interface for his testing as a way to fake a hotplug event on
+>>>>>> a system that does not support memory hotplug.
+>>>>> All vendors implement e820 maps for the memory present at boot time.
+>>>> Yes for boot time.  At run-time, e820 is not guaranteed to represent a
+>>>> new memory added.  Here is a quote from ACPI spec.
+>>>>
+>>>> ===
+>>>> 15.1 INT 15H, E820H - Query System Address Map
+>>>>    :
+>>>> The memory map conveyed by this interface is not required to reflect any
+>>>> changes in available physical memory that have occurred after the BIOS
+>>>> has initially passed control to the operating system. For example, if
+>>>> memory is added dynamically, this interface is not required to reflect
+>>>> the new system memory configuration.
+>>>> ===
+>>>>
+>>>> By definition, the "probe" interface is used for the kernel to recognize
+>>>> a new memory added at run-time.  So, it should check ACPI memory device
+>>>> objects (which represents run-time state) for the verification.  On x86,
+>>>> however, ACPI also sends a hotplug event to the kernel, which triggers
+>>>> the kernel to recognize the new physical memory properly.  Hence, users
+>>>> do not need this "probe" interface.
+>>>>
+>>>>> How is the testing done by Dave Hansen? If it's done by booting with less
+>>>>> RAM than available (via say the mem=1g boot parameter), and then
+>>>>> hot-adding some of the missing RAM, then this could be made safe via the
+>>>>> e820 maps and by consultig the physical memory maps (to avoid double
+>>>>> registry), right?
+>>>> If we focus on this test scenario on a system that does not support
+>>>> hotplug, yes, I agree that we can check with e820 since it is safe to
+>>>> assume that the system has no change after boot.  IOW, it is unsafe to
+>>>> check with e820 if the system supports hotplug, but there is no use in
+>>>> this interface for testing if the system supports hotplug.  So, this may
+>>>> be a good idea.
+>>>>
+>>>> Dave, is this how you are testing?  Do you always specify a valid memory
+>>>> address for your testing?
+>>>>
+>>>>> How does the hotplug event based approach solve double adds? Relies on the
+>>>>> hardware not sending a hot-add event twice for the same memory area or for
+>>>>> an invalid memory area, or does it include fail-safes and double checks as
+>>>>> well to avoid double adds and adding invalid memory? If yes then that
+>>>>> could be utilized here as well.
+>>>> In high-level, here is how ACPI memory hotplug works:
+>>>>
+>>>> 1. ACPI sends a hotplug event to a new ACPI memory device object that is
+>>>> hot-added.
+>>>> 2. The kernel is notified, and verifies if the new memory device object
+>>>> has not been attached by any handler yet.
+>>>> 3. The memory handler is called, and obtains a new memory range from the
+>>>> ACPI memory device object.
+>>>> 4. The memory handler calls add_memory() with the new address range.
+>>>>
+>>>> The above step 1-4 proceeds automatically within the kernel.  No user
+>>>> input (nor sysfs interface) is necessary.  Step 2 prevents double adds
+>>>> and step 3 gets a valid address range from the firmware directly.  Step
+>>>> 4 is basically the same as the "probe" interface, but with all the
+>>>> verification up front, this step is safe.
+>>> This is hot-added part, could you also explain how ACPI memory hotplug
+>>> works for hot-remove?
+>> Sure.  Here is high-level.
+>>
+>> 1. ACPI sends a hotplug event to an ACPI memory device object that is
+>> requested to hot-remove.
+>> 2. The kernel is notified, and verifies if the memory device object is
+>> attached by a handler.
+>> 3. The memory handler is called (which is being attached), and obtains
+>> its memory range.
+>> 4. The memory handler calls remove_memory() with the address range.
+>> 5. The kernel calls eject method of the ACPI memory device object.
+>
+> If hot remove the memory device by the hardware, or writing 1 to
+> /sys/bus/acpi/devices/PNP0C80:XX/eject both will call eject method?
 
-Using extern can cause unnecessary line wrapping at 80 columns
-and unnecessarily long multi-line function prototypes.
+Yes.
+Both operations will call eject method.
 
-Suggested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Thu, 2013-07-25 at 03:47 +0200, Hannes Frederic Sowa wrote:
-> On Wed, Jul 24, 2013 at 06:41:20PM -0700, Joe Perches wrote:
-> > On Thu, 2013-07-25 at 01:27 +0000, Cong Wang wrote:
-> > > On Tue, 23 Jul 2013 at 17:58 GMT, Joe Perches <joe@perches.com> wrote:
-> > > > Function prototypes don't need to be declared
-> > > > extern in .h files.  It's assumed by the compiler
-> > > > and is as unnecessary as using auto is when
-> > > > declaring automatic/local variables in a block.
-> > > Since we all know this, why bother it?
-> > If everyone knew this, new ones wouldn't be added.
-> > But a lot are.
-> Couldn't checkpatch take care of these?
+> What's the difference between these two methods? I guess the former will send SCI and the latter won't.
 
-checkpatch doesn't work well for multiple lines so
-this doesn't work on things like
-	extern unsigned long
-	foo(type bar);
-but it does for the single line function prototypes.
+Triggers are different. Former is triggered by SCI, latter is triggered by
+writing sysfs.
 
-Using --fix removes them.
+Thanks,
+Yasuaki Ishimatsu
 
- scripts/checkpatch.pl | 10 ++++++++++
- 1 file changed, 10 insertions(+)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 6918517..23126d4 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -3866,6 +3866,16 @@ sub process {
- 			}
- 		}
- 
-+# check for new externs in .h files.
-+		if ($realfile =~ /\.h$/ &&
-+		    $line =~ /^\+\s*(extern\s+)$Type\s*$Ident\s*\(/s) {
-+			if (WARN("AVOID_EXTERNS",
-+				 "extern prototypes should be avoided in .h files\n" . $herecurr) &&
-+			    $fix) {
-+				$fixed[$linenr - 1] =~ s/(.*)\bextern\b\s*(.*)/$1$2/;
-+			}
-+		}
-+
- # check for new externs in .c files.
- 		if ($realfile =~ /\.c$/ && defined $stat &&
- 		    $stat =~ /^.\s*(?:extern\s+)?$Type\s+($Ident)(\s*)\(/s)
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
+>
+>>
+>> Thanks,
+>> -Toshi
+>>
+>>
+>
 
 
