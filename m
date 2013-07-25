@@ -1,203 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab3GYDfA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:35:00 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:34430 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752641Ab3GYDe7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:34:59 -0400
-Message-ID: <51F09CD9.5050802@gmail.com>
-Date: Thu, 25 Jul 2013 11:34:49 +0800
-From: Hush Bensen <hush.bensen@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-CC: Toshi Kani <toshi.kani@hp.com>, Ingo Molnar <mingo@kernel.org>,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org, dave@sr71.net,
-        kosaki.motohiro@gmail.com, tangchen@cn.fujitsu.com,
-        vasilis.liaskovitis@profitbricks.com
-Subject: Re: [PATCH v2] mm/hotplug, x86: Disable ARCH_MEMORY_PROBE by default
-References: <1374256068-26016-1-git-send-email-toshi.kani@hp.com>   <20130722083721.GC25976@gmail.com>   <1374513120.16322.21.camel@misato.fc.hp.com>   <20130723080101.GB15255@gmail.com>  <1374612301.16322.136.camel@misato.fc.hp.com> <51EF1D38.60503@gmail.com> <1374681742.16322.180.camel@misato.fc.hp.com> <51F077AE.7080307@gmail.com> <51F0969C.8000001@jp.fujitsu.com>
-In-Reply-To: <51F0969C.8000001@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754744Ab3GYDfb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:35:31 -0400
+Received: from mga02.intel.com ([134.134.136.20]:14463 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752641Ab3GYDf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 23:35:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,740,1367996400"; 
+   d="scan'208";a="376039741"
+From: Sudeep Dutt <sudeep.dutt@intel.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>, Rob Landley <rob@landley.net>,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org
+Cc: Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: [PATCH 0/5] Enable Drivers for Intel MIC X100 Coprocessors.
+Date: Wed, 24 Jul 2013 20:31:31 -0700
+Message-Id: <cover.1374717252.git.sudeep.dutt@intel.com>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 11:08 AM, Yasuaki Ishimatsu wrote:
-> (2013/07/25 9:56), Hush Bensen wrote:
->> On 07/25/2013 12:02 AM, Toshi Kani wrote:
->>> On Wed, 2013-07-24 at 08:18 +0800, Hush Bensen wrote:
->>>> On 07/24/2013 04:45 AM, Toshi Kani wrote:
->>>>> On Tue, 2013-07-23 at 10:01 +0200, Ingo Molnar wrote:
->>>>>> * Toshi Kani <toshi.kani@hp.com> wrote:
->>>>>>
->>>>>>>> Could we please also fix it to never crash the kernel, even if 
->>>>>>>> stupid
->>>>>>>> ranges are provided?
->>>>>>> Yes, this probe interface can be enhanced to verify the firmware
->>>>>>> information before adding a given memory address. However, such 
->>>>>>> change
->>>>>>> would interfere its test use of "fake" hotplug, which is only 
->>>>>>> the known
->>>>>>> use-case of this interface on x86.
->>>>>> Not crashing the kernel is not a novel concept even for test 
->>>>>> interfaces...
->>>>> Agreed.
->>>>>
->>>>>> Where does the possible crash come from - from using invalid RAM 
->>>>>> ranges,
->>>>>> right? I.e. on x86 to fix the crash we need to check the RAM is 
->>>>>> present in
->>>>>> the e820 maps, is marked RAM there, and is not already registered 
->>>>>> with the
->>>>>> kernel, or so?
->>>>> Yes, the crash comes from using invalid RAM ranges.  How to check 
->>>>> if the
->>>>> RAM is present is different if the system supports hotplug or not.
->>>> Could you explain different methods to check the RAM is present if the
->>>> system supports hotplkug or not?
->>> e820 and UEFI memory descriptor tables are the boot-time interfaces.
->>> These interfaces are not required to reflect any run-time changes.
->>>
->>> ACPI memory device objects can be used at both boot-time and run-time,
->>> which reflect any run-time changes.  But they are optional to 
->>> implement.
->>> They typically are not implemented unless the system supports hotplug.
->>>
->>>>>>> In order to verify if a given memory address is enabled at 
->>>>>>> run-time (as
->>>>>>> opposed to boot-time), we need to check with ACPI memory device 
->>>>>>> objects
->>>>>>> on x86.  However, system vendors tend to not implement memory 
->>>>>>> device
->>>>>>> objects unless their systems support memory hotplug. Dave Hansen is
->>>>>>> using this interface for his testing as a way to fake a hotplug 
->>>>>>> event on
->>>>>>> a system that does not support memory hotplug.
->>>>>> All vendors implement e820 maps for the memory present at boot time.
->>>>> Yes for boot time.  At run-time, e820 is not guaranteed to 
->>>>> represent a
->>>>> new memory added.  Here is a quote from ACPI spec.
->>>>>
->>>>> ===
->>>>> 15.1 INT 15H, E820H - Query System Address Map
->>>>>    :
->>>>> The memory map conveyed by this interface is not required to 
->>>>> reflect any
->>>>> changes in available physical memory that have occurred after the 
->>>>> BIOS
->>>>> has initially passed control to the operating system. For example, if
->>>>> memory is added dynamically, this interface is not required to 
->>>>> reflect
->>>>> the new system memory configuration.
->>>>> ===
->>>>>
->>>>> By definition, the "probe" interface is used for the kernel to 
->>>>> recognize
->>>>> a new memory added at run-time.  So, it should check ACPI memory 
->>>>> device
->>>>> objects (which represents run-time state) for the verification.  
->>>>> On x86,
->>>>> however, ACPI also sends a hotplug event to the kernel, which 
->>>>> triggers
->>>>> the kernel to recognize the new physical memory properly. Hence, 
->>>>> users
->>>>> do not need this "probe" interface.
->>>>>
->>>>>> How is the testing done by Dave Hansen? If it's done by booting 
->>>>>> with less
->>>>>> RAM than available (via say the mem=1g boot parameter), and then
->>>>>> hot-adding some of the missing RAM, then this could be made safe 
->>>>>> via the
->>>>>> e820 maps and by consultig the physical memory maps (to avoid double
->>>>>> registry), right?
->>>>> If we focus on this test scenario on a system that does not support
->>>>> hotplug, yes, I agree that we can check with e820 since it is safe to
->>>>> assume that the system has no change after boot.  IOW, it is 
->>>>> unsafe to
->>>>> check with e820 if the system supports hotplug, but there is no 
->>>>> use in
->>>>> this interface for testing if the system supports hotplug.  So, 
->>>>> this may
->>>>> be a good idea.
->>>>>
->>>>> Dave, is this how you are testing?  Do you always specify a valid 
->>>>> memory
->>>>> address for your testing?
->>>>>
->>>>>> How does the hotplug event based approach solve double adds? 
->>>>>> Relies on the
->>>>>> hardware not sending a hot-add event twice for the same memory 
->>>>>> area or for
->>>>>> an invalid memory area, or does it include fail-safes and double 
->>>>>> checks as
->>>>>> well to avoid double adds and adding invalid memory? If yes then 
->>>>>> that
->>>>>> could be utilized here as well.
->>>>> In high-level, here is how ACPI memory hotplug works:
->>>>>
->>>>> 1. ACPI sends a hotplug event to a new ACPI memory device object 
->>>>> that is
->>>>> hot-added.
->>>>> 2. The kernel is notified, and verifies if the new memory device 
->>>>> object
->>>>> has not been attached by any handler yet.
->>>>> 3. The memory handler is called, and obtains a new memory range 
->>>>> from the
->>>>> ACPI memory device object.
->>>>> 4. The memory handler calls add_memory() with the new address range.
->>>>>
->>>>> The above step 1-4 proceeds automatically within the kernel.  No user
->>>>> input (nor sysfs interface) is necessary.  Step 2 prevents double 
->>>>> adds
->>>>> and step 3 gets a valid address range from the firmware directly.  
->>>>> Step
->>>>> 4 is basically the same as the "probe" interface, but with all the
->>>>> verification up front, this step is safe.
->>>> This is hot-added part, could you also explain how ACPI memory hotplug
->>>> works for hot-remove?
->>> Sure.  Here is high-level.
->>>
->>> 1. ACPI sends a hotplug event to an ACPI memory device object that is
->>> requested to hot-remove.
->>> 2. The kernel is notified, and verifies if the memory device object is
->>> attached by a handler.
->>> 3. The memory handler is called (which is being attached), and obtains
->>> its memory range.
->>> 4. The memory handler calls remove_memory() with the address range.
->>> 5. The kernel calls eject method of the ACPI memory device object.
->>
->> If hot remove the memory device by the hardware, or writing 1 to
->> /sys/bus/acpi/devices/PNP0C80:XX/eject both will call eject method?
->
-> Yes.
-> Both operations will call eject method.
->
->> What's the difference between these two methods? I guess the former 
->> will send SCI and the latter won't.
->
-> Triggers are different. Former is triggered by SCI, latter is 
-> triggered by
-> writing sysfs.
+An Intel MIC X100 device is a PCIe form factor add-in coprocessor
+card based on the Intel Many Integrated Core (MIC) architecture
+that runs a Linux OS. It is a PCIe endpoint in a platform and therefore
+implements the three required standard address spaces i.e. configuration,
+memory and I/O. The host OS loads a device driver as is typical for
+PCIe devices. The card itself runs a bootstrap after reset that
+transfers control to the card OS downloaded from the host driver.
+The card OS as shipped by Intel is a Linux kernel with modifications
+for the X100 devices.
 
-Thanks, another question, what's the role of udev in memory hotplug?
+Since it is a PCIe card, it does not have the ability to host hardware
+devices for networking, storage and console. We provide these devices
+on X100 coprocessors thus enabling a self-bootable equivalent environment
+for applications. A key benefit of our solution is that it leverages
+the standard virtio framework for network, disk and console devices,
+though in our case the virtio framework is used across a PCIe bus.
 
->
-> Thanks,
-> Yasuaki Ishimatsu
->
->
->>
->>>
->>> Thanks,
->>> -Toshi
->>>
->>>
->>
->
->
+Here is a block diagram of the various components described above. The
+virtio backends are situated on the host rather than the card given better
+single threaded performance for the host compared to MIC and the ability of
+the host to initiate DMA's to/from the card using the MIC DMA engine.
+
+                              |
+       +----------+           |             +----------+
+       | Card OS  |           |             | Host OS  |
+       +----------+           |             +----------+
+                              |
++-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+| Virtio| |Virtio  | |Virtio| | |Virtio   |  |Virtio  | |Virtio  |
+| Net   | |Console | |Block | | |Net      |  |Console | |Block   |
+| Driver| |Driver  | |Driver| | |backend  |  |backend | |backend |
++-------+ +--------+ +------+ | +---------+  +--------+ +--------+
+    |         |         |     |      |            |         |
+    |         |         |     |Ring 3|            |         |
+    |         |         |     |------|------------|---------|-------
+    +-------------------+     |Ring 0+--------------------------+
+              |               |      | Virtio over PCIe IOCTLs  |
+              |               |      +--------------------------+
+      +--------------+        |                   |
+      |Intel MIC     |        |            +---------------+
+      |Card Driver   |        |            |Intel MIC      |
+      +--------------+        |            |Host Driver    |
+              |               |            +---------------+
+              |               |                   |
+     +-------------------------------------------------------------+
+     |                                                             |
+     |                    PCIe Bus                                 |
+     +-------------------------------------------------------------+
+
+The following series of patches are partitioned as follows:
+
+Patch 1: This patch introduces the "Intel MIC Host Driver" in the block
+diagram which does the following:
+a) Initializes the Intel MIC X100 PCIe devices.
+b) Boots and shuts down the card via sysfs entries.
+c) Allocates and maps a device page for communication with the
+card driver and updates the device page address via scratchpad
+registers.
+d) Provides sysfs entries for family, stepping, state, shutdown
+status, kernel command line, IP address, ramdisk and log buffer
+information.
+
+Patch 2: This patch introduces the "Intel MIC Card Driver" in the block
+diagram which does the following:
+a) Initializes the Intel MIC X100 platform device and driver.
+b) Sets up support to handle shutdown requests from the host.
+c) Maps the device page after obtaining the device page address
+from the scratchpad registers updated by the host.
+d) Informs the host upon a card crash by registering a panic notifier.
+e) Informs the host upon a poweroff/halt event.
+
+Patch 3: This patch introduces the host "Virtio over PCIe" interface for
+Intel MIC. It allows creating user space backends on the host and
+instantiating virtio devices for them on the Intel MIC card. A character
+device per MIC is exposed with IOCTL, mmap and poll callbacks. This allows
+the user space backend to:
+(a) add/remove a virtio device via a device page.
+(b) map (R/O) virtio rings and device page to user space.
+(c) poll for availability of data.
+(d) copy a descriptor or entire descriptor chain to/from the card.
+(e) modify virtio configuration.
+(f) handle virtio device reset.
+The buffers are copied over using CPU copies for this initial patch
+and host initiated MIC DMA support is planned for future patches.
+The avail and desc virtio rings are in host memory and the used ring
+is in card memory to maximize writes across PCIe for performance.
+
+Patch 4: This patch introduces the card "Virtio over PCIe" interface for
+Intel MIC. It allows virtio drivers on the card to communicate with their
+user space backends on the host via a device page. Ring 3 apps on the host
+can add, remove and configure virtio devices. A thin MIC specific
+virtio_config_ops is implemented which is borrowed heavily from previous
+similar implementations in lguest and s390 @
+drivers/lguest/lguest_device.c
+drivers/s390/kvm/kvm_virtio.c
+
+Patch 5: This patch introduces a sample user space daemon which
+implements the virtio device backends on the host. The daemon
+creates/removes/configures virtio device backends by communicating with
+the Intel MIC Host Driver. The virtio devices currently supported are
+virtio net, virtio console and virtio block. The daemon also monitors
+card shutdown status and takes appropriate actions like killing the
+virtio backends and resetting the card upon card shutdown and crashes.
+
+The patches have been compiled/validated against v3.10.
+
+Ashutosh Dixit (2):
+  Intel MIC Host Driver Changes for Virtio Devices.
+  Intel MIC Card Driver Changes for Virtio Devices.
+
+Caz Yokoyama (1):
+  Sample Implementation of Intel MIC User Space Daemon.
+
+Sudeep Dutt (2):
+  Intel MIC Host Driver for X100 family.
+  Intel MIC Card Driver for X100 family.
+
+ Documentation/mic/mic_overview.txt   |   48 +
+ Documentation/mic/mpssd/.gitignore   |    1 +
+ Documentation/mic/mpssd/Makefile     |   20 +
+ Documentation/mic/mpssd/micctrl      |  157 +++
+ Documentation/mic/mpssd/mpss         |  246 +++++
+ Documentation/mic/mpssd/mpssd.c      | 1732 ++++++++++++++++++++++++++++++++++
+ Documentation/mic/mpssd/mpssd.h      |  105 +++
+ Documentation/mic/mpssd/sysfs.c      |  108 +++
+ drivers/misc/Kconfig                 |    1 +
+ drivers/misc/Makefile                |    1 +
+ drivers/misc/mic/Kconfig             |   56 ++
+ drivers/misc/mic/Makefile            |    6 +
+ drivers/misc/mic/card/Makefile       |   11 +
+ drivers/misc/mic/card/mic_common.h   |   43 +
+ drivers/misc/mic/card/mic_debugfs.c  |  139 +++
+ drivers/misc/mic/card/mic_debugfs.h  |   40 +
+ drivers/misc/mic/card/mic_device.c   |  311 ++++++
+ drivers/misc/mic/card/mic_device.h   |  106 +++
+ drivers/misc/mic/card/mic_virtio.c   |  643 +++++++++++++
+ drivers/misc/mic/card/mic_virtio.h   |   79 ++
+ drivers/misc/mic/card/mic_x100.c     |  253 +++++
+ drivers/misc/mic/card/mic_x100.h     |   53 ++
+ drivers/misc/mic/common/mic_device.h |   85 ++
+ drivers/misc/mic/host/Makefile       |   13 +
+ drivers/misc/mic/host/mic_boot.c     |  181 ++++
+ drivers/misc/mic/host/mic_common.h   |   37 +
+ drivers/misc/mic/host/mic_debugfs.c  |  503 ++++++++++
+ drivers/misc/mic/host/mic_debugfs.h  |   34 +
+ drivers/misc/mic/host/mic_device.h   |  280 ++++++
+ drivers/misc/mic/host/mic_fops.c     |  280 ++++++
+ drivers/misc/mic/host/mic_fops.h     |   37 +
+ drivers/misc/mic/host/mic_main.c     | 1119 ++++++++++++++++++++++
+ drivers/misc/mic/host/mic_smpt.c     |  441 +++++++++
+ drivers/misc/mic/host/mic_smpt.h     |  103 ++
+ drivers/misc/mic/host/mic_sysfs.c    |  360 +++++++
+ drivers/misc/mic/host/mic_virtio.c   |  703 ++++++++++++++
+ drivers/misc/mic/host/mic_virtio.h   |  108 +++
+ drivers/misc/mic/host/mic_x100.c     |  665 +++++++++++++
+ drivers/misc/mic/host/mic_x100.h     |  112 +++
+ include/uapi/linux/Kbuild            |    2 +
+ include/uapi/linux/mic_common.h      |  242 +++++
+ include/uapi/linux/mic_ioctl.h       |  104 ++
+ 42 files changed, 9568 insertions(+)
+ create mode 100644 Documentation/mic/mic_overview.txt
+ create mode 100644 Documentation/mic/mpssd/.gitignore
+ create mode 100644 Documentation/mic/mpssd/Makefile
+ create mode 100755 Documentation/mic/mpssd/micctrl
+ create mode 100755 Documentation/mic/mpssd/mpss
+ create mode 100644 Documentation/mic/mpssd/mpssd.c
+ create mode 100644 Documentation/mic/mpssd/mpssd.h
+ create mode 100644 Documentation/mic/mpssd/sysfs.c
+ create mode 100644 drivers/misc/mic/Kconfig
+ create mode 100644 drivers/misc/mic/Makefile
+ create mode 100644 drivers/misc/mic/card/Makefile
+ create mode 100644 drivers/misc/mic/card/mic_common.h
+ create mode 100644 drivers/misc/mic/card/mic_debugfs.c
+ create mode 100644 drivers/misc/mic/card/mic_debugfs.h
+ create mode 100644 drivers/misc/mic/card/mic_device.c
+ create mode 100644 drivers/misc/mic/card/mic_device.h
+ create mode 100644 drivers/misc/mic/card/mic_virtio.c
+ create mode 100644 drivers/misc/mic/card/mic_virtio.h
+ create mode 100644 drivers/misc/mic/card/mic_x100.c
+ create mode 100644 drivers/misc/mic/card/mic_x100.h
+ create mode 100644 drivers/misc/mic/common/mic_device.h
+ create mode 100644 drivers/misc/mic/host/Makefile
+ create mode 100644 drivers/misc/mic/host/mic_boot.c
+ create mode 100644 drivers/misc/mic/host/mic_common.h
+ create mode 100644 drivers/misc/mic/host/mic_debugfs.c
+ create mode 100644 drivers/misc/mic/host/mic_debugfs.h
+ create mode 100644 drivers/misc/mic/host/mic_device.h
+ create mode 100644 drivers/misc/mic/host/mic_fops.c
+ create mode 100644 drivers/misc/mic/host/mic_fops.h
+ create mode 100644 drivers/misc/mic/host/mic_main.c
+ create mode 100644 drivers/misc/mic/host/mic_smpt.c
+ create mode 100644 drivers/misc/mic/host/mic_smpt.h
+ create mode 100644 drivers/misc/mic/host/mic_sysfs.c
+ create mode 100644 drivers/misc/mic/host/mic_virtio.c
+ create mode 100644 drivers/misc/mic/host/mic_virtio.h
+ create mode 100644 drivers/misc/mic/host/mic_x100.c
+ create mode 100644 drivers/misc/mic/host/mic_x100.h
+ create mode 100644 include/uapi/linux/mic_common.h
+ create mode 100644 include/uapi/linux/mic_ioctl.h
+
+-- 
+1.8.2.1
 
