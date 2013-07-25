@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab3GYJJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:09:05 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:46651 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab3GYJIz (ORCPT
+	id S1755456Ab3GYJJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:09:24 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:59425 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755327Ab3GYJIz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 05:08:55 -0400
-X-AuditID: 85900ec0-d42c9b900000151e-81-51f0eb23b091
+X-AuditID: 85900ec0-d1ac5b900000151e-83-51f0eb250526
 X-Mailbox-Line: From nobody Thu Jul 25 17:37:30 2013
 From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Subject: [RESEND RFC PATCH 0/5] Add a hash value for each line in /dev/kmsg
+Subject: [RESEND RFC PATCH 2/5] printk: add message hash values in /dev/kmsg
+	output
 To: linux-kernel@vger.kernel.org
 Cc: yrl.pp-manager.tt@hitachi.com, akpm@linux-foundation.org,
         gregkh@linuxfoundation.org, kay@vrfy.org, davem@davemloft.net,
-        itoukzo@nttdata.co.jp
+        itoukzo@nttdata.co.jp, Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 Date: Thu, 25 Jul 2013 17:37:30 +0900
-Message-ID: <20130725083730.20349.50797.stgit@localhost.localdomain>
+Message-ID: <20130725083730.20349.32762.stgit@localhost.localdomain>
+In-Reply-To: <20130725083730.20349.50797.stgit@localhost.localdomain>
+References: <20130725083730.20349.50797.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,150 +29,377 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch adds the hash value for each printk line when reading
+/dev/kmsg as bellow:
 
-I resend patches as there was no reply.  Any comments are welcome.
+	6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
 
-Changes from the previous post:
-- Rebased to 3.11-rc2
-- Update the explanation in the cover mail a bit
+Here, the 5th field is the 32-bit hash value followed by
+@<filename>:<lineno>.  If this feature is disabled, i.e.
+CONFIG_KMSG_HASH=n, or the hash value hasn't be calculated, the 5th
+field simply shows '-'.  Hash values don't appear in other than
+/dev/kmsg, thus they are not't displayed on the console and won't be
+written to /var/log/messages.
 
-Brief description
-=================
-This patch series adds hash values of printk format strings into
-each line of /dev/kmsg outputs as follows:
+A metadata table which includes pointers to the format strings and
+location info of printk is placed between __start___kmsg_meta to
+__stop___kmsg_meta.  Since the kernel doesn't calculate hash values
+dynamically, userland tools need to calculate hash values and place
+them into the table before running the kernel.  To save the space,
+the pointers to the format strings are replaced with the calculated
+hash values.
 
-        6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
+In the current implementation, KERN_CONT cases are not dealt with
+well.  Only a hash value of the first printk in the sequence is
+printed.
 
-These hash values allow use space to identify messages easily and
-do valuable things.  There is no guarantee that the hash values
-are unique.  However, user space can know which one collides to
-others from a message-and-hash catalog generated at build time, so
-finally it should be able to identify the messages.  User space
-can also use filename:lineno information to do that, although the
-information is not portable among various kernel versions.
-
-
-Background
-==========
-We sometimes want to identify each kernel message automatically
-because of the following purposes:
-
-(1) Show more detailed information about the message by cooperating
-    with external system
-(2) Take actions automatically depending on the message, for example
-    trigger a fail over or collect related information to analyze the
-    problem
-
-However, most of printk messages have dynamically generated parts,
-so it is difficult to identify the messages.  Even if you can, it will
-be expensive.
-
-To solve this issue, this patch series add a hash value of each
-printk format string.  A catalog file which consists of hash, location,
-and format string lines is also generated at the kernel build time.
-User space tools can easily identify kernel messages by utilizing the
-catalog file.
-
-
-Design
-======
-Hash values are displayed only when reading /dev/kmsg.  Console and
-/proc/kmsg outputs are not affected by this feature.
-
-The format in /dev/kmsg output is like this:
-
-        6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
-
-The 5th field is added, and it means "<32-bit hash>@<filename>:<lineno>".
-If you disable this feature (CONFIG_KMSG_HASH=n) or any cases the
-hash value is not calculated, the 5th field shows '-'.
-
-The function printk() is replaced with macro version to create
-a metadata table which is used to calculate and keep hash values.
-Hash value calculation is done at the kernel build time, but not
-execution time.  scripts/msghash tools scan the metadata table in
-vmlinux, calculate hash values, and put them back into the table.
-At the same time, msghash creates a catalog file named
-"<objfile>.msglist".  Here is an example of its contents:
-
-    ...
-    b6be0058@init/main.c:180,"Parameter %s is obsolete, ignored"
-    72dfe336@init/main.c:403,"Malformed early option '%s'"
-    85788d36@init/do_mounts.c:573,"Waiting for root device %s..."
-    ...
-
-The format is <32-bit hash>@<filename>:<lineno>,"<message format>".
-Similar to /dev/kmsg, unprintable characters in message formats
-are escaped and a trailing newline is dropped.
-
-
-Restrictions
-============
-Currently, only printk, pr_xxx, dev_printk, and dev_xxx are supported
-except for pr_debug with dynamic printk.  Other printk variants won't
-show meaningful hash values.  I'm going to support some of them in
-the future patches.
-
-KERN_CONT cases are not dealt with well.  Only the first printk's
-hash is output and continued printks are ignored.
-
-Kernel module support has not been implemented yet.  I'm going to do
-this in the future patches.
-
-
-Note
-====
-When CONFIG_KMSG_HASH=y, a metadata table and additional file name
-strings are allocated in object files, and it increases the kernel
-size.  Below is the difference of CONFIG_KMSG_HASH=n/y in some
-configuration.  The total size increases about 2%.
-
-   text    data     bss     dec     hex filename
-8135284 2395144 2211840 12742268         c26e7c vmlinux_hash_disabled
-8255079 2519368 2211840 12986287         c627af vmlinux_hash_enabled
-
-
-Thanks,
+Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 ---
 
-Hidehiro Kawai (5):
-      printk: Add msghash support for dev_printk
-      msghash: Add userland msghash tool
-      tools/include: Add jhash.h
-      printk: add message hash values in /dev/kmsg output
-      printk: make printk a macro
-
-
- .gitignore                        |    1 
- Makefile                          |    7 +
- drivers/base/core.c               |   57 ++-------
- drivers/usb/storage/debug.c       |    2 
- include/asm-generic/vmlinux.lds.h |    5 +
- include/linux/device.h            |   73 +++++++----
- include/linux/kmsghash.h          |   19 +++
- include/linux/printk.h            |   31 ++++-
- kernel/printk.c                   |   81 +++++++++---
- lib/Kconfig.debug                 |   22 +++
- lib/dynamic_debug.c               |    4 -
- net/core/dev.c                    |    2 
- scripts/Makefile                  |    1 
- scripts/link-vmlinux.sh           |    5 +
- scripts/msghash/.gitignore        |    1 
- scripts/msghash/Makefile          |    7 +
- scripts/msghash/msghash.c         |  241 +++++++++++++++++++++++++++++++++++++
- scripts/msghash/msghash.sh        |   45 +++++++
- tools/include/tools/jhash.h       |  192 +++++++++++++++++++++++++++++
- 19 files changed, 698 insertions(+), 98 deletions(-)
+ drivers/base/core.c               |    3 +-
+ include/asm-generic/vmlinux.lds.h |    4 ++
+ include/linux/kmsghash.h          |   19 ++++++++++
+ include/linux/printk.h            |   29 ++++++++++++++--
+ kernel/printk.c                   |   69 ++++++++++++++++++++++++++++---------
+ lib/Kconfig.debug                 |   17 +++++++++
+ 6 files changed, 122 insertions(+), 19 deletions(-)
  create mode 100644 include/linux/kmsghash.h
- create mode 100644 scripts/msghash/.gitignore
- create mode 100644 scripts/msghash/Makefile
- create mode 100644 scripts/msghash/msghash.c
- create mode 100755 scripts/msghash/msghash.sh
- create mode 100644 tools/include/tools/jhash.h
 
--- 
-Hidehiro Kawai
-Hitach, Yokohama Research Laboratory
-Linux Technology Center
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 8856d74..e2bf2af 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -2153,7 +2153,8 @@ int dev_vprintk_emit(int level, const struct device *dev,
+ 
+ 	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
+ 
+-	return vprintk_emit(0, level, hdrlen ? hdr : NULL, hdrlen, fmt, args);
++	return vprintk_emit(0, level, hdrlen ? hdr : NULL, hdrlen,
++			    fmt, args, NULL);
+ }
+ EXPORT_SYMBOL(dev_vprintk_emit);
+ 
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 0162017..d5003a3 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -188,6 +188,10 @@
+ 	VMLINUX_SYMBOL(__start___verbose) = .;                          \
+ 	*(__verbose)                                                    \
+ 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
++	. = ALIGN(8);							\
++	VMLINUX_SYMBOL(__start___kmsg_meta) = .;			\
++	*(__kmsg_meta)							\
++	VMLINUX_SYMBOL(__stop___kmsg_meta) = .;				\
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+ 	TRACE_PRINTKS()
+diff --git a/include/linux/kmsghash.h b/include/linux/kmsghash.h
+new file mode 100644
+index 0000000..6cfe373
+--- /dev/null
++++ b/include/linux/kmsghash.h
+@@ -0,0 +1,19 @@
++#ifndef _LINUX_KMSGHASH_H
++#define _LINUX_KMSGHASH_H
++
++/* kernel message metadata flags */
++#define KMSG_FLAGS_HASH_VALID	(1<<0)
++#define KMSG_FLAGS_DEFAULT	0
++
++struct kmsg_meta {
++	const char *filename;
++	union {
++		/* format is replaced with hash at build time */
++		const char *format;
++		u32 hash;
++	} u;
++	unsigned int lineno:18;
++	unsigned int flags:8;
++} __attribute__((aligned(8)));
++
++#endif
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index c7a8c6b..fe6b350 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -5,6 +5,7 @@
+ #include <linux/init.h>
+ #include <linux/kern_levels.h>
+ #include <linux/linkage.h>
++#include <linux/kmsghash.h>
+ 
+ extern const char linux_banner[];
+ extern const char linux_proc_banner[];
+@@ -110,7 +111,7 @@ void early_printk(const char *s, ...) { }
+ asmlinkage __printf(5, 0)
+ int vprintk_emit(int facility, int level,
+ 		 const char *dict, size_t dictlen,
+-		 const char *fmt, va_list args);
++		 const char *fmt, va_list args, struct kmsg_meta *meta);
+ 
+ asmlinkage __printf(1, 0)
+ int vprintk(const char *fmt, va_list args);
+@@ -123,7 +124,31 @@ asmlinkage int printk_emit(int facility, int level,
+ asmlinkage __printf(1, 2) __cold
+ int _printk(const char *fmt, ...);
+ 
+-#define printk(fmt, args...) _printk(fmt, ## args)
++__printf(2, 3) __cold
++int __printk(struct kmsg_meta *meta, const char *fmt, ...);
++
++#ifdef CONFIG_KMSG_HASH
++#define DEFINE_KMSG_METADATA(name, fmt)					\
++	static struct kmsg_meta __aligned(8)				\
++	__attribute__((section("__kmsg_meta"))) name = {		\
++		.filename = __FILE__,					\
++		.u.format = __builtin_constant_p(fmt) ? (fmt) : 0,	\
++		.lineno = __LINE__,					\
++		.flags = KMSG_FLAGS_DEFAULT,				\
++	}
++
++#define printk_(fmt, args...)				\
++({							\
++	DEFINE_KMSG_METADATA(_meta, (fmt));		\
++	__printk(&_meta, (fmt), ##args);		\
++})
++
++#define printk(fmt, args...) printk_(fmt, ##args)
++
++#else
++
++#define printk(fmt, args...) __printk(0, fmt, ##args)
++#endif /* CONFIG_KMSG_HASH */
+ 
+ /*
+  * Special printk facility for scheduler use only, _DO_NOT_USE_ !
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 4cf26ea..57db1a7 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -208,6 +208,7 @@ struct log {
+ 	u8 facility;		/* syslog facility */
+ 	u8 flags:5;		/* internal record flags */
+ 	u8 level:3;		/* syslog level */
++	struct kmsg_meta *meta;	/* kmsg metadata */
+ };
+ 
+ /*
+@@ -306,7 +307,7 @@ static u32 log_next(u32 idx)
+ static void log_store(int facility, int level,
+ 		      enum log_flags flags, u64 ts_nsec,
+ 		      const char *dict, u16 dict_len,
+-		      const char *text, u16 text_len)
++		      const char *text, u16 text_len, struct kmsg_meta *meta)
+ {
+ 	struct log *msg;
+ 	u32 size, pad_len;
+@@ -357,6 +358,7 @@ static void log_store(int facility, int level,
+ 		msg->ts_nsec = local_clock();
+ 	memset(log_dict(msg) + dict_len, 0, pad_len);
+ 	msg->len = sizeof(struct log) + text_len + dict_len + pad_len;
++	msg->meta = meta;
+ 
+ 	/* insert message */
+ 	log_next_idx += msg->len;
+@@ -535,9 +537,16 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
+ 		 ((user->prev & LOG_CONT) && !(msg->flags & LOG_PREFIX)))
+ 		cont = '+';
+ 
+-	len = sprintf(user->buf, "%u,%llu,%llu,%c;",
+-		      (msg->facility << 3) | msg->level,
+-		      user->seq, ts_usec, cont);
++	if (msg->meta && (msg->meta->flags & KMSG_FLAGS_HASH_VALID))
++		len = sprintf(user->buf, "%u,%llu,%llu,%c,%08x@%s:%d;",
++			      (msg->facility << 3) | msg->level,
++			      user->seq, ts_usec, cont, msg->meta->u.hash,
++			      msg->meta->filename, msg->meta->lineno);
++	else
++		len = sprintf(user->buf, "%u,%llu,%llu,%c,-;",
++			      (msg->facility << 3) | msg->level,
++			      user->seq, ts_usec, cont);
++
+ 	user->prev = msg->flags;
+ 
+ 	/* escape non-printable characters */
+@@ -1405,6 +1414,7 @@ static struct cont {
+ 	u8 facility;			/* log level of first message */
+ 	enum log_flags flags;		/* prefix, newline flags */
+ 	bool flushed:1;			/* buffer sealed and committed */
++	struct kmsg_meta *meta;		/* kmsg metadata */
+ } cont;
+ 
+ static void cont_flush(enum log_flags flags)
+@@ -1421,7 +1431,8 @@ static void cont_flush(enum log_flags flags)
+ 		 * line. LOG_NOCONS suppresses a duplicated output.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags | LOG_NOCONS,
+-			  cont.ts_nsec, NULL, 0, cont.buf, cont.len);
++			  cont.ts_nsec, NULL, 0, cont.buf, cont.len,
++			  cont.meta);
+ 		cont.flags = flags;
+ 		cont.flushed = true;
+ 	} else {
+@@ -1430,12 +1441,13 @@ static void cont_flush(enum log_flags flags)
+ 		 * just submit it to the store and free the buffer.
+ 		 */
+ 		log_store(cont.facility, cont.level, flags, 0,
+-			  NULL, 0, cont.buf, cont.len);
++			  NULL, 0, cont.buf, cont.len, cont.meta);
+ 		cont.len = 0;
+ 	}
+ }
+ 
+-static bool cont_add(int facility, int level, const char *text, size_t len)
++static bool cont_add(int facility, int level, const char *text, size_t len,
++	struct kmsg_meta *meta)
+ {
+ 	if (cont.len && cont.flushed)
+ 		return false;
+@@ -1454,6 +1466,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.flags = 0;
+ 		cont.cons = 0;
+ 		cont.flushed = false;
++		cont.meta = meta;
+ 	}
+ 
+ 	memcpy(cont.buf + cont.len, text, len);
+@@ -1489,13 +1502,15 @@ static size_t cont_print_text(char *text, size_t size)
+ 			text[textlen++] = '\n';
+ 		/* got everything, release buffer */
+ 		cont.len = 0;
++		cont.meta = NULL;
+ 	}
+ 	return textlen;
+ }
+ 
+ asmlinkage int vprintk_emit(int facility, int level,
+ 			    const char *dict, size_t dictlen,
+-			    const char *fmt, va_list args)
++			    const char *fmt, va_list args,
++			    struct kmsg_meta *meta)
+ {
+ 	static int recursion_bug;
+ 	static char textbuf[LOG_LINE_MAX];
+@@ -1543,7 +1558,7 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		printed_len += strlen(recursion_msg);
+ 		/* emit KERN_CRIT message */
+ 		log_store(0, 2, LOG_PREFIX|LOG_NEWLINE, 0,
+-			  NULL, 0, recursion_msg, printed_len);
++			  NULL, 0, recursion_msg, printed_len, NULL);
+ 	}
+ 
+ 	/*
+@@ -1593,9 +1608,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 			cont_flush(LOG_NEWLINE);
+ 
+ 		/* buffer line if possible, otherwise store it right away */
+-		if (!cont_add(facility, level, text, text_len))
++		if (!cont_add(facility, level, text, text_len, meta))
+ 			log_store(facility, level, lflags | LOG_CONT, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len, meta);
+ 	} else {
+ 		bool stored = false;
+ 
+@@ -1607,13 +1622,14 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 */
+ 		if (cont.len && cont.owner == current) {
+ 			if (!(lflags & LOG_PREFIX))
+-				stored = cont_add(facility, level, text, text_len);
++				stored = cont_add(facility, level, text,
++						  text_len, meta);
+ 			cont_flush(LOG_NEWLINE);
+ 		}
+ 
+ 		if (!stored)
+ 			log_store(facility, level, lflags, 0,
+-				  dict, dictlen, text, text_len);
++				  dict, dictlen, text, text_len, meta);
+ 	}
+ 	printed_len += text_len;
+ 
+@@ -1638,7 +1654,7 @@ EXPORT_SYMBOL(vprintk_emit);
+ 
+ asmlinkage int vprintk(const char *fmt, va_list args)
+ {
+-	return vprintk_emit(0, -1, NULL, 0, fmt, args);
++	return vprintk_emit(0, -1, NULL, 0, fmt, args, NULL);
+ }
+ EXPORT_SYMBOL(vprintk);
+ 
+@@ -1650,7 +1666,7 @@ asmlinkage int printk_emit(int facility, int level,
+ 	int r;
+ 
+ 	va_start(args, fmt);
+-	r = vprintk_emit(facility, level, dict, dictlen, fmt, args);
++	r = vprintk_emit(facility, level, dict, dictlen, fmt, args, NULL);
+ 	va_end(args);
+ 
+ 	return r;
+@@ -1696,13 +1712,34 @@ asmlinkage int _printk(const char *fmt, ...)
+ 	}
+ #endif
+ 	va_start(args, fmt);
+-	r = vprintk_emit(0, -1, NULL, 0, fmt, args);
++	r = vprintk_emit(0, -1, NULL, 0, fmt, args, NULL);
+ 	va_end(args);
+ 
+ 	return r;
+ }
+ EXPORT_SYMBOL(_printk);
+ 
++int __printk(struct kmsg_meta *meta, const char *fmt, ...)
++{
++	va_list args;
++	int r;
++
++#ifdef CONFIG_KGDB_KDB
++	if (unlikely(kdb_trap_printk)) {
++		va_start(args, fmt);
++		r = vkdb_printf(fmt, args);
++		va_end(args);
++		return r;
++	}
++#endif
++	va_start(args, fmt);
++	r = vprintk_emit(0, -1, NULL, 0, fmt, args, meta);
++	va_end(args);
++
++	return r;
++}
++EXPORT_SYMBOL(__printk);
++
+ #else /* CONFIG_PRINTK */
+ 
+ #define LOG_LINE_MAX		0
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 1501aa5..907f8cf 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -15,6 +15,23 @@ config PRINTK_TIME
+ 	  The behavior is also controlled by the kernel command line
+ 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+ 
++config KMSG_HASH
++	bool "Show the hash value of each printk message format"
++	depends on PRINTK
++	default n
++	help
++	  If you say y here, the hash value of each printk message
++	  format is displayed when reading /dev/kmsg as bellow:
++
++	    6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
++
++	  Here, the 5th field is the 32-bit hash value followed by
++	  @<location>.  If this feature is disabled or the hash value
++	  couldn't be calculated, the 5th field simply shows '-'.
++
++	  Please note that the kernel image size gets larger by
++	  hundres Kbytes when this feature is enabled.
++
+ config DEFAULT_MESSAGE_LOGLEVEL
+ 	int "Default message log level (1-7)"
+ 	range 1 7
+
 
