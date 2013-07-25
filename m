@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755145Ab3GYJ6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:58:25 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:41383 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751750Ab3GYJ6W (ORCPT
+	id S1755401Ab3GYJ6q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:58:46 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:49804 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755301Ab3GYJ6l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:58:22 -0400
+	Thu, 25 Jul 2013 05:58:41 -0400
+Date: Thu, 25 Jul 2013 11:58:33 +0200
+From: Fabio Baltieri <fabio.baltieri@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mac80211: use oneshot blink API for LED triggers
+Message-ID: <20130725095833.GA21158@balto.lan>
+References: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
+ <1374624581-6012-2-git-send-email-fabio.baltieri@gmail.com>
+ <1374653665.8180.0.camel@jlt4.sipsolutions.net>
+ <20130724085337.GA7096@balto.lan>
+ <1374739101.8827.7.camel@jlt4.sipsolutions.net>
 MIME-Version: 1.0
-In-Reply-To: <51F09D5E.70304@cn.fujitsu.com>
-References: <51F09D5E.70304@cn.fujitsu.com>
-Date: Thu, 25 Jul 2013 11:58:21 +0200
-X-Google-Sender-Auth: JFIV3uuqZLcBF8PTpF43UFAlYMM
-Message-ID: <CAMuHMdVxXLrUXQno+vtHQrT_mmc9C6q42HZ6F1TujLBeEZt+Mw@mail.gmail.com>
-Subject: Re: [PATCH] driver/vga16fb.c: remove the unused variable "dev" of
- function vga16fb_destroy()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374739101.8827.7.camel@jlt4.sipsolutions.net>
+X-Operating-System: Linux balto 3.11.0-rc2-00001-g765589b x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 5:37 AM, Gu Zheng <guz.fnst@cn.fujitsu.com> wrote:
-> Commit  e21d2170f36602ae2708 removed the unnecessary platform_set_drvdata(),
-> but left the variable "dev" unused, delete it.
+On Thu, Jul 25, 2013 at 09:58:21AM +0200, Johannes Berg wrote:
+> > So, are you definitely rejecting this patch or should I fix indentation
+> > and send a v2?
+> 
+> I think I'll take it, I kinda hope nobody will really care much about it
+> but the behaviour looks better and the code is simpler, so ... :)
 
-When referring to another commit, please also include the oneline summary of
-the commit, to make it easier for people to see what it's about.
+Good enough...  I'll send the v2 then. :-)
 
-E.g. "Commit  e21d2170f36602ae2708 ("video: remove unnecessary
-platform_set_drvdata()") removed the unnecessary platform_set_drvdata(),
-but left the variable "dev" unused, delete it."
+Thanks,
+Fabio
 
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Fabio Baltieri
