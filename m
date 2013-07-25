@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab3GYSCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:02:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:38709 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756387Ab3GYSCv (ORCPT
+	id S932119Ab3GYR7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:59:43 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43468 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757005Ab3GYRwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:02:51 -0400
-Date: Thu, 25 Jul 2013 19:02:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Joseph Lo <josephl@nvidia.com>,
-        Stephen Warren <swarren@wwwdotorg.org>, linux-kernel@vger.kernel.org
-Message-ID: <20130725180246.GM9858@sirena.org.uk>
-References: <1374771899-5037-1-git-send-email-rklein@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="8+VFUngaQGc2C8Pg"
-Content-Disposition: inline
-In-Reply-To: <1374771899-5037-1-git-send-email-rklein@nvidia.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [v2 PATCH] regulator: palmas: Store pdata pointer in palmas
- struct
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Thu, 25 Jul 2013 13:52:04 -0400
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
+Subject: [PATCH V8 28/33] gfs2: Convert aio_read/write ops to read/write_iter
+Date: Thu, 25 Jul 2013 12:50:54 -0500
+Message-Id: <1374774659-13121-29-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Cc: cluster-devel@redhat.com
+---
+ fs/gfs2/file.c | 21 ++++++++++-----------
+ 1 file changed, 10 insertions(+), 11 deletions(-)
 
---8+VFUngaQGc2C8Pg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 72c3866..23cbdd4 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -679,10 +679,9 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+ }
+ 
+ /**
+- * gfs2_file_aio_write - Perform a write to a file
++ * gfs2_file_write_iter - Perform a write to a file
+  * @iocb: The io context
+- * @iov: The data to write
+- * @nr_segs: Number of @iov segments
++ * @iter: The data to write
+  * @pos: The file position
+  *
+  * We have to do a lock/unlock here to refresh the inode size for
+@@ -692,11 +691,11 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+  *
+  */
+ 
+-static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-				   unsigned long nr_segs, loff_t pos)
++static ssize_t gfs2_file_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				    loff_t pos)
+ {
+ 	struct file *file = iocb->ki_filp;
+-	size_t writesize = iov_length(iov, nr_segs);
++	size_t writesize = iov_iter_count(iter);
+ 	struct gfs2_inode *ip = GFS2_I(file_inode(file));
+ 	int ret;
+ 
+@@ -715,7 +714,7 @@ static ssize_t gfs2_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 		gfs2_glock_dq_uninit(&gh);
+ 	}
+ 
+-	return generic_file_aio_write(iocb, iov, nr_segs, pos);
++	return generic_file_write_iter(iocb, iter, pos);
+ }
+ 
+ static int fallocate_chunk(struct inode *inode, loff_t offset, loff_t len,
+@@ -1047,9 +1046,9 @@ static int gfs2_flock(struct file *file, int cmd, struct file_lock *fl)
+ const struct file_operations gfs2_file_fops = {
+ 	.llseek		= gfs2_llseek,
+ 	.read		= do_sync_read,
+-	.aio_read	= generic_file_aio_read,
++	.read_iter	= generic_file_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= gfs2_file_aio_write,
++	.write_iter	= gfs2_file_write_iter,
+ 	.unlocked_ioctl	= gfs2_ioctl,
+ 	.mmap		= gfs2_mmap,
+ 	.open		= gfs2_open,
+@@ -1079,9 +1078,9 @@ const struct file_operations gfs2_dir_fops = {
+ const struct file_operations gfs2_file_fops_nolock = {
+ 	.llseek		= gfs2_llseek,
+ 	.read		= do_sync_read,
+-	.aio_read	= generic_file_aio_read,
++	.read_iter	= generic_file_read_iter,
+ 	.write		= do_sync_write,
+-	.aio_write	= gfs2_file_aio_write,
++	.write_iter	= gfs2_file_write_iter,
+ 	.unlocked_ioctl	= gfs2_ioctl,
+ 	.mmap		= gfs2_mmap,
+ 	.open		= gfs2_open,
+-- 
+1.8.3.4
 
-On Thu, Jul 25, 2013 at 01:04:59PM -0400, Rhyland Klein wrote:
-> Store a pointer to the pdata so that if it needs to be used after
-> probe it can be. In the case of booting from DeviceTree, the
-> dev.platform_data may be null, so we need to store this pointer
-> explicitly.
-
-This doesn't seem to adjust any places where pdata is used to refer to
-the new pointer so does it actually have any effect?
-
---8+VFUngaQGc2C8Pg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8WhCAAoJELSic+t+oim9qrkP/3crBBItEJF3qzz1stqF9yB4
-bfdWCB+MXSFdvtxNZT7DtNEd5TQXb2iIy3GA185TaHb52KpJzv6N5KlvamQdECKE
-mDLZmcp8VKuRGZ61d8QGyILnWOZ2pznobxgKQ3OLUMs8ak94EC5UD5Y4x4OkMfqI
-JLEQ/P26b25oRMXoVtVN9k1wH6CaodZRqzhPNCTi+cRDZjAdPvVjvgu1ivS1FJRu
-LXYQZ+H0YbvPkzKW2riMBDf8gZuS6rebJg41tBZZyP6WA0sHAjThhuY4l7sEuYgo
-8R3LrxCMswUrctf4tJZpy3SM1k8ypT/uHdZlBpJvn1ZCwvpH2XeS0IcD+RXHVRb0
-7P9hSo/HvziCu8e4TepZlKekVvlgs0cCb15wodASGX1HNkG1jhI1XuMifEWUcl4D
-eDa5/QKqxJFcUdRj00E095isFGDPpY5EJWNl2eW/Vc23T+EW6tTealphlirzdwZQ
-Cizwnp5xNQyCodAQ3pfbqkSJ+ItqC2PMBOqsubhgAApHZO3AwTOMa7upBihhKvqZ
-XI5yNqivNu9r6kCIcwUTp4GIbwTvd5KKaP6/zwi8fjwJTYE0O+ejieToiOb+nopv
-mepnDQ1W8UdPsrMgUU5qFcKqBBcMIi+7nN8jREiPv2n148Kf0DHYjnSg9yhVaMNW
-XcBwZshnlwhkXqZ/IVHM
-=F+My
------END PGP SIGNATURE-----
-
---8+VFUngaQGc2C8Pg--
