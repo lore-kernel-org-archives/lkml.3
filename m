@@ -1,42 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab3GYXS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:18:28 -0400
-Received: from oproxy12-pub.bluehost.com ([50.87.16.10]:36390 "HELO
-	oproxy12-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757361Ab3GYXS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:18:27 -0400
-Date: Thu, 25 Jul 2013 16:18:16 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 2/2] x86: add early quirk for reserving Intel graphics
- stolen memory v3
-Message-ID: <20130725161816.45e0471f@jbarnes-desktop>
-In-Reply-To: <20130725225925.GD13295@cantiga.alporthouse.com>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-	<1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
-	<20130725224006.GC13295@cantiga.alporthouse.com>
-	<20130725225925.GD13295@cantiga.alporthouse.com>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	id S932239Ab3GYXSi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:18:38 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:40578 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757361Ab3GYXSd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 19:18:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: devicetree-discuss@lists.ozlabs.org, wni@nvidia.com,
+        l.stach@pengutronix.de, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, lm-sensors@lm-sensors.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, cpufreq@vger.kernel.org
+Subject: Re: [RESEND PATCH V1 1/9] cpufreq: cpufreq-cpu0: add dt node parsing for 'needs-cooling'
+Date: Fri, 26 Jul 2013 01:28:36 +0200
+Message-ID: <36180776.zbN9qNcjis@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1374074248-31690-2-git-send-email-eduardo.valentin@ti.com>
+References: <1374074248-31690-1-git-send-email-eduardo.valentin@ti.com> <1374074248-31690-2-git-send-email-eduardo.valentin@ti.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Jul 2013 23:59:25 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
+On Wednesday, July 17, 2013 11:17:20 AM Eduardo Valentin wrote:
+> This patch changes the cpufreq-cpu0 driver to consider if
+> a cpu needs cooling (with cpufreq). In case the cooling is needed,
+> it can be flagged at the cpu0 device tree node, with the boolean
+> property 'needs-cooling'.
+> 
+> In case this boolean is present, the driver will
+> load a cpufreq cooling device in the system. The cpufreq-cpu0
+> driver is not interested in determining how the system should
+> be using the cooling device. The driver is responsible
+> only of loading the cooling device.
+> 
+> Describing how the cooling device will be used can be
+> accomplished by setting up a thermal zone that references
+> and is composed by the cpufreq cooling device.
+> 
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 
-> Hmm, interesting licence block in i915_pciids.h - our claim to
-> grant licence but TG disclaims liability.
+FWIW, this change is fine by me, but I guess it should be handled along with
+the entire series.
 
-Oops my manual search & replace obviously failed.  Will fix up.
-
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <rob.herring@calxeda.com>
+> Cc: cpufreq@vger.kernel.org
+> Cc: linux-pm@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: devicetree-discuss@lists.ozlabs.org
+> Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
+> ---
+>  Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt | 3 +++
+>  drivers/cpufreq/cpufreq-cpu0.c                             | 8 ++++++++
+>  2 files changed, 11 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> index 051f764..e8ff916 100644
+> --- a/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> +++ b/Documentation/devicetree/bindings/cpufreq/cpufreq-cpu0.txt
+> @@ -15,6 +15,8 @@ Optional properties:
+>  - clock-latency: Specify the possible maximum transition latency for clock,
+>    in unit of nanoseconds.
+>  - voltage-tolerance: Specify the CPU voltage tolerance in percentage.
+> +- needs-cooling: The generic cpu cooling (freq clipping) is loaded by the
+> +generic cpufreq-cpu0 driver in case the device tree node has this boolean.
+>  
+>  Examples:
+>  
+> @@ -33,6 +35,7 @@ cpus {
+>  			198000  850000
+>  		>;
+>  		clock-latency = <61036>; /* two CLK32 periods */
+> +		needs-cooling;
+>  	};
+>  
+>  	cpu@1 {
+> diff --git a/drivers/cpufreq/cpufreq-cpu0.c b/drivers/cpufreq/cpufreq-cpu0.c
+> index ad1fde2..4a8747a 100644
+> --- a/drivers/cpufreq/cpufreq-cpu0.c
+> +++ b/drivers/cpufreq/cpufreq-cpu0.c
+> @@ -20,6 +20,9 @@
+>  #include <linux/platform_device.h>
+>  #include <linux/regulator/consumer.h>
+>  #include <linux/slab.h>
+> +#include <linux/thermal.h>
+> +#include <linux/cpu_cooling.h>
+> +#include <linux/cpumask.h>
+>  
+>  static unsigned int transition_latency;
+>  static unsigned int voltage_tolerance; /* in percentage */
+> @@ -28,6 +31,7 @@ static struct device *cpu_dev;
+>  static struct clk *cpu_clk;
+>  static struct regulator *cpu_reg;
+>  static struct cpufreq_frequency_table *freq_table;
+> +static struct thermal_cooling_device *cdev;
+>  
+>  static int cpu0_verify_speed(struct cpufreq_policy *policy)
+>  {
+> @@ -268,6 +272,9 @@ static int cpu0_cpufreq_probe(struct platform_device *pdev)
+>  		goto out_free_table;
+>  	}
+>  
+> +	if (of_property_read_bool(np, "needs-cooling"))
+> +		cdev = cpufreq_cooling_register(cpu_present_mask);
+> +
+>  	of_node_put(np);
+>  	of_node_put(parent);
+>  	return 0;
+> @@ -283,6 +290,7 @@ out_put_parent:
+>  
+>  static int cpu0_cpufreq_remove(struct platform_device *pdev)
+>  {
+> +	cpufreq_cooling_unregister(cdev);
+>  	cpufreq_unregister_driver(&cpu0_cpufreq_driver);
+>  	opp_free_cpufreq_table(cpu_dev, &freq_table);
+>  
+> 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
