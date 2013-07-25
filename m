@@ -1,147 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932256Ab3GYR7x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:59:53 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19909 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756822Ab3GYRwE (ORCPT
+	id S1757617Ab3GYSAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:00:41 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51252 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757014Ab3GYSAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:52:04 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Subject: [PATCH V8 22/33] ext4: add support for read_iter and write_iter
-Date: Thu, 25 Jul 2013 12:50:48 -0500
-Message-Id: <1374774659-13121-23-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 25 Jul 2013 14:00:35 -0400
+Date: Thu, 25 Jul 2013 19:00:14 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Message-ID: <20130725180014.GK9858@sirena.org.uk>
+References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
+ <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
+ <20130725080443.GB3403@laptop>
+ <20130725080800.GC3403@laptop>
+ <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9uRI0oaS4VwOtskx"
+Content-Disposition: inline
+In-Reply-To: <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use the generic_file_read_iter(), create ext4_file_write_iter() based on
-ext4_file_write(), and make ext4_file_write() a wrapper around
-ext4_file_write_iter().
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org
----
- fs/ext4/file.c | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+--9uRI0oaS4VwOtskx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 6f4cc56..c25d48a 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -74,12 +74,11 @@ void ext4_unwritten_wait(struct inode *inode)
-  * or one thread will zero the other's data, causing corruption.
-  */
- static int
--ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
--		   unsigned long nr_segs, loff_t pos)
-+ext4_unaligned_aio(struct inode *inode, struct iov_iter *iter, loff_t pos)
- {
- 	struct super_block *sb = inode->i_sb;
- 	int blockmask = sb->s_blocksize - 1;
--	size_t count = iov_length(iov, nr_segs);
-+	size_t count = iov_iter_count(iter);
- 	loff_t final_size = pos + count;
- 
- 	if (pos >= inode->i_size)
-@@ -92,8 +91,8 @@ ext4_unaligned_aio(struct inode *inode, const struct iovec *iov,
- }
- 
- static ssize_t
--ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
--		    unsigned long nr_segs, loff_t pos)
-+ext4_file_dio_write(struct kiocb *iocb, struct iov_iter *iter,
-+		    loff_t pos)
- {
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
-@@ -101,11 +100,11 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 	int unaligned_aio = 0;
- 	ssize_t ret;
- 	int overwrite = 0;
--	size_t length = iov_length(iov, nr_segs);
-+	size_t length = iov_iter_count(iter);
- 
- 	if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS) &&
- 	    !is_sync_kiocb(iocb))
--		unaligned_aio = ext4_unaligned_aio(inode, iov, nr_segs, pos);
-+		unaligned_aio = ext4_unaligned_aio(inode, iter, pos);
- 
- 	/* Unaligned direct AIO must be serialized; see comment above */
- 	if (unaligned_aio) {
-@@ -146,7 +145,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- 			overwrite = 1;
- 	}
- 
--	ret = __generic_file_aio_write(iocb, iov, nr_segs, &iocb->ki_pos);
-+	ret = __generic_file_write_iter(iocb, iter, &iocb->ki_pos);
- 	mutex_unlock(&inode->i_mutex);
- 
- 	if (ret > 0 || ret == -EIOCBQUEUED) {
-@@ -165,8 +164,7 @@ ext4_file_dio_write(struct kiocb *iocb, const struct iovec *iov,
- }
- 
- static ssize_t
--ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
--		unsigned long nr_segs, loff_t pos)
-+ext4_file_write_iter(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
- {
- 	struct inode *inode = file_inode(iocb->ki_filp);
- 	ssize_t ret;
-@@ -178,22 +176,24 @@ ext4_file_write(struct kiocb *iocb, const struct iovec *iov,
- 
- 	if (!(ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))) {
- 		struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
--		size_t length = iov_length(iov, nr_segs);
-+		size_t length = iov_iter_count(iter);
- 
- 		if ((pos > sbi->s_bitmap_maxbytes ||
- 		    (pos == sbi->s_bitmap_maxbytes && length > 0)))
- 			return -EFBIG;
- 
- 		if (pos + length > sbi->s_bitmap_maxbytes) {
--			nr_segs = iov_shorten((struct iovec *)iov, nr_segs,
--					      sbi->s_bitmap_maxbytes - pos);
-+			ret = iov_iter_shorten(iter,
-+					       sbi->s_bitmap_maxbytes - pos);
-+			if (ret)
-+				return ret;
- 		}
- 	}
- 
- 	if (unlikely(iocb->ki_filp->f_flags & O_DIRECT))
--		ret = ext4_file_dio_write(iocb, iov, nr_segs, pos);
-+		ret = ext4_file_dio_write(iocb, iter, pos);
- 	else
--		ret = generic_file_aio_write(iocb, iov, nr_segs, pos);
-+		ret = generic_file_write_iter(iocb, iter, pos);
- 
- 	return ret;
- }
-@@ -607,8 +607,8 @@ const struct file_operations ext4_file_operations = {
- 	.llseek		= ext4_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read	= generic_file_aio_read,
--	.aio_write	= ext4_file_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= ext4_file_write_iter,
- 	.unlocked_ioctl = ext4_ioctl,
- #ifdef CONFIG_COMPAT
- 	.compat_ioctl	= ext4_compat_ioctl,
--- 
-1.8.3.4
+On Thu, Jul 25, 2013 at 07:34:53PM +0200, Philipp Zabel wrote:
 
+> Well, most of those lines consist of the register and bit(field)
+> definitions and the assignment of those to regmap and regmap-irq.
+
+> I could split this into (core+i2c) and (irq) parts if you insist.
+
+You could probably put the register definitions into a separate patch
+too.
+
+--9uRI0oaS4VwOtskx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8WeqAAoJELSic+t+oim93YUP/Asr6YDAI2iqU/zFvZdhvoRg
+8QgsPmpj5bFhP/5eFqk/HcIbFUdOyAo5F6hBNWmSRJGEqOWZNyZhqQ9+kLgfRcmm
+zttAi53Sw/UtjxWA/aYEyUKLg6CvcgIA/VYY6H7A6BQB85HNY42UsW6gQPbmpiV+
+DFshnO22Ja8BVl4dRwXCJ2JHbM4l4zqH/lQX5B06a99hn7Uub3IGQueq5FjW4jRs
+ttoSSIrZk8ytcNM1KqaQiWCnJp/HgWLY/xAW9sXEW1GUdKhl6/1XtbaaRgoqEFGT
+LPyw93Bu5JUOAIy21b4yulB+skOw60ZmnUo1agj9iAQtp8n9j5d9NEyjmSItPpu2
+saSYWaCFB4310wuB5ceF808dz3lLgzOJc3SvR82p7x60iYldU/lCB/s8WkaJOaVM
+Aw/Zzn4ooPHqyCXOB0GfmYJkJQkv/UFRvyuoGCyGgzFY91kCkTVun1MzgR1qmaBn
+CxVNkAUe+OOTIQfFPCuOwSo3selJ//QW7rXkSaay0j66ITQ2WXXj56e/Ip1luYjN
+bDqssZEpTA0rzKJCe51IGi0zUsvT9Zw2w2HTxSXm3f2xbSFOEijAtmMJ1DGjj6Cm
+TNBUh41LvSTFYN+N0AiFGi05PVSb9DPm+yRqk0rRm7gyAG10suPRnzmjpg5pzy42
+9qGVP+mlRX2oBjCu2Tut
+=S38+
+-----END PGP SIGNATURE-----
+
+--9uRI0oaS4VwOtskx--
