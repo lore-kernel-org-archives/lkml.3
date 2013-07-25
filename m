@@ -1,336 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306Ab3GYIcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:32:17 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:44589 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab3GYIcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:32:13 -0400
-From: Tomasz Figa <tomasz.figa@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        Mike Turquette <mturquette@linaro.org>, linux-arm-msm@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v1 08/14] clk: msm: Add MSM clock driver
-Date: Thu, 25 Jul 2013 10:32:09 +0200
-Message-ID: <2513717.VTXGvIpGv4@flatron>
-User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <1374713022-6049-9-git-send-email-sboyd@codeaurora.org>
-References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org> <1374713022-6049-9-git-send-email-sboyd@codeaurora.org>
+	id S1755398Ab3GYIc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:32:28 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:4957 "EHLO mms3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755317Ab3GYIcV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:32:21 -0400
+X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
+Message-ID: <51F0E288.80501@broadcom.com>
+Date: Thu, 25 Jul 2013 10:32:08 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "Steven Rostedt" <rostedt@goodmis.org>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Oleg Nesterov" <oleg@redhat.com>,
+        "Masami Hiramatsu" <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: regression 3.11-rc1: rmmod hangs after tracing module
+References: <51EEC646.7070306@broadcom.com>
+ <1374605077.3356.128.camel@gandalf.local.home>
+In-Reply-To: <1374605077.3356.128.camel@gandalf.local.home>
+X-WSS-ID: 7DEE3FC92L851964710-02-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 07/23/2013 08:44 PM, Steven Rostedt wrote:
+> On Tue, 2013-07-23 at 20:07 +0200, Arend van Spriel wrote:
+>> Hi Steven,
+>>
+>> During testing of our brcmfmac wireless driver I had a trace-cmd running
+>> along (trace-cmd record -e brcmfmac:*). After the test I stopped the
+>> trace, unplugged my usb device and did a rmmod resulting in the attached
+>> lockdep splat. Hope you have an idea what is going wrong here.
+>
+> Thanks for the report!
+>
+> Does this fix you bug?
 
-On Wednesday 24 of July 2013 17:43:36 Stephen Boyd wrote:
-> Add a clock driver that registers clocks from a DT node's
-> 'clocks' child. Each new SoC will add a file describing the
-> software interface and frequency plan to drivers/clk/msm/ and
-> then hook that into the msm_cc_match_table by means of a
-> compatible string and an msm_clk_match table.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
->  drivers/clk/msm/Makefile   |   2 +
->  drivers/clk/msm/core.c     | 265
-> +++++++++++++++++++++++++++++++++++++++++++++
-> drivers/clk/msm/internal.h |  24 ++++
->  3 files changed, 291 insertions(+)
->  create mode 100644 drivers/clk/msm/core.c
->  create mode 100644 drivers/clk/msm/internal.h
-> 
-> diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-> index e1cee29..9cfd0d7 100644
-> --- a/drivers/clk/msm/Makefile
-> +++ b/drivers/clk/msm/Makefile
-> @@ -4,3 +4,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
->  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
->  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
->  clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
-> +
-> +clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
-> diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-> new file mode 100644
-> index 0000000..b1904c0
-> --- /dev/null
-> +++ b/drivers/clk/msm/core.c
-> @@ -0,0 +1,265 @@
-> +/*
-> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms. + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/err.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/module.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/spinlock.h>
-> +
-> +#include "internal.h"
-> +#include "clk-pll.h"
-> +#include "clk-rcg.h"
-> +#include "clk-branch.h"
-> +
-> +struct cc_data {
-> +	void __iomem *base;
-> +	spinlock_t lock;
-> +};
-> +
-> +static struct clk *
-> +dispatch_fixed_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	u32 rate;
-> +	const char *name = m->init_data->name;
-> +
-> +	if (of_property_read_u32(m->of_node, "clock-frequency", &rate))
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	return clk_register_fixed_rate(dev, name, NULL, CLK_IS_ROOT, 
-rate);
-> +}
-> +
-> +static struct clk *
-> +dispatch_pll_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct pll_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return pll_clk_register(dev, desc, m->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_pll_vote_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct pll_vote_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return pll_vote_clk_register(dev, desc, m->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_p2mn16_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct rcg_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_p2mn16_clk_register(dev, desc, &cc->lock, m-
->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_p2mn8_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct rcg_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_p2mn8_clk_register(dev, desc, &cc->lock, m->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_mn8_dyn_clk(struct of_clk_match *match, struct device
-> *dev, +		struct cc_data *cc)
-> +{
-> +	struct rcg_dyn_desc *desc = match->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_mn8_dyn_clk_register(dev, desc, &cc->lock,
-> +			match->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_p4_dyn_clk(struct of_clk_match *match, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct rcg_dyn_desc *desc = match->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_p4_dyn_clk_register(dev, desc, &cc->lock,
-> +			match->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_h5mn8_clk(struct of_clk_match *match, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct rcg2_desc *desc = match->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_h5mn8_clk_register(dev, desc, &cc->lock, match-
->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_rcg_h5mn16_clk(struct of_clk_match *match, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct rcg2_desc *desc = match->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return rcg_h5mn16_clk_register(dev, desc, &cc->lock,
-> match->init_data); +}
-> +
-> +static struct clk *
-> +dispatch_branch_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct branch_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return branch_clk_register(dev, desc, &cc->lock, m->init_data);
-> +}
-> +
-> +static struct clk *
-> +dispatch_branch_hg_clk(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc)
-> +{
-> +	struct branch_desc *desc = m->driver_data;
-> +
-> +	desc->base = cc->base;
-> +
-> +	return branch_hg_clk_register(dev, desc, &cc->lock, m->init_data);
-> +}
-> +
-> +static const struct of_device_id dispatch_table[] = {
-> +	{ .compatible = "fixed-clock", .data = dispatch_fixed_clk },
+Thanks Steve,
 
-This is already handled by the fixed-rate-clock driver and of_clk_init().
+Tested your patch and it indeed fixes my deadlock.
 
-> +	{ .compatible = "qcom,pll", .data = dispatch_pll_clk },
-> +	{ .compatible = "qcom,pll-vote", .data = dispatch_pll_vote_clk },
-> +	{ .compatible = "qcom,p2-mn8-clock", .data = 
-dispatch_rcg_p2mn8_clk },
-> +	{ .compatible = "qcom,p2-mn16-clock", .data = 
-dispatch_rcg_p2mn16_clk
-> }, +	{ .compatible = "qcom,mn8-dyn-clock", .data =
-> dispatch_rcg_mn8_dyn_clk }, +	{ .compatible = "qcom,p4-dyn-clock",
-> .data = dispatch_rcg_p4_dyn_clk }, +	{ .compatible =
-> "qcom,h5-mn8-clock", .data = dispatch_rcg_h5mn8_clk }, +	{ 
-.compatible
-> = "qcom,h5-mn16-clock", .data = dispatch_rcg_h5mn16_clk }, +	{
-> .compatible = "qcom,cxc-clock", .data = dispatch_branch_clk }, +	{
-> .compatible = "qcom,cxc-hg-clock", .data = dispatch_branch_hg_clk },
-> +};
+Regards,
+Arend
 
-You can avoid all the code above by using OF_CLK_DECLARE() and 
-of_clk_init().
+> -- Steve
+>
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 69cba47..882ec1d 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -1224,18 +1224,17 @@ void tracing_reset_current(int cpu)
+>   	tracing_reset(&global_trace.trace_buffer, cpu);
+>   }
+>
+> +/* Must have trace_types_lock held */
+>   void tracing_reset_all_online_cpus(void)
+>   {
+>   	struct trace_array *tr;
+>
+> -	mutex_lock(&trace_types_lock);
+>   	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
+>   		tracing_reset_online_cpus(&tr->trace_buffer);
+>   #ifdef CONFIG_TRACER_MAX_TRACE
+>   		tracing_reset_online_cpus(&tr->max_buffer);
+>   #endif
+>   	}
+> -	mutex_unlock(&trace_types_lock);
+>   }
+>
+>   #define SAVED_CMDLINES 128
+>
+>
+>
 
-> +typedef struct clk *
-> +(*clk_dispatch_fn)(struct of_clk_match *m, struct device *dev,
-> +		struct cc_data *cc);
-> +
-> +static const struct of_device_id msm_cc_match_table[] = {
-> +	{ }
-> +};
-> +MODULE_DEVICE_TABLE(of, msm_cc_match_table);
-> +
-> +static int msm_cc_probe(struct platform_device *pdev)
-> +{
-> +	struct cc_data *cc;
-> +	void __iomem *base;
-> +	struct resource *res;
-> +	int count, i;
-> +	const struct of_device_id *id_entry;
-> +	const struct msm_clk_match *m;
-> +	struct of_clk_match *matches;
-> +	size_t size;
-> +
-> +	id_entry = of_match_device(msm_cc_match_table, &pdev->dev);
-> +	m = id_entry->data;
-> +	matches = m->matches;
-> +	size = m->size;
-> +
-> +	cc = devm_kzalloc(&pdev->dev, sizeof(*cc), GFP_KERNEL);
-> +	if (!cc)
-> +		return -ENOMEM;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	base = devm_ioremap_resource(&pdev->dev, res);
-> +	if (IS_ERR(base))
-> +		return PTR_ERR(base);
-> +
-> +	cc->base = base;
-> +	spin_lock_init(&cc->lock);
-> +
-> +	count = of_clk_match(&pdev->dev, matches, size);
-> +	if (count < 0)
-> +		return count;
-> +
-> +	for (i = 0; i < size; i++) {
-> +		struct of_clk_match *match;
-> +		const struct of_device_id *id;
-> +		struct device_node *np;
-> +		clk_dispatch_fn fn;
-> +		struct clk *clk;
-> +		int err;
-> +
-> +		match = &matches[i];
-> +		np = match->of_node;
-> +		if (!np)
-> +			continue;
-> +
-> +		id = of_match_node(dispatch_table, match->of_node);
-> +		if (!id)
-> +			continue;
-> +
-> +		fn = id->data;
-> +		clk = fn(match, &pdev->dev, cc);
-> +		if (IS_ERR(clk))
-> +			return PTR_ERR(clk);
-> +
-> +		err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +		if (err)
-> +			return err;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver msm_cc_driver = {
-> +	.probe		= msm_cc_probe,
-> +	.driver		= {
-> +		.name	= "msm-clock",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table = msm_cc_match_table,
-> +	},
-> +};
-> +
-> +static int __init msm_cc_init(void)
-> +{
-> +	return platform_driver_register(&msm_cc_driver);
-> +}
-> +core_initcall(msm_cc_init);
-
-I might be saying something stupid, but is it okay for a removable module 
-to have a core_initcall?
-
-Best regards,
-Tomasz
 
