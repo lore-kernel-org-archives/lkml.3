@@ -1,110 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab3GYQLg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:11:36 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58443 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755847Ab3GYQLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:11:33 -0400
-Date: Thu, 25 Jul 2013 19:11:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Bin Liu <binmlist@gmail.com>
-CC: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <balbi@ti.com>, <george.cherian@ti.com>
-Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to
- am33xx_driver_data
-Message-ID: <20130725161120.GC31835@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
- <1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
- <CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
- <20130725144118.GA5412@linutronix.de>
- <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
- <51F14165.3060803@linutronix.de>
- <CADYTM3Z1aoTx_99xCj9XOQCUj63GeCcekL6ECajWQWKoQD4n0Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="sXc4Kmr5FA7axrvy"
-Content-Disposition: inline
-In-Reply-To: <CADYTM3Z1aoTx_99xCj9XOQCUj63GeCcekL6ECajWQWKoQD4n0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756426Ab3GYQLv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:11:51 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49408 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755993Ab3GYQLu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:11:50 -0400
+From: Zach Levis <zml@linux.vnet.ibm.com>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, Zach Levis <zml@linux.vnet.ibm.com>,
+        Zach Levis <zach@zachsthings.com>
+Subject: [PATCH 2/3] fs/binfmts: Better handling of binfmt loops
+Date: Thu, 25 Jul 2013 08:40:44 -0700
+Message-Id: <1374766845-13565-2-git-send-email-zml@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
+References: <1374766845-13565-1-git-send-email-zml@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072515-7282-0000-0000-000019A08575
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---sXc4Kmr5FA7axrvy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+With these changes, when a binfmt loop is encountered,
+the ELOOP will propogate back to the 0 depth. At this point the
+argv and argc values will be reset to what they were originally and an
+attempt is made to continue with the following binfmt handlers.
 
-Hi,
+Caveats:
+- binfmt_misc is skipped as a whole. To allow for a more generic
+  solution that works for any binfmt without a lot of duplicated code
+  and added complexity, the error detection code is applied on the
+  binfmt level.
+- This is a fallback solution. It attempts to restore the state to allow
+  executing most binaries without side effects, but it may not work for
+  everything and should not be depended on for regular usage.
 
-On Thu, Jul 25, 2013 at 10:28:37AM -0500, Bin Liu wrote:
-> Sebastian,
->=20
-> On Thu, Jul 25, 2013 at 10:16 AM, Sebastian Andrzej Siewior
-> <bigeasy@linutronix.de> wrote:
-> > On 07/25/2013 05:12 PM, Bin Liu wrote:
-> >> Sebastian,
-> >
-> > Hi Bin,
-> >
-> >>> Is it really there or was it never there and it has been added to TRM=
- by
-> >>> accident?
-> >> The EOI register IS in the USB subsystem of AM33xx, but the SoC does
-> >> not use it because it uses level triggering for USB interrupt.
-> >
-> > I see.
-> >
-> >>>> But I am not sure if it is a good idea to remove eoi from the musb_d=
-sps
-> >>>> driver. If the intension is to merge the support for other SoC, such=
- as
-> >>>> AM35xx, AM18xx, then EOI handling might be still needed. I just don'=
-t know
-> >>>> how those devices use EOI.
-> >>>
-> >>> If one of the architectures gets added which need an EOI then the off=
-set
-> >>> can be 0 and the EOI will happen only if it is !=3D 0.
-> >> This patch cleaned up the use of EOI. Do you mean EOI handling will be
-> >> added back with condition EOI offset !=3D 0, when the support of new
-> >> device which uses EIO is added?
-> >
-> > That is my intention.
-> Then should something like EOI cleanup be added into the commit
-> message for better git log searching experience? I would think the EOI
-> cleanup is more important then variable renaming in this patch. Or
-> even better to separate the changes into two patches.
+My (rough, but functional) test scripts for this issue are available at:
+    https://gist.github.com/zml2008/6075418
 
-perhaps two separate patches would be best, indeed. At least it would
-make it simpler to track regressions.
+Signed-off-by: Zach Levis <zach@zachsthings.com>
+Signed-off-by: Zach Levis <zml@linux.vnet.ibm.com>
+---
+ fs/exec.c               |   30 +++++++++++++++++++++++++++++-
+ include/linux/binfmts.h |    5 ++++-
+ 2 files changed, 33 insertions(+), 2 deletions(-)
 
---=20
-balbi
+diff --git a/fs/exec.c b/fs/exec.c
+index ffd7a81..fa59f05 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1401,13 +1401,40 @@ int search_binary_handler(struct linux_binprm *bprm)
+ 			if (!try_module_get(fmt->module))
+ 				continue;
+ 			read_unlock(&binfmt_lock);
++			bprm->previous_binfmts[1] = bprm->previous_binfmts[0];
++			bprm->previous_binfmts[0] = fmt;
++
+ 			bprm->recursion_depth = depth + 1;
+ 			retval = fn(bprm);
+ 			bprm->recursion_depth = depth;
++			if (retval == -ELOOP && depth == 0) { /* cur, previous */
++				pr_err("Too much recursion with binfmts (0:%s, -1:%s) in file %s, skipping (base %s).\n",
++						bprm->previous_binfmts[0]->name,
++						bprm->previous_binfmts[1]->name,
++						bprm->filename,
++						fmt->name);
++
++				/* Put argv back in its place */
++				while (bprm->argc > 0) {
++					retval = remove_arg_zero(bprm);
++					if (retval)
++						return retval;
++				}
++
++				copy_strings(bprm->argc_orig, *((struct user_arg_ptr *) bprm->argv_orig), bprm);
++				bprm->argc = bprm->argc_orig;
++				retval = -ENOEXEC;
++				continue;
++			}
++
+ 			if (retval >= 0) {
+ 				if (depth == 0) {
+ 					trace_sched_process_exec(current, old_pid, bprm);
+ 					ptrace_event(PTRACE_EVENT_EXEC, old_vpid);
++					/* Successful execution, now null out the cached argv
++					 * (we don't want to access it later)
++					 * */
++					bprm->argv_orig = NULL;
+ 				}
+ 				put_binfmt(fmt);
+ 				allow_write_access(bprm->file);
+@@ -1515,7 +1542,7 @@ static int do_execve_common(const char *filename,
+ 	if (retval)
+ 		goto out_file;
+ 
+-	bprm->argc = count(argv, MAX_ARG_STRINGS);
++	bprm->argc_orig = bprm->argc = count(argv, MAX_ARG_STRINGS);
+ 	if ((retval = bprm->argc) < 0)
+ 		goto out;
+ 
+@@ -1539,6 +1566,7 @@ static int do_execve_common(const char *filename,
+ 	retval = copy_strings(bprm->argc, argv, bprm);
+ 	if (retval < 0)
+ 		goto out;
++	bprm->argv_orig = &argv;
+ 
+ 	retval = search_binary_handler(bprm);
+ 	if (retval < 0)
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index 402a74a..2e3dc66 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -32,11 +32,14 @@ struct linux_binprm {
+ 	unsigned int taso:1;
+ #endif
+ 	unsigned int recursion_depth;
++	/* current binfmt at 0 and previous binfmt at 1 */
++	struct linux_binfmt *previous_binfmts[2];
+ 	struct file * file;
+ 	struct cred *cred;	/* new credentials */
+ 	int unsafe;		/* how unsafe this exec is (mask of LSM_UNSAFE_*) */
+ 	unsigned int per_clear;	/* bits to clear in current->personality */
+-	int argc, envc;
++	int argc, argc_orig, envc;
++	void *argv_orig;
+ 	const char * filename;	/* Name of binary as seen by procps */
+ 	const char * interp;	/* Name of the binary really executed. Most
+ 				   of the time same as filename, but could be
+-- 
+1.7.1
 
---sXc4Kmr5FA7axrvy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8U4oAAoJEIaOsuA1yqREJlQP/jbWOi+hdwhxPMyLB0Da+y0W
-7ZpniVhWdUfw0rtNs9EbT+cJNYEKm+VsTdQBSL6R7KlkoJFJlO76DRTa/+r/v25m
-tIof8qmia0kjxRdHNfcctBR6GBNg5ftvzZjnm7d+pZQnIyv9L9485jenekDmmSYe
-kkYvPtlBqNg3civyRn/iXFDj66htGncBEKik812Z7YlnOTE4/neMs1GD+UsFwhdR
-zr3PI1zG8lajtfoVZZ0aFgUoeEWu2Kwn2X6UOtu7/5FwYC3nN1NwfS60xE3ImPFu
-xqN/3ggRc+Jvl/8c4ZvCR+yg3i93gHQ0Tk3w995Bi+pHIiWpoUnGCeCeI1R8dDqJ
-zfp1hOuUq8JHfMR7JlmgPR5KOPzD8fO7s5QQZUWRoMls6+Mqp2Gm0qfX2Q/2YAMP
-lWy64nblMcg71H4MYKt/Tm7szVt4v3ZOmJvlL1dkMmWbRMjnbe/n51Jp3GkJ9NWJ
-ZETXJNZdl651PUGjAmrGQGLZCH5ZAaPRPeNnS19IfyEY5PrATPsms7Ocg/gEJ6xf
-c0B8rZbTQq43DritDhANtpPup3VawFRaYNClkWg2d94w5+NoAO9cJ2boWS6cZE5Z
-Pk3H8iiaGoAujzivv+x/q1ODeXcILHsiHHnVJwWhqJMdZ48+iGsFg0O6DqQ1zPxX
-pZlt329ZS1x7LB9sWomu
-=0Ejw
------END PGP SIGNATURE-----
-
---sXc4Kmr5FA7axrvy--
