@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab3GYHHY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 03:07:24 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:53982 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab3GYHHW (ORCPT
+	id S1754762Ab3GYHRq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 03:17:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41858 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753096Ab3GYHRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:07:22 -0400
-Date: Thu, 25 Jul 2013 11:07:19 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-Message-ID: <20130725070719.GB27992@moon>
-References: <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com>
- <20130724171728.GH8508@moon>
- <1374687373.7382.22.camel@dabdike>
- <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com>
- <20130724181516.GI8508@moon>
- <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com>
- <20130724185256.GA24365@moon>
- <51F0232D.6060306@parallels.com>
- <20130724190453.GJ8508@moon>
- <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com>
+	Thu, 25 Jul 2013 03:17:43 -0400
+Message-ID: <51F0D109.4050002@oracle.com>
+Date: Thu, 25 Jul 2013 15:17:29 +0800
+From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
+Reply-To: zhenzhong.duan@oracle.com
+Organization: oracle
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: linux-pci@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        xen-devel <xen-devel@lists.xen.org>, bhelgaas@google.com,
+        Feng Jin <joe.jin@oracle.com>,
+        "x86@kernel.org >> \"x86@kernel.org\"" <x86@kernel.org>
+Subject: Re: [PATCH 3/3] msix restore code optimization for dom0
+References: <51EF453B.5070200@oracle.com> <20130724135555.GD2518@phenom.dumpdata.com>
+In-Reply-To: <20130724135555.GD2518@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 12:40:22PM -0700, Andy Lutomirski wrote:
-> 
-> Hmm.  So there are at least three kinds of memory:
-> 
-> Anonymous pages: soft-dirty works
-> Shared file-backed pages: soft-dirty does not work
-> Private file-backed pages: soft-dirty works (but see below)
-> 
-> Perhaps another bit should be allocated to expose to userspace either
-> "soft-dirty", "soft-clean", or "soft-dirty unsupported"?
 
-> There's another possible issue with private file-backed pages, though:
-> how do you distinguish clean-and-not-cowed from cowed-but-soft-clean?
-> (The former will reflect changes in the underlying file, I think, but
-> the latter won't.)
-
-When fault happens with cow allocation (on write) the pte get soft dirty
-bit set (the code uses pte_mkdirty(entry) in __do_fault) and until we
-explicitly clean the bit it remains set. Or you mean something else?
+On 2013-07-24 21:55, Konrad Rzeszutek Wilk wrote:
+> On Wed, Jul 24, 2013 at 11:08:43AM +0800, Zhenzhong Duan wrote:
+>> PHYSDEVOP_restore_msi is used to restore all msix entrys in one hypercall
+>> in dom0. But it is called multi times in current code.
+> Couldn't the restore_msi_irqs instead check whether it has already
+> made the hypercall (perhaps by seeing if the MSI-X's are enabled?)
+> and if so don't do the hypercall?
+I think it's better to remove the for loop for dom0, also hard to know 
+when to clear hypercall count.
+>
+> I think you are addressing the problem from a different viewpoint.
+>
+> The problem is not with the API (the x86_msi one). The problem
+> is with the implementation (x86_msi.restore_msi_irq - specifically
+> the Xen one) having an side effect.
+We have x86_msi.restore_msi_irqs and no x86_msi.restore_msi_irq,if want to
+add x86_msi.restore_msi_irq, same hypercall need to be added accordingly.
+>
+>> This patch split arch_restore_msi_irqs into two functions.
+>> Use arch_restore_msi_irq deal with one entry and avoid call hypercall multi
+>> times in __pci_restore_msix_state.
+> But irregardless of how you address the problem, this in the MSI code
+> is a bit odd:
+>
+> 	list_for_each_entry(entry, &dev->msi_list, list) {
+> 		arch_restore_msi_irqs(dev, entry->irq);
+> 	}
+>
+> and if you collapse that and make the 'arch_restore_msi_irqs' be responsible
+> for doing all the heavy lifting.. That does seem an improvement on the API
+> and will make it inline with 'teardown_msi_irqs'.
+>
+> So from that view I think it would be nicer?
+Yes, This patch just did that. There is 
+teardown_msi_irqs/teardown_msi_irq pair.
+But in current code, arch_restore_msi_irqs is used for one msix entry, 
+this is not consistent with
+its naming tradiition. So I changed default_restore_msi_irqs to deal 
+with all entrys and
+default_restore_msi_irq to deal with one entry for baremetal. For dom0, 
+we have
+PHYSDEVOP_restore_msi  to restore all msix entrys.
