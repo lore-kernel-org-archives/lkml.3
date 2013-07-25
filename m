@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab3GYJJW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:09:22 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:52147 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093Ab3GYJI4 (ORCPT
+	id S1755425Ab3GYJKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:10:17 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:59432 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3GYJI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:08:56 -0400
-X-AuditID: 85900ec0-d24c6b900000151e-84-51f0eb2559a2
+	Thu, 25 Jul 2013 05:08:58 -0400
+X-AuditID: 85900ec0-d42c9b900000151e-86-51f0eb26f358
 X-Mailbox-Line: From nobody Thu Jul 25 17:37:30 2013
 From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Subject: [RESEND RFC PATCH 3/5] tools/include: Add jhash.h
+Subject: [RESEND RFC PATCH 5/5] printk: Add msghash support for dev_printk
 To: linux-kernel@vger.kernel.org
 Cc: yrl.pp-manager.tt@hitachi.com, akpm@linux-foundation.org,
         gregkh@linuxfoundation.org, kay@vrfy.org, davem@davemloft.net,
         itoukzo@nttdata.co.jp, Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 Date: Thu, 25 Jul 2013 17:37:30 +0900
-Message-ID: <20130725083730.20349.75560.stgit@localhost.localdomain>
+Message-ID: <20130725083730.20349.48855.stgit@localhost.localdomain>
 In-Reply-To: <20130725083730.20349.50797.stgit@localhost.localdomain>
 References: <20130725083730.20349.50797.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -28,215 +28,269 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Copy include/linux/jhash.h to tools/include/tools/ for userland
-tools.  The original jhash.h includes a couple of header files
-which is not suitable for userland.  So unfold the only necessary
-part in those header files to the copied jhash.h
+Add msghash support for dev_printk and its variants (dev_xxx).
+Without this patch, no kmsg_meta data are passed to vprintk_emit,
+and this means no hash value is output.
+
+To pass the metadata, this patch changes dev_printk and its
+variants to macros which construct the metadata in the similar way
+of printk.  No API of those functions are changed.
 
 Signed-off-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
 ---
 
- tools/include/tools/jhash.h |  192 +++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 192 insertions(+), 0 deletions(-)
- create mode 100644 tools/include/tools/jhash.h
+ drivers/base/core.c         |   56 +++++++++------------------------
+ drivers/usb/storage/debug.c |    2 +
+ include/linux/device.h      |   73 +++++++++++++++++++++++++------------------
+ lib/dynamic_debug.c         |    4 +-
+ net/core/dev.c              |    2 +
+ 5 files changed, 62 insertions(+), 75 deletions(-)
 
-diff --git a/tools/include/tools/jhash.h b/tools/include/tools/jhash.h
-new file mode 100644
-index 0000000..872d7f9
---- /dev/null
-+++ b/tools/include/tools/jhash.h
-@@ -0,0 +1,192 @@
-+#ifndef _TOOLS_JHASH_H
-+#define _TOOLS_JHASH_H
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index e2bf2af..ebe742f 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -2145,8 +2145,8 @@ create_syslog_header(const struct device *dev, char *hdr, size_t hdrlen)
+ }
+ EXPORT_SYMBOL(create_syslog_header);
+ 
+-int dev_vprintk_emit(int level, const struct device *dev,
+-		     const char *fmt, va_list args)
++int dev_vprintk_emit(struct kmsg_meta *meta, int level,
++		     const struct device *dev, const char *fmt, va_list args)
+ {
+ 	char hdr[128];
+ 	size_t hdrlen;
+@@ -2154,18 +2154,19 @@ int dev_vprintk_emit(int level, const struct device *dev,
+ 	hdrlen = create_syslog_header(dev, hdr, sizeof(hdr));
+ 
+ 	return vprintk_emit(0, level, hdrlen ? hdr : NULL, hdrlen,
+-			    fmt, args, NULL);
++			    fmt, args, meta);
+ }
+ EXPORT_SYMBOL(dev_vprintk_emit);
+ 
+-int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
++int dev_printk_emit(struct kmsg_meta *meta, int level,
++		    const struct device *dev, const char *fmt, ...)
+ {
+ 	va_list args;
+ 	int r;
+ 
+ 	va_start(args, fmt);
+ 
+-	r = dev_vprintk_emit(level, dev, fmt, args);
++	r = dev_vprintk_emit(meta, level, dev, fmt, args);
+ 
+ 	va_end(args);
+ 
+@@ -2173,19 +2174,20 @@ int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
+ }
+ EXPORT_SYMBOL(dev_printk_emit);
+ 
+-static int __dev_printk(const char *level, const struct device *dev,
+-			struct va_format *vaf)
++static int __dev_printk(struct kmsg_meta *meta, const char *level,
++			const struct device *dev, struct va_format *vaf)
+ {
+ 	if (!dev)
+-		return printk("%s(NULL device *): %pV", level, vaf);
++		return __printk(meta, "%s(NULL device *): %pV", level, vaf);
+ 
+-	return dev_printk_emit(level[1] - '0', dev,
++	return dev_printk_emit(meta, level[1] - '0', dev,
+ 			       "%s %s: %pV",
+ 			       dev_driver_string(dev), dev_name(dev), vaf);
+ }
+ 
+-int dev_printk(const char *level, const struct device *dev,
+-	       const char *fmt, ...)
++__printf(4, 5)
++int _dev_printk(struct kmsg_meta *meta, const char *level,
++		const struct device *dev, const char *fmt, ...)
+ {
+ 	struct va_format vaf;
+ 	va_list args;
+@@ -2196,40 +2198,12 @@ int dev_printk(const char *level, const struct device *dev,
+ 	vaf.fmt = fmt;
+ 	vaf.va = &args;
+ 
+-	r = __dev_printk(level, dev, &vaf);
++	r = __dev_printk(meta, level, dev, &vaf);
+ 
+ 	va_end(args);
+ 
+ 	return r;
+ }
+-EXPORT_SYMBOL(dev_printk);
+-
+-#define define_dev_printk_level(func, kern_level)		\
+-int func(const struct device *dev, const char *fmt, ...)	\
+-{								\
+-	struct va_format vaf;					\
+-	va_list args;						\
+-	int r;							\
+-								\
+-	va_start(args, fmt);					\
+-								\
+-	vaf.fmt = fmt;						\
+-	vaf.va = &args;						\
+-								\
+-	r = __dev_printk(kern_level, dev, &vaf);		\
+-								\
+-	va_end(args);						\
+-								\
+-	return r;						\
+-}								\
+-EXPORT_SYMBOL(func);
+-
+-define_dev_printk_level(dev_emerg, KERN_EMERG);
+-define_dev_printk_level(dev_alert, KERN_ALERT);
+-define_dev_printk_level(dev_crit, KERN_CRIT);
+-define_dev_printk_level(dev_err, KERN_ERR);
+-define_dev_printk_level(dev_warn, KERN_WARNING);
+-define_dev_printk_level(dev_notice, KERN_NOTICE);
+-define_dev_printk_level(_dev_info, KERN_INFO);
++EXPORT_SYMBOL(_dev_printk);
+ 
+ #endif
+diff --git a/drivers/usb/storage/debug.c b/drivers/usb/storage/debug.c
+index e08f647..22e1115 100644
+--- a/drivers/usb/storage/debug.c
++++ b/drivers/usb/storage/debug.c
+@@ -186,7 +186,7 @@ int usb_stor_dbg(const struct us_data *us, const char *fmt, ...)
+ 
+ 	va_start(args, fmt);
+ 
+-	r = dev_vprintk_emit(7, &us->pusb_dev->dev, fmt, args);
++	r = dev_vprintk_emit(NULL, 7, &us->pusb_dev->dev, fmt, args);
+ 
+ 	va_end(args);
+ 
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 22b546a..ba15810 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -984,42 +984,55 @@ extern const char *dev_driver_string(const struct device *dev);
+ 
+ #ifdef CONFIG_PRINTK
+ 
+-extern __printf(3, 0)
+-int dev_vprintk_emit(int level, const struct device *dev,
+-		     const char *fmt, va_list args);
+-extern __printf(3, 4)
+-int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...);
+-
+-extern __printf(3, 4)
+-int dev_printk(const char *level, const struct device *dev,
+-	       const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_emerg(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_alert(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_crit(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_err(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_warn(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int dev_notice(const struct device *dev, const char *fmt, ...);
+-extern __printf(2, 3)
+-int _dev_info(const struct device *dev, const char *fmt, ...);
++extern __printf(4, 0)
++int dev_vprintk_emit(struct kmsg_meta *meta, int level,
++		     const struct device *dev, const char *fmt, va_list args);
++extern __printf(4, 5)
++int dev_printk_emit(struct kmsg_meta *meta, int level,
++		    const struct device *dev, const char *fmt, ...);
 +
-+/* jhash.h: Jenkins hash support.
-+ *
-+ * Copyright (C) 2006. Bob Jenkins (bob_jenkins@burtleburtle.net)
-+ *
-+ * http://burtleburtle.net/bob/hash/
-+ *
-+ * These are the credits from Bob's sources:
-+ *
-+ * lookup3.c, by Bob Jenkins, May 2006, Public Domain.
-+ *
-+ * These are functions for producing 32-bit hashes for hash table lookup.
-+ * hashword(), hashlittle(), hashlittle2(), hashbig(), mix(), and final()
-+ * are externally useful functions.  Routines to test the hash are included
-+ * if SELF_TEST is defined.  You can use this free for any purpose.  It's in
-+ * the public domain.  It has no warranty.
-+ *
-+ * Copyright (C) 2009-2010 Jozsef Kadlecsik (kadlec@blackhole.kfki.hu)
-+ *
-+ * I've modified Bob's hash to be useful in the Linux kernel, and
-+ * any bugs present are my fault.
-+ * Jozsef
-+ */
++extern __printf(4, 5)
++int _dev_printk(struct kmsg_meta *_meta, const char *level,
++		const struct device *dev, const char *fmt, ...);
 +
-+#define __packed	__attribute__((packed))
-+
-+/*
-+ * __get_unaligned_cpu32 was copied from
-+ * include/linux/unaligned/packed_struct.h
-+ */
-+struct __una_u32 { u32 x; } __packed;
-+static inline u32 __get_unaligned_cpu32(const void *p)
-+{
-+	const struct __una_u32 *ptr = (const struct __una_u32 *)p;
-+	return ptr->x;
-+}
-+
-+/* rol32 was copied from include/linux/bitops.h */
-+/**
-+ * rol32 - rotate a 32-bit value left
-+ * @word: value to rotate
-+ * @shift: bits to roll
-+ */
-+static inline u32 rol32(u32 word, unsigned int shift)
-+{
-+	return (word << shift) | (word >> (32 - shift));
-+}
-+
-+/* Best hash sizes are of power of two */
-+#define jhash_size(n)   ((u32)1<<(n))
-+/* Mask the hash value, i.e (value & jhash_mask(n)) instead of (value % n) */
-+#define jhash_mask(n)   (jhash_size(n)-1)
-+
-+/* __jhash_mix -- mix 3 32-bit values reversibly. */
-+#define __jhash_mix(a, b, c)			\
-+{						\
-+	a -= c;  a ^= rol32(c, 4);  c += b;	\
-+	b -= a;  b ^= rol32(a, 6);  a += c;	\
-+	c -= b;  c ^= rol32(b, 8);  b += a;	\
-+	a -= c;  a ^= rol32(c, 16); c += b;	\
-+	b -= a;  b ^= rol32(a, 19); a += c;	\
-+	c -= b;  c ^= rol32(b, 4);  b += a;	\
-+}
-+
-+/* __jhash_final - final mixing of 3 32-bit values (a,b,c) into c */
-+#define __jhash_final(a, b, c)			\
-+{						\
-+	c ^= b; c -= rol32(b, 14);		\
-+	a ^= c; a -= rol32(c, 11);		\
-+	b ^= a; b -= rol32(a, 25);		\
-+	c ^= b; c -= rol32(b, 16);		\
-+	a ^= c; a -= rol32(c, 4);		\
-+	b ^= a; b -= rol32(a, 14);		\
-+	c ^= b; c -= rol32(b, 24);		\
-+}
-+
-+/* An arbitrary initial parameter */
-+#define JHASH_INITVAL		0xdeadbeef
-+
-+/* jhash - hash an arbitrary key
-+ * @k: sequence of bytes as key
-+ * @length: the length of the key
-+ * @initval: the previous hash, or an arbitray value
-+ *
-+ * The generic version, hashes an arbitrary sequence of bytes.
-+ * No alignment or length assumptions are made about the input key.
-+ *
-+ * Returns the hash value of the key. The result depends on endianness.
-+ */
-+static inline u32 jhash(const void *key, u32 length, u32 initval)
-+{
-+	u32 a, b, c;
-+	const u8 *k = key;
-+
-+	/* Set up the internal state */
-+	a = b = c = JHASH_INITVAL + length + initval;
-+
-+	/* All but the last block: affect some 32 bits of (a,b,c) */
-+	while (length > 12) {
-+		a += __get_unaligned_cpu32(k);
-+		b += __get_unaligned_cpu32(k + 4);
-+		c += __get_unaligned_cpu32(k + 8);
-+		__jhash_mix(a, b, c);
-+		length -= 12;
-+		k += 12;
-+	}
-+	/* Last block: affect all 32 bits of (c) */
-+	/* All the case statements fall through */
-+	switch (length) {
-+	case 12: c += (u32)k[11]<<24;
-+	case 11: c += (u32)k[10]<<16;
-+	case 10: c += (u32)k[9]<<8;
-+	case 9:  c += k[8];
-+	case 8:  b += (u32)k[7]<<24;
-+	case 7:  b += (u32)k[6]<<16;
-+	case 6:  b += (u32)k[5]<<8;
-+	case 5:  b += k[4];
-+	case 4:  a += (u32)k[3]<<24;
-+	case 3:  a += (u32)k[2]<<16;
-+	case 2:  a += (u32)k[1]<<8;
-+	case 1:  a += k[0];
-+		 __jhash_final(a, b, c);
-+	case 0: /* Nothing left to add */
-+		break;
-+	}
-+
-+	return c;
-+}
-+
-+/* jhash2 - hash an array of u32's
-+ * @k: the key which must be an array of u32's
-+ * @length: the number of u32's in the key
-+ * @initval: the previous hash, or an arbitray value
-+ *
-+ * Returns the hash value of the key.
-+ */
-+static inline u32 jhash2(const u32 *k, u32 length, u32 initval)
-+{
-+	u32 a, b, c;
-+
-+	/* Set up the internal state */
-+	a = b = c = JHASH_INITVAL + (length<<2) + initval;
-+
-+	/* Handle most of the key */
-+	while (length > 3) {
-+		a += k[0];
-+		b += k[1];
-+		c += k[2];
-+		__jhash_mix(a, b, c);
-+		length -= 3;
-+		k += 3;
-+	}
-+
-+	/* Handle the last 3 u32's: all the case statements fall through */
-+	switch (length) {
-+	case 3: c += k[2];
-+	case 2: b += k[1];
-+	case 1: a += k[0];
-+		__jhash_final(a, b, c);
-+	case 0:	/* Nothing left to add */
-+		break;
-+	}
-+
-+	return c;
-+}
-+
-+
-+/* jhash_3words - hash exactly 3, 2 or 1 word(s) */
-+static inline u32 jhash_3words(u32 a, u32 b, u32 c, u32 initval)
-+{
-+	a += JHASH_INITVAL;
-+	b += JHASH_INITVAL;
-+	c += initval;
-+
-+	__jhash_final(a, b, c);
-+
-+	return c;
-+}
-+
-+static inline u32 jhash_2words(u32 a, u32 b, u32 initval)
-+{
-+	return jhash_3words(a, b, 0, initval);
-+}
-+
-+static inline u32 jhash_1word(u32 a, u32 initval)
-+{
-+	return jhash_3words(a, 0, 0, initval);
-+}
-+
-+#endif /* _TOOLS_JHASH_H */
++#ifdef CONFIG_KMSG_HASH
++#define dev_printk(level, dev, fmt, args...)			\
++({								\
++	DEFINE_KMSG_METADATA(_meta, (fmt));			\
++	_dev_printk(&_meta, (level), (dev), (fmt), ##args);	\
++})
++#else
++#define dev_printk(level, dev, fmt, args...) \
++	_dev_printk(NULL, (level), (dev), (fmt), ##args)
++#endif
+ 
++#define dev_emerg(dev, fmt, args...) \
++	dev_printk(KERN_EMERG, (dev), (fmt), ##args)
++#define dev_alert(dev, fmt, args...) \
++	dev_printk(KERN_ALERT, (dev), (fmt), ##args)
++#define dev_crit(dev, fmt, args...) \
++	dev_printk(KERN_CRIT, (dev), (fmt), ##args)
++#define dev_err(dev, fmt, args...) \
++	dev_printk(KERN_ERR, (dev), (fmt), ##args)
++#define dev_warn(dev, fmt, args...) \
++	dev_printk(KERN_WARNING, (dev), (fmt), ##args)
++#define dev_notice(dev, fmt, args...) \
++	dev_printk(KERN_NOTICE, (dev), (fmt), ##args)
++#define _dev_info(dev, fmt, args...) \
++	dev_printk(KERN_INFO, (dev), (fmt), ##args)
+ #else
+ 
+-static inline __printf(3, 0)
+-int dev_vprintk_emit(int level, const struct device *dev,
+-		     const char *fmt, va_list args)
++static inline __printf(4, 0)
++int dev_vprintk_emit(struct kmsg_meta *meta, int level,
++		     const struct device *dev, const char *fmt, va_list args)
+ { return 0; }
+-static inline __printf(3, 4)
+-int dev_printk_emit(int level, const struct device *dev, const char *fmt, ...)
++static inline __printf(4, 5)
++int dev_printk_emit(struct kmsg_meta *meta, int level,
++		    const struct device *dev, const char *fmt, ...)
+ { return 0; }
+ 
+-static inline int __dev_printk(const char *level, const struct device *dev,
+-			       struct va_format *vaf)
++static inline int __dev_printk(struct kmsg_meta *meta, const char *level,
++			       const struct device *dev, struct va_format *vaf)
+ { return 0; }
+ static inline __printf(3, 4)
+ int dev_printk(const char *level, const struct device *dev,
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 99fec3a..46283dd 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -578,7 +578,7 @@ int __dynamic_dev_dbg(struct _ddebug *descriptor,
+ 	} else {
+ 		char buf[PREFIX_SIZE];
+ 
+-		res = dev_printk_emit(7, dev, "%s%s %s: %pV",
++		res = dev_printk_emit(NULL, 7, dev, "%s%s %s: %pV",
+ 				      dynamic_emit_prefix(descriptor, buf),
+ 				      dev_driver_string(dev), dev_name(dev),
+ 				      &vaf);
+@@ -610,7 +610,7 @@ int __dynamic_netdev_dbg(struct _ddebug *descriptor,
+ 	if (dev && dev->dev.parent) {
+ 		char buf[PREFIX_SIZE];
+ 
+-		res = dev_printk_emit(7, dev->dev.parent,
++		res = dev_printk_emit(NULL, 7, dev->dev.parent,
+ 				      "%s%s %s %s: %pV",
+ 				      dynamic_emit_prefix(descriptor, buf),
+ 				      dev_driver_string(dev->dev.parent),
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 26755dd..2df020e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6258,7 +6258,7 @@ static int __netdev_printk(const char *level, const struct net_device *dev,
+ 	int r;
+ 
+ 	if (dev && dev->dev.parent) {
+-		r = dev_printk_emit(level[1] - '0',
++		r = dev_printk_emit(NULL, level[1] - '0',
+ 				    dev->dev.parent,
+ 				    "%s %s %s: %pV",
+ 				    dev_driver_string(dev->dev.parent),
 
 
