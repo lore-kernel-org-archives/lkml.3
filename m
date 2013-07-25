@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067Ab3GYTLJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:11:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60014 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab3GYTLH (ORCPT
+	id S1757499Ab3GYTL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:11:29 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9161 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab3GYTL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:11:07 -0400
-Date: Thu, 25 Jul 2013 20:10:59 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20130725191059.GO9858@sirena.org.uk>
-References: <20130725111357.7c976963@armhf>
+	Thu, 25 Jul 2013 15:11:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 12:11:26 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: Re: [PATCH v3 8/9] usb: phy: tegra: Use DT helpers for phy_type
+Date: Thu, 25 Jul 2013 22:11:16 +0300
+Message-ID: <1374779476-16025-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130725190023.GA26858@radagast>
+References: <20130725190023.GA26858@radagast>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R/XXzwRD6iKUjf7i"
-Content-Disposition: inline
-In-Reply-To: <20130725111357.7c976963@armhf>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/4] ASoc: kirkwood: simplify probe error
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Use the new of_usb_get_phy_mode helper function for parsing phy_type
+from the device tree.
 
---R/XXzwRD6iKUjf7i
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+---
+Here's the version with switch().
 
-On Thu, Jul 25, 2013 at 11:13:57AM +0200, Jean-Francois Moine wrote:
-> The function kirkwood_i2s_dev_remove() may be used when probe fails.
+ drivers/usb/phy/phy-tegra-usb.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-This seems fine but doesn't apply against current code but otherwise
-seems fine.
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index fb5bc8c..41b67e2 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -31,6 +31,7 @@
+ #include <linux/of_gpio.h>
+ #include <linux/usb/otg.h>
+ #include <linux/usb/ulpi.h>
++#include <linux/usb/of.h>
+ #include <asm/mach-types.h>
+ #include <linux/usb/ehci_def.h>
+ #include <linux/usb/tegra_usb_phy.h>
+@@ -860,6 +861,7 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct tegra_usb_phy *tegra_phy = NULL;
+ 	struct device_node *np = pdev->dev.of_node;
++	enum usb_phy_interface phy_type;
+ 	int err;
+ 
+ 	tegra_phy = devm_kzalloc(&pdev->dev, sizeof(*tegra_phy), GFP_KERNEL);
+@@ -884,12 +886,15 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 	tegra_phy->is_legacy_phy =
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
+ 
+-	err = of_property_match_string(np, "phy_type", "ulpi");
+-	if (err < 0) {
++	phy_type = of_usb_get_phy_mode(np);
++	switch (phy_type) {
++	case USBPHY_INTERFACE_MODE_UTMI:
+ 		err = utmi_phy_probe(tegra_phy, pdev);
+ 		if (err < 0)
+ 			return err;
+-	} else {
++		break;
++
++	case USBPHY_INTERFACE_MODE_ULPI:
+ 		tegra_phy->is_ulpi_phy = true;
+ 
+ 		tegra_phy->reset_gpio =
+@@ -899,8 +904,12 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 				tegra_phy->reset_gpio);
+ 			return tegra_phy->reset_gpio;
+ 		}
+-
+ 		tegra_phy->config = NULL;
++		break;
++
++	default:
++		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
++		return -EINVAL;
+ 	}
+ 
+ 	err = of_property_match_string(np, "dr_mode", "otg");
+-- 
+1.8.1.5
 
-> +	if (!IS_ERR(priv->extclk)) {
-> +		clk_disable_unprepare(priv->extclk);
-> +		clk_put(priv->extclk);
-> +	}
-
-Could use devm_clk_get() for extclk.
-
---R/XXzwRD6iKUjf7i
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8XhAAAoJELSic+t+oim9KYYP/j95q2OJ5ln4rd8L3tjyAzfM
-rWsJN/Z5ZzCPd2jYY72gO1dzZoe8iQ/HS+BB+UkP5zFIPi3qveR7GN5rAQYawDEK
-G7DeZwgZfEONfa0YRA97j++pRpW2GLhi6eY1gxpSGPnRNkFElZ+Y86C3c0oBkjmf
-1JGCpGwAj0Y89zcUDcBve8FlLM9M8l6qaXjB6UWPwenFPPaKGvfIoWyIGpt3Q1kd
-FIGWRxG4MjkZMIPDnFIW5t75F0nequfZrElQmbfcqfuUAl5d1dqoyZdyjHEN5O5H
-hQ2LJmqkxCi+2kGMr9a81RedKPcy+y/BkwwSY6NytAtXfYrADrebfiYuU2VY17wL
-dz2P6TctSkdDv6cAKYlBDT2Ds2QnyrdjEyE+iqRzdyFqMCuQO8x/FAERugUWEGTN
-b0p9HBysGpBzqjrDygBkUcsS/4Sd48SAM0rm5OfwmFmiD9c0ArRvga43b60wB3dA
-NjtKSaNhDSudn2NIksflX13qTSo9QgcxJ/Tqszo96X7dFO7lTyjPx5q/CYTgBgDG
-Pm09m3+728k66oAh3X70xmofYAIoxywkaaKqzH6/zm+uSGCy7CY8F99ihQdf2ule
-yBQhybcxJ8ptD+6D+l4OyURVIg27nsVtu7FbfHFJN17+ydt6cB7JLs2lKabdSWZg
-aUu8MUZ5nlyy93+0l1dB
-=IVlb
------END PGP SIGNATURE-----
-
---R/XXzwRD6iKUjf7i--
