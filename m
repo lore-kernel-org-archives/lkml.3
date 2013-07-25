@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab3GYIDY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:03:24 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:56646 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab3GYIDU (ORCPT
+	id S1755097Ab3GYIEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:04:55 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:60074 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3GYIEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:03:20 -0400
-Message-ID: <51F0DB11.2080508@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 13:30:17 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Thu, 25 Jul 2013 04:04:51 -0400
+Date: Thu, 25 Jul 2013 09:04:43 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
+Message-ID: <20130725080443.GB3403@laptop>
+References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
+ <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Eric Dumazet <edumazet@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Gao feng <gaofeng@cn.fujitsu.com>
-Subject: Hack bench regression with CONFIG_SLUB_CPU_PARTIAL disabled (info
- only)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072507-5490-0000-0000-000003E2061C
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 24 Jul 2013, Philipp Zabel wrote:
 
-While testing hackbench with 3.11-rc1 I observed hackbench testcase
-took too long to complete (32 vcpu kvm guest on 32 core HT off machine).
+> From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+> 
+> This is MFD module providing access to registers and interrupts of DA906x
+> series PMIC. It is used by other functional modules, registered as MFD cells.
+> Driver uses regmap with paging to access extended register list. Register map
+> is divided into two pages, where the second page is used during initialisation.
+> 
+> This module provides support to following functional cells:
+>  - Regulators
+>  - RTC
+>  - HWMON
+>  - OnKey (power key misc input device)
+>  - Vibration (force-feedback input device)
+>  - Watchdog
+>  - LEDs
+> 
+> Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+>  drivers/mfd/Kconfig                  |   12 +
+>  drivers/mfd/Makefile                 |    3 +
+>  drivers/mfd/da9063-core.c            |  177 ++++++
+>  drivers/mfd/da9063-i2c.c             |  197 ++++++
+>  drivers/mfd/da9063-irq.c             |  193 ++++++
+>  include/linux/mfd/da9063/core.h      |  110 ++++
+>  include/linux/mfd/da9063/pdata.h     |  114 ++++
+>  include/linux/mfd/da9063/registers.h | 1090 ++++++++++++++++++++++++++++++++++
+>  8 files changed, 1896 insertions(+)
 
-hackbench 1x degraded by 3 time (40sec vs 112sec)
-hackbench 2x degraded by around 20time (90sec vs 1800 sec)
+Whoah!! Who's going to want to review a 2k line patch?
 
-When I bisected, I found that I had CONFIG_SLUB_CPU_PARTIAL
-accidentally disabled.
-I understand that  CONFIG_SLUB_CPU_PARTIAL=y by default and the config
-option is to provide determinism for RT kernels and thus it is not a
-problem.
-But thought of sharing this here so that if somebody runs into same 
-issue accidently, it would save their time.
+Any chance you can split this stuff up into more 'bite sized' patches?
 
+-- 
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
