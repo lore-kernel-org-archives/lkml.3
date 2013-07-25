@@ -1,215 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab3GYJjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:39:24 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38526 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab3GYJjX (ORCPT
+	id S1755506Ab3GYJlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:41:21 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:58921 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab3GYJlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:39:23 -0400
-Date: Thu, 25 Jul 2013 10:38:55 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/4] ASoc: kirkwood: change the pcm/dma stream data
-	pointer
-Message-ID: <20130725093855.GB24642@n2100.arm.linux.org.uk>
-References: <20130725111314.66b811bc@armhf>
+	Thu, 25 Jul 2013 05:41:17 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control its IRQ domain ?
+Date: Thu, 25 Jul 2013 11:42:10 +0200
+Message-ID: <1963628.LyVehxJcEL@avalon>
+User-Agent: KMail/4.10.5 (Linux/3.8.13-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130724202446.6CAF23E1313@localhost>
+References: <1624911.6TtmtVmU1T@avalon> <20130724202446.6CAF23E1313@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130725111314.66b811bc@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:13:14AM +0200, Jean-Francois Moine wrote:
-> In the kirkwood pcm/dma driver, the private stream related data pointer
-> was hold in the platform drvdata.
-> As this pointer may be used by other parts of the audio subsystem,
-> this patch uses the substream runtime private data pointer instead.
+Hi Grant,
 
-There's a much better solution to this, which is to get rid of
-kirkwood_dma_priv entirely:
+Thank you for your answer.
 
-diff --git a/sound/soc/kirkwood/kirkwood-dma.c b/sound/soc/kirkwood/kirkwood-dma.c
-index d3d4bdc..112c262 100644
---- a/sound/soc/kirkwood/kirkwood-dma.c
-+++ b/sound/soc/kirkwood/kirkwood-dma.c
-@@ -33,11 +33,11 @@
- 	 SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_LE | \
- 	 SNDRV_PCM_FMTBIT_IEC958_SUBFRAME_BE)
- 
--struct kirkwood_dma_priv {
--	struct snd_pcm_substream *play_stream;
--	struct snd_pcm_substream *rec_stream;
--	struct kirkwood_dma_data *data;
--};
-+static struct kirkwood_dma_data *kirkwood_priv(struct snd_pcm_substream *subs)
-+{
-+	struct snd_soc_pcm_runtime *soc_runtime = subs->private_data;
-+	return snd_soc_dai_get_drvdata(soc_runtime->cpu_dai);
-+}
- 
- static struct snd_pcm_hardware kirkwood_dma_snd_hw = {
- 	.info = (SNDRV_PCM_INFO_INTERLEAVED |
-@@ -63,8 +63,7 @@ static u64 kirkwood_dma_dmamask = DMA_BIT_MASK(32);
- 
- static irqreturn_t kirkwood_dma_irq(int irq, void *dev_id)
- {
--	struct kirkwood_dma_priv *prdata = dev_id;
--	struct kirkwood_dma_data *priv = prdata->data;
-+	struct kirkwood_dma_data *priv = dev_id;
- 	unsigned long mask, status, cause;
- 
- 	mask = readl(priv->io + KIRKWOOD_INT_MASK);
-@@ -89,10 +88,10 @@ static irqreturn_t kirkwood_dma_irq(int irq, void *dev_id)
- 	writel(status, priv->io + KIRKWOOD_INT_CAUSE);
- 
- 	if (status & KIRKWOOD_INT_CAUSE_PLAY_BYTES)
--		snd_pcm_period_elapsed(prdata->play_stream);
-+		snd_pcm_period_elapsed(priv->substream_play);
- 
- 	if (status & KIRKWOOD_INT_CAUSE_REC_BYTES)
--		snd_pcm_period_elapsed(prdata->rec_stream);
-+		snd_pcm_period_elapsed(priv->substream_rec);
- 
- 	return IRQ_HANDLED;
- }
-@@ -126,15 +125,10 @@ static int kirkwood_dma_open(struct snd_pcm_substream *substream)
- {
- 	int err;
- 	struct snd_pcm_runtime *runtime = substream->runtime;
--	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
--	struct snd_soc_platform *platform = soc_runtime->platform;
--	struct snd_soc_dai *cpu_dai = soc_runtime->cpu_dai;
--	struct kirkwood_dma_data *priv;
--	struct kirkwood_dma_priv *prdata = snd_soc_platform_get_drvdata(platform);
-+	struct kirkwood_dma_data *priv = kirkwood_priv(substream);
- 	const struct mbus_dram_target_info *dram;
- 	unsigned long addr;
- 
--	priv = snd_soc_dai_get_dma_data(cpu_dai, substream);
- 	snd_soc_set_runtime_hwparams(substream, &kirkwood_dma_snd_hw);
- 
- 	/* Ensure that all constraints linked to dma burst are fulfilled */
-@@ -157,21 +151,11 @@ static int kirkwood_dma_open(struct snd_pcm_substream *substream)
- 	if (err < 0)
- 		return err;
- 
--	if (prdata == NULL) {
--		prdata = kzalloc(sizeof(struct kirkwood_dma_priv), GFP_KERNEL);
--		if (prdata == NULL)
--			return -ENOMEM;
--
--		prdata->data = priv;
--
-+	if (!priv->substream_play && !priv->substream_rec) {
- 		err = request_irq(priv->irq, kirkwood_dma_irq, IRQF_SHARED,
--				  "kirkwood-i2s", prdata);
--		if (err) {
--			kfree(prdata);
-+				  "kirkwood-i2s", priv);
-+		if (err)
- 			return -EBUSY;
--		}
--
--		snd_soc_platform_set_drvdata(platform, prdata);
- 
- 		/*
- 		 * Enable Error interrupts. We're only ack'ing them but
-@@ -183,11 +167,11 @@ static int kirkwood_dma_open(struct snd_pcm_substream *substream)
- 	dram = mv_mbus_dram_info();
- 	addr = substream->dma_buffer.addr;
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
--		prdata->play_stream = substream;
-+		priv->substream_play = substream;
- 		kirkwood_dma_conf_mbus_windows(priv->io,
- 			KIRKWOOD_PLAYBACK_WIN, addr, dram);
- 	} else {
--		prdata->rec_stream = substream;
-+		priv->substream_rec = substream;
- 		kirkwood_dma_conf_mbus_windows(priv->io,
- 			KIRKWOOD_RECORD_WIN, addr, dram);
- 	}
-@@ -197,27 +181,19 @@ static int kirkwood_dma_open(struct snd_pcm_substream *substream)
- 
- static int kirkwood_dma_close(struct snd_pcm_substream *substream)
- {
--	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
--	struct snd_soc_dai *cpu_dai = soc_runtime->cpu_dai;
--	struct snd_soc_platform *platform = soc_runtime->platform;
--	struct kirkwood_dma_priv *prdata = snd_soc_platform_get_drvdata(platform);
--	struct kirkwood_dma_data *priv;
--
--	priv = snd_soc_dai_get_dma_data(cpu_dai, substream);
-+	struct kirkwood_dma_data *priv = kirkwood_priv(substream);
- 
--	if (!prdata || !priv)
-+	if (!priv)
- 		return 0;
- 
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
--		prdata->play_stream = NULL;
-+		priv->substream_play = NULL;
- 	else
--		prdata->rec_stream = NULL;
-+		priv->substream_rec = NULL;
- 
--	if (!prdata->play_stream && !prdata->rec_stream) {
-+	if (!priv->substream_play && !priv->substream_rec) {
- 		writel(0, priv->io + KIRKWOOD_ERR_MASK);
--		free_irq(priv->irq, prdata);
--		kfree(prdata);
--		snd_soc_platform_set_drvdata(platform, NULL);
-+		free_irq(priv->irq, priv);
- 	}
- 
- 	return 0;
-@@ -243,13 +219,9 @@ static int kirkwood_dma_hw_free(struct snd_pcm_substream *substream)
- static int kirkwood_dma_prepare(struct snd_pcm_substream *substream)
- {
- 	struct snd_pcm_runtime *runtime = substream->runtime;
--	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
--	struct snd_soc_dai *cpu_dai = soc_runtime->cpu_dai;
--	struct kirkwood_dma_data *priv;
-+	struct kirkwood_dma_data *priv = kirkwood_priv(substream);
- 	unsigned long size, count;
- 
--	priv = snd_soc_dai_get_dma_data(cpu_dai, substream);
--
- 	/* compute buffer size in term of "words" as requested in specs */
- 	size = frames_to_bytes(runtime, runtime->buffer_size);
- 	size = (size>>2)-1;
-@@ -272,13 +244,9 @@ static int kirkwood_dma_prepare(struct snd_pcm_substream *substream)
- static snd_pcm_uframes_t kirkwood_dma_pointer(struct snd_pcm_substream
- 						*substream)
- {
--	struct snd_soc_pcm_runtime *soc_runtime = substream->private_data;
--	struct snd_soc_dai *cpu_dai = soc_runtime->cpu_dai;
--	struct kirkwood_dma_data *priv;
-+	struct kirkwood_dma_data *priv = kirkwood_priv(substream);
- 	snd_pcm_uframes_t count;
- 
--	priv = snd_soc_dai_get_dma_data(cpu_dai, substream);
--
- 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
- 		count = bytes_to_frames(substream->runtime,
- 			readl(priv->io + KIRKWOOD_PLAY_BYTE_COUNT));
-diff --git a/sound/soc/kirkwood/kirkwood.h b/sound/soc/kirkwood/kirkwood.h
-index 4d92637..10a3aaa 100644
---- a/sound/soc/kirkwood/kirkwood.h
-+++ b/sound/soc/kirkwood/kirkwood.h
-@@ -129,6 +129,8 @@ struct kirkwood_dma_data {
- 	struct clk *extclk;
- 	uint32_t ctl_play;
- 	uint32_t ctl_rec;
-+	struct snd_pcm_substream *substream_play;
-+	struct snd_pcm_substream *substream_rec;
- 	int irq;
- 	int burst;
- };
+On Wednesday 24 July 2013 21:24:46 Grant Likely wrote:
+> On Wed, 24 Jul 2013 01:21:44 +0200, Laurent Pinchart wrote:
+> > Hello,
+> > 
+> > I'm running into an issue on several Renesas SoC with IRQ domains and
+> > GPIOs.
+> > 
+> > On sh73a0, r8a73a4 and r8a7740, GPIOs and external interrupts are handled
+> > by two separate IP cores, namely the PFC (Pin Function Controller) and
+> > INTC (Interrupt Controller). The former is handled by the sh-pfc driver
+> > (drivers/pinctrl/sh-pfc) and the later by the irq-renesas-intc-irqpin
+> > driver (drivers/irqchip), referred to below as the irqpin driver.
+> > 
+> > The sh73a0, for instance, has 32 external interrupt lines that are
+> > multiplexed on pins usable as GPIOs. Both the GPIO and external interrupt
+> > functions are usable at the same time, which allows reading the state of
+> > the interrupt lines.
+> > 
+> > These external interrupts are for MMC/SD support, among other devices. In
+> > this specific case the MMC/SD Card Detect signal is wired to one of the
+> > external interrupt signals, and the corresponding GPIO is passed to the
+> > MMC/SD controller driver. Depending on other configuration parameters the
+> > driver can then either poll the Card Detect signal, or register an
+> > interrupt handler to detect changes in the signal state. This features is
+> > implemented by the MMC/SD core, which call gpio_to_irq() on the GPIO to
+> > retrieve the corresponding IRQ number.
+> > 
+> > On non-DT systems the external IRQs are statically mapped at a known
+> > offset. The sh-pfc driver, to implement the gpio_to_irq() function
+> > (through its gpiochip .to_irq() handler), simply searches a SoC-specific
+> > lookup table for the fixed IRQ number associated with a given GPIO.
+> > 
+> > However, on DT systems, IRQs are mapped dynamically on demand. The irqpin
+> > driver registers a simple IRQ domain, and the irq_create_mapping()
+> > function can then be used to map a given IRQ, specified as an offset in
+> > the domain. This is where the problem appears, as the irqchip .to_irq()
+> > function is implemented in the sh-pfc driver, which doesn't have access to
+> > the IRQ domain registered by the irqpin driver.
+> > 
+> > I could hack around this by exporting a function in the irqpin driver that
+> > would map an IRQ, and call that function from the sh-pfc driver. I'd
+> > rather avoid that solution as it would add a direct dependency between the
+> > two drivers.
+> 
+> Well, the gpio controller really does need to know what irq is associated
+> with a GPIO line. If the gpio controller driver doesn't have direct access
+> to that information, then it needs to have a hook to set it up.
+
+The GPIO controller knows what hardware IRQ is associated with a GPIO line. It 
+can't however translate on its own that hardware IRQ number to a global IRQ 
+number, as the global IRQ numbers are allocated dynamically through the IRQ 
+mapping domain, which is local to the IRQ chip driver.
+
+To summarize the issue, the GPIO API exports a GPIO to IRQ translation 
+function, which requires two steps:
+
+- translating from a GPIO number to an IRQ chip and an IRQ chip local hardware 
+IRQ number
+
+- translation from the hardware IRQ number to a global IRQ number
+
+The second step currently requires information known to the IRQ chip driver 
+only.
+
+> In the past, I've seen gpio controllers have an interrupts property
+> specifying which interrupts it is connected to and can use for GPIO events.
+> That seems like a resonable scenario in this regard, but if GPIOS are 1:1
+> mapped to irqs, then it means a lot of interrupt entries need to appear in
+> the GPIO node. The other option is to add a hook directly to the gpio driver
+> so that it knows to use a specific irq controller; but that feels wrong.
+> Thought it may be a bit verbose, the addition of an interrupts property to
+> the GPIO controller node is probably what is wanted.
+
+That's a good idea. I don't actually need to specify all the interrupts 
+associated with the GPIOs (there are 58 of them in the worst case), as the 
+GPIO driver knows the hardware IRQ number of all interrupts associated with a 
+GPIO. I could just specify the interrupt-parent in the GPIO DT node, and call 
+irq_create_of_mapping() directly in my .to_irq() handler to translate the IRQ 
+number using the interrupt-parent phandle as the controller argument. Would 
+that be considered as an acceptable hack, or would it be preferred to specify 
+the interrupts individually in the GPIO controller DT node ?
+
+> There has also been a trend to make gpio controllers also interrupt
+> controllers if they support being used directly as irq inputs, but that
+> doesn't really help your problem.  :-)
+
+Newer generations of the Renesas SoCs have a GPIO controller than also acts as 
+an IRQ controller, but older generations unfortunately have two separate IP 
+cores.
+
+-- 
+Regards,
+
+Laurent Pinchart
+
