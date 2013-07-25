@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab3GYRaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:30:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33495 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3GYRaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:30:30 -0400
-Date: Thu, 25 Jul 2013 20:30:17 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <ldv-project@linuxtesting.org>
-Subject: Re: [PATCH] usb: gadget: mv_u3d_core: fix violation of locking
- discipline in mv_u3d_ep_disable()
-Message-ID: <20130725173017.GK25415@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru>
+	id S1756853Ab3GYRca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:32:30 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:37333 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756765Ab3GYRc1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:32:27 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="2O+9B+xSKalj/wdD"
-Content-Disposition: inline
-In-Reply-To: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <51F10AA8.2050901@linux.vnet.ibm.com>
+References: <1374526866-6813-1-git-send-email-bp@alien8.de>
+ <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722>
+ <51F10AA8.2050901@linux.vnet.ibm.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 25 Jul 2013 11:32:06 -0600
+Message-ID: <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
+Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
+To: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
+Cc: Joe Perches <joe@perches.com>, Borislav Petkov <bp@alien8.de>,
+        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
+        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
+        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---2O+9B+xSKalj/wdD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 25, 2013 at 5:23 AM, Naveen N. Rao
+<naveen.n.rao@linux.vnet.ibm.com> wrote:
+> On 07/24/2013 10:53 PM, Joe Perches wrote:
+>>
+>> On Wed, 2013-07-24 at 22:43 +0530, Naveen N. Rao wrote:
+>>>
+>>> On 2013/07/22 11:01PM, Borislav Petkov wrote:
+>>>>
+>>>> From: Borislav Petkov <bp@suse.de>
+>>>>
+>>>> [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x
+>>>> c7f00000> for ERST.
+>>>>
+>>>> This needs to have leading zeroes. Make it so.
+>>
+>>
+>> Why does it need leading zeros?
+>>
+>>> While looking at this, I noticed that we seem to be using varying field
+>>> widths in our APEI code:
+>>> - einj.c has two instances using %#010llx.
+>>> - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
+>>>
+>>> Not sure if these are intentional and those fields truly aren't 64-bit
+>>> (as suggested by the usage of long long int).
+>>
+>>
+>> I suggest using "0x%llx" everywhere unless there's a
+>> compelling reason like columnar alignment for them.
+>
+>
+> I think that might be better. I see that these changes were done in commit
+> 46b91e37. Copying Bjorn Helgaas.
 
-Hi,
+As the 46b91e37 changelog says, it was done to use "the normal
+%pR-like format".  I think that's a valid goal.  When we're printing
+the same sort of information, we should use the same sort of format.
 
-On Wed, Jul 24, 2013 at 12:20:17AM +0400, Alexey Khoroshilov wrote:
-> mv_u3d_nuke() expects to be calles with ep->u3d->lock held,
-> because mv_u3d_done() does. But mv_u3d_ep_disable() calls it
-> without lock that can lead to unpleasant consequences.
->=20
-> Found by Linux Driver Verification project (linuxtesting.org).
->=20
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+But I don't think the "Can not request iomem region <0x
+c7eff000-0x        c7f00000> for ERST" output mentioned in the
+original post was affected by 46b91e37.  I would suggest a change
+similar to 46b91e37 for ERST, and I would suggest using the leading
+zeros, with %#010llx for physical memory addresses and %#06llx for
+ioport addresses.  That's what %pR uses, and it produces columnar
+alignment in many cases (though not this one).
 
-which commit introduced the bug ? Which kernels are affected by this bug ?
-
---=20
-balbi
-
---2O+9B+xSKalj/wdD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8WCoAAoJEIaOsuA1yqREGQQP/jTo8gzqGRzWsfoXMbPFziKy
-TV1BqQR7kJPnHDmbsdnY9UjFHEE8XysbYU9zFfqLMlpyaWZ5KlZxutRc5Nrbo2Bw
-NovMCEe1lj1IzRMLWrDtGXWlNKJvhxE8GGJTSjnWF4h+v323PaDQn5T2Ec+JiHuv
-fIHLPb2iWuRt4N1MZK3HS1eeqAYa6BTWm1f8VoCpTN0F76bI4mE0Id5LnOt9q0Es
-JYovSj/IwH4GiY5/iRpWsP3QiwBUjfuWT1DnnIbiywA2ksR5oWqBpB/h13Ep192k
-W2TqF0kEK3pxJsObJNmOXieaNeNRa/tRCGt655+qwFC8tbf8Ka+5TF3ONz2cwOth
-ivZx3X9GO1ORiANkUWL9//2Hb5jAM2OKVPgmzldx2pV4FV/Qi1ASS310MDQeGBI3
-dENHlT2MHLgKXxtMOmuSbNgmc0Z6qsDWvlENKNkUS0hv2JYBKLl0KCNWrt6BUEps
-0RlIxYm/T8pojKKACAtxfpiBmLBpuLucm22A7jYGh3wVz0Z3LWVDBH1OUHtrR+2W
-0K0Xx/6ldzrySUNr7sMhp7NgzG4pKbM9B1SqbNNSEcHWN6uKasqlshCVDs/Le69l
-OLLq/A2q8TLJFaSLgs5F8xPgiWTc7h5lRepRlqMu68/xNrJsi2mzj2UwnURO34fK
-VTruK9mgOPWiMhEwLYka
-=es9l
------END PGP SIGNATURE-----
-
---2O+9B+xSKalj/wdD--
+Bjorn
