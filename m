@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757039Ab3GYSTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:19:17 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:11377 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab3GYSTQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:19:16 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/fBChtwXGvFJcTkHaE8JS+yGKcCtpc7JA=
-Date: Thu, 25 Jul 2013 14:19:03 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 0/7] ARM: mvebu: switch to DT probed irqchip and
- clocksource
-Message-ID: <20130725181903.GP23879@titan.lakedaemon.net>
-References: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1372763023-12374-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757174Ab3GYSU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:20:56 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:56692 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756883Ab3GYSUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:20:54 -0400
+Subject: Re: [PATCH] usb: dwc3: core: modify IO memory resource after
+ deferred probe completes
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <51F15E85.1050808@cogentembedded.com>
+References: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
+	 <51F15E85.1050808@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 25 Jul 2013 21:20:51 +0300
+Message-ID: <1374776451.24810.3.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 02, 2013 at 01:03:36PM +0200, Sebastian Hesselbarth wrote:
-> This patch set converts Marvell Dove and Kirkwood DT enabled boards
-> to probe irqchip and clocksource by DT. The corresponding irqchip and
-> clocksource drivers have been taken by Thomas Gleixner and Daniel Lezcano
-> respectively. This patch set is based on next-20130701 plus tip/core and
-> timers/clockevents. Also, mv643xx_eth DT patches sent earlier are applied.
+On Thu, 2013-07-25 at 21:21 +0400, Sergei Shtylyov wrote:
+> On 07/25/2013 08:26 PM, Ivan T. Ivanov wrote:
 > 
-> Unfortunately, the same compatible string is used by irqchip driver and
-> irq DT stub in plat-orion/irq.c while reg layout is different. This patch
-> set should be applied as a whole only, as device tree conversion breaks
-> kernel boot until the corresponding second patch is applied. As this set
-> is Marvell SoC related only, I suggest to take it all through Jason
-> Cooper's branch.
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 > 
-> Patch set version has been bumped to v4, but this only contains the
-> remaining Marvell related patches. irqchip and clocksource drivers from
-> v3 have already been taken by the respective maintainers.
+> > When deferred probe happens driver will try to ioremap multiple times
+> > and will fail. Memory resource.start variable is a global variable,
+> > modifications in this field will be accumulated on every probe.
+> > Fix this by moving the above operations after driver hold all
+> > required PHY's.
 > 
-> The first three patches convert Dove, Kirkwood, and Orion5x DT files to
-> the new reg layout. Patch 4 and 5 add the new clocksource and irqchip
-> nodes. Patch 6 also removes an obsolete clock gate workaround from
-> Kirkwood DT board setup. Patch 7 then updates the irq driver DT stub in
-> plat-orion/irq to reflect the changed reg layout. The irq driver DT stub
-> is still used on Orion5x until proper DT clk provider is available.
-> 
-> The patch set has been tested on Dove, and compile-tested on Kirkwood
-> and Orion5x defconfig.
-> 
-> Sebastian Hesselbarth (7):
->   ARM: dove: move device tree nodes to DT irqchip and clocksource
->   ARM: kirkwood: move device tree nodes to DT irqchip and clocksource
->   ARM: orion5x: update intc device tree node to new reg layout
->   ARM: dove: convert to DT irqchip and clocksource
->   ARM: kirkwood: convert to DT irqchip and clocksource
->   ARM: kirkwood: remove obsolete SDIO clock gate workaround
->   ARM: plat-orion: add reg offset to DT irq driver stub
-> 
->  arch/arm/boot/dts/dove.dtsi       |   21 +++++++++++++++++++--
->  arch/arm/boot/dts/kirkwood.dtsi   |   35 +++++++++++++++++++++++++++--------
->  arch/arm/boot/dts/orion5x.dtsi    |    5 +++--
->  arch/arm/mach-dove/Kconfig        |    2 ++
->  arch/arm/mach-dove/Makefile       |    4 ++--
->  arch/arm/mach-dove/board-dt.c     |   23 ++++++++++++++++-------
->  arch/arm/mach-kirkwood/Kconfig    |   22 ++++++++++++++++++++++
->  arch/arm/mach-kirkwood/Makefile   |    4 ++--
->  arch/arm/mach-kirkwood/board-dt.c |   28 +++++++++++++++++-----------
->  arch/arm/plat-orion/irq.c         |    2 +-
->  10 files changed, 111 insertions(+), 35 deletions(-)
 
-Whole series (with v5 of #5) applied to mvebu/boards
+Forgot to mention, generated on top of Felipe's 'testing' branch.
 
-thx,
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >   drivers/usb/dwc3/core.c |   31 ++++++++++++++++---------------
+> >   1 file changed, 16 insertions(+), 15 deletions(-)
+> 
+> > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> > index 607bef8..50c833f 100644
+> > --- a/drivers/usb/dwc3/core.c
+> > +++ b/drivers/usb/dwc3/core.c
+> [...]
+> > @@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
+> >   		return -EPROBE_DEFER;
+> >   	}
+> >
+> > +	dwc->xhci_resources[0].start = res->start;
+> > +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> > +					DWC3_XHCI_REGS_END;
+> > +	dwc->xhci_resources[0].flags = res->flags;
+> > +	dwc->xhci_resources[0].name = res->name;
+> > +
+> > +	res->start += DWC3_GLOBALS_REGS_START;
+> > +
+> > +	 /*
+> > +	  * Request memory region but exclude xHCI regs,
+> > +	  * since it will be requested by the xhci-plat driver.
+> > +	  */
+> 
+>      Please remove an extra space after a tab on each comment line.
+> It seems like a good time to do it, while you're moving this code.
+> 
 
-Jason.
+Ok. 
+
+Regards,
+Ivan
+
+> > +	regs = devm_ioremap_resource(dev, res);
+> > +	if (IS_ERR(regs))
+> > +		return PTR_ERR(regs);
+> > +
+> 
+> WBR, Sergei
+> 
+
+
