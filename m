@@ -1,77 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379Ab3GYInm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 04:43:42 -0400
-Received: from relay.parallels.com ([195.214.232.42]:35244 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab3GYIni (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 04:43:38 -0400
-Message-ID: <51F0E52C.1080101@parallels.com>
-Date: Thu, 25 Jul 2013 12:43:24 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Hush Bensen <hush.bensen@gmail.com>
-CC: Andy Lutomirski <luto@amacapital.net>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on swapped pages
-References: <CALCETrXYnkonpBANnUuX+aJ=B=EYFwecZO27yrqcEU8WErz9DA@mail.gmail.com> <20130724163734.GE24851@moon> <CALCETrVWgSMrM2ujpO092ZLQa3pWEQM4vdmHhCVUohUUcoR8AQ@mail.gmail.com> <20130724171728.GH8508@moon> <1374687373.7382.22.camel@dabdike> <CALCETrV5MD1qCQsyz4=t+QW1BJuTBYainewzDfEaXW12S91K=A@mail.gmail.com> <20130724181516.GI8508@moon> <CALCETrV5NojErxWOc2RpuYKE0g8FfOmKB31oDz46CRu27hmDBA@mail.gmail.com> <20130724185256.GA24365@moon> <51F0232D.6060306@parallels.com> <20130724190453.GJ8508@moon> <CALCETrVRQBLrQBL8_Zu0VqBRkDXXr2np57-gt4T59A4jG9jMZw@mail.gmail.com> <51F0D3CA.3080902@parallels.com> <51F0E144.9030304@gmail.com>
-In-Reply-To: <51F0E144.9030304@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.114]
+	id S1755353Ab3GYIxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 04:53:10 -0400
+Received: from etezian.org ([198.101.225.253]:41817 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751750Ab3GYIxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 04:53:06 -0400
+From: Andi Shyti <andi@etezian.org>
+To: davem@davemloft.net
+Cc: dominique.martinet@cea.fr, pebolle@tiscali.nl, lucho@ionkov.net,
+        ericvh@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov,
+        andi@etezian.org
+Subject: [PATCH] 9p: client: remove unused code and any reference to "cancelled" function
+Date: Thu, 25 Jul 2013 10:54:24 +0200
+Message-Id: <1374742464-10686-1-git-send-email-andi@etezian.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20130725061411.GA8579@nautica>
+References: <20130725061411.GA8579@nautica>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 12:26 PM, Hush Bensen wrote:
-> On 07/25/2013 03:29 PM, Pavel Emelyanov wrote:
->> On 07/24/2013 11:40 PM, Andy Lutomirski wrote:
->>> On Wed, Jul 24, 2013 at 12:04 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>>> On Wed, Jul 24, 2013 at 10:55:41PM +0400, Pavel Emelyanov wrote:
->>>>>> Well, some part of information already lays in pte (such as 'file' bit,
->>>>>> swap entries) so it looks natural i think to work on this level. but
->>>>>> letme think if use page struct for that be more convenient...
->>>>> It hardly will be. Consider we have a page shared between two tasks,
->>>>> then first one "touches" it and soft-dirty is put onto his PTE and,
->>>>> subsequently, the page itself. The we go and clear sofr-dirty for the
->>>>> 2nd task. What should we do with the soft-dirty bit on the page?
->>>> Indeed, this won't help. Well then, bippidy-boppidy-boo, our
->>>> pants are metaphorically on fire (c)
->>> Hmm.  So there are at least three kinds of memory:
->>>
->>> Anonymous pages: soft-dirty works
->>> Shared file-backed pages: soft-dirty does not work
->>> Private file-backed pages: soft-dirty works (but see below)
->> The shared file-backed pages case works, but unmap-map case doesn't
-> 
-> What's the meaning of unmap-map case?
+This patch reverts commit
 
-Unmap is what happens when Linux runs out of memory, starts memory
-reclaim procedure and removes a page from task's address space, replacing
-the respective pte with an information where (in swap or in file) the
-page can be found.
+80b45261a0b263536b043c5ccfc4ba4fc27c2acc
 
-Map is what occurs when the task touches the unmapped page again, the
-respective page is read back from file/swap and the respective pte if
-filled with its pfn.
+which was implementing a 'cancelled' functionality to notify that
+a cancelled request will not be replied.
 
-This patch fixes the soft-dirty bit preservation during the unmap-map cycle
-for pages, that go to swap.
+This implementation was not used anywhere and therefore removed.
 
-Sorry for confusion.
+Signed-off-by: Andi Shyti <andi@etezian.org>
+---
+ include/net/9p/transport.h | 3 ---
+ net/9p/client.c            | 9 ++-------
+ 2 files changed, 2 insertions(+), 10 deletions(-)
 
->> preserve the soft-dirty bit. Just like the private file did. We'll
->> fix this case next.
+diff --git a/include/net/9p/transport.h b/include/net/9p/transport.h
+index d9fa68f..9a36d92 100644
+--- a/include/net/9p/transport.h
++++ b/include/net/9p/transport.h
+@@ -40,8 +40,6 @@
+  * @close: member function to discard a connection on this transport
+  * @request: member function to issue a request to the transport
+  * @cancel: member function to cancel a request (if it hasn't been sent)
+- * @cancelled: member function to notify that a cancelled request will not
+- *             not receive a reply
+  *
+  * This is the basic API for a transport module which is registered by the
+  * transport module with the 9P core network module and used by the client
+@@ -60,7 +58,6 @@ struct p9_trans_module {
+ 	void (*close) (struct p9_client *);
+ 	int (*request) (struct p9_client *, struct p9_req_t *req);
+ 	int (*cancel) (struct p9_client *, struct p9_req_t *req);
+-	int (*cancelled)(struct p9_client *, struct p9_req_t *req);
+ 	int (*zc_request)(struct p9_client *, struct p9_req_t *,
+ 			  char *, char *, int , int, int, int);
+ };
+diff --git a/net/9p/client.c b/net/9p/client.c
+index 8b93cae..ba93bda 100644
+--- a/net/9p/client.c
++++ b/net/9p/client.c
+@@ -658,17 +658,12 @@ static int p9_client_flush(struct p9_client *c, struct p9_req_t *oldreq)
+ 
+ 	/*
+ 	 * if we haven't received a response for oldreq,
+-	 * remove it from the list, and notify the transport
+-	 * layer that the reply will never arrive.
++	 * remove it from the list
+ 	 */
+-	spin_lock(&c->lock);
+ 	if (oldreq->status == REQ_STATUS_FLSH) {
++		spin_lock(&c->lock);
+ 		list_del(&oldreq->req_list);
+ 		spin_unlock(&c->lock);
+-		if (c->trans_mod->cancelled)
+-			c->trans_mod->cancelled(c, req);
+-	} else {
+-		spin_unlock(&c->lock);
+ 	}
+ 
+ 	p9_free_req(c, req);
+-- 
+1.8.3.2
 
-Thanks,
-Pavel
