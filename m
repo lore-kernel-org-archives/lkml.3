@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab3GYSlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:41:19 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11777 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463Ab3GYSib (ORCPT
+	id S932130Ab3GYSlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:41:49 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:4241 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117Ab3GYSiZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:38:31 -0400
+	Thu, 25 Jul 2013 14:38:25 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 11:38:30 -0700
+	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 11:38:24 -0700
 From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 To: <balbi@ti.com>
 CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
         <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
-Subject: [PATCH v3 5/9] usb: phy: tegra: Register as an USB PHY.
-Date: Thu, 25 Jul 2013 21:38:05 +0300
-Message-ID: <1374777489-13093-6-git-send-email-ttynkkynen@nvidia.com>
+Subject: [PATCH v3 2/9] usb: host: tegra: Remove leftover code
+Date: Thu, 25 Jul 2013 21:38:02 +0300
+Message-ID: <1374777489-13093-3-git-send-email-ttynkkynen@nvidia.com>
 X-Mailer: git-send-email 1.8.1.5
 In-Reply-To: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
 References: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
@@ -27,52 +27,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register the Tegra PHY device instances with the PHY subsystem so that
-the Tegra EHCI driver can locate a PHY via the standard APIs.
+ehci-tegra calls devm_usb_get_phy, which will never succeed since the Tegra
+PHY does not register itself with the PHY subsystem. It is also completely
+redundant since the code has already located a PHY via an internal API.
+
+Call otg_set_host unconditionally to simplify the code since it should
+be safe to do so.
 
 Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
 Reviewed-by: Stephen Warren <swarren@nvidia.com>
 Tested-by: Stephen Warren <swarren@nvidia.com>
 ---
-v2 diff: Do the usb_add_phy_dev as the very last thing in .probe
- drivers/usb/phy/phy-tegra-usb.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/usb/host/ehci-tegra.c | 20 +++++---------------
+ 1 file changed, 5 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
-index 311fe03..441c306 100644
---- a/drivers/usb/phy/phy-tegra-usb.c
-+++ b/drivers/usb/phy/phy-tegra-usb.c
-@@ -932,6 +932,22 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
- 	tegra_phy->u_phy.set_suspend = tegra_usb_phy_suspend;
+diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
+index 14c1f35..06e8feb 100644
+--- a/drivers/usb/host/ehci-tegra.c
++++ b/drivers/usb/host/ehci-tegra.c
+@@ -58,7 +58,6 @@ static int (*orig_hub_control)(struct usb_hcd *hcd,
+ struct tegra_ehci_hcd {
+ 	struct tegra_usb_phy *phy;
+ 	struct clk *clk;
+-	struct usb_phy *transceiver;
+ 	int port_resuming;
+ 	bool needs_double_reset;
+ 	enum tegra_usb_phy_port_speed port_speed;
+@@ -436,26 +435,18 @@ static int tegra_ehci_probe(struct platform_device *pdev)
+ 		goto cleanup_phy;
+ 	}
  
- 	dev_set_drvdata(&pdev->dev, tegra_phy);
-+
-+	err = usb_add_phy_dev(&tegra_phy->u_phy);
-+	if (err < 0) {
-+		tegra_usb_phy_close(&tegra_phy->u_phy);
-+		return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int tegra_usb_phy_remove(struct platform_device *pdev)
-+{
-+	struct tegra_usb_phy *tegra_phy = platform_get_drvdata(pdev);
-+
-+	usb_remove_phy(&tegra_phy->u_phy);
-+
- 	return 0;
- }
+-	if (pdata->operating_mode == TEGRA_USB_OTG) {
+-		tegra->transceiver =
+-			devm_usb_get_phy(&pdev->dev, USB_PHY_TYPE_USB2);
+-		if (!IS_ERR(tegra->transceiver))
+-			otg_set_host(tegra->transceiver->otg, &hcd->self);
+-	} else {
+-		tegra->transceiver = ERR_PTR(-ENODEV);
+-	}
++	otg_set_host(u_phy->otg, &hcd->self);
  
-@@ -943,6 +959,7 @@ MODULE_DEVICE_TABLE(of, tegra_usb_phy_id_table);
+ 	err = usb_add_hcd(hcd, irq, IRQF_SHARED);
+ 	if (err) {
+ 		dev_err(&pdev->dev, "Failed to add USB HCD\n");
+-		goto cleanup_transceiver;
++		goto cleanup_otg_set_host;
+ 	}
  
- static struct platform_driver tegra_usb_phy_driver = {
- 	.probe		= tegra_usb_phy_probe,
-+	.remove		= tegra_usb_phy_remove,
- 	.driver		= {
- 		.name	= "tegra-phy",
- 		.owner	= THIS_MODULE,
+ 	return err;
+ 
+-cleanup_transceiver:
+-	if (!IS_ERR(tegra->transceiver))
+-		otg_set_host(tegra->transceiver->otg, NULL);
++cleanup_otg_set_host:
++	otg_set_host(u_phy->otg, NULL);
+ cleanup_phy:
+ 	usb_phy_shutdown(hcd->phy);
+ cleanup_clk_en:
+@@ -473,8 +464,7 @@ static int tegra_ehci_remove(struct platform_device *pdev)
+ 	struct tegra_ehci_hcd *tegra =
+ 		(struct tegra_ehci_hcd *)hcd_to_ehci(hcd)->priv;
+ 
+-	if (!IS_ERR(tegra->transceiver))
+-		otg_set_host(tegra->transceiver->otg, NULL);
++	otg_set_host(hcd->phy->otg, NULL);
+ 
+ 	usb_phy_shutdown(hcd->phy);
+ 	usb_remove_hcd(hcd);
 -- 
 1.8.1.5
 
