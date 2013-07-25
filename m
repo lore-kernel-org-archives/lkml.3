@@ -1,38 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab3GYChL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:37:11 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:45863 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab3GYChH (ORCPT
+	id S1754119Ab3GYCjZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 22:39:25 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:35335 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3GYCjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:37:07 -0400
+	Wed, 24 Jul 2013 22:39:24 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130724193519.GA16434@merkur.ravnborg.org>
-References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-2-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-5-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-6-git-send-email-mail-agent-noreply@emc.com>
- <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com> <20130724193519.GA16434@merkur.ravnborg.org>
+In-Reply-To: <20130724200730.GA22161@kroah.com>
+References: <1374689299-10126-1-git-send-email-bergwolf@gmail.com>
+ <1374689299-10126-4-git-send-email-bergwolf@gmail.com> <20130724200730.GA22161@kroah.com>
 From: Peng Tao <bergwolf@gmail.com>
-Date: Thu, 25 Jul 2013 10:36:45 +0800
-Message-ID: <CA+a=Yy7ykdzJ4gWc7GKF9RLOtzjomaFpkw8JEhHbgRPj2=5hzw@mail.gmail.com>
-Subject: Re: [PATCH 6/8] staging/lustre: fix Kconfig bool defaults
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: mail-agent-noreply@emc.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+Date: Thu, 25 Jul 2013 10:39:02 +0800
+Message-ID: <CA+a=Yy77Uuj4yuGUD71sgTKqtt4BU_hrr7rCLk-guH4qg2X=Ag@mail.gmail.com>
+Subject: Re: [PATCH-RESEND 3/3] staging/lustre: fix Kconfig bool defaults
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Andreas Dilger <andreas.dilger@intel.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 3:35 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Wed, Jul 24, 2013 at 04:31:30PM +0800, mail-agent-noreply@emc.com wrote:
->> From: Peng Tao <bergwolf@gmail.com>
+On Thu, Jul 25, 2013 at 4:07 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Thu, Jul 25, 2013 at 02:08:19AM +0800, Peng Tao wrote:
+>> From: Peng Tao <tao.peng@emc.com>
 >>
 >> Should be y instead of true.
 >>
@@ -41,7 +35,7 @@ On Thu, Jul 25, 2013 at 3:35 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
 >> Signed-off-by: Peng Tao <tao.peng@emc.com>
 >> ---
 >>  drivers/staging/lustre/lustre/Kconfig |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >>
 >> diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
 >> index 9ae7fa8..e3b3c74 100644
@@ -54,26 +48,19 @@ On Thu, Jul 25, 2013 at 3:35 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
 >> -     default true
 >> +     default y
 >
-> This was the file that contained some buggy "default false" IIRC.
-> Please delete these.
+> Why is the default for this going to be 'y'?  That should only be for
+> things that keep the machine from booting.
 >
-The default false lines were already deleted by Paul Bolle.
-Please see commit 68a8029799ad368ee82a5cf509a2b5b802837ce9 in Greg's
-staging-next branch.
-
-commit 68a8029799ad368ee82a5cf509a2b5b802837ce9
-Author: Paul Bolle <pebolle@tiscali.nl>
-Date:   Sat Jul 13 20:46:39 2013 +0200
-
-    staging/lustre/libcfs: drop bogus Kconfig default
-
-    Commit 4b5b4c7222 ("staging/lustre/libcfs: restore LINVRNT") added
-    "default false" to this Kconfig file. It was obviously meant to use
-    "default n" here. But we might as well drop this line, as a Kconfig bool
-    defaults to 'n' anyway.
-
-    Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> If this is something you always want to do, then why make it an option
+> at all?
+>
+> Given that there is no documentation for what this option is, and why
+> people should always turn it on, I can't accept this patch, sorry.
+>
+I was hoping to use the config option to control over whether the
+translation code need to be compiled. After checking other Makefiles,
+I found that I can just use ifeq clause in Makefile to do it. So this
+config option can be deleted. I will send updated patch.
 
 Thanks,
 Tao
