@@ -1,141 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276Ab3GYDPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:15:36 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46771 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752562Ab3GYDPb (ORCPT
+	id S1754567Ab3GYDUM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:20:12 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:53125 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343Ab3GYDUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:15:31 -0400
-Message-ID: <51F09841.1060405@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 11:15:13 +0800
-From: Michael Wang <wangyun@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Rakib Mullick <rakib.mullick@gmail.com>
-CC: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
- building sched domain.
-References: <1374601332.9192.0.camel@localhost.localdomain> <51EF4969.4050807@linux.vnet.ibm.com> <CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com> <51EF919F.2000706@linux.vnet.ibm.com> <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
-In-Reply-To: <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072503-9574-0000-0000-000008DF1F21
+	Wed, 24 Jul 2013 23:20:10 -0400
+Date: Thu, 25 Jul 2013 13:19:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Won Kang <wkang77@gmail.com>
+Subject: linux-next: build failure after merge of the staging tree
+Message-Id: <20130725131959.3c39e033c6fee01328b10119@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__25_Jul_2013_13_19_59_+1000_MInx8rGMCOdQKgKx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 09:57 PM, Rakib Mullick wrote:
-> On Wed, Jul 24, 2013 at 2:34 PM, Michael Wang
-[snip]
->>
->> I think you missed this in PeterZ's suggestion:
->>
->> -               cpu_attach_domain(NULL, &def_root_domain, i);
->>
->> With this change, it will be safe since you will still get an un-freed
->> sd, although it's an old one.
->>
-> I never meant it and clearly I missed it. If you remove
-> cpu_attach_domain(), then detach_destroy_domain() becomes meaningless.
-> And I don't have any intent to remove cpu_attach_domain from
-> detach_destroy_domain() at all.
-> 
->> But your patch will run the risk to get a freed sd, since you make
->> 'sd_llc' wrong for a period of time (between destroy and rebuild) IMO.
->>
+--Signature=_Thu__25_Jul_2013_13_19_59_+1000_MInx8rGMCOdQKgKx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, allow me try to explain it again, hope this time it could be more
-clear...
+Hi Greg,
 
-> Building 'sd_llc' depends on schedule domain. If you don't have sd,
-> sd_llc will point to NULL and sd_llc_id is
-> the CPU itself. Since, we're  trying to re-construing so for this time
-> being it doesn't matter, cause we're building
-> it again. 
+After merging the staging tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-It does matter, although we build it again, we need to make things sync
-at any point of time in SMP world.
+drivers/staging/gdm724x/built-in.o: In function `netlink_init':
+(.text+0x19b6): multiple definition of `netlink_init'
+drivers/staging/gdm72xx/built-in.o:(.text+0x19d5): first defined here
+drivers/staging/gdm724x/built-in.o: In function `netlink_exit':
+(.text+0x1a2a): multiple definition of `netlink_exit'
+drivers/staging/gdm72xx/built-in.o:(.text+0x1a49): first defined here
+drivers/staging/gdm724x/built-in.o: In function `netlink_send':
+(.text+0x1a4f): multiple definition of `netlink_send'
+drivers/staging/gdm72xx/built-in.o:(.text+0x1a67): first defined here
 
-Now, please just note what you're saying, on last thread
-> you've said -
-> 
->        "I don't think we have the promise that before we rebuild the stuff
->         correctly, no one will utilize 'sd_llc'..."
-> 
-> If that is the case, then we shouldn't worry about it at all. And this
-> above comments (from previous thread I've quoted and this thread I'm
-> replying) they're just self contradictory.
+Presumably caused by commit 61e121047645 ("staging: gdm7240: adding LTE
+USB driver").  I disabled this driver using this patch:
 
-Let's have some picture like:
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 25 Jul 2013 13:16:30 +1000
+Subject: [PATCH] staging: disable the gdm724x driver due to build problems
 
-	destroy
-		cpu_attach_domain(NULL)			//cad_A
-			update_top_cache_domain()	//utcd_A
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/gdm724x/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-	WINDOW	//begin after last rcu_read_unlock()
-		//end after next rcu_read_lock()
+diff --git a/drivers/staging/gdm724x/Kconfig b/drivers/staging/gdm724x/Kcon=
+fig
+index 10f7be1..85141bd 100644
+--- a/drivers/staging/gdm724x/Kconfig
++++ b/drivers/staging/gdm724x/Kconfig
+@@ -5,6 +5,7 @@
+ config LTE_GDM724X
+ 	tristate "GCT GDM724x LTE support"
+ 	depends on NET && USB
++	depends on BROKEN
+ 	help
+ 	  This driver supports GCT GDM724x LTE chip based USB modem devices.
+ 	  It exposes 4 network devices to be used per PDN and 2 tty devices to be
+--=20
+1.8.3.3
 
-	build
-		cpu_attach_domain(new_sd)		//cad_B
-			update_top_cache_domain()	//utcd_B
 
-Now in old world, what we have is:
-1. in 'utcd_A', make 'sd_llc' to be NULL since old_sd was destroyed in
-cad_A.
-2. thus during WINDOW, both 'rq->sd' and 'sd_llc' is NULL
-3. in 'utcd_B', update 'sd_llc' to be the new 'highest cache-share sd'
-since new_sd attached in 'cad_B'
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Now with your patch applied, what will happen is:
-1. 'utcd_A' won't happen now, although the sd 'sd_llc' point to was
-destroyed in 'cad_A'
-2. thus during WINDOW, 'rq->sd' is NULL while 'sd_llc' is the destroyed
-'old highest cache-share sd'
-3. in 'utcd_B', update 'sd_llc' to be the new 'highest cache-share sd '
-since new_sd attached in 'cad_B'
+--Signature=_Thu__25_Jul_2013_13_19_59_+1000_MInx8rGMCOdQKgKx
+Content-Type: application/pgp-signature
 
-Seems like both will result the same 'sd_llc', but your patch make
-'sd_llc' point to a destroyed sd during the WINDOW.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-And I said:
+iQIcBAEBCAAGBQJR8JlkAAoJEECxmPOUX5FE/vcP/RAVma5c86pW3e+hPcbwMEGq
+8BlyoAb+XEVR0Gtn7DqdOYcKOeDcXEZynnv6BR+fcaZ8IKKgnOqqU6kTKHdplWpq
+XFBUoRWRPM7Escurrz25C1mvcehEhcmkfm96QFpikO6fEGmF5mBkp6ykHkC2cVPk
+4PWucnFfUR7fKr0TA7dKu6TRysYAsDJE1PlENf4wG19cOka/cOdNl48l070icpAV
+fTEPn67lOQuvhgWZ847f4WhWC2hGQl2j+87XX7r3G9CKTr/ADCRAgTJXgN3CjSqU
+86moBbcITTGEwoD9i8ef/2ukqrqxmr4NvLsh5ID4lBqardtm/+pgvF2sy4zK+877
+0nKMgHehTbaGHRAdFu8ewRS7+s8hFu1fYydnyQBP2VyazQ5zRFegqRekDnsSxcpf
+cprOfbMXiXUB3G+qHUVm5Z6VMeU52sagGbuNFiUQB59ONYP9aXypXByXfd4fj4Bj
+3a4MaeAvrtVJDMCHbJQ0OhiRBt+pG1+F11u5v3ccB5aiolvWKcFqbF9KN0I1sz5P
+z/4J7u0MxMP7quJ4CPxL/lxrl8wvofJQka+S8gmjV2eg+55zk+NQ2GYhziYubIAb
+5iInpEYpFaymzGjmtMXlTscWq9fKiKSezyjygTaqCuKxAmF3XzfUakSgvSJ9ddbO
+lB8kLyqQUZn7tOFEffYR
+=dj5/
+-----END PGP SIGNATURE-----
 
-"I don't think we have the promise that before we rebuild the stuff
-correctly, no one will utilize 'sd_llc'..."
-
-By which I mean some one will utilize 'sd_llc' during the WINDOW, in old
-world, it's safe since will get NULL, with your patch, it's unsafe since
-we get a freeing sd.
-
-And that's the risk I concerned, and that's my point.
-
-> 
->> I guess I get you point, you are trying to save one time update since
->> you think this will be done twice, but actually the result of this two
->> time update was different, it's not redo and it's in order to sync
->> 'sd_llc' with 'rq->sd'.
->>
-> Yes, you got my point now, but I don't understand your points. Anyway,
-> I'm not going to argue with this
-> anymore, this stuff isn't much of an issue, but removing this sorts of
-> stuff is typical in kernel development.
-
-I'm not argue, actually there is nothing to argue...just try to explain
-what is wrong IMO, if I failed to, then I could only blame my poor
-writing skill...
-
-Regards,
-Michael Wang
-
-> 
-> Thanks,
-> Rakib.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
+--Signature=_Thu__25_Jul_2013_13_19_59_+1000_MInx8rGMCOdQKgKx--
