@@ -1,146 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab3GYPDI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:03:08 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:38071 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755457Ab3GYPDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:03:05 -0400
+	id S1756345Ab3GYPD6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:03:58 -0400
+Received: from www.sr71.net ([198.145.64.142]:34527 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755609Ab3GYPD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 11:03:57 -0400
+Message-ID: <51F13E51.7040808@sr71.net>
+Date: Thu, 25 Jul 2013 08:03:45 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130725142705.GM5939@phenom.ffwll.local>
-References: <CA+icZUVHkYd6xcGe7v-zA8=f+vTF1eF2JszvFPfqzJwE34_2ig@mail.gmail.com>
-	<87ehanx9bx.fsf@intel.com>
-	<CA+icZUXX1-kz9QbY5CpU1UDU8trxgfJSS6ZnUpx9ieq5FnVNSQ@mail.gmail.com>
-	<CA+icZUWOwKH+oF4Ekrkk3pUCjz4Rc361kzdsKjb04WzsEtWPYA@mail.gmail.com>
-	<87bo5rx7m0.fsf@intel.com>
-	<CA+icZUXhW_yAie25DPVXzhi2_pYQTjJpDqa7EzRfvtQ0gFYYHQ@mail.gmail.com>
-	<20130725133651.GI5939@phenom.ffwll.local>
-	<CA+icZUWxvBR6NX8JnqM1+4yVNfQ8ew5_7UCQ6yVpz8B4UibW7A@mail.gmail.com>
-	<20130725142705.GM5939@phenom.ffwll.local>
-Date: Thu, 25 Jul 2013 17:03:02 +0200
-Message-ID: <CA+icZUU3+egkAVtSVEiOaqWK+7EFi572jGv2jUt=QDuGjbfZOw@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org, DRI <dri-devel@lists.freedesktop.org>,
-        linux-next@vger.kernel.org
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=UTF-8
+To: KY Srinivasan <kys@microsoft.com>
+CC: Michal Hocko <mhocko@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "kay@vrfy.org" <kay@vrfy.org>
+Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com> <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com> <51F00415.8070104@sr71.net> <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com> <51F040E8.1030507@intel.com> <20130725075705.GD12818@dhcp22.suse.cz> <4f440c8d96f34711a3f06fb18702a297@SN2PR03MB061.namprd03.prod.outlook.com>
+In-Reply-To: <4f440c8d96f34711a3f06fb18702a297@SN2PR03MB061.namprd03.prod.outlook.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 4:27 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> On Thu, Jul 25, 2013 at 04:23:40PM +0200, Sedat Dilek wrote:
->> On Thu, Jul 25, 2013 at 3:36 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
->> > On Thu, Jul 25, 2013 at 12:37:44PM +0200, Sedat Dilek wrote:
->> >> On Thu, Jul 25, 2013 at 12:21 PM, Jani Nikula
->> >> <jani.nikula@linux.intel.com> wrote:
->> >> > On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> >> On Thu, Jul 25, 2013 at 12:02 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> >>> On Thu, Jul 25, 2013 at 11:44 AM, Jani Nikula
->> >> >>> <jani.nikula@linux.intel.com> wrote:
->> >> >>>> On Thu, 25 Jul 2013, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->> >> >>>>> On Thu, Jul 25, 2013 at 7:12 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> >> >>>>>> Hi all,
->> >> >>>>>>
->> >> >>>>>> Changes since 20130724:
->> >> >>>>>>
->> >> >>>>>> Removed tree:
->> >> >>>>>>         arm-dt (at maintainer's request)
->> >> >>>>>>
->> >> >>>>>> The wireless-next tree lost its build failure and gained a conflict
->> >> >>>>>> against Linus' tree.
->> >> >>>>>>
->> >> >>>>>> The tty tree lost its build failure.
->> >> >>>>>>
->> >> >>>>>> The staging tree gained a build failure for which I disabled a driver.
->> >> >>>>>>
->> >> >>>>>> ----------------------------------------------------------------------------
->> >> >>>>>>
->> >> >>>>>
->> >> >>>>> [ CCing drm and drm-intel folks ]
->> >> >>>>>
->> >> >>>>> With today's next-20130725 I see the following:
->> >> >>>>
->> >> >>>> Use of dev_priv->gt_lock in I915_WRITE through
->> >> >>>> intel_disable_gt_powersave before spin lock init, caused by
->> >> >>>>
->> >> >>>> commit 181d1b9e31c668259d3798c521672afb8edd355c
->> >> >>>> Author: Daniel Vetter <daniel.vetter@ffwll.ch>
->> >> >>>> Date:   Sun Jul 21 13:16:24 2013 +0200
->> >> >>>>
->> >> >>>>     drm/i915: fix up gt init sequence fallout
->> >> >>>>
->> >> >>>
->> >> >>> Ah, cool.
->> >> >>>
->> >> >>> I assumed/tested "drm/i915: fix the racy object accounting", but this
->> >> >>> does not fix it.
->> >> >>> Will try with yours.
->> >> >>>
->> >> >>
->> >> >> Sorry, Jani.
->> >> >>
->> >> >> next-20130725 ships the patch you pointed, too.
->> >> >
->> >> > Confused. I meant that the above mentioned commit "drm/i915: fix up gt
->> >> > init sequence fallout" causes the problem. The patch I included in my
->> >> > mail should fix it. Could you try that please?
->> >> >
->> >>
->> >> [ Note2myself: Do not read half of the message... ]
->> >>
->> >> The bad... Your patch needed some refresh against next-20130725 (guess
->> >> it's against drm-intel-nightly).
->> >>
->> >> The good... YES, your patch fixes the issue for me!
->> >>
->> >> The ugly... /me.
->> >>
->> >> Feel free to add my:
->> >>
->> >>        Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
->> >>
->> >> Thanks for the quick fix!
->> >
->> > Thanks a lot for the report, since this should be something I should have
->> > caught. And for added insult the offending patch is already in Linus' tree
->> > :( Patch merged to -fixes.
->>
->> Hmmm, don't you merge -fixes into -nightly?
->
-> I do, but it seems to only blow up with spinlock debugging enabling I
-> think. Our QA should run full debug buils in the -nightly testing, but
-> apparently they didn't catch this. I'm looking into what went wrong here
-> and fix up the process.
+On 07/25/2013 04:14 AM, KY Srinivasan wrote:
+> As promised, I have sent out the patches for (a) an implementation of an in-kernel API
+> for onlining  and a consumer for this API. While I don't know the exact reason why the
+> user mode code is delayed (under some low memory conditions), what is the harm in having
+> a mechanism to online memory that has been hot added without involving user space code.
 
-First, I thought I made my merge wrong, but there is no
+KY, your potential problem, not being able to online more memory because
+of a shortage of memory, is a serious one.
 
-$ grep spin_lock_init linux-next/drivers/gpu/drm/i915/i915_dma.c | grep gt_lock
+However, this potential issue exists in long-standing code, and
+potentially affects all users of memory hotplug.  The problem has not
+been described in sufficient detail for the rest of the developers to
+tell if you are facing a new problem, or whether *any* proposed solution
+will help the problem you face.
 
-Same in [1]:
-...
-	spin_lock_init(&dev_priv->irq_lock);
-	spin_lock_init(&dev_priv->gpu_error.lock);
-	spin_lock_init(&dev_priv->backlight.lock);
-	spin_lock_init(&dev_priv->uncore.lock);
-	spin_lock_init(&dev_priv->mm.object_stat_lock);
-...
-
-- Sedat -
-
-[1] http://cgit.freedesktop.org/~danvet/drm-intel/tree/drivers/gpu/drm/i915/i915_dma.c?h=drm-intel-nightly#n1477
-
-
-> -Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Your propsed solution changes the semantics of existing user/kernel
+interfaces, duplicates existing functionality, and adds code complexity
+to the kernel.
