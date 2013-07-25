@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab3GYKJo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 06:09:44 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:62972 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab3GYKJk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 06:09:40 -0400
+	id S1755525Ab3GYKJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 06:09:50 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61136 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755144Ab3GYKJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 06:09:45 -0400
+X-IronPort-AV: E=Sophos;i="4.89,742,1367942400"; 
+   d="scan'208";a="8020488"
+Message-ID: <51F0F88D.8060903@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 18:06:05 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <51EF8F27.3030003@monstr.eu>
-References: <ed64cda456be840147ae1f04bec6a99733f41c24.1374643896.git.michal.simek@xilinx.com>
-	<007401ce8833$22ce0600$686a1200$@samsung.com>
-	<51EF7FBD.8070103@monstr.eu>
-	<51EF8530.90809@monstr.eu>
-	<003a01ce8845$06df46e0$149dd4a0$@samsung.com>
-	<51EF8F27.3030003@monstr.eu>
-Date: Thu, 25 Jul 2013 12:09:39 +0200
-X-Google-Sender-Auth: 4TMu_VS3oDZlZM5sHLFAOpKamFo
-Message-ID: <CAMuHMdXnkN39A1z-Ejd247KHs-=kVBcBX0rbSp=gtye=E-Wzow@mail.gmail.com>
-Subject: Re: [PATCH] video: xilinxfb: Fix compilation warning
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Jingoo Han <jg1.han@samsung.com>, Michal Simek <michal.simek@xilinx.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
+CC: linux-fbdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH V2] driver/vga16fb.c: remove the unused variable "dev" of
+ function vga16fb_destroy()
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 18:07:40,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 18:07:40,
+	Serialize complete at 2013/07/25 18:07:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:24 AM, Michal Simek <monstr@monstr.eu> wrote:
->> Just now, I tested that the same problem happens on ARM config.
->> Also, I solved it by adding '&' operator.
->>
->> '&' operator is necessary as below:
->>
->>         dev_dbg(dev, "regs: phys=%pa, virt=%p\n",
->>                  &drvdata->regs_phys, drvdata->regs);
->>                 ^^^
->>
->>         dev_dbg(dev, "fb: phys=%pa, virt=%p, size=%x\n",
->>                 &drvdata->fb_phys, drvdata->fb_virt, fbsize);
->>                ^^^
->
-> ok.
->
-> The truth is as I said there are just 5 files in the whole kernel
-> which are using %pa and if %pa is right way to go we should
-> probably fix all off them.
+Commit e21d2170f36602ae2708 ("video: remove unnecessary
+platform_set_drvdata()") removed the unnecessary platform_set_drvdata(),
+but left the variable "dev" unused, delete it.
 
-"%pa" is a quite recent addition (v3.9).
+v2:
+   Following Geert's suggestion to make change log easier reading.
 
-Gr{oetje,eeting}s,
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/video/vga16fb.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-                        Geert
+diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+index 830ded4..2827333 100644
+--- a/drivers/video/vga16fb.c
++++ b/drivers/video/vga16fb.c
+@@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+ 
+ static void vga16fb_destroy(struct fb_info *info)
+ {
+-	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+ 	iounmap(info->screen_base);
+ 	fb_dealloc_cmap(&info->cmap);
+ 	/* XXX unshare VGA regions */
+-- 
+1.7.7
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
