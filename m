@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755047Ab3GYAqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:46:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34914 "EHLO
+	id S1755151Ab3GYAq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:46:56 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34900 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754646Ab3GYAns (ORCPT
+	with ESMTP id S1754638Ab3GYAns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 20:43:48 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v1 08/14] clk: msm: Add MSM clock driver
-Date: Wed, 24 Jul 2013 17:43:36 -0700
-Message-Id: <1374713022-6049-9-git-send-email-sboyd@codeaurora.org>
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v1 02/14] clk: Add of_init_clk_data() to parse common clock bindings
+Date: Wed, 24 Jul 2013 17:43:30 -0700
+Message-Id: <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
 References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
@@ -21,332 +22,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a clock driver that registers clocks from a DT node's
-'clocks' child. Each new SoC will add a file describing the
-software interface and frequency plan to drivers/clk/msm/ and
-then hook that into the msm_cc_match_table by means of a
-compatible string and an msm_clk_match table.
+Consolidate DT parsing for the common bits of a clock binding in
+one place to simplify clock drivers. This also has the added
+benefit of standardizing how the clock names used by the common
+clock framework are generated from the DT bindings. We always use
+the first clock-output-names string if it exists, otherwise we
+fall back to the node name.
 
+To be slightly more efficient and make the caller's life easier,
+we introduce a shallow copy flag so that the clock core knows to
+just copy the pointers to the strings and not the string
+contents. Otherwise the callers of this function would have to
+free the strings allocated here which could be cumbersome.
+
+Cc: Rob Herring <rob.herring@calxeda.com>
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/msm/Makefile   |   2 +
- drivers/clk/msm/core.c     | 265 +++++++++++++++++++++++++++++++++++++++++++++
- drivers/clk/msm/internal.h |  24 ++++
- 3 files changed, 291 insertions(+)
- create mode 100644 drivers/clk/msm/core.c
- create mode 100644 drivers/clk/msm/internal.h
+ drivers/clk/clk.c            | 59 +++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/clk-provider.h |  7 ++++++
+ 2 files changed, 65 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
-index e1cee29..9cfd0d7 100644
---- a/drivers/clk/msm/Makefile
-+++ b/drivers/clk/msm/Makefile
-@@ -4,3 +4,5 @@ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
- clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 1ed9bdd..ea8e951b 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1809,6 +1809,10 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+ {
+ 	int i, ret;
+ 
++	hw->clk = clk;
++	if (hw->init->flags & CLK_SHALLOW_COPY)
++		return PTR_RET(__clk_register(dev, hw));
 +
-+clk-msm-$(CONFIG_COMMON_CLK_MSM) += core.o
-diff --git a/drivers/clk/msm/core.c b/drivers/clk/msm/core.c
-new file mode 100644
-index 0000000..b1904c0
---- /dev/null
-+++ b/drivers/clk/msm/core.c
-@@ -0,0 +1,265 @@
-+/*
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+ 	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
+ 	if (!clk->name) {
+ 		pr_err("%s: could not allocate clk->name\n", __func__);
+@@ -1819,7 +1823,6 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
+ 	clk->hw = hw;
+ 	clk->flags = hw->init->flags;
+ 	clk->num_parents = hw->init->num_parents;
+-	hw->clk = clk;
+ 
+ 	/* allocate local copy in case parent_names is __initdata */
+ 	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
+@@ -2232,4 +2235,58 @@ void __init of_clk_init(const struct of_device_id *matches)
+ 		clk_init_cb(np);
+ 	}
+ }
++
++/**
++ * of_init_clk_data() - Initialize a clk_init_data struct from a DT node
++ * @np: node to initialize struct from
++ * @init: struct to initialize
 + *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
++ * Populates the clk_init_data struct by parsing the device node for
++ * properties matching the common clock binding. Returns 0 on success
++ * and a negative error code on failure.
 + */
-+
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/module.h>
-+#include <linux/clk-provider.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+#include <linux/spinlock.h>
-+
-+#include "internal.h"
-+#include "clk-pll.h"
-+#include "clk-rcg.h"
-+#include "clk-branch.h"
-+
-+struct cc_data {
-+	void __iomem *base;
-+	spinlock_t lock;
-+};
-+
-+static struct clk *
-+dispatch_fixed_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
++int of_init_clk_data(struct device_node *np, struct clk_init_data *init)
 +{
-+	u32 rate;
-+	const char *name = m->init_data->name;
++	struct of_phandle_args s;
++	const char **names = NULL, **p;
++	const char *name;
++	int i;
 +
-+	if (of_property_read_u32(m->of_node, "clock-frequency", &rate))
-+		return ERR_PTR(-EINVAL);
-+
-+	return clk_register_fixed_rate(dev, name, NULL, CLK_IS_ROOT, rate);
-+}
-+
-+static struct clk *
-+dispatch_pll_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct pll_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return pll_clk_register(dev, desc, m->init_data);
-+}
-+
-+static struct clk *
-+dispatch_pll_vote_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct pll_vote_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return pll_vote_clk_register(dev, desc, m->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_p2mn16_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_p2mn16_clk_register(dev, desc, &cc->lock, m->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_p2mn8_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_p2mn8_clk_register(dev, desc, &cc->lock, m->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_mn8_dyn_clk(struct of_clk_match *match, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg_dyn_desc *desc = match->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_mn8_dyn_clk_register(dev, desc, &cc->lock,
-+			match->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_p4_dyn_clk(struct of_clk_match *match, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg_dyn_desc *desc = match->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_p4_dyn_clk_register(dev, desc, &cc->lock,
-+			match->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_h5mn8_clk(struct of_clk_match *match, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg2_desc *desc = match->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_h5mn8_clk_register(dev, desc, &cc->lock, match->init_data);
-+}
-+
-+static struct clk *
-+dispatch_rcg_h5mn16_clk(struct of_clk_match *match, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct rcg2_desc *desc = match->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return rcg_h5mn16_clk_register(dev, desc, &cc->lock, match->init_data);
-+}
-+
-+static struct clk *
-+dispatch_branch_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct branch_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return branch_clk_register(dev, desc, &cc->lock, m->init_data);
-+}
-+
-+static struct clk *
-+dispatch_branch_hg_clk(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc)
-+{
-+	struct branch_desc *desc = m->driver_data;
-+
-+	desc->base = cc->base;
-+
-+	return branch_hg_clk_register(dev, desc, &cc->lock, m->init_data);
-+}
-+
-+static const struct of_device_id dispatch_table[] = {
-+	{ .compatible = "fixed-clock", .data = dispatch_fixed_clk },
-+	{ .compatible = "qcom,pll", .data = dispatch_pll_clk },
-+	{ .compatible = "qcom,pll-vote", .data = dispatch_pll_vote_clk },
-+	{ .compatible = "qcom,p2-mn8-clock", .data = dispatch_rcg_p2mn8_clk },
-+	{ .compatible = "qcom,p2-mn16-clock", .data = dispatch_rcg_p2mn16_clk },
-+	{ .compatible = "qcom,mn8-dyn-clock", .data = dispatch_rcg_mn8_dyn_clk },
-+	{ .compatible = "qcom,p4-dyn-clock", .data = dispatch_rcg_p4_dyn_clk },
-+	{ .compatible = "qcom,h5-mn8-clock", .data = dispatch_rcg_h5mn8_clk },
-+	{ .compatible = "qcom,h5-mn16-clock", .data = dispatch_rcg_h5mn16_clk },
-+	{ .compatible = "qcom,cxc-clock", .data = dispatch_branch_clk },
-+	{ .compatible = "qcom,cxc-hg-clock", .data = dispatch_branch_hg_clk },
-+};
-+
-+typedef struct clk *
-+(*clk_dispatch_fn)(struct of_clk_match *m, struct device *dev,
-+		struct cc_data *cc);
-+
-+static const struct of_device_id msm_cc_match_table[] = {
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, msm_cc_match_table);
-+
-+static int msm_cc_probe(struct platform_device *pdev)
-+{
-+	struct cc_data *cc;
-+	void __iomem *base;
-+	struct resource *res;
-+	int count, i;
-+	const struct of_device_id *id_entry;
-+	const struct msm_clk_match *m;
-+	struct of_clk_match *matches;
-+	size_t size;
-+
-+	id_entry = of_match_device(msm_cc_match_table, &pdev->dev);
-+	m = id_entry->data;
-+	matches = m->matches;
-+	size = m->size;
-+
-+	cc = devm_kzalloc(&pdev->dev, sizeof(*cc), GFP_KERNEL);
-+	if (!cc)
++	if (of_property_read_string(np, "clock-output-names", &name) < 0)
++		name = np->name;
++	init->name = kstrdup(name, GFP_KERNEL);
++	if (!init->name)
 +		return -ENOMEM;
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
++	for (i = 0; of_parse_phandle_with_args(np, "clocks", "#clock-cells",
++				i, &s) == 0; i++) {
++		p = krealloc(names, sizeof(*names) * (i + 1), GFP_KERNEL);
++		if (!p)
++			goto err;
++		names = p;
 +
-+	cc->base = base;
-+	spin_lock_init(&cc->lock);
-+
-+	count = of_clk_match(&pdev->dev, matches, size);
-+	if (count < 0)
-+		return count;
-+
-+	for (i = 0; i < size; i++) {
-+		struct of_clk_match *match;
-+		const struct of_device_id *id;
-+		struct device_node *np;
-+		clk_dispatch_fn fn;
-+		struct clk *clk;
-+		int err;
-+
-+		match = &matches[i];
-+		np = match->of_node;
-+		if (!np)
-+			continue;
-+
-+		id = of_match_node(dispatch_table, match->of_node);
-+		if (!id)
-+			continue;
-+
-+		fn = id->data;
-+		clk = fn(match, &pdev->dev, cc);
-+		if (IS_ERR(clk))
-+			return PTR_ERR(clk);
-+
-+		err = of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+		if (err)
-+			return err;
++		if (of_property_read_string(s.np, "clock-output-names",
++					&name) < 0)
++			name = s.np->name;
++		names[i] = kstrdup(name, GFP_KERNEL);
++		if (!names[i])
++			goto err;
++		of_node_put(s.np);
 +	}
 +
++	init->parent_names = names;
++	init->num_parents = i;
++	init->flags = init->num_parents ? 0 : CLK_IS_ROOT;
++	init->flags |= CLK_SHALLOW_COPY;
++
++	return 0;
++err:
++	of_node_put(s.np);
++	while (--i >= 0)
++		kfree(names[i]);
++	kfree(names);
++	kfree(init->name);
++	return -ENOMEM;
++}
++EXPORT_SYMBOL_GPL(of_init_clk_data);
+ #endif
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 9861cee..18d6362 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -28,6 +28,7 @@
+ #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
+ #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
+ #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
++#define CLK_SHALLOW_COPY	BIT(8) /* don't copy the initdata strings */
+ 
+ struct clk_hw;
+ 
+@@ -472,6 +473,7 @@ struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
+ const char *of_clk_get_parent_name(struct device_node *np, int index);
+ 
+ void of_clk_init(const struct of_device_id *matches);
++int of_init_clk_data(struct device_node *np, struct clk_init_data *init);
+ 
+ #else /* !CONFIG_OF */
+ 
+@@ -501,6 +503,11 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
+ }
+ #define of_clk_init(matches) \
+ 	{ while (0); }
++static inline int
++of_init_clk_data(struct device_node *np, struct clk_init_data *init)
++{
 +	return 0;
 +}
-+
-+static struct platform_driver msm_cc_driver = {
-+	.probe		= msm_cc_probe,
-+	.driver		= {
-+		.name	= "msm-clock",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = msm_cc_match_table,
-+	},
-+};
-+
-+static int __init msm_cc_init(void)
-+{
-+	return platform_driver_register(&msm_cc_driver);
-+}
-+core_initcall(msm_cc_init);
-+
-+static void __exit msm_cc_exit(void)
-+{
-+	platform_driver_unregister(&msm_cc_driver);
-+}
-+module_exit(msm_cc_exit);
-+
-+MODULE_DESCRIPTION("MSM Clock Driver");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:msm-cc");
-diff --git a/drivers/clk/msm/internal.h b/drivers/clk/msm/internal.h
-new file mode 100644
-index 0000000..177bd3b
---- /dev/null
-+++ b/drivers/clk/msm/internal.h
-@@ -0,0 +1,24 @@
-+/*
-+ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#ifndef __MSM_CLK_INTERNAL_H__
-+#define __MSM_CLK_INTERNAL_H__
-+
-+struct of_clk_match;
-+
-+struct msm_clk_match {
-+	struct of_clk_match *matches;
-+	size_t size;
-+};
-+
-+#endif
+ #endif /* CONFIG_OF */
+ #endif /* CONFIG_COMMON_CLK */
+ #endif /* CLK_PROVIDER_H */
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
