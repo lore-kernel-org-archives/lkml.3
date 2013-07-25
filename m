@@ -1,58 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab3GYGkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:40:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40238 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751436Ab3GYGko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:40:44 -0400
-X-IronPort-AV: E=Sophos;i="4.89,741,1367942400"; 
-   d="scan'208";a="8016998"
-Message-ID: <51F0C8ED.3070200@cn.fujitsu.com>
-Date: Thu, 25 Jul 2013 14:42:53 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1753272Ab3GYGqz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:46:55 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:52894 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751572Ab3GYGqx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:46:53 -0400
+X-SENDER-IP: [85.230.171.181]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApB+AP7I8FFV5qu1PGdsb2JhbABagwaDKCOFALYQBAMBgRcXAwEBAQE4NYIkAQEEATocIwULCAMhJQ8FJQoaiB0KuggWj2cHgxJuA5dehjOOMTo
+X-IronPort-AV: E=Sophos;i="4.89,741,1367964000"; 
+   d="scan'208";a="367481261"
+From: rydberg@euromail.se
+Date: Thu, 25 Jul 2013 08:48:47 +0200
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [63/85] Input: bcm5974 - add support for the 2013 MacBook Air
+Message-ID: <20130725064847.GA3581@polaris.bitmath.org>
+References: <lsq.1374674564.753305150@decadent.org.uk>
+ <lsq.1374674565.258792026@decadent.org.uk>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 02/21] memblock, numa: Introduce flag into memblock.
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-3-git-send-email-tangchen@cn.fujitsu.com> <20130723190928.GH21100@mtj.dyndns.org> <51EF4196.8050303@cn.fujitsu.com> <20130724155458.GA20377@mtj.dyndns.org>
-In-Reply-To: <20130724155458.GA20377@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/25 14:38:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/25 14:38:28,
-	Serialize complete at 2013/07/25 14:38:28
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <lsq.1374674565.258792026@decadent.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 11:54 PM, Tejun Heo wrote:
-> On Wed, Jul 24, 2013 at 10:53:10AM +0800, Tang Chen wrote:
->>> Let's please drop "with" and do we really need to print full 16
->>> digits?
->>
->> Sure, will remove "with". But I think printing out the full flags is batter.
->> The output seems more tidy.
->
-> I mean, padding is fine but you can just print out 4 or even 2 digits
-> and will be fine for the foreseeable future.
+Hi Ben,
 
-OK. In this patch-set, there won't more than two flags. I think one 
-hexadecimal
-number is enough. I'll print two digits for the foreseeable future.
+> 3.2.49-rc1 review patch.  If anyone has any objections, please let me know.
 
-Thanks.
+Unfortunately, kernels before 3.7 are missing a patch needed for this
+to work. As is, the driver will crash during urb setup because the bt
+endpoint no longer exists. Therefore, please remove this patch from
+the 3.2 queue.
 
+Thanks,
+Henrik
