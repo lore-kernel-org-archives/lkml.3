@@ -1,152 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab3GYJKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 05:10:44 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50399 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418Ab3GYJKd (ORCPT
+	id S1755365Ab3GYJMa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 05:12:30 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:46131 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662Ab3GYJM0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 05:10:33 -0400
-Message-ID: <51F0ED31.3040200@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 14:47:37 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: mingo@redhat.com, jeremy@goop.org, x86@kernel.org, konrad.wilk@oracle.com,
-        hpa@zytor.com, pbonzini@redhat.com, linux-doc@vger.kernel.org,
-        habanero@linux.vnet.ibm.com, xen-devel@lists.xensource.com,
-        peterz@infradead.org, mtosatti@redhat.com,
-        stefano.stabellini@eu.citrix.com, andi@firstfloor.org,
-        attilio.rao@citrix.com, ouyang@cs.pitt.edu, gregkh@suse.de,
-        agraf@suse.de, chegu_vinod@hp.com, torvalds@linux-foundation.org,
-        avi.kivity@gmail.com, tglx@linutronix.de, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, riel@redhat.com, drjones@redhat.com,
-        virtualization@lists.linux-foundation.org,
-        srivatsa.vaddagiri@gmail.com
-Subject: Re: [PATCH RFC V11 15/18] kvm : Paravirtual ticketlocks support for
- linux guests running on KVM hypervisor
-References: <20130722061631.24737.75508.sendpatchset@codeblue> <20130722062016.24737.54554.sendpatchset@codeblue> <20130723150748.GC6029@redhat.com> <51EFA24E.2060103@linux.vnet.ibm.com> <20130724103907.GF16400@redhat.com> <51EFC1D4.9060800@linux.vnet.ibm.com> <20130724120647.GG16400@redhat.com> <51EFCA42.5020009@linux.vnet.ibm.com>
-In-Reply-To: <51EFCA42.5020009@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072509-2674-0000-0000-000009F431FC
+	Thu, 25 Jul 2013 05:12:26 -0400
+Date: Thu, 25 Jul 2013 11:12:32 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: [PATCH 0/4] ASoc: kirkwood: extend the kirkwood audio subsystem for
+ DT usage
+Message-ID: <20130725111232.08736072@armhf>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 06:06 PM, Raghavendra K T wrote:
-> On 07/24/2013 05:36 PM, Gleb Natapov wrote:
->> On Wed, Jul 24, 2013 at 05:30:20PM +0530, Raghavendra K T wrote:
->>> On 07/24/2013 04:09 PM, Gleb Natapov wrote:
->>>> On Wed, Jul 24, 2013 at 03:15:50PM +0530, Raghavendra K T wrote:
->>>>> On 07/23/2013 08:37 PM, Gleb Natapov wrote:
->>>>>> On Mon, Jul 22, 2013 at 11:50:16AM +0530, Raghavendra K T wrote:
->>>>>>> +static void kvm_lock_spinning(struct arch_spinlock *lock,
->>>>>>> __ticket_t want)
->>>>> [...]
->>>>>>> +
->>>>>>> +    /*
->>>>>>> +     * halt until it's our turn and kicked. Note that we do safe
->>>>>>> halt
->>>>>>> +     * for irq enabled case to avoid hang when lock info is
->>>>>>> overwritten
->>>>>>> +     * in irq spinlock slowpath and no spurious interrupt occur
->>>>>>> to save us.
->>>>>>> +     */
->>>>>>> +    if (arch_irqs_disabled_flags(flags))
->>>>>>> +        halt();
->>>>>>> +    else
->>>>>>> +        safe_halt();
->>>>>>> +
->>>>>>> +out:
->>>>>> So here now interrupts can be either disabled or enabled. Previous
->>>>>> version disabled interrupts here, so are we sure it is safe to
->>>>>> have them
->>>>>> enabled at this point? I do not see any problem yet, will keep
->>>>>> thinking.
->>>>>
->>>>> If we enable interrupt here, then
->>>>>
->>>>>
->>>>>>> +    cpumask_clear_cpu(cpu, &waiting_cpus);
->>>>>
->>>>> and if we start serving lock for an interrupt that came here,
->>>>> cpumask clear and w->lock=null may not happen atomically.
->>>>> if irq spinlock does not take slow path we would have non null value
->>>>> for lock, but with no information in waitingcpu.
->>>>>
->>>>> I am still thinking what would be problem with that.
->>>>>
->>>> Exactly, for kicker waiting_cpus and w->lock updates are
->>>> non atomic anyway.
->>>>
->>>>>>> +    w->lock = NULL;
->>>>>>> +    local_irq_restore(flags);
->>>>>>> +    spin_time_accum_blocked(start);
->>>>>>> +}
->>>>>>> +PV_CALLEE_SAVE_REGS_THUNK(kvm_lock_spinning);
->>>>>>> +
->>>>>>> +/* Kick vcpu waiting on @lock->head to reach value @ticket */
->>>>>>> +static void kvm_unlock_kick(struct arch_spinlock *lock,
->>>>>>> __ticket_t ticket)
->>>>>>> +{
->>>>>>> +    int cpu;
->>>>>>> +
->>>>>>> +    add_stats(RELEASED_SLOW, 1);
->>>>>>> +    for_each_cpu(cpu, &waiting_cpus) {
->>>>>>> +        const struct kvm_lock_waiting *w =
->>>>>>> &per_cpu(lock_waiting, cpu);
->>>>>>> +        if (ACCESS_ONCE(w->lock) == lock &&
->>>>>>> +            ACCESS_ONCE(w->want) == ticket) {
->>>>>>> +            add_stats(RELEASED_SLOW_KICKED, 1);
->>>>>>> +            kvm_kick_cpu(cpu);
->>>>>> What about using NMI to wake sleepers? I think it was discussed, but
->>>>>> forgot why it was dismissed.
->>>>>
->>>>> I think I have missed that discussion. 'll go back and check. so
->>>>> what is the idea here? we can easily wake up the halted vcpus that
->>>>> have interrupt disabled?
->>>> We can of course. IIRC the objection was that NMI handling path is very
->>>> fragile and handling NMI on each wakeup will be more expensive then
->>>> waking up a guest without injecting an event, but it is still
->>>> interesting
->>>> to see the numbers.
->>>>
->>>
->>> Haam, now I remember, We had tried request based mechanism. (new
->>> request like REQ_UNHALT) and process that. It had worked, but had some
->>> complex hacks in vcpu_enter_guest to avoid guest hang in case of
->>> request cleared.  So had left it there..
->>>
->>> https://lkml.org/lkml/2012/4/30/67
->>>
->>> But I do not remember performance impact though.
->> No, this is something different. Wakeup with NMI does not need KVM
->> changes at
->> all. Instead of kvm_kick_cpu(cpu) in kvm_unlock_kick you send NMI IPI.
->>
->
-> True. It was not NMI.
-> just to confirm, are you talking about something like this to be tried ?
->
-> apic->send_IPI_mask(cpumask_of(cpu), APIC_DM_NMI);
+This patch series adds DT support to the kirkwood audio subsystem.
 
-When I started benchmark, I started seeing
-"Dazed and confused, but trying to continue" from unknown nmi error
-handling.
-Did I miss anything (because we did not register any NMI handler)? or
-is it that spurious NMIs are trouble because we could get spurious NMIs
-if next waiter already acquired the lock.
+It cancels the previous patch requests:
+- ARM: kirkwood: enable S/PDIF
+- ARM: kirkwood: extend the kirkwood i2s driver for DT usage
+- ARM: kirkwood: extend the kirkwood pcm/dma driver for DT usage
 
-(note: I tried sending APIC_DM_REMRD IPI directly, which worked fine
-but hypercall way of handling still performed well from the results I
-saw).
+It also contains the merge of kirkwood-i2c and kirkwood-dma into one
+module, and, the removal of the kirkwood-pcm-audio device.
+This involves changes in the openrd and t5325 drivers, as in the common
+Kirkwood machine initialization. These last changes have not been tested.
 
-
-
-
-
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
