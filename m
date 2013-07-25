@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab3GYCdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 22:33:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:40795 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754608Ab3GYCdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 22:33:01 -0400
-X-IronPort-AV: E=Sophos;i="4.89,739,1367942400"; 
-   d="scan'208";a="8014390"
-Message-ID: <51F08EFD.2080708@cn.fujitsu.com>
-Date: Thu, 25 Jul 2013 10:35:41 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754029Ab3GYChL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 22:37:11 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:45863 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475Ab3GYChH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 22:37:07 -0400
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 16/21] x86, memblock, mem-hotplug: Free hotpluggable memory
- reserved by memblock.
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-17-git-send-email-tangchen@cn.fujitsu.com> <20130723210053.GU21100@mtj.dyndns.org>
-In-Reply-To: <20130723210053.GU21100@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/25 10:30:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/25 10:30:52,
-	Serialize complete at 2013/07/25 10:30:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+In-Reply-To: <20130724193519.GA16434@merkur.ravnborg.org>
+References: <1374654692-13237-1-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-2-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-3-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-4-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-5-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-6-git-send-email-mail-agent-noreply@emc.com>
+ <1374654692-13237-7-git-send-email-mail-agent-noreply@emc.com> <20130724193519.GA16434@merkur.ravnborg.org>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Thu, 25 Jul 2013 10:36:45 +0800
+Message-ID: <CA+a=Yy7ykdzJ4gWc7GKF9RLOtzjomaFpkw8JEhHbgRPj2=5hzw@mail.gmail.com>
+Subject: Re: [PATCH 6/8] staging/lustre: fix Kconfig bool defaults
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: mail-agent-noreply@emc.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 05:00 AM, Tejun Heo wrote:
-> On Fri, Jul 19, 2013 at 03:59:29PM +0800, Tang Chen wrote:
->> We reserved hotpluggable memory in memblock at early time. And when memory
->> initialization is done, we have to free it to buddy system.
+On Thu, Jul 25, 2013 at 3:35 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> On Wed, Jul 24, 2013 at 04:31:30PM +0800, mail-agent-noreply@emc.com wrote:
+>> From: Peng Tao <bergwolf@gmail.com>
 >>
->> This patch free memory reserved by memblock with flag MEMBLK_HOTPLUGGABLE.
+>> Should be y instead of true.
+>>
+>> Reported-by: Paul Bolle <pebolle@tiscali.nl>
+>> Cc: Andreas Dilger <andreas.dilger@intel.com>
+>> Signed-off-by: Peng Tao <tao.peng@emc.com>
+>> ---
+>>  drivers/staging/lustre/lustre/Kconfig |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre/lustre/Kconfig
+>> index 9ae7fa8..e3b3c74 100644
+>> --- a/drivers/staging/lustre/lustre/Kconfig
+>> +++ b/drivers/staging/lustre/lustre/Kconfig
+>> @@ -52,4 +52,4 @@ config LUSTRE_DEBUG_EXPENSIVE_CHECK
+>>  config LUSTRE_TRANSLATE_ERRNOS
+>>       bool
+>>       depends on LUSTRE_FS && !X86
+>> -     default true
+>> +     default y
 >
-> Sequencing patches this way means machines will run with hotpluggable
-> regions reserved inbetween.  Please put the reserving and freeing into
-> the same patch.
+> This was the file that contained some buggy "default false" IIRC.
+> Please delete these.
+>
+The default false lines were already deleted by Paul Bolle.
+Please see commit 68a8029799ad368ee82a5cf509a2b5b802837ce9 in Greg's
+staging-next branch.
 
-Sure, followed.
+commit 68a8029799ad368ee82a5cf509a2b5b802837ce9
+Author: Paul Bolle <pebolle@tiscali.nl>
+Date:   Sat Jul 13 20:46:39 2013 +0200
 
-Thanks.
+    staging/lustre/libcfs: drop bogus Kconfig default
+
+    Commit 4b5b4c7222 ("staging/lustre/libcfs: restore LINVRNT") added
+    "default false" to this Kconfig file. It was obviously meant to use
+    "default n" here. But we might as well drop this line, as a Kconfig bool
+    defaults to 'n' anyway.
+
+    Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+Thanks,
+Tao
