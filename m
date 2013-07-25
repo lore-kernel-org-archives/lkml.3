@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755151Ab3GYAq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:46:56 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:34900 "EHLO
+	id S1754731Ab3GYAqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:46:53 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34907 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab3GYAns (ORCPT
+	with ESMTP id S1754643Ab3GYAns (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 24 Jul 2013 20:43:48 -0400
 From: Stephen Boyd <sboyd@codeaurora.org>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Saravana Kannan <skannan@codeaurora.org>, linux-kernel@vger.kernel.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH v1 02/14] clk: Add of_init_clk_data() to parse common clock bindings
-Date: Wed, 24 Jul 2013 17:43:30 -0700
-Message-Id: <1374713022-6049-3-git-send-email-sboyd@codeaurora.org>
+        devicetree@vger.kernel.org
+Subject: [PATCH v1 07/14] clk: msm: Add support for branches/gate clocks
+Date: Wed, 24 Jul 2013 17:43:35 -0700
+Message-Id: <1374713022-6049-8-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 1.8.3.4.840.g6a90778
 In-Reply-To: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
 References: <1374713022-6049-1-git-send-email-sboyd@codeaurora.org>
@@ -22,140 +22,312 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consolidate DT parsing for the common bits of a clock binding in
-one place to simplify clock drivers. This also has the added
-benefit of standardizing how the clock names used by the common
-clock framework are generated from the DT bindings. We always use
-the first clock-output-names string if it exists, otherwise we
-fall back to the node name.
-
-To be slightly more efficient and make the caller's life easier,
-we introduce a shallow copy flag so that the clock core knows to
-just copy the pointers to the strings and not the string
-contents. Otherwise the callers of this function would have to
-free the strings allocated here which could be cumbersome.
-
-Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: devicetree@vger.kernel.org
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- drivers/clk/clk.c            | 59 +++++++++++++++++++++++++++++++++++++++++++-
- include/linux/clk-provider.h |  7 ++++++
- 2 files changed, 65 insertions(+), 1 deletion(-)
+ Documentation/devicetree/bindings/clock/msm.txt |  28 ++++
+ drivers/clk/msm/Makefile                        |   1 +
+ drivers/clk/msm/clk-branch.c                    | 190 ++++++++++++++++++++++++
+ drivers/clk/msm/clk-branch.h                    |  48 ++++++
+ 4 files changed, 267 insertions(+)
+ create mode 100644 drivers/clk/msm/clk-branch.c
+ create mode 100644 drivers/clk/msm/clk-branch.h
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 1ed9bdd..ea8e951b 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -1809,6 +1809,10 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
- {
- 	int i, ret;
+diff --git a/Documentation/devicetree/bindings/clock/msm.txt b/Documentation/devicetree/bindings/clock/msm.txt
+index f4595fa..6840398 100644
+--- a/Documentation/devicetree/bindings/clock/msm.txt
++++ b/Documentation/devicetree/bindings/clock/msm.txt
+@@ -69,3 +69,31 @@ Example:
+ 		clocks = <&pxo>, <&pll2>, <&pll8>;
+ 	};
  
-+	hw->clk = clk;
-+	if (hw->init->flags & CLK_SHALLOW_COPY)
-+		return PTR_RET(__clk_register(dev, hw));
++CXC Binding
++-----------
 +
- 	clk->name = kstrdup(hw->init->name, GFP_KERNEL);
- 	if (!clk->name) {
- 		pr_err("%s: could not allocate clk->name\n", __func__);
-@@ -1819,7 +1823,6 @@ static int _clk_register(struct device *dev, struct clk_hw *hw, struct clk *clk)
- 	clk->hw = hw;
- 	clk->flags = hw->init->flags;
- 	clk->num_parents = hw->init->num_parents;
--	hw->clk = clk;
- 
- 	/* allocate local copy in case parent_names is __initdata */
- 	clk->parent_names = kzalloc((sizeof(char*) * clk->num_parents),
-@@ -2232,4 +2235,58 @@ void __init of_clk_init(const struct of_device_id *matches)
- 		clk_init_cb(np);
- 	}
- }
++Required properties:
++- compatible : shall be "qcom,cxc-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : from common clock binding; shall be set to the source being gated
++
++Example:
++	gsbi5_uart_clk: gsbi5_uart_cxc {
++		#clock-cells = <0>;
++		compatible = "qcom,cxc-clock";
++		clocks = <&gsbi5_uart_rcg>;
++	};
++
++CXC With Hardware Gating Binding
++--------------------------------
++
++Required properties:
++- compatible : shall be "qcom,cxc-hg-clock".
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : from common clock binding; shall be set to the source being gated
++
++	gsbi5_uart_ahb: gsbi5_uart_ahb {
++		#clock-cells = <0>;
++		compatible = "qcom,cxc-hg-clock";
++		clocks = <&cfpb_clk>;
++	};
+diff --git a/drivers/clk/msm/Makefile b/drivers/clk/msm/Makefile
+index fb78ac9..e1cee29 100644
+--- a/drivers/clk/msm/Makefile
++++ b/drivers/clk/msm/Makefile
+@@ -3,3 +3,4 @@ obj-$(CONFIG_COMMON_CLK_MSM) += clk-msm.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-pll.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg.o
+ clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-rcg2.o
++clk-msm-$(CONFIG_COMMON_CLK_MSM) += clk-branch.o
+diff --git a/drivers/clk/msm/clk-branch.c b/drivers/clk/msm/clk-branch.c
+new file mode 100644
+index 0000000..ff2e599
+--- /dev/null
++++ b/drivers/clk/msm/clk-branch.c
+@@ -0,0 +1,190 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
++#include <linux/clk-provider.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++
++#include "clk-branch.h"
 +
 +/**
-+ * of_init_clk_data() - Initialize a clk_init_data struct from a DT node
-+ * @np: node to initialize struct from
-+ * @init: struct to initialize
++ * struct clk_branch - gating clock with status bit and dynamic hardware gating
 + *
-+ * Populates the clk_init_data struct by parsing the device node for
-+ * properties matching the common clock binding. Returns 0 on success
-+ * and a negative error code on failure.
++ * @ctl_reg: clock control register
++ * @ctl_bit: ORed with @ctl_reg to enable the clock
++ * @hwcg_reg: dynamic hardware clock gating register
++ * @hwcg_bit: ORed with @hwcg_reg to enable dynamic hardware clock gating
++ * @halt_reg: halt register
++ * @halt_bit: ANDed with @halt_reg to test for clock halted
++ * @halt_check: type of halt checking to perform
++ * @hw: handle between common and hardware-specific interfaces
++ * @lock: register lock
++ *
++ * Clock which can gate its output.
 + */
-+int of_init_clk_data(struct device_node *np, struct clk_init_data *init)
++struct clk_branch {
++	void __iomem	*ctl_reg;
++	void __iomem	*hwcg_reg;
++	void __iomem	*halt_reg;
++
++	u8		ctl_bit;
++	u8		hwcg_bit;
++	u8		halt_bit;
++	u8		halt_check;
++
++	struct clk_hw	hw;
++	spinlock_t	*lock;
++};
++
++#define to_clk_branch(_hw) container_of(_hw, struct clk_branch, hw)
++
++static bool clk_branch_is_halted(const struct clk_branch *br)
 +{
-+	struct of_phandle_args s;
-+	const char **names = NULL, **p;
-+	const char *name;
-+	int i;
++	bool invert = (br->halt_check == BRANCH_HALT_ENABLE);
++	u32 status_bit = readl_relaxed(br->halt_reg) & BIT(br->halt_bit);
++	return invert ? !status_bit : status_bit;
++}
 +
-+	if (of_property_read_string(np, "clock-output-names", &name) < 0)
-+		name = np->name;
-+	init->name = kstrdup(name, GFP_KERNEL);
-+	if (!init->name)
-+		return -ENOMEM;
++static bool clk_branch_in_hwcg_mode(const struct clk_branch *br)
++{
++	if (!br->hwcg_reg)
++		return 0;
 +
-+	for (i = 0; of_parse_phandle_with_args(np, "clocks", "#clock-cells",
-+				i, &s) == 0; i++) {
-+		p = krealloc(names, sizeof(*names) * (i + 1), GFP_KERNEL);
-+		if (!p)
-+			goto err;
-+		names = p;
++	return !!(readl_relaxed(br->hwcg_reg) & BIT(br->hwcg_bit));
++}
 +
-+		if (of_property_read_string(s.np, "clock-output-names",
-+					&name) < 0)
-+			name = s.np->name;
-+		names[i] = kstrdup(name, GFP_KERNEL);
-+		if (!names[i])
-+			goto err;
-+		of_node_put(s.np);
++static int clk_branch_wait(const struct clk_branch *br, bool enabling)
++{
++	bool voted = br->halt_check & BRANCH_VOTED;
++	const char *name = __clk_get_name(br->hw.clk);
++
++	/* Skip checking halt bit if the clock is in hardware gated mode */
++	if (clk_branch_in_hwcg_mode(br))
++		return 0;
++
++	if (br->halt_check == BRANCH_HALT_DELAY || (!enabling && voted)) {
++		udelay(10);
++	} else if (br->halt_check == BRANCH_HALT_ENABLE ||
++		   br->halt_check == BRANCH_HALT ||
++		   (enabling && voted)) {
++		int count = 200;
++
++		while (count-- > 0) {
++			if (clk_branch_is_halted(br) == !enabling)
++				return 0;
++			udelay(1);
++		}
++		WARN("%s status stuck at 'o%s'", name, enabling ? "ff" : "n");
++		return -EBUSY;
 +	}
-+
-+	init->parent_names = names;
-+	init->num_parents = i;
-+	init->flags = init->num_parents ? 0 : CLK_IS_ROOT;
-+	init->flags |= CLK_SHALLOW_COPY;
-+
 +	return 0;
-+err:
-+	of_node_put(s.np);
-+	while (--i >= 0)
-+		kfree(names[i]);
-+	kfree(names);
-+	kfree(init->name);
-+	return -ENOMEM;
 +}
-+EXPORT_SYMBOL_GPL(of_init_clk_data);
- #endif
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 9861cee..18d6362 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -28,6 +28,7 @@
- #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
- #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
- #define CLK_SET_RATE_NO_REPARENT BIT(7) /* don't re-parent on rate change */
-+#define CLK_SHALLOW_COPY	BIT(8) /* don't copy the initdata strings */
- 
- struct clk_hw;
- 
-@@ -472,6 +473,7 @@ struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
- const char *of_clk_get_parent_name(struct device_node *np, int index);
- 
- void of_clk_init(const struct of_device_id *matches);
-+int of_init_clk_data(struct device_node *np, struct clk_init_data *init);
- 
- #else /* !CONFIG_OF */
- 
-@@ -501,6 +503,11 @@ static inline const char *of_clk_get_parent_name(struct device_node *np,
- }
- #define of_clk_init(matches) \
- 	{ while (0); }
-+static inline int
-+of_init_clk_data(struct device_node *np, struct clk_init_data *init)
++
++static int clk_branch_toggle(const struct clk_hw *hw, bool en)
 +{
-+	return 0;
++	struct clk_branch *br = to_clk_branch(hw);
++	unsigned long flags;
++	u32 val;
++
++	spin_lock_irqsave(br->lock, flags);
++
++	val = readl_relaxed(br->ctl_reg);
++	if (en)
++		val |= BIT(br->ctl_bit);
++	else
++		val &= ~BIT(br->ctl_bit);
++	writel(val, br->ctl_reg);
++
++	spin_unlock_irqrestore(br->lock, flags);
++
++	return clk_branch_wait(br, en);
 +}
- #endif /* CONFIG_OF */
- #endif /* CONFIG_COMMON_CLK */
- #endif /* CLK_PROVIDER_H */
++
++static int clk_branch_enable(struct clk_hw *hw)
++{
++	return clk_branch_toggle(hw, true);
++}
++
++static void clk_branch_disable(struct clk_hw *hw)
++{
++	clk_branch_toggle(hw, false);
++}
++
++static int clk_branch_is_enabled(struct clk_hw *hw)
++{
++	struct clk_branch *br = to_clk_branch(hw);
++	u32 val;
++
++	val = readl_relaxed(br->ctl_reg);
++	val &= BIT(br->ctl_bit);
++
++	return val ? 1 : 0;
++}
++
++static const struct clk_ops clk_branch_ops = {
++	.enable = clk_branch_enable,
++	.is_enabled = clk_branch_is_enabled,
++	.disable = clk_branch_disable,
++};
++
++struct clk *branch_clk_register(struct device *dev, struct branch_desc *desc,
++		spinlock_t *lock, struct clk_init_data *init)
++{
++	struct clk_branch *b;
++
++	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
++	if (!b)
++		return ERR_PTR(-ENOMEM);
++
++	b->ctl_reg = desc->base + desc->ctl_reg;
++	b->halt_reg = desc->base + desc->halt_reg;
++	b->ctl_bit = desc->ctl_bit;
++	b->halt_bit = desc->halt_bit;
++	b->halt_check = desc->halt_check;
++	b->lock = lock;
++
++	init->ops = &clk_branch_ops;
++	init->flags |= CLK_SET_RATE_PARENT;
++	b->hw.init = init;
++
++	return devm_clk_register(dev, &b->hw);
++}
++
++struct clk *branch_hg_clk_register(struct device *dev, struct branch_desc *desc,
++		spinlock_t *lock, struct clk_init_data *init)
++{
++	struct clk_branch *b;
++
++	b = devm_kzalloc(dev, sizeof(*b), GFP_KERNEL);
++	if (!b)
++		return ERR_PTR(-ENOMEM);
++
++	b->ctl_reg = desc->base + desc->ctl_reg;
++	b->halt_reg = desc->base + desc->halt_reg;
++	b->hwcg_reg = desc->base + desc->hwcg_reg;
++	b->ctl_bit = desc->ctl_bit;
++	b->halt_bit = desc->halt_bit;
++	b->halt_check = desc->halt_check;
++	b->lock = lock;
++
++	init->ops = &clk_branch_ops;
++	init->flags |= CLK_SET_RATE_PARENT;
++	b->hw.init = init;
++
++	return devm_clk_register(dev, &b->hw);
++}
+diff --git a/drivers/clk/msm/clk-branch.h b/drivers/clk/msm/clk-branch.h
+new file mode 100644
+index 0000000..bcb7345
+--- /dev/null
++++ b/drivers/clk/msm/clk-branch.h
+@@ -0,0 +1,48 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#ifndef __MSM_CLK_BRANCH_H__
++#define __MSM_CLK_BRANCH_H__
++
++#include <linux/spinlock.h>
++
++struct device;
++struct clk;
++struct clk_init_data;
++
++struct branch_desc {
++	void __iomem *base;
++	u32 ctl_reg;
++	u32 hwcg_reg;
++	u32 halt_reg;
++
++	u8 ctl_bit;
++	u8 hwcg_bit;
++	u8 halt_bit;
++	u8 halt_check;
++#define BRANCH_VOTED			BIT(7) /* Delay on disable */
++#define BRANCH_HALT			0 /* pol: 1 = halt */
++#define BRANCH_HALT_VOTED		(BRANCH_HALT | BRANCH_VOTED)
++#define BRANCH_HALT_ENABLE		1 /* pol: 0 = halt */
++#define BRANCH_HALT_ENABLE_VOTED	(BRANCH_HALT_ENABLE | BRANCH_VOTED)
++#define BRANCH_HALT_DELAY		2 /* No bit to check; just delay */
++};
++
++extern struct clk *branch_clk_register(struct device *dev,
++		struct branch_desc *desc, spinlock_t *lock,
++		struct clk_init_data *init);
++extern struct clk *branch_hg_clk_register(struct device *dev,
++		struct branch_desc *desc, spinlock_t *lock,
++		struct clk_init_data *init);
++
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
