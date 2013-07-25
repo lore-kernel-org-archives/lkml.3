@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757685Ab3GYXOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:14:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:19714 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722Ab3GYXOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:14:34 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-87-51f1b1585fec
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Michal Simek'" <michal.simek@xilinx.com>,
-        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>
-Cc: "'Michal Simek'" <monstr@monstr.eu>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
-        Jingoo Han <jg1.han@samsung.com>
-References: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
-In-reply-to: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
-Subject: Re: [PATCH v3] video: xilinxfb: Fix compilation warning
-Date: Fri, 26 Jul 2013 08:14:32 +0900
-Message-id: <000e01ce898c$b865f740$2931e5c0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGv6KqJYYunoL8LFwWZ4j+gRWEXl5mzR3uw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t8zQ92IjR8DDRZfkrV4dmsvk8XlhZdY
-	LU70fWC1uLxrDpvFu5cRFk8+nmaxWPfwBZPF+vm32Bw4PF5duMPicehwB6PH364pzB59W1Yx
-	ehy/sZ3J4/MmOY+9n3+zBLBHcdmkpOZklqUW6dslcGVMuzGBsaCFu+LgtsWsDYwvOboYOTkk
-	BEwkDk9tZ4KwxSQu3FvP1sXIxSEksIxR4lHvWTaYovan96ASixglbsw/xQLh/GKU6NvVyAxS
-	xSagJvHly2F2EFtEIEti/7VdjCBFzAL3GSW+/v8GNkpIIF6ide1uVhCbUyBBonPFSbBmYQEH
-	iZvn24BsDg4WAVWJ3++tQcK8ApYSe1cvZYWwBSV+TL7HAmIzC2hJrN95nAnClpfYvOYtM8Sl
-	ChI7zr5mhLjBSGJ63w9GiBoRiX0v3oHdIyHQyCFx8sFRsGYWAQGJb5MPsYDslRCQldh0AGqO
-	pMTBFTdYJjBKzEKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGCHR
-	PWEH470D1ocYk4HWT2SWEk3OByaHvJJ4Q2MzIwtTE1NjI3NLM9KElcR51VusA4UE0hNLUrNT
-	UwtSi+KLSnNSiw8xMnFwSjUwZkju7Pxa9Zznt7nQhMMdnfsn55s6n6t5O1HvWAD3Ya2V748Z
-	blqopxjR+OPk0jCJkG0Hy4+wK05Xs1urPfm6Fof4Irtw75YYuSMZS9O9btbGmBdcvWW45NlH
-	njnvLX74n73MuzDvtvkVhyuV738XhikLy2c8WrJKvCTmyml9n+NsDSff7qtersRSnJFoqMVc
-	VJwIACQ1a5sEAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t9jAd2IjR8DDY79lLB4dmsvk8XlhZdY
-	LU70fWC1uLxrDpvFu5cRFk8+nmaxWPfwBZPF+vm32Bw4PF5duMPicehwB6PH364pzB59W1Yx
-	ehy/sZ3J4/MmOY+9n3+zBLBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp
-	5CXmptoqufgE6Lpl5gBdpaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM
-	mHZjAmNBC3fFwW2LWRsYX3J0MXJySAiYSLQ/vccGYYtJXLi3Hsjm4hASWMQocWP+KRYI5xej
-	RN+uRmaQKjYBNYkvXw6zg9giAlkS+6/tYgQpYha4zyjx9f83sFFCAvESrWt3s4LYnAIJEp0r
-	ToI1Cws4SNw83wZkc3CwCKhK/H5vDRLmFbCU2Lt6KSuELSjxY/I9FhCbWUBLYv3O40wQtrzE
-	5jVvmSEuVZDYcfY1I8QNRhLT+34wQtSISOx78Y5xAqPQLCSjZiEZNQvJqFlIWhYwsqxiFE0t
-	SC4oTkrPNdIrTswtLs1L10vOz93ECE4dz6R3MK5qsDjEKMDBqMTDq+D0MVCINbGsuDL3EKME
-	B7OSCO+tXqAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wPTWl5JvKGxiZmRpZGZhZGJuTlp
-	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MCoErJnNYeycceCrrfW8uPslx4V2fGYMYpZg
-	6jx5SukKd7nPuhDlc07H3p7sn3/db/eTJqssY6e6f2aFpWWcG5+93VJnJzE1oeRU0M+0rglN
-	Fy1nmV7mZzphbHU3aI1g5sRzrrrL+oIXcFn66XhLzyp5+3Au/7uXFT4FV7M7Vn3mmLA7W131
-	kxJLcUaioRZzUXEiAD3kpjBhAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1758182Ab3GYXPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:15:09 -0400
+Received: from www.sr71.net ([198.145.64.142]:38364 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756969Ab3GYXPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 19:15:06 -0400
+Message-ID: <51F1B179.4070309@sr71.net>
+Date: Thu, 25 Jul 2013 16:15:05 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>
+Subject: SATA hotplug not detecting new disks
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 25, 2013 10:45 PM, Michal Simek wrote:
-> 
-> regs_phys is phys_addr_t (u32 or u64).
-> Lets use %pa printk format specifier.
-> 
-> Fixes compilation warning introduced by:
-> video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-> (sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
-> 
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+I've got a relatively new system that doesn't seem to be able to hotplug
+SATA disks.  I see the same behavior on 3.10, 3.11-rc2, and Ubuntu's
+3.8.0-25-generic.  The disks are detected right away on reboots, but
+even after poking the /sys/class/scsi_host/host*/scan files, new disks
+are never detected.  I've disabled link power management.
 
-It looks good.
+Am I doing something stupid here?  I thought this "just worked" on my
+previous hardware.
 
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+The motherboard is an Intel DH87RL. The SATA controller is:
 
-Best regards,
-Jingoo Han
+> 00:1f.2 SATA controller: Intel Corporation Lynx Point 6-port SATA Controller 1 [AHCI mode] (rev 04) (prog-if 01 [AHCI 1.0])
+> 	Subsystem: Intel Corporation Device 204a
+> 	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+> 	Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+> 	Latency: 0
+> 	Interrupt: pin B routed to IRQ 41
+> 	Region 0: I/O ports at f0d0 [size=8]
+> 	Region 1: I/O ports at f0c0 [size=4]
+> 	Region 2: I/O ports at f0b0 [size=8]
+> 	Region 3: I/O ports at f0a0 [size=4]
+> 	Region 4: I/O ports at f060 [size=32]
+> 	Region 5: Memory at f7d3a000 (32-bit, non-prefetchable) [size=2K]
+> 	Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
+> 		Address: fee2200c  Data: 4191
+> 	Capabilities: [70] Power Management version 3
+> 		Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold-)
+> 		Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
+> 	Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
+> 	Kernel driver in use: ahci
 
-> ---
-> Changes in v3:
-> - Fix commit message reported by Geert
-> 
-> Changes in v2:
-> - Use %pa instead of casting
-> 
-> ppc44x_defconfig
-> Fixes regressions in v3.11-rc2
-> 
-> ---
->  drivers/video/xilinxfb.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-> index f3d4a69..6629b29 100644
-> --- a/drivers/video/xilinxfb.c
-> +++ b/drivers/video/xilinxfb.c
-> @@ -341,8 +341,8 @@ static int xilinxfb_assign(struct platform_device *pdev,
-> 
->  	if (drvdata->flags & BUS_ACCESS_FLAG) {
->  		/* Put a banner in the log (for DEBUG) */
-> -		dev_dbg(dev, "regs: phys=%x, virt=%p\n", drvdata->regs_phys,
-> -					drvdata->regs);
-> +		dev_dbg(dev, "regs: phys=%pa, virt=%p\n",
-> +			&drvdata->regs_phys, drvdata->regs);
->  	}
->  	/* Put a banner in the log (for DEBUG) */
->  	dev_dbg(dev, "fb: phys=%llx, virt=%p, size=%x\n",
-> --
-> 1.8.2.3
->
+Relevant dmesg from boot:
+
+ahci 0000:00:1f.2: version 3.0
+ahci 0000:00:1f.2: irq 41 for MSI/MSI-X
+ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 5 ports 6 Gbps 0x1e impl SATA
+mode
+ahci 0000:00:1f.2: flags: 64bit ncq pm led clo pio slum part ems apst
+ahci 0000:00:1f.2: setting latency timer to 64
+scsi0 : ahci
+scsi1 : ahci
+scsi2 : ahci
+scsi3 : ahci
+scsi4 : ahci
+ata1: DUMMY
+ata2: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a180 irq 41
+ata3: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a200 irq 41
+ata4: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a280 irq 41
+ata5: SATA max UDMA/133 abar m2048@0xf7d3a000 port 0xf7d3a300 irq 41
 
