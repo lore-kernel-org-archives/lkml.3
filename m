@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab3GYOew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:34:52 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:41287 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755966Ab3GYOev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:34:51 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: <linux-kernel@vger.kernel.org>
-CC: James Hogan <james.hogan@imgtec.com>, Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Dipankar Sarma <dipankar@in.ibm.com>
-Subject: [PATCH 1/1] rcu: select IRQ_WORK from TREE_PREEMPT_RCU
-Date: Thu, 25 Jul 2013 15:34:25 +0100
-Message-ID: <1374762865-13635-1-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
+	id S1756247Ab3GYOgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:36:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35225 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab3GYOgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 10:36:16 -0400
+Date: Thu, 25 Jul 2013 07:37:29 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Anders Hammarquist <iko@iko.pp.se>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH 2/2] Remove static sizing of usb_device_id arrays
+Message-ID: <20130725143729.GA1897@kroah.com>
+References: <20130621235603.GA1603@kroah.com>
+ <1371927359-13977-1-git-send-email-iko@iko.pp.se>
+ <1371927359-13977-2-git-send-email-iko@iko.pp.se>
+ <20130724225208.GA3140@kroah.com>
+ <201307251415.r6PEFoO1015986@eskarina.iko.pp.se>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_25_15_34_32
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201307251415.r6PEFoO1015986@eskarina.iko.pp.se>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TREE_RCU and TREE_PREEMPT_RCU both cause kernel/rcutree.c to be built,
-but only TREE_RCU selects IRQ_WORK, which can result in an undefined
-reference to irq_work_queue for some (random) configs:
+On Thu, Jul 25, 2013 at 04:15:49PM +0200, Anders Hammarquist wrote:
+> In a message of Wed, 24 Jul 2013 15:52:08 -0700, Greg KH writes:
+> >On Sat, Jun 22, 2013 at 08:55:59PM +0200, Anders Hammarquist wrote:
+> >> 
+> >> Signed-off-by: Anders Hammarquist <iko@iko.pp.se>
+> >> ---
+> >>  drivers/usb/serial/ti_usb_3410_5052.c |   29 ++++++++++++++++++++++++-----
+> >>  1 file changed, 24 insertions(+), 5 deletions(-)
+> >
+> >This patch, and your previous one, are no longer needed, right?
+> 
+> They are needed until the module params for adding vendor and
+> product ids are removed, and it sounded like the consensus was
+> to keep them for a while.
 
-kernel/built-in.o In function `rcu_start_gp_advanced':
-kernel/rcutree.c:1564: undefined reference to `irq_work_queue'
+No, they will be removed for 3.12, the patches are already queued up.
 
-Select IRQ_WORK from TREE_PREEMPT_RCU too to fix this.
+thanks,
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Dipankar Sarma <dipankar@in.ibm.com>
----
- init/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 247084b..c08a549 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -470,6 +470,7 @@ config TREE_RCU
- config TREE_PREEMPT_RCU
- 	bool "Preemptible tree-based hierarchical RCU"
- 	depends on PREEMPT
-+	select IRQ_WORK
- 	help
- 	  This option selects the RCU implementation that is
- 	  designed for very large SMP systems with hundreds or
--- 
-1.8.1.2
-
-
+greg k-h
