@@ -1,88 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3GYEtd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:49:33 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:39039 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab3GYEtc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:49:32 -0400
-MIME-Version: 1.0
-Date: Thu, 25 Jul 2013 10:19:31 +0530
-X-Google-Sender-Auth: uTrphlu0fvwhYWwvXsqZxp2sP4w
-Message-ID: <CAPV97ydVKFdRuKRkW12KNmoh8ZoN-XoX=vW8CjaBz-u386ZOiA@mail.gmail.com>
-Subject: Re: [PATCH v4] staging: usbip: replace pr_warning() with dev_warn().
-From: navin patidar <navinp@cdac.in>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: mfm@muteddisk.com, sergei.shtylyov@cogentembedded.com, joe@perches.com,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1753170Ab3GYEz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:55:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42986 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab3GYEzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 00:55:52 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Hillf Danton <dhillf@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Subject: [PATCH 5/8] mbind: add hugepage migration code to mbind()
+Date: Thu, 25 Jul 2013 00:55:00 -0400
+Message-Id: <1374728103-17468-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013, Greg KH <gregkh@linuxfoundation.org> said:
+This patch extends do_mbind() to handle vma with VM_HUGETLB set.
+We will be able to migrate hugepage with mbind(2) after
+applying the enablement patch which comes later in this series.
 
-> On Thu, Jun 27, 2013 at 03:34:52PM +0530, navin patidar wrote:
->> dev_warn() is preferred over pr_warning().
->>
->> container_of() is used to get usb_driver pointer from usbip_device container
->> (stub_device or vhci_device), to get device structure required for dev_warn().
->>
->> Signed-off-by: navin patidar <navinp@cdac.in>
->> ---
->>  drivers/staging/usbip/usbip_event.c |   11 ++++++++++-
->>  1 file changed, 10 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/staging/usbip/usbip_event.c b/drivers/staging/usbip/usbip_event.c
->> index 82123be..1f3a571 100644
->> --- a/drivers/staging/usbip/usbip_event.c
->> +++ b/drivers/staging/usbip/usbip_event.c
->> @@ -21,6 +21,8 @@
->>  #include <linux/export.h>
->>
->>  #include "usbip_common.h"
->> +#include "stub.h"
->> +#include "vhci.h"
->>
->>  static int event_handler(struct usbip_device *ud)
->>  {
->> @@ -85,7 +87,14 @@ int usbip_start_eh(struct usbip_device *ud)
->>
->>      ud->eh = kthread_run(event_handler_loop, ud, "usbip_eh");
->>      if (IS_ERR(ud->eh)) {
->> -        pr_warning("Unable to start control thread\n");
->> +        struct device *dev;
->> +
->> +        if (ud->side == USBIP_STUB)
->> +            dev = &container_of(ud, struct stub_device, ud)->udev->dev;
->> +        else
->> +            dev = &container_of(ud, struct vhci_device, ud)->udev->dev;
->
-> Putting '&' in front of container_of seems odd, are you sure it's needed
-> here?  If ud is a pointer, everything else should "just work" properly
-> without that.
+ChangeLog v3:
+ - revert introducing migrate_movable_pages
+ - added alloc_huge_page_noerr free from ERR_VALUE
 
-Removing '&'   caused following error.
-drivers/staging/usbip/usbip_event.c: In function ‘usbip_start_eh’:
-drivers/staging/usbip/usbip_event.c:93:8: error: incompatible types
-when assigning to type ‘struct device *’ from type ‘struct device’
-drivers/staging/usbip/usbip_event.c:95:8: error: incompatible types
-when assigning to type ‘struct device *’ from type ‘struct device’
+ChangeLog v2:
+ - updated description and renamed patch title
 
-dev needs to be initialized with address of dev (struct device ) which
-is member of struct usb_device pointed by the udev.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Acked-by: Andi Kleen <ak@linux.intel.com>
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+---
+ include/linux/hugetlb.h |  3 +++
+ mm/hugetlb.c            | 14 ++++++++++++++
+ mm/mempolicy.c          |  4 +++-
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-To make it more clear i can change it to
+diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
+index c7a14a4..cae5539 100644
+--- v3.11-rc1.orig/include/linux/hugetlb.h
++++ v3.11-rc1/include/linux/hugetlb.h
+@@ -267,6 +267,8 @@ struct huge_bootmem_page {
+ };
+ 
+ struct page *alloc_huge_page_node(struct hstate *h, int nid);
++struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
++				unsigned long addr, int avoid_reserve);
+ 
+ /* arch callback */
+ int __init alloc_bootmem_huge_page(struct hstate *h);
+@@ -380,6 +382,7 @@ static inline pgoff_t basepage_index(struct page *page)
+ #else	/* CONFIG_HUGETLB_PAGE */
+ struct hstate {};
+ #define alloc_huge_page_node(h, nid) NULL
++#define alloc_huge_page_noerr(v, a, r) NULL
+ #define alloc_bootmem_huge_page(h) NULL
+ #define hstate_file(f) NULL
+ #define hstate_sizelog(s) NULL
+diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
+index 506d195..f6d8d67 100644
+--- v3.11-rc1.orig/mm/hugetlb.c
++++ v3.11-rc1/mm/hugetlb.c
+@@ -1195,6 +1195,20 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	return page;
+ }
+ 
++/*
++ * alloc_huge_page()'s wrapper which simply returns the page if allocation
++ * succeeds, otherwise NULL. This function is called from new_vma_page(),
++ * where no ERR_VALUE is expected to be returned.
++ */
++struct page *alloc_huge_page_noerr(struct vm_area_struct *vma,
++				unsigned long addr, int avoid_reserve)
++{
++	struct page *page = alloc_huge_page(vma, addr, avoid_reserve);
++	if (IS_ERR(page))
++		page = NULL;
++	return page;
++}
++
+ int __weak alloc_bootmem_huge_page(struct hstate *h)
+ {
+ 	struct huge_bootmem_page *m;
+diff --git v3.11-rc1.orig/mm/mempolicy.c v3.11-rc1/mm/mempolicy.c
+index d96afc1..4a03c14 100644
+--- v3.11-rc1.orig/mm/mempolicy.c
++++ v3.11-rc1/mm/mempolicy.c
+@@ -1183,6 +1183,8 @@ static struct page *new_vma_page(struct page *page, unsigned long private, int *
+ 		vma = vma->vm_next;
+ 	}
+ 
++	if (PageHuge(page))
++		return alloc_huge_page_noerr(vma, address, 1);
+ 	/*
+ 	 * if !vma, alloc_page_vma() will use task or system default policy
+ 	 */
+@@ -1293,7 +1295,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 					(unsigned long)vma,
+ 					MIGRATE_SYNC, MR_MEMPOLICY_MBIND);
+ 			if (nr_failed)
+-				putback_lru_pages(&pagelist);
++				putback_movable_pages(&pagelist);
+ 		}
+ 
+ 		if (nr_failed && (flags & MPOL_MF_STRICT))
+-- 
+1.8.3.1
 
-dev = &(container_of(ud, struct vhci_device, ud)->udev->dev);
-
- or
-
-struct vhci_device *vdev = container_of(ud, struct vhci_device, ud);
-dev = &(vdev->udev->dev);
-
-regards,
---navin-patidar
