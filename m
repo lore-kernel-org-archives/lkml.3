@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3GYQf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:35:27 -0400
-Received: from www.sr71.net ([198.145.64.142]:35377 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3GYQfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:35:18 -0400
-Message-ID: <51F153BA.1010106@sr71.net>
-Date: Thu, 25 Jul 2013 09:35:06 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Kay Sievers <kay@vrfy.org>
-CC: KY Srinivasan <kys@microsoft.com>, Michal Hocko <mhocko@suse.cz>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com> <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com> <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com> <51F00415.8070104@sr71.net> <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com> <51F040E8.1030507@intel.com> <20130725075705.GD12818@dhcp22.suse.cz> <4f440c8d96f34711a3f06fb18702a297@SN2PR03MB061.namprd03.prod.outlook.com> <51F13E51.7040808@sr71.net> <CAPXgP10BqFoYLOS+e=aTMqM6mAZrtuWHsrsSJ4+44m+LuzRwiQ@mail.gmail.com>
-In-Reply-To: <CAPXgP10BqFoYLOS+e=aTMqM6mAZrtuWHsrsSJ4+44m+LuzRwiQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756718Ab3GYQgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:36:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:41244 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab3GYQeW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 12:34:22 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-4a-51f1538c237f
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
+Subject: [PATCH v6 5/8] cpufreq:boost:Kconfig: Provide support for software
+ managed BOOST
+Date: Thu, 25 Jul 2013 18:33:28 +0200
+Message-id: <1374770011-22171-6-git-send-email-l.majewski@samsung.com>
+X-Mailer: git-send-email 1.7.10
+In-reply-to: <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t9jQd3e4I+BBhcuMVlsnLGe1eJp0w92
+	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRt8ebhZkaLy7vmsFl87j3CaHG7cQWbRf/C
+	XiaLJw/72Cw2fvVw4PdYvOclk8eda3vYPNZNe8vs0bdlFaPHo8UtjB7Hb2xn8vi8SS6APYrL
+	JiU1J7MstUjfLoEro/daWcEq4Yo9jQdZGxj/83cxcnJICJhItP2cxwRhi0lcuLeerYuRi0NI
+	YDqjxI35bVBOF5PEgs7jYFVsAnoSn+8+BbNFBOYwStw56g5SxCzwgFli8fcvjCAJYYFoifeN
+	vWA2i4CqxOmtDWA2r4CbxK79b5gh1slLPL3fxwZicwq4S0yYPIURYlsTo8S/G3eZJzDyLmBk
+	WMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHLbPpHcwrmqwOMQowMGoxMOr4PQxUIg1say4
+	MvcQowQHs5IIr7klUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgs
+	EwenVAPj1v86WR86CxjPeqa+cfrjVbL9n2GWqmRtkGuTQnGc1S2RxE9mL/8zxyTL3Vda/+Az
+	wwwLhcsLa5JEGDQkr97k0b/QaZNbq8Oa+OS2rZB1Ct87sR315TfVV7QfEttT0qD3ZLOdwOIv
+	5qtCWaat8l+W7VQrvSP0+pQlfrbiShKGkbd7SsPyviqxFGckGmoxFxUnAgCc5APtVwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 08:15 AM, Kay Sievers wrote:
-> Complexity, well, it's just a bit of code which belongs in the kernel.
-> The mentioned unconditional hotplug loop through userspace is
-> absolutely pointless. Such defaults never belong in userspace tools if
-> they do not involve data that is only available in userspace and
-> something would make a decision about that. Saying "hello" to
-> userspace and usrspace has a hardcoded "yes" in return makes no sense
-> at all. The kernel can just go ahead and do its job, like it does for
-> all other devices it finds too.
+For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
+Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
+option the software managed boost is enabled. It also selects thermal
+subsystem to be compiled in. Thermal is necessary for disabling boost
+and cooling down the device when overheating detected.
 
-Sorry, but memory is different than all other devices.  You never need a
-mouse in order to add another mouse to the kernel.
+Boost _MUST_NOT_ work without thermal subsystem with properly defined
+overheating temperatures.
 
-I'll repaste something I said earlier in this thread:
+This option doesn't affect x86's ACPI hardware managed boost support
+(i.e. Intel, AMD). In this situation boost management is embedded at
+hardware.
 
-> A system under memory pressure is going to have troubles doing a
-> hot-add.  You need memory to add memory.  Of the two operations ("add"
-> and "online"), "add" is the one vastly more likely to fail.  It has to
-> allocate several large swaths of contiguous physical memory.  For that
-> reason, the system was designed so that you could "add" and "online"
-> separately.  The intention was that you could "add" far in advance and
-> then "online" under memory pressure, with the "online" having *VASTLY*
-> smaller memory requirements and being much more likely to succeed.
+Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
 
-So, no, it makes no sense to just have userspace always unconditionally
-online all the memory that the kernel adds.  But, the way it's set up,
-we _have_ a method that can work under lots memory pressure, and it is
-available for users that want it.  It was designed 10 years ago, and
-maybe it's outdated, or history has proved that nobody is going to use
-it the way it was designed.
+---
+Changes for v6:
+- CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
+- Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
+  added. It depends on ARM_EXYNOS_CPUFREQ options and selects
+  EXYNOS_THERMAL with the main boost config [1].
 
-If I had it to do over again, I'd probably set up configurable per-node
-sets of spare kernel metadata.  That way, you could say "make sure we
-have enough memory reserved to add $FOO sections to node $BAR".  Use
-that for the largest allocations, then depend on PF_MEMALLOC to get us
-enough for the other little bits along the way.
+Changes for v5:
+- New patch
 
-Also, if this is a problem, it's going to be a problem for *EVERY* user
-of memory hotplug, not just hyperv.  So, let's see it fixed generically
-for *EVERY* user.  Something along the lines of:
+ drivers/cpufreq/Kconfig     |    3 +++
+ drivers/cpufreq/Kconfig.arm |   16 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
 
-1. Come up with an interface that specifies a default policy for
-   newly-added memory sections.  Currently, added memory gets "added",
-   but not "onlined", and the default should stay doing that.
-2. Make sure that we at least WARN_ONCE() if someone tries to online an
-   already-kernel-onlined memory section.  That way, if someone trips
-   over this new policy, we have a _chance_ of explaining to them what
-   is going on.
-3. Think about what we do in the failure case where we are able to
-   "add", but fail to "online" in the kernel.  Do we tear the
-   newly-added structures down and back out of the operation, or do
-   we leave the memory added, but offline (what happens in the normal
-   case now)?
-
-
+diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
+index 534fcb8..3f058a3 100644
+--- a/drivers/cpufreq/Kconfig
++++ b/drivers/cpufreq/Kconfig
+@@ -23,6 +23,9 @@ config CPU_FREQ_TABLE
+ config CPU_FREQ_GOV_COMMON
+ 	bool
+ 
++config CPU_FREQ_BOOST_SW
++	bool
++
+ config CPU_FREQ_STAT
+ 	tristate "CPU frequency translation statistics"
+ 	select CPU_FREQ_TABLE
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index de4d5d9..c8abb93 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -55,6 +55,22 @@ config ARM_EXYNOS5440_CPUFREQ
+ 	  different than previous exynos controllers so not using
+ 	  the common exynos framework.
+ 
++config ARM_EXYNOS_CPU_FREQ_BOOST_SW
++	bool "EXYNOS Frequency Overclocking - Software"
++	depends on ARM_EXYNOS_CPUFREQ
++	select CPU_FREQ_BOOST_SW
++	select EXYNOS_THERMAL
++	default n
++	help
++	  This driver supports software managed overclocking (BOOST).
++	  It allows usage of special frequencies for Samsung Exynos
++	  processors if thermal conditions are appropriate.
++
++	  It reguires, for safe operation, thermal framework with properly
++	  defined trip points.
++
++	  If in doubt, say N.
++
+ config ARM_HIGHBANK_CPUFREQ
+ 	tristate "Calxeda Highbank-based"
+ 	depends on ARCH_HIGHBANK
+-- 
+1.7.10.4
 
