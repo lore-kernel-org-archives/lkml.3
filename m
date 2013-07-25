@@ -1,58 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab3GYNCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:02:49 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:36947 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab3GYNCq (ORCPT
+	id S1755826Ab3GYNFl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:05:41 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:60199 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550Ab3GYNFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:02:46 -0400
-Date: Thu, 25 Jul 2013 09:02:12 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Anton Blanchard <anton@samba.org>, Scott Wood <scottwood@freescale.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
- issues
-Message-ID: <20130725130212.GA19366@hmsreliant.think-freely.org>
-References: <20130718140045.6794ecd5@kryten>
- <1374274770.5357.33@snotra>
- <20130725083427.56e36010@kryten>
- <1374707665.6142.18.camel@pasglop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374707665.6142.18.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+	Thu, 25 Jul 2013 09:05:39 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        hector.palacios@digi.com, Thomas Petazzoni <thomas@free-electrons.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-fbdev@vger.kernel.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 1/3] video: mxsfb: fix color settings for 18bit data bus and 32bpp
+Date: Thu, 25 Jul 2013 15:05:11 +0200
+Message-Id: <1374757513-2253-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374757513-2253-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1374757513-2253-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:14:25AM +1000, Benjamin Herrenschmidt wrote:
-> On Thu, 2013-07-25 at 08:34 +1000, Anton Blanchard wrote:
-> > > Apart from the annoying colors, is there anything specific I should
-> > > be looking for?  Some sort of error message, or output that actually
-> > > makes sense?
-> > 
-> > Thanks for testing! Ben, I think the patch is good to go.
-> 
-> Sent it yesterday to Linus, it's upstream already :-)
-> 
-> Cheers,
-> Ben.
-> 
-Sorry I'm a bit late to the thread, I've ben swamped.  Has someone tested this
-with kexec/kdump?  Thats why the origional patch was created, because when kexec
-loads the kernel at a different physical address, the relocations messed with
-the module crc's, and modules couldn't load during the kexec boot.  Assuming
-that kernaddr_start gets set appropriately during boot, using PHYSICAL_START
-should be fine, but I wanted to check, and don't currently have access to a
-powerpc system to do so.
-Neil
+From: Hector Palacios <hector.palacios@digi.com>
 
-> 
-> 
-> 
+For a combination of 18bit LCD data bus width and a color
+mode of 32bpp, the driver was setting the color mapping to
+rgb666, which is wrong, as the color in memory realy has an
+rgb888 layout.
+
+This patch also removes the setting of flag CTRL_DF24 that
+makes the driver dimiss the upper 2 bits when handling 32/24bpp
+colors in a diplay with 18bit data bus width. This flag made
+true color images display wrong in such configurations.
+
+Finally, the color mapping rgb666 has also been removed as nobody
+is using it and high level applications like Qt5 cannot work
+with it either.
+
+Reference: https://lkml.org/lkml/2013/5/23/220
+Signed-off-by: Hector Palacios <hector.palacios@digi.com>
+Acked-by: Juergen Beisert <jbe@pengutronix.de>
+Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/video/mxsfb.c | 26 --------------------------
+ 1 file changed, 26 deletions(-)
+
+diff --git a/drivers/video/mxsfb.c b/drivers/video/mxsfb.c
+index 3ba3771..dc09ebe 100644
+--- a/drivers/video/mxsfb.c
++++ b/drivers/video/mxsfb.c
+@@ -239,24 +239,6 @@ static const struct fb_bitfield def_rgb565[] = {
+ 	}
+ };
+ 
+-static const struct fb_bitfield def_rgb666[] = {
+-	[RED] = {
+-		.offset = 16,
+-		.length = 6,
+-	},
+-	[GREEN] = {
+-		.offset = 8,
+-		.length = 6,
+-	},
+-	[BLUE] = {
+-		.offset = 0,
+-		.length = 6,
+-	},
+-	[TRANSP] = {	/* no support for transparency */
+-		.length = 0,
+-	}
+-};
+-
+ static const struct fb_bitfield def_rgb888[] = {
+ 	[RED] = {
+ 		.offset = 16,
+@@ -309,9 +291,6 @@ static int mxsfb_check_var(struct fb_var_screeninfo *var,
+ 			break;
+ 		case STMLCDIF_16BIT:
+ 		case STMLCDIF_18BIT:
+-			/* 24 bit to 18 bit mapping */
+-			rgb = def_rgb666;
+-			break;
+ 		case STMLCDIF_24BIT:
+ 			/* real 24 bit */
+ 			rgb = def_rgb888;
+@@ -453,11 +432,6 @@ static int mxsfb_set_par(struct fb_info *fb_info)
+ 			return -EINVAL;
+ 		case STMLCDIF_16BIT:
+ 		case STMLCDIF_18BIT:
+-			/* 24 bit to 18 bit mapping */
+-			ctrl |= CTRL_DF24; /* ignore the upper 2 bits in
+-					    *  each colour component
+-					    */
+-			break;
+ 		case STMLCDIF_24BIT:
+ 			/* real 24 bit */
+ 			break;
+-- 
+1.8.3.2
+
