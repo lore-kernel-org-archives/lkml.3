@@ -1,106 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758006Ab3GYTXC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:23:02 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:65421 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756883Ab3GYTXA (ORCPT
+	id S1758116Ab3GYTYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:24:30 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:9564 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab3GYTYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:23:00 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 25 Jul 2013 20:22:48 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-Message-ID: <20130725192248.GA13295@cantiga.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Sedat Dilek <sedat.dilek@gmail.com>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	DRI <dri-devel@lists.freedesktop.org>,
-	linux-next <linux-next@vger.kernel.org>
-References: <20130725170144.GE6493@cantiga.alporthouse.com>
- <CA+icZUUOmoFY3JDZOYmiP3dV9KAR_8WYfEDQhaynKmhXCLpF9w@mail.gmail.com>
- <20130725172616.GA11514@cantiga.alporthouse.com>
- <CA+icZUUpnQ_=bTtK-0-qG90GjV38oeVe2E1v-KdLZQFQWH21GQ@mail.gmail.com>
- <CA+icZUXz+6MgbW952fU_da1-RfX8CSZp76gJnOwGDNsd-rdebA@mail.gmail.com>
- <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
- <20130725184504.GC11514@cantiga.alporthouse.com>
- <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
- <20130725190006.GD11514@cantiga.alporthouse.com>
- <CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
+	Thu, 25 Jul 2013 15:24:25 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 25 Jul 2013 12:24:24 -0700
+From: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+To: <balbi@ti.com>
+CC: <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <swarren@wwwdotorg.org>,
+        <gregkh@linuxfoundation.org>, Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+Subject: [PATCH] usb: phy: tegra: Use switch instead of if-else
+Date: Thu, 25 Jul 2013 22:24:09 +0300
+Message-ID: <1374780249-22207-1-git-send-email-ttynkkynen@nvidia.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20130725191734.GB26858@radagast>
+References: <20130725191734.GB26858@radagast>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:12:41PM +0200, Sedat Dilek wrote:
-> New -3 dmesg.
+Use switch() instead of if-else when checking for the PHY type.
 
-That puts the ball back in the ddx's court. Next debugging patch:
+Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+---
+Ah :). Here.
 
-diff --git a/src/intel_driver.c b/src/intel_driver.c
-index f4d76bb..1f4f299 100644
---- a/src/intel_driver.c
-+++ b/src/intel_driver.c
-@@ -170,6 +170,7 @@ static Bool i830CreateScreenResources(ScreenPtr screen)
- 		return FALSE;
- 
- 	intel_copy_fb(scrn);
-+	ErrorF("%s: Success\n", __func__);
- 	return TRUE;
- }
- 
-diff --git a/src/intel_uxa.c b/src/intel_uxa.c
-index 2f14173..6be7ebe 100644
---- a/src/intel_uxa.c
-+++ b/src/intel_uxa.c
-@@ -1150,11 +1150,15 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
- 	intel_screen_private *intel = intel_get_screen_private(scrn);
- 	dri_bo *bo = intel->front_buffer;
- 
--	if (!uxa_resources_init(screen))
-+	if (!uxa_resources_init(screen)) {
-+		ErrorF("bang: %d\n", __LINE__);
- 		return FALSE;
-+	}
- 
--	if (drm_intel_gem_bo_map_gtt(bo))
-+	if (drm_intel_gem_bo_map_gtt(bo)) {
-+		ErrorF("bang: %d\n", __LINE__);
- 		return FALSE;
-+	}
- 
- 	pixmap = screen->GetScreenPixmap(screen);
- 	intel_set_pixmap_bo(pixmap, bo);
-@@ -1167,8 +1171,10 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
- 				   NULL);
- 	scrn->displayWidth = intel->front_pitch / intel->cpp;
- 
--	if (!intel_glamor_create_screen_resources(screen))
-+	if (!intel_glamor_create_screen_resources(screen)) {
-+		ErrorF("bang: %d\n", __LINE__);
- 		return FALSE;
-+	}
- 
- 	return TRUE;
- }
+ drivers/usb/phy/phy-tegra-usb.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-usb.c
+index 01c30ff..49fa2da 100644
+--- a/drivers/usb/phy/phy-tegra-usb.c
++++ b/drivers/usb/phy/phy-tegra-usb.c
+@@ -887,11 +887,14 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 		of_property_read_bool(np, "nvidia,has-legacy-mode");
+ 
+ 	phy_type = of_usb_get_phy_mode(np);
+-	if (phy_type == USBPHY_INTERFACE_MODE_UTMI) {
++	switch (phy_type) {
++	case USBPHY_INTERFACE_MODE_UTMI:
+ 		err = utmi_phy_probe(tegra_phy, pdev);
+ 		if (err < 0)
+ 			return err;
+-	} else if (phy_type == USBPHY_INTERFACE_MODE_ULPI) {
++		break;
++
++	case USBPHY_INTERFACE_MODE_ULPI:
+ 		tegra_phy->is_ulpi_phy = true;
+ 
+ 		tegra_phy->reset_gpio =
+@@ -902,7 +905,9 @@ static int tegra_usb_phy_probe(struct platform_device *pdev)
+ 			return tegra_phy->reset_gpio;
+ 		}
+ 		tegra_phy->config = NULL;
+-	} else {
++		break;
++
++	default:
+ 		dev_err(&pdev->dev, "phy_type is invalid or unsupported\n");
+ 		return -EINVAL;
+ 	}
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+1.8.1.5
+
