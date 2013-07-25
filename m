@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab3GYR6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:58:32 -0400
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:35405 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab3GYRyE (ORCPT
+	id S1757381Ab3GYR7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:59:16 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54922 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757134Ab3GYR7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:54:04 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Jay Agarwal <jagarwal@nvidia.com>, linux-pci@vger.kernel.org,
-        linux-tegra@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v5 04/16] ARM: tegra: tamonten: Add PCIe support
-Date: Thu, 25 Jul 2013 10:53:18 -0700
-Message-Id: <1374774810-18459-5-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
-References: <1374774810-18459-1-git-send-email-thierry.reding@gmail.com>
+	Thu, 25 Jul 2013 13:59:11 -0400
+Message-ID: <51F1676C.5050408@wwwdotorg.org>
+Date: Thu, 25 Jul 2013 10:59:08 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+In-Reply-To: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <thierry.reding@avionic-design.de>
+On 07/25/2013 09:09 AM, Olof Johansson wrote:
+...
+> One problem that needs to be solved is obviously how a binding
+> graduates from tentative to locked. This work isn't going to be very
+> interesting to most people, I suspect. Think standards committee type
+> work.
 
-Add properties common to all Tamonten-derived boards to the Tamonten
-DTSI and add the fixed 1.05 V regulator.
+I assume that's part of what being a maintainer of the DT bindings tree
+means?
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
-Changes in v2:
-- add properties common to all Tamonten boards
-- add fixed 1.05 V regulator
-
- arch/arm/boot/dts/tegra20-tamonten.dtsi | 17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/tegra20-tamonten.dtsi b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-index c54faae..5ee674b 100644
---- a/arch/arm/boot/dts/tegra20-tamonten.dtsi
-+++ b/arch/arm/boot/dts/tegra20-tamonten.dtsi
-@@ -366,7 +366,7 @@
- 					regulator-always-on;
- 				};
- 
--				ldo0 {
-+				pci_clk_reg: ldo0 {
- 					regulator-name = "vdd_ldo0,vddio_pex_clk";
- 					regulator-min-microvolt = <3300000>;
- 					regulator-max-microvolt = <3300000>;
-@@ -467,6 +467,11 @@
- 		nvidia,sys-clock-req-active-high;
- 	};
- 
-+	pcie-controller {
-+		pex-clk-supply = <&pci_clk_reg>;
-+		vdd-supply = <&pci_vdd_reg>;
-+	};
-+
- 	usb@c5008000 {
- 		status = "okay";
- 	};
-@@ -509,5 +514,15 @@
- 			regulator-max-microvolt = <5000000>;
- 			regulator-always-on;
- 		};
-+
-+		pci_vdd_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "vdd_1v05";
-+			regulator-min-microvolt = <1050000>;
-+			regulator-max-microvolt = <1050000>;
-+			gpio = <&pmic 2 0>;
-+			enable-active-high;
-+		};
- 	};
- };
--- 
-1.8.1.5
-
++1 on everything else you said. I've been traveling this week so haven't
+had much time for email, but if I hadn't, I hope I would have said
+something similar:-)
