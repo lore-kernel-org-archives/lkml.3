@@ -1,108 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755823Ab3GYNao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:30:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46376 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755416Ab3GYNan (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:30:43 -0400
-Date: Thu, 25 Jul 2013 15:30:40 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Minchan Kim <minchan@kernel.org>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: hugepage related lockdep trace.
-Message-ID: <20130725133040.GI12818@dhcp22.suse.cz>
-References: <20130717153223.GD27731@redhat.com>
- <20130718000901.GA31972@blaptop>
- <87hafrdatb.fsf@linux.vnet.ibm.com>
- <20130719001303.GB23354@blaptop>
- <20130723140120.GG8677@dhcp22.suse.cz>
- <20130724024428.GA14795@bbox>
+	id S1755722Ab3GYNa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:30:59 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:37979 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab3GYNav (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 09:30:51 -0400
+Date: Thu, 25 Jul 2013 15:30:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
+        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
+        paulmck@linux.vnet.ibm.com, michael@ellerman.id.au, arnd@arndb.de,
+        linux-pm@vger.kernel.org, rostedt@goodmis.org, rjw@sisk.pl,
+        john.stultz@linaro.org, tglx@linutronix.de, chenhui.zhao@freescale.com,
+        deepthi@linux.vnet.ibm.com, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, svaidy@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
+ arch-specific constraints
+Message-ID: <20130725133044.GA7400@somewhere>
+References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com>
+ <20130725090302.12500.42998.stgit@preeti.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130724024428.GA14795@bbox>
+In-Reply-To: <20130725090302.12500.42998.stgit@preeti.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-07-13 11:44:28, Minchan Kim wrote:
-> On Tue, Jul 23, 2013 at 04:01:20PM +0200, Michal Hocko wrote:
-> > On Fri 19-07-13 09:13:03, Minchan Kim wrote:
-> > > On Thu, Jul 18, 2013 at 11:12:24PM +0530, Aneesh Kumar K.V wrote:
-> > [...]
-> > > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > > > index 83aff0a..2cb1be3 100644
-> > > > --- a/mm/hugetlb.c
-> > > > +++ b/mm/hugetlb.c
-> > > > @@ -3266,8 +3266,8 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
-> > > >  		put_page(virt_to_page(spte));
-> > > >  	spin_unlock(&mm->page_table_lock);
-> > > >  out:
-> > > > -	pte = (pte_t *)pmd_alloc(mm, pud, addr);
-> > > >  	mutex_unlock(&mapping->i_mmap_mutex);
-> > > > +	pte = (pte_t *)pmd_alloc(mm, pud, addr);
-> > > >  	return pte;
-> > > 
-> > > I am blind on hugetlb but not sure it doesn't break eb48c071.
-> > > Michal?
-> > 
-> > Well, it is some time since I debugged the race and all the details
-> > vanished in the meantime. But this part of the changelog suggests that
-> > this indeed breaks the fix:
-> > "
-> >     This patch addresses the issue by moving pmd_alloc into huge_pmd_share
-> >     which guarantees that the shared pud is populated in the same critical
-> >     section as pmd.  This also means that huge_pte_offset test in
-> >     huge_pmd_share is serialized correctly now which in turn means that the
-> >     success of the sharing will be higher as the racing tasks see the pud
-> >     and pmd populated together.
-> > "
-> > 
-> > Besides that I fail to see how moving pmd_alloc down changes anything.
-> > Even if pmd_alloc triggered reclaim then we cannot trip over the same
-> > i_mmap_mutex as hugetlb pages are not reclaimable because they are not
-> > on the LRU.
+On Thu, Jul 25, 2013 at 02:33:02PM +0530, Preeti U Murthy wrote:
+> In the current design of timer offload framework, the broadcast cpu should
+> *not* go into tickless idle so as to avoid missed wakeups on CPUs in deep idle states.
 > 
-> I thought we could map some part of binary with normal page and other part
-> of the one with MAP_HUGETLB so that a address space could have both normal
-> page and HugeTLB page. Okay, it's impossible so HugeTLB pages are not on LRU.
-> Then, above lockdep warning is totally false positive.
-> Best solution is avoiding pmd_alloc with holding i_mmap_mutex but we need it
-> to fix eb48c071 so how about this if we couldn't have a better idea?
+> Since we prevent the CPUs entering deep idle states from programming the lapic of the
+> broadcast cpu for their respective next local events for reasons mentioned in
+> PATCH[3/5], the broadcast CPU checks if there are any CPUs to be woken up during
+> each of its timer interrupt programmed to its local events.
+> 
+> With tickless idle, the broadcast CPU might not get a timer interrupt till after
+> many ticks which can result in missed wakeups on CPUs in deep idle states. By
+> disabling tickless idle, worst case, the tick_sched hrtimer will trigger a
+> timer interrupt every period to check for broadcast.
+> 
+> However the current setup of tickless idle does not let us make the choice
+> of tickless on individual cpus. NOHZ_MODE_INACTIVE which disables tickless idle,
+> is a system wide setting. Hence resort to an arch specific call to check if a cpu
+> can go into tickless idle.
 
-Shouldn't we rather use a hugetlb specific lock_class_key. I am not
-familiar with lockdep much but something like bellow should do the
-trick?
+Hi Preeti,
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index a3f868a..40a61f6 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -463,6 +463,8 @@ static struct inode *hugetlbfs_get_root(struct super_block *sb,
- 	return inode;
- }
- 
-+struct lock_class_key hugetlbfs_i_mmap_mutex_key;
-+
- static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 					struct inode *dir,
- 					umode_t mode, dev_t dev)
-@@ -474,6 +476,7 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 		struct hugetlbfs_inode_info *info;
- 		inode->i_ino = get_next_ino();
- 		inode_init_owner(inode, dir, mode);
-+		lockdep_set_class(&inode->i_mapping->i_mmap_mutex, &hugetlbfs_i_mmap_mutex_key);
- 		inode->i_mapping->a_ops = &hugetlbfs_aops;
- 		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
--- 
-Michal Hocko
-SUSE Labs
+I'm not exactly sure why you can't enter the broadcast CPU in dynticks idle mode.
+I read in the previous patch that's because in dynticks idle mode the broadcast
+CPU deactivates its lapic so it doesn't receive the IPI. But may be I misunderstood.
+Anyway that's not good for powersaving.
+
+Also when an arch wants to prevent a CPU from entering dynticks idle mode, it typically
+use arch_needs_cpu(). May be that could fit for you as well?
+
+Thanks.
