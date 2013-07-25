@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab3GYTAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 15:00:19 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:33115 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab3GYTAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 15:00:15 -0400
-Message-ID: <51F1737A.9020205@wwwdotorg.org>
-Date: Thu, 25 Jul 2013 11:50:34 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757619Ab3GYTAd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 15:00:33 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37501 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757138Ab3GYTA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 15:00:29 -0400
+Date: Thu, 25 Jul 2013 22:00:23 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+CC: <balbi@ti.com>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <swarren@wwwdotorg.org>, <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 8/9] usb: phy: tegra: Use DT helpers for phy_type
+Message-ID: <20130725190023.GA26858@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374777489-13093-1-git-send-email-ttynkkynen@nvidia.com>
+ <1374777489-13093-9-git-send-email-ttynkkynen@nvidia.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Mark Rutland <mark.rutland@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: DT bindings as ABI [was: Do we have people interested in device
- tree janitoring / cleanup?]
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <51F168FC.9070906@wwwdotorg.org> <CAOesGMiLKysW2JG1jbef76Ves=-DAYEiE9d+s8YXWRXUJ+XhaQ@mail.gmail.com>
-In-Reply-To: <CAOesGMiLKysW2JG1jbef76Ves=-DAYEiE9d+s8YXWRXUJ+XhaQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OgqxwSJOaUobr8KG"
+Content-Disposition: inline
+In-Reply-To: <1374777489-13093-9-git-send-email-ttynkkynen@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 11:25 AM, Olof Johansson wrote:
-> On Thu, Jul 25, 2013 at 11:05 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-...
->> On another related topic, something that may be useful for the DT
->> bindings reviewer team is a basic checklist for new DT bindings.
->> Something similar to Fedora's package review checklist. Perhaps also
->> (yet another?) document on a bit of DT philosophy. If this sounds
->> useful, I could try and take a stab at some basic initial version.
-> 
-> Sounds reasonable. Starting with one of the existing ones instead of
-> from scratch is a reasonable approach. A checklist and a best
-> practices doc would come a long way.
+--OgqxwSJOaUobr8KG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Do you have a link to an existing check-list? I know there's plenty of
-best practices information out there to build on.
+Hi,
 
->> We also need to decide (or just document) exactly what "describes the
->> HW" means; see the thread on thermal limits, and consider the extension
->> of describing hard/absolute thermal limits to describing use-cased base
->> thermal profiles using the same schema, or not allowing that.
-> 
-> Yes indeed. A basic binding need just specify what the specific
-> hardware IP is, if the rest of the configuration of the IP can be
-> determined at runtime through other means (i.e. by autoprobing). It's
-> stuff beyond that that gets very complicated.
-> 
-> To talk semi-specifics: What about USB PHY tunings for a specific
-> board,
+On Thu, Jul 25, 2013 at 09:38:08PM +0300, Tuomas Tynkkynen wrote:
+> Use the new of_usb_get_phy_mode helper function for parsing phy_type
+> from the device tree.
+>=20
+> Signed-off-by: Tuomas Tynkkynen <ttynkkynen@nvidia.com>
+> Reviewed-by: Stephen Warren <swarren@nvidia.com>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+>  drivers/usb/phy/phy-tegra-usb.c | 12 ++++++++----
+>  1 file changed, 8 insertions(+), 4 deletions(-)
+>=20
+> diff --git a/drivers/usb/phy/phy-tegra-usb.c b/drivers/usb/phy/phy-tegra-=
+usb.c
+> index fb5bc8c..fb469f1 100644
+> --- a/drivers/usb/phy/phy-tegra-usb.c
+> +++ b/drivers/usb/phy/phy-tegra-usb.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/of_gpio.h>
+>  #include <linux/usb/otg.h>
+>  #include <linux/usb/ulpi.h>
+> +#include <linux/usb/of.h>
+>  #include <asm/mach-types.h>
+>  #include <linux/usb/ehci_def.h>
+>  #include <linux/usb/tegra_usb_phy.h>
+> @@ -860,6 +861,7 @@ static int tegra_usb_phy_probe(struct platform_device=
+ *pdev)
+>  	struct resource *res;
+>  	struct tegra_usb_phy *tegra_phy =3D NULL;
+>  	struct device_node *np =3D pdev->dev.of_node;
+> +	enum usb_phy_interface phy_type;
+>  	int err;
+> =20
+>  	tegra_phy =3D devm_kzalloc(&pdev->dev, sizeof(*tegra_phy), GFP_KERNEL);
+> @@ -884,12 +886,12 @@ static int tegra_usb_phy_probe(struct platform_devi=
+ce *pdev)
+>  	tegra_phy->is_legacy_phy =3D
+>  		of_property_read_bool(np, "nvidia,has-legacy-mode");
+> =20
+> -	err =3D of_property_match_string(np, "phy_type", "ulpi");
+> -	if (err < 0) {
+> +	phy_type =3D of_usb_get_phy_mode(np);
+> +	if (phy_type =3D=3D USBPHY_INTERFACE_MODE_UTMI) {
 
-I was thinking more about the slightly blurry line between representing
-HW and representing policy, but the example you gave certainly needs
-consideration too.
+can you add one more patch to your series converting this to a switch ?
+I can apply this one as is, but this really looks like a good fit for a
+switch statement
+
+--=20
+balbi
+
+--OgqxwSJOaUobr8KG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8XXHAAoJEIaOsuA1yqRE2cAP/3XTtv/WdmrqXIGZB7Oh5mHG
+wLkj7dqZxsPqyWy3sIcG6efKT9igUrBGpNtV+8oLfi1Yc6iqytIiWWYAWkko5l26
+332pLzGQ+YWQr8lIeMDsbfsMs9ManZk7nFYjnQAPSV80b1odbOXo02UsY/8QXRva
+XQZEFfBRGBKM/35Xa6i0ndIAfNZZQWOjcZH7ZZLX1nRgUZsOLgLWJorM/3j36sOf
+lvH6uhJ2GSgJgiJO9V61oQBo7wWXyDfVM8hujFALnHgK7xfpGwzackD5GLynUUrL
++OhHW0SNBaz+vO1V0ePS5m+RH47epSvHwXx9CF/YiORGMzjx8zvSxE9WlQjR0voX
+bO2AvA5c4n/LsJnZ1cdLcGrRiNefK0baWnMsbHKKtAp2kDqtKEGr884VMNwaCnDt
+lSwiHyShlO/jOg/7r9nLU52KTpf56EImVlgpnxX8rHsAB2w27GQoHH39tyjDz5VE
+3yD4lqJG0PfSYg6ovph8WDqa3FGH/QFxGp9hHCSs2pORdJc4WJswaJ1U7Tv8C3lF
+RY0OR4NuQu4LoCwAJSmaVfET3nTqhJkXZEnVt7zCqo1WbPCUruzldcKoWcjtJm6S
+3gPQuvx4nc+EqyaSJqFi3LssgZ9pHgAeOAkcVm8dfiyDTGCzJ8lc1QgffwsCUxqL
+rr4wg1o8IeriY21b7YJu
+=yJWk
+-----END PGP SIGNATURE-----
+
+--OgqxwSJOaUobr8KG--
