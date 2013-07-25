@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3GYEXw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 00:23:52 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:41164 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751504Ab3GYEXu (ORCPT
+	id S1752295Ab3GYEgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 00:36:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57713 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab3GYEg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 00:23:50 -0400
-X-Sasl-enc: LBW47QsI10v/kWGRWd7L12WhaNYf6jL87Z59MFc1UT11 1374726229
-Date: Wed, 24 Jul 2013 21:25:01 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Won Kang <wkang77@gmail.com>
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20130725042501.GC7122@kroah.com>
-References: <20130725131959.3c39e033c6fee01328b10119@canb.auug.org.au>
+	Thu, 25 Jul 2013 00:36:29 -0400
+Date: Wed, 24 Jul 2013 21:37:41 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Won Kang <wkang77@gmail.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
+        wonkang@gctsemi.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/2] staging: gdm7240: adding LTE USB driver
+Message-ID: <20130725043741.GA11906@kroah.com>
+References: <1374476192-7801-1-git-send-email-wonkang@gctsemi.com>
+ <1374690977-10877-1-git-send-email-wonkang@gctsemi.com>
+ <20130724215340.GY5585@mwanda>
+ <20130724220631.GA10541@kroah.com>
+ <CABe_0=+bXAuXhG+XG4ObUO_2MYD_XWxF_wbTVrpKagmHi8_CDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130725131959.3c39e033c6fee01328b10119@canb.auug.org.au>
+In-Reply-To: <CABe_0=+bXAuXhG+XG4ObUO_2MYD_XWxF_wbTVrpKagmHi8_CDQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 01:19:59PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/staging/gdm724x/built-in.o: In function `netlink_init':
-> (.text+0x19b6): multiple definition of `netlink_init'
-> drivers/staging/gdm72xx/built-in.o:(.text+0x19d5): first defined here
-> drivers/staging/gdm724x/built-in.o: In function `netlink_exit':
-> (.text+0x1a2a): multiple definition of `netlink_exit'
-> drivers/staging/gdm72xx/built-in.o:(.text+0x1a49): first defined here
-> drivers/staging/gdm724x/built-in.o: In function `netlink_send':
-> (.text+0x1a4f): multiple definition of `netlink_send'
-> drivers/staging/gdm72xx/built-in.o:(.text+0x1a67): first defined here
-> 
-> Presumably caused by commit 61e121047645 ("staging: gdm7240: adding LTE
-> USB driver").  I disabled this driver using this patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Thu, 25 Jul 2013 13:16:30 +1000
-> Subject: [PATCH] staging: disable the gdm724x driver due to build problems
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/staging/gdm724x/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/drivers/staging/gdm724x/Kconfig b/drivers/staging/gdm724x/Kconfig
-> index 10f7be1..85141bd 100644
-> --- a/drivers/staging/gdm724x/Kconfig
-> +++ b/drivers/staging/gdm724x/Kconfig
-> @@ -5,6 +5,7 @@
->  config LTE_GDM724X
->  	tristate "GCT GDM724x LTE support"
->  	depends on NET && USB
-> +	depends on BROKEN
 
-Ugh, that means this can't be built into the kernel, due to symbol
-issues, I'll go fix that up with a "depends on m" patch.
+A: No.
+Q: Should I include quotations after my reply?
+
+http://daringfireball.net/2007/07/on_top
+
+On Thu, Jul 25, 2013 at 01:15:07PM +0900, Won Kang wrote:
+> GDM7240 is in LE where as GDM7243 (currently under development) is in BE.
+
+But why does this information need to be sent to userspace?
+
+> User space applications needs to discover the endianess to properly
+> encode/decode LTE control protocols. We have existing customers
+> already deploying units in large volume, and want to avoid forcing
+> them to change SDK APIs along with kernel updates.
+> At some point, It will have to be fixed with SDK API can interoperate properly.
+
+Ugh, really?  What special tools does userspace need to talk to this
+device?  It "should" just be a network device, and a serial port, why
+does the endianness of the device mean anything?
+
+Custom ioctls aren't ok for new drivers, if at all possible.  Can't
+userspace just trigger this based on the device id instead?
 
 thanks,
 
