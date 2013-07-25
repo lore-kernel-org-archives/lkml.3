@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838Ab3GYRa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:30:29 -0400
-Received: from www.sr71.net ([198.145.64.142]:35798 "EHLO blackbird.sr71.net"
+	id S1756862Ab3GYRaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:30:35 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33495 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678Ab3GYRaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 13:30:25 -0400
-Message-ID: <51F160A5.2040004@sr71.net>
-Date: Thu, 25 Jul 2013 10:30:13 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756678Ab3GYRaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 13:30:30 -0400
+Date: Thu, 25 Jul 2013 20:30:17 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldv-project@linuxtesting.org>
+Subject: Re: [PATCH] usb: gadget: mv_u3d_core: fix violation of locking
+ discipline in mv_u3d_ep_disable()
+Message-ID: <20130725173017.GK25415@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-To: Robert Jennings <rcj@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Matt Helsley <matt.helsley@gmail.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Michael Roth <mdroth@linux.vnet.ibm.com>,
-        Lei Li <lilei@linux.vnet.ibm.com>,
-        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 1/2] vmsplice unmap gifted pages for recipient
-References: <1374772906-21511-1-git-send-email-rcj@linux.vnet.ibm.com> <1374772906-21511-2-git-send-email-rcj@linux.vnet.ibm.com>
-In-Reply-To: <1374772906-21511-2-git-send-email-rcj@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="2O+9B+xSKalj/wdD"
+Content-Disposition: inline
+In-Reply-To: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 10:21 AM, Robert Jennings wrote:
-> +static void zap_buf_page(unsigned long useraddr)
-> +{
-> +	struct vm_area_struct *vma;
-> +
-> +	down_read(&current->mm->mmap_sem);
-> +	vma = find_vma_intersection(current->mm, useraddr,
-> +			useraddr + PAGE_SIZE);
-> +	if (!IS_ERR_OR_NULL(vma))
-> +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
-> +	up_read(&current->mm->mmap_sem);
-> +}
-> +
->  /**
->   * splice_to_pipe - fill passed data into a pipe
->   * @pipe:	pipe to fill
-> @@ -212,8 +224,16 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
->  			buf->len = spd->partial[page_nr].len;
->  			buf->private = spd->partial[page_nr].private;
->  			buf->ops = spd->ops;
-> -			if (spd->flags & SPLICE_F_GIFT)
-> +			if (spd->flags & SPLICE_F_GIFT) {
-> +				unsigned long useraddr =
-> +						spd->partial[page_nr].useraddr;
-> +
-> +				if ((spd->flags & SPLICE_F_MOVE) &&
-> +				    !buf->offset && (buf->len == PAGE_SIZE))
-> +					/* Can move page aligned buf */
-> +					zap_buf_page(useraddr);
->  				buf->flags |= PIPE_BUF_FLAG_GIFT;
-> +			}
+--2O+9B+xSKalj/wdD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There isn't quite enough context here, but is it going to do this
-zap_buf_page() very often?  Seems a bit wasteful to do the up/down and
-find_vma() every trip through the loop.
+Hi,
+
+On Wed, Jul 24, 2013 at 12:20:17AM +0400, Alexey Khoroshilov wrote:
+> mv_u3d_nuke() expects to be calles with ep->u3d->lock held,
+> because mv_u3d_done() does. But mv_u3d_ep_disable() calls it
+> without lock that can lead to unpleasant consequences.
+>=20
+> Found by Linux Driver Verification project (linuxtesting.org).
+>=20
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+
+which commit introduced the bug ? Which kernels are affected by this bug ?
+
+--=20
+balbi
+
+--2O+9B+xSKalj/wdD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8WCoAAoJEIaOsuA1yqREGQQP/jTo8gzqGRzWsfoXMbPFziKy
+TV1BqQR7kJPnHDmbsdnY9UjFHEE8XysbYU9zFfqLMlpyaWZ5KlZxutRc5Nrbo2Bw
+NovMCEe1lj1IzRMLWrDtGXWlNKJvhxE8GGJTSjnWF4h+v323PaDQn5T2Ec+JiHuv
+fIHLPb2iWuRt4N1MZK3HS1eeqAYa6BTWm1f8VoCpTN0F76bI4mE0Id5LnOt9q0Es
+JYovSj/IwH4GiY5/iRpWsP3QiwBUjfuWT1DnnIbiywA2ksR5oWqBpB/h13Ep192k
+W2TqF0kEK3pxJsObJNmOXieaNeNRa/tRCGt655+qwFC8tbf8Ka+5TF3ONz2cwOth
+ivZx3X9GO1ORiANkUWL9//2Hb5jAM2OKVPgmzldx2pV4FV/Qi1ASS310MDQeGBI3
+dENHlT2MHLgKXxtMOmuSbNgmc0Z6qsDWvlENKNkUS0hv2JYBKLl0KCNWrt6BUEps
+0RlIxYm/T8pojKKACAtxfpiBmLBpuLucm22A7jYGh3wVz0Z3LWVDBH1OUHtrR+2W
+0K0Xx/6ldzrySUNr7sMhp7NgzG4pKbM9B1SqbNNSEcHWN6uKasqlshCVDs/Le69l
+OLLq/A2q8TLJFaSLgs5F8xPgiWTc7h5lRepRlqMu68/xNrJsi2mzj2UwnURO34fK
+VTruK9mgOPWiMhEwLYka
+=es9l
+-----END PGP SIGNATURE-----
+
+--2O+9B+xSKalj/wdD--
