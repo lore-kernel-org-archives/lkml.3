@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab3GYF0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 01:26:42 -0400
-Received: from smtp206.alice.it ([82.57.200.102]:48348 "EHLO smtp206.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751425Ab3GYF0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 01:26:39 -0400
-From: Gianluca Anzolin <gianluca@sottospazio.it>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, gustavo@padovan.org, peter@hurleysoftware.com,
-        linux-kernel@vger.kernel.org,
-        Gianluca Anzolin <gianluca@sottospazio.it>
-Subject: [PATCH] tty_port: Fix refcounting leak in tty_port_tty_hangup()
-Date: Thu, 25 Jul 2013 07:26:16 +0200
-Message-Id: <1374729977-7164-1-git-send-email-gianluca@sottospazio.it>
-X-Mailer: git-send-email 1.7.10.4
+	id S1754535Ab3GYFjD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 01:39:03 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:41750 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752637Ab3GYFi7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 01:38:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAD6i1fJO3geZ0vkHLsJEd+KedHkpC1OZVTJJskU2RAAKYBhhJQ@mail.gmail.com>
+References: <1374646199-9398-1-git-send-email-pshah.mumbai@gmail.com>
+ <51F07489.7010404@gmail.com> <CAD6i1fJO3geZ0vkHLsJEd+KedHkpC1OZVTJJskU2RAAKYBhhJQ@mail.gmail.com>
+From: Prashant Shah <pshah.mumbai@gmail.com>
+Date: Thu, 25 Jul 2013 11:08:37 +0530
+Message-ID: <CAD6i1f+NYu7rcQwF-TXk4+OdjPNZwMKxxjJ9YA_+v9B6uPYq+g@mail.gmail.com>
+Subject: Re: [PATCH] Change request_irq() to use struct net_device *dev->name
+To: Ryan Mallon <rmallon@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mwhitehe@redhat.com,
+        kernel-mentors@selenic.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function tty_port_tty_hangup() could leak a reference to the tty_struct:
+Hi,
 
-        struct tty_struct *tty = tty_port_tty_get(port);
+On Thu, Jul 25, 2013 at 10:49 AM, Prashant Shah <pshah.mumbai@gmail.com> wrote:
+> Hi,
+>
+>> You should also remove the definition of DRV_NAME, since it is no longer
+>> used. The changelog should probably mention that this will change the
+>> interrupt name (which appears in /proc/interrupts for example) from "wd"
+>> to "eth%d".
+>>
 
-        if (tty && (!check_clocal || !C_CLOCAL(tty))) {
-                tty_hangup(tty);
-                tty_kref_put(tty);
-        }
+I was going through the code. The apne driver apne.c in the same
+folder is using DRV_NAME in request_region()
 
-If tty != NULL and the second condition is false we never call tty_kref_put and
-the reference is leaked.
+> if (!request_region(IOBASE, 0x20, DRV_NAME)) {
 
-Fix by always calling tty_kref_put() which accepts a NULL argument.
+I can change the wd.c request_region() code to use DRV_NAME. Currently
+it is using a string constant.
 
-The patch fixes a regression introduced by commit aa27a094.
+> r = request_region(base_addr, WD_IO_EXTENT, "wd-probe");
 
-Acked-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Signed-off-by: Gianluca Anzolin <gianluca@sottospazio.it>
----
- drivers/tty/tty_port.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+This will make it more consistent. Please suggest which change is more
+preferable.
 
-diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
-index 121aeb9..f597e88 100644
---- a/drivers/tty/tty_port.c
-+++ b/drivers/tty/tty_port.c
-@@ -256,10 +256,9 @@ void tty_port_tty_hangup(struct tty_port *port, bool check_clocal)
- {
- 	struct tty_struct *tty = tty_port_tty_get(port);
- 
--	if (tty && (!check_clocal || !C_CLOCAL(tty))) {
-+	if (tty && (!check_clocal || !C_CLOCAL(tty)))
- 		tty_hangup(tty);
--		tty_kref_put(tty);
--	}
-+	tty_kref_put(tty);
- }
- EXPORT_SYMBOL_GPL(tty_port_tty_hangup);
- 
--- 
-1.8.3.3
+@Matthew, following drivers are not using dev->name in request_irq()
+axnet_cs.c
+mac8390.c
+hydra.c
+ne-h8300.c
+apne.c
+stnic.c
+zorro8390.c
 
+Regards.
