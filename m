@@ -1,456 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab3GYQiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:38:05 -0400
-Received: from oproxy9.bluehost.com ([69.89.24.6]:38102 "HELO
-	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756548Ab3GYQhy (ORCPT
+	id S1756786Ab3GYQiW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:38:22 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:46331 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756470Ab3GYQiS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:37:54 -0400
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: [PATCH 1/2] drm/i915: split PCI IDs out into i915_drm.h v3
-Date: Thu, 25 Jul 2013 09:37:48 -0700
-Message-Id: <1374770269-3223-2-git-send-email-jbarnes@virtuousgeek.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 25 Jul 2013 12:38:18 -0400
+Message-ID: <1374770294.3213.35.camel@hornet>
+Subject: Re: RFC: device thermal limits represented in device tree nodes
+From: Pawel Moll <pawel.moll@arm.com>
+To: Eduardo Valentin <eduardo.valentin@ti.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Durgadoss R <durgadoss.r@intel.com>,
+        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 25 Jul 2013 17:38:14 +0100
+In-Reply-To: <1374768928.3213.31.camel@hornet>
+References: <51ED40E3.5020703@ti.com> <51EF3186.9060001@wwwdotorg.org>
+	 <1374664745.25700.118.camel@hornet> <51EFED19.5090900@ti.com>
+	 <1374768928.3213.31.camel@hornet>
+X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
+Mime-Version: 1.0
+X-OriginalArrivalTime: 25 Jul 2013 16:38:14.0426 (UTC) FILETIME=[5BB6DFA0:01CE8955]
+X-MC-Unique: 113072517381605701
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For use by userspace (at some point in the future) and other kernel code.
+On Thu, 2013-07-25 at 17:15 +0100, Pawel Moll wrote:
+> > Another way, as I mentioned in the original RFC, an option would be to
+> > have the thermal_zone node not embedded in any device node. But them, we
+> > would need to firmly link it to other device nodes, to describe what is
+> > monitored and what is used for monitoring. 
+> 
+> You mean the zone nodes would live at the top level of the tree? To my
+> mind the root represents the device (the board, whatever you call it),
 
-v2: move PCI IDs to uabi (Chris)
-    move PCI IDs to drm/ (Dave)
-v3: fixup Quanta detection - needs to come first (Daniel)
+What I wanted to say was: ... so the zone would still be embedded in a
+device node :-)
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/i915/i915_drv.c |  164 +++++++-----------------------
- include/drm/i915_drm.h          |    2 +
- include/drm/i915_pciids.h       |  208 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 244 insertions(+), 130 deletions(-)
- create mode 100644 include/drm/i915_pciids.h
+Pawel
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index b07362f..e87bccf 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -140,25 +140,6 @@ MODULE_PARM_DESC(fastboot, "Try to skip unnecessary mode sets at boot time "
- static struct drm_driver driver;
- extern int intel_agp_enabled;
- 
--#define INTEL_VGA_DEVICE(id, info) {		\
--	.class = PCI_BASE_CLASS_DISPLAY << 16,	\
--	.class_mask = 0xff0000,			\
--	.vendor = 0x8086,			\
--	.device = id,				\
--	.subvendor = PCI_ANY_ID,		\
--	.subdevice = PCI_ANY_ID,		\
--	.driver_data = (unsigned long) info }
--
--#define INTEL_QUANTA_VGA_DEVICE(info) {		\
--	.class = PCI_BASE_CLASS_DISPLAY << 16,	\
--	.class_mask = 0xff0000,			\
--	.vendor = 0x8086,			\
--	.device = 0x16a,			\
--	.subvendor = 0x152d,			\
--	.subdevice = 0x8990,			\
--	.driver_data = (unsigned long) info }
--
--
- static const struct intel_device_info intel_i830_info = {
- 	.gen = 2, .is_mobile = 1, .cursor_needs_physical = 1, .num_pipes = 2,
- 	.has_overlay = 1, .overlay_needs_physical = 1,
-@@ -333,118 +314,41 @@ static const struct intel_device_info intel_haswell_m_info = {
- 	.has_vebox_ring = 1,
- };
- 
-+/*
-+ * Make sure any device matches here are from most specific to most
-+ * general.  For example, since the Quanta match is based on the subsystem
-+ * and subvendor IDs, we need it to come before the more general IVB
-+ * PCI ID matches, otherwise we'll use the wrong info struct above.
-+ */
-+#define INTEL_PCI_IDS \
-+	INTEL_I830_IDS(&intel_i830_info),	\
-+	INTEL_I845G_IDS(&intel_845g_info),	\
-+	INTEL_I85X_IDS(&intel_i85x_info),	\
-+	INTEL_I865G_IDS(&intel_i865g_info),	\
-+	INTEL_I915G_IDS(&intel_i915g_info),	\
-+	INTEL_I915GM_IDS(&intel_i915gm_info),	\
-+	INTEL_I945G_IDS(&intel_i945g_info),	\
-+	INTEL_I945GM_IDS(&intel_i945gm_info),	\
-+	INTEL_I965G_IDS(&intel_i965g_info),	\
-+	INTEL_G33_IDS(&intel_g33_info),		\
-+	INTEL_I965GM_IDS(&intel_i965gm_info),	\
-+	INTEL_GM45_IDS(&intel_gm45_info), 	\
-+	INTEL_G45_IDS(&intel_g45_info), 	\
-+	INTEL_PINEVIEW_IDS(&intel_pineview_info),	\
-+	INTEL_IRONLAKE_D_IDS(&intel_ironlake_d_info),	\
-+	INTEL_IRONLAKE_M_IDS(&intel_ironlake_m_info),	\
-+	INTEL_SNB_D_IDS(&intel_sandybridge_d_info),	\
-+	INTEL_SNB_M_IDS(&intel_sandybridge_m_info),	\
-+	INTEL_IVB_Q_IDS(&intel_ivybridge_q_info), /* must be first IVB */ \
-+	INTEL_IVB_M_IDS(&intel_ivybridge_m_info),	\
-+	INTEL_IVB_D_IDS(&intel_ivybridge_d_info),	\
-+	INTEL_HSW_D_IDS(&intel_haswell_d_info), \
-+	INTEL_HSW_M_IDS(&intel_haswell_m_info), \
-+	INTEL_VLV_M_IDS(&intel_valleyview_m_info),	\
-+	INTEL_VLV_D_IDS(&intel_valleyview_d_info)
-+
- static const struct pci_device_id pciidlist[] = {		/* aka */
--	INTEL_VGA_DEVICE(0x3577, &intel_i830_info),		/* I830_M */
--	INTEL_VGA_DEVICE(0x2562, &intel_845g_info),		/* 845_G */
--	INTEL_VGA_DEVICE(0x3582, &intel_i85x_info),		/* I855_GM */
--	INTEL_VGA_DEVICE(0x358e, &intel_i85x_info),
--	INTEL_VGA_DEVICE(0x2572, &intel_i865g_info),		/* I865_G */
--	INTEL_VGA_DEVICE(0x2582, &intel_i915g_info),		/* I915_G */
--	INTEL_VGA_DEVICE(0x258a, &intel_i915g_info),		/* E7221_G */
--	INTEL_VGA_DEVICE(0x2592, &intel_i915gm_info),		/* I915_GM */
--	INTEL_VGA_DEVICE(0x2772, &intel_i945g_info),		/* I945_G */
--	INTEL_VGA_DEVICE(0x27a2, &intel_i945gm_info),		/* I945_GM */
--	INTEL_VGA_DEVICE(0x27ae, &intel_i945gm_info),		/* I945_GME */
--	INTEL_VGA_DEVICE(0x2972, &intel_i965g_info),		/* I946_GZ */
--	INTEL_VGA_DEVICE(0x2982, &intel_i965g_info),		/* G35_G */
--	INTEL_VGA_DEVICE(0x2992, &intel_i965g_info),		/* I965_Q */
--	INTEL_VGA_DEVICE(0x29a2, &intel_i965g_info),		/* I965_G */
--	INTEL_VGA_DEVICE(0x29b2, &intel_g33_info),		/* Q35_G */
--	INTEL_VGA_DEVICE(0x29c2, &intel_g33_info),		/* G33_G */
--	INTEL_VGA_DEVICE(0x29d2, &intel_g33_info),		/* Q33_G */
--	INTEL_VGA_DEVICE(0x2a02, &intel_i965gm_info),		/* I965_GM */
--	INTEL_VGA_DEVICE(0x2a12, &intel_i965gm_info),		/* I965_GME */
--	INTEL_VGA_DEVICE(0x2a42, &intel_gm45_info),		/* GM45_G */
--	INTEL_VGA_DEVICE(0x2e02, &intel_g45_info),		/* IGD_E_G */
--	INTEL_VGA_DEVICE(0x2e12, &intel_g45_info),		/* Q45_G */
--	INTEL_VGA_DEVICE(0x2e22, &intel_g45_info),		/* G45_G */
--	INTEL_VGA_DEVICE(0x2e32, &intel_g45_info),		/* G41_G */
--	INTEL_VGA_DEVICE(0x2e42, &intel_g45_info),		/* B43_G */
--	INTEL_VGA_DEVICE(0x2e92, &intel_g45_info),		/* B43_G.1 */
--	INTEL_VGA_DEVICE(0xa001, &intel_pineview_info),
--	INTEL_VGA_DEVICE(0xa011, &intel_pineview_info),
--	INTEL_VGA_DEVICE(0x0042, &intel_ironlake_d_info),
--	INTEL_VGA_DEVICE(0x0046, &intel_ironlake_m_info),
--	INTEL_VGA_DEVICE(0x0102, &intel_sandybridge_d_info),
--	INTEL_VGA_DEVICE(0x0112, &intel_sandybridge_d_info),
--	INTEL_VGA_DEVICE(0x0122, &intel_sandybridge_d_info),
--	INTEL_VGA_DEVICE(0x0106, &intel_sandybridge_m_info),
--	INTEL_VGA_DEVICE(0x0116, &intel_sandybridge_m_info),
--	INTEL_VGA_DEVICE(0x0126, &intel_sandybridge_m_info),
--	INTEL_VGA_DEVICE(0x010A, &intel_sandybridge_d_info),
--	INTEL_VGA_DEVICE(0x0156, &intel_ivybridge_m_info), /* GT1 mobile */
--	INTEL_VGA_DEVICE(0x0166, &intel_ivybridge_m_info), /* GT2 mobile */
--	INTEL_VGA_DEVICE(0x0152, &intel_ivybridge_d_info), /* GT1 desktop */
--	INTEL_VGA_DEVICE(0x0162, &intel_ivybridge_d_info), /* GT2 desktop */
--	INTEL_VGA_DEVICE(0x015a, &intel_ivybridge_d_info), /* GT1 server */
--	INTEL_QUANTA_VGA_DEVICE(&intel_ivybridge_q_info), /* Quanta transcode */
--	INTEL_VGA_DEVICE(0x016a, &intel_ivybridge_d_info), /* GT2 server */
--	INTEL_VGA_DEVICE(0x0402, &intel_haswell_d_info), /* GT1 desktop */
--	INTEL_VGA_DEVICE(0x0412, &intel_haswell_d_info), /* GT2 desktop */
--	INTEL_VGA_DEVICE(0x0422, &intel_haswell_d_info), /* GT3 desktop */
--	INTEL_VGA_DEVICE(0x040a, &intel_haswell_d_info), /* GT1 server */
--	INTEL_VGA_DEVICE(0x041a, &intel_haswell_d_info), /* GT2 server */
--	INTEL_VGA_DEVICE(0x042a, &intel_haswell_d_info), /* GT3 server */
--	INTEL_VGA_DEVICE(0x0406, &intel_haswell_m_info), /* GT1 mobile */
--	INTEL_VGA_DEVICE(0x0416, &intel_haswell_m_info), /* GT2 mobile */
--	INTEL_VGA_DEVICE(0x0426, &intel_haswell_m_info), /* GT2 mobile */
--	INTEL_VGA_DEVICE(0x040B, &intel_haswell_d_info), /* GT1 reserved */
--	INTEL_VGA_DEVICE(0x041B, &intel_haswell_d_info), /* GT2 reserved */
--	INTEL_VGA_DEVICE(0x042B, &intel_haswell_d_info), /* GT3 reserved */
--	INTEL_VGA_DEVICE(0x040E, &intel_haswell_d_info), /* GT1 reserved */
--	INTEL_VGA_DEVICE(0x041E, &intel_haswell_d_info), /* GT2 reserved */
--	INTEL_VGA_DEVICE(0x042E, &intel_haswell_d_info), /* GT3 reserved */
--	INTEL_VGA_DEVICE(0x0C02, &intel_haswell_d_info), /* SDV GT1 desktop */
--	INTEL_VGA_DEVICE(0x0C12, &intel_haswell_d_info), /* SDV GT2 desktop */
--	INTEL_VGA_DEVICE(0x0C22, &intel_haswell_d_info), /* SDV GT3 desktop */
--	INTEL_VGA_DEVICE(0x0C0A, &intel_haswell_d_info), /* SDV GT1 server */
--	INTEL_VGA_DEVICE(0x0C1A, &intel_haswell_d_info), /* SDV GT2 server */
--	INTEL_VGA_DEVICE(0x0C2A, &intel_haswell_d_info), /* SDV GT3 server */
--	INTEL_VGA_DEVICE(0x0C06, &intel_haswell_m_info), /* SDV GT1 mobile */
--	INTEL_VGA_DEVICE(0x0C16, &intel_haswell_m_info), /* SDV GT2 mobile */
--	INTEL_VGA_DEVICE(0x0C26, &intel_haswell_m_info), /* SDV GT3 mobile */
--	INTEL_VGA_DEVICE(0x0C0B, &intel_haswell_d_info), /* SDV GT1 reserved */
--	INTEL_VGA_DEVICE(0x0C1B, &intel_haswell_d_info), /* SDV GT2 reserved */
--	INTEL_VGA_DEVICE(0x0C2B, &intel_haswell_d_info), /* SDV GT3 reserved */
--	INTEL_VGA_DEVICE(0x0C0E, &intel_haswell_d_info), /* SDV GT1 reserved */
--	INTEL_VGA_DEVICE(0x0C1E, &intel_haswell_d_info), /* SDV GT2 reserved */
--	INTEL_VGA_DEVICE(0x0C2E, &intel_haswell_d_info), /* SDV GT3 reserved */
--	INTEL_VGA_DEVICE(0x0A02, &intel_haswell_d_info), /* ULT GT1 desktop */
--	INTEL_VGA_DEVICE(0x0A12, &intel_haswell_d_info), /* ULT GT2 desktop */
--	INTEL_VGA_DEVICE(0x0A22, &intel_haswell_d_info), /* ULT GT3 desktop */
--	INTEL_VGA_DEVICE(0x0A0A, &intel_haswell_d_info), /* ULT GT1 server */
--	INTEL_VGA_DEVICE(0x0A1A, &intel_haswell_d_info), /* ULT GT2 server */
--	INTEL_VGA_DEVICE(0x0A2A, &intel_haswell_d_info), /* ULT GT3 server */
--	INTEL_VGA_DEVICE(0x0A06, &intel_haswell_m_info), /* ULT GT1 mobile */
--	INTEL_VGA_DEVICE(0x0A16, &intel_haswell_m_info), /* ULT GT2 mobile */
--	INTEL_VGA_DEVICE(0x0A26, &intel_haswell_m_info), /* ULT GT3 mobile */
--	INTEL_VGA_DEVICE(0x0A0B, &intel_haswell_d_info), /* ULT GT1 reserved */
--	INTEL_VGA_DEVICE(0x0A1B, &intel_haswell_d_info), /* ULT GT2 reserved */
--	INTEL_VGA_DEVICE(0x0A2B, &intel_haswell_d_info), /* ULT GT3 reserved */
--	INTEL_VGA_DEVICE(0x0A0E, &intel_haswell_m_info), /* ULT GT1 reserved */
--	INTEL_VGA_DEVICE(0x0A1E, &intel_haswell_m_info), /* ULT GT2 reserved */
--	INTEL_VGA_DEVICE(0x0A2E, &intel_haswell_m_info), /* ULT GT3 reserved */
--	INTEL_VGA_DEVICE(0x0D02, &intel_haswell_d_info), /* CRW GT1 desktop */
--	INTEL_VGA_DEVICE(0x0D12, &intel_haswell_d_info), /* CRW GT2 desktop */
--	INTEL_VGA_DEVICE(0x0D22, &intel_haswell_d_info), /* CRW GT3 desktop */
--	INTEL_VGA_DEVICE(0x0D0A, &intel_haswell_d_info), /* CRW GT1 server */
--	INTEL_VGA_DEVICE(0x0D1A, &intel_haswell_d_info), /* CRW GT2 server */
--	INTEL_VGA_DEVICE(0x0D2A, &intel_haswell_d_info), /* CRW GT3 server */
--	INTEL_VGA_DEVICE(0x0D06, &intel_haswell_m_info), /* CRW GT1 mobile */
--	INTEL_VGA_DEVICE(0x0D16, &intel_haswell_m_info), /* CRW GT2 mobile */
--	INTEL_VGA_DEVICE(0x0D26, &intel_haswell_m_info), /* CRW GT3 mobile */
--	INTEL_VGA_DEVICE(0x0D0B, &intel_haswell_d_info), /* CRW GT1 reserved */
--	INTEL_VGA_DEVICE(0x0D1B, &intel_haswell_d_info), /* CRW GT2 reserved */
--	INTEL_VGA_DEVICE(0x0D2B, &intel_haswell_d_info), /* CRW GT3 reserved */
--	INTEL_VGA_DEVICE(0x0D0E, &intel_haswell_d_info), /* CRW GT1 reserved */
--	INTEL_VGA_DEVICE(0x0D1E, &intel_haswell_d_info), /* CRW GT2 reserved */
--	INTEL_VGA_DEVICE(0x0D2E, &intel_haswell_d_info), /* CRW GT3 reserved */
--	INTEL_VGA_DEVICE(0x0f30, &intel_valleyview_m_info),
--	INTEL_VGA_DEVICE(0x0f31, &intel_valleyview_m_info),
--	INTEL_VGA_DEVICE(0x0f32, &intel_valleyview_m_info),
--	INTEL_VGA_DEVICE(0x0f33, &intel_valleyview_m_info),
--	INTEL_VGA_DEVICE(0x0157, &intel_valleyview_m_info),
--	INTEL_VGA_DEVICE(0x0155, &intel_valleyview_d_info),
-+	INTEL_PCI_IDS,
- 	{0, 0, 0}
- };
- 
-diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
-index 63d609d..7276a72 100644
---- a/include/drm/i915_drm.h
-+++ b/include/drm/i915_drm.h
-@@ -26,6 +26,7 @@
- #ifndef _I915_DRM_H_
- #define _I915_DRM_H_
- 
-+#include <drm/i915_pciids.h>
- #include <uapi/drm/i915_drm.h>
- 
- /* For use by IPS driver */
-@@ -34,4 +35,5 @@ extern bool i915_gpu_raise(void);
- extern bool i915_gpu_lower(void);
- extern bool i915_gpu_busy(void);
- extern bool i915_gpu_turbo_disable(void);
-+
- #endif				/* _I915_DRM_H_ */
-diff --git a/include/drm/i915_pciids.h b/include/drm/i915_pciids.h
-new file mode 100644
-index 0000000..3f03544
---- /dev/null
-+++ b/include/drm/i915_pciids.h
-@@ -0,0 +1,208 @@
-+/*
-+ * Copyright 2013 Intel Corporation
-+ * All Rights Reserved.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the
-+ * "Software"), to deal in the Software without restriction, including
-+ * without limitation the rights to use, copy, modify, merge, publish,
-+ * distribute, sub license, and/or sell copies of the Software, and to
-+ * permit persons to whom the Software is furnished to do so, subject to
-+ * the following conditions:
-+ *
-+ * The above copyright notice and this permission notice (including the
-+ * next paragraph) shall be included in all copies or substantial portions
-+ * of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
-+ * IN NO EVENT SHALL TUNGSTEN GRAPHICS AND/OR ITS SUPPLIERS BE LIABLE FOR
-+ * ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-+ *
-+ */
-+#ifndef _I915_PCIIDS_H
-+#define _I915_PCIIDS_H
-+
-+#define INTEL_VGA_DEVICE(id, info) {		\
-+	.class = PCI_BASE_CLASS_DISPLAY << 16,	\
-+	.class_mask = 0xff0000,			\
-+	.vendor = 0x8086,			\
-+	.device = id,				\
-+	.subvendor = PCI_ANY_ID,		\
-+	.subdevice = PCI_ANY_ID,		\
-+	.driver_data = (unsigned long) info }
-+
-+#define INTEL_QUANTA_VGA_DEVICE(info) {		\
-+	.class = PCI_BASE_CLASS_DISPLAY << 16,	\
-+	.class_mask = 0xff0000,			\
-+	.vendor = 0x8086,			\
-+	.device = 0x16a,			\
-+	.subvendor = 0x152d,			\
-+	.subdevice = 0x8990,			\
-+	.driver_data = (unsigned long) info }
-+
-+#define INTEL_I830_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x3577, info)
-+
-+#define INTEL_I845G_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2562, info)
-+
-+#define INTEL_I85X_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x3582, info), /* I855_GM */ \
-+	INTEL_VGA_DEVICE(0x358e, info)
-+
-+#define INTEL_I865G_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2572, info) /* I865_G */
-+
-+#define INTEL_I915G_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2582, info), /* I915_G */ \
-+	INTEL_VGA_DEVICE(0x258a, info)  /* E7221_G */
-+
-+#define INTEL_I915GM_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2592, info) /* I915_GM */
-+
-+#define INTEL_I945G_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2772, info) /* I945_G */
-+
-+#define INTEL_I945GM_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x27a2, info), /* I945_GM */ \
-+	INTEL_VGA_DEVICE(0x27ae, info)  /* I945_GME */
-+
-+#define INTEL_I965G_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2972, info), /* I946_GZ */	\
-+	INTEL_VGA_DEVICE(0x2982, info),	/* G35_G */	\
-+	INTEL_VGA_DEVICE(0x2992, info),	/* I965_Q */	\
-+	INTEL_VGA_DEVICE(0x29a2, info)	/* I965_G */
-+
-+#define INTEL_G33_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x29b2, info), /* Q35_G */ \
-+	INTEL_VGA_DEVICE(0x29c2, info),	/* G33_G */ \
-+	INTEL_VGA_DEVICE(0x29d2, info)	/* Q33_G */
-+
-+#define INTEL_I965GM_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2a02, info),	/* I965_GM */ \
-+	INTEL_VGA_DEVICE(0x2a12, info)  /* I965_GME */
-+
-+#define INTEL_GM45_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2a42, info) /* GM45_G */
-+
-+#define INTEL_G45_IDS(info)				\
-+	INTEL_VGA_DEVICE(0x2e02, info), /* IGD_E_G */ \
-+	INTEL_VGA_DEVICE(0x2e12, info), /* Q45_G */ \
-+	INTEL_VGA_DEVICE(0x2e22, info), /* G45_G */ \
-+	INTEL_VGA_DEVICE(0x2e32, info), /* G41_G */ \
-+	INTEL_VGA_DEVICE(0x2e42, info), /* B43_G */ \
-+	INTEL_VGA_DEVICE(0x2e92, info)	/* B43_G.1 */
-+
-+#define INTEL_PINEVIEW_IDS(info)			\
-+	INTEL_VGA_DEVICE(0xa001, info),			\
-+	INTEL_VGA_DEVICE(0xa011, info)
-+
-+#define INTEL_IRONLAKE_D_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0042, info)
-+
-+#define INTEL_IRONLAKE_M_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0046, info)
-+
-+#define INTEL_SNB_D_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0102, info), \
-+	INTEL_VGA_DEVICE(0x0112, info), \
-+	INTEL_VGA_DEVICE(0x0122, info), \
-+	INTEL_VGA_DEVICE(0x010A, info)
-+
-+#define INTEL_SNB_M_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0106, info), \
-+	INTEL_VGA_DEVICE(0x0116, info), \
-+	INTEL_VGA_DEVICE(0x0126, info)
-+
-+#define INTEL_IVB_M_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0156, info), /* GT1 mobile */ \
-+	INTEL_VGA_DEVICE(0x0166, info)  /* GT2 mobile */
-+
-+#define INTEL_IVB_D_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0152, info), /* GT1 desktop */ \
-+	INTEL_VGA_DEVICE(0x0162, info), /* GT2 desktop */ \
-+	INTEL_VGA_DEVICE(0x015a, info), /* GT1 server */ \
-+	INTEL_VGA_DEVICE(0x016a, info)  /* GT2 server */
-+
-+#define INTEL_IVB_Q_IDS(info) \
-+	INTEL_QUANTA_VGA_DEVICE(info) /* Quanta transcode */
-+
-+#define INTEL_HSW_D_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0402, info), /* GT1 desktop */ \
-+	INTEL_VGA_DEVICE(0x0412, info), /* GT2 desktop */ \
-+	INTEL_VGA_DEVICE(0x0422, info), /* GT3 desktop */ \
-+	INTEL_VGA_DEVICE(0x040a, info), /* GT1 server */ \
-+	INTEL_VGA_DEVICE(0x041a, info), /* GT2 server */ \
-+	INTEL_VGA_DEVICE(0x042a, info), /* GT3 server */ \
-+	INTEL_VGA_DEVICE(0x040B, info), /* GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x041B, info), /* GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x042B, info), /* GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x040E, info), /* GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x041E, info), /* GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x042E, info), /* GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C02, info), /* SDV GT1 desktop */ \
-+	INTEL_VGA_DEVICE(0x0C12, info), /* SDV GT2 desktop */ \
-+	INTEL_VGA_DEVICE(0x0C22, info), /* SDV GT3 desktop */ \
-+	INTEL_VGA_DEVICE(0x0C0A, info), /* SDV GT1 server */ \
-+	INTEL_VGA_DEVICE(0x0C1A, info), /* SDV GT2 server */ \
-+	INTEL_VGA_DEVICE(0x0C2A, info), /* SDV GT3 server */ \
-+	INTEL_VGA_DEVICE(0x0C0B, info), /* SDV GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C1B, info), /* SDV GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C2B, info), /* SDV GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C0E, info), /* SDV GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C1E, info), /* SDV GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0C2E, info), /* SDV GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0A02, info), /* ULT GT1 desktop */ \
-+	INTEL_VGA_DEVICE(0x0A12, info), /* ULT GT2 desktop */ \
-+	INTEL_VGA_DEVICE(0x0A22, info), /* ULT GT3 desktop */ \
-+	INTEL_VGA_DEVICE(0x0A0A, info), /* ULT GT1 server */ \
-+	INTEL_VGA_DEVICE(0x0A1A, info), /* ULT GT2 server */ \
-+	INTEL_VGA_DEVICE(0x0A2A, info), /* ULT GT3 server */ \
-+	INTEL_VGA_DEVICE(0x0A0B, info), /* ULT GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0A1B, info), /* ULT GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0A2B, info), /* ULT GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D02, info), /* CRW GT1 desktop */ \
-+	INTEL_VGA_DEVICE(0x0D12, info), /* CRW GT2 desktop */ \
-+	INTEL_VGA_DEVICE(0x0D22, info), /* CRW GT3 desktop */ \
-+	INTEL_VGA_DEVICE(0x0D0A, info), /* CRW GT1 server */ \
-+	INTEL_VGA_DEVICE(0x0D1A, info), /* CRW GT2 server */ \
-+	INTEL_VGA_DEVICE(0x0D2A, info), /* CRW GT3 server */ \
-+	INTEL_VGA_DEVICE(0x0D0B, info), /* CRW GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D1B, info), /* CRW GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D2B, info), /* CRW GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D0E, info), /* CRW GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D1E, info), /* CRW GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D2E, info)  /* CRW GT3 reserved */ \
-+
-+#define INTEL_HSW_M_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0406, info), /* GT1 mobile */ \
-+	INTEL_VGA_DEVICE(0x0416, info), /* GT2 mobile */ \
-+	INTEL_VGA_DEVICE(0x0426, info), /* GT2 mobile */ \
-+	INTEL_VGA_DEVICE(0x0C06, info), /* SDV GT1 mobile */ \
-+	INTEL_VGA_DEVICE(0x0C16, info), /* SDV GT2 mobile */ \
-+	INTEL_VGA_DEVICE(0x0C26, info), /* SDV GT3 mobile */ \
-+	INTEL_VGA_DEVICE(0x0A06, info), /* ULT GT1 mobile */ \
-+	INTEL_VGA_DEVICE(0x0A16, info), /* ULT GT2 mobile */ \
-+	INTEL_VGA_DEVICE(0x0A26, info), /* ULT GT3 mobile */ \
-+	INTEL_VGA_DEVICE(0x0A0E, info), /* ULT GT1 reserved */ \
-+	INTEL_VGA_DEVICE(0x0A1E, info), /* ULT GT2 reserved */ \
-+	INTEL_VGA_DEVICE(0x0A2E, info), /* ULT GT3 reserved */ \
-+	INTEL_VGA_DEVICE(0x0D06, info), /* CRW GT1 mobile */ \
-+	INTEL_VGA_DEVICE(0x0D16, info), /* CRW GT2 mobile */ \
-+	INTEL_VGA_DEVICE(0x0D26, info)  /* CRW GT3 mobile */
-+
-+#define INTEL_VLV_M_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0f30, info), \
-+	INTEL_VGA_DEVICE(0x0f31, info), \
-+	INTEL_VGA_DEVICE(0x0f32, info), \
-+	INTEL_VGA_DEVICE(0x0f33, info), \
-+	INTEL_VGA_DEVICE(0x0157, info)
-+
-+#define INTEL_VLV_D_IDS(info) \
-+	INTEL_VGA_DEVICE(0x0155, info)
-+
-+#endif /* _I915_PCIIDS_H */
--- 
-1.7.9.5
 
