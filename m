@@ -1,90 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab3GYXLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 19:11:22 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:43826 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755514Ab3GYXLU convert rfc822-to-8bit (ORCPT
+	id S1757685Ab3GYXOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 19:14:36 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:19714 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756722Ab3GYXOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 19:11:20 -0400
-X-AuditID: cbfec37b-b7f306d0000047de-ed-51f1b0960b5b
-From: Shuah Khan <shuah.kh@samsung.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: "joro@8bytes.org" <joro@8bytes.org>,
-        "alex.williamson@redhat.com" <alex.williamson@redhat.com>,
-        "Varun.Sethi@freescale.com" <Varun.Sethi@freescale.com>,
-        "aik@ozlabs.ru" <aik@ozlabs.ru>, "joe@perches.com" <joe@perches.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "andreas.herrmann@calxeda.com" <andreas.herrmann@calxeda.com>,
-        "will.deacon@arm.com" <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "shuahkhan@gmail.com" <shuahkhan@gmail.com>,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 0/4] iommu: Add event tracing feature to iommu
-Thread-topic: [PATCH 0/4] iommu: Add event tracing feature to iommu
-Thread-index: AQHOiTkS5thczE0zBk2/LnmZo1iUEA==
-Date: Thu, 25 Jul 2013 23:11:16 +0000
-Message-id: <B8EFE96D1287C24090BAD9D858E15E6174A596@sisaex01sj>
-References: <cover.1374711464.git.shuah.kh@samsung.com>
- <1374758841.3356.174.camel@gandalf.local.home>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [105.144.21.63]
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 8BIT
+	Thu, 25 Jul 2013 19:14:34 -0400
+X-AuditID: cbfee690-b7f6f6d00000740c-87-51f1b1585fec
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Michal Simek'" <michal.simek@xilinx.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>
+Cc: "'Michal Simek'" <monstr@monstr.eu>,
+        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Geert Uytterhoeven'" <geert@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>
+References: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
+In-reply-to: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
+Subject: Re: [PATCH v3] video: xilinxfb: Fix compilation warning
+Date: Fri, 26 Jul 2013 08:14:32 +0900
+Message-id: <000e01ce898c$b865f740$2931e5c0$@samsung.com>
 MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9hX93pGz4GGtzZzmrRe7zI4tv/HjaL
-	xUdiLGa+7mayWLDf2mL2/ccsFp2zN7BbXN41h83i0oEFTBa/V/9gttjX8YDJ4utPB4v9V7ws
-	Zt5aw2Lx8uMJFgd+jycH5zF5rJm3htHj29dJLB4LPl9h9/h3uJ/JY+esu+weLftusXtMvrGc
-	0ePG3WY2jy+rrjF7vN93lc3j8yY5j0+f9rEF8EZx2aSk5mSWpRbp2yVwZZw8dYil4D9XReeM
-	OewNjE84uhg5OSQETCTmXz7MDmGLSVy4t56ti5GLQ0hgGaPEthlHwBJCAr1MEtPXqEIk5jNK
-	7Hh6kQkkwSagLvH59Q6wIhEBDYmWBc9ZQIqYBa6zSlzaMRusSFjASeLlhyWMEEXOEnOvtzF3
-	MXIA2XoSjS08IGEWAVWJ5fvPgZXwCthLTOxvYYNYnCHRfeUhmM0IdN33U2vARjILiEs0t95k
-	gbhaQGLJnvPMELaoxMvH/1hBxksIKEpsX20FUa4lsX7ncahWbYkn7y6wQqwSlPgx+R7LBEax
-	WUimzkLSMgtJyywkLQsYWVYxipUWJxcUJ6WnVhjpFSfmFpfmpesl5+duYoQkieodjHe/2hxi
-	FOBgVOLhPWH/MVCINbGsuDL3EKMEB7OSCO+tXqAQb0piZVVqUX58UWlOavEhRiYOTqkGxnnp
-	m9f13Tt/x5ZxubekL+cjNpF19W6zixeumjt7a+grldX/VbpOX1Cu1mNyn3iga87dpqir5mz/
-	bW/Hb7/W9cnCY/9js6qvIn+3fRNa7Sl0fed00b9tl0xrqw7z++6eJJiwbC33it0Tn+7yiUqY
-	ezFrsaYMK5dCTVy6+eaW+u/fMtYem8h0/qUSS3FGoqEWc1FxIgBqj/x08AIAAA==
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQGv6KqJYYunoL8LFwWZ4j+gRWEXl5mzR3uw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t8zQ92IjR8DDRZfkrV4dmsvk8XlhZdY
+	LU70fWC1uLxrDpvFu5cRFk8+nmaxWPfwBZPF+vm32Bw4PF5duMPicehwB6PH364pzB59W1Yx
+	ehy/sZ3J4/MmOY+9n3+zBLBHcdmkpOZklqUW6dslcGVMuzGBsaCFu+LgtsWsDYwvOboYOTkk
+	BEwkDk9tZ4KwxSQu3FvP1sXIxSEksIxR4lHvWTaYovan96ASixglbsw/xQLh/GKU6NvVyAxS
+	xSagJvHly2F2EFtEIEti/7VdjCBFzAL3GSW+/v8GNkpIIF6ide1uVhCbUyBBonPFSbBmYQEH
+	iZvn24BsDg4WAVWJ3++tQcK8ApYSe1cvZYWwBSV+TL7HAmIzC2hJrN95nAnClpfYvOYtM8Sl
+	ChI7zr5mhLjBSGJ63w9GiBoRiX0v3oHdIyHQyCFx8sFRsGYWAQGJb5MPsYDslRCQldh0AGqO
+	pMTBFTdYJjBKzEKyehaS1bOQrJ6FZMUCRpZVjKKpBckFxUnpRSZ6xYm5xaV56XrJ+bmbGCHR
+	PWEH470D1ocYk4HWT2SWEk3OByaHvJJ4Q2MzIwtTE1NjI3NLM9KElcR51VusA4UE0hNLUrNT
+	UwtSi+KLSnNSiw8xMnFwSjUwZkju7Pxa9Zznt7nQhMMdnfsn55s6n6t5O1HvWAD3Ya2V748Z
+	blqopxjR+OPk0jCJkG0Hy4+wK05Xs1urPfm6Fof4Irtw75YYuSMZS9O9btbGmBdcvWW45NlH
+	njnvLX74n73MuzDvtvkVhyuV738XhikLy2c8WrJKvCTmyml9n+NsDSff7qtersRSnJFoqMVc
+	VJwIACQ1a5sEAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHKsWRmVeSWpSXmKPExsVy+t9jAd2IjR8DDY79lLB4dmsvk8XlhZdY
+	LU70fWC1uLxrDpvFu5cRFk8+nmaxWPfwBZPF+vm32Bw4PF5duMPicehwB6PH364pzB59W1Yx
+	ehy/sZ3J4/MmOY+9n3+zBLBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp
+	5CXmptoqufgE6Lpl5gBdpaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPM
+	mHZjAmNBC3fFwW2LWRsYX3J0MXJySAiYSLQ/vccGYYtJXLi3Hsjm4hASWMQocWP+KRYI5xej
+	RN+uRmaQKjYBNYkvXw6zg9giAlkS+6/tYgQpYha4zyjx9f83sFFCAvESrWt3s4LYnAIJEp0r
+	ToI1Cws4SNw83wZkc3CwCKhK/H5vDRLmFbCU2Lt6KSuELSjxY/I9FhCbWUBLYv3O40wQtrzE
+	5jVvmSEuVZDYcfY1I8QNRhLT+34wQtSISOx78Y5xAqPQLCSjZiEZNQvJqFlIWhYwsqxiFE0t
+	SC4oTkrPNdIrTswtLs1L10vOz93ECE4dz6R3MK5qsDjEKMDBqMTDq+D0MVCINbGsuDL3EKME
+	B7OSCO+tXqAQb0piZVVqUX58UWlOavEhxmSgRycyS4km5wPTWl5JvKGxiZmRpZGZhZGJuTlp
+	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MCoErJnNYeycceCrrfW8uPslx4V2fGYMYpZg
+	6jx5SukKd7nPuhDlc07H3p7sn3/db/eTJqssY6e6f2aFpWWcG5+93VJnJzE1oeRU0M+0rglN
+	Fy1nmV7mZzphbHU3aI1g5sRzrrrL+oIXcFn66XhLzyp5+3Au/7uXFT4FV7M7Vn3mmLA7W131
+	kxJLcUaioRZzUXEiAD3kpjBhAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 07:27 AM, Steven Rostedt wrote:
-> On Thu, 2013-07-25 at 07:15 -0600, Shuah Khan wrote:
->
->> Shuah Khan (4):
->>    iommu: Add event tracing feature to iommu - Add iommu trace events
->>    iommu: Add event tracing feature to iommu - export trace events
->>    iommu: Add event tracing feature to iommu - amd_iommu driver trace
->>      events
->>    iommu: Add event tracing feature to iommu - iommu driver trace events
->>
->>   drivers/iommu/Makefile       |    1 +
->>   drivers/iommu/amd_iommu.c    |   19 +++++
->>   drivers/iommu/iommu-traces.c |   27 +++++++
->>   drivers/iommu/iommu.c        |   17 ++++-
->>   include/trace/events/iommu.h |  174 ++++++++++++++++++++++++++++++++++++++++++
->>   5 files changed, 237 insertions(+), 1 deletion(-)
->>   create mode 100644 drivers/iommu/iommu-traces.c
->>   create mode 100644 include/trace/events/iommu.h
->
-> I don't know what the maintainer thinks, but usually new tracepoints
-> like this are done as one patch. Not four.
->
-> -- Steve
+On Thursday, July 25, 2013 10:45 PM, Michal Simek wrote:
+> 
+> regs_phys is phys_addr_t (u32 or u64).
+> Lets use %pa printk format specifier.
+> 
+> Fixes compilation warning introduced by:
+> video: xilinxfb: Use drvdata->regs_phys instead of physaddr
+> (sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+
+It looks good.
+
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
+
+Best regards,
+Jingoo Han
+
+> ---
+> Changes in v3:
+> - Fix commit message reported by Geert
+> 
+> Changes in v2:
+> - Use %pa instead of casting
+> 
+> ppc44x_defconfig
+> Fixes regressions in v3.11-rc2
+> 
+> ---
+>  drivers/video/xilinxfb.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
+> index f3d4a69..6629b29 100644
+> --- a/drivers/video/xilinxfb.c
+> +++ b/drivers/video/xilinxfb.c
+> @@ -341,8 +341,8 @@ static int xilinxfb_assign(struct platform_device *pdev,
+> 
+>  	if (drvdata->flags & BUS_ACCESS_FLAG) {
+>  		/* Put a banner in the log (for DEBUG) */
+> -		dev_dbg(dev, "regs: phys=%x, virt=%p\n", drvdata->regs_phys,
+> -					drvdata->regs);
+> +		dev_dbg(dev, "regs: phys=%pa, virt=%p\n",
+> +			&drvdata->regs_phys, drvdata->regs);
+>  	}
+>  	/* Put a banner in the log (for DEBUG) */
+>  	dev_dbg(dev, "fb: phys=%llx, virt=%p, size=%x\n",
+> --
+> 1.8.2.3
 >
 
-If one single patch is preferred, I can easily generate one. Does the 
-code look good otherwise?
-
--- Shuah
-
-Shuah Khan, Linux Kernel Developer - Open Source Group Samsung Research 
-America (Silicon Valley) shuah.kh@samsung.com | (970) 672-0658
