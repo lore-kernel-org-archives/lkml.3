@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab3GYUdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 16:33:01 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:57796 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752685Ab3GYUdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 16:33:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/2CqqckJVHaK3wqt34OmQOUsKo2VvERGs=
-Date: Thu, 25 Jul 2013 16:32:28 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: DT bindings as ABI [was: Do we have people interested in
- device tree janitoring / cleanup?]
-Message-ID: <20130725203228.GX23879@titan.lakedaemon.net>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
- <20130725193135.GT23879@titan.lakedaemon.net>
- <CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
+	id S1754656Ab3GYUeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 16:34:21 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:38946 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752715Ab3GYUeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 16:34:17 -0400
+Message-ID: <51F18BAB.8060600@interlog.com>
+Date: Thu, 25 Jul 2013 16:33:47 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: vaughan <vaughan.cao@oracle.com>
+CC: JBottomley@parallels.com, =?UTF-8?B?SsO2cm4gRW5nZWw=?= <joern@logfs.org>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] [SCSI] sg: fix race condition in sg_open
+References: <1374075246-22923-1-git-send-email-vaughan.cao@oracle.com> <1374468033-8947-1-git-send-email-vaughan.cao@oracle.com> <20130722170338.GA15824@logfs.org> <51F144F4.4090509@oracle.com>
+In-Reply-To: <51F144F4.4090509@oracle.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 03:16:14PM -0500, Rob Herring wrote:
-> On Thu, Jul 25, 2013 at 2:31 PM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
-> >> On Thu, Jul 25, 2013 at 11:09 AM, Olof Johansson <olof@lixom.net> wrote:
-> >
-> >> > One problem that needs to be solved is obviously how a binding
-> >> > graduates from tentative to locked. This work isn't going to be very
-> >> > interesting to most people, I suspect. Think standards committee type
-> >> > work.
-> >>
-> >> I think a time based stabilization period would be better than a
-> >> separate directory to apply bindings too. Or time plus periodic review
-> >> perhaps.
-> >
-> > The only problem with a time-based versus separate directory is how do
-> > users who've downloaded the tree determine which bindings are stable?
-> > If they pull a tarball, or receive an SDK, there is most likely no git
-> > history attached.
-> 
-> Well, if time based includes moving the binding out of the kernel,
-> then that is what defines it as stable or not. I guess that is a form
-> of a separate directory.
+On 13-07-25 11:32 AM, vaughan wrote:
+> On 07/23/2013 01:03 AM, Jörn Engel wrote:
+>> On Mon, 22 July 2013 12:40:29 +0800, Vaughan Cao wrote:
+>>> There is a race when open sg with O_EXCL flag. Also a race may happen between
+>>> sg_open and sg_remove.
+>>>
+>>> Changes from v4:
+>>>   * [3/4] use ERR_PTR series instead of adding another parameter in sg_add_sfp
+>>>   * [4/4] fix conflict for cherry-pick from v3.
+>>>
+>>> Changes from v3:
+>>>   * release o_sem in sg_release(), not in sg_remove_sfp().
+>>>   * not set exclude with sfd_lock held.
+>>>
+>>> Vaughan Cao (4):
+>>>    [SCSI] sg: use rwsem to solve race during exclusive open
+>>>    [SCSI] sg: no need sg_open_exclusive_lock
+>>>    [SCSI] sg: checking sdp->detached isn't protected when open
+>>>    [SCSI] sg: push file descriptor list locking down to per-device
+>>>      locking
+>>>
+>>>   drivers/scsi/sg.c | 178 +++++++++++++++++++++++++-----------------------------
+>>>   1 file changed, 83 insertions(+), 95 deletions(-)
+>> Patchset looks good to me, although I didn't test it on hardware yet.
+>> Signed-off-by: Joern Engel <joern@logfs.org>
+>>
+>> James, care to pick this up?
+>>
+>> Jörn
+> Hi James,
+>
+> sg driver has two races happen in
+>   a) exclusive open and non-exclusive open
+>   b) sg removal and sg open
+> I explained the scenario detail in the separate patches. I did test
+> those patches and
+> Jörn has reviewed them.  I got no response from Doug Gilbert for a long
+> time.
+> Would you care to pick these up?
 
-One of the things I've been trying to square up in my head is how to
-retain the history of the binding when moving to the new tree.  My
-current idea was to clone the kernel tree, add one patch deleting
-everything but the bindings and dts files, and one more patch moving
-things where we want them (arch/{powerpc,arm}/boot/dts -> dts).
+Hi,
+Your patches applied with a little noise to lk 3.10.2 and
+gave this warning from the build.
 
-Then, as needed, we could merge a kernel version tag and delete
-everything we don't need (code) in the merge commit.
+   CC [M]  drivers/scsi/sg.o
+drivers/scsi/sg.c: In function ‘sg_open’:
+drivers/scsi/sg.c:242:6: warning: unused variable ‘res’ [-Wunused-variable]
 
-The downside of this is it would be messy, the upside is that we could
-closely track the kernel tree (until the bindings and dts are moved
-out), and retain the history of the bindings and dts files.
+I'll keep testing ...
 
-> I don't think we want to be moving bindings twice: tentative -> stable
-> and kernel -> DT repo.
+Doug Gilbert
 
-agreed.
 
-> The policy could be as simple as an binding without change in at least
-> N kernel releases is moved out and stable.
-
-If the cloned tree idea works, we could just merge version tags that are
-two or three behind the most recent version.
-
-thx,
-
-Jason.
