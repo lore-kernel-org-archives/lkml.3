@@ -1,73 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754918Ab3GYH60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 03:58:26 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:53329 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab3GYH6Y (ORCPT
+	id S1755137Ab3GYH7l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 03:59:41 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:42019 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3GYH7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:58:24 -0400
-Message-ID: <1374739101.8827.7.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH] mac80211: use oneshot blink API for LED triggers
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Fabio Baltieri <fabio.baltieri@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 25 Jul 2013 09:58:21 +0200
-In-Reply-To: <20130724085337.GA7096@balto.lan> (sfid-20130724_105341_536708_82A83A0A)
-References: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
-	 <1374624581-6012-2-git-send-email-fabio.baltieri@gmail.com>
-	 <1374653665.8180.0.camel@jlt4.sipsolutions.net>
-	 <20130724085337.GA7096@balto.lan> (sfid-20130724_105341_536708_82A83A0A)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.3-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 25 Jul 2013 03:59:37 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.34 with qID r6P7xWko016948, This message is accepted by code: ctaloc0852
+From: Hayes Wang <hayeswang@realtek.com>
+To: <gregkh@linuxfoundation.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH v2 1/3] net/usb/r815x: replace USB buffer from stack to DMA-able
+Date: Thu, 25 Jul 2013 15:59:02 +0800
+Message-ID: <1374739144-732-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <20130724.174947.452272360732442554.davem@davemloft.net>
+References: <20130724.174947.452272360732442554.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 10:53 +0200, Fabio Baltieri wrote:
-> On Wed, Jul 24, 2013 at 10:14:25AM +0200, Johannes Berg wrote:
-> > On Wed, 2013-07-24 at 02:09 +0200, Fabio Baltieri wrote:
-> > > Changes mac80211 LED trigger code to use the generic
-> > > led_trigger_blink_oneshot() API for transmit and receive activity
-> > > indication.
-> > > 
-> > > This gives a better feedback to the user, as with the new API each
-> > > activity event results in a visible blink, while a constant traffic
-> > > results in a continuous blink at constant rate.
-> > 
-> > This seems a little pointless since our throughput-based trigger can do
-> > very similar (but somewhat better) behaviour? Maybe that should just be
-> > the default instead, with some sane default setup values?
-> 
-> Ok but that requires driver specific support and it's only implemented
-> on a subset of currently available drivers.
+Some USB buffers use stack which may not be DMA-able.
+Use the buffers from kmalloc to replace those one.
 
-Not necessarily, it's just done that way because we expected everyone to
-have their own idea of what the blink speeds should be, possibly even
-depending on the maximum speed the hardware can do etc.
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/usb/r815x.c | 44 +++++++++++++++++++++++++++-----------------
+ 1 file changed, 27 insertions(+), 17 deletions(-)
 
-> This at least makes the basic tx/rx indication capability a better.
-
-Fair enough.
-
-> > (Regardless of that, you also have indentation problems in your patch)
-> 
-> Ok, I guess you are referring to the this:
-> 
-> +       led_trigger_blink_oneshot(local->tx_led,                                
-> +                       &led_delay, &led_delay, 0);                             
-
-Yes, that was the place I noticed, didn't check more closely.
-
-> So, are you definitely rejecting this patch or should I fix indentation
-> and send a v2?
-
-I think I'll take it, I kinda hope nobody will really care much about it
-but the behaviour looks better and the code is simpler, so ... :)
-
-johannes
+diff --git a/drivers/net/usb/r815x.c b/drivers/net/usb/r815x.c
+index 8523922..e9b99ba 100644
+--- a/drivers/net/usb/r815x.c
++++ b/drivers/net/usb/r815x.c
+@@ -24,34 +24,43 @@
+ 
+ static int pla_read_word(struct usb_device *udev, u16 index)
+ {
+-	int data, ret;
++	int ret;
+ 	u8 shift = index & 2;
+-	__le32 ocp_data;
++	__le32 *tmp;
++
++	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
++	if (!tmp)
++		return -ENOMEM;
+ 
+ 	index &= ~3;
+ 
+ 	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+ 			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
+-			      index, MCU_TYPE_PLA, &ocp_data, sizeof(ocp_data),
+-			      500);
++			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
+ 	if (ret < 0)
+-		return ret;
++		goto out2;
+ 
+-	data = __le32_to_cpu(ocp_data);
+-	data >>= (shift * 8);
+-	data &= 0xffff;
++	ret = __le32_to_cpu(*tmp);
++	ret >>= (shift * 8);
++	ret &= 0xffff;
+ 
+-	return data;
++out2:
++	kfree(tmp);
++	return ret;
+ }
+ 
+ static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
+ {
+-	__le32 ocp_data;
++	__le32 *tmp;
+ 	u32 mask = 0xffff;
+ 	u16 byen = BYTE_EN_WORD;
+ 	u8 shift = index & 2;
+ 	int ret;
+ 
++	tmp = kmalloc(sizeof(*tmp), GFP_KERNEL);
++	if (!tmp)
++		return -ENOMEM;
++
+ 	data &= mask;
+ 
+ 	if (shift) {
+@@ -63,19 +72,20 @@ static int pla_write_word(struct usb_device *udev, u16 index, u32 data)
+ 
+ 	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+ 			      RTL815x_REQ_GET_REGS, RTL815x_REQT_READ,
+-			      index, MCU_TYPE_PLA, &ocp_data, sizeof(ocp_data),
+-			      500);
++			      index, MCU_TYPE_PLA, tmp, sizeof(*tmp), 500);
+ 	if (ret < 0)
+-		return ret;
++		goto out3;
+ 
+-	data |= __le32_to_cpu(ocp_data) & ~mask;
+-	ocp_data = __cpu_to_le32(data);
++	data |= __le32_to_cpu(*tmp) & ~mask;
++	*tmp = __cpu_to_le32(data);
+ 
+ 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+ 			      RTL815x_REQ_SET_REGS, RTL815x_REQT_WRITE,
+-			      index, MCU_TYPE_PLA | byen, &ocp_data,
+-			      sizeof(ocp_data), 500);
++			      index, MCU_TYPE_PLA | byen, tmp, sizeof(*tmp),
++			      500);
+ 
++out3:
++	kfree(tmp);
+ 	return ret;
+ }
+ 
+-- 
+1.8.3.1
 
