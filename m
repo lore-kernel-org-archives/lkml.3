@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3GYRwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 13:52:22 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43478 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011Ab3GYRwF (ORCPT
+	id S1757156Ab3GYRwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 13:52:25 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:19921 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757010Ab3GYRwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 13:52:05 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V8 10/33] iov_iter: let callers extract iovecs and bio_vecs
-Date: Thu, 25 Jul 2013 12:50:36 -0500
-Message-Id: <1374774659-13121-11-git-send-email-dave.kleikamp@oracle.com>
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com
+Subject: [PATCH V8 27/33] xfs: add support for read_iter and write_iter
+Date: Thu, 25 Jul 2013 12:50:53 -0500
+Message-Id: <1374774659-13121-28-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
@@ -23,60 +25,171 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-direct IO treats memory from user iovecs and memory from arrays of
-kernel pages very differently.  User memory is pinned and worked with in
-batches while kernel pages are always pinned and don't require
-additional processing.
-
-Rather than try and provide an abstraction that includes these
-different behaviours we let direct IO extract the memory structs and
-hand them to the existing code.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
- include/linux/fs.h | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ fs/xfs/xfs_file.c | 51 ++++++++++++++++++++-------------------------------
+ 1 file changed, 20 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a89bcb9..322d585 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -371,6 +371,17 @@ static inline void iov_iter_init_bvec(struct iov_iter *i,
- 
- 	iov_iter_advance(i, written);
- }
-+
-+static inline int iov_iter_has_bvec(struct iov_iter *i)
-+{
-+	return i->ops == &ii_bvec_ops;
-+}
-+
-+static inline struct bio_vec *iov_iter_bvec(struct iov_iter *i)
-+{
-+	BUG_ON(!iov_iter_has_bvec(i));
-+	return (struct bio_vec *)i->data;
-+}
- #endif
- 
- extern struct iov_iter_ops ii_iovec_ops;
-@@ -388,8 +399,14 @@ static inline void iov_iter_init(struct iov_iter *i,
- 	iov_iter_advance(i, written);
+diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+index de3dc98..1716b6a 100644
+--- a/fs/xfs/xfs_file.c
++++ b/fs/xfs/xfs_file.c
+@@ -226,10 +226,9 @@ xfs_file_fsync(
  }
  
-+static inline int iov_iter_has_iovec(struct iov_iter *i)
-+{
-+	return i->ops == &ii_iovec_ops;
-+}
-+
- static inline struct iovec *iov_iter_iovec(struct iov_iter *i)
+ STATIC ssize_t
+-xfs_file_aio_read(
++xfs_file_read_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
  {
-+	BUG_ON(!iov_iter_has_iovec(i));
- 	return (struct iovec *)i->data;
+ 	struct file		*file = iocb->ki_filp;
+@@ -250,9 +249,7 @@ xfs_file_aio_read(
+ 	if (file->f_mode & FMODE_NOCMTIME)
+ 		ioflags |= IO_INVIS;
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &size, VERIFY_WRITE);
+-	if (ret < 0)
+-		return ret;
++	size = iov_iter_count(iter);
+ 
+ 	if (unlikely(ioflags & IO_ISDIRECT)) {
+ 		xfs_buftarg_t	*target =
+@@ -305,7 +302,7 @@ xfs_file_aio_read(
+ 
+ 	trace_xfs_file_read(ip, size, pos, ioflags);
+ 
+-	ret = generic_file_aio_read(iocb, iovp, nr_segs, pos);
++	ret = generic_file_read_iter(iocb, iter, pos);
+ 	if (ret > 0)
+ 		XFS_STATS_ADD(xs_read_bytes, ret);
+ 
+@@ -621,10 +618,9 @@ restart:
+ STATIC ssize_t
+ xfs_file_dio_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -632,7 +628,6 @@ xfs_file_dio_aio_write(
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	ssize_t			ret = 0;
+-	size_t			count = ocount;
+ 	int			unaligned_io = 0;
+ 	int			iolock;
+ 	struct xfs_buftarg	*target = XFS_IS_REALTIME_INODE(ip) ?
+@@ -692,8 +687,8 @@ xfs_file_dio_aio_write(
+ 	}
+ 
+ 	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_direct_write(iocb, iovp,
+-			&nr_segs, pos, &iocb->ki_pos, count, ocount);
++	ret = generic_file_direct_write_iter(iocb, iter,
++			pos, &iocb->ki_pos, count);
+ 
+ out:
+ 	xfs_rw_iunlock(ip, iolock);
+@@ -706,10 +701,9 @@ out:
+ STATIC ssize_t
+ xfs_file_buffered_aio_write(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos,
+-	size_t			ocount)
++	size_t			count)
+ {
+ 	struct file		*file = iocb->ki_filp;
+ 	struct address_space	*mapping = file->f_mapping;
+@@ -718,7 +712,6 @@ xfs_file_buffered_aio_write(
+ 	ssize_t			ret;
+ 	int			enospc = 0;
+ 	int			iolock = XFS_IOLOCK_EXCL;
+-	size_t			count = ocount;
+ 
+ 	xfs_rw_ilock(ip, iolock);
+ 
+@@ -731,7 +724,7 @@ xfs_file_buffered_aio_write(
+ 
+ write_retry:
+ 	trace_xfs_file_buffered_write(ip, count, iocb->ki_pos, 0);
+-	ret = generic_file_buffered_write(iocb, iovp, nr_segs,
++	ret = generic_file_buffered_write_iter(iocb, iter,
+ 			pos, &iocb->ki_pos, count, 0);
+ 
+ 	/*
+@@ -752,10 +745,9 @@ out:
  }
  
+ STATIC ssize_t
+-xfs_file_aio_write(
++xfs_file_write_iter(
+ 	struct kiocb		*iocb,
+-	const struct iovec	*iovp,
+-	unsigned long		nr_segs,
++	struct iov_iter		*iter,
+ 	loff_t			pos)
+ {
+ 	struct file		*file = iocb->ki_filp;
+@@ -763,17 +755,15 @@ xfs_file_aio_write(
+ 	struct inode		*inode = mapping->host;
+ 	struct xfs_inode	*ip = XFS_I(inode);
+ 	ssize_t			ret;
+-	size_t			ocount = 0;
++	size_t			count = 0;
+ 
+ 	XFS_STATS_INC(xs_write_calls);
+ 
+ 	BUG_ON(iocb->ki_pos != pos);
+ 
+-	ret = generic_segment_checks(iovp, &nr_segs, &ocount, VERIFY_READ);
+-	if (ret)
+-		return ret;
++	count = iov_iter_count(iter);
+ 
+-	if (ocount == 0)
++	if (count == 0)
+ 		return 0;
+ 
+ 	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
+@@ -782,10 +772,9 @@ xfs_file_aio_write(
+ 	}
+ 
+ 	if (unlikely(file->f_flags & O_DIRECT))
+-		ret = xfs_file_dio_aio_write(iocb, iovp, nr_segs, pos, ocount);
++		ret = xfs_file_dio_aio_write(iocb, iter, pos, count);
+ 	else
+-		ret = xfs_file_buffered_aio_write(iocb, iovp, nr_segs, pos,
+-						  ocount);
++		ret = xfs_file_buffered_aio_write(iocb, iter, pos, count);
+ 
+ 	if (ret > 0) {
+ 		ssize_t err;
+@@ -1410,8 +1399,8 @@ const struct file_operations xfs_file_operations = {
+ 	.llseek		= xfs_file_llseek,
+ 	.read		= do_sync_read,
+ 	.write		= do_sync_write,
+-	.aio_read	= xfs_file_aio_read,
+-	.aio_write	= xfs_file_aio_write,
++	.read_iter	= xfs_file_read_iter,
++	.write_iter	= xfs_file_write_iter,
+ 	.splice_read	= xfs_file_splice_read,
+ 	.splice_write	= xfs_file_splice_write,
+ 	.unlocked_ioctl	= xfs_file_ioctl,
 -- 
 1.8.3.4
 
