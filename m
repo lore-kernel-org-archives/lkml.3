@@ -1,98 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396Ab3GYOwR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:52:17 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:45978 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884Ab3GYOwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:52:08 -0400
+	id S1756303Ab3GYOzE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:55:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53784 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755576Ab3GYOzB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 10:55:01 -0400
+Date: Thu, 25 Jul 2013 17:54:54 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Felipe Balbi <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <george.cherian@ti.com>
+Subject: Re: [PATCH 02/16] usb: phy: phy-nop: add support for am335x PHY
+Message-ID: <20130725145454.GL16106@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-3-git-send-email-bigeasy@linutronix.de>
+ <20130725143330.GK16106@radagast>
+ <20130725144529.GB5412@linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1374750101.23313.16.camel@edumazet-glaptop>
-References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
-	<1374512879.4990.19.camel@edumazet-glaptop>
-	<CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
-	<1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
-	<1374518841.4990.26.camel@edumazet-glaptop>
-	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
-	<1374559827.4990.143.camel@edumazet-glaptop>
-	<CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
-	<1374729058.23313.8.camel@edumazet-glaptop>
-	<CACVXFVNyFk0Zpi4tC0ENiq8RcrtrjYW-Dhs+A56+Pw4BKm8y8A@mail.gmail.com>
-	<1374750101.23313.16.camel@edumazet-glaptop>
-Date: Thu, 25 Jul 2013 22:52:07 +0800
-Message-ID: <CACVXFVNre5SsJhaVqFNRcop7ahqxabWqHZkjBZccj1ZqOAUZ9A@mail.gmail.com>
-Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
-From: Ming Lei <tom.leiming@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        Oliver Neukum <oliver@neukum.org>,
-        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        =?Big5?B?QVNJWCBMb3VpcyBbxKyrwrOwXQ==?= <louis@asix.com.tw>,
-        Allan Chou <allan@asix.com.tw>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JKGvNdIvrY8Ovf7Z"
+Content-Disposition: inline
+In-Reply-To: <20130725144529.GB5412@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 7:01 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Thu, 2013-07-25 at 13:25 +0800, Ming Lei wrote:
->> On Thu, Jul 25, 2013 at 1:10 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> > On Thu, 2013-07-25 at 10:28 +0800, Ming Lei wrote:
->> >
->> >>
->> >> It depends if size of sg buffer(except for last one) in the sg list can be
->> >> divided by usb endpoint's max packet size(512 or 1024), at least there
->> >> is the constraint:
->> >>
->> >> http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=10e232c597ac757e7f8600649f7e872e86de190f
->> >>
->> >> I am wondering if network stack can meet that.  If not, it might be a
->> >> bit difficult
->> >> because lots of USB host controller don't support that, and driver may have
->> >> to support SG and non-SG at the same time for working well on all HCs.
->> >
->> > I do not see the problem.
->> >
->> > If one skb has 2 fragments of 32KB, couldn't they be split into 64 1K
->> > segments by the device driver ?
->>
->> OK, if length of fragments of all SKBs from network stack can always guarantee
->> to be divided by 1024, that is fine,  seems I worry about too much, :-)
->
-> Unfortunately, there is no such guarantee. TSO permits sendfile() zero
-> copy operation, so the frags can be of any size, any offset...
+--JKGvNdIvrY8Ovf7Z
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-USB protocol doesn't care offset or buffer start address, but has requirement
-on sg buffer size(except for last one) in sg list.
+On Thu, Jul 25, 2013 at 04:45:29PM +0200, Sebastian Andrzej Siewior wrote:
+> * Felipe Balbi | 2013-07-25 17:33:30 [+0300]:
+>=20
+> >On Mon, Jul 22, 2013 at 08:09:53PM +0200, Sebastian Andrzej Siewior wrot=
+e:
+> >right, I replied to the wrong series, please add a patch renaming file
+> >and functions to phy-generic.c/usb_phy_gen_
+>=20
+> Sorry, I can't parse that.
+> You want to rename phy-nop.c to phy-generic.c and add the additional
+> functions in usb_phy_gen.c?
 
->
-> In this mode, the first element (skb->head) will typically contains the
-> headers, and there are way below 512 bytes.
->
-> So even with lowering netdev->gso_max_size under PAGE_SIZE, most of the
-> packets will need to be copied into a single segment.
+$ git mv drivers/usb/phy/phy-nop.c drivers/usb/phy/phy-generic.c
+$ sed -i 's/\<nop_/usb_phy_gen_/g' drivers/usb/phy/phy-generic.c
 
-Maybe need to try it with TSO enabled, in my test on ax88179_178a NIC after
-applying your disabling TSO patch, tx throughput is less than 600Mbps, but rx
-is close to 900Mbps.
+--=20
+balbi
 
-On Thu, Jul 25, 2013 at 9:34 PM, Ben Hutchings
-<bhutchings@solarflare.com> wrote:
->
-> Not that I have any experience with USB drivers, but perhaps
-> usb_sg_init()?
+--JKGvNdIvrY8Ovf7Z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-USB SG library doesn't support submitting SG URB asynchronously, but that isn't
-a big deal.  The problem is that many USB host controllers can't build
-one single
-packet from two buffers, what is why USB stack requires size of all
-buffers(except
-for last one) in sg list can be divided by max endpoint packet
-size.(1024 for usbnet)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Thanks,
--- 
-Ming Lei
+iQIcBAEBAgAGBQJR8Tw+AAoJEIaOsuA1yqREEPwQALTE0hXrLO2vvcUoHTdfoPOO
+HwEfNUhy7K8zrRkrRVFaF0TzASUxxRhBBL3tvz79eUY1bKyBJaoBlJYQlga5uev9
+Jo3pOH+o4OYad7Q/z2eo0CFQfQEJ5qp5+Sh1Hws5dAvH11RzdOEMrheDIYpO3bwL
+28/uDu+vYbGPVC7GR4e3dNMpKvI2YJvCxolgTui36UVko2XY9RDOLXpXQBXk4pJx
+Orh2yiAtHO4568rMkFw+9LUml4veZM1Don8obEGPCknsGHbDPd7VXZUaCGP4hbmU
+2Bj7zN9xV5YhTmk80AAZELLtonCAMh+SaUnfPex9um0voEjkwRzpGfCp5xcbqhBg
+KN+9pCWCFzIByKS6iV8OxzldQ3CXP3ydx7Y6oj1eOj+37ETqXLM2U/OSb5uGo3x1
+0/VCxf6Vvos8Gxw8FeqPvDzQVvWTyfL9k1ywIXDSmndv9vMsOL7U3YlhqpvKuoXy
+e0WEaBI5ediB9PKofaR+pwkhRSNkIh7QwKyrOB+NuIf1EgllmVEM7rLIIspA7OPC
+zwXvcHyL3sLhGM06K2bxHwY866qLa/X0+WjLBUfugbbOn3FJgZwX+yNOhANKt2LH
+bvQgWelf92Fg+DTujhFyQG+V3O33MIVsnlh5nCVwyNjWEWQw1pdd3JEJP11cq97V
+38Rhy8+PBwub7r3DmQPN
+=8gGV
+-----END PGP SIGNATURE-----
+
+--JKGvNdIvrY8Ovf7Z--
