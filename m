@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab3GYSBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:01:16 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48502 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638Ab3GYSBH (ORCPT
+	id S1757701Ab3GYSCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:02:10 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:51311 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab3GYSCI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:01:07 -0400
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        David Howells <dhowells@redhat.com>, linux-afs@lists.infradead.org
-Subject: [PATCH V8 30/33] afs: add support for read_iter and write_iter
-Date: Thu, 25 Jul 2013 12:50:56 -0500
-Message-Id: <1374774659-13121-31-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 25 Jul 2013 14:02:08 -0400
+Date: Thu, 25 Jul 2013 19:01:45 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Lee Jones <lee.jones@linaro.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Message-ID: <20130725180145.GL9858@sirena.org.uk>
+References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
+ <1374683683-13370-3-git-send-email-p.zabel@pengutronix.de>
+ <20130724172959.GR9858@sirena.org.uk>
+ <1374773739.4382.18.camel@pizza.hi.pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="p2N8/IdOpufTRkPb"
+Content-Disposition: inline
+In-Reply-To: <1374773739.4382.18.camel@pizza.hi.pengutronix.de>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] regulator: Add Dialog DA9063 voltage regulators
+ support.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: linux-afs@lists.infradead.org
----
- fs/afs/file.c     | 4 ++--
- fs/afs/internal.h | 3 +--
- fs/afs/write.c    | 9 ++++-----
- 3 files changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/fs/afs/file.c b/fs/afs/file.c
-index 66d50fe..3b71622 100644
---- a/fs/afs/file.c
-+++ b/fs/afs/file.c
-@@ -33,8 +33,8 @@ const struct file_operations afs_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= do_sync_read,
- 	.write		= do_sync_write,
--	.aio_read	= generic_file_aio_read,
--	.aio_write	= afs_file_write,
-+	.read_iter	= generic_file_read_iter,
-+	.write_iter	= afs_file_write,
- 	.mmap		= generic_file_readonly_mmap,
- 	.splice_read	= generic_file_splice_read,
- 	.fsync		= afs_fsync,
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index a306bb6..9c048ff 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -747,8 +747,7 @@ extern int afs_write_end(struct file *file, struct address_space *mapping,
- extern int afs_writepage(struct page *, struct writeback_control *);
- extern int afs_writepages(struct address_space *, struct writeback_control *);
- extern void afs_pages_written_back(struct afs_vnode *, struct afs_call *);
--extern ssize_t afs_file_write(struct kiocb *, const struct iovec *,
--			      unsigned long, loff_t);
-+extern ssize_t afs_file_write(struct kiocb *, struct iov_iter *, loff_t);
- extern int afs_writeback_all(struct afs_vnode *);
- extern int afs_fsync(struct file *, loff_t, loff_t, int);
- 
-diff --git a/fs/afs/write.c b/fs/afs/write.c
-index a890db4..9fa2f59 100644
---- a/fs/afs/write.c
-+++ b/fs/afs/write.c
-@@ -625,15 +625,14 @@ void afs_pages_written_back(struct afs_vnode *vnode, struct afs_call *call)
- /*
-  * write to an AFS file
-  */
--ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
--		       unsigned long nr_segs, loff_t pos)
-+ssize_t afs_file_write(struct kiocb *iocb, struct iov_iter *iter, loff_t pos)
- {
- 	struct afs_vnode *vnode = AFS_FS_I(file_inode(iocb->ki_filp));
- 	ssize_t result;
--	size_t count = iov_length(iov, nr_segs);
-+	size_t count = iov_iter_count(iter);
- 
- 	_enter("{%x.%u},{%zu},%lu,",
--	       vnode->fid.vid, vnode->fid.vnode, count, nr_segs);
-+	       vnode->fid.vid, vnode->fid.vnode, count, iter->nr_segs);
- 
- 	if (IS_SWAPFILE(&vnode->vfs_inode)) {
- 		printk(KERN_INFO
-@@ -644,7 +643,7 @@ ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
- 	if (!count)
- 		return 0;
- 
--	result = generic_file_aio_write(iocb, iov, nr_segs, pos);
-+	result = generic_file_write_iter(iocb, iter, pos);
- 	if (IS_ERR_VALUE(result)) {
- 		_leave(" = %zd", result);
- 		return result;
--- 
-1.8.3.4
+--p2N8/IdOpufTRkPb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Thu, Jul 25, 2013 at 07:35:39PM +0200, Philipp Zabel wrote:
+> Am Mittwoch, den 24.07.2013, 18:29 +0100 schrieb Mark Brown:
+
+> > This looks like it should be generic (and there is actually a
+> > regmap_field API for bitfields...).
+
+> Indeed. I'm a bit unhappy about having to split all the masks into lsb and msb
+> only to have regmap_field_init combine them back into a mask, though.
+> Could we perhaps change struct reg_field to contain reg and mask, and then also use
+> this for the regulator_desc vsel/apply/enable/bypass_reg/mask fields?
+
+Well, the other option is to define regmap regulator helpers for
+everything where there's overlap and just do that.  The helpers cover a
+bunch of common things but there's going to be room for more.
+
+--p2N8/IdOpufTRkPb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8WgFAAoJELSic+t+oim9AQoP/0VfLrZdYehgaSiLh5L+Q1v8
+ng3nnvlD5JeOIdLCIugTJxGS6ABtN5FDf+OyQ8OTmYwq82Ly07FtBdappOM4dPZ5
+lqtWpweo9CAFTE3JMakcnq1pZCIQSVjDlOmv9modBq+OfWJCu2NZb/Y1xz/n4E7L
+FwkJIVbSs4U/dpNKQLj+aFl4go49Gm/c20zJGgGMrvyg5jpuN7+MxgobD8g2aAyt
+9LMssqIb+LTdJRurRh0xquPtwpqNzu6muHTdPwoE7xlh360MXn18vGBmqOgk3UKL
+imO7TPFC5axnmsIVStOoR2L3fi3P5WiN0Gar6iVv341PQ17LU1Ku535qWPz1ArFw
+0Bx/7PsFNvYYSvTfaeVA5a7N88mjoNSnLBG5kOxToCV1W9yr2h7ekeMlNbL2vj/e
+3g74YrsqjOustQAbwhdlWUagFCHTHN+R/hwhGeNIkgOGQtpO4xl9DwMVwJnFrlR8
+Tccm+7PEx/hWAkBwFL4DN9OShS7tQq5iL7FDLPHDYvMrEBowBy6rTOUB2N8CiX4/
+XoZkzj9iiTcZ09cfPCoqETZdqG+zYUokzLak4299cM9mSBiuaaShyuCfD0XVMUYc
+7V7b7dUEr/8V2r3cz9dMFlHDMVXwoHWPRAoasrhS1UqPp7bPSRxaBJBdnATY864K
+RNznP9krxDGP3hPajzWL
+=+eqX
+-----END PGP SIGNATURE-----
+
+--p2N8/IdOpufTRkPb--
