@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab3GYH5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 03:57:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33904 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752782Ab3GYH5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 03:57:12 -0400
-Date: Thu, 25 Jul 2013 09:57:05 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Dave Hansen <dave.hansen@intel.com>
-Cc: KY Srinivasan <kys@microsoft.com>, Dave Hansen <dave@sr71.net>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
-        "yinghan@google.com" <yinghan@google.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "kay@vrfy.org" <kay@vrfy.org>
-Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
- memory blocks
-Message-ID: <20130725075705.GD12818@dhcp22.suse.cz>
-References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
- <20130722123716.GB24400@dhcp22.suse.cz>
- <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
- <51EEA11D.4030007@intel.com>
- <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com>
- <51EEA89F.9070309@intel.com>
- <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
- <51F00415.8070104@sr71.net>
- <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
- <51F040E8.1030507@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F040E8.1030507@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754918Ab3GYH60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 03:58:26 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:53329 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab3GYH6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 03:58:24 -0400
+Message-ID: <1374739101.8827.7.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH] mac80211: use oneshot blink API for LED triggers
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Fabio Baltieri <fabio.baltieri@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 25 Jul 2013 09:58:21 +0200
+In-Reply-To: <20130724085337.GA7096@balto.lan> (sfid-20130724_105341_536708_82A83A0A)
+References: <1374624581-6012-1-git-send-email-fabio.baltieri@gmail.com>
+	 <1374624581-6012-2-git-send-email-fabio.baltieri@gmail.com>
+	 <1374653665.8180.0.camel@jlt4.sipsolutions.net>
+	 <20130724085337.GA7096@balto.lan> (sfid-20130724_105341_536708_82A83A0A)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.3-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 24-07-13 14:02:32, Dave Hansen wrote:
-> On 07/24/2013 12:45 PM, KY Srinivasan wrote:
-> > All I am saying is that I see two classes of failures: (a) Our
-> > inability to allocate memory to manage the memory that is being hot added
-> > and (b) Our inability to bring the hot added memory online within a reasonable
-> > amount of time. I am not sure the cause for (b) and I was just speculating that
-> > this could be memory related. What is interesting is that I have seen failure related
-> > to our inability to online the memory after having succeeded in hot adding the
-> > memory.
+On Wed, 2013-07-24 at 10:53 +0200, Fabio Baltieri wrote:
+> On Wed, Jul 24, 2013 at 10:14:25AM +0200, Johannes Berg wrote:
+> > On Wed, 2013-07-24 at 02:09 +0200, Fabio Baltieri wrote:
+> > > Changes mac80211 LED trigger code to use the generic
+> > > led_trigger_blink_oneshot() API for transmit and receive activity
+> > > indication.
+> > > 
+> > > This gives a better feedback to the user, as with the new API each
+> > > activity event results in a visible blink, while a constant traffic
+> > > results in a continuous blink at constant rate.
+> > 
+> > This seems a little pointless since our throughput-based trigger can do
+> > very similar (but somewhat better) behaviour? Maybe that should just be
+> > the default instead, with some sane default setup values?
 > 
-> I think we should hold off on this patch and other like it until we've
-> been sufficiently able to explain how (b) happens.
+> Ok but that requires driver specific support and it's only implemented
+> on a subset of currently available drivers.
 
-Agreed.
+Not necessarily, it's just done that way because we expected everyone to
+have their own idea of what the blink speeds should be, possibly even
+depending on the maximum speed the hardware can do etc.
 
--- 
-Michal Hocko
-SUSE Labs
+> This at least makes the basic tx/rx indication capability a better.
+
+Fair enough.
+
+> > (Regardless of that, you also have indentation problems in your patch)
+> 
+> Ok, I guess you are referring to the this:
+> 
+> +       led_trigger_blink_oneshot(local->tx_led,                                
+> +                       &led_delay, &led_delay, 0);                             
+
+Yes, that was the place I noticed, didn't check more closely.
+
+> So, are you definitely rejecting this patch or should I fix indentation
+> and send a v2?
+
+I think I'll take it, I kinda hope nobody will really care much about it
+but the behaviour looks better and the code is simpler, so ... :)
+
+johannes
+
