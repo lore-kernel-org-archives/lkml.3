@@ -1,258 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab3GYSEo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:04:44 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19878 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756948Ab3GYRwB (ORCPT
+	id S1757823Ab3GYSEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:04:42 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:43397 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756945Ab3GYRwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 25 Jul 2013 13:52:01 -0400
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V8 17/33] loop: use aio to perform io on the underlying file
-Date: Thu, 25 Jul 2013 12:50:43 -0500
-Message-Id: <1374774659-13121-18-git-send-email-dave.kleikamp@oracle.com>
+        Zach Brown <zab@zabbo.net>, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH V8 21/33] ocfs2: add support for read_iter and  write_iter
+Date: Thu, 25 Jul 2013 12:50:47 -0500
+Message-Id: <1374774659-13121-22-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-This uses the new kernel aio interface to process loopback IO by
-submitting concurrent direct aio.  Previously loop's IO was serialized
-by synchronous processing in a thread.
-
-The aio operations specify the memory for the IO with the bio_vec arrays
-directly instead of mappings of the pages.
-
-The use of aio operations is enabled when the backing file supports the
-read_iter, write_iter and direct_IO methods.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
 Cc: Zach Brown <zab@zabbo.net>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: ocfs2-devel@oss.oracle.com
 ---
- drivers/block/loop.c      | 148 +++++++++++++++++++++++++++++++++-------------
- include/uapi/linux/loop.h |   1 +
- 2 files changed, 109 insertions(+), 40 deletions(-)
+ fs/ocfs2/aops.h        |  2 +-
+ fs/ocfs2/file.c        | 55 ++++++++++++++++++++++----------------------------
+ fs/ocfs2/ocfs2_trace.h |  6 +++---
+ 3 files changed, 28 insertions(+), 35 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 40e7155..66e3ccf 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -75,6 +75,7 @@
- #include <linux/sysfs.h>
- #include <linux/miscdevice.h>
- #include <linux/falloc.h>
-+#include <linux/aio.h>
- #include "loop.h"
- 
- #include <asm/uaccess.h>
-@@ -218,6 +219,48 @@ lo_do_transfer(struct loop_device *lo, int cmd,
- 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
- }
- 
-+#ifdef CONFIG_AIO
-+static void lo_rw_aio_complete(u64 data, long res)
-+{
-+	struct bio *bio = (struct bio *)(uintptr_t)data;
-+
-+	if (res > 0)
-+		res = 0;
-+	else if (res < 0)
-+		res = -EIO;
-+
-+	bio_endio(bio, res);
-+}
-+
-+static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	struct kiocb *iocb;
-+	unsigned short op;
-+	struct iov_iter iter;
-+	struct bio_vec *bvec;
-+	size_t nr_segs;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+
-+	iocb = aio_kernel_alloc(GFP_NOIO);
-+	if (!iocb)
-+		return -ENOMEM;
-+
-+	if (bio_rw(bio) & WRITE)
-+		op = IOCB_CMD_WRITE_ITER;
-+	else
-+		op = IOCB_CMD_READ_ITER;
-+
-+	bvec = bio_iovec_idx(bio, bio->bi_idx);
-+	nr_segs = bio_segments(bio);
-+	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
-+	aio_kernel_init_iter(iocb, file, op, &iter, pos);
-+	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)(uintptr_t)bio);
-+
-+	return aio_kernel_submit(iocb);
-+}
-+#endif /* CONFIG_AIO */
-+
- /**
-  * __do_lo_send_write - helper for writing data to a loop device
-  *
-@@ -418,50 +461,33 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
- 	pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
- 
- 	if (bio_rw(bio) == WRITE) {
--		struct file *file = lo->lo_backing_file;
--
--		if (bio->bi_rw & REQ_FLUSH) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL)) {
--				ret = -EIO;
--				goto out;
--			}
--		}
-+		ret = lo_send(lo, bio, pos);
-+	} else
-+		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
- 
--		/*
--		 * We use punch hole to reclaim the free space used by the
--		 * image a.k.a. discard. However we do not support discard if
--		 * encryption is enabled, because it may give an attacker
--		 * useful information.
--		 */
--		if (bio->bi_rw & REQ_DISCARD) {
--			struct file *file = lo->lo_backing_file;
--			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	return ret;
-+}
- 
--			if ((!file->f_op->fallocate) ||
--			    lo->lo_encrypt_key_size) {
--				ret = -EOPNOTSUPP;
--				goto out;
--			}
--			ret = file->f_op->fallocate(file, mode, pos,
--						    bio->bi_size);
--			if (unlikely(ret && ret != -EINVAL &&
--				     ret != -EOPNOTSUPP))
--				ret = -EIO;
--			goto out;
--		}
-+static int lo_discard(struct loop_device *lo, struct bio *bio)
-+{
-+	struct file *file = lo->lo_backing_file;
-+	int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
-+	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
-+	int ret;
- 
--		ret = lo_send(lo, bio, pos);
-+	/*
-+	 * We use punch hole to reclaim the free space used by the
-+	 * image a.k.a. discard. However we do not support discard if
-+	 * encryption is enabled, because it may give an attacker
-+	 * useful information.
-+	 */
- 
--		if ((bio->bi_rw & REQ_FUA) && !ret) {
--			ret = vfs_fsync(file, 0);
--			if (unlikely(ret && ret != -EINVAL))
--				ret = -EIO;
--		}
--	} else
--		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
-+	if ((!file->f_op->fallocate) || lo->lo_encrypt_key_size)
-+		return -EOPNOTSUPP;
- 
--out:
-+	ret = file->f_op->fallocate(file, mode, pos, bio->bi_size);
-+	if (unlikely(ret && ret != -EINVAL && ret != -EOPNOTSUPP))
-+		ret = -EIO;
+diff --git a/fs/ocfs2/aops.h b/fs/ocfs2/aops.h
+index f671e49..573f41d 100644
+--- a/fs/ocfs2/aops.h
++++ b/fs/ocfs2/aops.h
+@@ -74,7 +74,7 @@ static inline void ocfs2_iocb_set_rw_locked(struct kiocb *iocb, int level)
+ /*
+  * Using a named enum representing lock types in terms of #N bit stored in
+  * iocb->private, which is going to be used for communication between
+- * ocfs2_dio_end_io() and ocfs2_file_aio_write/read().
++ * ocfs2_dio_end_io() and ocfs2_file_write/read_iter().
+  */
+ enum ocfs2_iocb_lock_bits {
+ 	OCFS2_IOCB_RW_LOCK = 0,
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 41000f2..d2d203b 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2220,15 +2220,13 @@ out:
  	return ret;
  }
  
-@@ -525,7 +551,35 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
- 		do_loop_switch(lo, bio->bi_private);
- 		bio_put(bio);
+-static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+-				    const struct iovec *iov,
+-				    unsigned long nr_segs,
+-				    loff_t pos)
++static ssize_t ocfs2_file_write_iter(struct kiocb *iocb,
++				     struct iov_iter *iter,
++				     loff_t pos)
+ {
+ 	int ret, direct_io, appending, rw_level, have_alloc_sem  = 0;
+ 	int can_do_direct, has_refcount = 0;
+ 	ssize_t written = 0;
+-	size_t ocount;		/* original count */
+ 	size_t count;		/* after file limit checks */
+ 	loff_t old_size, *ppos = &iocb->ki_pos;
+ 	u32 old_clusters;
+@@ -2239,11 +2237,11 @@ static ssize_t ocfs2_file_aio_write(struct kiocb *iocb,
+ 			       OCFS2_MOUNT_COHERENCY_BUFFERED);
+ 	int unaligned_dio = 0;
+ 
+-	trace_ocfs2_file_aio_write(inode, file, file->f_path.dentry,
++	trace_ocfs2_file_write_iter(inode, file, file->f_path.dentry,
+ 		(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 		file->f_path.dentry->d_name.len,
+ 		file->f_path.dentry->d_name.name,
+-		(unsigned int)nr_segs);
++		(unsigned long long)pos);
+ 
+ 	if (iocb->ki_left == 0)
+ 		return 0;
+@@ -2343,28 +2341,24 @@ relock:
+ 	/* communicate with ocfs2_dio_end_io */
+ 	ocfs2_iocb_set_rw_locked(iocb, rw_level);
+ 
+-	ret = generic_segment_checks(iov, &nr_segs, &ocount,
+-				     VERIFY_READ);
+-	if (ret)
+-		goto out_dio;
+ 
+-	count = ocount;
++	count = iov_iter_count(iter);
+ 	ret = generic_write_checks(file, ppos, &count,
+ 				   S_ISBLK(inode->i_mode));
+ 	if (ret)
+ 		goto out_dio;
+ 
+ 	if (direct_io) {
+-		written = generic_file_direct_write(iocb, iov, &nr_segs, *ppos,
+-						    ppos, count, ocount);
++		written = generic_file_direct_write_iter(iocb, iter, *ppos,
++						    ppos, count);
+ 		if (written < 0) {
+ 			ret = written;
+ 			goto out_dio;
+ 		}
  	} else {
--		int ret = do_bio_filebacked(lo, bio);
-+		int ret;
-+
-+		if (bio_rw(bio) == WRITE) {
-+			if (bio->bi_rw & REQ_FLUSH) {
-+				ret = vfs_fsync(lo->lo_backing_file, 1);
-+				if (unlikely(ret && ret != -EINVAL))
-+					goto out;
-+			}
-+			if (bio->bi_rw & REQ_DISCARD) {
-+				ret = lo_discard(lo, bio);
-+				goto out;
-+			}
-+		}
-+#ifdef CONFIG_AIO
-+		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
-+		    lo->transfer == transfer_none) {
-+			ret = lo_rw_aio(lo, bio);
-+			if (ret == 0)
-+				return;
-+		} else
-+#endif
-+			ret = do_bio_filebacked(lo, bio);
-+
-+		if ((bio_rw(bio) == WRITE) && bio->bi_rw & REQ_FUA && !ret) {
-+			ret = vfs_fsync(lo->lo_backing_file, 0);
-+			if (unlikely(ret && ret != -EINVAL))
-+				ret = -EIO;
-+		}
-+out:
- 		bio_endio(bio, ret);
+ 		current->backing_dev_info = file->f_mapping->backing_dev_info;
+-		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+-						      ppos, count, 0);
++		written = generic_file_buffered_write_iter(iocb, iter, *ppos,
++							   ppos, count, 0);
+ 		current->backing_dev_info = NULL;
  	}
+ 
+@@ -2520,7 +2514,7 @@ static ssize_t ocfs2_file_splice_read(struct file *in,
+ 			in->f_path.dentry->d_name.name, len);
+ 
+ 	/*
+-	 * See the comment in ocfs2_file_aio_read()
++	 * See the comment in ocfs2_file_read_iter()
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, in->f_path.mnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2535,19 +2529,18 @@ bail:
+ 	return ret;
  }
-@@ -547,6 +601,12 @@ static int loop_thread(void *data)
- 	struct loop_device *lo = data;
- 	struct bio *bio;
  
-+	/*
-+	 * In cases where the underlying filesystem calls balance_dirty_pages()
-+	 * we want less throttling to avoid lock ups trying to write dirty
-+	 * pages through the loop device
-+	 */
-+	current->flags |= PF_LESS_THROTTLE;
- 	set_user_nice(current, -20);
+-static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+-				   const struct iovec *iov,
+-				   unsigned long nr_segs,
+-				   loff_t pos)
++static ssize_t ocfs2_file_read_iter(struct kiocb *iocb,
++				    struct iov_iter *iter,
++				    loff_t pos)
+ {
+ 	int ret = 0, rw_level = -1, have_alloc_sem = 0, lock_level = 0;
+ 	struct file *filp = iocb->ki_filp;
+ 	struct inode *inode = file_inode(filp);
  
- 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
-@@ -869,6 +929,14 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
- 	    !file->f_op->write)
- 		lo_flags |= LO_FLAGS_READ_ONLY;
+-	trace_ocfs2_file_aio_read(inode, filp, filp->f_path.dentry,
++	trace_ocfs2_file_read_iter(inode, filp, filp->f_path.dentry,
+ 			(unsigned long long)OCFS2_I(inode)->ip_blkno,
+ 			filp->f_path.dentry->d_name.len,
+-			filp->f_path.dentry->d_name.name, nr_segs);
++			filp->f_path.dentry->d_name.name, pos);
  
-+#ifdef CONFIG_AIO
-+	if (file->f_op->write_iter && file->f_op->read_iter &&
-+	    mapping->a_ops->direct_IO) {
-+		file->f_flags |= O_DIRECT;
-+		lo_flags |= LO_FLAGS_USE_AIO;
-+	}
-+#endif
-+
- 	lo_blocksize = S_ISBLK(inode->i_mode) ?
- 		inode->i_bdev->bd_block_size : PAGE_SIZE;
  
-diff --git a/include/uapi/linux/loop.h b/include/uapi/linux/loop.h
-index e0cecd2..6edc6b6 100644
---- a/include/uapi/linux/loop.h
-+++ b/include/uapi/linux/loop.h
-@@ -21,6 +21,7 @@ enum {
- 	LO_FLAGS_READ_ONLY	= 1,
- 	LO_FLAGS_AUTOCLEAR	= 4,
- 	LO_FLAGS_PARTSCAN	= 8,
-+	LO_FLAGS_USE_AIO	= 16,
- };
+ 	if (!inode) {
+@@ -2583,7 +2576,7 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	 *
+ 	 * Take and drop the meta data lock to update inode fields
+ 	 * like i_size. This allows the checks down below
+-	 * generic_file_aio_read() a chance of actually working.
++	 * generic_file_read_iter() a chance of actually working.
+ 	 */
+ 	ret = ocfs2_inode_lock_atime(inode, filp->f_path.mnt, &lock_level);
+ 	if (ret < 0) {
+@@ -2592,13 +2585,13 @@ static ssize_t ocfs2_file_aio_read(struct kiocb *iocb,
+ 	}
+ 	ocfs2_inode_unlock(inode, lock_level);
  
- #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
+-	ret = generic_file_aio_read(iocb, iov, nr_segs, iocb->ki_pos);
+-	trace_generic_file_aio_read_ret(ret);
++	ret = generic_file_read_iter(iocb, iter, iocb->ki_pos);
++	trace_generic_file_read_iter_ret(ret);
+ 
+ 	/* buffered aio wouldn't have proper lock coverage today */
+ 	BUG_ON(ret == -EIOCBQUEUED && !(filp->f_flags & O_DIRECT));
+ 
+-	/* see ocfs2_file_aio_write */
++	/* see ocfs2_file_write_iter */
+ 	if (ret == -EIOCBQUEUED || !ocfs2_iocb_is_rw_locked(iocb)) {
+ 		rw_level = -1;
+ 		have_alloc_sem = 0;
+@@ -2686,8 +2679,8 @@ const struct file_operations ocfs2_fops = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+@@ -2734,8 +2727,8 @@ const struct file_operations ocfs2_fops_no_plocks = {
+ 	.fsync		= ocfs2_sync_file,
+ 	.release	= ocfs2_file_release,
+ 	.open		= ocfs2_file_open,
+-	.aio_read	= ocfs2_file_aio_read,
+-	.aio_write	= ocfs2_file_aio_write,
++	.read_iter	= ocfs2_file_read_iter,
++	.write_iter	= ocfs2_file_write_iter,
+ 	.unlocked_ioctl	= ocfs2_ioctl,
+ #ifdef CONFIG_COMPAT
+ 	.compat_ioctl   = ocfs2_compat_ioctl,
+diff --git a/fs/ocfs2/ocfs2_trace.h b/fs/ocfs2/ocfs2_trace.h
+index 3b481f4..1c5018c 100644
+--- a/fs/ocfs2/ocfs2_trace.h
++++ b/fs/ocfs2/ocfs2_trace.h
+@@ -1310,13 +1310,13 @@ DEFINE_OCFS2_FILE_OPS(ocfs2_file_release);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_sync_file);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_write);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_write_iter);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_write);
+ 
+ DEFINE_OCFS2_FILE_OPS(ocfs2_file_splice_read);
+ 
+-DEFINE_OCFS2_FILE_OPS(ocfs2_file_aio_read);
++DEFINE_OCFS2_FILE_OPS(ocfs2_file_read_iter);
+ 
+ DEFINE_OCFS2_ULL_ULL_ULL_EVENT(ocfs2_truncate_file);
+ 
+@@ -1474,7 +1474,7 @@ TRACE_EVENT(ocfs2_prepare_inode_for_write,
+ 		  __entry->direct_io, __entry->has_refcount)
+ );
+ 
+-DEFINE_OCFS2_INT_EVENT(generic_file_aio_read_ret);
++DEFINE_OCFS2_INT_EVENT(generic_file_read_iter_ret);
+ 
+ /* End of trace events for fs/ocfs2/file.c. */
+ 
 -- 
 1.8.3.4
 
