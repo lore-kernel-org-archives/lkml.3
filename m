@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab3GYGsV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:48:21 -0400
-Received: from nautica.notk.org ([91.121.71.147]:34879 "EHLO nautica.notk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab3GYGsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:48:19 -0400
-Date: Thu, 25 Jul 2013 08:48:02 +0200
-From: Dominique Martinet <dominique.martinet@cea.fr>
-To: David Miller <davem@davemloft.net>
-Cc: pebolle@tiscali.nl, lucho@ionkov.net, ericvh@gmail.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, andi@etezian.org,
-        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
-Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
- function
-Message-ID: <20130725064802.GA12569@nautica>
-References: <1374497956-32104-1-git-send-email-andi@etezian.org>
- <20130724.154646.2283898956674234778.davem@davemloft.net>
- <1374707387.29835.23.camel@x61.thuisdomein>
- <20130724.164514.393667021861625699.davem@davemloft.net>
- <20130725061411.GA8579@nautica>
+	id S1754803Ab3GYGsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:48:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:31934 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753052Ab3GYGsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 02:48:23 -0400
+X-IronPort-AV: E=Sophos;i="4.89,741,1367942400"; 
+   d="scan'208";a="8017091"
+Message-ID: <51F0CACF.6030606@cn.fujitsu.com>
+Date: Thu, 25 Jul 2013 14:50:55 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20130725061411.GA8579@nautica>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 08/21] x86, acpi: Also initialize signature and length
+ when parsing root table.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-9-git-send-email-tangchen@cn.fujitsu.com> <20130723194540.GM21100@mtj.dyndns.org>
+In-Reply-To: <20130723194540.GM21100@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 14:46:05,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/25 14:46:17,
+	Serialize complete at 2013/07/25 14:46:17
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hard morning, sorry for the double mail.
+On 07/24/2013 03:45 AM, Tejun Heo wrote:
+> On Fri, Jul 19, 2013 at 03:59:21PM +0800, Tang Chen wrote:
+>> @@ -514,6 +514,7 @@ acpi_tb_install_table(acpi_physical_address address,
+>>   	 * fully mapped later (in verify table). In any case, we must
+>>   	 * unmap the header that was mapped above.
+>>   	 */
+>> +	table_desc =&acpi_gbl_root_table_list.tables[table_index];
+>>   	final_table = acpi_tb_table_override(table, table_desc);
+>>   	if (!final_table) {
+>>   		final_table = table;	/* There was no override */
+>
+> Is this chunk correct?  Why is @table_desc being assigned twice in
+> this function?
 
-Dominique Martinet wrote on Thu, Jul 25, 2013 :
-> Well, I do care - but I couldn't find where the trans->cancelled member
-> function was supposed to be called anyway...
-> So adding it to the struct and fixing the warning is well and fine, but
-> if it's still never called in the end I don't see much point and there's
-> nothing to test.
+Oh, my mistake. The second assignment is redundant. Only the first one is
+useful. Will remove the redundant assignment in this patch.
 
-To be more precise, there's a single call to c->trans_mode->cancelled in
-net/9p/client.c, in p9_client_flush, which is called on subfunction returning
--ERESTARTSYS... which never happens as far as I could see.
+Thanks.
 
-This will be useful once/if we start working on client recovery, though
-- so the function in itself definitely does interest me, and I guess
-that thinking about I would have preferred to have the hook added rather
-than the function removed.
-But there definitely is no hurry to add this cancelled function till
-then.
-
-
-Regards,
--- 
-Dominique Martinet
+>
+>> +	/*
+>> +	 * Also initialize the table entries here, so that later we can use them
+>> +	 * to find SRAT at very eraly time to reserve hotpluggable memory.
+>                                  ^ typo
+> Thanks.
+>
