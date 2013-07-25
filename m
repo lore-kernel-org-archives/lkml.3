@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab3GYFjD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 01:39:03 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:41750 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab3GYFi7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 01:38:59 -0400
+	id S1754247Ab3GYFqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 01:46:12 -0400
+Received: from na3sys010aog102.obsmtp.com ([74.125.245.72]:42760 "HELO
+	na3sys010aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751821Ab3GYFqH convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 01:46:07 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAD6i1fJO3geZ0vkHLsJEd+KedHkpC1OZVTJJskU2RAAKYBhhJQ@mail.gmail.com>
-References: <1374646199-9398-1-git-send-email-pshah.mumbai@gmail.com>
- <51F07489.7010404@gmail.com> <CAD6i1fJO3geZ0vkHLsJEd+KedHkpC1OZVTJJskU2RAAKYBhhJQ@mail.gmail.com>
-From: Prashant Shah <pshah.mumbai@gmail.com>
-Date: Thu, 25 Jul 2013 11:08:37 +0530
-Message-ID: <CAD6i1f+NYu7rcQwF-TXk4+OdjPNZwMKxxjJ9YA_+v9B6uPYq+g@mail.gmail.com>
-Subject: Re: [PATCH] Change request_irq() to use struct net_device *dev->name
-To: Ryan Mallon <rmallon@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, mwhitehe@redhat.com,
-        kernel-mentors@selenic.com
+In-Reply-To: <1374715444.3356.163.camel@gandalf.local.home>
+References: <20130705142629.GA325@redhat.com>
+	<1373036034.22688.155.camel@gandalf.local.home>
+	<20130724160422.GA3641@logfs.org>
+	<1374715444.3356.163.camel@gandalf.local.home>
+Date: Wed, 24 Jul 2013 22:46:06 -0700
+Message-ID: <CADHUQJ4yweA4zNKqtsq=iQkX+o6UmA-dwWV1d-0SdJbpGtZR5A@mail.gmail.com>
+Subject: Re: __ftrace_hash_rec_update FTRACE_WARN_ON.
+From: Steve Hodgson <steve@purestorage.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jul 25, 2013 at 10:49 AM, Prashant Shah <pshah.mumbai@gmail.com> wrote:
-> Hi,
+On Wed, Jul 24, 2013 at 6:24 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
->> You should also remove the definition of DRV_NAME, since it is no longer
->> used. The changelog should probably mention that this will change the
->> interrupt name (which appears in /proc/interrupts for example) from "wd"
->> to "eth%d".
->>
+> On Wed, 2013-07-24 at 12:04 -0400, Jörn Engel wrote:
+> > On Fri, 5 July 2013 10:53:54 -0400, Steven Rostedt wrote:
+> > >
+> > > Can you find an easy reproducer for this?
+> >
+> > We might have found something:
+> >
+> > Jul 23 19:00:59 [28253.487058,08] WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
+> > Jul 23 19:00:59 [28253.487203,08] Pid: 20903, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
+> > Jul 23 19:00:59 [28253.487206,08] Call Trace:
+> > Jul 23 19:00:59 [28253.487213,08]  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+> > Jul 23 19:00:59 [28253.487218,08]  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+> > Jul 23 19:00:59 [28253.487222,08]  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
+> > Jul 23 19:00:59 [28253.487227,08]  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
+> > Jul 23 19:00:59 [28253.487232,08]  [<ffffffff811401cc>] ? kfree+0x2c/0x110
+> > Jul 23 19:00:59 [28253.487237,08]  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
+> > Jul 23 19:00:59 [28253.487242,08]  [<ffffffff81149f1e>] __fput+0xae/0x220
+> > Jul 23 19:00:59 [28253.487247,08]  [<ffffffff8114a09e>] ____fput+0xe/0x10
+> > Jul 23 19:00:59 [28253.487252,08]  [<ffffffff8105fa22>] task_work_run+0x72/0x90
+> > Jul 23 19:00:59 [28253.487257,08]  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
+> > Jul 23 19:00:59 [28253.487262,08]  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+> > Jul 23 19:00:59 [28253.487267,08]  [<ffffffff815c0f88>] int_signal+0x12/0x17
+> > Jul 23 19:00:59 [28253.487271,08] ---[ end trace 793179526ee09b2c ]---
+> >
+> > Jul 23 19:21:02 [  775.393547,08] WARNING: at kernel/trace/ftrace.c:1529 __ftrace_hash_rec_update+0x1e3/0x230()
+> > Jul 23 19:21:02 [  775.393715,08] Pid: 6376, comm: bash Tainted: G           O 3.6.11+ #38405.trunk
+> > Jul 23 19:21:02 [  775.393718,08] Call Trace:
+> > Jul 23 19:21:02 [  775.393727,08]  [<ffffffff8103e5ff>] warn_slowpath_common+0x7f/0xc0
+> > Jul 23 19:21:02 [  775.393732,08]  [<ffffffff8103e65a>] warn_slowpath_null+0x1a/0x20
+> > Jul 23 19:21:02 [  775.393737,08]  [<ffffffff810c2ee3>] __ftrace_hash_rec_update+0x1e3/0x230
+> > Jul 23 19:21:02 [  775.393741,08]  [<ffffffff810c4f28>] ftrace_hash_move+0x28/0x1d0
+> > Jul 23 19:21:02 [  775.393748,08]  [<ffffffff811401cc>] ? kfree+0x2c/0x110
+> > Jul 23 19:21:02 [  775.393754,08]  [<ffffffff810c68ee>] ftrace_regex_release+0x8e/0x150
+> > Jul 23 19:21:02 [  775.393771,08]  [<ffffffff81149f1e>] __fput+0xae/0x220
+> > Jul 23 19:21:02 [  775.393784,08]  [<ffffffff8114a09e>] ____fput+0xe/0x10
+> > Jul 23 19:21:02 [  775.393792,08]  [<ffffffff8105fa22>] task_work_run+0x72/0x90
+> > Jul 23 19:21:02 [  775.393798,08]  [<ffffffff810028ec>] do_notify_resume+0x6c/0xc0
+> > Jul 23 19:21:02 [  775.393804,08]  [<ffffffff8126596e>] ? trace_hardirqs_on_thunk+0x3a/0x3c
+> > Jul 23 19:21:02 [  775.393810,08]  [<ffffffff815c0f88>] int_signal+0x12/0x17
+> > Jul 23 19:21:02 [  775.393814,08] ---[ end trace 3b86cc549cc5483e ]---
+> >
+> > If I understand Steve correctly, you have to enable a trace somewhere
+> > in a module, them rmmod that module without disabling the trace.  Easy
+> > enough to avoid, but maybe you are interested.
+>
+> I'm a bit confused by this. What do you mean exactly by enable a trace
+> somewhere in a module? The module enables the trace? Does it have its
+> own ftrace_ops? Or the module just starts tracing?
 
-I was going through the code. The apne driver apne.c in the same
-folder is using DRV_NAME in request_region()
+No, nothing so complicated.
 
-> if (!request_region(IOBASE, 0x20, DRV_NAME)) {
+I added symbols from a kernel module into
+/sys/kernel/debug/tracing/set_ftrace_filter, enabled tracing, then
+unloaded the kernel module.
 
-I can change the wd.c request_region() code to use DRV_NAME. Currently
-it is using a string constant.
+Which I'll admit is a stupid thing to do. I was then punished for my
+stupidity by being unable to use ftrace until the next reboot.
 
-> r = request_region(base_addr, WD_IO_EXTENT, "wd-probe");
-
-This will make it more consistent. Please suggest which change is more
-preferable.
-
-@Matthew, following drivers are not using dev->name in request_irq()
-axnet_cs.c
-mac8390.c
-hydra.c
-ne-h8300.c
-apne.c
-stnic.c
-zorro8390.c
-
-Regards.
+- Steve
