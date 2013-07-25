@@ -1,94 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab3GYOwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:52:06 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:44737 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884Ab3GYOwB convert rfc822-to-8bit (ORCPT
+	id S1756396Ab3GYOwR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:52:17 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45978 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755884Ab3GYOwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:52:01 -0400
+	Thu, 25 Jul 2013 10:52:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <2218913.HKGjJcYT1G@vostro.rjw.lan>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	<CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
-	<9012759.Alzqtdvh5b@vostro.rjw.lan>
-	<2218913.HKGjJcYT1G@vostro.rjw.lan>
-Date: Thu, 25 Jul 2013 16:52:01 +0200
-Message-ID: <CADDKRnAwipzeYsrx7vyTYToPvQkhCg1PgxzCWqvbW_w+Qd9Oeg@mail.gmail.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1374750101.23313.16.camel@edumazet-glaptop>
+References: <1374311809-4155-1-git-send-email-freddy@asix.com.tw>
+	<1374512879.4990.19.camel@edumazet-glaptop>
+	<CANEJEGvPc56ePP=_bxfA4PZfsM3vw=MsRjbWwrFBC3eP-GtzZg@mail.gmail.com>
+	<1374518312.1635.29.camel@bwh-desktop.uk.level5networks.com>
+	<1374518841.4990.26.camel@edumazet-glaptop>
+	<1374522471.1635.48.camel@bwh-desktop.uk.level5networks.com>
+	<1374559827.4990.143.camel@edumazet-glaptop>
+	<CACVXFVN0eN9E9efr8UdqFz68-emHa2o-RQ0RYfazEq8f=qxkLQ@mail.gmail.com>
+	<1374729058.23313.8.camel@edumazet-glaptop>
+	<CACVXFVNyFk0Zpi4tC0ENiq8RcrtrjYW-Dhs+A56+Pw4BKm8y8A@mail.gmail.com>
+	<1374750101.23313.16.camel@edumazet-glaptop>
+Date: Thu, 25 Jul 2013 22:52:07 +0800
+Message-ID: <CACVXFVNre5SsJhaVqFNRcop7ahqxabWqHZkjBZccj1ZqOAUZ9A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] TX throttling bug-fixing patch of AX88179_178A
+From: Ming Lei <tom.leiming@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        Oliver Neukum <oliver@neukum.org>,
+        Grant Grundler <grundler@google.com>, Freddy Xin <freddy@asix.com.tw>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        =?Big5?B?QVNJWCBMb3VpcyBbxKyrwrOwXQ==?= <louis@asix.com.tw>,
+        Allan Chou <allan@asix.com.tw>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/7/25 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
->> On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
->> > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > >
->> > > Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
+On Thu, Jul 25, 2013 at 7:01 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Thu, 2013-07-25 at 13:25 +0800, Ming Lei wrote:
+>> On Thu, Jul 25, 2013 at 1:10 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> > On Thu, 2013-07-25 at 10:28 +0800, Ming Lei wrote:
 >> >
->> > Yes, but let's wait a while. Not because I think we'll fix the problem
->> > (hey, miracles might happen), but because I think it would be useful
->> > to couple the reverts with information about the particular machines
->> > that broke (and the people who reported it). So that when we
->> > inevitably try again, we can perhaps get some testing effort with
->> > those machines/people.
+>> >>
+>> >> It depends if size of sg buffer(except for last one) in the sg list can be
+>> >> divided by usb endpoint's max packet size(512 or 1024), at least there
+>> >> is the constraint:
+>> >>
+>> >> http://git.kernel.org/cgit/linux/kernel/git/gregkh/usb.git/commit/?h=usb-next&id=10e232c597ac757e7f8600649f7e872e86de190f
+>> >>
+>> >> I am wondering if network stack can meet that.  If not, it might be a
+>> >> bit difficult
+>> >> because lots of USB host controller don't support that, and driver may have
+>> >> to support SG and non-SG at the same time for working well on all HCs.
 >> >
->> > It doesn't seem to be a show-stopped for a large number of people, so
->> > there's no huge hurry. I'd suggest doing the revert just in time for
->> > rc3, but waiting until then to gather info about people who see
->> > breakage.
+>> > I do not see the problem.
 >> >
->> > Sound like a plan?
+>> > If one skb has 2 fragments of 32KB, couldn't they be split into 64 1K
+>> > segments by the device driver ?
 >>
->> Yes, it does.
+>> OK, if length of fragments of all SKBs from network stack can always guarantee
+>> to be divided by 1024, that is fine,  seems I worry about too much, :-)
 >
-> OK, time to revert I guess.
+> Unfortunately, there is no such guarantee. TSO permits sendfile() zero
+> copy operation, so the frags can be of any size, any offset...
+
+USB protocol doesn't care offset or buffer start address, but has requirement
+on sg buffer size(except for last one) in sg list.
+
 >
-> James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
-> fixes the backlight for you.
+> In this mode, the first element (skb->head) will typically contains the
+> headers, and there are way below 512 bytes.
 >
+> So even with lowering netdev->gso_max_size under PAGE_SIZE, most of the
+> packets will need to be copied into a single segment.
 
-Problems, problems :-) I tried to apply on top of 3.11-rc2:
+Maybe need to try it with TSO enabled, in my test on ax88179_178a NIC after
+applying your disabling TSO patch, tx throughput is less than 600Mbps, but rx
+is close to 900Mbps.
 
-jojo@ahorn:/data/kernel/linux$ git log --pretty=oneline | head -5
-3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b Linux 3.11-rc2
-ea45ea70b6131fa0b006f5b687b9b1398b24f681 Merge tag 'acpi-video-3.11'
-of git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm
-90db76e829479ef2ba1fed8f2552846015469831 Merge tag 'ext4_for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4
-dda5690defe4af62ee120f055e98e40d97e4c760 ext3: fix a BUG when opening
-a file with O_TMPFILE flag
-e94bd3490f4ef342801cfc76b33d8baf9ccc9437 ext4: fix a BUG when opening
-a file with O_TMPFILE flag
+On Thu, Jul 25, 2013 at 9:34 PM, Ben Hutchings
+<bhutchings@solarflare.com> wrote:
+>
+> Not that I have any experience with USB drivers, but perhaps
+> usb_sg_init()?
 
-jojo@ahorn:/data/kernel/linux$ git apply --check
-/data/kernel/acpi-backlight-revert.patch
-error: patch failed: drivers/acpi/video.c:897
-error: drivers/acpi/video.c: patch does not apply
-error: patch failed: drivers/gpu/drm/i915/i915_dma.c:1648
-error: drivers/gpu/drm/i915/i915_dma.c: patch does not apply
-error: patch failed: include/acpi/video.h:17
-error: include/acpi/video.h: patch does not apply
-error: patch failed: drivers/acpi/video_detect.c:235
-error: drivers/acpi/video_detect.c: patch does not apply
-error: patch failed: include/linux/acpi.h:191
-error: include/linux/acpi.h: patch does not apply
-error: patch failed: drivers/acpi/internal.h:169
-error: drivers/acpi/internal.h: patch does not apply
+USB SG library doesn't support submitting SG URB asynchronously, but that isn't
+a big deal.  The problem is that many USB host controllers can't build
+one single
+packet from two buffers, what is why USB stack requires size of all
+buffers(except
+for last one) in sg list can be divided by max endpoint packet
+size.(1024 for usbnet)
+
+Thanks,
+-- 
+Ming Lei
