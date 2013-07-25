@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab3GYNPl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 09:15:41 -0400
-Received: from qmta01.emeryville.ca.mail.comcast.net ([76.96.30.16]:44171 "EHLO
-	qmta01.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755925Ab3GYNPa (ORCPT
+	id S1756041Ab3GYNP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 09:15:58 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:53850 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755911Ab3GYNP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 09:15:30 -0400
+	Thu, 25 Jul 2013 09:15:29 -0400
 From: Shuah Khan <shuah.kh@samsung.com>
 To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         aik@ozlabs.ru, joe@perches.com, rostedt@goodmis.org,
@@ -14,9 +14,9 @@ To: joro@8bytes.org, alex.williamson@redhat.com, Varun.Sethi@freescale.com,
         ohad@wizery.com, andreas.herrmann@calxeda.com, will.deacon@arm.com
 Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
         iommu@lists.linux-foundation.org, shuahkhan@gmail.com
-Subject: [PATCH 4/4] iommu: Add event tracing feature to iommu - iommu driver trace events
-Date: Thu, 25 Jul 2013 07:15:05 -0600
-Message-Id: <735116faffe67fea4de5496c5cd9ba16e5ca9d00.1374711464.git.shuah.kh@samsung.com>
+Subject: [PATCH 3/4] iommu: Add event tracing feature to iommu - amd_iommu driver trace events
+Date: Thu, 25 Jul 2013 07:15:04 -0600
+Message-Id: <647a953ffac9a572cc580118c6ca27a706b7c4f2.1374711464.git.shuah.kh@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1374711464.git.shuah.kh@samsung.com>
 References: <cover.1374711464.git.shuah.kh@samsung.com>
@@ -59,82 +59,88 @@ iommu:amd_event
 
 Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- drivers/iommu/iommu.c |   17 ++++++++++++++++-
- 1 file changed, 16 insertions(+), 1 deletion(-)
+ drivers/iommu/amd_iommu.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index fbe9ca7..8e77110 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -29,6 +29,7 @@
- #include <linux/idr.h>
- #include <linux/notifier.h>
- #include <linux/err.h>
+diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+index 6dc6594..10ac042 100644
+--- a/drivers/iommu/amd_iommu.c
++++ b/drivers/iommu/amd_iommu.c
+@@ -42,6 +42,7 @@
+ #include <asm/iommu.h>
+ #include <asm/gart.h>
+ #include <asm/dma.h>
 +#include <trace/events/iommu.h>
  
- static struct kset *iommu_group_kset;
- static struct ida iommu_group_ida;
-@@ -363,6 +364,8 @@ rename:
- 	/* Notify any listeners about change to group. */
- 	blocking_notifier_call_chain(&group->notifier,
- 				     IOMMU_GROUP_NOTIFY_ADD_DEVICE, dev);
-+
-+	trace_add_device_to_group(group->id, dev);
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(iommu_group_add_device);
-@@ -399,6 +402,8 @@ void iommu_group_remove_device(struct device *dev)
- 	sysfs_remove_link(group->devices_kobj, device->name);
- 	sysfs_remove_link(&dev->kobj, "iommu_group");
- 
-+	trace_remove_device_from_group(group->id, dev);
-+
- 	kfree(device->name);
- 	kfree(device);
- 	dev->iommu_group = NULL;
-@@ -680,10 +685,16 @@ EXPORT_SYMBOL_GPL(iommu_domain_free);
- 
- int iommu_attach_device(struct iommu_domain *domain, struct device *dev)
- {
-+	int ret;
- 	if (unlikely(domain->ops->attach_dev == NULL))
- 		return -ENODEV;
- 
--	return domain->ops->attach_dev(domain, dev);
-+	ret = domain->ops->attach_dev(domain, dev);
-+
-+	if (!ret)
-+		trace_attach_device_to_domain(dev);
-+
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(iommu_attach_device);
- 
-@@ -693,6 +704,7 @@ void iommu_detach_device(struct iommu_domain *domain, struct device *dev)
- 		return;
- 
- 	domain->ops->detach_dev(domain, dev);
-+	trace_detach_device_from_domain(dev);
- }
- EXPORT_SYMBOL_GPL(iommu_detach_device);
- 
-@@ -832,6 +844,8 @@ int iommu_map(struct iommu_domain *domain, unsigned long iova,
- 	/* unroll mapping in case something went wrong */
- 	if (ret)
- 		iommu_unmap(domain, orig_iova, orig_size - size);
-+	else
-+		trace_map(iova, paddr, size);
- 
- 	return ret;
- }
-@@ -880,6 +894,7 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
- 		unmapped += unmapped_page;
+ #include "amd_iommu_proto.h"
+ #include "amd_iommu_types.h"
+@@ -659,6 +660,8 @@ retry:
+ 		       "address=0x%016llx flags=0x%04x]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       address, flags);
++		trace_amd_event("ILLEGAL_DEV_TABLE_ENTRY", type, domid,
++				      devid, address, flags);
+ 		dump_dte_entry(devid);
+ 		break;
+ 	case EVENT_TYPE_IO_FAULT:
+@@ -666,41 +669,57 @@ retry:
+ 		       "domain=0x%04x address=0x%016llx flags=0x%04x]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       domid, address, flags);
++		trace_amd_event("IO_PAGE_FAULT", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	case EVENT_TYPE_DEV_TAB_ERR:
+ 		printk("DEV_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
+ 		       "address=0x%016llx flags=0x%04x]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       address, flags);
++		trace_amd_event("DEV_TAB_HARDWARE_ERROR", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	case EVENT_TYPE_PAGE_TAB_ERR:
+ 		printk("PAGE_TAB_HARDWARE_ERROR device=%02x:%02x.%x "
+ 		       "domain=0x%04x address=0x%016llx flags=0x%04x]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       domid, address, flags);
++		trace_amd_event("PAGE_TAB_HARDWARE_ERROR", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	case EVENT_TYPE_ILL_CMD:
+ 		printk("ILLEGAL_COMMAND_ERROR address=0x%016llx]\n", address);
++		trace_amd_event("ILLEGAL_COMMAND_ERROR", type, domid,
++				      devid, address, flags);
+ 		dump_command(address);
+ 		break;
+ 	case EVENT_TYPE_CMD_HARD_ERR:
+ 		printk("COMMAND_HARDWARE_ERROR address=0x%016llx "
+ 		       "flags=0x%04x]\n", address, flags);
++		trace_amd_event("COMMAND_HARDWARE_ERROR", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	case EVENT_TYPE_IOTLB_INV_TO:
+ 		printk("IOTLB_INV_TIMEOUT device=%02x:%02x.%x "
+ 		       "address=0x%016llx]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       address);
++		trace_amd_event("IOTLB_INV_TIMEOUT", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	case EVENT_TYPE_INV_DEV_REQ:
+ 		printk("INVALID_DEVICE_REQUEST device=%02x:%02x.%x "
+ 		       "address=0x%016llx flags=0x%04x]\n",
+ 		       PCI_BUS_NUM(devid), PCI_SLOT(devid), PCI_FUNC(devid),
+ 		       address, flags);
++		trace_amd_event("INVALID_DEVICE_REQUEST", type, domid,
++				      devid, address, flags);
+ 		break;
+ 	default:
+ 		printk(KERN_ERR "UNKNOWN type=0x%02x]\n", type);
++		trace_amd_event("UNKNOWN", type, domid,
++				      devid, address, flags);
  	}
  
-+	trace_unmap(iova, 0, size);
- 	return unmapped;
- }
- EXPORT_SYMBOL_GPL(iommu_unmap);
+ 	memset(__evt, 0, 4 * sizeof(u32));
 -- 
 1.7.10.4
 
