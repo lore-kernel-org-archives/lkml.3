@@ -1,93 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab3GYObj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 10:31:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38176 "EHLO mx1.redhat.com"
+	id S1756155Ab3GYOdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 10:33:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:52661 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755576Ab3GYObh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 10:31:37 -0400
-Date: Thu, 25 Jul 2013 16:26:13 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] tracing: Turn event/id->i_private into
-	call->event.type
-Message-ID: <20130725142613.GB15965@redhat.com>
-References: <20130723205909.GA9055@redhat.com> <1374696796.3356.162.camel@gandalf.local.home>
+	id S1755882Ab3GYOdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 10:33:03 -0400
+Date: Thu, 25 Jul 2013 17:32:53 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <george.cherian@ti.com>
+Subject: Re: [PATCH 01/16] usb: musb: dsps: init / shutdown the phy
+Message-ID: <20130725143253.GJ16106@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-2-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vzUQzca511KWT6Hk"
 Content-Disposition: inline
-In-Reply-To: <1374696796.3356.162.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1374516607-2705-2-git-send-email-bigeasy@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24, Steven Rostedt wrote:
->
-> On Tue, 2013-07-23 at 22:59 +0200, Oleg Nesterov wrote:
-> > event_id_read() is racy, ftrace_event_call can be already freed
-> > by trace_remove_event_call() callers.
-> >
-> > Change event_create_dir() to pass "data = call->event.type", this
-> > is all event_id_read() needs. ftrace_event_id_fops no longer needs
-> > tracing_open_generic().
-> >
-> > We add the new helper, event_file_data(), to read ->i_private, it
-> > will have more users.
-> >
-> > Note: currently ACCESS_ONCE() and "id != 0" check are not needed,
-> > but we are going to change event_remove/rmdir to clear ->i_mutex.
->
-> We are changing i_mutex or i_private?
+--vzUQzca511KWT6Hk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-i_private, yes, will fix.
+On Mon, Jul 22, 2013 at 08:09:52PM +0200, Sebastian Andrzej Siewior wrote:
+> If the init / shutdown function of the phy moves out of dsps into the
+> phy driver, then dsps needs to call the callbacks of the phy driver to
+> ensure that this happens.
+>=20
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-Steven, I agree with all your comments, thanks. Except this one.
+cool, eventually we should move these calls to musb_core.c though.
 
-> Anyway, this still looks too complex for the id. Just pass the id number
-> to the filp->private_data, and use that. It should never be cleared, and
-> as we are not using any pointers it will always return what the id
-> is/was.
->
-> Keep tracing_open_generic() and have:
->
-> event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t
-> *ppos)
-> {
-> 	int id = (int)(unsigned long)filp->private_data;
-> 	char buf[32];
-> 	int len;
->
-> 	if (*ppos)
-> 		return 0;
->
-> 	len = sprintf(buf, "%d\n", id);
-> 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
-> }
->
-> No need for accessing the inode->i_private.
+--=20
+balbi
 
-Unless you strongly object, I'd prefer to avoid filp->private_data
-and use event_file_data(). Also, I'd like to keep "if (!id) ENODEV".
+--vzUQzca511KWT6Hk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-The main reason is the consistency with other f_op's, and this allows
-us to change event_file_data/remove_event_file_dir without breaking
-event_id_read().
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Also. Even if we use filp->private_data, it can be NULL/0, ->open()
-can race with rmdir. Of course we could update remove_event_file_dir()
-to skip this file, but I am sure we should not do this.
+iQIcBAEBAgAGBQJR8TcUAAoJEIaOsuA1yqRE8iEP/RtyYdIJaf9m+iKDs5j1cACp
+1cuxVKv1YMMDy/c6W9UYQX67N4+/UW2ahCPbExghdetiQIXyShWa59JhQRoc5goH
+iC5AwrWgGxX14BVKI6tPaw3I+SDxA9c0q0aiUXY2iEaxaDXCNKEQO/B5z3DLuQXo
+T8R9GxsLF0pc3g/lN9x5pRAgQ1oIuh4s4gDQKBy1E6fCIiYMa2cessnKyYgE+rIB
+ygybhddAeTBXTRhLUgDYDAqBBrjUXKekSl+RX9kcGp5bFWNRMfAiq3K9ec/VvMNV
+CIuVUEi2pmCrXfaLa3uzZyzFs7+wTMma05TfqaIRR/IkVcQBPo7Z9OyKpS+G8Dby
+iqXddbpDt8ywBPtF8BsLyBJ9kQaoilFWHir+i7iRcJekbN1nyUX/dmnrMfGSUDVo
+1xUnL2/YQb+I1usvF/L2aZxdX6aDRCvidT3Vzg3SoYgKU8tiGFC1czakdzvbr5zq
+NNJNXN3hvrAu55FgUH3XPuITj/to5s1JmAboH8FvRX9Zub8POI3lcFIJ8qM3SGRw
+C1xGwfec2yayCJ4abLtdC4R7bVSGAPniX2Gl+2e+s3VCasHnVRYKfyR8hHLU0PQq
+MOLoC2k6kkeeuiNOEP+Abx4Jnj/cSNV/W35vH3K9tE2TCsC1Ifr9+673VlertZFb
+iYF5Kpbup34Veoe/TY3E
+=Fani
+-----END PGP SIGNATURE-----
 
-Oleg.
-
+--vzUQzca511KWT6Hk--
