@@ -1,113 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754452Ab3GYDKw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 23:10:52 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:52160 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343Ab3GYDKt (ORCPT
+	id S1754276Ab3GYDPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 23:15:36 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:46771 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562Ab3GYDPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 23:10:49 -0400
-Message-ID: <20130724221048.129254d7cfiyvoe0@67.228.131.205>
-Date: Wed, 24 Jul 2013 22:10:48 -0500
-From: linux@roeck-us.net
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, stable@vger.kernel.org
-Subject: Re: [ 000/103] 3.10.3-stable review
-References: <20130723220418.532514378@linuxfoundation.org>
-In-Reply-To: <20130723220418.532514378@linuxfoundation.org>
+	Wed, 24 Jul 2013 23:15:31 -0400
+Message-ID: <51F09841.1060405@linux.vnet.ibm.com>
+Date: Thu, 25 Jul 2013 11:15:13 +0800
+From: Michael Wang <wangyun@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
+To: Rakib Mullick <rakib.mullick@gmail.com>
+CC: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] sched: update_top_cache_domain only at the times of
+ building sched domain.
+References: <1374601332.9192.0.camel@localhost.localdomain> <51EF4969.4050807@linux.vnet.ibm.com> <CADZ9YHiJ4MYFkWqikKu0qHOsBYGEPYvC2JL5wE3iCUH6vTMKcA@mail.gmail.com> <51EF919F.2000706@linux.vnet.ibm.com> <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
+In-Reply-To: <CADZ9YHiQO7ynz+4KK73N+wpEvgcQDaHJ9cOn5fHaw0uGnVBtnQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.10)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072503-9574-0000-0000-000008DF1F21
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+On 07/24/2013 09:57 PM, Rakib Mullick wrote:
+> On Wed, Jul 24, 2013 at 2:34 PM, Michael Wang
+[snip]
+>>
+>> I think you missed this in PeterZ's suggestion:
+>>
+>> -               cpu_attach_domain(NULL, &def_root_domain, i);
+>>
+>> With this change, it will be safe since you will still get an un-freed
+>> sd, although it's an old one.
+>>
+> I never meant it and clearly I missed it. If you remove
+> cpu_attach_domain(), then detach_destroy_domain() becomes meaningless.
+> And I don't have any intent to remove cpu_attach_domain from
+> detach_destroy_domain() at all.
+> 
+>> But your patch will run the risk to get a freed sd, since you make
+>> 'sd_llc' wrong for a period of time (between destroy and rebuild) IMO.
+>>
 
-> This is the start of the stable review cycle for the 3.10.3 release.
-> There are 103 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Thu Jul 25 22:01:33 UTC 2013.
-> Anything received after that time might be too late.
->
-Build results below. Same as with previous release.
+Ok, allow me try to explain it again, hope this time it could be more
+clear...
 
-Guenter
+> Building 'sd_llc' depends on schedule domain. If you don't have sd,
+> sd_llc will point to NULL and sd_llc_id is
+> the CPU itself. Since, we're  trying to re-construing so for this time
+> being it doesn't matter, cause we're building
+> it again. 
 
-----
-Build x86_64:defconfig passed
-Build x86_64:allyesconfig passed
-Build x86_64:allmodconfig passed
-Build x86_64:allnoconfig passed
-Build x86_64:alldefconfig passed
-Build i386:defconfig passed
-Build i386:allyesconfig passed
-Build i386:allmodconfig passed
-Build i386:allnoconfig passed
-Build i386:alldefconfig passed
-Build mips:defconfig passed
-Build mips:bcm47xx_defconfig passed
-Build mips:bcm63xx_defconfig passed
-Build mips:nlm_xlp_defconfig passed
-Build mips:ath79_defconfig passed
-Build mips:ar7_defconfig passed
-Build mips:fuloong2e_defconfig passed
-Build mips:e55_defconfig passed
-Build mips:cavium_octeon_defconfig passed
-Build mips:powertv_defconfig passed
-Build mips:malta_defconfig passed
-Build powerpc:defconfig passed
-Build powerpc:allyesconfig failed
-Build powerpc:allmodconfig passed
-Build powerpc:chroma_defconfig passed
-Build powerpc:maple_defconfig passed
-Build powerpc:ppc6xx_defconfig passed
-Build powerpc:mpc83xx_defconfig passed
-Build powerpc:mpc85xx_defconfig passed
-Build powerpc:mpc85xx_smp_defconfig passed
-Build powerpc:tqm8xx_defconfig passed
-Build powerpc:85xx/sbc8548_defconfig passed
-Build powerpc:83xx/mpc834x_mds_defconfig passed
-Build powerpc:86xx/sbc8641d_defconfig passed
-Build arm:defconfig passed
-Build arm:allyesconfig failed
-Build arm:allmodconfig failed
-Build arm:exynos4_defconfig passed
-Build arm:multi_v7_defconfig passed
-Build arm:kirkwood_defconfig passed
-Build arm:omap2plus_defconfig passed
-Build arm:tegra_defconfig passed
-Build arm:u8500_defconfig passed
-Build arm:at91sam9rl_defconfig passed
-Build arm:ap4evb_defconfig passed
-Build arm:bcm_defconfig passed
-Build arm:bonito_defconfig passed
-Build arm:pxa910_defconfig passed
-Build arm:mvebu_defconfig passed
-Build m68k:defconfig passed
-Build m68k:m5272c3_defconfig passed
-Build m68k:m5307c3_defconfig passed
-Build m68k:m5249evb_defconfig passed
-Build m68k:m5407c3_defconfig passed
-Build m68k:sun3_defconfig passed
-Build m68k:m5475evb_defconfig passed
-Build sparc:defconfig passed
-Build sparc:sparc64_defconfig passed
-Build xtensa:defconfig passed
-Build xtensa:iss_defconfig passed
-Build microblaze:mmu_defconfig passed
-Build microblaze:nommu_defconfig passe
-Build blackfin:defconfig passed
-Build parisc:defconfig passed
+It does matter, although we build it again, we need to make things sync
+at any point of time in SMP world.
 
------------------------
-Total builds: 64 Total build errors: 3
+Now, please just note what you're saying, on last thread
+> you've said -
+> 
+>        "I don't think we have the promise that before we rebuild the stuff
+>         correctly, no one will utilize 'sd_llc'..."
+> 
+> If that is the case, then we shouldn't worry about it at all. And this
+> above comments (from previous thread I've quoted and this thread I'm
+> replying) they're just self contradictory.
+
+Let's have some picture like:
+
+	destroy
+		cpu_attach_domain(NULL)			//cad_A
+			update_top_cache_domain()	//utcd_A
+
+	WINDOW	//begin after last rcu_read_unlock()
+		//end after next rcu_read_lock()
+
+	build
+		cpu_attach_domain(new_sd)		//cad_B
+			update_top_cache_domain()	//utcd_B
+
+Now in old world, what we have is:
+1. in 'utcd_A', make 'sd_llc' to be NULL since old_sd was destroyed in
+cad_A.
+2. thus during WINDOW, both 'rq->sd' and 'sd_llc' is NULL
+3. in 'utcd_B', update 'sd_llc' to be the new 'highest cache-share sd'
+since new_sd attached in 'cad_B'
+
+Now with your patch applied, what will happen is:
+1. 'utcd_A' won't happen now, although the sd 'sd_llc' point to was
+destroyed in 'cad_A'
+2. thus during WINDOW, 'rq->sd' is NULL while 'sd_llc' is the destroyed
+'old highest cache-share sd'
+3. in 'utcd_B', update 'sd_llc' to be the new 'highest cache-share sd '
+since new_sd attached in 'cad_B'
+
+Seems like both will result the same 'sd_llc', but your patch make
+'sd_llc' point to a destroyed sd during the WINDOW.
+
+And I said:
+
+"I don't think we have the promise that before we rebuild the stuff
+correctly, no one will utilize 'sd_llc'..."
+
+By which I mean some one will utilize 'sd_llc' during the WINDOW, in old
+world, it's safe since will get NULL, with your patch, it's unsafe since
+we get a freeing sd.
+
+And that's the risk I concerned, and that's my point.
+
+> 
+>> I guess I get you point, you are trying to save one time update since
+>> you think this will be done twice, but actually the result of this two
+>> time update was different, it's not redo and it's in order to sync
+>> 'sd_llc' with 'rq->sd'.
+>>
+> Yes, you got my point now, but I don't understand your points. Anyway,
+> I'm not going to argue with this
+> anymore, this stuff isn't much of an issue, but removing this sorts of
+> stuff is typical in kernel development.
+
+I'm not argue, actually there is nothing to argue...just try to explain
+what is wrong IMO, if I failed to, then I could only blame my poor
+writing skill...
+
+Regards,
+Michael Wang
+
+> 
+> Thanks,
+> Rakib.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
