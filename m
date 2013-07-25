@@ -1,133 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab3GYQPg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 12:15:36 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44192 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756217Ab3GYQPe convert rfc822-to-8bit (ORCPT
+	id S1756521Ab3GYQSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 12:18:43 -0400
+Received: from mail-qe0-f48.google.com ([209.85.128.48]:43532 "EHLO
+	mail-qe0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756244Ab3GYQSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 12:15:34 -0400
-Message-ID: <1374768928.3213.31.camel@hornet>
-Subject: Re: RFC: device thermal limits represented in device tree nodes
-From: Pawel Moll <pawel.moll@arm.com>
-To: Eduardo Valentin <eduardo.valentin@ti.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Durgadoss R <durgadoss.r@intel.com>,
-        "Zhang, Rui" <rui.zhang@intel.com>, Wei Ni <wni@nvidia.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+	Thu, 25 Jul 2013 12:18:39 -0400
+MIME-Version: 1.0
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130725161406.GD31835@radagast>
+References: <1374605750-29565-1-git-send-email-olof@lixom.net>
+	<20130725161406.GD31835@radagast>
+Date: Thu, 25 Jul 2013 09:18:39 -0700
+Message-ID: <CAOesGMiupSqpqfyuJ_abr4UQj9Ot77aGJZTsCEY63v-XttgPgw@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: at91_udc: Check gpio lookup results
+From: Olof Johansson <olof@lixom.net>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 25 Jul 2013 17:15:28 +0100
-In-Reply-To: <51EFED19.5090900@ti.com>
-References: <51ED40E3.5020703@ti.com> <51EF3186.9060001@wwwdotorg.org>
-	 <1374664745.25700.118.camel@hornet> <51EFED19.5090900@ti.com>
-X-Mailer: Evolution 3.8.2-0ubuntu1~raring1
-Mime-Version: 1.0
-X-OriginalArrivalTime: 25 Jul 2013 16:15:28.0539 (UTC) FILETIME=[2D950EB0:01CE8952]
-X-MC-Unique: 113072517153200801
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 16:04 +0100, Eduardo Valentin wrote:
-> > 1. As you have pointed out, the thermal limits are related to the
-> > *device being monitored*, not the sensor itself.
-> > 
-> Yeah, thinking of it now, this original proposal, it lacks a stronger
-> relationship mapping between monitored and monitoring devices. But it
-> does have it..
-> 
-> > 2. Therefore the tree should express relation between those two; a
-> > sensor mode should be connected (via phandle most likely) to the device
-> 
-> .. this is done, more or less, by means of the 'type' property (see
-> original RFC binding).
+On Thu, Jul 25, 2013 at 9:14 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Jul 23, 2013 at 11:55:50AM -0700, Olof Johansson wrote:
+>> This resolves the following valid build warning:
+>>
+>> drivers/usb/gadget/at91_udc.c:1685:34: warning: 'flags' may be used uninitialized in this function [-Wmaybe-uninitialized]
+>>
+>> I switched from ? : to !! mostly to save from wrapping the lines while
+>> I was at it.
+>>
+>> Signed-off-by: Olof Johansson <olof@lixom.net>
+>> ---
+>>
+>> Felipe, this would be nice to see fixed for 3.11 but I'd argue that it's
+>> been here long enough to not really be needed for -stable.
+>>
+>>  drivers/usb/gadget/at91_udc.c |   12 ++++++++++--
+>>  1 file changed, 10 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+>> index 073b938..f3dbcd0 100644
+>> --- a/drivers/usb/gadget/at91_udc.c
+>> +++ b/drivers/usb/gadget/at91_udc.c
+>> @@ -1682,12 +1682,20 @@ static void at91udc_of_init(struct at91_udc *udc,
+>>
+>>       board->vbus_pin = of_get_named_gpio_flags(np, "atmel,vbus-gpio", 0,
+>>                                                 &flags);
+>> -     board->vbus_active_low = (flags & OF_GPIO_ACTIVE_LOW) ? 1 : 0;
+>> +     if (board->vbus_pin < 0)
+>> +             pr_err("%s: Failed to get atmel,vbus-gpio property\n",
+>> +                    np->full_name);
+>> +     else
+>> +             board->vbus_active_low = !!(flags & OF_GPIO_ACTIVE_LOW);
+>
+> should you even continue if you can't get the gpio ? If this gpio is
+> optional, then it's not really and error, rather a debugging or
+> informational message.
 
-I'm not sure what do you mean (regarding "type"), but I think I got what
-I wanted with the "monitoring_device" phandles (shouldn't it be
-"_device*s*" then? ;-).
+That's what the code does today, and I wasn't trying to second-guess
+their decisions on that. Chances are firmware, in some instances, have
+left power on so continuing might do no harm.
 
-> For example:
-> cpu0: cpu@0 {
-> 	/* ... cpu needed bindings  */
-> 
-> 	thermal_zone {
-> 		type = "CPU";
+> BTW, this vbus-gpio looks, to me at least, like a fixed regulator
+> controlled by a GPIO, no ?
 
-So what does this exactly mean? What is so special about CPU? What other
-types you've got there? (Am I just lazy not looking at the numerous
-links you provided? ;-)
-
-> 		monitoring_device = <&sensor@xxxx
-> 				    &sensor@yyyy>;
-> 
-> 		mask = <0x03>; /* trips writability */
-> 		passive_delay = <250>; /* milliseconds */
-> 		polling_delay = <1000>; /* milliseconds */
-> 		policy = "step_wise";
-
-The word "policy" doesn't sound to me like a "hardware feature",
-wouldn't you agree?
-
-> 		trips {
-> 			alert@100000{
-> 				temperature = <100000>; /* milliCelsius
-> 				hysteresis = <2000>; /* milliCelsius */
-> 				type = <THERMAL_TRIP_PASSIVE>;
-> 			};
-> 			crit@125000{
-> 				temperature = <125000>; /* milliCelsius
-> 				hysteresis = <2000>; /* milliCelsius */
-> 				type = <THERMAL_TRIP_CRITICAL>;
-> 			};
-> 		};
-> 		bind_params {
-> 			action@0{
-> 				cooling_device = "thermal-cpufreq";
-
-Why is it a string? It seems very Linux-y... (cpufreq) Is there any
-particular reason not to have phandles to the fans that have any impact
-on the zone?
-
-> 				weight = <100>; /* percentage */
-
-Does this mean: how "successful" will be the particular fan?
-
-> Another way, as I mentioned in the original RFC, an option would be to
-> have the thermal_zone node not embedded in any device node. But them, we
-> would need to firmly link it to other device nodes, to describe what is
-> monitored and what is used for monitoring. 
-
-You mean the zone nodes would live at the top level of the tree? To my
-mind the root represents the device (the board, whatever you call it),
-which, I guess, may be what you want, if the zone "covers" the whole
-device? (as in: one fan and one sensor somewhere in the box and the only
-thing you may do is to check the ambient temperature and start the fan
-if it's to high)
-
-> With the above I believe we could have dts(i) files describing only
-> thermal, for instance.
-
-You can include a dtsi inside the device node, no problem with that:
-
-/dts-v1/;
-        
-/ {     
-        smb {                   
-                compatible = "simple-bus";
-
-                /include/ "vexpress-v2m-rs1.dtsi"
-        };      
-};     
-
-Pawel
+Yes, it does. We have plenty of these kind of bindings from before
+everything had to be a regulator.
 
 
+-Olof
