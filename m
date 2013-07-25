@@ -1,72 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab3GYLXv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 07:23:51 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48625 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755862Ab3GYLXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 07:23:47 -0400
-Message-ID: <51F10AA8.2050901@linux.vnet.ibm.com>
-Date: Thu, 25 Jul 2013 16:53:20 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>, Borislav Petkov <bp@alien8.de>,
-        bhelgaas@google.com
-CC: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-acpi@vger.kernel.org, "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-References: <1374526866-6813-1-git-send-email-bp@alien8.de> <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722>
-In-Reply-To: <1374686598.18818.18.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072511-5816-0000-0000-00000916D38B
+	id S1755732Ab3GYL0I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 07:26:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52216 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755491Ab3GYL0C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 07:26:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,742,1367996400"; 
+   d="scan'208";a="273078846"
+From: Jenny TC <jenny.tc@intel.com>
+To: linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>,
+        Anton Vorontsov <anton.vorontsov@linaro.org>
+Cc: Jenny TC <jenny.tc@intel.com>
+Subject: [PATCH] power_supply: Add power_supply notifier
+Date: Fri, 26 Jul 2013 00:51:09 +0530
+Message-Id: <1374780069-23670-1-git-send-email-jenny.tc@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 10:53 PM, Joe Perches wrote:
-> On Wed, 2013-07-24 at 22:43 +0530, Naveen N. Rao wrote:
->> On 2013/07/22 11:01PM, Borislav Petkov wrote:
->>> From: Borislav Petkov <bp@suse.de>
->>>
->>> [    5.525861] ERST: Can not request iomem region <0x        c7eff000-0x        c7f00000> for ERST.
->>>
->>> This needs to have leading zeroes. Make it so.
->
-> Why does it need leading zeros?
->
->> While looking at this, I noticed that we seem to be using varying field
->> widths in our APEI code:
->> - einj.c has two instances using %#010llx.
->> - apei-base.c uses widths of 10 (4 bytes) and 6 (2 bytes).
->>
->> Not sure if these are intentional and those fields truly aren't 64-bit
->> (as suggested by the usage of long long int).
->
-> I suggest using "0x%llx" everywhere unless there's a
-> compelling reason like columnar alignment for them.
+This patch adds a notifier chain to the power_supply.
+This notifier helps drivers in other subsystem to listen to
+changes in power supply subsystem. This would help to take some
+actions in those drivers on changing the power supply properties.
+One such scenario is to increase/decrease system performance based
+on the battery capacity/voltage. Another scenario is to adjust the
+h/w peak current detection voltage/current thresholds based on battery
+voltage/capacity. The notifier helps drivers to listen to changes
+in power_suppy susbystem without polling the power_supply properties
 
-I think that might be better. I see that these changes were done in 
-commit 46b91e37. Copying Bjorn Helgaas.
+Signed-off-by: Jenny TC <jenny.tc@intel.com>
+---
+ drivers/power/power_supply_core.c |   18 ++++++++++++++++++
+ include/linux/power_supply.h      |    7 +++++++
+ 2 files changed, 25 insertions(+)
 
-On 07/24/2013 11:40 PM, Borislav Petkov wrote:
- > That's an interesting question but I think you're better fitted to
- > answer it - I try to avoid the APEI spec as much as possible.
- >
- > :-)
- >
-
-Oh, I've hardly scratched the surface w.r.t APEI. I think I'll let the 
-experts comment on this :)
-
-
-Thanks,
-Naveen
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index 3b2d5df..a5779b3 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -24,6 +24,9 @@
+ struct class *power_supply_class;
+ EXPORT_SYMBOL_GPL(power_supply_class);
+ 
++ATOMIC_NOTIFIER_HEAD(power_supply_notifier);
++EXPORT_SYMBOL(power_supply_notifier);
++
+ static struct device_type power_supply_dev_type;
+ 
+ static bool __power_supply_is_supplied_by(struct power_supply *supplier,
+@@ -76,6 +79,9 @@ static void power_supply_changed_work(struct work_struct *work)
+ 			      __power_supply_changed_work);
+ 
+ 	power_supply_update_leds(psy);
++	
++	atomic_notifier_call_chain(&power_supply_notifier,
++				POWER_SUPPLY_PROP_CHANGED, psy);
+ 
+ 	kobject_uevent(&psy->dev->kobj, KOBJ_CHANGE);
+ }
+@@ -328,6 +334,18 @@ static void power_supply_dev_release(struct device *dev)
+ 	kfree(dev);
+ }
+ 
++int power_supply_reg_notifier(struct notifier_block *nb)
++{
++	return atomic_notifier_chain_register(&power_supply_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(power_supply_reg_notifier);
++
++void power_supply_unreg_notifier(struct notifier_block *nb)
++{
++	atomic_notifier_chain_unregister(&power_supply_notifier, nb);
++}
++EXPORT_SYMBOL_GPL(power_supply_unreg_notifier);
++
+ #ifdef CONFIG_THERMAL
+ static int power_supply_read_temp(struct thermal_zone_device *tzd,
+ 		unsigned long *temp)
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index 516e4c4..32fae9c 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -217,6 +217,10 @@ enum psy_throttle_action {
+ 	PSY_THROTTLE_INPUT_LIMIT,
+ };
+ 
++enum power_supply_notifier_events {
++	POWER_SUPPLY_PROP_CHANGED,
++};
++
+ struct psy_throttle_state {
+ 	enum psy_throttle_action throttle_action;
+ 	unsigned throttle_val;
+@@ -293,6 +297,9 @@ struct power_supply_info {
+ 	int use_for_apm;
+ };
+ 
++extern struct atomic_notifier_head    power_supply_notifier;
++extern int power_supply_reg_notifier(struct notifier_block *nb);
++extern void power_supply_unreg_notifier(struct notifier_block *nb);
+ extern struct power_supply *power_supply_get_by_name(const char *name);
+ extern void power_supply_changed(struct power_supply *psy);
+ extern int power_supply_am_i_supplied(struct power_supply *psy);
+-- 
+1.7.9.5
 
