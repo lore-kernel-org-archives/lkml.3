@@ -1,49 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341Ab3GYAJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 24 Jul 2013 20:09:56 -0400
-Received: from etezian.org ([198.101.225.253]:40087 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752685Ab3GYAJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 24 Jul 2013 20:09:55 -0400
-From: Andi Shyti <andi@etezian.org>
-To: chris.mason@fusionio.com
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        andi@etezian.org
-Subject: [PATCH] btrfs: raid56: avoid double allocation
-Date: Thu, 25 Jul 2013 02:09:40 +0200
-Message-Id: <1374710980-5707-1-git-send-email-andi@etezian.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754538Ab3GYAN3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 24 Jul 2013 20:13:29 -0400
+Received: from mailout39.mail01.mtsvc.net ([216.70.64.83]:39295 "EHLO
+	n12.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753924Ab3GYAN2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 24 Jul 2013 20:13:28 -0400
+Message-ID: <51F06DA4.6010603@hurleysoftware.com>
+Date: Wed, 24 Jul 2013 20:13:24 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Dean Jenkins <Dean_Jenkins@mentor.com>
+CC: Andre Naujoks <nautsch2@gmail.com>, linux-kernel@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 5/5] SLIP: Fix transmission segmentation mechanism
+References: <1372779094-11730-1-git-send-email-Dean_Jenkins@mentor.com> <1372779094-11730-6-git-send-email-Dean_Jenkins@mentor.com>
+In-Reply-To: <1372779094-11730-6-git-send-email-Dean_Jenkins@mentor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-INTERNAL-ID: 8fa290c2a27252aacf65dbc4a42f3ce3735fb2a4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-alloc_rbio frees already bbio and raid_map, therefore they don't
-need to be freed in case it fails
+On 07/02/2013 11:31 AM, Dean Jenkins wrote:
+> Binding SLIP with a PTY/TTY can cause truncated SLIP frames to be
+> transmitted when the first write to the TTY fails to consume all
+> the characters of the SLIP frame.
+>
+> Asynchronous to the write function is a wakeup event from the TTY
+> that indicates the TTY can accept more data. The wakeup event
+> calls tty_wakeup() which calls slip_write_wakeup() when
+> TTY_DO_WRITE_WAKEUP is set.
+>
+> To complete the transmission of a SLIP frame to the TTY,
+> slip_write_wakeup() must run at least once. Unfortunately, pty_write()
+> also calls tty_wakeup() and when TTY_DO_WRITE_WAKEUP is set,
+> slip_write_wakeup() is called. xleft is always zero and
+> causes slip_write_wakeup() to complete the transmission and
+> clears the TTY_DO_WRITE_WAKEUP flag. This can cause a truncated
+> SLIP frame because any remaining characters will not get sent.
+>
+> The wakeup event is unable to process the remaining characters
+> because the TTY_DO_WRITE_WAKEUP flag has been cleared.
+>
+> The code modification fixes the transmission segmentation
+> mechanism by preventing pty_write() from calling
+> slip_write_wakeup() by clearing TTY_DO_WRITE_WAKEUP before calling
+> pty_write(). After pty_write() returns, TTY_DO_WRITE_WAKEUP is set
+> to allow the TTY wakeup event to call slip_write_wakeup() to
+> attempt to complete the transmission of the SLIP frame.
+>
+> This may not be foolproof because a timeout is needed to
+> break out of the cycle of transmission attempts. Note error
+> codes from the TTY layer will break out of the cycle of
+> transmission attempts.
+>
+> Signed-off-by: Dean Jenkins <Dean_Jenkins@mentor.com>
+> ---
+>   drivers/net/slip/slip.c | 29 ++++++++++++++++++++---------
+>   1 file changed, 20 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/net/slip/slip.c b/drivers/net/slip/slip.c
+> index e2eff84..0ded23d 100644
+> --- a/drivers/net/slip/slip.c
+> +++ b/drivers/net/slip/slip.c
+> @@ -404,15 +404,13 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
+>   	 */
+>   	sl->xleft = 0;
+>
+> -	/* Order of next two lines is *very* important.
+> -	 * When we are sending a little amount of data,
+> -	 * the transfer may be completed inside the ops->write()
+> -	 * routine, because it's running with interrupts enabled.
+> -	 * In this case we *never* got WRITE_WAKEUP event,
+> -	 * if we did not request it before write operation.
+> -	 *       14 Oct 1994  Dmitry Gorodchanin.
+> +	/* ensure slip_write_wakeup() does not run due to write()
+> +	 * or write_wakeup event and this prevents slip_write_wakeup()
+> +	 * responding to an out of date xleft value.
+>   	 */
+> -	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+> +	clear_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
+> +
+> +	/* attempt to write the SLIP frame to the TTY buffer */
+>   	err = sl->tty->ops->write(sl->tty, sl->xbuff, count);
+>
+>   	if (err < 0) {
+> @@ -432,6 +430,11 @@ static void sl_encaps(struct slip *sl, unsigned char *icp, int len)
+>   	/* VSV */
+>   	clear_bit(SLF_OUTWAIT, &sl->flags);	/* reset outfill flag */
+>   #endif
+> +	/* xleft will be zero when all characters have been written.
+> +	 * if xleft is positive then additional writes are needed.
+> +	 * write_wakeup event is needed to complete the transmission.
+> +	 */
+> +	set_bit(TTY_DO_WRITE_WAKEUP, &sl->tty->flags);
 
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- fs/btrfs/raid56.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+What happens if the tty_wakeup() has already happened on another
+CPU before TTY_DO_WRITE_WAKEUP was set?
 
-diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
-index 0525e13..35fe775 100644
---- a/fs/btrfs/raid56.c
-+++ b/fs/btrfs/raid56.c
-@@ -1687,11 +1687,9 @@ int raid56_parity_write(struct btrfs_root *root, struct bio *bio,
- 	struct blk_plug_cb *cb;
- 
- 	rbio = alloc_rbio(root, bbio, raid_map, stripe_len);
--	if (IS_ERR(rbio)) {
--		kfree(raid_map);
--		kfree(bbio);
-+	if (IS_ERR(rbio))
- 		return PTR_ERR(rbio);
--	}
-+
- 	bio_list_add(&rbio->bio_list, bio);
- 	rbio->bio_list_bytes = bio->bi_size;
- 
--- 
-1.8.3.2
+>   }
+>
+>   /*
+> @@ -447,15 +450,18 @@ static void slip_write_wakeup(struct tty_struct *tty)
+>   	if (!sl || sl->magic != SLIP_MAGIC || !netif_running(sl->dev))
+>   		return;
+>
+> +	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+> +
+>   	if (sl->xleft <= 0)  {
+> +		/* Whole SLIP frame has been written. */
+>   		/* Now serial buffer is almost free & we can start
+>   		 * transmission of another packet */
+>   		sl->dev->stats.tx_packets++;
+> -		clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+>   		sl_unlock(sl);
+>   		return;
+>   	}
+>
+> +	/* attempt to write the remaining SLIP frame characters */
+>   	err = tty->ops->write(tty, sl->xhead, sl->xleft);
+>
+>   	if (err < 0) {
+> @@ -468,6 +474,11 @@ static void slip_write_wakeup(struct tty_struct *tty)
+>
+>   	sl->xleft -= actual;
+>   	sl->xhead += actual;
+> +
+> +	/* allow the next tty wakeup event to attempt to complete
+> +	 * the transmission
+> +	 */
+> +	set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+
+Same here.
+
+>   }
+>
+>   static void sl_tx_timeout(struct net_device *dev)
+>
 
