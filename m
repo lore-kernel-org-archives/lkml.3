@@ -1,131 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab3GYSx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 14:53:29 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:37694 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756758Ab3GYSx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 14:53:27 -0400
-Message-ID: <1374778405.1957.21.camel@joe-AO722>
-Subject: [trivial PATCH] treewide: Fix printks with 0x%#
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Helge Deller <deller@gmx.de>, John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Daniele Venzano <venza@brownhat.org>, Andi Kleen <andi@firstfloor.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-mm@kvack.org,
-        alsa-devel <alsa-devel@alsa-project.org>
-Date: Thu, 25 Jul 2013 11:53:25 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1757919Ab3GYSx4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 14:53:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:38442 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849Ab3GYSxx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 14:53:53 -0400
+Message-ID: <51F1743D.7050007@wwwdotorg.org>
+Date: Thu, 25 Jul 2013 11:53:49 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Richard Cochran <richardcochran@gmail.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <51F168FC.9070906@wwwdotorg.org> <20130725182920.GA24955@e106331-lin.cambridge.arm.com> <20130725184834.GA8296@netboy>
+In-Reply-To: <20130725184834.GA8296@netboy>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/25/2013 11:48 AM, Richard Cochran wrote:
+> On Thu, Jul 25, 2013 at 07:29:20PM +0100, Mark Rutland wrote:
+>> On Thu, Jul 25, 2013 at 07:05:48PM +0100, Stephen Warren wrote:
+>>>
+>>> I don't think having people "rely" on the bindings is the issue so much
+>>> as the awareness that if they do, there will be compatibility issues for
+>>> unstable bindings.
+>>
+>> As long as we can make sufficiently clear that trying to use an unstable
+>> binding is going to be *very* painful, and not necessarily supported.
+> 
+> Oh, man.
+> 
+> The introduction of DT into ARM Linux was supposed to make everyone's
+> life sooo much easier. Of course, based on experience with powerpc, I
+> never believed it*, but still I would expect to hear that the DT
+> bindings are, well, a *binding* contract between the board developer,
+> boot loader, and the kernel.
+> 
+> Once it is working with a particular kernel, a DT board description
+> file should continue to work indefinitely with newer kernels. Anything
+> less is a regression, pure and simple.
+> 
+> If you go around changing the bindings willy nilly, then what is point
+> of having DT at all?
 
-Using 0x%# emits 0x0x.  Only one is necessary.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- arch/parisc/kernel/signal.c       | 2 +-
- drivers/clocksource/acpi_pm.c     | 4 ++--
- drivers/net/ethernet/sis/sis900.c | 2 +-
- mm/memory-failure.c               | 2 +-
- sound/pci/ens1370.c               | 2 +-
- sound/pci/via82xx.c               | 2 +-
- 6 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/arch/parisc/kernel/signal.c b/arch/parisc/kernel/signal.c
-index 940188d..35c5bf1 100644
---- a/arch/parisc/kernel/signal.c
-+++ b/arch/parisc/kernel/signal.c
-@@ -85,7 +85,7 @@ restore_sigcontext(struct sigcontext __user *sc, struct pt_regs *regs)
- 	err |= __copy_from_user(regs->iaoq, sc->sc_iaoq, sizeof(regs->iaoq));
- 	err |= __copy_from_user(regs->iasq, sc->sc_iasq, sizeof(regs->iasq));
- 	err |= __get_user(regs->sar, &sc->sc_sar);
--	DBG(2,"restore_sigcontext: iaoq is 0x%#lx / 0x%#lx\n", 
-+	DBG(2,"restore_sigcontext: iaoq is %#lx / %#lx\n",
- 			regs->iaoq[0],regs->iaoq[1]);
- 	DBG(2,"restore_sigcontext: r28 is %ld\n", regs->gr[28]);
- 	return err;
-diff --git a/drivers/clocksource/acpi_pm.c b/drivers/clocksource/acpi_pm.c
-index 6efe4d1..6eab889 100644
---- a/drivers/clocksource/acpi_pm.c
-+++ b/drivers/clocksource/acpi_pm.c
-@@ -200,14 +200,14 @@ static int __init init_acpi_pm_clocksource(void)
- 			if ((value2 < value1) && ((value2) < 0xFFF))
- 				break;
- 			printk(KERN_INFO "PM-Timer had inconsistent results:"
--			       " 0x%#llx, 0x%#llx - aborting.\n",
-+			       " %#llx, %#llx - aborting.\n",
- 			       value1, value2);
- 			pmtmr_ioport = 0;
- 			return -EINVAL;
- 		}
- 		if (i == ACPI_PM_READ_CHECKS) {
- 			printk(KERN_INFO "PM-Timer failed consistency check "
--			       " (0x%#llx) - aborting.\n", value1);
-+			       " (%#llx) - aborting.\n", value1);
- 			pmtmr_ioport = 0;
- 			return -ENODEV;
- 		}
-diff --git a/drivers/net/ethernet/sis/sis900.c b/drivers/net/ethernet/sis/sis900.c
-index eb4aea3..6c1e34c 100644
---- a/drivers/net/ethernet/sis/sis900.c
-+++ b/drivers/net/ethernet/sis/sis900.c
-@@ -1723,7 +1723,7 @@ static irqreturn_t sis900_interrupt(int irq, void *dev_instance)
- 
- 	if(netif_msg_intr(sis_priv))
- 		printk(KERN_DEBUG "%s: exiting interrupt, "
--		       "interrupt status = 0x%#8.8x.\n",
-+		       "interrupt status = %#8.8x\n",
- 		       net_dev->name, sr32(isr));
- 
- 	spin_unlock (&sis_priv->lock);
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 09ae111..29d3f38 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -1267,7 +1267,7 @@ void memory_failure_queue(unsigned long pfn, int trapno, int flags)
- 	if (kfifo_put(&mf_cpu->fifo, &entry))
- 		schedule_work_on(smp_processor_id(), &mf_cpu->work);
- 	else
--		pr_err("Memory failure: buffer overflow when queuing memory failure at 0x%#lx\n",
-+		pr_err("Memory failure: buffer overflow when queuing memory failure at %#lx\n",
- 		       pfn);
- 	spin_unlock_irqrestore(&mf_cpu->lock, proc_flags);
- 	put_cpu_var(memory_failure_cpu);
-diff --git a/sound/pci/ens1370.c b/sound/pci/ens1370.c
-index ca8929b..61262f3 100644
---- a/sound/pci/ens1370.c
-+++ b/sound/pci/ens1370.c
-@@ -1842,7 +1842,7 @@ static int snd_ensoniq_create_gameport(struct ensoniq *ensoniq, int dev)
- 
- 	default:
- 		if (!request_region(io_port, 8, "ens137x: gameport")) {
--			printk(KERN_WARNING "ens137x: gameport io port 0x%#x in use\n",
-+			printk(KERN_WARNING "ens137x: gameport io port %#x in use\n",
- 			       io_port);
- 			return -EBUSY;
- 		}
-diff --git a/sound/pci/via82xx.c b/sound/pci/via82xx.c
-index 3c511d0..5ae6f04 100644
---- a/sound/pci/via82xx.c
-+++ b/sound/pci/via82xx.c
-@@ -1940,7 +1940,7 @@ static int snd_via686_create_gameport(struct via82xx *chip, unsigned char *legac
- 
- 	r = request_region(JOYSTICK_ADDR, 8, "VIA686 gameport");
- 	if (!r) {
--		printk(KERN_WARNING "via82xx: cannot reserve joystick port 0x%#x\n",
-+		printk(KERN_WARNING "via82xx: cannot reserve joystick port %#x\n",
- 		       JOYSTICK_ADDR);
- 		return -EBUSY;
- 	}
-
-
-
+That's exactly why we're starting to think about which bindings should
+be considered stable and immutable, and when that should happen. As Olof
+pointed out, we haven't fully enforced that yet. Preferably bindings
+will be marked stable very fast, but mistakes are always going to happen
+in early development. ABIs are very hard.
