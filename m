@@ -1,96 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab3GYGAb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 02:00:31 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27738 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab3GYGA1 (ORCPT
+	id S1754880Ab3GYGGe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 02:06:34 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:62811 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753005Ab3GYGGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 02:00:27 -0400
-X-AuditID: cbfee6a3-b7fe56d0000075aa-cd-51f0bef9cf11
-Date: Thu, 25 Jul 2013 06:00:25 +0000 (GMT)
-From: Tarak Anumolu <tarak.anumolu@samsung.com>
-Subject: Need help in using udev
-To: kernelnewbies@nl.linux.org, linux-kernel@vger.kernel.org
-Reply-to: tarak.anumolu@samsung.com
-MIME-version: 1.0
-X-MTR: 20130725055835052@tarak.anumolu
-Msgkey: 20130725055835052@tarak.anumolu
-X-EPLocale: en_US.windows-1252
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20130725054032684@tarak.anumolu
-X-ParentMTR: 20130725054032684@tarak.anumolu
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=windows-1252
-MIME-version: 1.0
-Message-id: <10322723.303681374732025069.JavaMail.weblogic@epml08>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHIsWRmVeSWpSXmKPExsVy+t/t6bo/930INFh1QMvi8q45bA6MHp83
-	yQUwRnHZpKTmZJalFunbJXBlTL74n6mgTaDi/PwG5gbGM/xdjJwcQgIaEo9PPmbqYuTgkBAw
-	kbg8JQ4kLCEgJnHh3nq2LkYuoJL5jBLtt+YzgiRYBFQlbn3ezQpiswkYSFyctJQNxBYWUJDo
-	7H4FFhcR8JC4t+INE8R8ZYk/E3vBangFBCVOznzCArFLTeL6Aj2IsLpE/+ZWZoi9chJLpl5m
-	grB5JWa0P2WBiU/7ugaqRlri/KwNjDB3Lv7+GCrOL3Hs9g6oV3glntwPhhmze/MXNghbQGLq
-	mYNQrdoSH949glqlK7Fz9mq4MbtOLWeG6b2/ZS5YDbOAosSU7ofsELaBxJFFc1hRfQViO0ns
-	/buEdQKj7CwkqVlI2mchaUdWs4CRZRWjaGpBckFxUnqFsV5xYm5xaV66XnJ+7iZGcCw/W7yD
-	8f9560OMAhyMSjy8AV/fBwqxJpYVV+YeYpTgYFYS4Y2t+BAoxJuSWFmVWpQfX1Sak1p8iFGa
-	g0VJnPdZq3WgkEB6YklqdmpqQWoRTJaJg1OqgTHxp7iSzGZBPdddC6x/FrKtyjsb4ZPQ0ewY
-	fWDvFZPZ6dMttNavubtbkvH2jF9/l77yPq5f25Qjqpudc1Fi/reX14xfcbHXaaS5bLtfEKLN
-	dVbrLP/2j9NDHWTm9a76ZiJ/+bJNYEAJ1yTNcubb8g4XVS+nds01Pl3qelFO/uX3ioa4+b1/
-	WJRYijMSDbWYi4oTAfybfoDhAgAA
+	Thu, 25 Jul 2013 02:06:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374728103-17468-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1374728103-17468-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<1374728103-17468-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Date: Thu, 25 Jul 2013 14:06:32 +0800
+Message-ID: <CAJd=RBA00LjCv7qnCAgxBvKPx9pRQ9pWSgTKHURm2tWM3_BD0A@mail.gmail.com>
+Subject: Re: [PATCH 1/8] migrate: make core migration code aware of hugepage
+From: Hillf Danton <dhillf@gmail.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, Michal Hocko <mhocko@suse.cz>,
+        Rik van Riel <riel@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Naoya Horiguchi <nao.horiguchi@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6P60ZVp001612
 
+On Thu, Jul 25, 2013 at 12:54 PM, Naoya Horiguchi
+<n-horiguchi@ah.jp.nec.com> wrote:
+> Before enabling each user of page migration to support hugepage,
+> this patch enables the list of pages for migration to link not only
+> LRU pages, but also hugepages. As a result, putback_movable_pages()
+> and migrate_pages() can handle both of LRU pages and hugepages.
+>
+> ChangeLog v4:
+>  - make some macros return 'do {} while(0)'
+>  - use more readable variable name
+>
+> ChangeLog v3:
+>  - revert introducing migrate_movable_pages
+>  - add isolate_huge_page
+>
+> ChangeLog v2:
+>  - move code removing VM_HUGETLB from vma_migratable check into a
+>    separate patch
+>  - hold hugetlb_lock in putback_active_hugepage
+>  - update comment near the definition of hugetlb_lock
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Acked-by: Andi Kleen <ak@linux.intel.com>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> ---
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Hi
-
-My name is Tarak, working in Samsung-SouthKorea.
-
-I got some problem in using udev, particulary in writing rules for network interfaces.
-
-Following is the rule for my udev.
-
-Every thing is working fine except the network interface.
-
-My aim is to run network.sh script when the interface got connected/ disconnected.
-
-Can anyone help me on this.
-
-
-# Media automounting
-SUBSYSTEM=="block", ACTION=="add"    RUN+="/etc/udev/scripts/mount.sh"
-SUBSYSTEM=="block", ACTION=="remove" RUN+="/etc/udev/scripts/mount.sh"
-# Added HDD/USB Storage Hotplug by BSP Team at 2013/2/18
-KERNEL=="sd[a-z]", RUN+="/root/usb_hotplug.sh"
-KERNEL=="mouse0", RUN+="/root/mouse_hotplug.sh"
-# Handle network interface setup
-
-#ACTION=="add", SUBSYSTEM=="net", SYSFS{address}=="00:09:18:30:97:02", RUN+="/root/network.sh"
-#ACTION=="remove", SUBSYSTEM=="net", SYSFS{address}=="00:09:18:30:97:02",  RUN+="/root/network.sh"
-
-# The first framebuffer is symlinked to /dev/fb
-KERNEL=="fb0", SYMLINK+="fb"
-# The first rtc device is symlinked to /dev/rtc
-KERNEL=="rtc0", SYMLINK+="rtc"
-# Try and modprobe for drivers for new hardware
-ACTION=="add", DEVPATH=="/devices/*", ENV{MODALIAS}=="?*", RUN+="/sbin/modprobe $env{MODALIAS}"
-# Create a symlink to any touchscreen input device
-SUBSYSTEM=="input", KERNEL=="event[0-9]*", ATTRS{modalias}=="input:*-e0*,3,*a0,1,*18,*", SYMLINK+="input/touchscreen0"
-
-
-
-Regards
-
-
-Tarak Ramgopal Anumolu 
-Security Solution Division
-SAMSUNG TECHWIN CO.,LTDÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+>  include/linux/hugetlb.h |  6 ++++++
+>  mm/hugetlb.c            | 32 +++++++++++++++++++++++++++++++-
+>  mm/migrate.c            | 10 +++++++++-
+>  3 files changed, 46 insertions(+), 2 deletions(-)
+>
+> diff --git v3.11-rc1.orig/include/linux/hugetlb.h v3.11-rc1/include/linux/hugetlb.h
+> index c2b1801..c7a14a4 100644
+> --- v3.11-rc1.orig/include/linux/hugetlb.h
+> +++ v3.11-rc1/include/linux/hugetlb.h
+> @@ -66,6 +66,9 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+>                                                 vm_flags_t vm_flags);
+>  void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
+>  int dequeue_hwpoisoned_huge_page(struct page *page);
+> +bool isolate_huge_page(struct page *page, struct list_head *list);
+> +void putback_active_hugepage(struct page *page);
+> +void putback_active_hugepages(struct list_head *list);
+>  void copy_huge_page(struct page *dst, struct page *src);
+>
+>  #ifdef CONFIG_ARCH_WANT_HUGE_PMD_SHARE
+> @@ -134,6 +137,9 @@ static inline int dequeue_hwpoisoned_huge_page(struct page *page)
+>         return 0;
+>  }
+>
+> +#define isolate_huge_page(p, l) false
+> +#define putback_active_hugepage(p)     do {} while (0)
+> +#define putback_active_hugepages(l)    do {} while (0)
+>  static inline void copy_huge_page(struct page *dst, struct page *src)
+>  {
+>  }
+> diff --git v3.11-rc1.orig/mm/hugetlb.c v3.11-rc1/mm/hugetlb.c
+> index 83aff0a..506d195 100644
+> --- v3.11-rc1.orig/mm/hugetlb.c
+> +++ v3.11-rc1/mm/hugetlb.c
+> @@ -48,7 +48,8 @@ static unsigned long __initdata default_hstate_max_huge_pages;
+>  static unsigned long __initdata default_hstate_size;
+>
+>  /*
+> - * Protects updates to hugepage_freelists, nr_huge_pages, and free_huge_pages
+> + * Protects updates to hugepage_freelists, hugepage_activelist, nr_huge_pages,
+> + * free_huge_pages, and surplus_huge_pages.
+>   */
+>  DEFINE_SPINLOCK(hugetlb_lock);
+>
+> @@ -3431,3 +3432,32 @@ int dequeue_hwpoisoned_huge_page(struct page *hpage)
+>         return ret;
+>  }
+>  #endif
+> +
+> +bool isolate_huge_page(struct page *page, struct list_head *list)
+> +{
+> +       VM_BUG_ON(!PageHead(page));
+> +       if (!get_page_unless_zero(page))
+> +               return false;
+> +       spin_lock(&hugetlb_lock);
+> +       list_move_tail(&page->lru, list);
+> +       spin_unlock(&hugetlb_lock);
+> +       return true;
+> +}
+> +
+> +void putback_active_hugepage(struct page *page)
+> +{
+> +       VM_BUG_ON(!PageHead(page));
+> +       spin_lock(&hugetlb_lock);
+> +       list_move_tail(&page->lru, &(page_hstate(page))->hugepage_activelist);
+> +       spin_unlock(&hugetlb_lock);
+> +       put_page(page);
+> +}
+> +
+> +void putback_active_hugepages(struct list_head *list)
+> +{
+> +       struct page *page;
+> +       struct page *page2;
+> +
+> +       list_for_each_entry_safe(page, page2, list, lru)
+> +               putback_active_hugepage(page);
+> +}
+> diff --git v3.11-rc1.orig/mm/migrate.c v3.11-rc1/mm/migrate.c
+> index 6f0c244..b44a067 100644
+> --- v3.11-rc1.orig/mm/migrate.c
+> +++ v3.11-rc1/mm/migrate.c
+> @@ -100,6 +100,10 @@ void putback_movable_pages(struct list_head *l)
+>         struct page *page2;
+>
+>         list_for_each_entry_safe(page, page2, l, lru) {
+> +               if (unlikely(PageHuge(page))) {
+> +                       putback_active_hugepage(page);
+> +                       continue;
+> +               }
+>                 list_del(&page->lru);
+>                 dec_zone_page_state(page, NR_ISOLATED_ANON +
+>                                 page_is_file_cache(page));
+> @@ -1025,7 +1029,11 @@ int migrate_pages(struct list_head *from, new_page_t get_new_page,
+>                 list_for_each_entry_safe(page, page2, from, lru) {
+>                         cond_resched();
+>
+> -                       rc = unmap_and_move(get_new_page, private,
+> +                       if (PageHuge(page))
+> +                               rc = unmap_and_move_huge_page(get_new_page,
+> +                                               private, page, pass > 2, mode);
+> +                       else
+> +                               rc = unmap_and_move(get_new_page, private,
+>                                                 page, pass > 2, mode);
+>
+>                         switch(rc) {
+> --
+> 1.8.3.1
+>
