@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab3GYPMi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 11:12:38 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:40343 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755678Ab3GYPMg (ORCPT
+	id S1756097Ab3GYPPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 11:15:35 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:38010 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3GYPPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 11:12:36 -0400
+	Thu, 25 Jul 2013 11:15:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130725144118.GA5412@linutronix.de>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-	<1374516607-2705-7-git-send-email-bigeasy@linutronix.de>
-	<CADYTM3avh7GFTDQW01FnojKZkmL0_hi+=K-VVwCw5peJL2hwTA@mail.gmail.com>
-	<20130725144118.GA5412@linutronix.de>
-Date: Thu, 25 Jul 2013 10:12:34 -0500
-Message-ID: <CADYTM3bJZKUjgddP1pddZvqg7CfVyayxEXfBoJFrhean79+ykA@mail.gmail.com>
-Subject: Re: [PATCH 06/16] usb: musb: dsps: rename ti81xx_driver_data to am33xx_driver_data
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <51F13E51.7040808@sr71.net>
+References: <1374261785-1615-1-git-send-email-kys@microsoft.com>
+ <20130722123716.GB24400@dhcp22.suse.cz> <e06fced3ca42408b980f8aa68f4a29f3@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EEA11D.4030007@intel.com> <3318be0a96cb4d05838d76dc9d088cc0@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51EEA89F.9070309@intel.com> <9f351a549e76483d9148f87535567ea0@SN2PR03MB061.namprd03.prod.outlook.com>
+ <51F00415.8070104@sr71.net> <d1f80c05986b439cbeef12bcd595b264@BLUPR03MB050.namprd03.prod.outlook.com>
+ <51F040E8.1030507@intel.com> <20130725075705.GD12818@dhcp22.suse.cz>
+ <4f440c8d96f34711a3f06fb18702a297@SN2PR03MB061.namprd03.prod.outlook.com> <51F13E51.7040808@sr71.net>
+From: Kay Sievers <kay@vrfy.org>
+Date: Thu, 25 Jul 2013 17:15:11 +0200
+Message-ID: <CAPXgP10BqFoYLOS+e=aTMqM6mAZrtuWHsrsSJ4+44m+LuzRwiQ@mail.gmail.com>
+Subject: Re: [PATCH 1/1] Drivers: base: memory: Export symbols for onlining
+ memory blocks
+To: Dave Hansen <dave@sr71.net>
+Cc: KY Srinivasan <kys@microsoft.com>, Michal Hocko <mhocko@suse.cz>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "kamezawa.hiroyuki@gmail.com" <kamezawa.hiroyuki@gmail.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>,
+        "yinghan@google.com" <yinghan@google.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On Thu, Jul 25, 2013 at 5:03 PM, Dave Hansen <dave@sr71.net> wrote:
+> On 07/25/2013 04:14 AM, KY Srinivasan wrote:
+>> As promised, I have sent out the patches for (a) an implementation of an in-kernel API
+>> for onlining  and a consumer for this API. While I don't know the exact reason why the
+>> user mode code is delayed (under some low memory conditions), what is the harm in having
+>> a mechanism to online memory that has been hot added without involving user space code.
+>
+> KY, your potential problem, not being able to online more memory because
+> of a shortage of memory, is a serious one.
+>
+> However, this potential issue exists in long-standing code, and
+> potentially affects all users of memory hotplug.  The problem has not
+> been described in sufficient detail for the rest of the developers to
+> tell if you are facing a new problem, or whether *any* proposed solution
+> will help the problem you face.
+>
+> Your propsed solution changes the semantics of existing user/kernel
+> interfaces, duplicates existing functionality, and adds code complexity
+> to the kernel.
 
-On Thu, Jul 25, 2013 at 9:41 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> * Bin Liu | 2013-07-23 13:23:57 [-0500]:
->
->>Hi Sebastian,
-> Hi Liu,
->
->>On Mon, Jul 22, 2013 at 1:09 PM, Sebastian Andrzej Siewior <
->>bigeasy@linutronix.de> wrote:
->>
->>> This patch renames the type struct from ti81xx_driver_data to
->>> am33xx_driver_data since it is not used for ti81xx anymore. The EOI
->>> member is also removed since the am33xx SoC does not have such register.
->>> The interrupt is acknowledged by writting into the stat register.
->>>
->>I guess the EOI register is removed from the TRM because AM33xx does not
->>use it, there is no need to write to it to acknowledge. It does not hurt to
->>write to it though since the register still exists, it just does nothing, I
->>guess.
->
-> Is it really there or was it never there and it has been added to TRM by
-> accident?
-The EOI register IS in the USB subsystem of AM33xx, but the SoC does
-not use it because it uses level triggering for USB interrupt.
+Complexity, well, it's just a bit of code which belongs in the kernel.
+The mentioned unconditional hotplug loop through userspace is
+absolutely pointless. Such defaults never belong in userspace tools if
+they do not involve data that is only available in userspace and
+something would make a decision about that. Saying "hello" to
+userspace and usrspace has a hardcoded "yes" in return makes no sense
+at all. The kernel can just go ahead and do its job, like it does for
+all other devices it finds too.
 
->
->>But I am not sure if it is a good idea to remove eoi from the musb_dsps
->>driver. If the intension is to merge the support for other SoC, such as
->>AM35xx, AM18xx, then EOI handling might be still needed. I just don't know
->>how those devices use EOI.
->
-> If one of the architectures gets added which need an EOI then the offset
-> can be 0 and the EOI will happen only if it is != 0.
-This patch cleaned up the use of EOI. Do you mean EOI handling will be
-added back with condition EOI offset != 0, when the support of new
-device which uses EIO is added?
-
-Regards,
--Bin.
-
->
->>
->>Regards,
->>-Bin.
->
-> Sebastian
+Kay
