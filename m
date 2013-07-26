@@ -1,206 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab3GZUBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:01:15 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:42840 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab3GZUBM convert rfc822-to-8bit (ORCPT
+	id S1759590Ab3GZUFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:05:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50369 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753393Ab3GZUFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:01:12 -0400
-Content-Type: text/plain; charset="utf-8"
+	Fri, 26 Jul 2013 16:05:35 -0400
+Date: Fri, 26 Jul 2013 13:04:00 -0700
+From: tip-bot for Tom Rini <tipbot@zytor.com>
+Message-ID: <tip-323f54ed0f3ce20e9946c961fc928ccdb80d9345@git.kernel.org>
+Cc: mingo@kernel.org, rusty@rustcorp.com.au, pebolle@tiscali.nl,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        tglx@linutronix.de, rientjes@google.com, trini@ti.com,
+        laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        majianpeng@gmail.com, yinghai@kernel.org, greg@kroah.com,
+        wency@cn.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        kosaki.motohiro@jp.fujitsu.com
+Reply-To: mingo@kernel.org, rusty@rustcorp.com.au, pebolle@tiscali.nl,
+        isimatu.yasuaki@jp.fujitsu.com, jiang.liu@huawei.com,
+        tglx@linutronix.de, laijs@cn.fujitsu.com, rientjes@google.com,
+        trini@ti.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        majianpeng@gmail.com, yinghai@kernel.org, greg@kroah.com,
+        wency@cn.fujitsu.com, minchan.kim@gmail.com, mgorman@suse.de,
+        kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <1374776770-32361-1-git-send-email-trini@ti.com>
+References: <1374776770-32361-1-git-send-email-trini@ti.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] numa: Mark __node_set() as __always_inline
+Git-Commit-ID: 323f54ed0f3ce20e9946c961fc928ccdb80d9345
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Cho KyongHo <pullip.cho@samsung.com>,
-        "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <003b01ce89f3$2be4db80$83ae9280$@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>
-References: <003b01ce89f3$2be4db80$83ae9280$@samsung.com>
-Message-ID: <20130726200107.7598.82010@quantum>
-User-Agent: alot/0.3.4
-Subject: Re: [PATCH v8 05/12] clk: exynos5250: add gate clock descriptions of System
- MMU
-Date: Fri, 26 Jul 2013 13:01:07 -0700
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Fri, 26 Jul 2013 13:04:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Cho KyongHo (2013-07-26 04:27:54)
-> This adds gate clocks of all System MMUs and their master IPs
-> that are not apeared in clk-exynos5250.c
-> 
-> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+Commit-ID:  323f54ed0f3ce20e9946c961fc928ccdb80d9345
+Gitweb:     http://git.kernel.org/tip/323f54ed0f3ce20e9946c961fc928ccdb80d9345
+Author:     Tom Rini <trini@ti.com>
+AuthorDate: Thu, 25 Jul 2013 14:26:10 -0400
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 25 Jul 2013 21:54:01 +0200
 
-Change looks good to me. Are you OK if I take it into the clk tree or do
-you want to keep this series together?
+numa: Mark __node_set() as __always_inline
 
-Regards,
-Mike
+It is posible for some compilers to decide that __node_set() does
+not need to be made turned into an inline function.  When the
+compiler does this on an __init function calling it on
+__initdata we get a section mismatch warning now.  Use
+__always_inline to ensure that we will be inlined.
 
-> ---
->  .../devicetree/bindings/clock/exynos5250-clock.txt |   28 +++++++++-
->  drivers/clk/samsung/clk-exynos5250.c               |   57 ++++++++++++++++---
->  2 files changed, 75 insertions(+), 10 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-> b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-> index 781a627..df49694 100644
-> --- a/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/exynos5250-clock.txt
-> @@ -154,7 +154,33 @@ clock which they consume.
->    dsim0                        341
->    dp                   342
->    mixer                        343
-> -  hdmi                 345
-> +  hdmi                 344
-> +  camif_top            345
-> +  smmu_fimc_lite0      346
-> +  smmu_fimc_lite1      347
-> +  smmu_fimc_lite2      348
-> +  smmu_tv              349
-> +  smmu_fimd1           350
-> +  smmu_2d              351
-> +  fimc_isp             352
-> +  fimc_drc             353
-> +  fimc_fd              354
-> +  fimc_scc             355
-> +  fimc_scp             356
-> +  fimc_mcuctl          357
-> +  fimc_odc             358
-> +  fimc_dis             359
-> +  fimc_3dnr            360
-> +  smmu_fimc_isp                361
-> +  smmu_fimc_drc                362
-> +  smmu_fimc_fd         363
-> +  smmu_fimc_scc                364
-> +  smmu_fimc_scp                365
-> +  smmu_fimc_mcuctl     366
-> +  smmu_fimc_odc                367
-> +  smmu_fimc_dis0       368
-> +  smmu_fimc_dis1       369
-> +  smmu_fimc_3dnr       370
->  
->  Example 1: An example of a clock controller node is listed below.
->  
-> diff --git a/drivers/clk/samsung/clk-exynos5250.c b/drivers/clk/samsung/clk-exynos5250.c
-> index 22d7699..e242bde 100644
-> --- a/drivers/clk/samsung/clk-exynos5250.c
-> +++ b/drivers/clk/samsung/clk-exynos5250.c
-> @@ -53,12 +53,15 @@
->  #define DIV_PERIC3             0x10564
->  #define DIV_PERIC4             0x10568
->  #define DIV_PERIC5             0x1056c
-> +#define GATE_IP_ISP0           0x0C800
-> +#define GATE_IP_ISP1           0x0C800
->  #define GATE_IP_GSCL           0x10920
->  #define GATE_IP_MFC            0x1092c
->  #define GATE_IP_GEN            0x10934
->  #define GATE_IP_FSYS           0x10944
->  #define GATE_IP_PERIC          0x10950
->  #define GATE_IP_PERIS          0x10960
-> +#define GATE_IP_ACP            0x18800
->  #define SRC_CDREX              0x20200
->  #define PLL_DIV2_SEL           0x20a24
->  #define GATE_IP_DISP1          0x10928
-> @@ -100,6 +103,14 @@ enum exynos5250_clks {
->         tzpc2, tzpc3, tzpc4, tzpc5, tzpc6, tzpc7, tzpc8, tzpc9, hdmi_cec, mct,
->         wdt, rtc, tmu, fimd1, mie1, dsim0, dp, mixer, hdmi,
->  
-> +       camif_top, smmu_fimc_lite0, smmu_fimc_lite1, smmu_fimc_lite2,
-> +       smmu_tv, smmu_fimd1, smmu_2d,
-> +       fimc_isp, fimc_drc, fimc_fd, fimc_scc, fimc_scp, fimc_mcuctl, fimc_odc,
-> +       fimc_dis, fimc_3dnr,
-> +       smmu_fimc_isp, smmu_fimc_drc, smmu_fimc_fd, smmu_fimc_scc,
-> +       smmu_fimc_scp, smmu_fimc_mcuctl, smmu_fimc_odc, smmu_fimc_dis0,
-> +       smmu_fimc_dis1, smmu_fimc_3dnr,
-> +
->         nr_clks,
->  };
->  
-> @@ -320,19 +331,26 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
->         GATE(gscl3, "gscl3", "aclk266", GATE_IP_GSCL, 3, 0, 0),
->         GATE(gscl_wa, "gscl_wa", "div_gscl_wa", GATE_IP_GSCL, 5, 0, 0),
->         GATE(gscl_wb, "gscl_wb", "div_gscl_wb", GATE_IP_GSCL, 6, 0, 0),
-> -       GATE(smmu_gscl0, "smmu_gscl0", "aclk266", GATE_IP_GSCL, 7, 0, 0),
-> -       GATE(smmu_gscl1, "smmu_gscl1", "aclk266", GATE_IP_GSCL, 8, 0, 0),
-> -       GATE(smmu_gscl2, "smmu_gscl2", "aclk266", GATE_IP_GSCL, 9, 0, 0),
-> -       GATE(smmu_gscl3, "smmu_gscl3", "aclk266", GATE_IP_GSCL, 10, 0, 0),
-> +       GATE(smmu_gscl0, "smmu_gscl0", "none", GATE_IP_GSCL, 7, 0, 0),
-> +       GATE(smmu_gscl1, "smmu_gscl1", "none", GATE_IP_GSCL, 8, 0, 0),
-> +       GATE(smmu_gscl2, "smmu_gscl2", "none", GATE_IP_GSCL, 9, 0, 0),
-> +       GATE(smmu_gscl3, "smmu_gscl3", "none", GATE_IP_GSCL, 10, 0, 0),
-> +       GATE(camif_top, "camif_top", "aclk266", GATE_IP_GSCL, 4, 0, 0),
-> +       GATE(smmu_fimc_lite0, "smmu_fimc_lite0", "none",
-> +                                               GATE_IP_GSCL, 12, 0, 0),
-> +       GATE(smmu_fimc_lite1, "smmu_fimc_lite1", "none",
-> +                                               GATE_IP_GSCL, 13, 0, 0),
-> +       GATE(smmu_fimc_lite2, "smmu_fimc_lite2", "none",
-> +                                               GATE_IP_GSCL, 14, 0, 0),
->         GATE(mfc, "mfc", "aclk333", GATE_IP_MFC, 0, 0, 0),
-> -       GATE(smmu_mfcl, "smmu_mfcl", "aclk333", GATE_IP_MFC, 1, 0, 0),
-> -       GATE(smmu_mfcr, "smmu_mfcr", "aclk333", GATE_IP_MFC, 2, 0, 0),
-> +       GATE(smmu_mfcr, "smmu_mfcr", "none", GATE_IP_MFC, 1, 0, 0),
-> +       GATE(smmu_mfcl, "smmu_mfcl", "none", GATE_IP_MFC, 2, 0, 0),
->         GATE(rotator, "rotator", "aclk266", GATE_IP_GEN, 1, 0, 0),
->         GATE(jpeg, "jpeg", "aclk166", GATE_IP_GEN, 2, 0, 0),
->         GATE(mdma1, "mdma1", "aclk266", GATE_IP_GEN, 4, 0, 0),
-> -       GATE(smmu_rotator, "smmu_rotator", "aclk266", GATE_IP_GEN, 6, 0, 0),
-> -       GATE(smmu_jpeg, "smmu_jpeg", "aclk166", GATE_IP_GEN, 7, 0, 0),
-> -       GATE(smmu_mdma1, "smmu_mdma1", "aclk266", GATE_IP_GEN, 9, 0, 0),
-> +       GATE(smmu_rotator, "smmu_rotator", "none", GATE_IP_GEN, 6, 0, 0),
-> +       GATE(smmu_jpeg, "smmu_jpeg", "none", GATE_IP_GEN, 7, 0, 0),
-> +       GATE(smmu_mdma1, "smmu_mdma1", "none", GATE_IP_GEN, 9, 0, 0),
->         GATE(pdma0, "pdma0", "aclk200", GATE_IP_FSYS, 1, 0, 0),
->         GATE(pdma1, "pdma1", "aclk200", GATE_IP_FSYS, 2, 0, 0),
->         GATE(sata, "sata", "aclk200", GATE_IP_FSYS, 6, 0, 0),
-> @@ -462,6 +480,27 @@ struct samsung_gate_clock exynos5250_gate_clks[] __initdata = {
->         GATE(dp, "dp", "aclk200", GATE_IP_DISP1, 4, 0, 0),
->         GATE(mixer, "mixer", "aclk200", GATE_IP_DISP1, 5, 0, 0),
->         GATE(hdmi, "hdmi", "aclk200", GATE_IP_DISP1, 6, 0, 0),
-> +       GATE(smmu_tv, "smmu_tv", "none", GATE_IP_DISP1, 2, 0, 0),
-> +       GATE(smmu_fimd1, "smmu_fimd1", "none", GATE_IP_DISP1, 8, 0, 0),
-> +
-> +       GATE(smmu_fimc_isp, "smmu_fimc_isp", "none", GATE_IP_ISP0, 8, 0, 0),
-> +       GATE(smmu_fimc_drc, "smmu_fimc_drc", "none", GATE_IP_ISP0, 9, 0, 0),
-> +       GATE(smmu_fimc_fd, "smmu_fimc_fd", "none", GATE_IP_ISP0, 10, 0, 0),
-> +       GATE(smmu_fimc_scc, "smmu_fimc_scc", "none",
-> +                                                       GATE_IP_ISP0, 11, 0, 0),
-> +       GATE(smmu_fimc_scp, "smmu_fimc_scp", "none",
-> +                                                       GATE_IP_ISP0, 12, 0, 0),
-> +       GATE(smmu_fimc_mcuctl, "smmu_fimc_mcuctl", "none",
-> +                                                       GATE_IP_ISP0, 13, 0, 0),
-> +       GATE(smmu_fimc_odc, "smmu_fimc_odc", "none", GATE_IP_ISP1, 4, 0, 0),
-> +       GATE(smmu_fimc_dis0, "smmu_fimc_dis0", "none",
-> +                                                       GATE_IP_ISP1, 5, 0, 0),
-> +       GATE(smmu_fimc_dis1, "smmu_fimc_dis1", "none",
-> +                                                       GATE_IP_ISP1, 6, 0, 0),
-> +       GATE(smmu_fimc_3dnr, "smmu_fimc_3dnr", "none",
-> +                                                       GATE_IP_ISP1, 7, 0, 0),
-> +
-> +       GATE(smmu_2d, "smmu_2d", "none", GATE_IP_ACP, 7, 0, 0),
->  };
->  
->  static __initdata struct of_device_id ext_clk_match[] = {
-> -- 
-> 1.7.2.5
-> 
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Cc: Jianpeng Ma <majianpeng@gmail.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Cc: Wen Congyang <wency@cn.fujitsu.com>
+Cc: Jiang Liu <jiang.liu@huawei.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Greg KH <greg@kroah.com>
+Signed-off-by: Tom Rini <trini@ti.com>
+Link: http://lkml.kernel.org/r/1374776770-32361-1-git-send-email-trini@ti.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ include/linux/nodemask.h | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
+index 4e2cbfa..58b9a02 100644
+--- a/include/linux/nodemask.h
++++ b/include/linux/nodemask.h
+@@ -98,8 +98,17 @@
+ typedef struct { DECLARE_BITMAP(bits, MAX_NUMNODES); } nodemask_t;
+ extern nodemask_t _unused_nodemask_arg_;
+ 
++/*
++ * The inline keyword gives the compiler room to decide to inline, or
++ * not inline a function as it sees best.  However, as these functions
++ * are called in both __init and non-__init functions, if they are not
++ * inlined we will end up with a section mis-match error (of the type of
++ * freeable items not being freed).  So we must use __always_inline here
++ * to fix the problem.  If other functions in the future also end up in
++ * this situation they will also need to be annotated as __always_inline
++ */
+ #define node_set(node, dst) __node_set((node), &(dst))
+-static inline void __node_set(int node, volatile nodemask_t *dstp)
++static __always_inline void __node_set(int node, volatile nodemask_t *dstp)
+ {
+ 	set_bit(node, dstp->bits);
+ }
