@@ -1,194 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759242Ab3GZPRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:17:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54922 "EHLO mx1.redhat.com"
+	id S1759278Ab3GZPR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:17:57 -0400
+Received: from nautica.notk.org ([91.121.71.147]:48317 "EHLO nautica.notk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759102Ab3GZPRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:17:48 -0400
-Date: Fri, 26 Jul 2013 17:12:24 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely
-	on list_empty(d_subdirs)
-Message-ID: <20130726151224.GB19472@redhat.com>
-References: <20130723205854.GA9036@redhat.com> <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com> <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com> <20130726151151.GA19472@redhat.com>
+	id S1759080Ab3GZPRx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:17:53 -0400
+Date: Fri, 26 Jul 2013 17:17:37 +0200
+From: Dominique Martinet <dominique.martinet@cea.fr>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: Latchesar Ionkov <lucho@ionkov.net>, pebolle@tiscali.nl,
+        netdev@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        andi@etezian.org,
+        V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+        rminnich@sandia.gov, David Miller <davem@davemloft.net>
+Subject: Re: [V9fs-developer] [PATCH] net: trans_rdma: remove unused
+ function
+Message-ID: <20130726151737.GA24757@nautica>
+References: <1374497956-32104-1-git-send-email-andi@etezian.org>
+ <20130724.154646.2283898956674234778.davem@davemloft.net>
+ <1374707387.29835.23.camel@x61.thuisdomein>
+ <20130724.164514.393667021861625699.davem@davemloft.net>
+ <20130725061411.GA8579@nautica>
+ <20130725064802.GA12569@nautica>
+ <CAFkjPTm1FH24EfWMDrXTh7DmU8WAb0ji-jkUgkayqMzfWj9O0A@mail.gmail.com>
+ <20130725190506.GA32375@nautica>
+ <CAFkjPTkr5JYf6qc=pjcG8rSoocFekU-cTw450SujTvpCp33cyw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130726151151.GA19472@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAFkjPTkr5JYf6qc=pjcG8rSoocFekU-cTw450SujTvpCp33cyw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs_remove_recursive() is wrong,
+Eric Van Hensbergen wrote on Fri, Jul 26, 2013 :
+> It depends on the flags you use with 9p.  If you mount with nodevmap it'll
+> treat them like normal files.  Alternatively you can use synthetics from
+> fuse or even 9p file systems from Plan 9 port.
 
-1. it wrongly assumes that !list_empty(d_subdirs) means that this
-   dir should be removed.
+Ok, thank you for the explanation. Now I need to see if my server
+supports this :)
 
-   This is not that bad by itself, but:
+> I need to go back and refresh more of my RDMA knowledge, I thought you
+> could provide a better more direct coupling between the request and
+> response buffers (similar to what we do in virtio).  In such a case, you'd
+> simply need to reclaim the "skipped" buffer not shuffle everything around.
+> Ultimately that would seem to work against the point of having "zero copy"
+> RDMA.
 
-2. if d_subdirs does not becomes empty after __debugfs_remove()
-   it gives up and silently fails, it doesn't even try to remove
-   other entries.
+What I said next was wrong, but the queue really isn't something you can
+control this finely. Once something is posted, you can't take it back,
+and you can't know which buffer will come back for which reply (but it's
+easy enough to read the tag from the reply and associate it back)
 
-   However ->d_subdirs can be non-empty because it still has the
-   already deleted !debugfs_positive() entries.
+For flush, I'm honestly not sure on how to deal with the possibility of
+the servers processing the original query and sending a reply after
+we've tagged our own buffer as free again, but I think there might
+actually be a problem even on sucessful flush if the next post is from a
+different tag (that has its own rc buffer) -- as far as I understand it,
+this one's reply will be considered duplicate reply in handle_recv.
+But I really need to do some more precise testing, I'll try playing with
+nodevmap, if I get the flush functions to be called I'll get this
+fixed.
 
-3. simple_release_fs() is called even if __debugfs_remove() fails.
 
-Suppose we have
+> > I haven't found how to reproduce this perfectly yet, but a dd with
+> > blocksize 1MB and one with blocksize 10B in parallel brought the
+> > mountpoint down (and the whole server was completely unavailable for the
+> > duration of the dd - TCP sessions timed out, I even got IO errors on the
+> > local disk :D)
+> >
+> 
+> Sounds like you ran out of memory and things didn't degrade gracefully.
 
-	dir1/
-		dir2/
-			file2
-		file1
+I think it's actually "just" in the debug, there are two p9_debug printk
+in p9_client_cb which are called from an rdma irq handler, and it gets
+messy once the kernel buffer is full and it wants to flush to the
+console.
+I've got a short patch that adds an argument to p9_client_cb with an
+indication that it shouldn't output messages, I'll send it to the v9fs
+mailing list for comments if you think the idea is acceptable.
 
-and someone opens dir1/dir2/file2.
+>  Which server are you using?
 
-Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/di2 goes
-away.
+I know of two servers out there which handle 9P/RDMA - diod (
+http://code.google.com/p/diod/ ) and nfs-ganesha (
+https://github.com/nfs-ganesha/nfs-ganesha )
+I wrote the RDMA implementation for ganesha and am mostly running tests
+on that, but both should somewhat work with their quirks :)
 
-But debugfs_remove_recursive(dir1) silently fails and doesn't remove
-this directory. Because it tries to delete (the already deleted)
-dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
-logic.
-
-Test-case:
-
-	#!/bin/sh
-
-	cd /sys/kernel/debug/tracing
-	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
-	sleep 1000 < events/probe/sigprocmask/id &
-	echo -n >| kprobe_events
-
-	[ -d events/probe ] && echo "ERR!! failed to rm probe"
-
-And after that it is not possible to create another probe entry.
-
-With this patch debugfs_remove_recursive() skips !debugfs_positive()
-files although this is not strictly needed. The most important change
-is that it does not try to make ->d_subdirs empty, it simply scans
-the whole list(s) recursively and removes as much as possible.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/debugfs/inode.c |   69 ++++++++++++++++-----------------------------------
- 1 files changed, 22 insertions(+), 47 deletions(-)
-
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 4888cb3..c7c83ff 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -533,8 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
- {
--	struct dentry *child;
--	struct dentry *parent;
-+	struct dentry *child, *next, *parent;
- 
- 	if (IS_ERR_OR_NULL(dentry))
- 		return;
-@@ -544,61 +543,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
- 		return;
- 
- 	parent = dentry;
-+ down:
- 	mutex_lock(&parent->d_inode->i_mutex);
-+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+		if (!debugfs_positive(child))
-+			continue;
- 
--	while (1) {
--		/*
--		 * When all dentries under "parent" has been removed,
--		 * walk up the tree until we reach our starting point.
--		 */
--		if (list_empty(&parent->d_subdirs)) {
--			mutex_unlock(&parent->d_inode->i_mutex);
--			if (parent == dentry)
--				break;
--			parent = parent->d_parent;
--			mutex_lock(&parent->d_inode->i_mutex);
--		}
--		child = list_entry(parent->d_subdirs.next, struct dentry,
--				d_u.d_child);
-- next_sibling:
--
--		/*
--		 * If "child" isn't empty, walk down the tree and
--		 * remove all its descendants first.
--		 */
-+		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
--			mutex_lock(&parent->d_inode->i_mutex);
--			continue;
-+			goto down;
- 		}
--		__debugfs_remove(child, parent);
--		if (parent->d_subdirs.next == &child->d_u.d_child) {
--			/*
--			 * Try the next sibling.
--			 */
--			if (child->d_u.d_child.next != &parent->d_subdirs) {
--				child = list_entry(child->d_u.d_child.next,
--						   struct dentry,
--						   d_u.d_child);
--				goto next_sibling;
--			}
--
--			/*
--			 * Avoid infinite loop if we fail to remove
--			 * one dentry.
--			 */
--			mutex_unlock(&parent->d_inode->i_mutex);
--			break;
--		}
--		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+ up:
-+		if (!__debugfs_remove(child, parent))
-+			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	}
- 
--	parent = dentry->d_parent;
-+	mutex_unlock(&parent->d_inode->i_mutex);
-+	child = parent;
-+	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
--	__debugfs_remove(dentry, parent);
-+
-+	if (child != dentry) {
-+		next = list_entry(child->d_u.d_child.next, struct dentry,
-+					d_u.d_child);
-+		goto up;
-+	}
-+
-+	if (!__debugfs_remove(child, parent))
-+		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	mutex_unlock(&parent->d_inode->i_mutex);
--	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- }
- EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
- 
+Regards,
 -- 
-1.5.5.1
-
-
+Dominique Martine
