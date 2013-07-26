@@ -1,76 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779Ab3GZDTg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:19:36 -0400
-Received: from smtpauth05.mfg.siteprotect.com ([64.26.60.144]:53712 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756387Ab3GZDTd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:19:33 -0400
-Date: Thu, 25 Jul 2013 23:20:24 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Adrian Hunter <adrian.hunter@intel.com>
-cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Update perf_event_type documentation
-In-Reply-To: <51F0C41C.8080005@intel.com>
-Message-ID: <alpine.DEB.2.02.1307252313460.26062@pianoman.cluster.toy>
-References: <20130716150907.GL23818@dyad.programming.kicks-ass.net> <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org> <alpine.DEB.2.02.1307241348250.7828@pianoman.cluster.toy> <51F0C41C.8080005@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757155Ab3GZDT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:19:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:43462 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753586Ab3GZDTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 23:19:54 -0400
+Date: Fri, 26 Jul 2013 13:19:50 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, deepthi@linux.vnet.ibm.com,
+        shangw@linux.vnet.ibm.com, arnd@arndb.de, linux-pm@vger.kernel.org,
+        geoff@infradead.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
+        rjw@sisk.pl, paul.gortmaker@windriver.com,
+        srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        john.stultz@linaro.org, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, chenhui.zhao@freescale.com
+Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
+ arch-specific constraints
+Message-ID: <20130726031950.GA6438@iris.ozlabs.ibm.com>
+References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com>
+ <20130725090302.12500.42998.stgit@preeti.in.ibm.com>
+ <20130725133044.GA7400@somewhere>
+ <51F1E15B.3050106@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020203.51F1EAC4.002B,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F1E15B.3050106@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 26, 2013 at 08:09:23AM +0530, Preeti U Murthy wrote:
+> Hi Frederic,
+> 
+> On 07/25/2013 07:00 PM, Frederic Weisbecker wrote:
+> > Hi Preeti,
+> > 
+> > I'm not exactly sure why you can't enter the broadcast CPU in dynticks idle mode.
+> > I read in the previous patch that's because in dynticks idle mode the broadcast
+> > CPU deactivates its lapic so it doesn't receive the IPI. But may be I misunderstood.
+> > Anyway that's not good for powersaving.
+> 
+> Let me elaborate. The CPUs in deep idle states have their lapics
+> deactivated. This means the next timer event which would typically have
+> been taken care of by a lapic firing at the appropriate moment does not
+> get taken care of in deep idle states, due to the lapic being switched off.
 
-On Thu, 25 Jul 2013, Adrian Hunter wrote:
+I really don't think it's helpful to use the term "lapic" in
+connection with Power systems.  There is nothing that is called a
+"lapic" in a Power machine.  The nearest equivalent of the LAPIC on
+x86 machines is the ICP, the interrupt-controller presentation
+element, of which there is one per CPU thread.
 
-> >> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> >> index 0b1df41..00d8274 100644
-> >> --- a/include/uapi/linux/perf_event.h
-> >> +++ b/include/uapi/linux/perf_event.h
-> >> @@ -478,6 +478,16 @@ enum perf_event_type {
-> >>  	 * file will be supported by older perf tools, with these new optional
-> >>  	 * fields being ignored.
-> >>  	 *
-> >> +	 * struct sample_id {
-> >> +	 * 	{ u32			pid, tid; } && PERF_SAMPLE_TID
-> >> +	 * 	{ u64			time;     } && PERF_SAMPLE_TIME
-> >> +	 * 	{ u64			id;       } && PERF_SAMPLE_ID
-> >> +	 * 	{ u64			stream_id;} && PERF_SAMPLE_STREAM_ID
-> >> +	 * 	{ u32			cpu, res; } && PERF_SAMPLE_CPU
-> >> +	 * } && perf_event_attr::sample_id_all
-> >> +	 */
-> >> +
+However, I don't believe the ICP gets disabled in deep sleep modes.
+What does get disabled is the "decrementer", which is a register that
+normally counts down (at 512MHz) and generates an exception when it is
+negative.  The decrementer *is* part of the CPU core, unlike the ICP.
+That's why we can still get IPIs but not timer interrupts.
 
-a thing that personally bothers me are these imaginary struct definitions 
-added as part of the documentation that aren't actually available in the 
-public perf_event.h
+Please reword your patch description to not use the term "lapic",
+which is not defined in the Power context and is therefore just
+causing confusion.
 
-I can see why it's done, but it can be confusing picking out in later 
-definitions which struct fields are real and which ones are conceptual.
-
-> >> @@ -498,6 +508,7 @@ enum perf_event_type {
-> >>  	 *	struct perf_event_header	header;
-> >>  	 *	u64				id;
-> >>  	 *	u64				lost;
-> >> +	 * 	struct sample_id		sample_id;
-> >>  	 * };
-
-This is what confused me; this documentation shows the sample_id
-as always being there, but in reality that struct is only there
-if perf_event_attr::sample_id_all is set.  
-
-It might be clearer
-if you stuck the perf_event_attr::sample_id_all qualifier each
-place you add the sample_id field.
-
-And it's nice that the header holds a size field which ensures backward 
-compatability, I somehow had forgotten that with my initial complaint.
-
-Vince
+Paul.
