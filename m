@@ -1,108 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab3GZEsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 00:48:35 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:33620 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073Ab3GZEsc (ORCPT
+	id S1751984Ab3GZEtD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:49:03 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:54022 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab3GZEsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 00:48:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
-References: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
-Date: Fri, 26 Jul 2013 10:18:31 +0530
-Message-ID: <CAK9yfHw1Q9tmARR9W9WGaW5hhzcSQ5CV13Ct=7LT8pj85tBMBA@mail.gmail.com>
-Subject: Re: [PATCHv2 1/2] iommu/exynos: add devices attached to the System
- MMU to an IOMMU group
-From: Sachin Kamat <sachin.kamat@linaro.org>
-To: Antonios Motakis <a.motakis@virtualopensystems.com>
-Cc: linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
-        linux-samsung-soc@vger.kernel.org, kvmarm@lists.cs.columbia.edu,
-        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Jul 2013 00:48:43 -0400
+From: Andreas Platschek <andi.platschek@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: jslaby@suse.cz, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andreas Platschek <andi.platschek@gmail.com>
+Subject: [PATCH] tty: Remove dead code
+Date: Fri, 26 Jul 2013 06:46:37 +0200
+Message-Id: <1374813997-24671-1-git-send-email-andi.platschek@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Antonios,
+-> The ledptrs[] array is never initialized.
+-> There is no place where kbd->ledmode is set to LED_SHOW_MEM therefore the if
+   statement does not make much sense.
+-> Since LED_SHOW_MEM is not used, it can be removed from the header file as well.
 
-On 25 July 2013 21:04, Antonios Motakis
-<a.motakis@virtualopensystems.com> wrote:
-> IOMMU groups are expected by certain users of the IOMMU API,
-> e.g. VFIO. Since each device is behind its own System MMU, we
-> can allocate a new IOMMU group for each device.
->
-> This patch depends on Cho KyongHo's patch series titled "[PATCH v7 00/12]
-> iommu/exynos: Fixes and Enhancements of System MMU driver with DT",
-> applied on a Linux 3.10.1 kernel.
+Signed-off-by: Andreas Platschek <andi.platschek@gmail.com>
+---
+ drivers/tty/vt/keyboard.c |   21 +--------------------
+ include/linux/kbd_kern.h  |    3 +--
+ 2 files changed, 2 insertions(+), 22 deletions(-)
 
-This kind of meta information should go after the "---" line below.
-
-It has been tested on the Arndale board.
->
-> Changes since in v2:
-> - Removed possibility for minor memory leak in case of
->   misbehaving platform drivers
->
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> ---
->  drivers/iommu/exynos-iommu.c | 28 ++++++++++++++++++++++++++++
->  1 file changed, 28 insertions(+)
->
-> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-> index 51d43bb..c7dd4b5 100644
-> --- a/drivers/iommu/exynos-iommu.c
-> +++ b/drivers/iommu/exynos-iommu.c
-> @@ -1134,6 +1134,32 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
->         return phys;
->  }
->
-> +static int exynos_iommu_add_device(struct device *dev)
-> +{
-> +       struct iommu_group *group;
-> +       int ret;
-> +
-> +       group = iommu_group_get(dev);
-> +
-> +       if (!group) {
-> +               group = iommu_group_alloc();
-> +               if (IS_ERR(group)) {
-> +                       dev_err(dev, "Failed to allocate IOMMU group\n");
-> +                       return PTR_ERR(group);
-> +               }
-> +       }
-> +
-> +       ret = iommu_group_add_device(group, dev);
-> +       iommu_group_put(group);
-> +
-> +       return ret;
-> +}
-> +
-> +static void exynos_iommu_remove_device(struct device *dev)
-> +{
-> +       iommu_group_remove_device(dev);
-> +}
-> +
->  static struct iommu_ops exynos_iommu_ops = {
->         .domain_init = &exynos_iommu_domain_init,
->         .domain_destroy = &exynos_iommu_domain_destroy,
-> @@ -1142,6 +1168,8 @@ static struct iommu_ops exynos_iommu_ops = {
->         .map = &exynos_iommu_map,
->         .unmap = &exynos_iommu_unmap,
->         .iova_to_phys = &exynos_iommu_iova_to_phys,
-> +       .add_device     = exynos_iommu_add_device,
-> +       .remove_device  = exynos_iommu_remove_device,
->         .pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
->  };
->
-> --
-> 1.8.1.2
->
-
-
-
+diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
+index a9af1b9a..d0e3a44 100644
+--- a/drivers/tty/vt/keyboard.c
++++ b/drivers/tty/vt/keyboard.c
+@@ -132,12 +132,6 @@ static int shift_state = 0;
+ static unsigned char ledstate = 0xff;			/* undefined */
+ static unsigned char ledioctl;
+ 
+-static struct ledptr {
+-	unsigned int *addr;
+-	unsigned int mask;
+-	unsigned char valid:1;
+-} ledptrs[3];
+-
+ /*
+  * Notifier list for console keyboard events
+  */
+@@ -994,24 +988,11 @@ void setledstate(struct kbd_struct *kbd, unsigned int led)
+ static inline unsigned char getleds(void)
+ {
+ 	struct kbd_struct *kbd = kbd_table + fg_console;
+-	unsigned char leds;
+-	int i;
+ 
+ 	if (kbd->ledmode == LED_SHOW_IOCTL)
+ 		return ledioctl;
+ 
+-	leds = kbd->ledflagstate;
+-
+-	if (kbd->ledmode == LED_SHOW_MEM) {
+-		for (i = 0; i < 3; i++)
+-			if (ledptrs[i].valid) {
+-				if (*ledptrs[i].addr & ledptrs[i].mask)
+-					leds |= (1 << i);
+-				else
+-					leds &= ~(1 << i);
+-			}
+-	}
+-	return leds;
++	return kbd->ledflagstate;
+ }
+ 
+ static int kbd_update_leds_helper(struct input_handle *handle, void *data)
+diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
+index b7c8cdc..c164c04 100644
+--- a/include/linux/kbd_kern.h
++++ b/include/linux/kbd_kern.h
+@@ -36,10 +36,9 @@ struct kbd_struct {
+ #define VC_CTRLRLOCK	KG_CTRLR 	/* ctrlr lock mode */
+ 	unsigned char slockstate; 	/* for `sticky' Shift, Ctrl, etc. */
+ 
+-	unsigned char ledmode:2; 	/* one 2-bit value */
++	unsigned char ledmode:1;
+ #define LED_SHOW_FLAGS 0        /* traditional state */
+ #define LED_SHOW_IOCTL 1        /* only change leds upon ioctl */
+-#define LED_SHOW_MEM 2          /* `heartbeat': peek into memory */
+ 
+ 	unsigned char ledflagstate:4;	/* flags, not lights */
+ 	unsigned char default_ledflagstate:4;
 -- 
-With warm regards,
-Sachin
+1.7.10.4
+
