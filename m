@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760735Ab3GZVmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:42:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
+	id S1760008Ab3GZVmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:42:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932342Ab3GZUsX (ORCPT
+	with ESMTP id S932348Ab3GZUsY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:23 -0400
+	Fri, 26 Jul 2013 16:48:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
+        Jongsung Kim <neidhard.kim@lge.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 16/79] sfc: Fix memory leak when discarding scattered packets
-Date: Fri, 26 Jul 2013 13:47:06 -0700
-Message-Id: <20130726204723.623202745@linuxfoundation.org>
+Subject: [ 17/79] net/cadence/macb: fix bug/typo in extracting gem_irq_read_clear bit
+Date: Fri, 26 Jul 2013 13:47:07 -0700
+Message-Id: <20130726204723.735715051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,86 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Jongsung Kim <neidhard.kim@lge.com>
 
-[ Upstream commit 734d4e159b283a4ae4d007b7e7a91d84398ccb92 ]
+[ Upstream commit 01276ed2424eb78c95461545410923d5da154d31 ]
 
-Commit 2768935a4660 ('sfc: reuse pages to avoid DMA mapping/unmapping
-costs') did not fully take account of DMA scattering which was
-introduced immediately before.  If a received packet is invalid and
-must be discarded, we only drop a reference to the first buffer's
-page, but we need to drop a reference for each buffer the packet
-used.
-
-I think this bug was missed partly because efx_recycle_rx_buffers()
-was not renamed and so no longer does what its name says.  It does not
-change the state of buffers, but only prepares the underlying pages
-for recycling.  Rename it accordingly.
-
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Signed-off-by: Jongsung Kim <neidhard.kim@lge.com>
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/sfc/rx.c |   27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ drivers/net/ethernet/cadence/macb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/sfc/rx.c
-+++ b/drivers/net/ethernet/sfc/rx.c
-@@ -282,9 +282,9 @@ static void efx_fini_rx_buffer(struct ef
- }
- 
- /* Recycle the pages that are used by buffers that have just been received. */
--static void efx_recycle_rx_buffers(struct efx_channel *channel,
--				   struct efx_rx_buffer *rx_buf,
--				   unsigned int n_frags)
-+static void efx_recycle_rx_pages(struct efx_channel *channel,
-+				 struct efx_rx_buffer *rx_buf,
-+				 unsigned int n_frags)
+--- a/drivers/net/ethernet/cadence/macb.c
++++ b/drivers/net/ethernet/cadence/macb.c
+@@ -1070,7 +1070,7 @@ static void macb_configure_dma(struct ma
+ static void macb_configure_caps(struct macb *bp)
  {
- 	struct efx_rx_queue *rx_queue = efx_channel_get_rx_queue(channel);
- 
-@@ -294,6 +294,20 @@ static void efx_recycle_rx_buffers(struc
- 	} while (--n_frags);
+ 	if (macb_is_gem(bp)) {
+-		if (GEM_BF(IRQCOR, gem_readl(bp, DCFG1)) == 0)
++		if (GEM_BFEXT(IRQCOR, gem_readl(bp, DCFG1)) == 0)
+ 			bp->caps |= MACB_CAPS_ISR_CLEAR_ON_WRITE;
+ 	}
  }
- 
-+static void efx_discard_rx_packet(struct efx_channel *channel,
-+				  struct efx_rx_buffer *rx_buf,
-+				  unsigned int n_frags)
-+{
-+	struct efx_rx_queue *rx_queue = efx_channel_get_rx_queue(channel);
-+
-+	efx_recycle_rx_pages(channel, rx_buf, n_frags);
-+
-+	do {
-+		efx_free_rx_buffer(rx_buf);
-+		rx_buf = efx_rx_buf_next(rx_queue, rx_buf);
-+	} while (--n_frags);
-+}
-+
- /**
-  * efx_fast_push_rx_descriptors - push new RX descriptors quickly
-  * @rx_queue:		RX descriptor queue
-@@ -533,8 +547,7 @@ void efx_rx_packet(struct efx_rx_queue *
- 	 */
- 	if (unlikely(rx_buf->flags & EFX_RX_PKT_DISCARD)) {
- 		efx_rx_flush_packet(channel);
--		put_page(rx_buf->page);
--		efx_recycle_rx_buffers(channel, rx_buf, n_frags);
-+		efx_discard_rx_packet(channel, rx_buf, n_frags);
- 		return;
- 	}
- 
-@@ -570,9 +583,9 @@ void efx_rx_packet(struct efx_rx_queue *
- 		efx_sync_rx_buffer(efx, rx_buf, rx_buf->len);
- 	}
- 
--	/* All fragments have been DMA-synced, so recycle buffers and pages. */
-+	/* All fragments have been DMA-synced, so recycle pages. */
- 	rx_buf = efx_rx_buffer(rx_queue, index);
--	efx_recycle_rx_buffers(channel, rx_buf, n_frags);
-+	efx_recycle_rx_pages(channel, rx_buf, n_frags);
- 
- 	/* Pipeline receives so that we give time for packet headers to be
- 	 * prefetched into cache.
 
 
