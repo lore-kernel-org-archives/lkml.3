@@ -1,126 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab3GZHPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:15:19 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:60254 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab3GZHPQ (ORCPT
+	id S1757049Ab3GZHRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:17:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:59583 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3GZHRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:15:16 -0400
+	Fri, 26 Jul 2013 03:17:16 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130725232556.GF13295@cantiga.alporthouse.com>
-References: <CA+icZUV+D8PvEysipfg9nPXp3ON1QSA7DiFdpYFpdesFF5c0sw@mail.gmail.com>
-	<20130725184504.GC11514@cantiga.alporthouse.com>
-	<CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
-	<20130725190006.GD11514@cantiga.alporthouse.com>
-	<CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
-	<20130725192248.GA13295@cantiga.alporthouse.com>
-	<CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
-	<CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
-	<20130725215259.GB13295@cantiga.alporthouse.com>
-	<CA+icZUXZKndg7==Y6v2Z45WZDp+tDC5FzaOC=KWTf4m=rjUKnA@mail.gmail.com>
-	<20130725232556.GF13295@cantiga.alporthouse.com>
-Date: Fri, 26 Jul 2013 09:15:14 +0200
-Message-ID: <CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Cc: "s.dilek" <s.dilek@jpberlin.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1374770011-22171-3-git-send-email-l.majewski@samsung.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-3-git-send-email-l.majewski@samsung.com>
+Date: Fri, 26 Jul 2013 12:47:15 +0530
+Message-ID: <CAKohpom9QHf+XBYQcajv4tni4_KA2x+Y3BAXWhZkdCFnZxp3XA@mail.gmail.com>
+Subject: Re: [PATCH v6 2/8] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 1:25 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Fri, Jul 26, 2013 at 01:21:07AM +0200, Sedat Dilek wrote:
->> On Thu, Jul 25, 2013 at 11:52 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> > On Thu, Jul 25, 2013 at 10:07:02PM +0200, Sedat Dilek wrote:
->> >> What means the bang line?
->> >>
->> >> [    54.564] (II) GLX: Initialized DRI2 GL provider for screen 0
->> >> [    54.565] bang: 1159
->> >> [    54.565]
->> >> Fatal server error:
->> >> [    54.565] failed to create screen resources
->> >
->> > That means between the kernel reporting success for
->> > DRM_IOCTL_I915_GEM_MMAP_GTT and libdrm returning from
->> > drm_intel_gem_bo_map_gtt(), something went wrong. This implies that the
->> > call to mmap() failed.
->> >
->> > I don't see how changing versions of the ddx would unmask the bug, nor
->> > why the mmap() should suddenly start failing. Anybody have any
->> > suggestions other than
->> >
->> > diff --git a/src/intel_uxa.c b/src/intel_uxa.c
->> > index 2f14173..3872258 100644
->> > --- a/src/intel_uxa.c
->> > +++ b/src/intel_uxa.c
->> > @@ -1149,12 +1149,15 @@ Bool intel_uxa_create_screen_resources(ScreenPtr screen)
->> >         PixmapPtr pixmap;
->> >         intel_screen_private *intel = intel_get_screen_private(scrn);
->> >         dri_bo *bo = intel->front_buffer;
->> > +       int ret;
->> >
->> >         if (!uxa_resources_init(screen))
->> >                 return FALSE;
->> >
->> > -       if (drm_intel_gem_bo_map_gtt(bo))
->> > +       if ((ret = drm_intel_gem_bo_map_gtt(bo))) {
->> > +               ErrorF("%s:%d bang, errno=%d\n", __func__, __LINE__, -ret);
->> >                 return FALSE;
->> > +       }
->> >
->> >         pixmap = screen->GetScreenPixmap(screen);
->> >         intel_set_pixmap_bo(pixmap, bo);
->> >
->> > which is most likely to report EINVAL (22)?
->>
->> Yupp, this shows me...
->>
->> [    28.542] (II) GLX: Initialized DRI2 GL provider for screen 0
->> [    28.543] intel_uxa_create_screen_resources:1158 bang, errno=22
->> [    28.543]
->> Fatal server error:
->> [    28.543] failed to create screen resources
+On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+
+>  /*********************************************************************
+> + *               BOOST                                              *
+> + *********************************************************************/
+> +static int cpufreq_boost_set_sw(int state)
+> +{
+> +       struct cpufreq_frequency_table *freq_table;
+> +       struct cpufreq_policy *policy;
+> +       int ret = -EINVAL;
+> +
+> +       list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
+> +               freq_table = cpufreq_frequency_get_table(policy->cpu);
+> +               if (freq_table) {
+> +                       ret = cpufreq_frequency_table_cpuinfo(policy,
+> +                                                       freq_table);
+> +                       if (!ret) {
+> +                               policy->user_policy.max = policy->max;
+> +                               __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
+> +                       }
+> +               }
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +int cpufreq_boost_trigger_state(int state)
+> +{
+> +       unsigned long flags;
+> +       int ret = 0;
+> +
+> +       if (cpufreq_driver->boost_enabled == state)
+> +               return 0;
+> +
+> +       write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +       cpufreq_driver->boost_enabled = state;
+> +       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+
+Not sure if we should leave the lock at this point of time, as we
+haven't enabled boost until now.
+
+If somebody tries to use this variable at this point of time, then
+it would get the wrong information about it.
+
+> +       ret = cpufreq_driver->set_boost(state);
+> +       if (ret) {
+> +               write_lock_irqsave(&cpufreq_driver_lock, flags);
+> +               cpufreq_driver->boost_enabled = 0;
+
+should be:
+                    cpufreq_driver->boost_enabled = !state;
+
+> +               write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> +
+> +               pr_err("%s: BOOST cannot %s\n", __func__,
+
+s/BOOST cannot %s/Cannot %s BOOST
+
+> +                      state ? "enabled" : "disabled");
+> +       }
+> +
+> +       return ret;
+> +}
+> +
+> +int cpufreq_boost_supported(void)
+> +{
+> +       if (cpufreq_driver)
+
+This routine is always called from places where cpufreq_driver
+can't be NULL..
+
+--contd--
+
+> +               return cpufreq_driver->boost_supported;
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_boost_supported);
+> +
+> +int cpufreq_boost_enabled(void)
+> +{
+> +       return cpufreq_driver->boost_enabled;
+
+And if above check is necessary, then don't you need to check
+it here as well?
+
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_boost_enabled);
+> +
+> +/*********************************************************************
+>   *               REGISTER / UNREGISTER CPUFREQ DRIVER                *
+>   *********************************************************************/
 >
-> I'm out of ideas, could you bisect this? Either kernel, userspace or
-> both. Thanks,
-
-I will wait for today's official Linux-next (next-20130726) release
-and check if the issue still exists (might be I mismerged).
-Cannot promise for bisecting, but for me it seems to be a
-"kernel-related" issue.
-So, my 1st bisect-strategy would be to see before/after drm-intel
-merge into -next.
-
-For example: I could start my X with even doing ugly hacks like this...
-
-[ intel-ddx (git) ]
-...
-Bool intel_uxa_create_screen_resources(ScreenPtr screen)
-...
-#if 0
-	if (drm_intel_gem_bo_map_gtt(bo))
-		return FALSE;
-#endif
-...
-
-...with any other kernel.
-
-- Sedat -
-
-> -Chris
+> @@ -2008,9 +2099,25 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
+>         cpufreq_driver = driver_data;
+>         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
 >
-> --
-> Chris Wilson, Intel Open Source Technology Centre
+> +       if (cpufreq_boost_supported()) {
+> +               /*
+> +                * Check if boost driver provides function to enable boost -
+
+s/boost driver/driver
+
+> +                * if not, use cpufreq_boost_set_sw as default
+> +                */
+> +               if (!cpufreq_driver->set_boost)
+> +                       cpufreq_driver->set_boost = cpufreq_boost_set_sw;
+> +
+> +               ret = cpufreq_sysfs_create_file(&(boost.attr));
+
+You don't need braces around boost.attr.
+
+> +               if (ret) {
+> +                       pr_err("%s: cannot register global BOOST sysfs file\n",
+> +                               __func__);
+> +                       goto err_null_driver;
+> +               }
+> +       }
+> +
+>         ret = subsys_interface_register(&cpufreq_interface);
+>         if (ret)
+> -               goto err_null_driver;
+> +               goto err_boost_unreg;
+>
+>         if (!(cpufreq_driver->flags & CPUFREQ_STICKY)) {
+>                 int i;
+> @@ -2037,6 +2144,9 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
+>         return 0;
+>  err_if_unreg:
+>         subsys_interface_unregister(&cpufreq_interface);
+> +err_boost_unreg:
+> +       if (cpufreq_boost_supported())
+> +               cpufreq_sysfs_remove_file(&(boost.attr));
+
+same here.
+
+>  err_null_driver:
+>         write_lock_irqsave(&cpufreq_driver_lock, flags);
+>         cpufreq_driver = NULL;
+> @@ -2063,6 +2173,9 @@ int cpufreq_unregister_driver(struct cpufreq_driver *driver)
+>         pr_debug("unregistering driver %s\n", driver->name);
+>
+>         subsys_interface_unregister(&cpufreq_interface);
+> +       if (cpufreq_boost_supported())
+> +               cpufreq_sysfs_remove_file(&(boost.attr));
+
+here too.
+
+> +
+>         unregister_hotcpu_notifier(&cpufreq_cpu_notifier);
+>
+>         write_lock_irqsave(&cpufreq_driver_lock, flags);
+
+> +static ssize_t scaling_available_frequencies_show(struct cpufreq_policy *policy,
+> +                                                 char *buf)
+> +{
+> +       return show_available_freqs(policy, buf, 0);
+
+s/0/false
+
+> +}
+
+> +static ssize_t scaling_boost_frequencies_show(struct cpufreq_policy *policy,
+> +                                             char *buf)
+> +{
+> +       return show_available_freqs(policy, buf, 1);
+
+s/1/true
+
+> +}
+
+Looks good mostly.. We Should be to get it in 3.12 :)
