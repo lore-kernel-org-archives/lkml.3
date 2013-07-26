@@ -1,212 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758688Ab3GZQlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:41:37 -0400
-Received: from 17.mo5.mail-out.ovh.net ([46.105.56.132]:50982 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758278Ab3GZQld (ORCPT
+	id S1758794Ab3GZQlm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:41:42 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:47158 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758379Ab3GZQli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:41:33 -0400
-Message-ID: <51F2A6B9.1010401@overkiz.com>
-Date: Fri, 26 Jul 2013 18:41:29 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 26 Jul 2013 12:41:38 -0400
+Date: Fri, 26 Jul 2013 17:41:22 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@linaro.org, linus.walleij@linaro.org, rob.herring@calxeda.com,
+        rob@landley.net, sameo@linux.intel.com, lee.jones@linaro.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
+        swarren@nvidia.com, devicetree@vger.kernel.org
+Message-ID: <20130726164122.GT9858@sirena.org.uk>
+References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com>
+ <1374833754-19659-3-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 02/42] ARM: at91: add PMC main clock
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12009411357578786937
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -85
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -85
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fVqowPMy9d9Ku1/g"
+Content-Disposition: inline
+In-Reply-To: <1374833754-19659-3-git-send-email-ldewangan@nvidia.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] pinctrl: palmas: add pincontrol driver
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/2013 15:40, Boris BREZILLON wrote:
-> This is the at91 main oscillator clock implementation using common
-> clk framework.
->
-> If rate is not provided during clock registraction it is computed using
-> the slow clock (main clk parent in this case) rate and the MCFR register.
->
-> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
-> ---
->   drivers/clk/at91/Makefile   |    5 ++
->   drivers/clk/at91/clk-main.c |  106 +++++++++++++++++++++++++++++++++++++++++++
->   include/linux/clk/at91.h    |   10 ++++
->   3 files changed, 121 insertions(+)
->   create mode 100644 drivers/clk/at91/Makefile
->   create mode 100644 drivers/clk/at91/clk-main.c
->
-> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
-> new file mode 100644
-> index 0000000..42c084e
-> --- /dev/null
-> +++ b/drivers/clk/at91/Makefile
-> @@ -0,0 +1,5 @@
-> +#
-> +# Makefile for at91 specific clk
-> +#
-> +
-> +obj-y += clk-main.o
-> diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
-> new file mode 100644
-> index 0000000..738fa39
-> --- /dev/null
-> +++ b/drivers/clk/at91/clk-main.c
-> @@ -0,0 +1,106 @@
-> +/*
-> + * drivers/clk/at91/clk-main.c
-> + *
-> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
-> + *
-> + * This mainram is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + */
-> +
-> +#include <linux/clk-provider.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk/at91.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +
-> +#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
-> +struct clk_main {
-> +	struct clk_hw hw;
-> +	unsigned long rate;
-> +};
-> +
-> +static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
-> +					  unsigned long parent_rate)
-> +{
-> +	u32 tmp;
-> +	struct clk_main *clkmain = to_clk_main(hw);
-> +	if (clkmain->rate)
-> +		return clkmain->rate;
-> +	while ((tmp = at91_pmc_read(AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY)
-> +		;
-wrong test here, should be:
 
-while (!((tmp = at91_pmc_read(AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY))
-	;
+--fVqowPMy9d9Ku1/g
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Jul 26, 2013 at 03:45:54PM +0530, Laxman Dewangan wrote:
 
-> +	tmp &= AT91_PMC_MAINF;
-> +	clkmain->rate = (tmp * parent_rate) / 16;
-> +	return clkmain->rate;
-> +}
-> +
-> +static const struct clk_ops main_ops = {
-> +	.recalc_rate = clk_main_recalc_rate,
-> +};
-> +
-> +struct clk * __init
-> +at91_clk_register_main(const char *name,
-> +		       const char *parent_name,
-> +		       unsigned long rate)
-> +{
-> +	struct clk_main *clkmain;
-> +	struct clk *clk = NULL;
-> +	struct clk_init_data init;
-> +
-> +	if (!rate && !parent_name)
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
-> +	if (!clkmain)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	init.name = name;
-> +	init.ops = &main_ops;
-> +	init.parent_names = parent_name ? &parent_name : NULL;
-> +	init.num_parents = parent_name ? 1 : 0;
-> +	init.flags = parent_name ? 0 : CLK_IS_ROOT;
-> +
-> +	clkmain->hw.init = &init;
-> +	clkmain->rate = rate;
-> +
-> +	clk = clk_register(NULL, &clkmain->hw);
-> +
-> +	if (IS_ERR(clk))
-> +		kfree(clkmain);
-> +
-> +	return clk;
-> +}
-> +
-> +
-> +
-> +#if defined(CONFIG_OF)
-> +static void __init
-> +of_at91_clk_main_setup(struct device_node *np)
-> +{
-> +	struct clk *clk;
-> +	const char *parent_name;
-> +	const char *name = np->name;
-> +	u32 rate = 0;
-> +
-> +	parent_name = of_clk_get_parent_name(np, 0);
-> +	of_property_read_string(np, "clock-output-names", &name);
-> +	of_property_read_u32(np, "clock-frequency", &rate);
-> +
-> +	clk = at91_clk_register_main(name, parent_name, rate);
-> +
-> +	if (!IS_ERR(clk))
-> +		return;
-> +
-> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
-> +}
-> +
-> +static void __init of_at91rm9200_clk_main_setup(struct device_node *np)
-> +{
-> +	of_at91_clk_main_setup(np);
-> +}
-> +CLK_OF_DECLARE(at91rm9200_clk_main, "atmel,at91rm9200-clk-main",
-> +	       of_at91rm9200_clk_main_setup);
-> +#endif
-> diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
-> index 0ce9586..8e83942 100644
-> --- a/include/linux/clk/at91.h
-> +++ b/include/linux/clk/at91.h
-> @@ -16,6 +16,8 @@
->   #ifndef AT91_PMC_H
->   #define AT91_PMC_H
->   
-> +#include <linux/clk-provider.h>
-> +
->   #ifndef __ASSEMBLY__
->   extern void __iomem *at91_pmc_base;
->   
-> @@ -187,4 +189,12 @@ extern void __iomem *at91_pmc_base;
->   #define			AT91_PMC_PCR_DIV8	0x3			/* Peripheral clock is MCK/8 */
->   #define		AT91_PMC_PCR_EN		(0x1  <<  28)		/* Enable */
->   
-> +
-> +
-> +
-> +struct clk * __init
-> +at91_clk_register_main(const char *name,
-> +		       const char *parent_name,
-> +		       unsigned long rate);
-> +
->   #endif
+> +pins: gpio0_id, gpio1_vbus_det_led1_pwm1, gpio2_regen_led2_pwm2, gpio3_chrg_det,
+> +	gpio4_sysen1, gpio5_clk32kgaudio_usb_psel, gpio6_sysen2,
+> +	gpio7_msecure_pwrhold, gpio8_sim1rsti, gpio9_low_vbat,
+> +	gpio10_wireless_chrg1, gpio11_rcm, gpio12_sim2rsto, gpio13, gpio14,
+> +	gpio15_sim2rsti, vac, powergood_usb_psel, nreswarm, pwrdown,
+> +	gpadc_start, reset_in, nsleep, enable1, enable2, int.
 
+Would it not be easier to just name the GPIOs gpioN rather than using
+the full names with the possible functions?
+
+--fVqowPMy9d9Ku1/g
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8qauAAoJELSic+t+oim9i2IP+gK8XCjkUG7Z8hMXhIGNn1zg
+5JmP1sT9/aSJtfzkWGW9ndqlSoTr7u5P1H0pOT9maRF9W9yNZ5W5S42TJQvMMGMz
+EsZ2OsWOGTK1iyw5JeMtRLFZ2XmzFyz3AZ3nvMlcp4mtype7tO+fkgZnbMx4MHup
+UyR3aWXXVvu/tIujgHB3IYE0zt/AKD5p7btp51K4nws0cm4se+kp74We8EsOMXBg
+nkw9UDoFFDAoFPMia9KKimZPk+uk85PyGPkiLtihX+U+rd1R5AqYn7MuEOlUi1vE
+1hd4ZXkFihHThYTX8FKgW+C4nHzVzzrExZKmniWgEtRdZDPLQffpejfRHSoAMTqB
+DqCwzhdj+E+TUpF+Zed4v5SI/LJfVzT7jTtmRx9/M1x0rMvBI2GXHL/65NJ07dW2
+CjFSJxPV+PLmZmg6xnu/fCUxS3EemjohDWiA95SpQZtLLIFFJhOk01BlWVPBsxAF
+VDyqR+VGw7pU6E/65CDIJXKfLCF5bnqUDFy+UEzj+eaV9dk8lQx/0+D7VI+UwWyk
+0fVa7a6B/8AXURgQt63nYrogNgBIGz5ICcu1SDFqFaxY3U4xvntr5YXZD6Mw/Utu
+n7i6/d0YeCvpQ3q2d0d/kRX+k8C9TGoAS9ym2n2qYM2ZxvZS+PY1vkbAxPcp3n5j
++VBZWD1yv739wFhjF78v
+=T9ys
+-----END PGP SIGNATURE-----
+
+--fVqowPMy9d9Ku1/g--
