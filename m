@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab3GZNGb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:06:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30237 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757038Ab3GZNFR (ORCPT
+	id S1758889Ab3GZNGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:06:43 -0400
+Received: from mail-gg0-f178.google.com ([209.85.161.178]:51932 "EHLO
+	mail-gg0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038Ab3GZNGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:05:17 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=AGr_jgBdTAoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=LiBVAXjy5VsA:10 a=VwQbUJbxAAAA:8 a=Q-fNiiVtAAAA:8 a=1XWaLZrsAAAA:8 a=S4XTqWYCxZEdMK2QbjYA:9 a=jeBq3FmKZ4MA:10 a=lcTMV_K9oDIA:10 a=UTB_XpHje0EA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130726130513.428993451@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 26 Jul 2013 09:03:36 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arend van Spril <arend@broadcom.com>, Alexander Z Lam <azl@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, <stable@vger.kernel.org>
-Subject: [PATCH 9/9] tracing: Remove locking trace_types_lock from
- tracing_reset_all_online_cpus()
-References: <20130726130327.911599518@goodmis.org>
-Content-Disposition: inline; filename=0009-tracing-Remove-locking-trace_types_lock-from-tracing.patch
+	Fri, 26 Jul 2013 09:06:40 -0400
+Date: Fri, 26 Jul 2013 09:06:35 -0400
+From: "tj@kernel.org" <tj@kernel.org>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Zhu Richard-R65037 <r65037@freescale.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: [PATCH] ahci_imx: depend on CONFIG_MFD_SYSCON
+Message-ID: <20130726130635.GB3013@htj.dyndns.org>
+References: <20130725151253.8b9b53b3a3cf6cacd501dc54@canb.auug.org.au>
+ <51F16F17.4030002@infradead.org>
+ <0E83723C55F66F43A6041464FE31119D3487F2@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130726040349.GA29268@S2101-09.ap.freescale.net>
+ <0E83723C55F66F43A6041464FE31119D34886A@039-SN2MPN1-011.039d.mgd.msft.net>
+ <20130726052519.GB29268@S2101-09.ap.freescale.net>
+ <20130726111850.GD30786@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726111850.GD30786@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+>From 867974fc09f93bdd7f98d46ac3733934486bbf4a Mon Sep 17 00:00:00 2001
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 26 Jul 2013 08:57:56 -0400
 
-Commit a82274151af "tracing: Protect ftrace_trace_arrays list in trace_events.c"
-added taking the trace_types_lock mutex in trace_events.c as there were
-several locations that needed it for protection. Unfortunately, it also
-encapsulated a call to tracing_reset_all_online_cpus() which also takes
-the trace_types_lock, causing a deadlock.
+ahci_imx makes use of regmap but the dependency wasn't specified in
+Kconfig leading build failures if CONFIG_AHCI_IMX is enabled but
+CONFIG_MFD_SYSCON is not.  Add the Kconfig dependency.
 
-This happens when a module has tracepoints and has been traced. When the
-module is removed, the trace events module notifier will grab the
-trace_types_lock, do a bunch of clean ups, and also clears the buffer
-by calling tracing_reset_all_online_cpus. This doesn't happen often
-which explains why it wasn't caught right away.
-
-Commit a82274151af was marked for stable, which means this must be
-sent to stable too.
-
-Link: http://lkml.kernel.org/r/51EEC646.7070306@broadcom.com
-
-Reported-by: Arend van Spril <arend@broadcom.com>
-Tested-by: Arend van Spriel <arend@broadcom.com>
-Cc: Alexander Z Lam <azl@google.com>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Cc: David Sharp <dhsharp@google.com>
-Cc: stable@vger.kernel.org # 3.10
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- kernel/trace/trace.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+Applied to libata/for-3.11-fixes.
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 69cba47..882ec1d 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1224,18 +1224,17 @@ void tracing_reset_current(int cpu)
- 	tracing_reset(&global_trace.trace_buffer, cpu);
- }
+Thanks.
+
+ drivers/ata/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index a4af0a2..4e73772 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -99,7 +99,7 @@ config SATA_AHCI_PLATFORM
  
-+/* Must have trace_types_lock held */
- void tracing_reset_all_online_cpus(void)
- {
- 	struct trace_array *tr;
- 
--	mutex_lock(&trace_types_lock);
- 	list_for_each_entry(tr, &ftrace_trace_arrays, list) {
- 		tracing_reset_online_cpus(&tr->trace_buffer);
- #ifdef CONFIG_TRACER_MAX_TRACE
- 		tracing_reset_online_cpus(&tr->max_buffer);
- #endif
- 	}
--	mutex_unlock(&trace_types_lock);
- }
- 
- #define SAVED_CMDLINES 128
+ config AHCI_IMX
+ 	tristate "Freescale i.MX AHCI SATA support"
+-	depends on SATA_AHCI_PLATFORM
++	depends on SATA_AHCI_PLATFORM && MFD_SYSCON
+ 	help
+ 	  This option enables support for the Freescale i.MX SoC's
+ 	  onboard AHCI SATA.
 -- 
-1.7.10.4
-
+1.8.3.1
 
