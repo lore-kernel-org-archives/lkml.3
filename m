@@ -1,173 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757441Ab3GZDnr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:43:47 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:10000 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753924Ab3GZDnp (ORCPT
+	id S1756949Ab3GZDsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:48:37 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46296 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753924Ab3GZDsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:43:45 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-91-51f1f0700685
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Greg Kroah-Hartman'" <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>
-References: <001a01ce8450$dcbd0bb0$96372310$@samsung.com>
-In-reply-to: <001a01ce8450$dcbd0bb0$96372310$@samsung.com>
-Subject: Re: [PATCH] driver core: replace strict_strto*() with kstrto*()
-Date: Fri, 26 Jul 2013 12:43:43 +0900
-Message-id: <000101ce89b2$5378c210$fa6a4630$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQGkIV4S6h94/ChSBCBZycQQa/McpZnLINNg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t8zfd2CDx8DDe4eYrJoXryezeLywkus
-	Fpd3zWFzYPbYP3cNu0ffllWMHp83yQUwR3HZpKTmZJalFunbJXBl/N9iVXBbquLU6eNsDYyN
-	ol2MnBwSAiYSixf8ZYewxSQu3FvP1sXIxSEksIxRYuWKLewwReuWt4LZQgLTGSU69plDFP1i
-	lJj18BRYgk1ATeLLl8NgtoiAqcTG91MYQWxmASeJn1tmskA0W0pcvLQWrIZTwEpi2YE/YLaw
-	gIfE6UndQJs5OFgEVCUunskDCfMCld9teM0GYQtK/Jh8jwVipJbE+p3HmSBseYnNa94yQ9yp
-	ILHj7GtGiBOMJKat38AKUSMise/FO0aQmyUEtrFL9HRMBxvEIiAg8W3yIRaQvRICshKbDkDN
-	kZQ4uOIGywSg75CsnoVk9Swkq2chWbGAkWUVo2hqQXJBcVJ6kYlecWJucWleul5yfu4mRkj8
-	TdjBeO+A9SHGZKD1E5mlRJPzgfGbVxJvaGxmZGFqYmpsZG5pRpqwkjiveot1oJBAemJJanZq
-	akFqUXxRaU5q8SFGJg5OqQbGxYqli6IjSpqiVmbEpwce5OvyzGxn7Gd/frGncGKGz7SD0mKS
-	bV6nU3c4r5GNm71436oJxyRNeI9zHItuOhSwIyNyS+d7k773foJ9D3+4GYldVbBNnb5BnDls
-	rkVX5dvA64YdYV/bfyffrk57v1Qn7PfXf/WJIe9sd4nFNRzbaHR/lbjI40IlluKMREMt5qLi
-	RAC1fMuv1QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jQd38Dx8DDY4ftLZoXryezeLywkus
-	Fpd3zWFzYPbYP3cNu0ffllWMHp83yQUwRzUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
-	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAbVJSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdj
-	ZIAGEtYxZvzfYlVwW6ri1OnjbA2MjaJdjJwcEgImEuuWt7JD2GISF+6tZwOxhQSmM0p07DPv
-	YuQCsn8xSsx6eAqsiE1ATeLLl8NgtoiAqcTG91MYQWxmASeJn1tmskA0W0pcvLQWrIZTwEpi
-	2YE/YLawgIfE6UndQAs4OFgEVCUunskDCfMCld9teM0GYQtK/Jh8jwVipJbE+p3HmSBseYnN
-	a94yQ9ypILHj7GtGiBOMJKat38AKUSMise/FO8YJjEKzkIyahWTULCSjZiFpWcDIsopRNLUg
-	uaA4KT3XUK84Mbe4NC9dLzk/dxMjOLqfSe1gXNlgcYhRgINRiYdXweljoBBrYllxZe4hRgkO
-	ZiUR3oZjQCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OByaevJJ4Q2MTMyNLIzMLIxNzc9KE
-	lcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpg3Jb8ml0qg3/q1wqDfYuO3fffFvvKWClTSGRy
-	NMPH64fcBWPcqteynqy1bMy/c/OQQf3hOTdtTQ47pPyavW7mw1dWtlc1Bd3lrHwWVk2bI/Yu
-	/uKcHV5NnkwPu9707bGyfH7XwuuyuPDq5RFzC3VFHp3gTznIYz3BSOih0cFdOUdYj7/aoMW/
-	X4mlOCPRUIu5qDgRAB+GbfcyAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 25 Jul 2013 23:48:35 -0400
+Date: Fri, 26 Jul 2013 13:48:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Quigley <dpquigl@davequigley.com>,
+        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>,
+        Miguel Rodel Felipe <Rodel_FM@dsi.a-star.edu.sg>,
+        Phua Eu Gene <PHUA_Eu_Gene@dsi.a-star.edu.sg>,
+        Khin Mi Mi Aung <Mi_Mi_AUNG@dsi.a-star.edu.sg>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: linux-next: manual merge of the selinux tree with Linus' tree
+Message-Id: <20130726134823.e4c0a1b7bad087c12b3ce782@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Jul_2013_13_48_23_+1000_VItqWXMydGOGgI+6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 04:21:28PM +0900, Jingoo Han wrote:, Jingoo Han wrote:
-> 
-> The usage of strict_strto*() is not preferred, because
-> strict_strto*() is obsolete. Thus, kstrto*() should be
-> used.
-> 
-> Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> ---
->  drivers/base/core.c                  |    2 +-
->  drivers/base/memory.c                |   10 ++++++----
->  drivers/base/power/sysfs.c           |    7 ++++++-
->  drivers/base/regmap/regmap-debugfs.c |    5 +++--
->  4 files changed, 16 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 8856d74..edfbf05 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -38,7 +38,7 @@ long sysfs_deprecated = 0;
->  #endif
->  static __init int sysfs_deprecated_setup(char *arg)
->  {
-> -	return strict_strtol(arg, 10, &sysfs_deprecated);
-> +	return kstrtol(arg, 10, &sysfs_deprecated);
->  }
->  early_param("sysfs.deprecated", sysfs_deprecated_setup);
->  #endif
-> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-> index 2b7813e..d0817fb 100644
-> --- a/drivers/base/memory.c
-> +++ b/drivers/base/memory.c
-> @@ -469,8 +469,9 @@ store_soft_offline_page(struct device *dev,
->  	u64 pfn;
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> -	if (strict_strtoull(buf, 0, &pfn) < 0)
-> -		return -EINVAL;
-> +	ret = kstrtoull(buf, 0, &pfn);
-> +	if (ret < 0)
-> +		return ret;
+--Signature=_Fri__26_Jul_2013_13_48_23_+1000_VItqWXMydGOGgI+6
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In order to not risk any user space breakage,
-I will just mechanically replaces strict_strto*() with kstrto*().
+Hi Eric,
 
+Today's linux-next merge of the selinux tree got a conflict in
+security/selinux/hooks.c between commit eb9ae686507b ("SELinux: Add new
+labeling type native labels") from Linus' tree and commits 40d3d0b85fa2
+("SELinux: remove crazy contortions around proc") and a64c54cf0811
+("SELinux: pass a superblock to security_fs_use") from the selinux tree.
 
->  	pfn >>= PAGE_SHIFT;
->  	if (!pfn_valid(pfn))
->  		return -ENXIO;
-> @@ -488,8 +489,9 @@ store_hard_offline_page(struct device *dev,
->  	u64 pfn;
->  	if (!capable(CAP_SYS_ADMIN))
->  		return -EPERM;
-> -	if (strict_strtoull(buf, 0, &pfn) < 0)
-> -		return -EINVAL;
-> +	ret = kstrtoull(buf, 0, &pfn);
-> +	if (ret < 0)
-> +		return ret;
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Ditto.
+P.S. Unusually, that commit from Linus' tree has no Signed-off-by from
+its purported author (David Quigley).
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+diff --cc security/selinux/hooks.c
+index a5091ec,4fbf2c5..0000000
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@@ -680,21 -702,14 +712,19 @@@ static int selinux_set_mnt_opts(struct=20
+  	if (strcmp(sb->s_type->name, "proc") =3D=3D 0)
+  		sbsec->flags |=3D SE_SBPROC;
+ =20
+ -	/* Determine the labeling behavior to use for this filesystem type. */
+ -	rc =3D security_fs_use(sb);
+ -	if (rc) {
+ -		printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
+ -		       __func__, sb->s_type->name, rc);
+ -		goto out;
+ +	if (!sbsec->behavior) {
+ +		/*
+ +		 * Determine the labeling behavior to use for this
+ +		 * filesystem type.
+ +		 */
+- 		rc =3D security_fs_use((sbsec->flags & SE_SBPROC) ?
+- 					"proc" : sb->s_type->name,
+- 					&sbsec->behavior, &sbsec->sid);
+++		rc =3D security_fs_use(sb);
+ +		if (rc) {
+ +			printk(KERN_WARNING
+ +				"%s: security_fs_use(%s) returned %d\n",
+ +					__func__, sb->s_type->name, rc);
+ +			goto out;
+ +		}
+  	}
+ -
+  	/* sets the context of the superblock for the fs being mounted. */
+  	if (fscontext_sid) {
+  		rc =3D may_context_mount_sb_relabel(fscontext_sid, sbsec, cred);
+@@@ -2629,11 -2589,15 +2659,11 @@@ static int selinux_inode_init_security(
+  		isec->initialized =3D 1;
+  	}
+ =20
+- 	if (!ss_initialized || !(sbsec->flags & SE_SBLABELSUPP))
++ 	if (!ss_initialized || !(sbsec->flags & SBLABEL_MNT))
+  		return -EOPNOTSUPP;
+ =20
+ -	if (name) {
+ -		namep =3D kstrdup(XATTR_SELINUX_SUFFIX, GFP_NOFS);
+ -		if (!namep)
+ -			return -ENOMEM;
+ -		*name =3D namep;
+ -	}
+ +	if (name)
+ +		*name =3D XATTR_SELINUX_SUFFIX;
+ =20
+  	if (value && len) {
+  		rc =3D security_sid_to_context_force(newsid, &context, &clen);
 
->  	pfn >>= PAGE_SHIFT;
->  	ret = memory_failure(pfn, 0, 0);
->  	return ret ? ret : count;
-> diff --git a/drivers/base/power/sysfs.c b/drivers/base/power/sysfs.c
-> index a53ebd2..e0a3877 100644
-> --- a/drivers/base/power/sysfs.c
-> +++ b/drivers/base/power/sysfs.c
-> @@ -202,11 +202,16 @@ static ssize_t autosuspend_delay_ms_store(struct device *dev,
->  		struct device_attribute *attr, const char *buf, size_t n)
->  {
->  	long delay;
-> +	int ret;
-> 
->  	if (!dev->power.use_autosuspend)
->  		return -EIO;
-> 
-> -	if (strict_strtol(buf, 10, &delay) != 0 || delay != (int) delay)
-> +	ret = kstrtol(buf, 10, &delay);
-> +	if (ret)
-> +		return ret;
-> +
-> +	if (delay != (int) delay)
+--Signature=_Fri__26_Jul_2013_13_48_23_+1000_VItqWXMydGOGgI+6
+Content-Type: application/pgp-signature
 
-Ditto.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
->  		return -EINVAL;
-> 
->  	device_lock(dev);
-> diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
-> index 5349575..664a75e 100644
-> --- a/drivers/base/regmap/regmap-debugfs.c
-> +++ b/drivers/base/regmap/regmap-debugfs.c
-> @@ -281,8 +281,9 @@ static ssize_t regmap_map_write_file(struct file *file,
->  	reg = simple_strtoul(start, &start, 16);
->  	while (*start == ' ')
->  		start++;
-> -	if (strict_strtoul(start, 16, &value))
-> -		return -EINVAL;
-> +	ret = kstrtoul(start, 16, &value);
-> +	if (ret)
-> +		return ret;
+iQIcBAEBCAAGBQJR8fGKAAoJEECxmPOUX5FEIFkP+wfb+ZrrOvvhwfh1zpYnoBYZ
+Uoh+lK2BmZuarDUpRPvTO68OACXbh0wlG/p7ThYWvYV51BDMDbKF2QD0oHA75w2M
+JhMs3aE7yufBTpQqdroAtafiG9jtLWrWidTflqJjCmRDoQGe4mgVW+OZowGC7Tao
++VU/Ufbl8PwmyplZQStdFvTeI1nlfW1lbQhaWOvPpJYgCr2W6G6jkrBCcblmRaku
+tB+rKhpgO8rX2QvKySghDceJWWvDwqzJEN9V7KD9BOqsJiDoiv/cgVwE8aovwtLx
+oFX6EwfF8bjRpsLG9yXyM8mgUxjccWFm5mFghX++m1+SgxkDrnEC82Kkp57LxTQG
+2etNfHeC/w9aCZQnNbUnr7taS7dziGIoQ+kLuRFg5kDhsJKV5/HBIQroWit0y5H3
+TKZ0kRJ8P98CKPQWjB0DhAqLZBq7kptcUv9LeyxQAP8Ndignrd/3w2Ta+2jUnsbJ
+Ya9rfkIjh265E8CsAIJtMOMa4iPg6pEs4zSrzSS8JpqK7MeqGONS9hBaZZebWRkL
+XqO28TupNmXTzHKbPG44Ps/1oTh96faS85OcKxstS3Ccc9IIDpkaan2/SrkRTTzM
+nu4Y9l4puG9/eluBS6X31AcgsHpyxSAD/BatCZ+gXX13v9p267sb2E6V8FcQ7ZLu
+lKgbpE4Mrl5F1KAFQGjN
+=sFMN
+-----END PGP SIGNATURE-----
 
-Ditto.
-
-I will send v2 patch, soon.
-Thank you.
-
-Best regards,
-Jingoo Han
-
-> 
->  	/* Userspace has been fiddling around behind the kernel's back */
->  	add_taint(TAINT_USER, LOCKDEP_STILL_OK);
-> --
-> 1.7.10.4
-
-
+--Signature=_Fri__26_Jul_2013_13_48_23_+1000_VItqWXMydGOGgI+6--
