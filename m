@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760064Ab3GZU5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:57:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51172 "EHLO
+	id S1760042Ab3GZU5o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:57:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51176 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933031Ab3GZUyB (ORCPT
+	with ESMTP id S933038Ab3GZUyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:54:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luiz Angelo Daros de Luca <luizluca@gmail.com>
-Subject: [ 53/59] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
-Date: Fri, 26 Jul 2013 13:53:17 -0700
-Message-Id: <20130726205019.499679862@linuxfoundation.org>
+        Sami Rahman <sami.rahman@mmbresearch.com>
+Subject: [ 54/59] USB: cp210x: add MMB and PI ZigBee USB Device Support
+Date: Fri, 26 Jul 2013 13:53:18 -0700
+Message-Id: <20130726205019.609085698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -26,31 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+From: Sami Rahman <sami.rahman@mmbresearch.com>
 
-commit 90625070c4253377025878c4e82feed8b35c7116 upstream.
+commit 7681156982026ebf7eafd7301eb0374d7648d068 upstream.
 
-This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
-USB ID (0846:0110) to the cp210x driver. Without this, the serial
-adapter is not recognized in Linux. Description was obtained from
-an Netgear Eng.
+Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB
+devices using customized Silicon Labs' CP210x.c USB to UART bridge
+drivers with PIDs: 88A4, 88A5.
 
-Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/cp210x.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
 --- a/drivers/usb/serial/cp210x.c
 +++ b/drivers/usb/serial/cp210x.c
-@@ -60,6 +60,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
-+	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
- 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
- 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
- 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
+@@ -125,6 +125,8 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
+ 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
+ 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
++	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
++	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
+ 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
+ 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
 
 
