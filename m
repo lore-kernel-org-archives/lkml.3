@@ -1,134 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758462Ab3GZK3P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:29:15 -0400
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:54823 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3GZK3M (ORCPT
+	id S1758460Ab3GZKac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:30:32 -0400
+Received: from mail-gh0-f175.google.com ([209.85.160.175]:43252 "EHLO
+	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754659Ab3GZKab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:29:12 -0400
-Date: Fri, 26 Jul 2013 06:28:02 -0400 (EDT)
-From: John Kacur <jkacur@redhat.com>
-To: James Bottomley <jbottomley@parallels.com>
-Cc: linux-kernel@vger.kernel.org,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Message-ID: <766237766.6462824.1374834482391.JavaMail.root@redhat.com>
-In-Reply-To: <1374796568.1952.43.camel@dabdike>
-References: <alpine.LFD.2.03.1307252312310.28787@tycho> <1374796568.1952.43.camel@dabdike>
-Subject: Re: hpsa - BUG: using smp_processor_id() in preemptible [00000000
- 00000000] code: kworker/u:0/6
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.5.82.11]
-X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF21 (Linux)/8.0.3_GA_5664)
-Thread-Topic: hpsa - BUG: using smp_processor_id() in preemptible [00000000
- 00000000] code: kworker/u:0/6
-Thread-Index: AQHOiX6R9uBZuwzAn0qsFAGkrxWQgJl2h2sAE2YV50E=
+	Fri, 26 Jul 2013 06:30:31 -0400
+X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 06:30:31 EDT
+From: Jeff Layton <jlayton@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>
+Subject: [PATCH] vfs: allow umount to handle mountpoints without revalidating them
+Date: Fri, 26 Jul 2013 06:23:25 -0400
+Message-Id: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Christopher reported a regression where he was unable to unmount a NFS
+filesystem where the root had gone stale. The problem is that
+d_revalidate handles the root of the filesystem differently from other
+dentries, but d_weak_revalidate does not. We could simply fix this by
+making d_weak_revalidate return success on IS_ROOT dentries, but there
+are cases where we do want to revalidate the root of the fs.
 
+A umount is really a special case. We generally aren't interested in
+anything but the dentry and vfsmount that's attached at that point. If
+the inode turns out to be stale we just don't care since the intent is
+to stop using it anyway.
 
------ Original Message -----
-> [Adding missing cc to linux-scsi]
-> On Thu, 2013-07-25 at 23:33 +0200, John Kacur wrote:
-> > Hi
-> > 
-> > We're seeing this on a 3.6 kernel with the real-time patch applied, but it
-> > looks like it is relevant with the real-time patch in the latest kernel
+Try to handle this situation better by treating umount as a special
+case in the lookup code. Have it resolve the parent using normal
+means, and then do a lookup of the final dentry without revalidating
+it. In most cases, the final lookup will come out of the dcache, but
+the case where there's a trailing symlink or !LAST_NORM entry on the
+end complicates things a bit.
 
-This should read, "it looks like it is relevant WITHOUT the real-time patch in the latest kernel".
+Cc: Neil Brown <neilb@suse.de>
+Reported-by: Christopher T Vogan <cvogan@us.ibm.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/namei.c            | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/namespace.c        |   2 +-
+ include/linux/namei.h |   1 +
+ 3 files changed, 184 insertions(+), 1 deletion(-)
 
+diff --git a/fs/namei.c b/fs/namei.c
+index 8b61d10..d9f65bd 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -2184,6 +2184,188 @@ user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
+ 	return s;
+ }
+ 
++/**
++ * umount_lookup_last - look up last component for umount
++ * @nd:   pathwalk nameidata - currently pointing at parent directory of "last"
++ * @path: pointer to container for result
++ *
++ * This is a special lookup_last function just for umount. In this case, we
++ * need to resolve the path without doing any revalidation.
++ *
++ * The nameidata should be the result of doing a LOOKUP_PARENT pathwalk. Since
++ * mountpoints are always pinned in the dcache, their ancestors are too. Thus,
++ * in almost all cases, this lookup will be served out of the dcache. The only
++ * cases where it won't are if nd->last refers to a symlink or the path is
++ * bogus and it doesn't exist.
++ *
++ * Returns:
++ * -error: if there was an error during lookup. This includes -ENOENT if the
++ *         lookup found a negative dentry. The nd->path reference will also be
++ *         put in this case.
++ *
++ * 0:      if we successfully resolved nd->path and found it to not to be a
++ *         symlink that needs to be followed. "path" will also be populated.
++ *         The nd->path reference will also be put.
++ *
++ * 1:      if we successfully resolved nd->last and found it to be a symlink
++ *         that needs to be followed. "path" will be populated with the path
++ *         to the link, and nd->path will *not* be put.
++ */
++static int
++umount_lookup_last(struct nameidata *nd, struct path *path)
++{
++	int error = 0;
++	struct dentry *dentry;
++	struct dentry *dir = nd->path.dentry;
++
++	if (unlikely(nd->flags & LOOKUP_RCU)) {
++		WARN_ON_ONCE(1);
++		error = -ECHILD;
++		goto error_check;
++	}
++
++	nd->flags &= ~LOOKUP_PARENT;
++
++	if (unlikely(nd->last_type != LAST_NORM)) {
++		error = handle_dots(nd, nd->last_type);
++		if (!error)
++			dentry = dget(nd->path.dentry);
++		goto error_check;
++	}
++
++	mutex_lock(&dir->d_inode->i_mutex);
++	dentry = d_lookup(dir, &nd->last);
++	if (!dentry) {
++		/*
++		 * No cached dentry. Mounted dentries are pinned in the cache,
++		 * so that means that this dentry is probably a symlink or the
++		 * path doesn't actually point to a mounted dentry.
++		 */
++		dentry = d_alloc(dir, &nd->last);
++		if (!dentry) {
++			error = -ENOMEM;
++		} else {
++			dentry = lookup_real(dir->d_inode, dentry, nd->flags);
++			if (IS_ERR(dentry))
++				error = PTR_ERR(dentry);
++		}
++	}
++	mutex_unlock(&dir->d_inode->i_mutex);
++
++error_check:
++	if (!error) {
++		if (!dentry->d_inode) {
++			error = -ENOENT;
++			dput(dentry);
++		} else {
++			path->dentry = dentry;
++			path->mnt = mntget(nd->path.mnt);
++			if (should_follow_link(dentry->d_inode,
++						nd->flags & LOOKUP_FOLLOW))
++				return 1;
++			follow_mount(path);
++		}
++	}
++	terminate_walk(nd);
++	return error;
++}
++
++/**
++ * path_umountat - look up a path to be umounted
++ * @dfd:	directory file descriptor to start walk from
++ * @name:	full pathname to walk
++ * @flags:	lookup flags
++ * @nd:		pathwalk nameidata
++ *
++ * Look up the given name, but don't attempt to revalidate the last component.
++ * Returns 0 and "path" will be valid on success; Retuns error otherwise.
++ */
++static int
++path_umountat(int dfd, const char *name, struct path *path, unsigned int flags)
++{
++	struct file *base = NULL;
++	struct nameidata nd;
++	int err;
++
++	err = path_init(dfd, name, flags | LOOKUP_PARENT, &nd, &base);
++	if (unlikely(err))
++		return err;
++
++	current->total_link_count = 0;
++	err = link_path_walk(name, &nd);
++	if (err)
++		goto out;
++
++	/* If we're in rcuwalk, drop out of it to handle last component */
++	if (nd.flags & LOOKUP_RCU) {
++		err = unlazy_walk(&nd, NULL);
++		if (err) {
++			terminate_walk(&nd);
++			goto out;
++		}
++	}
++
++	err = umount_lookup_last(&nd, path);
++	while (err > 0) {
++		void *cookie;
++		struct path link = *path;
++		err = may_follow_link(&link, &nd);
++		if (unlikely(err))
++			break;
++		nd.flags |= LOOKUP_PARENT;
++		err = follow_link(&link, &nd, &cookie);
++		if (err)
++			break;
++		err = umount_lookup_last(&nd, path);
++		put_link(&nd, &link, cookie);
++	}
++out:
++	if (base)
++		fput(base);
++
++	if (nd.root.mnt && !(nd.flags & LOOKUP_ROOT))
++		path_put(&nd.root);
++
++	return err;
++}
++
++/**
++ * user_path_umountat - lookup a path from userland in order to umount it
++ * @dfd:	directory file descriptor
++ * @name:	pathname from userland
++ * @flags:	lookup flags
++ * @path:	pointer to container to hold result
++ *
++ * A umount is a special case for path walking. We're not actually interested
++ * in the inode in this situation, and ESTALE errors can be a problem. We
++ * simply want track down the dentry and vfsmount attached at the mountpoint
++ * and avoid revalidating the last component.
++ *
++ * Returns 0 and populates "path" on success.
++ */
++int
++user_path_umountat(int dfd, const char __user *name, unsigned int flags,
++			struct path *path)
++{
++	struct filename *s = getname(name);
++	int error;
++
++	if (IS_ERR(s))
++		return PTR_ERR(s);
++
++	error = path_umountat(dfd, s->name, path, flags | LOOKUP_RCU);
++	if (unlikely(error == -ECHILD))
++		error = path_umountat(dfd, s->name, path, flags);
++	if (unlikely(error == -ESTALE))
++		error = path_umountat(dfd, s->name, path, flags | LOOKUP_REVAL);
++
++	if (likely(!error))
++		audit_inode(s, path->dentry, 0);
++
++	putname(s);
++	return error;
++}
++
+ /*
+  * It's inline, so penalty for filesystems that don't use sticky bit is
+  * minimal.
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 7b1ca9b..5d2676a 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -1318,7 +1318,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
+ 	if (!(flags & UMOUNT_NOFOLLOW))
+ 		lookup_flags |= LOOKUP_FOLLOW;
+ 
+-	retval = user_path_at(AT_FDCWD, name, lookup_flags, &path);
++	retval = user_path_umountat(AT_FDCWD, name, lookup_flags, &path);
+ 	if (retval)
+ 		goto out;
+ 	mnt = real_mount(path.mnt);
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 5a5ff57..cd09751 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -58,6 +58,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ 
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
+ extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
++extern int user_path_umountat(int, const char __user *, unsigned int, struct path *);
+ 
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
+-- 
+1.8.3.1
 
-> > too.
-> > 
-> > [   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
-> > [   49.749928] scsi0 : hpsa
-> > [   49.784437] BUG: using smp_processor_id() in preemptible [00000000
-> > 00000000] code: kworker/u:0/6
-> > [   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
-> > [   49.784468] Pid: 6, comm: kworker/u:0 Not tainted
-> > 3.6.11.5-rt37.52.el6rt.x86_64.debug #1
-> > [   49.784471] Call Trace:
-> > [   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
-> > [   49.784520]  [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100
-> > [hpsa]
-> > [   49.784529]  [<ffffffffa00905cb>]
-> > hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
-> > [   49.784537]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
-> > [   49.784544]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
-> > [   49.784553]  [<ffffffffa0090701>]
-> > hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
-> > [   49.784562]  [<ffffffffa0093558>]
-> > hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
-> > [   49.784571]  [<ffffffffa00935ea>]
-> > hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
-> > [   49.784580]  [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0
-> > [hpsa]
-> > [   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
-> > [   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
-> > [   49.784613]  [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
-> > [   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
-> > [   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
-> > [   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
-> > [   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
-> > [   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
-> > [   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
-> > [   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
-> > [   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
-> > [   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
-> > [   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
-> > [   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
-> > [   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
-> > [   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
-> > [   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
-> > [   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
-> > [   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
-> > 
-> > -------
-> > 
-> > When I look at the code I see this call chain
-> > enqueue_cmd_and_start_io()->
-> > 	set_performant_mode()->
-> > 		smp_processor_id()
-> > Which if you have debugging enabled calls debug_processor_id() and
-> > triggers the warning.
-> > 
-> > I'm not very familiar with the hpsa code, so I'm not entirely sure what
-> > the purpose of this line is
-> > 
-> > c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
-> > 
-> > Is the purpose to simply try to get a range of ReplyQueue numbers, but
-> > somewhat arbitrary? Or is it necessary that the current processor_id
-> > is used? If it is the former, and you're not accessing per cpu structures,
-> > or pinning a cpu, or anything like that then I would think it is safe to
-> > change this to a raw_smp_processor_id() to get rid of a false positive
-> > warning.
-> > 
-> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > index 7f4f790..4e19267 100644
-> > --- a/drivers/scsi/hpsa.c
-> > +++ b/drivers/scsi/hpsa.c
-> > @@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h,
-> > struct CommandList *c)
-> >  		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
-> >  		if (likely(h->msix_vector))
-> >  			c->Header.ReplyQueue =
-> > -				smp_processor_id() % h->nreply_queues;
-> > +				raw_smp_processor_id() % h->nreply_queues;
-> >  	}
-> >  }
-> >  
-> > 
-> > Thanks
-> > 
-> > John Kacur
-> 
-> 
-> 
