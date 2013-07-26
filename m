@@ -1,143 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758980Ab3GZNpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:45:54 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:23479 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758829Ab3GZNpw (ORCPT
+	id S1759011Ab3GZNq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:46:27 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:13906 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758926Ab3GZNqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:45:52 -0400
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 09:45:52 EDT
-Date: Fri, 26 Jul 2013 08:36:44 -0500
-From: scameron@beardog.cce.hp.com
-To: John Kacur <jkacur@redhat.com>
-Cc: James Bottomley <jbottomley@parallels.com>, linux-kernel@vger.kernel.org,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org,
-        linux-scsi@vger.kernel.org, scameron@beardog.cce.hp.com
-Subject: Re: hpsa - BUG: using smp_processor_id() in preemptible [00000000 00000000] code: kworker/u:0/6
-Message-ID: <20130726133644.GM24664@beardog.cce.hp.com>
-References: <alpine.LFD.2.03.1307252312310.28787@tycho> <1374796568.1952.43.camel@dabdike> <766237766.6462824.1374834482391.JavaMail.root@redhat.com>
-Mime-Version: 1.0
+	Fri, 26 Jul 2013 09:46:24 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+gnawqz0WWqYelJ5D8h1Mf5SU3j/I650I=
+Date: Fri, 26 Jul 2013 09:45:51 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130726134551.GI29916@titan.lakedaemon.net>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726080115.GA5436@netboy>
+ <1374831744.2923.42.camel@shinybook.infradead.org>
+ <20130726130927.GC4219@netboy>
+ <20130726132709.GH29916@titan.lakedaemon.net>
+ <20130726133802.GN24642@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <766237766.6462824.1374834482391.JavaMail.root@redhat.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20130726133802.GN24642@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 06:28:02AM -0400, John Kacur wrote:
-> 
-> 
-> ----- Original Message -----
-> > [Adding missing cc to linux-scsi]
-> > On Thu, 2013-07-25 at 23:33 +0200, John Kacur wrote:
-> > > Hi
+On Fri, Jul 26, 2013 at 02:38:02PM +0100, Russell King - ARM Linux wrote:
+> On Fri, Jul 26, 2013 at 09:27:09AM -0400, Jason Cooper wrote:
+> > On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
+> > > Unless I totally misunderstood, the thread is talking about letting
+> > > established bindings change with each new kernel version.  I am
+> > > opposed to that.
 > > > 
-> > > We're seeing this on a 3.6 kernel with the real-time patch applied, but it
-> > > looks like it is relevant with the real-time patch in the latest kernel
-> 
-> This should read, "it looks like it is relevant WITHOUT the real-time patch in the latest kernel".
-> 
-> 
-> > > too.
-> > > 
-> > > [   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
-> > > [   49.749928] scsi0 : hpsa
-> > > [   49.784437] BUG: using smp_processor_id() in preemptible [00000000
-> > > 00000000] code: kworker/u:0/6
-> > > [   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
-> > > [   49.784468] Pid: 6, comm: kworker/u:0 Not tainted
-> > > 3.6.11.5-rt37.52.el6rt.x86_64.debug #1
-> > > [   49.784471] Call Trace:
-> > > [   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
-> > > [   49.784520]  [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100
-> > > [hpsa]
-> > > [   49.784529]  [<ffffffffa00905cb>]
-> > > hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
-> > > [   49.784537]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
-> > > [   49.784544]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
-> > > [   49.784553]  [<ffffffffa0090701>]
-> > > hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
-> > > [   49.784562]  [<ffffffffa0093558>]
-> > > hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
-> > > [   49.784571]  [<ffffffffa00935ea>]
-> > > hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
-> > > [   49.784580]  [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0
-> > > [hpsa]
-> > > [   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
-> > > [   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
-> > > [   49.784613]  [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
-> > > [   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
-> > > [   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
-> > > [   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
-> > > [   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
-> > > [   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
-> > > [   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
-> > > [   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
-> > > [   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
-> > > [   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
-> > > [   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
-> > > [   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
-> > > [   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
-> > > [   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
-> > > [   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
-> > > [   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
-> > > [   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
-> > > 
-> > > -------
-> > > 
-> > > When I look at the code I see this call chain
-> > > enqueue_cmd_and_start_io()->
-> > > 	set_performant_mode()->
-> > > 		smp_processor_id()
-> > > Which if you have debugging enabled calls debug_processor_id() and
-> > > triggers the warning.
-> > > 
-> > > I'm not very familiar with the hpsa code, so I'm not entirely sure what
-> > > the purpose of this line is
-> > > 
-> > > c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
-> > > 
-> > > Is the purpose to simply try to get a range of ReplyQueue numbers, but
-> > > somewhat arbitrary?  Or is it necessary that the current processor_id
-> > > is used? If it is the former, and you're not accessing per cpu structures,
-> > > or pinning a cpu, or anything like that then I would think it is safe to
-> > > change this to a raw_smp_processor_id() to get rid of a false positive
-> > > warning.
-
-It's not critical that they match (will work if they don't) but for certain
-workloads you can get more performance if you pin processes to cpus and
-arrange msix interrupt vectors so that commands are likely to complete on
-the same cpu they originated from.
-
-In any case, I think your analysis is correct.  Thanks.
-
-> > > 
-> > > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-> > > index 7f4f790..4e19267 100644
-> > > --- a/drivers/scsi/hpsa.c
-> > > +++ b/drivers/scsi/hpsa.c
-> > > @@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h,
-> > > struct CommandList *c)
-> > >  		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
-> > >  		if (likely(h->msix_vector))
-> > >  			c->Header.ReplyQueue =
-> > > -				smp_processor_id() % h->nreply_queues;
-> > > +				raw_smp_processor_id() % h->nreply_queues;
-> > >  	}
-> > >  }
-
-Ack.
-
--- steve
-
-> > >  
-> > > 
-> > > Thanks
-> > > 
-> > > John Kacur
+> > > Of course, a user may want to change the values of his MAC addresses,
+> > > if he needs to. But he should never have to change *how* he specifies
+> > > those addresses.
 > > 
+> > The other dynamic change that bears mentioning here is attributes which
+> > have been configured by the bootloader.  For example, in mvebu, we have
+> > the Schrodinger's Cat register.  It allows you to reconfigure the base
+> > address of the registers from *within* that register range.  If the
+> > bootloader does this, the DT needs to be updated to reflect the current
+> > hardware configuration.  Otherwise, the kernel is stuck poking around at
+> > memory addresses hoping to find something sane.
 > > 
-> > 
+> > But this falls into the same category as you mentioned, but outside of
+> > chosen {};.
+> 
+> No, this falls within the remit of "describing the hardware" and it is
+> certainly something that is free to change.
+
+We agree, I was just highlighting that attributes outside of chosen can
+and need to be rewritten by the bootloader.
+
+> What should not "change" once a kernel is the method by which hardware is
+> described in DT.  "change" there in the sense that how it was described by
+> kernel 3.X should still be accepted by 3.X+n, even if 3.X+n comes up with
+> a much better way to describe it.
+> 
+> The actual data associated with those descriptions is free to change in
+> whatever way is necessary if the hardware itself changes due to things
+> being programmed differently.
+> 
+> Think of it as the difference between the design of an interface, and the
+> interface being used.  We don't mandate that the write() syscall shall
+> always be called for fd=1 with length=5 and bytes "Hello" in the buffer.
+> We mandate that the write() syscall shall be passed an integer fd, a
+> buffer pointer, and a length and we don't change that ever.
+> 
+> Think of "a better way to describe it" as introducing the writev() syscall
+> to supplement write() so that applications can do writes from scattered
+> memory locations.  We don't get rid of the write() syscall - we add to
+> the ABI that's already there leaving the existing interfaces with exactly
+> the same semantics, so that all the existing stuff continues to work as-is.
+
+Yes, the manner in which the bootloader writes the changes should adhere
+to the binding.  In my example, it shouldn't replace the reg property
+with reg-mod.  It should just change the addresses to reflect the
+current state of the hardware the kernel will see.
+
+thx,
+
+Jason.
