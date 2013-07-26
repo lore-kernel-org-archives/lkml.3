@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760149Ab3GZWMf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:12:35 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:1377 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab3GZWMc convert rfc822-to-8bit (ORCPT
+	id S1757618Ab3GZWZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:25:05 -0400
+Received: from april.london.02.net ([87.194.255.143]:60950 "EHLO
+	april.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751809Ab3GZWZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:12:32 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 26 Jul 2013 15:12:32 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Jul 2013 15:12:31 -0700
-Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Index: Ac6KS/X0FiU29TJ+S1qMwrvFDOyarAAAC49w
-Message-ID: <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com>
-References: <1374871308-490-1-git-send-email-achew@nvidia.com>
- <51F2E74E.2060107@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
- <51F2EC66.2080200@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com>
- <51F2F22B.500@wwwdotorg.org>
-In-Reply-To: <51F2F22B.500@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Jul 2013 18:25:03 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 18:25:02 EDT
+Message-ID: <51F2F5D4.50409@baker-net.org.uk>
+Date: Fri, 26 Jul 2013 23:19:00 +0100
+From: Adam Baker <linux@baker-net.org.uk>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
+To: =?UTF-8?B?TGludXMgTMO8c3Npbmc=?= <linus.luessing@web.de>
+CC: bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Cong Wang <amwang@redhat.com>
+Subject: Re: [PATCHv2] bridge: disable snooping if there is no querier
+References: <1374757046-12463-1-git-send-email-linus.luessing@web.de> <1374760580-12920-1-git-send-email-linus.luessing@web.de>
+In-Reply-To: <1374760580-12920-1-git-send-email-linus.luessing@web.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>> How does this interact with the pinctrl driver that Laxman just
-> >>>> sent for Palmas?
-> >>>>
-> >>>> https://lkml.org/lkml/2013/7/26/141
-> >>>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
-> >>>
-> >>> Thanks for pointing this out.  Given this:
-> >>>
-> >>> +Optional properties:
-> >>> +- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1
-> mode.
-> >>> +- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2
-> mode.
-> >>>
-> >>> I think his work already encompasses what my patch is supposed to do.
-> >>>
-> >>> Abandoning this patch.
-> >>
-> >> OK, that's simple!
-> >>
-> >> Are the existing ti,mux-pad1/ti,mux-pad2 properties already in the
-> >> binding redundant with Laxman's pinctrl driver?
-> >
-> > In linux-next (where I based my work), yes, those two properties
-> > already exist, and as far as I understand it, are redundant with Laxman's
-> pinctrl driver.
-> > I expect those properties will go away with Laxman's pinctrl driver.
-> 
-> Except those properties have been there for many kernel revisions and are
-> an ABI and hence can't be removed, although I noticed that they got
-> renamed recently, and of course we aren't technically being strict about this
-> quite yet...
-> 
-> Re: the complete pinctrl driver: is anything outside the Palmas going to need
-> to reprogram the Palmas pinctrl HW at run-time? Are the functions that can
-> be routed to the pins just static configuration for PMIC features, or might
-> other generic (non-Palmas) drivers use those pins for something? If not,
-> perhaps it's be simpler to just add your ti,mux-pad3 property and be done.
+On 25/07/13 14:56, Linus Lüssing wrote:
+> If there is no querier on a link then we won't get periodic reports and
+> therefore won't be able to learn about multicast listeners behind ports,
+> potentially leading to lost multicast packets, especially for multicast
+> listeners that joined before the creation of the bridge.
+>
+> These lost multicast packets can appear since c5c23260594
+> ("bridge: Add multicast_querier toggle and disable queries by default")
+> in particular.
+>
+> With this patch we are flooding multicast packets if our querier is
+> disabled and if we didn't detect any other querier.
+>
+> A grace period of the Maximum Response Delay of the querier is added to
+> give multicast responses enough time to arrive and to be learned from
+> before disabling the flooding behaviour again.
+>
+> Signed-off-by: Linus Lüssing<linus.luessing@web.de>
 
-I can imagine other projects wanting to do runtime muxing on those pins.
-These pins can serve as GPIOs, or can be programmed for special functions.
-For my particular scenario, I just need to statically set that particular mux
-register (the power-on default value is not suitable for what we want to
-do, namely to use the GPIO_6 pin as an actual GPIO pin).  If the existing
-ti,mux-pad1 and ti,mux-pad2 properties are to stay, in the spirit of not changing
-the existing ABI, then sure, we can make a case for adding the missing one
-(ti,mux-pad3) for completeness.  In this case, if the palmas PMIC's pin
-configuration can be statically set at start of day, one won't even need to
-instantiate the palmas pinctrl driver at all, and with the addition of ti,mux-pad3,
-the pin configuration control will actually be complete. 
+If the lack of queries if there is no other querier is unacceptable to 
+the majority of users (and I believe it is) then surely the sensible 
+option is to have the multicast querier toggle enabled by default.
+
+The toggle was added in the first place because the queries were 
+reported to be generating issues with certain other equipment. This may 
+have been because the queries by default have an invalid IP address 
+(although I have been unable to identify what equipment they caused 
+problems with so can't verify this).
+
+If the only reason to turn the querier off is because it interferes with 
+other equipment then the solution to it being off by default isn't to 
+generate queries in some instances even if it is off but rather to turn 
+it on by default and only turn it off if it causes problems. If 
+multicast_query_use_ifaddr was also enabled by default the the 
+likelihood of the querier causing problems elsewhere should be reduced.
+
+Regards
+
+Adam
