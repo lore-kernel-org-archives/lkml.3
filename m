@@ -1,154 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab3GZOLV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:11:21 -0400
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35430 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757889Ab3GZOLO (ORCPT
+	id S1758162Ab3GZONi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:13:38 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:47434 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755628Ab3GZONh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:11:14 -0400
-Message-ID: <51F28370.6050304@gmail.com>
-Date: Fri, 26 Jul 2013 16:10:56 +0200
-From: Richard Genoud <richard.genoud@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Fri, 26 Jul 2013 10:13:37 -0400
+Date: Fri, 26 Jul 2013 10:12:26 -0400 (EDT)
+From: John Kacur <jkacur@redhat.com>
+To: scameron@beardog.cce.hp.com
+Cc: James Bottomley <jbottomley@parallels.com>, linux-kernel@vger.kernel.org,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Message-ID: <94298596.6633840.1374847946705.JavaMail.root@redhat.com>
+In-Reply-To: <20130726133644.GM24664@beardog.cce.hp.com>
+References: <alpine.LFD.2.03.1307252312310.28787@tycho> <1374796568.1952.43.camel@dabdike> <766237766.6462824.1374834482391.JavaMail.root@redhat.com> <20130726133644.GM24664@beardog.cce.hp.com>
+Subject: Re: hpsa - BUG: using smp_processor_id() in preemptible [00000000
+ 00000000] code: kworker/u:0/6
 MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 00/42] ARM: at91: move to common clk framework
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-In-Reply-To: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.12]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF21 (Linux)/8.0.3_GA_5664)
+Thread-Topic: hpsa - BUG: using smp_processor_id() in preemptible [00000000 00000000] code: kworker/u:0/6
+Thread-Index: xmheeLLc9gVnT8LluF7e+1oSQIHgZQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/07/2013 15:34, Boris BREZILLON wrote:
-> Hello,
-> 
-> This patch series is a proposal to move at91 clock implementation
-> to common clk framework.
-> 
-> Most of the clock provided by the PMC (Power Management Controller) are
-> implemented :
-> - main clock (main oscillator)
-> - pll clocks
-> - master clock
-> - programmable clocks
-> - utmi clock
-> - peripheral clocks
-> - system clocks
-> 
-> This implementation is compatible with device tree: the goal is
-> to define the whole clock tree in the device tree (all currently
-> available dt SoCs and boards are patched to support dt clocks).
-> Please feel free to comment the dt bindinds.
-> 
-> I removed the register_clocks function in SoC supporting dt boards only:
-> - at91sam9x5 SoCs
-> - at91sam9n12 SoC
-> - sama5d3 SoCs
-> 
-> This patch series is based on linux-next and has been tested on sama5d31ek
-> board using device tree. It compiles for other SoCs and both with and without
-> dt support, but it has not been tested.
-> 
-> BTW could other people test it on other boards (I only have a kizbox and
-> a sama5d31ek dev kit).
-> 
-> Best Regards,
-> Boris
-> 
-> Changes since v1:
->  - fix bugs in pll, programmable and system clock implementations
->    (wrong bit position).
->  - add usb clock configuration support (ohci and udc drivers +
->    clk_lookup for non dt boards)
->  - rework of the system clock interfaces (no need to define a parent clock,
->    system clock is a gate with no rate info)
->  - change system, peripheral and programmable clk dt bindings (1 master node
->    and multiple child nodes each defining a system/peripheral or prog clock)
->  - fix bugs in sama5 dt definition
-> 
-Hi Boris,
 
-First of all: Big thumbs up for this work !
 
-Then, I tested the serie on at91sam9g35ek (sam9x5 familly), and I see some problems:
-kernel is next-20130725 with the v4 serie of "ARM: at91: prepare transition to common clk framework"
-and v2 serie of "ARM: at91: move to common clk framework"
+----- Original Message -----
+> On Fri, Jul 26, 2013 at 06:28:02AM -0400, John Kacur wrote:
+> > 
+> > 
+> > ----- Original Message -----
+> > > [Adding missing cc to linux-scsi]
+> > > On Thu, 2013-07-25 at 23:33 +0200, John Kacur wrote:
+> > > > Hi
+> > > > 
+> > > > We're seeing this on a 3.6 kernel with the real-time patch applied, but
+> > > > it
+> > > > looks like it is relevant with the real-time patch in the latest kernel
+> > 
+> > This should read, "it looks like it is relevant WITHOUT the real-time patch
+> > in the latest kernel".
+> > 
+> > 
+> > > > too.
+> > > > 
+> > > > [   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
+> > > > [   49.749928] scsi0 : hpsa
+> > > > [   49.784437] BUG: using smp_processor_id() in preemptible [00000000
+> > > > 00000000] code: kworker/u:0/6
+> > > > [   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+> > > > [   49.784468] Pid: 6, comm: kworker/u:0 Not tainted
+> > > > 3.6.11.5-rt37.52.el6rt.x86_64.debug #1
+> > > > [   49.784471] Call Trace:
+> > > > [   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
+> > > > [   49.784520]  [<ffffffffa009043a>]
+> > > > enqueue_cmd_and_start_io+0x5a/0x100
+> > > > [hpsa]
+> > > > [   49.784529]  [<ffffffffa00905cb>]
+> > > > hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
+> > > > [   49.784537]  [<ffffffff812b09c8>] ?
+> > > > swiotlb_dma_mapping_error+0x18/0x30
+> > > > [   49.784544]  [<ffffffff812b09c8>] ?
+> > > > swiotlb_dma_mapping_error+0x18/0x30
+> > > > [   49.784553]  [<ffffffffa0090701>]
+> > > > hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
+> > > > [   49.784562]  [<ffffffffa0093558>]
+> > > > hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
+> > > > [   49.784571]  [<ffffffffa00935ea>]
+> > > > hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
+> > > > [   49.784580]  [<ffffffffa00963df>]
+> > > > hpsa_update_scsi_devices+0x11f/0x4f0
+> > > > [hpsa]
+> > > > [   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
+> > > > [   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
+> > > > [   49.784613]  [<ffffffff8158cba8>] ?
+> > > > rt_spin_lock_slowunlock+0x78/0x90
+> > > > [   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
+> > > > [   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
+> > > > [   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
+> > > > [   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
+> > > > [   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
+> > > > [   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
+> > > > [   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
+> > > > [   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
+> > > > [   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
+> > > > [   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
+> > > > [   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
+> > > > [   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
+> > > > [   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
+> > > > [   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
+> > > > [   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
+> > > > [   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
+> > > > 
+> > > > -------
+> > > > 
+> > > > When I look at the code I see this call chain
+> > > > enqueue_cmd_and_start_io()->
+> > > > 	set_performant_mode()->
+> > > > 		smp_processor_id()
+> > > > Which if you have debugging enabled calls debug_processor_id() and
+> > > > triggers the warning.
+> > > > 
+> > > > I'm not very familiar with the hpsa code, so I'm not entirely sure what
+> > > > the purpose of this line is
+> > > > 
+> > > > c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
+> > > > 
+> > > > Is the purpose to simply try to get a range of ReplyQueue numbers, but
+> > > > somewhat arbitrary?  Or is it necessary that the current processor_id
+> > > > is used? If it is the former, and you're not accessing per cpu
+> > > > structures,
+> > > > or pinning a cpu, or anything like that then I would think it is safe
+> > > > to
+> > > > change this to a raw_smp_processor_id() to get rid of a false positive
+> > > > warning.
+> 
+> It's not critical that they match (will work if they don't) but for certain
+> workloads you can get more performance if you pin processes to cpus and
+> arrange msix interrupt vectors so that commands are likely to complete on
+> the same cpu they originated from.
+> 
+> In any case, I think your analysis is correct.  Thanks.
+> 
+> > > > 
+> > > > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> > > > index 7f4f790..4e19267 100644
+> > > > --- a/drivers/scsi/hpsa.c
+> > > > +++ b/drivers/scsi/hpsa.c
+> > > > @@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info
+> > > > *h,
+> > > > struct CommandList *c)
+> > > >  		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+> > > >  		if (likely(h->msix_vector))
+> > > >  			c->Header.ReplyQueue =
+> > > > -				smp_processor_id() % h->nreply_queues;
+> > > > +				raw_smp_processor_id() % h->nreply_queues;
+> > > >  	}
+> > > >  }
+> 
+> Ack.
+> 
+> -- steve
+> 
 
-[    0.000000] Booting Linux on physical CPU 0x0
-[    0.000000] Linux version 3.11.0-rc2-next-20130725+ (rgenoud@lnx-rg) (gcc version 4.7.3 (Buildroot 2013.05-00157-g6d1e60b-dirty) ) #61 Fri Jul 26 15:30:13 CEST 2013
-[    0.000000] CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ), cr=00053177
-[    0.000000] CPU: VIVT data cache, VIVT instruction cache
-[    0.000000] Machine: Atmel AT91SAM (Device Tree), model: Atmel AT91SAM9G35-EK
-[    0.000000] bootconsole [earlycon0] enabled
-[    0.000000] Memory policy: ECC disabled, Data cache writeback
-[    0.000000] AT91: Detected soc type: at91sam9x5
-[    0.000000] AT91: Detected soc subtype: at91sam9g35
-[    0.000000] AT91: sram at 0x300000 of 0x8000 mapped at 0xfef70000
-[    0.000000] On node 0 totalpages: 32768
-[    0.000000] free_area_init_node: node 0, pgdat c039d208, node_mem_map c03b5000
-[    0.000000]   Normal zone: 256 pages used for memmap
-[    0.000000]   Normal zone: 0 pages reserved
-[    0.000000]   Normal zone: 32768 pages, LIFO batch:7
-[    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
-[    0.000000] pcpu-alloc: [0] 0 
-[    0.000000] Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 32512
-[    0.000000] Kernel command line: console=ttyS0,115200 loglevel=8 ip=dhcp root=/dev/nfs nfsroot=10.128.0.9:/nfsroot,v3 rw earlyprintk
-[    0.000000] PID hash table entries: 512 (order: -1, 2048 bytes)
-[    0.000000] Dentry cache hash table entries: 16384 (order: 4, 65536 bytes)
-[    0.000000] Inode-cache hash table entries: 8192 (order: 3, 32768 bytes)
-[    0.000000] Memory: 126044K/131072K available (2804K kernel code, 126K rwdata, 592K rodata, 141K init, 93K bss, 5028K reserved)
-[    0.000000] Virtual kernel memory layout:
-[    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
-[    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
-[    0.000000]     vmalloc : 0xc8800000 - 0xff000000   ( 872 MB)
-[    0.000000]     lowmem  : 0xc0000000 - 0xc8000000   ( 128 MB)
-[    0.000000]       .text : 0xc0008000 - 0xc0359550   (3398 kB)
-[    0.000000]       .init : 0xc035a000 - 0xc037d61c   ( 142 kB)
-[    0.000000]       .data : 0xc037e000 - 0xc039d920   ( 127 kB)
-[    0.000000]        .bss : 0xc039d920 - 0xc03b4ff4   (  94 kB)
-[    0.000000] NR_IRQS:16 nr_irqs:16 16
-[    0.000000] AT91: PIT: mck rate = 0
-[    0.000000] ------------[ cut here ]------------
-[    0.000000] WARNING: CPU: 0 PID: 0 at arch/arm/mach-at91/at91sam926x_time.c:259 at91sam926x_pit_init+0x114/0x234()
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted 3.11.0-rc2-next-20130725+ #61
-[    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from [<c000b0f0>] (show_stack+0x10/0x14)
-[    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c00144e0>] (warn_slowpath_common+0x5c/0x7c)
-[    0.000000] [<c00144e0>] (warn_slowpath_common+0x5c/0x7c) from [<c00145b8>] (warn_slowpath_null+0x18/0x1c)
-[    0.000000] [<c00145b8>] (warn_slowpath_null+0x18/0x1c) from [<c03607b0>] (at91sam926x_pit_init+0x114/0x234)
-[    0.000000] [<c03607b0>] (at91sam926x_pit_init+0x114/0x234) from [<c035ca4c>] (time_init+0x1c/0x24)
-[    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>] (start_kernel+0x19c/0x2f4)
-[    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from [<20008040>] (0x20008040)
-[    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
-[    0.000000] Division by zero in kernel.
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Tainted: G        W    3.11.0-rc2-next-20130725+ #61
-[    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from [<c000b0f0>] (show_stack+0x10/0x14)
-[    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c013f0a0>] (Ldiv0_64+0x8/0x18)
-[    0.000000] [<c013f0a0>] (Ldiv0_64+0x8/0x18) from [<c003b864>] (__clocksource_updatefreq_scale+0x30/0x104)
-[    0.000000] [<c003b864>] (__clocksource_updatefreq_scale+0x30/0x104) from [<c003b944>] (__clocksource_register_scale+0xc/0x48)
-[    0.000000] [<c003b944>] (__clocksource_register_scale+0xc/0x48) from [<c0360810>] (at91sam926x_pit_init+0x174/0x234)
-[    0.000000] [<c0360810>] (at91sam926x_pit_init+0x174/0x234) from [<c035ca4c>] (time_init+0x1c/0x24)
-[    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>] (start_kernel+0x19c/0x2f4)
-[    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from [<20008040>] (0x20008040)
-[    0.000000] Division by zero in kernel.
-[    0.000000] CPU: 0 PID: 0 Comm: swapper Tainted: G        W    3.11.0-rc2-next-20130725+ #61
-[    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from [<c000b0f0>] (show_stack+0x10/0x14)
-[    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c013f0a0>] (Ldiv0_64+0x8/0x18)
-[    0.000000] [<c013f0a0>] (Ldiv0_64+0x8/0x18) from [<c003b76c>] (clocks_calc_mult_shift+0x70/0xa4)
-[    0.000000] [<c003b76c>] (clocks_calc_mult_shift+0x70/0xa4) from [<c003b8e4>] (__clocksource_updatefreq_scale+0xb0/0x104)
-[    0.000000] [<c003b8e4>] (__clocksource_updatefreq_scale+0xb0/0x104) from [<c003b944>] (__clocksource_register_scale+0xc/0x48)
-[    0.000000] [<c003b944>] (__clocksource_register_scale+0xc/0x48) from [<c0360810>] (at91sam926x_pit_init+0x174/0x234)
-[    0.000000] [<c0360810>] (at91sam926x_pit_init+0x174/0x234) from [<c035ca4c>] (time_init+0x1c/0x24)
-[    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>] (start_kernel+0x19c/0x2f4)
-[    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from [<20008040>] (0x20008040)
-[...]
-
-Best regards,
-Richard
+Ok, thanks, I'll put the patch in another mail with my sign-off.
