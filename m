@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab3GZQaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:30:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43269 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758533Ab3GZQaI (ORCPT
+	id S1758816Ab3GZQbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:31:07 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38135 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758367Ab3GZQbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:30:08 -0400
-From: Illia Smyrnov <illia.smyrnov@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>
-Subject: [PATCH 3/3] Input: omap-keypad: Set irq to level instead of edge
-Date: Fri, 26 Jul 2013 19:30:01 +0300
-Message-ID: <1374856201-11507-4-git-send-email-illia.smyrnov@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374856201-11507-1-git-send-email-illia.smyrnov@ti.com>
-References: <1374856201-11507-1-git-send-email-illia.smyrnov@ti.com>
+	Fri, 26 Jul 2013 12:31:03 -0400
+Date: Fri, 26 Jul 2013 18:31:01 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Bin Liu <binmlist@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back
+ after removal
+Message-ID: <20130726163101.GB29819@linutronix.de>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
+ <CADYTM3a5xzs+-VCTeKLGiRjo7JOqOJ5H4EWDACpTMovY5_ooRA@mail.gmail.com>
+ <51EEBE05.2040000@linutronix.de>
+ <CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Haslam <axelhaslam@ti.com>
+* Bin Liu | 2013-07-23 13:55:27 [-0500]:
 
-Set mpu irq to level instead of edge, since if mpu is in low power
-an edge detection may be lost if the event is a wkup event.
+>Hi Sebastian,
+Hi Bin,
 
-Signed-off-by: Axel Haslam <axelhaslam@ti.com>
-Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
----
- Based on top of v3.11-rc2
+>either by SRP or HNP, or something else. In TI 3.2 kernel, there is
+>workaround in otg_timer() to _toggle_ the SESSION bit to detect if ID
+>pin is grounded, which means a USB device is connected.
 
- Depends on:
- Input: omap-keypad: Convert to threaded IRQ
- https://patchwork.kernel.org/patch/2832920/
+I've been looking at
+  http://downloads.ti.com/sitara_linux/esd/AM335xSDK/latest/index_FDS.html
 
- drivers/input/keyboard/omap4-keypad.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+and I can't find what you are talking about. My MUSB_DEVCTL doesn't
+change after I connect a device and the SESSION bit is not set. Also I
+remain in a_idle state. Do you have maybe a hint for me? :)
 
-diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index b13589e..66a41d6 100644
---- a/drivers/input/keyboard/omap4-keypad.c
-+++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -374,9 +374,13 @@ static int omap4_keypad_probe(struct platform_device *pdev)
- 		goto err_free_keymap;
- 	}
- 
-+	/*
-+	 * Set irq level detection for mpu. Edge event are missed in gic
-+	 * if the mpu is in low power and keypad event is a wakeup
-+	 */
- 	error = request_threaded_irq(keypad_data->irq, omap4_keypad_irq_handler,
- 				     omap4_keypad_irq_thread_fn,
--				     IRQF_TRIGGER_RISING,
-+				     IRQF_TRIGGER_HIGH,
- 				     "omap4-keypad", keypad_data);
- 	if (error) {
- 		dev_err(&pdev->dev, "failed to register interrupt\n");
--- 
-1.7.9.5
+>Regards,
+>-Bin.
 
+Sebastian
