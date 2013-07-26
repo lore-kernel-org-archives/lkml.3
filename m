@@ -1,82 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab3GZVJD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:09:03 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49548 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933386Ab3GZVIz (ORCPT
+	id S1760117Ab3GZVJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:09:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51331 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760054Ab3GZU6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:08:55 -0400
-Message-ID: <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Fri, 26 Jul 2013 14:14:36 -0700
-In-Reply-To: <20130726020928.GL29296@kernel.dk>
-References: <20130719003034.GG28005@kernel.dk>
-	 <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
-	 <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
-	 <1374248000.2266.20.camel@dabdike>
-	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
-	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
-	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
-	 <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
-	 <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
-	 <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
-	 <20130726020928.GL29296@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Jul 2013 16:58:15 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Olivier DANET <odanet@caramail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/45] sparc32: vm_area_struct access for old Sun SPARCs.
+Date: Fri, 26 Jul 2013 13:57:30 -0700
+Message-Id: <20130726205656.038293344@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
+References: <20130726205654.896050165@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 20:09 -0600, Jens Axboe wrote:
-> On Thu, Jul 25 2013, Nicholas A. Bellinger wrote:
-> > On Thu, 2013-07-25 at 12:16 +0200, Alexander Gordeev wrote:
-> > > On Mon, Jul 22, 2013 at 02:10:36PM -0700, Nicholas A. Bellinger wrote:
-> > > > Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
-> > > > target-pending/scsi-mq, which now has functioning scsi-generic support.
-> > > 
-> > > Survives a boot, a kernel build and the build's result :)
-> > 
-> > Great.  Thanks for the feedback Alexander!
-> > 
-> > So the next step on my end is to enable -mq for ahci, and verify initial
-> > correctness using QEMU/KVM hardware emulation.
-> > 
-> > Btw, I've been looking at enabling the SHT->cmd_size for struct
-> > ata_queued_cmd descriptor pre-allocation, but AFAICT these descriptors
-> > are already all pre-allocated by libata and obtained via ata_qc_new() ->
-> > __ata_qc_from_tag() during ata_scsi_queuecmd().
-> 
-> Might still not be a bad idea to do it:
-> 
-> - Cleans up a driver, getting rid of the need to alloc, maintain, and
->   free those structures.
-> 
-> - Should be some cache locality benefits to having it all sequential.
-> 
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Looking at this some more, there are a number of locations outside of
-the main blk_mq_ops->queue_rq() -> SHT->queuecommand_mq() dispatch that
-use *ata_qc_from_tag() to obtain *ata_queued_cmd, and a few without a
-associated struct scsi_cmnd like libata-core.c:ata_exec_internal_sg()
-for example..
+------------------
 
-So I don't think (completely) getting rid of ata_port->qcmds[] will be
-possible, and just converting the ata_scsi_queuecmd() path to use the
-extra SHT->cmd_size pre-allocation for *ata_queued_cmd might end up
-being more trouble that it's worth.  Still undecided on that part..
+From: Olivier DANET <odanet@caramail.com>
 
-Tejun, do you have any thoughts + input here..?
+Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
+vm_area_struct for fewer cache misses") changed the layout of the
+vm_area_struct structure, it broke several SPARC32 assembly routines
+which used numerical constants for accessing the vm_mm field.
 
---nab
+This patch defines the VMA_VM_MM constant to replace the immediate values.
+
+Signed-off-by: Olivier DANET <odanet@caramail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/kernel/asm-offsets.c |    2 ++
+ arch/sparc/mm/hypersparc.S      |    8 ++++----
+ arch/sparc/mm/swift.S           |    8 ++++----
+ arch/sparc/mm/tsunami.S         |    6 +++---
+ arch/sparc/mm/viking.S          |   10 +++++-----
+ 5 files changed, 18 insertions(+), 16 deletions(-)
+
+--- a/arch/sparc/kernel/asm-offsets.c
++++ b/arch/sparc/kernel/asm-offsets.c
+@@ -34,6 +34,8 @@ int foo(void)
+ 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
+ 	BLANK();
+ 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
++	BLANK();
++	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+ 
+ 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
+ 	return 0;
+--- a/arch/sparc/mm/hypersparc.S
++++ b/arch/sparc/mm/hypersparc.S
+@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+ 
+ 	/* The things we do for performance... */
+ hypersparc_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #ifndef CONFIG_SMP
+ 	ld	[%o0 + AOFF_mm_context], %g1
+ 	cmp	%g1, -1
+@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
+ 	 */
+ 	/* Verified, my ass... */
+ hypersparc_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ #ifndef CONFIG_SMP
+ 	cmp	%g2, -1
+@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/swift.S
++++ b/arch/sparc/mm/swift.S
+@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
+ 
+ 	.globl	swift_flush_cache_range
+ swift_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	sub	%o2, %o1, %o2
+ 	sethi	%hi(4096), %o3
+ 	cmp	%o2, %o3
+@@ -116,7 +116,7 @@ swift_flush_cache_range:
+ 
+ 	.globl	swift_flush_cache_page
+ swift_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 70:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -219,7 +219,7 @@ swift_flush_sig_insns:
+ 	.globl	swift_flush_tlb_range
+ 	.globl	swift_flush_tlb_all
+ swift_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ swift_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
+ 
+ 	.globl	swift_flush_tlb_page
+ swift_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/tsunami.S
++++ b/arch/sparc/mm/tsunami.S
+@@ -24,7 +24,7 @@
+ 	/* Sliiick... */
+ tsunami_flush_cache_page:
+ tsunami_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_cache_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
+ 
+ 	/* More slick stuff... */
+ tsunami_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
+ 
+ 	/* This one can be done in a fine grained manner... */
+ tsunami_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/viking.S
++++ b/arch/sparc/mm/viking.S
+@@ -109,7 +109,7 @@ viking_mxcc_flush_page:
+ viking_flush_cache_page:
+ viking_flush_cache_range:
+ #ifndef CONFIG_SMP
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #endif
+ viking_flush_cache_mm:
+ #ifndef CONFIG_SMP
+@@ -149,7 +149,7 @@ viking_flush_tlb_mm:
+ #endif
+ 
+ viking_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -174,7 +174,7 @@ viking_flush_tlb_range:
+ #endif
+ 
+ viking_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -240,7 +240,7 @@ sun4dsmp_flush_tlb_range:
+ 	tst	%g5
+ 	bne	3f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
+@@ -266,7 +266,7 @@ sun4dsmp_flush_tlb_page:
+ 	tst	%g5
+ 	bne	2f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	and	%o1, PAGE_MASK, %o1
+
 
