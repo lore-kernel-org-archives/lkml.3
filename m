@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759633Ab3GZUYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:24:23 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:47369 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752253Ab3GZUYV (ORCPT
+	id S1759619Ab3GZUZQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:25:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50251 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab3GZUZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:24:21 -0400
-Date: Fri, 26 Jul 2013 22:24:18 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, intel-gfx@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        torvalds@linux-foundation.org
-Subject: Re: Ugly patches for stolen reservation
-Message-ID: <20130726202418.GD21415@gmail.com>
-References: <rddfy5e894xuv6d47gu7hbuh.1374804892449@email.android.com>
- <51F1ED8F.40703@zytor.com>
- <20130726083314.4e2e333f@jbarnes-desktop>
+	Fri, 26 Jul 2013 16:25:14 -0400
+Date: Fri, 26 Jul 2013 13:25:12 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-stable <stable@vger.kernel.org>, hpa@linux.intel.com,
+        hjl.tools@gmail.com, mingo@kernel.org, tglx@linutronix.de,
+        "tip-bot for H.J. Lu" <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86, fpu: correct the asm constraints for
+ fxsave , unbreak mxcsr.daz
+Message-ID: <20130726202512.GA4585@kroah.com>
+References: <tip-eaa5a990191d204ba0f9d35dbe5505ec2cdd1460@git.kernel.org>
+ <51F2D9D2.8050405@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130726083314.4e2e333f@jbarnes-desktop>
+In-Reply-To: <51F2D9D2.8050405@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-
-> On Thu, 25 Jul 2013 20:31:27 -0700
-> "H. Peter Anvin" <hpa@zytor.com> wrote:
+On Fri, Jul 26, 2013 at 01:19:30PM -0700, H. Peter Anvin wrote:
+> Hi everyone,
 > 
-> > On 07/25/2013 07:14 PM, Jesse Barnes wrote:
-> > > To clarify: it'll either be marked reserved or not listed at all in e820, which is why I did this early, before any other e820 stuff like the "RAM buffer" are allocated, and before we could use the iomem resource (or maybe we could even early per Linus? I'll check). 
-> > > 
-> > > Jesse
-> > 
-> > If it is marked reserved or not listed at all it is much less of an
-> > issue.  Reserved is in fact the correct thing; not listed at all really
-> > isn't very problematic in most cases.
+> I have tagged this one for -stable, but it is a definite "maybe", so I
+> wanted to:
 > 
-> Yeah the problems seem to fall into two categories:
->   1) mmio space is allocated in this range:
->      https://bugs.freedesktop.org/show_bug.cgi?id=66726
->   2) range gets partially allocated to the "RAM buffer"
->      https://bugs.freedesktop.org/show_bug.cgi?id=66844
+> a) qualify that tagging, and
+> b) perhaps use it as a boundary case for policy clarification.
 > 
-> Case (1) is the one that worries me.  I'm guessing it'll mainly be a
-> problem on machines where MMIO space is limited or somehow structured
-> such that PCI resources end up there when we allocate them.  Depending
-> on what gets put there and the decode priority, behavior may be poor.
+> This patch is an old bug, an incorrect assembly constraint, but as
+> happens with this type of bug it is being exposed by a change in gcc.
+> Therefore, although this is neither a regression per se in the kernel
+> nor in gcc, it is a regression in the combined output.
 > 
-> Case (2) isn't harmful, but ends up causing our driver to skip stolen
-> memory initialization, because of the conflict.
+> The bug is obvious; the fix at the very least *should* be obvious; the
+> main source of risk would appear that it might trigger bugs in very old
+> versions of gcc.
 > 
-> Anyway I'll look at Linus's suggestion of reserving in the iomem
-> resource really early and roll in Chris's stuff if that doesn't work
-> out.
+> The gain is less inherently obvious: currently the only MXCSR bit
+> affected is DAZ, although this also affects any future MXCSR bits.  Most
+> users do not care about DAZ, but the ones that do generally care *a lot*
+> about it as their applications may suffer very bad performance otherwise.
+> 
+> There is a kernel bugzilla for this:
+> 
+> 	https://bugzilla.kernel.org/show_bug.cgi?id=60633
+> 
+> ... but it doesn't really add any additional information.
 
-Am I being too pedantic in expecting that we still mark it 
-e820-reserved?
+Thanks for the additional information, it's much appreciated.
 
-This area really isnt an ordinary PCI resource such as a 
-BAR or an MMIO region. It's truly system RAM (which cannot 
-be moved/reallocated), used by graphics hardware, and the 
-firmware should have marked it reserved.
-
-(The end result should be the same in any case, so this is 
-a detail.)
-
-Thanks,
-
-	Ingo
+greg k-h
