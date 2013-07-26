@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab3GZUvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:51:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
+	id S932673Ab3GZUvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:51:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50971 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932500Ab3GZUtE (ORCPT
+	with ESMTP id S932517Ab3GZUtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:49:04 -0400
+	Fri, 26 Jul 2013 16:49:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        Rob Herring <rob.herring@calxeda.com>, Olof Johansson <olof@lixom.net>
-Subject: [ 67/79] ARM: footbridge: fix overlapping PCI mappings
-Date: Fri, 26 Jul 2013 13:47:57 -0700
-Message-Id: <20130726204729.809411648@linuxfoundation.org>
+        Luiz Angelo Daros de Luca <luizluca@gmail.com>
+Subject: [ 68/79] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
+Date: Fri, 26 Jul 2013 13:47:58 -0700
+Message-Id: <20130726204729.913005890@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,51 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
 
-commit 6287e7319870ec949fb809e4eb4154c2b05b221f upstream.
+commit 90625070c4253377025878c4e82feed8b35c7116 upstream.
 
-Commit 8ef6e6201b26cb9fde79c1baa08145af6aca2815 (ARM: footbridge: use
-fixed PCI i/o mapping) broke booting on my netwinder.  Before that,
-everything boots fine.  Since then, it crashes on boot.
+This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
+USB ID (0846:0110) to the cp210x driver. Without this, the serial
+adapter is not recognized in Linux. Description was obtained from
+an Netgear Eng.
 
-With earlyprintk, I see it BUG-ing like so:
-kernel BUG at lib/ioremap.c:27!
-Internal error: Oops - BUG: 0 [#1] ARM
-...
-[<c0139b54>] (ioremap_page_range+0x128/0x154) from [<c02e6a6c>] (dc21285_setup+0xd0/0x114)
-[<c02e6a6c>] (dc21285_setup+0xd0/0x114) from [<c02e4874>] (pci_common_init+0xa0/0x298)
-[<c02e4874>] (pci_common_init+0xa0/0x298) from [<c02e793c>] (netwinder_pci_init+0xc/0x18)
-[<c02e793c>] (netwinder_pci_init+0xc/0x18) from [<c02e27d0>] (do_one_initcall+0xb4/0x180)
-...
-
-Russell points out it's because of overlapping PCI mappings that was
-added with the aforementioned commit.  Rob thought the code would re-use
-the static mapping, but that turns out to not be the case and instead
-hits the BUG further down.
-
-After deleting this hunk as suggested by Russel, the system boots up fine
-again and all my PCI devices work (IDE, ethernet, the DC21285).
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Olof Johansson <olof@lixom.net>
+Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-footbridge/dc21285.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mach-footbridge/dc21285.c
-+++ b/arch/arm/mach-footbridge/dc21285.c
-@@ -276,8 +276,6 @@ int __init dc21285_setup(int nr, struct
- 
- 	sys->mem_offset  = DC21285_PCI_MEM;
- 
--	pci_ioremap_io(0, DC21285_PCI_IO);
--
- 	pci_add_resource_offset(&sys->resources, &res[0], sys->mem_offset);
- 	pci_add_resource_offset(&sys->resources, &res[1], sys->mem_offset);
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -53,6 +53,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
+ 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
+ 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
++	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
+ 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
+ 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
+ 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
 
 
