@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab3GZCnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:43:13 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:44105 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756859Ab3GZCnL (ORCPT
+	id S1757980Ab3GZCt4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:49:56 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51692 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756421Ab3GZCty (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:43:11 -0400
-Message-ID: <51F1E15B.3050106@linux.vnet.ibm.com>
-Date: Fri, 26 Jul 2013 08:09:23 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
-MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: rjw@sisk.pl, shangw@linux.vnet.ibm.com, arnd@arndb.de,
-        linux-pm@vger.kernel.org, geoff@infradead.org, rostedt@goodmis.org,
-        deepthi@linux.vnet.ibm.com, paul.gortmaker@windriver.com,
-        paulus@samba.org, srivatsa.bhat@linux.vnet.ibm.com,
-        schwidefsky@de.ibm.com, john.stultz@linaro.org, tglx@linutronix.de,
-        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, chenhui.zhao@freescale.com
-Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
- arch-specific constraints
-References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com> <20130725090302.12500.42998.stgit@preeti.in.ibm.com> <20130725133044.GA7400@somewhere>
-In-Reply-To: <20130725133044.GA7400@somewhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072602-5140-0000-0000-000003947005
+	Thu, 25 Jul 2013 22:49:54 -0400
+Message-ID: <1374806984.2480.21.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [62/85] HID: apple: Add support for the 2013 Macbook Air
+From: Ben Hutchings <ben@decadent.org.uk>
+To: rydberg@euromail.se
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, Jiri Kosina <jkosina@suse.cz>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Date: Fri, 26 Jul 2013 03:49:44 +0100
+In-Reply-To: <20130725065048.GA3586@polaris.bitmath.org>
+References: <lsq.1374674564.753305150@decadent.org.uk>
+	 <lsq.1374674565.974236672@decadent.org.uk>
+	 <20130725065048.GA3586@polaris.bitmath.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-/nkI+9ARRYMKGNSwmPui"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
 
-On 07/25/2013 07:00 PM, Frederic Weisbecker wrote:
-> On Thu, Jul 25, 2013 at 02:33:02PM +0530, Preeti U Murthy wrote:
->> In the current design of timer offload framework, the broadcast cpu should
->> *not* go into tickless idle so as to avoid missed wakeups on CPUs in deep idle states.
->>
->> Since we prevent the CPUs entering deep idle states from programming the lapic of the
->> broadcast cpu for their respective next local events for reasons mentioned in
->> PATCH[3/5], the broadcast CPU checks if there are any CPUs to be woken up during
->> each of its timer interrupt programmed to its local events.
->>
->> With tickless idle, the broadcast CPU might not get a timer interrupt till after
->> many ticks which can result in missed wakeups on CPUs in deep idle states. By
->> disabling tickless idle, worst case, the tick_sched hrtimer will trigger a
->> timer interrupt every period to check for broadcast.
->>
->> However the current setup of tickless idle does not let us make the choice
->> of tickless on individual cpus. NOHZ_MODE_INACTIVE which disables tickless idle,
->> is a system wide setting. Hence resort to an arch specific call to check if a cpu
->> can go into tickless idle.
-> 
-> Hi Preeti,
-> 
-> I'm not exactly sure why you can't enter the broadcast CPU in dynticks idle mode.
-> I read in the previous patch that's because in dynticks idle mode the broadcast
-> CPU deactivates its lapic so it doesn't receive the IPI. But may be I misunderstood.
-> Anyway that's not good for powersaving.
+--=-/nkI+9ARRYMKGNSwmPui
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Let me elaborate. The CPUs in deep idle states have their lapics
-deactivated. This means the next timer event which would typically have
-been taken care of by a lapic firing at the appropriate moment does not
-get taken care of in deep idle states, due to the lapic being switched off.
+On Thu, 2013-07-25 at 08:50 +0200, rydberg@euromail.se wrote:
+> Hi Ben,
+>=20
+> > 3.2.49-rc1 review patch.  If anyone has any objections, please let me k=
+now.
+>=20
+> Because the bcm5974 patch is unsuitable for pre-3.7 kernels, this one
+> is unsuitable as well; it renders the trackpad unusable. Without this
+> patch, we at least have one-finger mouse emulation, so, please remove
+> from the queue.
 
-Hence such CPUs offload their next timer event to the broadcast CPU,
-which should *not* enter deep idle states. The broadcast CPU has the
-responsibility of waking the CPUs in deep idle states.
+That's a pity.  I'll drop them both, thanks.
 
-*The lapic of a broadcast CPU is active always*. Say CPUX, wants the
-broadcast CPU to wake it up at timeX.  Since we cannot program the lapic
-of a remote CPU, CPUX will need to send an IPI to the broadcast CPU,
-asking it to program its lapic to fire at timeX so as to wake up CPUX.
-*With multiple CPUs the overhead of sending IPI, could result in
-performance bottlenecks and may not scale well.*
+Ben.
 
-Hence the workaround is that the broadcast CPU on each of its timer
-interrupt checks if any of the next timer event of a CPU in deep idle
-state has expired, which can very well be found from dev->next_event of
-that CPU. For example the timeX that has been mentioned above has
-expired. If so the broadcast handler is called to send an IPI to the
-idling CPU to wake it up.
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
-*If the broadcast CPU, is in tickless idle, its timer interrupt could be
-many ticks away. It could miss waking up a CPU in deep idle*, if its
-wakeup is much before this timer interrupt of the broadcast CPU. But
-without tickless idle, atleast at each period we are assured of a timer
-interrupt. At which time broadcast handling is done as stated in the
-previous paragraph and we will not miss wakeup of CPUs in deep idle states.
+--=-/nkI+9ARRYMKGNSwmPui
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Yeah it is true that not allowing the broadcast CPU to enter tickless
-idle is bad for power savings, but for the use case that we are aiming
-at in this patch series, the current approach seems to be the best, with
-minimal trade-offs in performance, power savings, scalability and no
-change in the broadcast framework that exists today in the kernel.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-> 
-> Also when an arch wants to prevent a CPU from entering dynticks idle mode, it typically
-> use arch_needs_cpu(). May be that could fit for you as well?
+iQIVAwUAUfHjyOe/yOyVhhEJAQqwwBAAqGEfqcLnz9K1g2hjxzrAXddFhPVtS/Af
+Kb0vr4+Tmw4M4pf/QfueXcedRZuJ3YmudG6BGsB3tyUcwnXGlgIcBP4Q2gGDgn+A
+wX/S6Ll5m3AbQXYZpaWWdJdxG/E7qvoyrrhWSc64T8JMvUTCS+BRvmYK9KXkc1gK
+vvP6iWQGrJ13Wbp8ZXEHjzymlLfQF/Fo5PCqkOJ2LU0m70s+YwjrV4uvBC+ckKRX
+mqiG3FMesyT8YrbXsiB3QGuBsCt/cOfjKTfzuZMXO0VdYqy6Eo3I4dr1VhrEg2mZ
+b/9gOkH/vvOhAkIhm0WQaR/yYOp61QGe97/trXGbpAqZK2RFhSe19tlEaYWIvPFN
+xrtLLZCMj8OaNKNudsQSRi33NcAhgbsFX1b9ksu/mkffD5DqI+Fwjv29Ow+LkVVj
+DXLKNJLhBSsiP6EHgnLGG5DLmm/trFVSgyKXjd1ahXBw/e2Avj1vV0Z1uCYhIS4n
+z0GEOGzKRQ3Q+dYxA76sICC/TZZeLM/SO0NvyFYRbPQSph8qpdhc7e7xc8Fll2W2
+9PYCiToJ2HV5PvfHCcaSYELtAjTgJm92oDeRSq+xD3YYOp52RxsY+FocSsAQYA2D
+R9CIBkmdz9GLd35kP9mZEoWqssWnbGMXS6rYtVVPML1KFMiSiospMp7lt45b1qjF
+pu0PZLX30PY=
+=dbt9
+-----END PGP SIGNATURE-----
 
-Oh ok thanks :) I will look into this and get back on if we can use it.
-
-Regards
-Preeti U Murthy
-
+--=-/nkI+9ARRYMKGNSwmPui--
