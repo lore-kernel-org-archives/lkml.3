@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab3GZOXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:23:19 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:64638 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab3GZOXR (ORCPT
+	id S1759029Ab3GZOXg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:23:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:8942 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758994Ab3GZOXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:23:17 -0400
-Message-ID: <1374848591.13685.6.camel@desktop>
-Subject: [PATCH 4/5] Staging: bcm: LeakyBucket: Fixed code indent issues
-From: Lilis Iskandar <veeableful@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jamesceri@googlemail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Jul 2013 22:23:11 +0800
+	Fri, 26 Jul 2013 10:23:30 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=DwtdHThkOYoA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=D1LXhyGZXAkA:10 a=i0EeH86SAAAA:8 a=UpWnXQfAW7c4NQLsXxAA:9 a=QEXdDO2ut3YA:10 a=hPjdaMEvmhQA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374848608.6580.28.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/2][RESEND] tracing/syscalls: Annotate raw_init
+ function with __init
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Jul 2013 10:23:28 -0400
+In-Reply-To: <51F08D1B.1080300@huawei.com>
+References: <51F08D1B.1080300@huawei.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4 (3.8.4-1.fc19) 
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed code indent issues.
+On Thu, 2013-07-25 at 10:27 +0800, Li Zefan wrote:
+> init_syscall_trace() can be called during kernel bootup only, so we can
+> mark it and the functions it calls as __init.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
+> ---
+> 
+> this was sent 4 months ago.
+> 
 
-Signed-off-by: Lilis Iskandar <veeableful@gmail.com>
----
- drivers/staging/bcm/LeakyBucket.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+And it was still in my todo list :-/
 
-diff --git a/drivers/staging/bcm/LeakyBucket.c b/drivers/staging/bcm/LeakyBucket.c
-index 75d77c2e..fb18ae0 100644
---- a/drivers/staging/bcm/LeakyBucket.c
-+++ b/drivers/staging/bcm/LeakyBucket.c
-@@ -187,7 +187,7 @@ static VOID CheckAndSendPacketFromIndex(struct bcm_mini_adapter *Adapter, struct
- 				atomic_dec(&Adapter->TotalPacketCount);
- 				spin_unlock_bh(&psSF->SFQueueLock);
- 
--			   	Status = SendPacketFromQueue(Adapter, psSF, QueuePacket);
-+				Status = SendPacketFromQueue(Adapter, psSF, QueuePacket);
- 				psSF->uiPendedLast = FALSE;
- 			} else {
- 				BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, TX_PACKETS, DBG_LVL_ALL, "For Queue: %zd\n", psSF-Adapter->PackInfo);
-@@ -230,7 +230,7 @@ static VOID CheckAndSendPacketFromIndex(struct bcm_mini_adapter *Adapter, struct
- 			} else {
- 					BCM_DEBUG_PRINT(Adapter, DBG_TYPE_TX, TX_PACKETS, DBG_LVL_ALL, " Control Pkt is not available, Indexing is wrong....");
- 			}
--	   	}
-+		}
- 	}
- }
- 
-@@ -308,7 +308,7 @@ VOID transmit_packets(struct bcm_mini_adapter *Adapter)
- 			break;
- 		}
- 		if (exit_flag == TRUE)
--		    break;
-+			break;
- 	} /* end of inner while loop */
- 
- 	update_per_cid_rx(Adapter);
--- 
-1.8.3.1
+Sorry, it was lost in the noise, as there's lots in my todo list, and
+things that are marked for cleanup got pushed to the bottom.
 
+I'll add this to my 3.12 queue.
+
+Thanks!
+
+-- Steve
 
 
