@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab3GZPR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:17:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29346 "EHLO mx1.redhat.com"
+	id S1759242Ab3GZPRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:17:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54922 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757489Ab3GZPRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:17:25 -0400
-Date: Fri, 26 Jul 2013 17:11:51 +0200
+	id S1759102Ab3GZPRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:17:48 -0400
+Date: Fri, 26 Jul 2013 17:12:24 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Steven Rostedt <rostedt@goodmis.org>
@@ -22,97 +22,173 @@ Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely on
-	list_empty(d_subdirs)
-Message-ID: <20130726151151.GA19472@redhat.com>
-References: <20130723205854.GA9036@redhat.com> <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com> <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com>
+Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely
+	on list_empty(d_subdirs)
+Message-ID: <20130726151224.GB19472@redhat.com>
+References: <20130723205854.GA9036@redhat.com> <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com> <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com> <20130726151151.GA19472@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130725234357.GA14958@kroah.com>
+In-Reply-To: <20130726151151.GA19472@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25, Greg Kroah-Hartman wrote:
->
-> Anyway, your changes below look good in this version, I don't see
-> anything obviously wrong with it, but maybe others do?
+debugfs_remove_recursive() is wrong,
 
-Please see 1/1.
+1. it wrongly assumes that !list_empty(d_subdirs) means that this
+   dir should be removed.
 
-Changes:
+   This is not that bad by itself, but:
 
-	- s/list_next_entry/list_entry/. It would be nice to move
-	  list_next_entry() from kernel/events/core.c to list.h
-	  but this needs another patch
+2. if d_subdirs does not becomes empty after __debugfs_remove()
+   it gives up and silently fails, it doesn't even try to remove
+   other entries.
 
-	- Do "parent = parent->d_parent" before "!= dentry" check,
-	  this factors out the common code in "goto up" and final
-	  __debugfs_remove(dentry)
+   However ->d_subdirs can be non-empty because it still has the
+   already deleted !debugfs_positive() entries.
 
-	- Add simple_release_fs() back.
+3. simple_release_fs() is called even if __debugfs_remove() fails.
 
-The patch is hardly readable, so I attached the code below again.
+Suppose we have
 
+	dir1/
+		dir2/
+			file2
+		file1
 
+and someone opens dir1/dir2/file2.
 
-Note!!! The changelog contains the simple test-case. However, this
-test-case can actually reveal more problems because kernel/trace/
-is buggy too. (hopefully we already have the necessary fixes).
+Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/di2 goes
+away.
 
-Steven, Greg. Assuming that nobody objects and the patch is fine.
-Perhaps this patch can be routed via rostedt/linux-trace tree?
+But debugfs_remove_recursive(dir1) silently fails and doesn't remove
+this directory. Because it tries to delete (the already deleted)
+dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
+logic.
 
-This connects to other problems we are working on, it would be
-nice to have this patch in the same tree to simplify the testing.
+Test-case:
 
-Oleg.
+	#!/bin/sh
 
-void debugfs_remove_recursive(struct dentry *dentry)
-{
-	struct dentry *child, *next, *parent;
+	cd /sys/kernel/debug/tracing
+	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
+	sleep 1000 < events/probe/sigprocmask/id &
+	echo -n >| kprobe_events
 
-	if (IS_ERR_OR_NULL(dentry))
-		return;
+	[ -d events/probe ] && echo "ERR!! failed to rm probe"
 
-	parent = dentry->d_parent;
-	if (!parent || !parent->d_inode)
-		return;
+And after that it is not possible to create another probe entry.
 
-	parent = dentry;
- down:
-	mutex_lock(&parent->d_inode->i_mutex);
-	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-		if (!debugfs_positive(child))
-			continue;
+With this patch debugfs_remove_recursive() skips !debugfs_positive()
+files although this is not strictly needed. The most important change
+is that it does not try to make ->d_subdirs empty, it simply scans
+the whole list(s) recursively and removes as much as possible.
 
-		/* perhaps simple_empty(child) makes more sense */
-		if (!list_empty(&child->d_subdirs)) {
-			mutex_unlock(&parent->d_inode->i_mutex);
-			parent = child;
-			goto down;
-		}
- up:
-		if (!__debugfs_remove(child, parent))
-			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-	}
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ fs/debugfs/inode.c |   69 ++++++++++++++++-----------------------------------
+ 1 files changed, 22 insertions(+), 47 deletions(-)
 
-	mutex_unlock(&parent->d_inode->i_mutex);
-	child = parent;
-	parent = parent->d_parent;
-	mutex_lock(&parent->d_inode->i_mutex);
-
-	if (child != dentry) {
-		next = list_entry(child->d_u.d_child.next, struct dentry,
-					d_u.d_child);
-		goto up;
-	}
-
-	if (!__debugfs_remove(child, parent))
-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-	mutex_unlock(&parent->d_inode->i_mutex);
-}
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 4888cb3..c7c83ff 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -533,8 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
+ {
+-	struct dentry *child;
+-	struct dentry *parent;
++	struct dentry *child, *next, *parent;
+ 
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -544,61 +543,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
+ 		return;
+ 
+ 	parent = dentry;
++ down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
++	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++		if (!debugfs_positive(child))
++			continue;
+ 
+-	while (1) {
+-		/*
+-		 * When all dentries under "parent" has been removed,
+-		 * walk up the tree until we reach our starting point.
+-		 */
+-		if (list_empty(&parent->d_subdirs)) {
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			if (parent == dentry)
+-				break;
+-			parent = parent->d_parent;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-		}
+-		child = list_entry(parent->d_subdirs.next, struct dentry,
+-				d_u.d_child);
+- next_sibling:
+-
+-		/*
+-		 * If "child" isn't empty, walk down the tree and
+-		 * remove all its descendants first.
+-		 */
++		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-			continue;
++			goto down;
+ 		}
+-		__debugfs_remove(child, parent);
+-		if (parent->d_subdirs.next == &child->d_u.d_child) {
+-			/*
+-			 * Try the next sibling.
+-			 */
+-			if (child->d_u.d_child.next != &parent->d_subdirs) {
+-				child = list_entry(child->d_u.d_child.next,
+-						   struct dentry,
+-						   d_u.d_child);
+-				goto next_sibling;
+-			}
+-
+-			/*
+-			 * Avoid infinite loop if we fail to remove
+-			 * one dentry.
+-			 */
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			break;
+-		}
+-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++ up:
++		if (!__debugfs_remove(child, parent))
++			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	}
+ 
+-	parent = dentry->d_parent;
++	mutex_unlock(&parent->d_inode->i_mutex);
++	child = parent;
++	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++
++	if (child != dentry) {
++		next = list_entry(child->d_u.d_child.next, struct dentry,
++					d_u.d_child);
++		goto up;
++	}
++
++	if (!__debugfs_remove(child, parent))
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
+ 
+-- 
+1.5.5.1
 
 
