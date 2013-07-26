@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933825Ab3GZVnv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:43:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50719 "EHLO
+	id S1760712Ab3GZVon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:44:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759696Ab3GZUsS (ORCPT
+	with ESMTP id S1759834Ab3GZUsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:18 -0400
+	Fri, 26 Jul 2013 16:48:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Cong Wang <amwang@redhat.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Saurabh Mohan <saurabh.mohan@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/79] vti: remove duplicated code to fix a memory leak
-Date: Fri, 26 Jul 2013 13:46:58 -0700
-Message-Id: <20130726204722.844127280@linuxfoundation.org>
+        Dave Jones <davej@redhat.com>, "David S. Miller" <davem@davemloft.net>
+Subject: [ 05/79] x25: Fix broken locking in ioctl error paths.
+Date: Fri, 26 Jul 2013 13:46:55 -0700
+Message-Id: <20130726204722.488623956@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -29,47 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cong Wang <amwang@redhat.com>
+From: Dave Jones <davej@redhat.com>
 
-[ Upstream commit ab6c7a0a43c2eaafa57583822b619b22637b49c7 ]
+[ Upstream commit 4ccb93ce7439b63c31bc7597bfffd13567fa483d ]
 
-vti module allocates dev->tstats twice: in vti_fb_tunnel_init()
-and in vti_tunnel_init(), this lead to a memory leak of
-dev->tstats.
+Two of the x25 ioctl cases have error paths that break out of the function without
+unlocking the socket, leading to this warning:
 
-Just remove the duplicated operations in vti_fb_tunnel_init().
+================================================
+[ BUG: lock held when returning to user space! ]
+3.10.0-rc7+ #36 Not tainted
+------------------------------------------------
+trinity-child2/31407 is leaving the kernel with locks still held!
+1 lock held by trinity-child2/31407:
+ #0:  (sk_lock-AF_X25){+.+.+.}, at: [<ffffffffa024b6da>] x25_ioctl+0x8a/0x740 [x25]
 
-(candidate for -stable)
-
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Cc: Stephen Hemminger <stephen@networkplumber.org>
-Cc: Saurabh Mohan <saurabh.mohan@vyatta.com>
-Acked-by: Stephen Hemminger <stephen@networkplumber.org>
+Signed-off-by: Dave Jones <davej@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_vti.c |    7 -------
- 1 file changed, 7 deletions(-)
+ net/x25/af_x25.c |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
 
---- a/net/ipv4/ip_vti.c
-+++ b/net/ipv4/ip_vti.c
-@@ -606,17 +606,10 @@ static int __net_init vti_fb_tunnel_init
- 	struct iphdr *iph = &tunnel->parms.iph;
- 	struct vti_net *ipn = net_generic(dev_net(dev), vti_net_id);
+--- a/net/x25/af_x25.c
++++ b/net/x25/af_x25.c
+@@ -1583,11 +1583,11 @@ out_cud_release:
+ 	case SIOCX25CALLACCPTAPPRV: {
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+-		if (sk->sk_state != TCP_CLOSE)
+-			break;
+-		clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++		if (sk->sk_state == TCP_CLOSE) {
++			clear_bit(X25_ACCPT_APPRV_FLAG, &x25->flags);
++			rc = 0;
++		}
+ 		release_sock(sk);
+-		rc = 0;
+ 		break;
+ 	}
  
--	tunnel->dev = dev;
--	strcpy(tunnel->parms.name, dev->name);
--
- 	iph->version		= 4;
- 	iph->protocol		= IPPROTO_IPIP;
- 	iph->ihl		= 5;
+@@ -1595,14 +1595,15 @@ out_cud_release:
+ 		rc = -EINVAL;
+ 		lock_sock(sk);
+ 		if (sk->sk_state != TCP_ESTABLISHED)
+-			break;
++			goto out_sendcallaccpt_release;
+ 		/* must call accptapprv above */
+ 		if (test_bit(X25_ACCPT_APPRV_FLAG, &x25->flags))
+-			break;
++			goto out_sendcallaccpt_release;
+ 		x25_write_internal(sk, X25_CALL_ACCEPTED);
+ 		x25->state = X25_STATE_3;
+-		release_sock(sk);
+ 		rc = 0;
++out_sendcallaccpt_release:
++		release_sock(sk);
+ 		break;
+ 	}
  
--	dev->tstats = alloc_percpu(struct pcpu_tstats);
--	if (!dev->tstats)
--		return -ENOMEM;
--
- 	dev_hold(dev);
- 	rcu_assign_pointer(ipn->tunnels_wc[0], tunnel);
- 	return 0;
 
 
