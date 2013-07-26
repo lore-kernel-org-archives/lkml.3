@@ -1,56 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760179Ab3GZVMD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:12:03 -0400
-Received: from co1ehsobe006.messaging.microsoft.com ([216.32.180.189]:47429
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756881Ab3GZVL6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:11:58 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(zz98dIc89bh936eI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
-Date: Fri, 26 Jul 2013 14:11:52 -0700
-From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
-To: Mike Turquette <mturquette@linaro.org>
-CC: <monstr@monstr.eu>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Zynq clk fixes
-References: <51F26716.6030701@monstr.eu>
- <20130726200703.7598.86150@quantum>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Disposition: inline
-In-Reply-To: <20130726200703.7598.86150@quantum>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-RCIS-Action: ALLOW
-Message-ID: <a76b3a5d-dadc-43b3-87ee-3c65258c15d7@CO1EHSMHS029.ehs.local>
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1760303Ab3GZVMS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:12:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51168 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933026Ab3GZUyA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 16:54:00 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Alexandr Ivanov <alexandr.sky@gmail.com>
+Subject: [ 51/59] USB: option: add D-Link DWM-152/C1 and DWM-156/C1
+Date: Fri, 26 Jul 2013 13:53:15 -0700
+Message-Id: <20130726205019.292409872@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 01:07:03PM -0700, Mike Turquette wrote:
-> Quoting Michal Simek (2013-07-26 05:09:58)
-> > Hi Mike, [cc: Arnd and Olof]
-> > 
-> > Soren has found two bug fixes in zynq clk code.
-> > Can you please add these two patches to your tree?
-> > Will be great if you can add them to v3.11.
-> > 
-> > Arnd, Olof: I expect that all these clock changes should go through Mike.
-> > If I am wrong please let me know.
-> 
-> Looks right to me. Do these fix regressions in the current -rc cycle?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-I doubt there are real regressions. But since it's still early in
-the release cycle and the driver was added in this merge window, I'd prefer
-having it hit a release kernel with these fixes included.
+------------------
 
-	Sören
+From: "Alexandr \\\"Sky\\\" Ivanov" <alexandr.sky@gmail.com>
+
+commit ca24763588844b14f019ffc45c7df6d9e8f932c5 upstream.
+
+Adding support for D-Link DWM-152/C1 and DWM-156/C1 devices.
+
+DWM-152/C1:
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  6 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=07d1 ProdID=3e01 Rev= 0.00
+S:  Product=USB Configuration
+S:  SerialNumber=1234567890ABCDEF
+C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+
+DWM-156/C1:
+T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  8 Spd=480 MxCh= 0
+D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
+P:  Vendor=07d1 ProdID=3e02 Rev= 0.00
+S:  Product=DataCard Device
+S:  SerialNumber=1234567890ABCDEF
+C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
+E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
+I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
+E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
+
+Signed-off-by: Alexandr Ivanov <alexandr.sky@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1361,6 +1361,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
++	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
