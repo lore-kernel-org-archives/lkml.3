@@ -1,104 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758908Ab3GZNHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:07:20 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14483 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758258Ab3GZNFO (ORCPT
+	id S1758938Ab3GZNIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:08:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:53198 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038Ab3GZNIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:05:14 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=1aBXN6OI0oIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9gBtJG8FnjkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=0kbfjC1OccZKM1oZNXEA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=q9mC2fbAJx8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130726130512.305024273@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 26 Jul 2013 09:03:29 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 2/9] tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
-References: <20130726130327.911599518@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Change-tracing_pipe_fops-to-rely-on-tracing_.patch
+	Fri, 26 Jul 2013 09:08:32 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-a0-51f274ce0b2c
+Date: Fri, 26 Jul 2013 15:08:22 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v6 2/8] cpufreq: Add boost frequency support in core
+Message-id: <20130726150822.62891d43@amdc308.digital.local>
+In-reply-to: <13618968.iglDI8cQ6h@vostro.rjw.lan>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <CAKohpom9QHf+XBYQcajv4tni4_KA2x+Y3BAXWhZkdCFnZxp3XA@mail.gmail.com>
+ <20130726103321.21238bbb@amdc308.digital.local>
+ <13618968.iglDI8cQ6h@vostro.rjw.lan>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJIsWRmVeSWpSXmKPExsVy+t9jQd1zJZ8CDXZskbXYOGM9q8XTph/s
+	FvM+y1r0/bzCbLFm/08mi86zT5gtehdcZbN484jb4v2hZ8wWl3fNYbP43HuE0aJ/YS+TxZOH
+	fWwWG796OPB5LN7zksnjzrU9bB63/z1m9lg37S2zR9+WVYwejxa3MHocv7GdyePzJrkAjigu
+	m5TUnMyy1CJ9uwSujEUfljEXTJSo+H7mPGMD40uBLkZODgkBE4ntDY3MELaYxIV769m6GLk4
+	hASmM0o8/7KNGcJpZ5LYMeUWO0gVi4CqxM2Od4wgNpuAnsTnu0+ZQGwRoPiWJ//ZQRqYBXax
+	SOw63Ao2VljAQ+LIr29gRbwC1hK3j91hA7E5BQwlHh59wAix4SmjxJcZt8GK+AUkJdr//YC6
+	yU7i3KcN7BDNghI/Jt9jAbGZBbQkNm9rYoWw5SU2r3nLPIFRcBaSsllIymYhKVvAyLyKUTS1
+	ILmgOCk910ivODG3uDQvXS85P3cTIzjCnknvYFzVYHGIUYCDUYmHV8HpY6AQa2JZcWXuIUYJ
+	DmYlEd7r3p8ChXhTEiurUovy44tKc1KLDzFKc7AoifMebLUOFBJITyxJzU5NLUgtgskycXBK
+	NTCq5HSX7T8c/+Vc/yXD6Iy3bPNOl67xsuL6wiunc7LA+Qhrpcfp7ljvT9cXPOW6cvNw3zLt
+	uEXX6+4w6zMWbXZfWBy464b1FSGb1V6S2ju/VM/stIquyfM49X/e/5YHIgE/n8wKfOji2+G4
+	6dcm+b+buBYfzsrye3g9+ZGh5e+gsK91se72n1uUWIozEg21mIuKEwHDr3jlrAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+On Fri, 26 Jul 2013 14:36:08 +0200 Rafael J. Wysocki rjw@sisk.pl wrote,
+> On Friday, July 26, 2013 10:33:21 AM Lukasz Majewski wrote:
+> > On Fri, 26 Jul 2013 12:47:15 +0530 Viresh Kumar wrote,
+> > > On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com>
+> > > wrote:
+> > > > diff --git a/drivers/cpufreq/cpufreq.c
+> > > > b/drivers/cpufreq/cpufreq.c
+> > > 
+> > > >  /*********************************************************************
+> > > > + *
+> > > > BOOST                                              *
+> > > > +
+> > > > *********************************************************************/
+> > > > +static int cpufreq_boost_set_sw(int state) +{
+> > > > +       struct cpufreq_frequency_table *freq_table;
+> > > > +       struct cpufreq_policy *policy;
+> > > > +       int ret = -EINVAL;
+> > > > +
+> > > > +       list_for_each_entry(policy, &cpufreq_policy_list,
+> > > > policy_list) {
+> > > > +               freq_table =
+> > > > cpufreq_frequency_get_table(policy->cpu);
+> > > > +               if (freq_table) {
+> > > > +                       ret =
+> > > > cpufreq_frequency_table_cpuinfo(policy,
+> > > > +
+> > > > freq_table);
+> > > > +                       if (!ret) {
+> > > > +                               policy->user_policy.max =
+> > > > policy->max;
+> > > > +                               __cpufreq_governor(policy,
+> > > > CPUFREQ_GOV_LIMITS);
+> > > > +                       }
+> > > > +               }
+> > > > +       }
+> > > > +
+> > > > +       return ret;
+> > > > +}
+> > > > +
+> > > > +int cpufreq_boost_trigger_state(int state)
+> > > > +{
+> > > > +       unsigned long flags;
+> > > > +       int ret = 0;
+> > > > +
+> > > > +       if (cpufreq_driver->boost_enabled == state)
+> > > > +               return 0;
+> > > > +
+> > > > +       write_lock_irqsave(&cpufreq_driver_lock, flags);
+> > > > +       cpufreq_driver->boost_enabled = state;
+> > > > +       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> > 	    ^^^^^^^^^^^^^^^^^^^^ [*]
+> > > 
+> > > Not sure if we should leave the lock at this point of time, as we
+> > > haven't enabled boost until now.
+> > 
+> > The problem here is with the cpufreq_driver->set_boost() call.
+> > 
+> > I tried to avoid acquiring lock at one function and release it at
+> > another (in this case cpufreq_boost_set_sw), especially since the
+> > __cpufreq_governor() acquires its own lock - good place for
+> > deadlock.
+> > 
+> > Is it OK for you to grab lock at one function
+> > (cpufreq_boost_trigger_state()) and then at other function
+> > (cpufreq_boost_set_sw) release it before calling
+> > __cpufreq_governor() and grab it again after its completion?
+> 
+> It generally is better to avoid doing that, although it is not
+> unheard of.
 
-tracing_open_pipe() is racy, the memory inode->i_private points to
-can be already freed.
+In this particular case, one also needs to pass the "flags" parameter to
+the set_boost() function. This looks a bit unnatural to mix lock layer
+with the boost.
 
-Change debugfs_create_file("trace_pipe", data) callers to to pass
-"data = tr", tracing_open_pipe() can use tracing_get_cpu().
+> 
+> Thanks,
+> Rafael
+> 
+> 
 
-Link: http://lkml.kernel.org/r/20130723152557.GA23717@redhat.com
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index cfff63c..51a99ef 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -3959,8 +3959,7 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
- 
- static int tracing_open_pipe(struct inode *inode, struct file *filp)
- {
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
- 	struct trace_iterator *iter;
- 	int ret = 0;
- 
-@@ -4006,9 +4005,9 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
- 	if (trace_clocks[tr->clock_id].in_ns)
- 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
- 
--	iter->cpu_file = tc->cpu;
--	iter->tr = tc->tr;
--	iter->trace_buffer = &tc->tr->trace_buffer;
-+	iter->tr = tr;
-+	iter->trace_buffer = &tr->trace_buffer;
-+	iter->cpu_file = tracing_get_cpu(inode);
- 	mutex_init(&iter->mutex);
- 	filp->private_data = iter;
- 
-@@ -4031,8 +4030,7 @@ fail:
- static int tracing_release_pipe(struct inode *inode, struct file *file)
- {
- 	struct trace_iterator *iter = file->private_data;
--	struct trace_cpu *tc = inode->i_private;
--	struct trace_array *tr = tc->tr;
-+	struct trace_array *tr = inode->i_private;
- 
- 	mutex_lock(&trace_types_lock);
- 
-@@ -5571,7 +5569,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
- 
- 	/* per cpu trace_pipe */
- 	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
--				&data->trace_cpu, cpu, &tracing_pipe_fops);
-+				tr, cpu, &tracing_pipe_fops);
- 
- 	/* per cpu trace */
- 	trace_create_cpu_file("trace", 0644, d_cpu,
-@@ -6157,7 +6155,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
- 			(void *)&tr->trace_cpu, &tracing_fops);
- 
- 	trace_create_file("trace_pipe", 0444, d_tracer,
--			(void *)&tr->trace_cpu, &tracing_pipe_fops);
-+			  tr, &tracing_pipe_fops);
- 
- 	trace_create_file("buffer_size_kb", 0644, d_tracer,
- 			(void *)&tr->trace_cpu, &tracing_entries_fops);
 -- 
-1.7.10.4
+Best regards,
 
+Lukasz Majewski
 
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
