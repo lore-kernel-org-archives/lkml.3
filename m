@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab3GZUwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:52:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
+	id S932775Ab3GZUwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:52:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760022Ab3GZUs7 (ORCPT
+	with ESMTP id S1760016Ab3GZUs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:48:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 78/79] ALSA: usb-audio: 6fire: return correct XRUN indication
-Date: Fri, 26 Jul 2013 13:48:08 -0700
-Message-Id: <20130726204731.020326603@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 77/79] ALSA: hda - Remove NO_PRESENCE bit override for Dell 1420n Laptop
+Date: Fri, 26 Jul 2013 13:48:07 -0700
+Message-Id: <20130726204730.909846876@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,34 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
+commit f3e351eef3a7fd1e36a3e18d4f2f069b00deb23c upstream.
 
-Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
-SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
-function of 6fire, as expected by snd_pcm_update_hw_ptr0().
+The quirk for Dell laptops with STAC9228 overrides the pin default
+config of NID 0x0f to the value with AC_DEFCFG_MISC_NO_PRESENCE bit
+on.  I'm not quite sure why this was done so, but can guess that this
+was introduced for avoiding this to be muted by another headphone
+plug.  Now, after transition to the generic parser, this workaround
+rather causes a problem (notably as unexpected speaker mutes) because
+the pin is seen as if it's always plugged in.
 
-Caught by sparse.
+Since the generic parser can handle multiple headphone plugging
+gracefully, we can get rid of this override now.
 
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Reported-and-tested-by: Eric Shattow <lucent@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/pcm.c |    2 +-
+ sound/pci/hda/patch_sigmatel.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -543,7 +543,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
- 	snd_pcm_uframes_t ret;
- 
- 	if (rt->panic || !sub)
--		return SNDRV_PCM_STATE_XRUN;
-+		return SNDRV_PCM_POS_XRUN;
- 
- 	spin_lock_irqsave(&sub->lock, flags);
- 	ret = sub->dma_off;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -3227,7 +3227,7 @@ static const struct hda_fixup stac927x_f
+ 			/* configure the analog microphone on some laptops */
+ 			{ 0x0c, 0x90a79130 },
+ 			/* correct the front output jack as a hp out */
+-			{ 0x0f, 0x0227011f },
++			{ 0x0f, 0x0221101f },
+ 			/* correct the front input jack as a mic */
+ 			{ 0x0e, 0x02a79130 },
+ 			{}
 
 
