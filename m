@@ -1,135 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758864Ab3GZNF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:05:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:30237 "EHLO
+	id S1758878Ab3GZNFa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:05:30 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14483 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758636Ab3GZNFP (ORCPT
+	with ESMTP id S1758730Ab3GZNFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 09:05:15 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=WcOaF7j7pIMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=DOlwg8UYz3sA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=zjrQCKcW1wbbZFTcZgEA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=2h585o1us28A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=X0tspx6XrPkA:10 a=vF7ddqKuu8PhE6TKm2kA:9 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130726130513.114964526@goodmis.org>
+Message-Id: <20130726130513.275078009@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 26 Jul 2013 09:03:34 -0400
+Date: Fri, 26 Jul 2013 09:03:35 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 7/9] tracing: Kill trace_cpu struct/members
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 8/9] ftrace: Add check for NULL regs if ops has SAVE_REGS set
 References: <20130726130327.911599518@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Kill-trace_cpu-struct-members.patch
+Content-Disposition: inline; filename=0008-ftrace-Add-check-for-NULL-regs-if-ops-has-SAVE_REGS-.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-After the previous changes trace_array_cpu->trace_cpu and
-trace_array->trace_cpu becomes write-only. Remove these members
-and kill "struct trace_cpu" as well.
+If a ftrace ops is registered with the SAVE_REGS flag set, and there's
+already a ops registered to one of its functions but without the
+SAVE_REGS flag, there's a small race window where the SAVE_REGS ops gets
+added to the list of callbacks to call for that function before the
+callback trampoline gets set to save the regs.
 
-As a side effect this also removes memset(per_cpu_memory, 0).
-It was not needed, alloc_percpu() returns zero-filled memory.
+The problem is, the function is not currently saving regs, which opens
+a small race window where the ops that is expecting regs to be passed
+to it, wont. This can cause a crash if the callback were to reference
+the regs, as the SAVE_REGS guarantees that regs will be set.
 
-Link: http://lkml.kernel.org/r/20130723152613.GA23741@redhat.com
+To fix this, we add a check in the loop case where it checks if the ops
+has the SAVE_REGS flag set, and if so, it will ignore it if regs is
+not set.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c |   21 ---------------------
- kernel/trace/trace.h |    8 --------
- 2 files changed, 29 deletions(-)
+ kernel/trace/ftrace.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index dd7780d..69cba47 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -5865,17 +5865,6 @@ struct dentry *trace_instance_dir;
- static void
- init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer);
- 
--static void init_trace_buffers(struct trace_array *tr, struct trace_buffer *buf)
--{
--	int cpu;
--
--	for_each_tracing_cpu(cpu) {
--		memset(per_cpu_ptr(buf->data, cpu), 0, sizeof(struct trace_array_cpu));
--		per_cpu_ptr(buf->data, cpu)->trace_cpu.cpu = cpu;
--		per_cpu_ptr(buf->data, cpu)->trace_cpu.tr = tr;
--	}
--}
--
- static int
- allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size)
- {
-@@ -5893,8 +5882,6 @@ allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size
- 		return -ENOMEM;
- 	}
- 
--	init_trace_buffers(tr, buf);
--
- 	/* Allocate the first page for all buffers */
- 	set_buffer_entries(&tr->trace_buffer,
- 			   ring_buffer_size(tr->trace_buffer.buffer, 0));
-@@ -5961,10 +5948,6 @@ static int new_instance_create(const char *name)
- 	if (allocate_trace_buffers(tr, trace_buf_size) < 0)
- 		goto out_free_tr;
- 
--	/* Holder for file callbacks */
--	tr->trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
--	tr->trace_cpu.tr = tr;
--
- 	tr->dir = debugfs_create_dir(name, trace_instance_dir);
- 	if (!tr->dir)
- 		goto out_free_tr;
-@@ -6438,10 +6421,6 @@ __init static int tracer_alloc_buffers(void)
- 
- 	global_trace.flags = TRACE_ARRAY_FL_GLOBAL;
- 
--	/* Holder for file callbacks */
--	global_trace.trace_cpu.cpu = RING_BUFFER_ALL_CPUS;
--	global_trace.trace_cpu.tr = &global_trace;
--
- 	INIT_LIST_HEAD(&global_trace.systems);
- 	INIT_LIST_HEAD(&global_trace.events);
- 	list_add(&global_trace.list, &ftrace_trace_arrays);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index e7d643b..afaae41 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -130,19 +130,12 @@ enum trace_flag_type {
- 
- struct trace_array;
- 
--struct trace_cpu {
--	struct trace_array	*tr;
--	struct dentry		*dir;
--	int			cpu;
--};
--
- /*
-  * The CPU trace array - it consists of thousands of trace entries
-  * plus some other descriptor data: (for example which task started
-  * the trace, etc.)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 67708f4..8ce9eef 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1441,12 +1441,22 @@ ftrace_hash_move(struct ftrace_ops *ops, int enable,
+  * the hashes are freed with call_rcu_sched().
   */
- struct trace_array_cpu {
--	struct trace_cpu	trace_cpu;
- 	atomic_t		disabled;
- 	void			*buffer_page;	/* ring buffer spare */
+ static int
+-ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
++ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ {
+ 	struct ftrace_hash *filter_hash;
+ 	struct ftrace_hash *notrace_hash;
+ 	int ret;
  
-@@ -196,7 +189,6 @@ struct trace_array {
- 	bool			allocated_snapshot;
- #endif
- 	int			buffer_disabled;
--	struct trace_cpu	trace_cpu;	/* place holder */
- #ifdef CONFIG_FTRACE_SYSCALLS
- 	int			sys_refcount_enter;
- 	int			sys_refcount_exit;
++#ifdef CONFIG_DYNAMIC_FTRACE_WITH_REGS
++	/*
++	 * There's a small race when adding ops that the ftrace handler
++	 * that wants regs, may be called without them. We can not
++	 * allow that handler to be called if regs is NULL.
++	 */
++	if (regs == NULL && (ops->flags & FTRACE_OPS_FL_SAVE_REGS))
++		return 0;
++#endif
++
+ 	filter_hash = rcu_dereference_raw_notrace(ops->filter_hash);
+ 	notrace_hash = rcu_dereference_raw_notrace(ops->notrace_hash);
+ 
+@@ -4218,7 +4228,7 @@ static inline void ftrace_startup_enable(int command) { }
+ # define ftrace_shutdown_sysctl()	do { } while (0)
+ 
+ static inline int
+-ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip)
++ftrace_ops_test(struct ftrace_ops *ops, unsigned long ip, void *regs)
+ {
+ 	return 1;
+ }
+@@ -4241,7 +4251,7 @@ ftrace_ops_control_func(unsigned long ip, unsigned long parent_ip,
+ 	do_for_each_ftrace_op(op, ftrace_control_list) {
+ 		if (!(op->flags & FTRACE_OPS_FL_STUB) &&
+ 		    !ftrace_function_local_disabled(op) &&
+-		    ftrace_ops_test(op, ip))
++		    ftrace_ops_test(op, ip, regs))
+ 			op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+ 	trace_recursion_clear(TRACE_CONTROL_BIT);
+@@ -4274,7 +4284,7 @@ __ftrace_ops_list_func(unsigned long ip, unsigned long parent_ip,
+ 	 */
+ 	preempt_disable_notrace();
+ 	do_for_each_ftrace_op(op, ftrace_ops_list) {
+-		if (ftrace_ops_test(op, ip))
++		if (ftrace_ops_test(op, ip, regs))
+ 			op->func(ip, parent_ip, op, regs);
+ 	} while_for_each_ftrace_op(op);
+ 	preempt_enable_notrace();
 -- 
 1.7.10.4
 
