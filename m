@@ -1,198 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758936Ab3GZNHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:07:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57237 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758914Ab3GZNHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:07:23 -0400
-Date: Fri, 26 Jul 2013 15:07:21 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/6] arch: mm: do not invoke OOM killer on kernel fault
- OOM
-Message-ID: <20130726130721.GD17761@dhcp22.suse.cz>
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
- <1374791138-15665-3-git-send-email-hannes@cmpxchg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374791138-15665-3-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758908Ab3GZNHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:07:20 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14483 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758258Ab3GZNFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 09:05:14 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=1aBXN6OI0oIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=9gBtJG8FnjkA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=ayC55rCoAAAA:8 a=0kbfjC1OccZKM1oZNXEA:9 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=q9mC2fbAJx8A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130726130512.305024273@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 26 Jul 2013 09:03:29 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 2/9] tracing: Change tracing_pipe_fops() to rely on tracing_get_cpu()
+References: <20130726130327.911599518@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-Change-tracing_pipe_fops-to-rely-on-tracing_.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 25-07-13 18:25:34, Johannes Weiner wrote:
-> Kernel faults are expected to handle OOM conditions gracefully (gup,
-> uaccess etc.), so they should never invoke the OOM killer.  Reserve
-> this for faults triggered in user context when it is the only option.
-> 
-> Most architectures already do this, fix up the remaining few.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-I didn't go over all architectures to check whether something slipped
-through but the converted ones look OK to me.
+tracing_open_pipe() is racy, the memory inode->i_private points to
+can be already freed.
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Change debugfs_create_file("trace_pipe", data) callers to to pass
+"data = tr", tracing_open_pipe() can use tracing_get_cpu().
 
-> ---
->  arch/arm/mm/fault.c       | 14 +++++++-------
->  arch/arm64/mm/fault.c     | 14 +++++++-------
->  arch/avr32/mm/fault.c     |  2 +-
->  arch/mips/mm/fault.c      |  2 ++
->  arch/um/kernel/trap.c     |  2 ++
->  arch/unicore32/mm/fault.c | 14 +++++++-------
->  6 files changed, 26 insertions(+), 22 deletions(-)
-> 
-> diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-> index c97f794..217bcbf 100644
-> --- a/arch/arm/mm/fault.c
-> +++ b/arch/arm/mm/fault.c
-> @@ -349,6 +349,13 @@ retry:
->  	if (likely(!(fault & (VM_FAULT_ERROR | VM_FAULT_BADMAP | VM_FAULT_BADACCESS))))
->  		return 0;
->  
-> +	/*
-> +	 * If we are in kernel mode at this point, we
-> +	 * have no context to handle this fault with.
-> +	 */
-> +	if (!user_mode(regs))
-> +		goto no_context;
-> +
->  	if (fault & VM_FAULT_OOM) {
->  		/*
->  		 * We ran out of memory, call the OOM killer, and return to
-> @@ -359,13 +366,6 @@ retry:
->  		return 0;
->  	}
->  
-> -	/*
-> -	 * If we are in kernel mode at this point, we
-> -	 * have no context to handle this fault with.
-> -	 */
-> -	if (!user_mode(regs))
-> -		goto no_context;
-> -
->  	if (fault & VM_FAULT_SIGBUS) {
->  		/*
->  		 * We had some memory, but were unable to
-> diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
-> index 0ecac89..dab1cfd 100644
-> --- a/arch/arm64/mm/fault.c
-> +++ b/arch/arm64/mm/fault.c
-> @@ -294,6 +294,13 @@ retry:
->  			      VM_FAULT_BADACCESS))))
->  		return 0;
->  
-> +	/*
-> +	 * If we are in kernel mode at this point, we have no context to
-> +	 * handle this fault with.
-> +	 */
-> +	if (!user_mode(regs))
-> +		goto no_context;
-> +
->  	if (fault & VM_FAULT_OOM) {
->  		/*
->  		 * We ran out of memory, call the OOM killer, and return to
-> @@ -304,13 +311,6 @@ retry:
->  		return 0;
->  	}
->  
-> -	/*
-> -	 * If we are in kernel mode at this point, we have no context to
-> -	 * handle this fault with.
-> -	 */
-> -	if (!user_mode(regs))
-> -		goto no_context;
-> -
->  	if (fault & VM_FAULT_SIGBUS) {
->  		/*
->  		 * We had some memory, but were unable to successfully fix up
-> diff --git a/arch/avr32/mm/fault.c b/arch/avr32/mm/fault.c
-> index b2f2d2d..2ca27b0 100644
-> --- a/arch/avr32/mm/fault.c
-> +++ b/arch/avr32/mm/fault.c
-> @@ -228,9 +228,9 @@ no_context:
->  	 */
->  out_of_memory:
->  	up_read(&mm->mmap_sem);
-> -	pagefault_out_of_memory();
->  	if (!user_mode(regs))
->  		goto no_context;
-> +	pagefault_out_of_memory();
->  	return;
->  
->  do_sigbus:
-> diff --git a/arch/mips/mm/fault.c b/arch/mips/mm/fault.c
-> index 85df1cd..94d3a31 100644
-> --- a/arch/mips/mm/fault.c
-> +++ b/arch/mips/mm/fault.c
-> @@ -241,6 +241,8 @@ out_of_memory:
->  	 * (which will retry the fault, or kill us if we got oom-killed).
->  	 */
->  	up_read(&mm->mmap_sem);
-> +	if (!user_mode(regs))
-> +		goto no_context;
->  	pagefault_out_of_memory();
->  	return;
->  
-> diff --git a/arch/um/kernel/trap.c b/arch/um/kernel/trap.c
-> index 089f398..b2f5adf 100644
-> --- a/arch/um/kernel/trap.c
-> +++ b/arch/um/kernel/trap.c
-> @@ -124,6 +124,8 @@ out_of_memory:
->  	 * (which will retry the fault, or kill us if we got oom-killed).
->  	 */
->  	up_read(&mm->mmap_sem);
-> +	if (!is_user)
-> +		goto out_nosemaphore;
->  	pagefault_out_of_memory();
->  	return 0;
->  }
-> diff --git a/arch/unicore32/mm/fault.c b/arch/unicore32/mm/fault.c
-> index f9b5c10..8ed3c45 100644
-> --- a/arch/unicore32/mm/fault.c
-> +++ b/arch/unicore32/mm/fault.c
-> @@ -278,6 +278,13 @@ retry:
->  	       (VM_FAULT_ERROR | VM_FAULT_BADMAP | VM_FAULT_BADACCESS))))
->  		return 0;
->  
-> +	/*
-> +	 * If we are in kernel mode at this point, we
-> +	 * have no context to handle this fault with.
-> +	 */
-> +	if (!user_mode(regs))
-> +		goto no_context;
-> +
->  	if (fault & VM_FAULT_OOM) {
->  		/*
->  		 * We ran out of memory, call the OOM killer, and return to
-> @@ -288,13 +295,6 @@ retry:
->  		return 0;
->  	}
->  
-> -	/*
-> -	 * If we are in kernel mode at this point, we
-> -	 * have no context to handle this fault with.
-> -	 */
-> -	if (!user_mode(regs))
-> -		goto no_context;
-> -
->  	if (fault & VM_FAULT_SIGBUS) {
->  		/*
->  		 * We had some memory, but were unable to
-> -- 
-> 1.8.3.2
-> 
+Link: http://lkml.kernel.org/r/20130723152557.GA23717@redhat.com
 
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index cfff63c..51a99ef 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3959,8 +3959,7 @@ tracing_max_lat_write(struct file *filp, const char __user *ubuf,
+ 
+ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ {
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 	struct trace_iterator *iter;
+ 	int ret = 0;
+ 
+@@ -4006,9 +4005,9 @@ static int tracing_open_pipe(struct inode *inode, struct file *filp)
+ 	if (trace_clocks[tr->clock_id].in_ns)
+ 		iter->iter_flags |= TRACE_FILE_TIME_IN_NS;
+ 
+-	iter->cpu_file = tc->cpu;
+-	iter->tr = tc->tr;
+-	iter->trace_buffer = &tc->tr->trace_buffer;
++	iter->tr = tr;
++	iter->trace_buffer = &tr->trace_buffer;
++	iter->cpu_file = tracing_get_cpu(inode);
+ 	mutex_init(&iter->mutex);
+ 	filp->private_data = iter;
+ 
+@@ -4031,8 +4030,7 @@ fail:
+ static int tracing_release_pipe(struct inode *inode, struct file *file)
+ {
+ 	struct trace_iterator *iter = file->private_data;
+-	struct trace_cpu *tc = inode->i_private;
+-	struct trace_array *tr = tc->tr;
++	struct trace_array *tr = inode->i_private;
+ 
+ 	mutex_lock(&trace_types_lock);
+ 
+@@ -5571,7 +5569,7 @@ tracing_init_debugfs_percpu(struct trace_array *tr, long cpu)
+ 
+ 	/* per cpu trace_pipe */
+ 	trace_create_cpu_file("trace_pipe", 0444, d_cpu,
+-				&data->trace_cpu, cpu, &tracing_pipe_fops);
++				tr, cpu, &tracing_pipe_fops);
+ 
+ 	/* per cpu trace */
+ 	trace_create_cpu_file("trace", 0644, d_cpu,
+@@ -6157,7 +6155,7 @@ init_tracer_debugfs(struct trace_array *tr, struct dentry *d_tracer)
+ 			(void *)&tr->trace_cpu, &tracing_fops);
+ 
+ 	trace_create_file("trace_pipe", 0444, d_tracer,
+-			(void *)&tr->trace_cpu, &tracing_pipe_fops);
++			  tr, &tracing_pipe_fops);
+ 
+ 	trace_create_file("buffer_size_kb", 0644, d_tracer,
+ 			(void *)&tr->trace_cpu, &tracing_entries_fops);
 -- 
-Michal Hocko
-SUSE Labs
+1.7.10.4
+
+
