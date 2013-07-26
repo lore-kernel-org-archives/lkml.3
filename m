@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab3GZD5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:57:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:9613 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756730Ab3GZD5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:57:41 -0400
-X-IronPort-AV: E=Sophos;i="4.89,748,1367942400"; 
-   d="scan'208";a="8029960"
-Message-ID: <51F1F453.8060602@cn.fujitsu.com>
-Date: Fri, 26 Jul 2013 12:00:19 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1751108Ab3GZEBy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:01:54 -0400
+Received: from mail-db9lp0251.outbound.messaging.microsoft.com ([213.199.154.251]:19916
+	"EHLO db9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750699Ab3GZEBu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 00:01:50 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I542I1432I14ffIzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dhbe9i1155h)
+From: Zhu Richard-R65037 <r65037@freescale.com>
+To: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Subject: RE: linux-next: Tree for Jul 25 (ahci_imx.c)
+Thread-Topic: linux-next: Tree for Jul 25 (ahci_imx.c)
+Thread-Index: AQHOiWVuR7qfxy8/30GbgPkEHfnAsZl2Ukxw
+Date: Fri, 26 Jul 2013 03:46:42 +0000
+Message-ID: <0E83723C55F66F43A6041464FE31119D3487F2@039-SN2MPN1-011.039d.mgd.msft.net>
+References: <20130725151253.8b9b53b3a3cf6cacd501dc54@canb.auug.org.au>
+ <51F16F17.4030002@infradead.org>
+In-Reply-To: <51F16F17.4030002@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.144]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in memblock.reserve
- with numa_meminfo.
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com> <20130723212548.GZ21100@mtj.dyndns.org> <51F0A4F9.2060802@cn.fujitsu.com> <20130725150554.GC26107@mtj.dyndns.org>
-In-Reply-To: <20130725150554.GC26107@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/26 11:55:27,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/26 11:55:33,
-	Serialize complete at 2013/07/26 11:55:33
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 11:05 PM, Tejun Heo wrote:
-> Hello, Tang.
->
-> On Thu, Jul 25, 2013 at 12:09:29PM +0800, Tang Chen wrote:
->> And as in [patch 14/21], when reserving hotpluggable memory, we use
->> pxm. So my
->
-> Which is kinda nasty.
+Hi Randy:
+Thanks for your kindly reminder.
+I re-produced this issue at my side.
+Now, I'm trying to find a proper method to fix it.
 
-Yes, will remove it.
+Best Regards
+Richard Zhu
 
->
->> idea was to do a nid sync in numa_init(). After this, memblock will
->> set nid when
->> it allocates memory.
->
-> Sure, that's the only place we can set the numa node IDs but my point
-> is that you don't need to add another interface.  Jet let
-> memblock_set_node() handle both memblock.memory and .reserved ranges.
-> That way, you can make memblock simpler to use and less error-prone.
 
-Yes, I missed the isolation phase in memblock_set_node().
-So followed.
+-----Original Message-----
+From: Randy Dunlap [mailto:rdunlap@infradead.org] 
+Sent: Friday, July 26, 2013 2:32 AM
+To: Stephen Rothwell
+Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; linux-ide@vger.kernel.org; Zhu Richard-R65037
+Subject: Re: linux-next: Tree for Jul 25 (ahci_imx.c)
 
->
->> If we want to let memblock_set_node() and alloc functions set nid on
->> the reserved
->> regions, we should setup nid<->  pxm mapping when we parst SRAT for
->> the first time.
->
-> I don't follow why it has to be different.  Why do you need to do
-> anything differently?  What am I missing here?
+On 07/24/13 22:12, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130724:
+> 
 
-No, it was me who missed the isolation phase in memblock_set_node().
+on i386:
 
-Thanks.
+# CONFIG_MFD_SYSCON is not set
+
+
+when ahci_imx.c is built as a loadable module:
+
+ERROR: "syscon_regmap_lookup_by_compatible" [drivers/ata/ahci_imx.ko] undefined!
+
+or when it is builtin:
+
+ahci_imx.c:(.text+0x182e54): undefined reference to `syscon_regmap_lookup_by_compatible'
+
+
+
+Full randconfig file is attached.
+
+
+-- 
+~Randy
+
