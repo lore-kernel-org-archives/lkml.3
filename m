@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab3GZH0F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:26:05 -0400
-Received: from mms2.broadcom.com ([216.31.210.18]:4183 "EHLO mms2.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752524Ab3GZH0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:26:03 -0400
-X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
-Message-ID: <51F2247D.2000805@broadcom.com>
-Date: Fri, 26 Jul 2013 09:25:49 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1757509Ab3GZH1J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:27:09 -0400
+Received: from s16502780.onlinehome-server.info ([87.106.93.118]:62716 "EHLO
+	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753454Ab3GZH1G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 03:27:06 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+Date: Fri, 26 Jul 2013 08:26:46 +0100
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+Message-ID: <20130726072646.GH13295@cantiga.alporthouse.com>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	Sedat Dilek <sedat.dilek@gmail.com>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	intel-gfx <intel-gfx@lists.freedesktop.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>,
+	linux-next <linux-next@vger.kernel.org>,
+	"s.dilek" <s.dilek@jpberlin.de>
+References: <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+ <20130725190006.GD11514@cantiga.alporthouse.com>
+ <CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
+ <20130725192248.GA13295@cantiga.alporthouse.com>
+ <CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
+ <CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+ <20130725215259.GB13295@cantiga.alporthouse.com>
+ <CA+icZUXZKndg7==Y6v2Z45WZDp+tDC5FzaOC=KWTf4m=rjUKnA@mail.gmail.com>
+ <20130725232556.GF13295@cantiga.alporthouse.com>
+ <CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
 MIME-Version: 1.0
-To: "Joel Fernandes" <joelf@ti.com>
-cc: "Roger Quadros" <rogerq@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
- <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com>
- <51E7E1B7.6090104@broadcom.com> <51E7E2AD.8020106@ti.com>
- <51F122D5.80205@broadcom.com> <51F1E39D.2030902@ti.com>
- <51F1E65B.4020005@ti.com>
-In-Reply-To: <51F1E65B.4020005@ti.com>
-X-WSS-ID: 7DECFC9D1R048228780-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: 78.156.73.22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 05:00 AM, Joel Fernandes wrote:
-> On 07/25/2013 09:49 PM, Joel Fernandes wrote:
->
-> [..]
->
->>> Can I get back on this topic. When USB and ethernet was working for me
->>> as stated above, I was not doing tftpboot. When I use tftpboot the
->>> images are obtained from the tftp server, but after kernel has started
->>> there is nothing in /sys/bus/usb/devices/.
->>
->> I quickly tried 3.11-rc2 + Roger's USB PHY clock patch on omap4-panda-es
->> and enabled following USB options:
->>
->> CONFIG_USB_MUSB_HDRC=y
->> CONFIG_USB_PHY=y
->> CONFIG_OMAP_USB2=y
->> CONFIG_OMAP_CONTROL_USB=y
->> CONFIG_USB_MUSB_OMAP2PLUS=y
->> CONFIG_MFD_OMAP_USB_HOST=y
->> CONFIG_USB_EHCI_HCD=y
->> CONFIG_USB_OHCI_HCD=y
->> CONFIG_USB_EHCI_HCD_OMAP=y
->
-> Sorry I missed saying I also set had to set CONFIG_NOP_USB_XCEIV=y
->
+On Fri, Jul 26, 2013 at 09:15:14AM +0200, Sedat Dilek wrote:
+> For example: I could start my X with even doing ugly hacks like this...
+> 
+> [ intel-ddx (git) ]
+> ...
+> Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+> ...
+> #if 0
+> 	if (drm_intel_gem_bo_map_gtt(bo))
+> 		return FALSE;
+> #endif
+> ...
+> 
+> ...with any other kernel.
 
-I will compare this with my .config. At first glance it looks like I am 
-missing some of these.
+Yes. Acquiring the map there is just a bit of paranoia to ensure we
+having the mapping into the scanout already in place in case of
+emergencies (and so don't fail along failure paths due to resource
+conflicts).
 
-Gr. AvS
+Hmm, though we only started checking for map failures in 2.20.10 - which
+would explain why going back to the older ddx masks the issue. And yes,
+this means we do require a kernel bisect - or some passing inspiron.
+-Chris
 
+-- 
+Chris Wilson, Intel Open Source Technology Centre
