@@ -1,43 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760672Ab3GZVXG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:23:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:37634 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760655Ab3GZVXC (ORCPT
+	id S1760659Ab3GZVXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:23:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932604Ab3GZUxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:23:02 -0400
-Date: Fri, 26 Jul 2013 14:23:00 -0700 (PDT)
-Message-Id: <20130726.142300.2079205413428223270.davem@davemloft.net>
-To: ffusco@redhat.com
-Cc: netdev@vger.kernel.org, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 2/2] sysctl: range checking in
- do_proc_dointvec_ms_jiffies_conv
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <de72e4265ab874b70b127011bb1ef8c2d27bfe63.1374654531.git.ffusco@redhat.com>
-References: <cover.1374654531.git.ffusco@redhat.com>
-	<cover.1374654531.git.ffusco@redhat.com>
-	<de72e4265ab874b70b127011bb1ef8c2d27bfe63.1374654531.git.ffusco@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Fri, 26 Jul 2013 14:23:01 -0700 (PDT)
+	Fri, 26 Jul 2013 16:53:35 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Olivier DANET <odanet@caramail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 15/59] sparc32: vm_area_struct access for old Sun SPARCs.
+Date: Fri, 26 Jul 2013 13:52:39 -0700
+Message-Id: <20130726205015.440894498@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Francesco Fusco <ffusco@redhat.com>
-Date: Wed, 24 Jul 2013 10:39:07 +0200
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> When (integer) sysctl values are expressed in ms and have to be
-> represented internally as jiffies. The msecs_to_jiffies function
-> returns an unsigned long, which gets assigned to the integer.
-> This patch prevents the value to be assigned if bigger than
-> INT_MAX, done in a similar way as in cba9f3 ("Range checking in
-> do_proc_dointvec_(userhz_)jiffies_conv").
-> 
-> Signed-off-by: Francesco Fusco <ffusco@redhat.com>
+------------------
 
-Applied with the changes suggested by Sergei.
+From: Olivier DANET <odanet@caramail.com>
+
+Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
+vm_area_struct for fewer cache misses") changed the layout of the
+vm_area_struct structure, it broke several SPARC32 assembly routines
+which used numerical constants for accessing the vm_mm field.
+
+This patch defines the VMA_VM_MM constant to replace the immediate values.
+
+Signed-off-by: Olivier DANET <odanet@caramail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/kernel/asm-offsets.c |    2 ++
+ arch/sparc/mm/hypersparc.S      |    8 ++++----
+ arch/sparc/mm/swift.S           |    8 ++++----
+ arch/sparc/mm/tsunami.S         |    6 +++---
+ arch/sparc/mm/viking.S          |   10 +++++-----
+ 5 files changed, 18 insertions(+), 16 deletions(-)
+
+--- a/arch/sparc/kernel/asm-offsets.c
++++ b/arch/sparc/kernel/asm-offsets.c
+@@ -34,6 +34,8 @@ int foo(void)
+ 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
+ 	BLANK();
+ 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
++	BLANK();
++	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+ 
+ 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
+ 	return 0;
+--- a/arch/sparc/mm/hypersparc.S
++++ b/arch/sparc/mm/hypersparc.S
+@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+ 
+ 	/* The things we do for performance... */
+ hypersparc_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #ifndef CONFIG_SMP
+ 	ld	[%o0 + AOFF_mm_context], %g1
+ 	cmp	%g1, -1
+@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
+ 	 */
+ 	/* Verified, my ass... */
+ hypersparc_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ #ifndef CONFIG_SMP
+ 	cmp	%g2, -1
+@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
+ 	 sta	%g5, [%g1] ASI_M_MMUREGS
+ 
+ hypersparc_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/swift.S
++++ b/arch/sparc/mm/swift.S
+@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
+ 
+ 	.globl	swift_flush_cache_range
+ swift_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	sub	%o2, %o1, %o2
+ 	sethi	%hi(4096), %o3
+ 	cmp	%o2, %o3
+@@ -116,7 +116,7 @@ swift_flush_cache_range:
+ 
+ 	.globl	swift_flush_cache_page
+ swift_flush_cache_page:
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 70:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -219,7 +219,7 @@ swift_flush_sig_insns:
+ 	.globl	swift_flush_tlb_range
+ 	.globl	swift_flush_tlb_all
+ swift_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ swift_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
+ 
+ 	.globl	swift_flush_tlb_page
+ swift_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/tsunami.S
++++ b/arch/sparc/mm/tsunami.S
+@@ -24,7 +24,7 @@
+ 	/* Sliiick... */
+ tsunami_flush_cache_page:
+ tsunami_flush_cache_range:
+-	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_cache_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
+ 
+ 	/* More slick stuff... */
+ tsunami_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ tsunami_flush_tlb_mm:
+ 	ld	[%o0 + AOFF_mm_context], %g2
+ 	cmp	%g2, -1
+@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
+ 
+ 	/* This one can be done in a fine grained manner... */
+ tsunami_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	andn	%o1, (PAGE_SIZE - 1), %o1
+--- a/arch/sparc/mm/viking.S
++++ b/arch/sparc/mm/viking.S
+@@ -109,7 +109,7 @@ viking_mxcc_flush_page:
+ viking_flush_cache_page:
+ viking_flush_cache_range:
+ #ifndef CONFIG_SMP
+-	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ #endif
+ viking_flush_cache_mm:
+ #ifndef CONFIG_SMP
+@@ -149,7 +149,7 @@ viking_flush_tlb_mm:
+ #endif
+ 
+ viking_flush_tlb_range:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -174,7 +174,7 @@ viking_flush_tlb_range:
+ #endif
+ 
+ viking_flush_tlb_page:
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	mov	SRMMU_CTX_REG, %g1
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+@@ -240,7 +240,7 @@ sun4dsmp_flush_tlb_range:
+ 	tst	%g5
+ 	bne	3f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
+@@ -266,7 +266,7 @@ sun4dsmp_flush_tlb_page:
+ 	tst	%g5
+ 	bne	2f
+ 	 mov	SRMMU_CTX_REG, %g1
+-	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
++	ld	[%o0 + VMA_VM_MM], %o0
+ 	ld	[%o0 + AOFF_mm_context], %o3
+ 	lda	[%g1] ASI_M_MMUREGS, %g5
+ 	and	%o1, PAGE_MASK, %o1
+
+
