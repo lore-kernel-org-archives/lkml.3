@@ -1,154 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab3GZDBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:01:47 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:18904 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab3GZDBp (ORCPT
+	id S1758319Ab3GZDBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:01:52 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:46666 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758292Ab3GZDBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:01:45 -0400
-Message-ID: <51F1E68A.2080703@oracle.com>
-Date: Fri, 26 Jul 2013 11:01:30 +0800
-From: Zhenzhong Duan <zhenzhong.duan@oracle.com>
-Reply-To: zhenzhong.duan@oracle.com
-Organization: oracle
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        xen-devel <xen-devel@lists.xen.org>, bhelgaas@google.com,
-        Feng Jin <joe.jin@oracle.com>,
-        Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
-Subject: Re: [PATCH 2/3] Refactor msi/msix restore code Part2
-References: <51EF451A.8050003@oracle.com> <20130724134622.GC2518@phenom.dumpdata.com> <51F0CB10.1070500@oracle.com> <20130725122552.GA23927@konrad-lan.dumpdata.com>
-In-Reply-To: <20130725122552.GA23927@konrad-lan.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 25 Jul 2013 23:01:48 -0400
+Date: Fri, 26 Jul 2013 13:01:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: linux-next: manual merge of the drm tree with Linus' tree
+Message-Id: <20130726130129.b10066a83ebf9c59ec345ce9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 2013-07-25 20:25, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jul 25, 2013 at 02:52:00PM +0800, Zhenzhong Duan wrote:
->> On 2013-07-24 21:46, Konrad Rzeszutek Wilk wrote:
->>> On Wed, Jul 24, 2013 at 11:08:10AM +0800, Zhenzhong Duan wrote:
->>>> xen_initdom_restore_msi_irqs trigger a hypercall to restore addr/data/mask
->>>> in dom0. It's better to do the same for default_restore_msi_irqs in baremetal.
->>>>
->>>> Move restore of mask in default_restore_msi_irqs, this could avoid mask
->>>> restored twice in dom0, once in hypercall, the other in kernel.
->>> Why not remove the hypercall then?
->> If removed, msi entry couldn't be restored, such as
->> pci_reset_function who will reset pci registers.
-> I did not read your email first time correctly. You are saying
-> that we restore it twice in the host kernel (aka dom0), once in the
-> hypervisor (b/c the guest tries to do MSI-X write and it ends up in
-> the hypervisor), and then we also do it in the guest kernel?
-Non business of guest kernel, this patch is fixing driver load issue in 
-dom0.
-Driver qlcnic called pci_reset_function during init. The call path:
-pci_reset_function->pci_restore_state->__pci_restore_msix_state->arch_restore_msi_irqs->
-xen_initdom_restore_msi_irqs->PHYSDEVOP_restore_msi hypercall
+Hi Dave,
 
-First mask restore is in 
-xen_initdom_restore_msi_irqs->PHYSDEVOP_restore_msi hypercall
-Second restore is __pci_restore_msix_state->msix_mask_irq(entry, 
-entry->masked)
+Today's linux-next merge of the drm tree got a conflict in
+drivers/gpu/drm/i915/i915_dma.c between commit 7dcd2677ea91 ("drm/i915:
+fix long-standing SNB regression in power consumption after resume v2")
+from Linus' tree and commit 59cdb63d529c ("drm/i915: kill
+dev_priv->rps.lock") from the drm tree.
 
-Mask bits are under full control of xen, and the entry->masked in dom0 
-kernel is invalid.
-We restore an invalid value to mask register could mask the msix interrupt.
->
-> That is a lot of duplicate calls.
->>> Or alter the function to detect
->>> whether the restore of the mask has occurred?
->> Then we need to add the check for dom0 only.
-> I am not sure I completly follow this. Is the reason for the lost of
-> interrupt b/c one of those four MSI-X writes ends up masking and the
-> subsequent writes end up with invalid data?
-The first restore in hypercall is needed, and second restore should be 
-removed for dom0
-But baremetal need that restore, so I move it in 
-default_restore_msi_irqs which is the func for baremetal.
->
->>>> Without that, qlcnic driver calling pci_reset_function will lost interrupt
->>>> in dom0.
-> But if you pass said PCI device to a guest there is no need for the
-> interrupts to go to the host (dom0). They should go to the hypervisor
-> which will deliever them to the guest.
->
-> Is that what you meant by 'in dom0' ?
->
->>>> Tested-by: Sucheta Chakraborty <sucheta.chakraborty@qlogic.com>
->>>> Signed-off-by: Zhenzhong Duan <zhenzhong.duan@oracle.com>
->>>> ---
->>>>   drivers/pci/msi.c |   17 ++++++++++++++---
->>>>   1 files changed, 14 insertions(+), 3 deletions(-)
->>>>
->>>> diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
->>>> index 87223ae..922fb49 100644
->>>> --- a/drivers/pci/msi.c
->>>> +++ b/drivers/pci/msi.c
->>>> @@ -216,6 +216,8 @@ void unmask_msi_irq(struct irq_data *data)
->>>>   #ifdef HAVE_DEFAULT_MSI_RESTORE_IRQS
->>>>   void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->>>>   {
->>>> +	int pos;
->>>> +	u16 control;
->>>>   	struct msi_desc *entry;
->>>>   	entry = NULL;
->>>> @@ -228,8 +230,19 @@ void default_restore_msi_irqs(struct pci_dev *dev, int irq)
->>>>   		entry = irq_get_msi_desc(irq);
->>>>   	}
->>>> -	if (entry)
->>>> +	if (entry) {
->>>>   		write_msi_msg(irq, &entry->msg);
->>>> +		if (dev->msix_enabled) {
->>>> +			msix_mask_irq(entry, entry->masked);
->>>> +			readl(entry->mask_base);
->>>> +		} else {
->>>> +			pos = entry->msi_attrib.pos;
->>>> +			pci_read_config_word(dev, pos + PCI_MSI_FLAGS,
->>>> +					     &control);
->>>> +			msi_mask_irq(entry, msi_capable_mask(control),
->>>> +				     entry->masked);
->>>> +		}
->>>> +	}
->>>>   }
->>>>   #endif
->>>> @@ -406,7 +419,6 @@ static void __pci_restore_msi_state(struct pci_dev *dev)
->>>>   	arch_restore_msi_irqs(dev, dev->irq);
->>>>   	pci_read_config_word(dev, dev->msi_cap + PCI_MSI_FLAGS, &control);
->>>> -	msi_mask_irq(entry, msi_capable_mask(control), entry->masked);
->>> Before this patch we had:
->>>
->>> 	write_msi_msg(..)
->>> 	pci_read_config_work(PCI_MSI_FLAGS, &control)
->>> 	pci_write_config_dword(~msi_capable_mask(control) | entry->masked)
->>> 	control &= ~_PCI_MSI_FLAGS_QSIZE;
->>> 	control |= ...
->>> 	pci_write_config_dword(PCI_MSI_FLAGS, control)
->>>
->>> while with this you have now:
->>>
->>> 	write_msi_msg(..)
->>> 	pci_read_config_work(PCI_MSI_FLAGS, &_control)
->>> 	pci_write_config_dword(~msi_capable_mask(_control) | entry->masked)
->>> --> 	pci_read_config_work(PCI_MSI_FLAGS, &control)
->>> 	control &= ~_PCI_MSI_FLAGS_QSIZE;
->>> 	control |= ...
->>> 	pci_write_config_dword(PCI_MSI_FLAGS, control)
->>>
->>> see the problem? The 'control' value in __pci_restore_msi_state reads the
->>> value _after_ it has been masked (which is now done in default_restore_msi_irqs).
->>>
->>> Wouldn't that cause problems?
->>>
->> pci_write_config_dword(~msi_capable_mask(_control) | entry->masked) restore per vector
->> msi mask bits based on the support of PCI_MSI_FLAGS_MASKBIT. This is different from the
->> global mask bit in PCI_MSI_FLAGS.
-> So I think you are saying that it won't cause problems?
-Yes
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/gpu/drm/i915/i915_dma.c
+index 66c6380,6ce9033..0000000
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@@ -1495,15 -1490,6 +1490,14 @@@ int i915_driver_load(struct drm_device=20
+  	dev_priv->dev =3D dev;
+  	dev_priv->info =3D info;
+ =20
+ +	spin_lock_init(&dev_priv->irq_lock);
+ +	spin_lock_init(&dev_priv->gpu_error.lock);
+- 	spin_lock_init(&dev_priv->rps.lock);
+ +	spin_lock_init(&dev_priv->gt_lock);
+ +	spin_lock_init(&dev_priv->backlight.lock);
+ +	mutex_init(&dev_priv->dpio_lock);
+ +	mutex_init(&dev_priv->rps.hw_lock);
+ +	mutex_init(&dev_priv->modeset_restore_lock);
+ +
+  	i915_dump_device_info(dev_priv);
+ =20
+  	if (i915_get_bridge_dev(dev)) {
+
+--Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR8eaNAAoJEECxmPOUX5FEd+oP/2XbDbAU0noGwE0i7cNvtl4k
+VcI7WyrxIAEq4meORoMXRFRW4K16H8xI1O3/hjvJEr+if6Iz98MifVhavl0VELLR
+nw9p66M+FKIhn26oxZDyjsP3SLgBr6GhCm2fC67eAKggLGBaicE00/Nyke2bS6gm
+V+7/rVMQHG1AKU/vV8PG692/G5mP9CdTwFBPT2Kwiob0FkEj8itn8Rnr3xHgIuL/
+NS4kW+eHsoSmK1NpTOkzybHklIPK251TDl8K2Q/R2tkg5jCv0aYzkRx81hnIym2J
+OxRLg/c53ZO56IBnAx9YX8bkvX2kwMfJDsWSkBpii0Er3Z+Cnyu0wX/glPHcgjsE
+Mfh3tYC5llbV5q6ptLdAnwkVBaMkidRNZmOCG/JmE6iwDMfGn9D+WzK4V/iq5knE
+GQCnRCPfmfE7E56F5ElZCscAFBWPDeP7pZyCcqikBOMGkHr32cctNP7tcGkZabhj
+xBOqvFDlJIvdMp6G3LgbDc2jy1ywBJnufV8Y9qaGqYt2GZB5Fed/Xu6+dZOD+nau
+gpLmcOlYS6Glv3Hf2aqa2pKOA1+Y2RF6MgKDlPG4MFt6CVifqYWI73YTO4nPGR/S
+G8Yr9aQ3DFcOhSFpHjf3fg+bYRIbkQi3HswUeIPHCCgydnFJFPfcGY4XexxhmL3F
+NvavV9AwgsbLepQ51GbP
+=rmy3
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i--
