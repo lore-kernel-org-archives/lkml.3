@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab3G3PYq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:24:46 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:59597 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756664Ab3G3PXq (ORCPT
+	id S1756792Ab3G3PYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:24:48 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:47237 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756632Ab3G3PXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 11:23:46 -0400
-Date: Mon, 29 Jul 2013 10:01:47 -0500
+Date: Fri, 26 Jul 2013 09:33:44 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 1/5] rbtree: add postorder iteration functions
-Message-ID: <20130729150147.GA4381@variantweb.net>
-References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
- <1374873223-25557-2-git-send-email-cody@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
+ memory systems
+Message-ID: <20130726143344.GA4379@variantweb.net>
+References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130725233800.GA18349@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374873223-25557-2-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <20130725233800.GA18349@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073015-8878-0000-0000-0000082C328D
+x-cbid: 13073015-9574-0000-0000-000008F3DECB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 02:13:39PM -0700, Cody P Schafer wrote:
-> Add postorder iteration functions for rbtree. These are useful for
-> safely freeing an entire rbtree without modifying the tree at all.
+On Thu, Jul 25, 2013 at 04:38:00PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Jul 25, 2013 at 04:11:20PM -0500, Seth Jennings wrote:
+> > From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+> > 
+> > Large memory systems (1TB or more) experience boot delays on the order
+> > of minutes due to the initializing the memory configuration part of
+> > sysfs at /sys/devices/system/memory/.
+> > 
+> > ppc64 has a memory block size of 256M and (I think) x86 is 128M.  With 1TB
+> > of RAM and a 256M block size, that's 4k memory blocks with 20 sysfs
+> > entries per block that's around 80k items that need be created at boot
+> > time in sysfs.  Some systems go up to 16TB where the issue is
+> > even more severe.
+> > 
+> > This patch is a prototype for a new sysfs memory layout where the
+> > entries are created on demand by writing memory block numbers into a
+> > "show" and "hide" files to create and destroy the memory block
+> > configuration attributes in sysfs.  This would decouple the number of
+> > sysfs entries created at boot time from the memory size, resulting in a
+> > sysfs initialization time that doesn't increase and memory size
+> > increase.
+> > 
+> > Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+> > Signed-off-by: Nathan Fontenot <nfont@linux.vnet.ibm.com>
 > 
-> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
-> ---
->  include/linux/rbtree.h |  4 ++++
->  lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 44 insertions(+)
-> 
-> diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-> index 0022c1b..2879e96 100644
-> --- a/include/linux/rbtree.h
-> +++ b/include/linux/rbtree.h
-> @@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
->  extern struct rb_node *rb_first(const struct rb_root *);
->  extern struct rb_node *rb_last(const struct rb_root *);
-> 
-> +/* Postorder iteration - always visit the parent after it's children */
+> How does this tie into the patches Nathan sent yesterday for memory
+> hotplug stuff that I thought modified the same part of the kernel?
 
-s/it's/its/
+So this patch introduces the new layout in a new file
+drives/base/memfs.c (which, in light of your last comment should
+probably be something more like largememory.c).
 
-> +extern struct rb_node *rb_first_postorder(const struct rb_root *);
-> +extern struct rb_node *rb_next_postorder(const struct rb_node *);
-> +
->  /* Fast replacement of a single node without remove/rebalance/add/rebalance */
->  extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
->  			    struct rb_root *root);
-> diff --git a/lib/rbtree.c b/lib/rbtree.c
-> index c0e31fe..65f4eff 100644
-> --- a/lib/rbtree.c
-> +++ b/lib/rbtree.c
-> @@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
->  	*new = *victim;
->  }
->  EXPORT_SYMBOL(rb_replace_node);
-> +
-> +static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
-> +{
-> +	for (;;) {
-> +		if (node->rb_left)
-> +			node = node->rb_left;
-
-Assigning to an argument passed as const seems weird to me.  I would
-think it shouldn't compile but it does.  I guess my understanding of
-const is incomplete.
-
-> +		else if (node->rb_right)
-> +			node = node->rb_right;
-> +		else
-> +			return (struct rb_node *)node;
-> +	}
-> +}
-> +
-> +struct rb_node *rb_next_postorder(const struct rb_node *node)
-> +{
-> +	const struct rb_node *parent;
-> +	if (!node)
-> +		return NULL;
-> +	parent = rb_parent(node);
-
-Again here.
+It doesn't clash with Nathan's, but it doesn't contain the new
+is_memblock_[removable|offline] functions or the new "release"
+attribute.  But that can be added easily.
 
 Seth
-
-> +
-> +	/* If we're sitting on node, we've already seen our children */
-> +	if (parent && node == parent->rb_left && parent->rb_right) {
-> +		/* If we are the parent's left node, go to the parent's right
-> +		 * node then all the way down to the left */
-> +		return rb_left_deepest_node(parent->rb_right);
-> +	} else
-> +		/* Otherwise we are the parent's right node, and the parent
-> +		 * should be next */
-> +		return (struct rb_node *)parent;
-> +}
-> +EXPORT_SYMBOL(rb_next_postorder);
-> +
-> +struct rb_node *rb_first_postorder(const struct rb_root *root)
-> +{
-> +	if (!root->rb_node)
-> +		return NULL;
-> +
-> +	return rb_left_deepest_node(root->rb_node);
-> +}
-> +EXPORT_SYMBOL(rb_first_postorder);
-> -- 
-> 1.8.3.4
-> 
 
