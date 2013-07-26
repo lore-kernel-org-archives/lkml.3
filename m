@@ -1,150 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933767Ab3GZVgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:36:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50738 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759932Ab3GZUsd (ORCPT
+	id S933795Ab3GZVg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:36:57 -0400
+Received: from mail-vb0-f51.google.com ([209.85.212.51]:53454 "EHLO
+	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1161015Ab3GZVgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:33 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 40/79] macvtap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-Date: Fri, 26 Jul 2013 13:47:30 -0700
-Message-Id: <20130726204726.120428404@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
-References: <20130726204721.849052763@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 17:36:52 -0400
+MIME-Version: 1.0
+In-Reply-To: <51F2D9D2.8050405@zytor.com>
+References: <tip-eaa5a990191d204ba0f9d35dbe5505ec2cdd1460@git.kernel.org>
+	<51F2D9D2.8050405@zytor.com>
+Date: Fri, 26 Jul 2013 14:36:51 -0700
+X-Google-Sender-Auth: kLKlnjwQbMIzFxIHhiiJBpNELG4
+Message-ID: <CA+55aFzVj4YnUMik_BYbSab7PeL=__fPO47FTUAdY2090Yyapg@mail.gmail.com>
+Subject: Re: [tip:x86/urgent] x86, fpu: correct the asm constraints for fxsave
+ , unbreak mxcsr.daz
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-stable <stable@vger.kernel.org>, Peter Anvin <hpa@linux.intel.com>,
+        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "tip-bot for H.J. Lu" <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 26, 2013 at 1:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>
+> The bug is obvious; the fix at the very least *should* be obvious; the
+> main source of risk would appear that it might trigger bugs in very old
+> versions of gcc.
 
-------------------
+I used to be worried about "+m", but we're using it a lot these days,
+and don't support the (really old) versions of gcc that used to have
+trouble with in-out constraints. So the fix looks obvious and safe, no
+worries from me.
 
-From: Jason Wang <jasowang@redhat.com>
-
-[ Upstream commit ece793fcfc417b3925844be88a6a6dc82ae8f7c6 ]
-
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
-
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
-
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
-
-We can do further optimization on top.
-
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
-
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/macvtap.c |   62 +++++++++++++++++++++++++++++---------------------
- 1 file changed, 37 insertions(+), 25 deletions(-)
-
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -633,6 +633,28 @@ static int macvtap_skb_to_vnet_hdr(const
- 	return 0;
- }
- 
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
-+{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
-+
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
-+}
- 
- /* Get packet from user space buffer */
- static ssize_t macvtap_get_user(struct macvtap_queue *q, struct msghdr *m,
-@@ -679,31 +701,15 @@ static ssize_t macvtap_get_user(struct m
- 	if (unlikely(count > UIO_MAXIOV))
- 		goto err;
- 
--	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY))
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < vnet_hdr_len)
--				copylen = 0;
--			else
--				copylen -= vnet_hdr_len;
--		}
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
--		 * The rest buffer is mapped from userspace.
--		 */
--		if (copylen < vnet_hdr.hdr_len)
--			copylen = vnet_hdr.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+	if (m && m->msg_control && sock_flag(&q->sk, SOCK_ZEROCOPY)) {
-+		copylen = vnet_hdr.hdr_len ? vnet_hdr.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, vnet_hdr_len + copylen, count)
-+		    <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
-+
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = vnet_hdr.hdr_len;
- 	}
-@@ -715,9 +721,15 @@ static ssize_t macvtap_get_user(struct m
- 
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, vnet_hdr_len, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, vnet_hdr_len,
- 						   len);
-+		if (!err && m && m->msg_control) {
-+			struct ubuf_info *uarg = m->msg_control;
-+			uarg->callback(uarg, false);
-+		}
-+	}
-+
- 	if (err)
- 		goto err_kfree;
- 
-
-
+          Linus
