@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab3GZLBZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 07:01:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52790 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756819Ab3GZLBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 07:01:24 -0400
-Subject: Re: [PATCH 5/7] rapidio: add modular build option for the
- subsystem core
-From: Jean Delvare <jdelvare@suse.de>
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
-        Andre van Herk <andre.van.herk@Prodrive.nl>,
-        Micha Nelissen <micha.nelissen@Prodrive.nl>,
-        Stef van Os <stef.van.os@Prodrive.nl>
-In-Reply-To: <1372447136-5751-6-git-send-email-alexandre.bounine@idt.com>
-References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
-	 <1372447136-5751-6-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Suse Linux
-Date: Fri, 26 Jul 2013 13:00:54 +0200
-Message-ID: <1374836454.4361.2.camel@chaos.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1758491Ab3GZLCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 07:02:37 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:44999 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab3GZLCf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 07:02:35 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130726125827.72f9ef18@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-2-git-send-email-l.majewski@samsung.com>
+	<CAKohpoktwZUvs2ap7wk1tudVsiKjbhFkoM5=+AaFZP=+73fEyg@mail.gmail.com>
+	<20130726125827.72f9ef18@amdc308.digital.local>
+Date: Fri, 26 Jul 2013 16:32:34 +0530
+Message-ID: <CAKohpokqHsHZP0AkPBbmGP=ekLPQrnLCc5j6BsfM6KY01uzG1w@mail.gmail.com>
+Subject: Re: [PATCH v6 1/8] cpufreq: Store cpufreq policies in a list
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+On 26 July 2013 16:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Fri, 26 Jul 2013 15:44:29 +0530 Viresh Kumar viresh.kumar@linaro.org
+> wrote,
+>> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
 
-Le Friday 28 June 2013 à 15:18 -0400, Alexandre Bounine a écrit :
-> Add a configuration option to build RapidIO subsystem core code as a loadable
-> kernel module. Currently this option is available only for x86-based platforms,
-> with the additional patch for PowerPC planned to be provided later.
-> 
-> This patch replaces kernel command line parameter "riohdid=" with its
-> module-specific analog "rapidio.hdid=".  
-> 
-> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-> Cc: Matt Porter <mporter@kernel.crashing.org>
-> Cc: Li Yang <leoli@freescale.com>
-> Cc: Kumar Gala <galak@kernel.crashing.org>
-> Cc: Andre van Herk <andre.van.herk@Prodrive.nl>
-> Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
-> Cc: Stef van Os <stef.van.os@Prodrive.nl>
-> Cc: Jean Delvare <jdelvare@suse.de>
-> ---
->  arch/x86/Kconfig         |    4 ++--
->  drivers/rapidio/Makefile |    4 +++-
->  drivers/rapidio/rio.c    |   27 ++++++++++++++-------------
->  3 files changed, 19 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index fe120da..583ac42 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -2246,11 +2246,11 @@ source "drivers/pcmcia/Kconfig"
->  source "drivers/pci/hotplug/Kconfig"
->  
->  config RAPIDIO
-> -	bool "RapidIO support"
-> +	tristate "RapidIO support"
+>> Looks good but would have been better if you could have moved
+>> existing code to use this infrastructure..
+>>
+>> For example, this code in __cpufreq_add_dev()
+>>
+>> #ifdef CONFIG_HOTPLUG_CPU
+>>       /* Check if this cpu was hot-unplugged earlier and has
+>> siblings */ read_lock_irqsave(&cpufreq_driver_lock, flags);
+>>       for_each_online_cpu(sibling) {
+>>
+>>          ---
+>>
+>>       }
+>>       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>> #endif
+>
+> Do you mean to write something like:
+>
+> #ifdef CONFIG_CPU_FREQ_BOOST_SW
+>         write_lock_irqsave(&cpufreq_driver_lock, flags);
+>         list_add(&policy->policy_list, &cpufreq_policy_list);
+>         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> #endif
+>
+> Or Am I missing something?
 
-Is there a reason why this was only done for x86 and not for mips and
-powerpc?
+I can't imaging how you though I am saying this :)
 
->  	depends on PCI
->  	default n
->  	help
-> -	  If you say Y here, the kernel will include drivers and
-> +	  If enabled this option will include drivers and the core
->  	  infrastructure code to support RapidIO interconnect devices.
->  
+The code I mentioned actually requires to iterate through the
+list of available policies but was iterating over all online cpus..
 
--- 
-Jean Delvare
-Suse L3
-
+And so your new infrastructure or this list can be used instead
+of looping for all cpus.
