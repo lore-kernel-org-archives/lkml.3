@@ -1,175 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760668Ab3GZXrz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:47:55 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38477 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab3GZXm6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:42:58 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 02/21] context_tracing: Fix guest accounting with native vtime
-Date: Sat, 27 Jul 2013 01:42:25 +0200
-Message-Id: <1374882164-32519-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
-References: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
+	id S1760368Ab3GZXso (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:48:44 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51876 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750994Ab3GZXsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 19:48:43 -0400
+Message-ID: <1374882473.9200.33.camel@pasglop>
+Subject: Re: [GIT PULL] arm64 fixes for 3.11
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Sat, 27 Jul 2013 09:47:53 +1000
+In-Reply-To: <CA+55aFzmEhGvqY883Bg568Gguewy41X9n1qDeaHkW2We6VVhZg@mail.gmail.com>
+References: <20130726155458.GA31613@arm.com>
+	 <CA+55aFzmEhGvqY883Bg568Gguewy41X9n1qDeaHkW2We6VVhZg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) If context tracking is enabled with native vtime accounting (which
-combo is useless except for dev testing), we call vtime_guest_enter()
-and vtime_guest_exit() on host <-> guest switches. But those are stubs
-in this configurations. As a result, cputime is not correctly flushed
-on kvm context switches.
+On Fri, 2013-07-26 at 12:54 -0700, Linus Torvalds wrote:
+> 
+> *Some* other 64-bit architectures do 16k stack sizes. But neither
+> x86-64 nor powerpc do, afaik. Instead, they do irq stacks, which is
+> generally a better idea than having one big stack.
 
-2) If context tracking runs but is disabled on some CPUs, those
-CPUs end up calling __guest_enter/__guest_exit which in turn
-call vtime_account_system(). We don't want to call this because we
-run in tick based accounting for these CPUs.
+Sadly you over estimated us here :-) We do 16K *and* irq stacks on
+64-bit ... Remember our ABI with it's 112 bytes minimum per frame ?
 
-Refactor the guest_enter/guest_exit code such that all combinations
-finally work.
+It's been a while since I've last audited our actual usage mind you, we
+*might* be able to reduce it but at this stage, since our typical
+configs use a 64K base page size, it's not a big deal (ie, it's not an
+order-N allocation).
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Kevin Hilman <khilman@linaro.org>
----
- include/linux/context_tracking.h |   52 ++++++++++++++++----------------------
- kernel/context_tracking.c        |    6 +++-
- 2 files changed, 26 insertions(+), 32 deletions(-)
+Cheers,
+Ben.
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index fc09d7b..5984f25 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -20,25 +20,6 @@ struct context_tracking {
- 	} state;
- };
- 
--static inline void __guest_enter(void)
--{
--	/*
--	 * This is running in ioctl context so we can avoid
--	 * the call to vtime_account() with its unnecessary idle check.
--	 */
--	vtime_account_system(current);
--	current->flags |= PF_VCPU;
--}
--
--static inline void __guest_exit(void)
--{
--	/*
--	 * This is running in ioctl context so we can avoid
--	 * the call to vtime_account() with its unnecessary idle check.
--	 */
--	vtime_account_system(current);
--	current->flags &= ~PF_VCPU;
--}
- 
- #ifdef CONFIG_CONTEXT_TRACKING
- DECLARE_PER_CPU(struct context_tracking, context_tracking);
-@@ -56,9 +37,6 @@ static inline bool context_tracking_active(void)
- extern void user_enter(void);
- extern void user_exit(void);
- 
--extern void guest_enter(void);
--extern void guest_exit(void);
--
- static inline enum ctx_state exception_enter(void)
- {
- 	enum ctx_state prev_ctx;
-@@ -81,21 +59,35 @@ extern void context_tracking_task_switch(struct task_struct *prev,
- static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
- static inline void user_exit(void) { }
-+static inline enum ctx_state exception_enter(void) { return 0; }
-+static inline void exception_exit(enum ctx_state prev_ctx) { }
-+static inline void context_tracking_task_switch(struct task_struct *prev,
-+						struct task_struct *next) { }
-+#endif /* !CONFIG_CONTEXT_TRACKING */
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
-+extern void guest_enter(void);
-+extern void guest_exit(void);
-+#else
- static inline void guest_enter(void)
- {
--	__guest_enter();
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system(current);
-+	current->flags |= PF_VCPU;
- }
- 
- static inline void guest_exit(void)
- {
--	__guest_exit();
-+	/*
-+	 * This is running in ioctl context so we can avoid
-+	 * the call to vtime_account() with its unnecessary idle check.
-+	 */
-+	vtime_account_system(current);
-+	current->flags &= ~PF_VCPU;
- }
--
--static inline enum ctx_state exception_enter(void) { return 0; }
--static inline void exception_exit(enum ctx_state prev_ctx) { }
--static inline void context_tracking_task_switch(struct task_struct *prev,
--						struct task_struct *next) { }
--#endif /* !CONFIG_CONTEXT_TRACKING */
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
- 
- #endif
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 942835c..1f47119 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -141,12 +141,13 @@ void user_exit(void)
- 	local_irq_restore(flags);
- }
- 
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
- void guest_enter(void)
- {
- 	if (vtime_accounting_enabled())
- 		vtime_guest_enter(current);
- 	else
--		__guest_enter();
-+		current->flags |= PF_VCPU;
- }
- EXPORT_SYMBOL_GPL(guest_enter);
- 
-@@ -155,9 +156,10 @@ void guest_exit(void)
- 	if (vtime_accounting_enabled())
- 		vtime_guest_exit(current);
- 	else
--		__guest_exit();
-+		current->flags &= ~PF_VCPU;
- }
- EXPORT_SYMBOL_GPL(guest_exit);
-+#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
- 
- 
- /**
--- 
-1.7.5.4
 
