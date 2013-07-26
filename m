@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760766Ab3GZVpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:45:39 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47839 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760599Ab3GZVpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:45:17 -0400
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH 1/5] rbtree: add postorder iteration functions
-Date: Fri, 26 Jul 2013 14:13:39 -0700
-Message-Id: <1374873223-25557-2-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
-References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072621-5406-0000-0000-00000ACD9DB3
+	id S1758561Ab3GZVs2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:48:28 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:38573 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752595Ab3GZVs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 17:48:27 -0400
+Message-ID: <1374875305.2009.16.camel@joe-AO722>
+Subject: Re: [PATCH 1/2] Staging: bcm: InterfaceIdleMode: Fixed
+ spacing/tabing issues
+From: Joe Perches <joe@perches.com>
+To: Lilis Iskandar <veeableful@gmail.com>
+Cc: gregkh@linuxfoundation.org, tulinizer@gmail.com, klmckinney1@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Date: Fri, 26 Jul 2013 14:48:25 -0700
+In-Reply-To: <1374843573.1802.3.camel@desktop>
+References: <1374843573.1802.3.camel@desktop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add postorder iteration functions for rbtree. These are useful for
-safely freeing an entire rbtree without modifying the tree at all.
+On Fri, 2013-07-26 at 20:59 +0800, Lilis Iskandar wrote:
+> Fixed spacing/tabing issues.
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
- include/linux/rbtree.h |  4 ++++
- lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
+two b's in tabbing.
 
-diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 0022c1b..2879e96 100644
---- a/include/linux/rbtree.h
-+++ b/include/linux/rbtree.h
-@@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
- extern struct rb_node *rb_first(const struct rb_root *);
- extern struct rb_node *rb_last(const struct rb_root *);
- 
-+/* Postorder iteration - always visit the parent after it's children */
-+extern struct rb_node *rb_first_postorder(const struct rb_root *);
-+extern struct rb_node *rb_next_postorder(const struct rb_node *);
-+
- /* Fast replacement of a single node without remove/rebalance/add/rebalance */
- extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
- 			    struct rb_root *root);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0e31fe..65f4eff 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
- 	*new = *victim;
- }
- EXPORT_SYMBOL(rb_replace_node);
-+
-+static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
-+{
-+	for (;;) {
-+		if (node->rb_left)
-+			node = node->rb_left;
-+		else if (node->rb_right)
-+			node = node->rb_right;
-+		else
-+			return (struct rb_node *)node;
-+	}
-+}
-+
-+struct rb_node *rb_next_postorder(const struct rb_node *node)
-+{
-+	const struct rb_node *parent;
-+	if (!node)
-+		return NULL;
-+	parent = rb_parent(node);
-+
-+	/* If we're sitting on node, we've already seen our children */
-+	if (parent && node == parent->rb_left && parent->rb_right) {
-+		/* If we are the parent's left node, go to the parent's right
-+		 * node then all the way down to the left */
-+		return rb_left_deepest_node(parent->rb_right);
-+	} else
-+		/* Otherwise we are the parent's right node, and the parent
-+		 * should be next */
-+		return (struct rb_node *)parent;
-+}
-+EXPORT_SYMBOL(rb_next_postorder);
-+
-+struct rb_node *rb_first_postorder(const struct rb_root *root)
-+{
-+	if (!root->rb_node)
-+		return NULL;
-+
-+	return rb_left_deepest_node(root->rb_node);
-+}
-+EXPORT_SYMBOL(rb_first_postorder);
--- 
-1.8.3.4
+First send the emails to yourself and make sure
+they apply with git am
+
+Remember mentioning git diff -w.
+
+You also might try to use
+
+$ ./scripts/checkpatch.pl -f --fix --test-only=space drivers/staging/bcm/*.[ch] 
+$ ls drivers/staging/bcm/*EXPERIMENTAL-checkpatch-fixes | \
+  while read file ; do \
+    mv $file ${file%.EXPERIMENTAL-checkpatch-fixes}; \
+  done
+$ git diff drivers/staging/bcm
+
 
