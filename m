@@ -1,66 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab3GZWz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:55:28 -0400
-Received: from mxout1.netvision.net.il ([194.90.9.20]:48099 "EHLO
-	mxout1.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756108Ab3GZWz0 (ORCPT
+	id S1760069Ab3GZXAy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:00:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52415 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758315Ab3GZXAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:55:26 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <51F2FE34.8010601@gmail.com>
-Date: Sat, 27 Jul 2013 01:54:44 +0300
-From: Eli Billauer <eli.billauer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
- Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-References: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
- <20130726210335.GA2788@kroah.com> <51F2E8A4.2010405@gmail.com>
- <20130726215634.GA31820@kroah.com>
-In-reply-to: <20130726215634.GA31820@kroah.com>
+	Fri, 26 Jul 2013 19:00:53 -0400
+Date: Fri, 26 Jul 2013 16:00:51 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>, linux-serial@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>, Rajendra Nayak <rnayak@ti.com>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: Re: [PATCH 2/2] serial: omap: fix wrong context restoration on init
+Message-ID: <20130726230051.GA25990@kroah.com>
+References: <1373630142-21765-1-git-send-email-grygorii.strashko@ti.com>
+ <1373630142-21765-2-git-send-email-grygorii.strashko@ti.com>
+ <20130712121146.GC17053@arwen.pp.htv.fi>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130712121146.GC17053@arwen.pp.htv.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/07/13 00:56, Greg KH wrote:
-> No, I need you to do that.  Can you do a kernel build with:
-> 	make M=drivers/staging/xillybus C=1
-> and fix up the errors that sparse reports and send a patch for that?
->
->    
-I'm not sure it's related to me. I get the same errors whether I compile 
-my own modules or something in e.g. drivers/tty/ . This is what I get 
-after make allmodconfig on the current staging git repo:
+On Fri, Jul 12, 2013 at 03:11:46PM +0300, Felipe Balbi wrote:
+> hi,
+> 
+> On Fri, Jul 12, 2013 at 02:55:42PM +0300, Grygorii Strashko wrote:
+> > Since commit a630fbf "serial: omap: Fix device tree based PM runtime"
+> > the OMAP serial driver will always try to restore its context in
+> > serial_omap_runtime_resume(). But the problem is that during driver
+> > initialization the UART context is not ready yet and, as result, first
+> > call to pm_runtime_get*() will cause UART register overwriting by all
+> > zeros. This causes Kernel boot hang in case if "earlyprintk" feature is
+> > enabled at least [1].
+> > 
+> > Unfortunately, there is no exact place in driver now where we can
+> > determine that UART context is ready - most of registers configured in
+> > serial_omap_set_termios(), but some of them in other places.
+> > More over, even if PM runtime will be disabled (blocked) during OMAP
+> > serial driver probe() execution [2],[3] it will fix only console UART,
+> > but context of other UARTs will be overwriting by all zeros during first
+> > access to the corresponding UART.
+> > 
+> > To fix this issue:
+> > - introduce additional "initialized" flag and update PM runtime callback
+> > to do nothing if its not set. Set "initialized" at the end of probe().
+> > - read current UART registers configuration in probe and use it by
+> > default.
+> > 
+> > [1] http://www.spinics.net/lists/arm-kernel/msg256828.html
+> > [2] http://www.spinics.net/lists/arm-kernel/msg258062.html
+> > [3] http://www.spinics.net/lists/arm-kernel/msg258040.html
+> > 
+> > CC: Tony Lindgren <tony@atomide.com>
+> > CC: Rajendra Nayak <rnayak@ti.com>
+> > CC: Felipe Balbi <balbi@ti.com>
+> > CC: Kevin Hilman <khilman@linaro.org>
+> > 
+> > Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> > ---
+> > tested on OMAP4 SDP with and without earlyprintk enabled.
+> >  drivers/tty/serial/omap-serial.c |   27 ++++++++++++++++++++++++++-
+> >  1 file changed, 26 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+> > index f39bf0c..e1e9667 100644
+> > --- a/drivers/tty/serial/omap-serial.c
+> > +++ b/drivers/tty/serial/omap-serial.c
+> > @@ -162,6 +162,7 @@ struct uart_omap_port {
+> >  	struct work_struct	qos_work;
+> >  	struct pinctrl		*pins;
+> >  	bool			is_suspending;
+> > +	bool			initialized;
+> 
+> you really think adding this sort of bool flag is the best thing we can
+> do ? Something which will, quite likely, spread through every single
+> driver ?
 
-$ make M=drivers/staging/xillybus C=1
-/home/eli/xillybus/submission/staging/arch/x86/Makefile:107: 
-CONFIG_X86_X32 enabled but no binutils support
-   CHECK   drivers/staging/xillybus/xillybus_core.c
-/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
-error: Expected ( after asm
-/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
-error: got goto
-   CC [M]  drivers/staging/xillybus/xillybus_core.o
-   CHECK   drivers/staging/xillybus/xillybus_pcie.c
-/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
-error: Expected ( after asm
-/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
-error: got goto
-   CC [M]  drivers/staging/xillybus/xillybus_pcie.o
+I agree, that's not ok, please fix this up "properly" somehow.
 
-I'll spare you the output from modules in drivers/tty. But it's exactly 
-the same messages on each of these modules.
+thanks,
 
-Am I doing something wrong?
-
-Regards,
-    Eli
-
-P.S. Regarding the missing Reported-By header, I learned something new 
-today. Thanks. :)
-
+greg k-h
