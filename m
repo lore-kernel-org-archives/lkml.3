@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab3GZVJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:09:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51331 "EHLO
+	id S1760156Ab3GZVJe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:09:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51328 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760054Ab3GZU6P (ORCPT
+	with ESMTP id S1759973Ab3GZU6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:58:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier DANET <odanet@caramail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/45] sparc32: vm_area_struct access for old Sun SPARCs.
-Date: Fri, 26 Jul 2013 13:57:30 -0700
-Message-Id: <20130726205656.038293344@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 08/45] perf: Remove WARN_ON_ONCE() check in __perf_event_enable() for valid scenario
+Date: Fri, 26 Jul 2013 13:57:28 -0700
+Message-Id: <20130726205655.810700481@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -27,188 +32,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier DANET <odanet@caramail.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
-vm_area_struct for fewer cache misses") changed the layout of the
-vm_area_struct structure, it broke several SPARC32 assembly routines
-which used numerical constants for accessing the vm_mm field.
+commit 06f417968beac6e6b614e17b37d347aa6a6b1d30 upstream.
 
-This patch defines the VMA_VM_MM constant to replace the immediate values.
+The '!ctx->is_active' check has a valid scenario, so
+there's no need for the warning.
 
-Signed-off-by: Olivier DANET <odanet@caramail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+The reason is that there's a time window between the
+'ctx->is_active' check in the perf_event_enable() function
+and the __perf_event_enable() function having:
+
+  - IRQs on
+  - ctx->lock unlocked
+
+where the task could be killed and 'ctx' deactivated by
+perf_event_exit_task(), ending up with the warning below.
+
+So remove the WARN_ON_ONCE() check and add comments to
+explain it all.
+
+This addresses the following warning reported by Vince Weaver:
+
+[  324.983534] ------------[ cut here ]------------
+[  324.984420] WARNING: at kernel/events/core.c:1953 __perf_event_enable+0x187/0x190()
+[  324.984420] Modules linked in:
+[  324.984420] CPU: 19 PID: 2715 Comm: nmi_bug_snb Not tainted 3.10.0+ #246
+[  324.984420] Hardware name: Supermicro X8DTN/X8DTN, BIOS 4.6.3 01/08/2010
+[  324.984420]  0000000000000009 ffff88043fce3ec8 ffffffff8160ea0b ffff88043fce3f00
+[  324.984420]  ffffffff81080ff0 ffff8802314fdc00 ffff880231a8f800 ffff88043fcf7860
+[  324.984420]  0000000000000286 ffff880231a8f800 ffff88043fce3f10 ffffffff8108103a
+[  324.984420] Call Trace:
+[  324.984420]  <IRQ>  [<ffffffff8160ea0b>] dump_stack+0x19/0x1b
+[  324.984420]  [<ffffffff81080ff0>] warn_slowpath_common+0x70/0xa0
+[  324.984420]  [<ffffffff8108103a>] warn_slowpath_null+0x1a/0x20
+[  324.984420]  [<ffffffff81134437>] __perf_event_enable+0x187/0x190
+[  324.984420]  [<ffffffff81130030>] remote_function+0x40/0x50
+[  324.984420]  [<ffffffff810e51de>] generic_smp_call_function_single_interrupt+0xbe/0x130
+[  324.984420]  [<ffffffff81066a47>] smp_call_function_single_interrupt+0x27/0x40
+[  324.984420]  [<ffffffff8161fd2f>] call_function_single_interrupt+0x6f/0x80
+[  324.984420]  <EOI>  [<ffffffff816161a1>] ? _raw_spin_unlock_irqrestore+0x41/0x70
+[  324.984420]  [<ffffffff8113799d>] perf_event_exit_task+0x14d/0x210
+[  324.984420]  [<ffffffff810acd04>] ? switch_task_namespaces+0x24/0x60
+[  324.984420]  [<ffffffff81086946>] do_exit+0x2b6/0xa40
+[  324.984420]  [<ffffffff8161615c>] ? _raw_spin_unlock_irq+0x2c/0x30
+[  324.984420]  [<ffffffff81087279>] do_group_exit+0x49/0xc0
+[  324.984420]  [<ffffffff81096854>] get_signal_to_deliver+0x254/0x620
+[  324.984420]  [<ffffffff81043057>] do_signal+0x57/0x5a0
+[  324.984420]  [<ffffffff8161a164>] ? __do_page_fault+0x2a4/0x4e0
+[  324.984420]  [<ffffffff8161665c>] ? retint_restore_args+0xe/0xe
+[  324.984420]  [<ffffffff816166cd>] ? retint_signal+0x11/0x84
+[  324.984420]  [<ffffffff81043605>] do_notify_resume+0x65/0x80
+[  324.984420]  [<ffffffff81616702>] retint_signal+0x46/0x84
+[  324.984420] ---[ end trace 442ec2f04db3771a ]---
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-2-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/asm-offsets.c |    2 ++
- arch/sparc/mm/hypersparc.S      |    8 ++++----
- arch/sparc/mm/swift.S           |    8 ++++----
- arch/sparc/mm/tsunami.S         |    6 +++---
- arch/sparc/mm/viking.S          |   10 +++++-----
- 5 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/kernel/asm-offsets.c
-+++ b/arch/sparc/kernel/asm-offsets.c
-@@ -34,6 +34,8 @@ int foo(void)
- 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
- 	BLANK();
- 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
-+	BLANK();
-+	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+---
+ kernel/events/core.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -1616,7 +1616,16 @@ static int __perf_event_enable(void *inf
+ 	struct perf_cpu_context *cpuctx = __get_cpu_context(ctx);
+ 	int err;
  
- 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
- 	return 0;
---- a/arch/sparc/mm/hypersparc.S
-+++ b/arch/sparc/mm/hypersparc.S
-@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+-	if (WARN_ON_ONCE(!ctx->is_active))
++	/*
++	 * There's a time window between 'ctx->is_active' check
++	 * in perf_event_enable function and this place having:
++	 *   - IRQs on
++	 *   - ctx->lock unlocked
++	 *
++	 * where the task could be killed and 'ctx' deactivated
++	 * by perf_event_exit_task.
++	 */
++	if (!ctx->is_active)
+ 		return -EINVAL;
  
- 	/* The things we do for performance... */
- hypersparc_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #ifndef CONFIG_SMP
- 	ld	[%o0 + AOFF_mm_context], %g1
- 	cmp	%g1, -1
-@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
- 	 */
- 	/* Verified, my ass... */
- hypersparc_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %g2
- #ifndef CONFIG_SMP
- 	cmp	%g2, -1
-@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
- 
- hypersparc_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
- 
- hypersparc_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/swift.S
-+++ b/arch/sparc/mm/swift.S
-@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
- 
- 	.globl	swift_flush_cache_range
- swift_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	sub	%o2, %o1, %o2
- 	sethi	%hi(4096), %o3
- 	cmp	%o2, %o3
-@@ -116,7 +116,7 @@ swift_flush_cache_range:
- 
- 	.globl	swift_flush_cache_page
- swift_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 70:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -219,7 +219,7 @@ swift_flush_sig_insns:
- 	.globl	swift_flush_tlb_range
- 	.globl	swift_flush_tlb_all
- swift_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- swift_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
- 
- 	.globl	swift_flush_tlb_page
- swift_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/tsunami.S
-+++ b/arch/sparc/mm/tsunami.S
-@@ -24,7 +24,7 @@
- 	/* Sliiick... */
- tsunami_flush_cache_page:
- tsunami_flush_cache_range:
--	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_cache_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
- 
- 	/* More slick stuff... */
- tsunami_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
- 
- 	/* This one can be done in a fine grained manner... */
- tsunami_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/viking.S
-+++ b/arch/sparc/mm/viking.S
-@@ -109,7 +109,7 @@ viking_mxcc_flush_page:
- viking_flush_cache_page:
- viking_flush_cache_range:
- #ifndef CONFIG_SMP
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #endif
- viking_flush_cache_mm:
- #ifndef CONFIG_SMP
-@@ -149,7 +149,7 @@ viking_flush_tlb_mm:
- #endif
- 
- viking_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -174,7 +174,7 @@ viking_flush_tlb_range:
- #endif
- 
- viking_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -240,7 +240,7 @@ sun4dsmp_flush_tlb_range:
- 	tst	%g5
- 	bne	3f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
-@@ -266,7 +266,7 @@ sun4dsmp_flush_tlb_page:
- 	tst	%g5
- 	bne	2f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	and	%o1, PAGE_MASK, %o1
+ 	raw_spin_lock(&ctx->lock);
 
 
