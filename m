@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab3GZCYj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:24:39 -0400
-Received: from [216.32.180.11] ([216.32.180.11]:47043 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1756982Ab3GZCYh (ORCPT
+	id S1757905Ab3GZCid (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:38:33 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:58884 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961Ab3GZCia (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:24:37 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 4
-X-BigFish: VS4(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzd2iz1de098h1de097h8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
-From: Robin Gong <b38343@freescale.com>
-To: <broonie@kernel.org>, <shawn.guo@linaro.org>, <grant.likely@linaro.org>,
-        <rob.herring@calxeda.com>, <rob@landley.net>, <lgirdwood@gmail.com>,
-        <s.trumtrar@pengutronix.de>
-CC: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] regulator:pfuze100:  fix build warning and correct the binding doc
-Date: Fri, 26 Jul 2013 10:27:18 +0800
-Message-ID: <1374805638-12299-1-git-send-email-b38343@freescale.com>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 25 Jul 2013 22:38:30 -0400
+Date: Fri, 26 Jul 2013 11:38:27 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Olof Johansson <olof@lixom.net>, Linux-SH <linux-sh@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend] shdma: fixup sh_dmae_get_partial() calculation
+ error
+Message-ID: <20130726023827.GA32490@verge.net.au>
+References: <1373422152-29976-1-git-send-email-horms+renesas@verge.net.au>
+ <20130716012041.GA942@verge.net.au>
+ <20130723023907.GC14983@quad.lixom.net>
+ <20130723041220.GA22253@verge.net.au>
+ <87zjtddgtg.wl%kuninori.morimoto.gx@renesas.com>
+ <20130724034009.GA18355@verge.net.au>
+ <87d2q8v6fs.wl%kuninori.morimoto.gx@renesas.com>
+ <87bo5sv63u.wl%kuninori.morimoto.gx@renesas.com>
+ <Pine.LNX.4.64.1307241042360.30777@axis700.grange>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1307241042360.30777@axis700.grange>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix building warning and correct the binding doc
+On Wed, Jul 24, 2013 at 10:43:44AM +0200, Guennadi Liakhovetski wrote:
+> Hi Morimoto-san
+> 
+> On Tue, 23 Jul 2013, Kuninori Morimoto wrote:
+> 
+> > sh_desc->hw.tcr is controlling real data size,
+> > and, register TCR is controlling data transfer count
+> > which was xmit_shifted value of hw.tcr.
+> > Current sh_dmae_get_partial() is calculating in different unit.
+> > This patch fixes it.
+> > 
+> > Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+> 
+> Looks right to me
+> 
+> Acked-by: Guennadi Liakhovetski <g.liakhovetski+renesas@gmail.com>
 
-Signed-off-by: Robin Gong <b38343@freescale.com>
----
- .../devicetree/bindings/regulator/pfuze100.txt     |    2 ++
- drivers/regulator/pfuze100-regulator.c             |    2 +-
- 2 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/pfuze100.txt b/Documentation/devicetree/bindings/regulator/pfuze100.txt
-index 22e1a48..fc989b2 100644
---- a/Documentation/devicetree/bindings/regulator/pfuze100.txt
-+++ b/Documentation/devicetree/bindings/regulator/pfuze100.txt
-@@ -3,6 +3,8 @@ PFUZE100 family of regulators
- Required properties:
- - compatible: "fsl,pfuze100"
- - reg: I2C slave address
-+
-+Required child node:
- - regulators: This is the list of child nodes that specify the regulator
-   initialization data for defined regulators. Please refer to below doc
-   Documentation/devicetree/bindings/regulator/regulator.txt.
-diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-index fcc7cd0..e2f9dcf 100644
---- a/drivers/regulator/pfuze100-regulator.c
-+++ b/drivers/regulator/pfuze100-regulator.c
-@@ -295,7 +295,7 @@ static inline struct device_node *match_of_node(int index)
- #else
- static int pfuze_parse_regulators_dt(struct pfuze_chip *chip)
- {
--	return NULL;
-+	return 0;
- }
- 
- static inline struct regulator_init_data *match_init_data(int index)
--- 
-1.7.5.4
-
-
+Thanks, I will queue this up for v3.11 in the fixes-for-v3.11 branch.
