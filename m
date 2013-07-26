@@ -1,199 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab3GZJiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:38:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60301 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3GZJiH (ORCPT
+	id S1753432Ab3GZJmp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:42:45 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46578 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750793Ab3GZJmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:38:07 -0400
-Message-ID: <51F24379.6020708@linux-pingi.de>
-Date: Fri, 26 Jul 2013 11:38:01 +0200
-From: Karsten Keil <kkeil@linux-pingi.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-kernel@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
-Subject: Re: [PATCH 09/36] ISDN: convert class code to use dev_groups
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-10-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-10-git-send-email-gregkh@linuxfoundation.org>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:OLWMdak4WRd90Ei2YnFOKXS8KcF7R/aZXgJRQ1OLZro
- OyuOLHstni1frMkVtDEBiEq7NMLzWNGXjEHOC72Th0FwvDSrz1
- o1hAmD2ECK6Ti2w2CzgwkZyJYfTAnaw7DDiezcPiHLQGf/kWk9
- mQCe6aELsv1uZoz30FhcgpmCpNCvLSb6maIopN5mVj91Rfkzn1
- YuPpKu9QBqzqv8TfgQDSOdjUXExKIcBqm9PVspl3JoVva3j2UH
- Wn5eSVpmBMsJuWXMsYy8JfaIkhO5TlWx72WCHaVLrxHIsk7zC0
- ZjdjeQ0Vm8ntOlwyM138EpybougfA2YEf2txbfjwrsbnFEAPhE
- XkrrTKbKxqnijn8yXjPkMdXOobpVcQw3vrU4Cdd3e
+	Fri, 26 Jul 2013 05:42:39 -0400
+Message-ID: <1374831744.2923.42.camel@shinybook.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+From: David Woodhouse <dwmw2@infradead.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Date: Fri, 26 Jul 2013 10:42:24 +0100
+In-Reply-To: <20130726080115.GA5436@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+	 <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+	 <51F168FC.9070906@wwwdotorg.org>
+	 <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+	 <20130725184834.GA8296@netboy>
+	 <20130725213753.GC17616@obsidianresearch.com>
+	 <20130726080115.GA5436@netboy>
+Content-Type: multipart/signed; micalg="sha-1"; protocol="application/x-pkcs7-signature";
+	boundary="=-aifDjmytBm7A/Y2251gl"
+X-Mailer: Evolution 3.8.4 (3.8.4-1.fc19) 
+Mime-Version: 1.0
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 25.07.2013 00:05, schrieb Greg Kroah-Hartman:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the mISDN class code to use the
-> correct field.
-> 
-> Cc: Karsten Keil <isdn@linux-pingi.de>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Acked-by: Karsten Keil <isdn@linux-pingi.de>
+--=-aifDjmytBm7A/Y2251gl
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> ---
-> 
-> Karsten, feel free to apply this to your tree, or ACK it and I can take it
-> through mine.
-> 
->  drivers/isdn/mISDN/core.c | 64 ++++++++++++++++++++++++++---------------------
->  1 file changed, 36 insertions(+), 28 deletions(-)
-> 
-> diff --git a/drivers/isdn/mISDN/core.c b/drivers/isdn/mISDN/core.c
-> index da30c5cb..faf50546 100644
-> --- a/drivers/isdn/mISDN/core.c
-> +++ b/drivers/isdn/mISDN/core.c
-> @@ -37,8 +37,8 @@ static void mISDN_dev_release(struct device *dev)
->  	/* nothing to do: the device is part of its parent's data structure */
->  }
->  
-> -static ssize_t _show_id(struct device *dev,
-> -			struct device_attribute *attr, char *buf)
-> +static ssize_t id_show(struct device *dev,
-> +		       struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  
-> @@ -46,9 +46,10 @@ static ssize_t _show_id(struct device *dev,
->  		return -ENODEV;
->  	return sprintf(buf, "%d\n", mdev->id);
->  }
-> +static DEVICE_ATTR_RO(id);
->  
-> -static ssize_t _show_nrbchan(struct device *dev,
-> -			     struct device_attribute *attr, char *buf)
-> +static ssize_t nrbchan_show(struct device *dev,
-> +			    struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  
-> @@ -56,9 +57,10 @@ static ssize_t _show_nrbchan(struct device *dev,
->  		return -ENODEV;
->  	return sprintf(buf, "%d\n", mdev->nrbchan);
->  }
-> +static DEVICE_ATTR_RO(nrbchan);
->  
-> -static ssize_t _show_d_protocols(struct device *dev,
-> -				 struct device_attribute *attr, char *buf)
-> +static ssize_t d_protocols_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  
-> @@ -66,9 +68,10 @@ static ssize_t _show_d_protocols(struct device *dev,
->  		return -ENODEV;
->  	return sprintf(buf, "%d\n", mdev->Dprotocols);
->  }
-> +static DEVICE_ATTR_RO(d_protocols);
->  
-> -static ssize_t _show_b_protocols(struct device *dev,
-> -				 struct device_attribute *attr, char *buf)
-> +static ssize_t b_protocols_show(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  
-> @@ -76,9 +79,10 @@ static ssize_t _show_b_protocols(struct device *dev,
->  		return -ENODEV;
->  	return sprintf(buf, "%d\n", mdev->Bprotocols | get_all_Bprotocols());
->  }
-> +static DEVICE_ATTR_RO(b_protocols);
->  
-> -static ssize_t _show_protocol(struct device *dev,
-> -			      struct device_attribute *attr, char *buf)
-> +static ssize_t protocol_show(struct device *dev,
-> +			     struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  
-> @@ -86,17 +90,19 @@ static ssize_t _show_protocol(struct device *dev,
->  		return -ENODEV;
->  	return sprintf(buf, "%d\n", mdev->D.protocol);
->  }
-> +static DEVICE_ATTR_RO(protocol);
->  
-> -static ssize_t _show_name(struct device *dev,
-> -			  struct device_attribute *attr, char *buf)
-> +static ssize_t name_show(struct device *dev,
-> +			 struct device_attribute *attr, char *buf)
->  {
->  	strcpy(buf, dev_name(dev));
->  	return strlen(buf);
->  }
-> +static DEVICE_ATTR_RO(name);
->  
->  #if 0 /* hangs */
-> -static ssize_t _set_name(struct device *dev, struct device_attribute *attr,
-> -			 const char *buf, size_t count)
-> +static ssize_t name_set(struct device *dev, struct device_attribute *attr,
-> +			const char *buf, size_t count)
->  {
->  	int err = 0;
->  	char *out = kmalloc(count + 1, GFP_KERNEL);
-> @@ -113,10 +119,11 @@ static ssize_t _set_name(struct device *dev, struct device_attribute *attr,
->  
->  	return (err < 0) ? err : count;
->  }
-> +static DEVICE_ATTR_RW(name);
->  #endif
->  
-> -static ssize_t _show_channelmap(struct device *dev,
-> -				struct device_attribute *attr, char *buf)
-> +static ssize_t channelmap_show(struct device *dev,
-> +			       struct device_attribute *attr, char *buf)
->  {
->  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
->  	char *bp = buf;
-> @@ -127,18 +134,19 @@ static ssize_t _show_channelmap(struct device *dev,
->  
->  	return bp - buf;
->  }
-> -
-> -static struct device_attribute mISDN_dev_attrs[] = {
-> -	__ATTR(id,          S_IRUGO,         _show_id,          NULL),
-> -	__ATTR(d_protocols, S_IRUGO,         _show_d_protocols, NULL),
-> -	__ATTR(b_protocols, S_IRUGO,         _show_b_protocols, NULL),
-> -	__ATTR(protocol,    S_IRUGO,         _show_protocol,    NULL),
-> -	__ATTR(channelmap,  S_IRUGO,         _show_channelmap,  NULL),
-> -	__ATTR(nrbchan,     S_IRUGO,         _show_nrbchan,     NULL),
-> -	__ATTR(name,        S_IRUGO,         _show_name,        NULL),
-> -/*	__ATTR(name,        S_IRUGO | S_IWUSR, _show_name,      _set_name), */
-> -	{}
-> +static DEVICE_ATTR_RO(channelmap);
-> +
-> +static struct attribute *mISDN_attrs[] = {
-> +	&dev_attr_id.attr,
-> +	&dev_attr_d_protocols.attr,
-> +	&dev_attr_b_protocols.attr,
-> +	&dev_attr_protocol.attr,
-> +	&dev_attr_channelmap.attr,
-> +	&dev_attr_nrbchan.attr,
-> +	&dev_attr_name.attr,
-> +	NULL,
->  };
-> +ATTRIBUTE_GROUPS(mISDN);
->  
->  static int mISDN_uevent(struct device *dev, struct kobj_uevent_env *env)
->  {
-> @@ -162,7 +170,7 @@ static struct class mISDN_class = {
->  	.name = "mISDN",
->  	.owner = THIS_MODULE,
->  	.dev_uevent = mISDN_uevent,
-> -	.dev_attrs = mISDN_dev_attrs,
-> +	.dev_groups = mISDN_groups,
->  	.dev_release = mISDN_dev_release,
->  	.class_release = mISDN_class_release,
->  };
-> 
+On Fri, 2013-07-26 at 10:01 +0200, Richard Cochran wrote:
+> On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
+> >=20
+> > We use DT has a kernel configuration input. Our environment is
+> > designed to guarantee 100% that the kernel and DT match exactly. DT
+> > very deliberately isn't an ABI boundary in our systems.
+>=20
+> Think about what you just said.
+>=20
+> The DT describes the *hardware* not the kernel. Why should you ever
+> need to update your DT at all?
+
+Well, the nodes which describe hardware devices, according to the
+bindings which form an ABI contract between DT and drivers, should not
+normally change. Although they *can* change, if for example you change
+the MAC address and that's stored there. Or you change the PHY you want
+it to use. Or something like that. The *ABI* doesn't change, but the
+data you express *using* that ABI can change. That's kind of the point.
+
+And the nodes in /chosen aren't describing hardware at all. Those are
+*absolutely* expected to be configuration things. It's quite normal for
+those to vary from one boot to the next, if your bootloader is
+sophisticated enough to do that.
+
+And if Jason wants to hard-code that kind of configuration data into his
+device-tree and ship it as part of the overall system image that gets
+installed, I see no particular problem with that.
+
+--=20
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
+--=-aifDjmytBm7A/Y2251gl
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIISxDCCBjQw
+ggQcoAMCAQICAR4wDQYJKoZIhvcNAQEFBQAwfTELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxKTAn
+BgNVBAMTIFN0YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA3MTAyNDIxMDE1NVoX
+DTE3MTAyNDIxMDE1NVowgYwxCzAJBgNVBAYTAklMMRYwFAYDVQQKEw1TdGFydENvbSBMdGQuMSsw
+KQYDVQQLEyJTZWN1cmUgRGlnaXRhbCBDZXJ0aWZpY2F0ZSBTaWduaW5nMTgwNgYDVQQDEy9TdGFy
+dENvbSBDbGFzcyAxIFByaW1hcnkgSW50ZXJtZWRpYXRlIENsaWVudCBDQTCCASIwDQYJKoZIhvcN
+AQEBBQADggEPADCCAQoCggEBAMcJg8zOLdgasSmkLhOrlr6KMoOMpohBllVHrdRvEg/q6r8jR+EK
+75xCGhR8ToREoqe7zM9/UnC6TS2y9UKTpT1v7RSMzR0t6ndl0TWBuUr/UXBhPk+Kmy7bI4yW4urC
++y7P3/1/X7U8ocb8VpH/Clt+4iq7nirMcNh6qJR+xjOhV+VHzQMALuGYn5KZmc1NbJQYclsGkDxD
+z2UbFqE2+6vIZoL+jb9x4Pa5gNf1TwSDkOkikZB1xtB4ZqtXThaABSONdfmv/Z1pua3FYxnCFmdr
+/+N2JLKutIxMYqQOJebr/f/h5t95m4JgrM3Y/w7YX9d7YAL9jvN4SydHsU6n65cCAwEAAaOCAa0w
+ggGpMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBRTcu2SnODaywFc
+fH6WNU7y1LhRgjAfBgNVHSMEGDAWgBROC+8apEBbpRdphzDKNGhD0EGu8jBmBggrBgEFBQcBAQRa
+MFgwJwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9jYTAtBggrBgEFBQcwAoYh
+aHR0cDovL3d3dy5zdGFydHNzbC5jb20vc2ZzY2EuY3J0MFsGA1UdHwRUMFIwJ6AloCOGIWh0dHA6
+Ly93d3cuc3RhcnRzc2wuY29tL3Nmc2NhLmNybDAnoCWgI4YhaHR0cDovL2NybC5zdGFydHNzbC5j
+b20vc2ZzY2EuY3JsMIGABgNVHSAEeTB3MHUGCysGAQQBgbU3AQIBMGYwLgYIKwYBBQUHAgEWImh0
+dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+c3RhcnRzc2wuY29tL2ludGVybWVkaWF0ZS5wZGYwDQYJKoZIhvcNAQEFBQADggIBAAqDCH14qywG
+XLhjjF6uHLkjd02hcdh9hrw+VUsv+q1eeQWB21jWj3kJ96AUlPCoEGZ/ynJNScWy6QMVQjbbMXlt
+UfO4n4bGGdKo3awPWp61tjAFgraLJgDk+DsSvUD6EowjMTNx25GQgyYJ5RPIzKKR9tQW8gGK+2+R
+HxkUCTbYFnL6kl8Ch507rUdPPipJ9CgJFws3kDS3gOS5WFMxcjO5DwKfKSETEPrHh7p5shuuNktv
+sv6hxHTLhiMKX893gxdT3XLS9OKmCv87vkINQcNEcIIoFWbP9HORz9v3vQwR4e3ksLc2JZOAFK+s
+sS5XMEoznzpihEP0PLc4dCBYjbvSD7kxgDwZ+Aj8Q9PkbvE9sIPP7ON0fz095HdThKjiVJe6vofq
++n6b1NBc8XdrQvBmunwxD5nvtTW4vtN6VY7mUCmxsCieuoBJ9OlqmsVWQvifIYf40dJPZkk9YgGT
+zWLpXDSfLSplbY2LL9C9U0ptvjcDjefLTvqSFc7tw1sEhF0n/qpA2r0GpvkLRDmcSwVyPvmjFBGq
+Up/pNy8ZuPGQmHwFi2/14+xeSUDG2bwnsYJQG2EdJCB6luQ57GEnTA/yKZSTKI8dDQa8Sd3zfXb1
+9mOgSF0bBdXbuKhEpuP9wirslFe6fQ1t5j5R0xi72MZ8ikMu1RQZKCyDbMwazlHiMIIGQjCCBSqg
+AwIBAgIDBoXOMA0GCSqGSIb3DQEBBQUAMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRD
+b20gTHRkLjErMCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYG
+A1UEAxMvU3RhcnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0EwHhcN
+MTMwNTAyMDYyMDQ2WhcNMTQwNTAzMTIxNDAyWjBdMRkwFwYDVQQNExBNd0k3ODIxNTRpV21lZVkw
+MRwwGgYDVQQDDBNkd213MkBpbmZyYWRlYWQub3JnMSIwIAYJKoZIhvcNAQkBFhNkd213MkBpbmZy
+YWRlYWQub3JnMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvWGuRDHiXVpOgaFkBaz8
+c3jQTfiEw7j0iKZnktCQi0xjY29QJ7GwL+fgQlbofXgYTm8E9fWERvw2tAy2BxHzAPguBzziS7JN
+hsGP9lf3L8hFJBvmdyyyj8b9A6Oi7s3JLtMRWIvyvE+DbuTkP+htuT4+XuTJr8Y5yIqd1WXr2gJk
+ANr77vTyjeNxceevP58Tqr0f+4v5g6+vNARO3bk3SaVQPDUTwGrpoPtLh3d+mQzZ4iiW3MwQS7Wr
+UVT3l2aTVHCpgtAaBs3zHWarvmIqhbWj8zdcnELNzwqTrOjaoWxuWY4k05GGfzmdjOBUiL7FDNvI
+ZwweJEPwJAQI72YhUwIDAQABo4IC2TCCAtUwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0l
+BBYwFAYIKwYBBQUHAwIGCCsGAQUFBwMEMB0GA1UdDgQWBBSs0hZhUgQwqGVXzLuH6pJH0hMZwTAf
+BgNVHSMEGDAWgBRTcu2SnODaywFcfH6WNU7y1LhRgjAeBgNVHREEFzAVgRNkd213MkBpbmZyYWRl
+YWQub3JnMIIBTAYDVR0gBIIBQzCCAT8wggE7BgsrBgEEAYG1NwECAzCCASowLgYIKwYBBQUHAgEW
+Imh0dHA6Ly93d3cuc3RhcnRzc2wuY29tL3BvbGljeS5wZGYwgfcGCCsGAQUFBwICMIHqMCcWIFN0
+YXJ0Q29tIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MAMCAQEagb5UaGlzIGNlcnRpZmljYXRlIHdh
+cyBpc3N1ZWQgYWNjb3JkaW5nIHRvIHRoZSBDbGFzcyAxIFZhbGlkYXRpb24gcmVxdWlyZW1lbnRz
+IG9mIHRoZSBTdGFydENvbSBDQSBwb2xpY3ksIHJlbGlhbmNlIG9ubHkgZm9yIHRoZSBpbnRlbmRl
+ZCBwdXJwb3NlIGluIGNvbXBsaWFuY2Ugb2YgdGhlIHJlbHlpbmcgcGFydHkgb2JsaWdhdGlvbnMu
+MDYGA1UdHwQvMC0wK6ApoCeGJWh0dHA6Ly9jcmwuc3RhcnRzc2wuY29tL2NydHUxLWNybC5jcmww
+gY4GCCsGAQUFBwEBBIGBMH8wOQYIKwYBBQUHMAGGLWh0dHA6Ly9vY3NwLnN0YXJ0c3NsLmNvbS9z
+dWIvY2xhc3MxL2NsaWVudC9jYTBCBggrBgEFBQcwAoY2aHR0cDovL2FpYS5zdGFydHNzbC5jb20v
+Y2VydHMvc3ViLmNsYXNzMS5jbGllbnQuY2EuY3J0MCMGA1UdEgQcMBqGGGh0dHA6Ly93d3cuc3Rh
+cnRzc2wuY29tLzANBgkqhkiG9w0BAQUFAAOCAQEACFLDQnyO8+XA/TiTltjJ/ZAvM+qmBEKN43Vd
++Wio2lM/Wq/scJpkupXGHrl9CueobkDxMAogXbMxqLZYO13PvgjMh+PHxDPnQv8EGxOig+k/Hqvc
+qEdTlm9YEHcbXbWS6XB+zRO7VVIpGMYQ1f1qCOcukxmwIm6iMSHXbOr/7paQm4bO0ULptjBotfiO
+Zo6q8No6SroQlOSyc6v8FYSxTNIAXMaM2FYkjqrxgdnJmSIAfr11gROuF69WuOICxP0zTEjJle+7
+aO9lUWNaWMWPMyFSNCxF6kkRuvUCami7vlhLOTRC1kb+OMhx7keN9At3tdTI3rtuFeSB1Pa3VXVs
+0DCCBkIwggUqoAMCAQICAwaFzjANBgkqhkiG9w0BAQUFADCBjDELMAkGA1UEBhMCSUwxFjAUBgNV
+BAoTDVN0YXJ0Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNp
+Z25pbmcxODA2BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xp
+ZW50IENBMB4XDTEzMDUwMjA2MjA0NloXDTE0MDUwMzEyMTQwMlowXTEZMBcGA1UEDRMQTXdJNzgy
+MTU0aVdtZWVZMDEcMBoGA1UEAwwTZHdtdzJAaW5mcmFkZWFkLm9yZzEiMCAGCSqGSIb3DQEJARYT
+ZHdtdzJAaW5mcmFkZWFkLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAL1hrkQx
+4l1aToGhZAWs/HN40E34hMO49IimZ5LQkItMY2NvUCexsC/n4EJW6H14GE5vBPX1hEb8NrQMtgcR
+8wD4Lgc84kuyTYbBj/ZX9y/IRSQb5ncsso/G/QOjou7NyS7TEViL8rxPg27k5D/obbk+Pl7kya/G
+OciKndVl69oCZADa++708o3jcXHnrz+fE6q9H/uL+YOvrzQETt25N0mlUDw1E8Bq6aD7S4d3fpkM
+2eIoltzMEEu1q1FU95dmk1RwqYLQGgbN8x1mq75iKoW1o/M3XJxCzc8Kk6zo2qFsblmOJNORhn85
+nYzgVIi+xQzbyGcMHiRD8CQECO9mIVMCAwEAAaOCAtkwggLVMAkGA1UdEwQCMAAwCwYDVR0PBAQD
+AgSwMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDBDAdBgNVHQ4EFgQUrNIWYVIEMKhlV8y7
+h+qSR9ITGcEwHwYDVR0jBBgwFoAUU3Ltkpzg2ssBXHx+ljVO8tS4UYIwHgYDVR0RBBcwFYETZHdt
+dzJAaW5mcmFkZWFkLm9yZzCCAUwGA1UdIASCAUMwggE/MIIBOwYLKwYBBAGBtTcBAgMwggEqMC4G
+CCsGAQUFBwIBFiJodHRwOi8vd3d3LnN0YXJ0c3NsLmNvbS9wb2xpY3kucGRmMIH3BggrBgEFBQcC
+AjCB6jAnFiBTdGFydENvbSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTADAgEBGoG+VGhpcyBjZXJ0
+aWZpY2F0ZSB3YXMgaXNzdWVkIGFjY29yZGluZyB0byB0aGUgQ2xhc3MgMSBWYWxpZGF0aW9uIHJl
+cXVpcmVtZW50cyBvZiB0aGUgU3RhcnRDb20gQ0EgcG9saWN5LCByZWxpYW5jZSBvbmx5IGZvciB0
+aGUgaW50ZW5kZWQgcHVycG9zZSBpbiBjb21wbGlhbmNlIG9mIHRoZSByZWx5aW5nIHBhcnR5IG9i
+bGlnYXRpb25zLjA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnN0YXJ0c3NsLmNvbS9jcnR1
+MS1jcmwuY3JsMIGOBggrBgEFBQcBAQSBgTB/MDkGCCsGAQUFBzABhi1odHRwOi8vb2NzcC5zdGFy
+dHNzbC5jb20vc3ViL2NsYXNzMS9jbGllbnQvY2EwQgYIKwYBBQUHMAKGNmh0dHA6Ly9haWEuc3Rh
+cnRzc2wuY29tL2NlcnRzL3N1Yi5jbGFzczEuY2xpZW50LmNhLmNydDAjBgNVHRIEHDAahhhodHRw
+Oi8vd3d3LnN0YXJ0c3NsLmNvbS8wDQYJKoZIhvcNAQEFBQADggEBAAhSw0J8jvPlwP04k5bYyf2Q
+LzPqpgRCjeN1XfloqNpTP1qv7HCaZLqVxh65fQrnqG5A8TAKIF2zMai2WDtdz74IzIfjx8Qz50L/
+BBsTooPpPx6r3KhHU5ZvWBB3G121kulwfs0Tu1VSKRjGENX9agjnLpMZsCJuojEh12zq/+6WkJuG
+ztFC6bYwaLX4jmaOqvDaOkq6EJTksnOr/BWEsUzSAFzGjNhWJI6q8YHZyZkiAH69dYETrhevVrji
+AsT9M0xIyZXvu2jvZVFjWljFjzMhUjQsRepJEbr1Ampou75YSzk0QtZG/jjIce5HjfQLd7XUyN67
+bhXkgdT2t1V1bNAxggNvMIIDawIBATCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0
+Q29tIEx0ZC4xKzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2
+BgNVBAMTL1N0YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMG
+hc4wCQYFKw4DAhoFAKCCAa8wGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMTMwNzI2MDk0MjI0WjAjBgkqhkiG9w0BCQQxFgQUtrjr9sewp64O3NPjjHyzTY8x4BkwgaUG
+CSsGAQQBgjcQBDGBlzCBlDCBjDELMAkGA1UEBhMCSUwxFjAUBgNVBAoTDVN0YXJ0Q29tIEx0ZC4x
+KzApBgNVBAsTIlNlY3VyZSBEaWdpdGFsIENlcnRpZmljYXRlIFNpZ25pbmcxODA2BgNVBAMTL1N0
+YXJ0Q29tIENsYXNzIDEgUHJpbWFyeSBJbnRlcm1lZGlhdGUgQ2xpZW50IENBAgMGhc4wgacGCyqG
+SIb3DQEJEAILMYGXoIGUMIGMMQswCQYDVQQGEwJJTDEWMBQGA1UEChMNU3RhcnRDb20gTHRkLjEr
+MCkGA1UECxMiU2VjdXJlIERpZ2l0YWwgQ2VydGlmaWNhdGUgU2lnbmluZzE4MDYGA1UEAxMvU3Rh
+cnRDb20gQ2xhc3MgMSBQcmltYXJ5IEludGVybWVkaWF0ZSBDbGllbnQgQ0ECAwaFzjANBgkqhkiG
+9w0BAQEFAASCAQCO1JScbQdZu+Lyyrn4CePu/do9BZzlxCu1GMfanzRvbmTNNz00gRqByhyT9C/9
+g0P7r75CmwLBgneP/kTKfXc6KsMWewnrwXh5CcPNCaPI6KFX5Op+MvIw6xGZszomILaJKkZeNGpx
+eWgDl9LdNLqrQB7wwG7WEWMmOTxCZ3O6q97AimmKa5/BPYd8INvKSmdKYAebTSuYfJOWY5Smu9gt
+eAd1lb1pLxeXCrB3dSMuF3Lf5l33uWBOjTuFXtrEgEn5e+KeEt0zxckL/P+a25tyHPSPfBXxsvXY
+4quxSsAnAzK66pHrDoJffCDhX/jisW0QA65hIz1WF1jaKxjzd2dpAAAAAAAA
+
+
+--=-aifDjmytBm7A/Y2251gl--
 
