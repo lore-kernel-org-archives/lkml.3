@@ -1,50 +1,358 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758138Ab3GZBTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 21:19:30 -0400
-Received: from ozlabs.org ([203.10.76.45]:55454 "EHLO ozlabs.org"
+	id S1757816Ab3GZBVZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 21:21:25 -0400
+Received: from mga09.intel.com ([134.134.136.24]:51740 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757803Ab3GZBT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 21:19:27 -0400
-Date: Fri, 26 Jul 2013 11:19:13 +1000
-From: Anton Blanchard <anton@samba.org>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] module: ppc64 module CRC relocation fix causes perf
- issues
-Message-ID: <20130726111913.201ab9d4@kryten>
-In-Reply-To: <20130725130212.GA19366@hmsreliant.think-freely.org>
-References: <20130718140045.6794ecd5@kryten>
-	<1374274770.5357.33@snotra>
-	<20130725083427.56e36010@kryten>
-	<1374707665.6142.18.camel@pasglop>
-	<20130725130212.GA19366@hmsreliant.think-freely.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756858Ab3GZBVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 21:21:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,746,1367996400"; 
+   d="scan'208";a="376722181"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: RE: [PATCH 07/13] ACPI/IPMI: Add reference counting for ACPI IPMI
+ transfers
+Thread-Topic: [PATCH 07/13] ACPI/IPMI: Add reference counting for ACPI IPMI
+ transfers
+Thread-Index: AQHOh3wRN6oS+39rD0GgT9HT0Co6N5l1dgCAgAC3NeA=
+Date: Fri, 26 Jul 2013 01:21:18 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435AFE@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com>
+ <cover.1374566394.git.lv.zheng@intel.com>
+ <2a9be056a4a8bff4458b2e6b922b32d8b0af1abe.1374566394.git.lv.zheng@intel.com>
+ <4808924.gkxOzGhztB@vostro.rjw.lan>
+In-Reply-To: <4808924.gkxOzGhztB@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6Q1LV6e008367
 
+> From: linux-acpi-owner@vger.kernel.org
+> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+> Sent: Friday, July 26, 2013 6:23 AM
+> 
+> On Tuesday, July 23, 2013 04:09:54 PM Lv Zheng wrote:
+> > This patch adds reference counting for ACPI IPMI transfers to tune the
+> > locking granularity of tx_msg_lock.
+> >
+> > The acpi_ipmi_msg handling is re-designed using referece counting.
+> > 1. tx_msg is always unlinked before complete(), so that:
+> >    1.1. it is safe to put complete() out side of tx_msg_lock;
+> >    1.2. complete() can only happen once, thus smp_wmb() is not required.
+> > 2. Increasing the reference of tx_msg before calling
+> >    ipmi_request_settime() and introducing tx_msg_lock protected
+> >    ipmi_cancel_tx_msg() so that a complete() can happen in parellel with
+> >    tx_msg unlinking in the failure cases.
+> > 3. tx_msg holds the reference of acpi_ipmi_device so that it can be flushed
+> >    and freed in the contexts other than acpi_ipmi_space_handler().
+> >
+> > The lockdep_chains shows all acpi_ipmi locks are leaf locks after the
+> > tuning:
+> > 1. ipmi_lock is always leaf:
+> >    irq_context: 0
+> >    [ffffffff81a943f8] smi_watchers_mutex
+> >    [ffffffffa06eca60] driver_data.ipmi_lock
+> >    irq_context: 0
+> >    [ffffffff82767b40] &buffer->mutex
+> >    [ffffffffa00a6678] s_active#103
+> >    [ffffffffa06eca60] driver_data.ipmi_lock
+> > 2. without this patch applied, lock used by complete() is held after
+> >    holding tx_msg_lock:
+> >    irq_context: 0
+> >    [ffffffff82767b40] &buffer->mutex
+> >    [ffffffffa00a6678] s_active#103
+> >    [ffffffffa06ecce8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    irq_context: 1
+> >    [ffffffffa06ecce8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    irq_context: 1
+> >    [ffffffffa06ecce8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    [ffffffffa06eccf0] &x->wait#25
+> >    irq_context: 1
+> >    [ffffffffa06ecce8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    [ffffffffa06eccf0] &x->wait#25
+> >    [ffffffff81e36620] &p->pi_lock
+> >    irq_context: 1
+> >    [ffffffffa06ecce8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    [ffffffffa06eccf0] &x->wait#25
+> >    [ffffffff81e36620] &p->pi_lock
+> >    [ffffffff81e5d0a8] &rq->lock
+> > 3. with this patch applied, tx_msg_lock is always leaf:
+> >    irq_context: 0
+> >    [ffffffff82767b40] &buffer->mutex
+> >    [ffffffffa00a66d8] s_active#107
+> >    [ffffffffa07ecdc8] &(&ipmi_device->tx_msg_lock)->rlock
+> >    irq_context: 1
+> >    [ffffffffa07ecdc8] &(&ipmi_device->tx_msg_lock)->rlock
+> >
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Cc: Zhao Yakui <yakui.zhao@intel.com>
+> > Reviewed-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/acpi/acpi_ipmi.c |  107
+> +++++++++++++++++++++++++++++++++-------------
+> >  1 file changed, 77 insertions(+), 30 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
+> > index 2a09156..0ee1ea6 100644
+> > --- a/drivers/acpi/acpi_ipmi.c
+> > +++ b/drivers/acpi/acpi_ipmi.c
+> > @@ -105,6 +105,7 @@ struct acpi_ipmi_msg {
+> >  	u8	data[ACPI_IPMI_MAX_MSG_LENGTH];
+> >  	u8	rx_len;
+> >  	struct acpi_ipmi_device *device;
+> > +	atomic_t	refcnt;
+> 
+> Again: kref, please?
 
-Hi Neil,
+Please see the concerns in another email.
 
-> Sorry I'm a bit late to the thread, I've ben swamped.  Has someone
-> tested this with kexec/kdump?  Thats why the origional patch was
-> created, because when kexec loads the kernel at a different physical
-> address, the relocations messed with the module crc's, and modules
-> couldn't load during the kexec boot.  Assuming that kernaddr_start
-> gets set appropriately during boot, using PHYSICAL_START should be
-> fine, but I wanted to check, and don't currently have access to a
-> powerpc system to do so. Neil
+> 
+> >  };
+> >
+> >  /* IPMI request/response buffer per ACPI 4.0, sec 5.5.2.4.3.2 */
+> > @@ -195,22 +196,47 @@ static struct acpi_ipmi_device
+> *acpi_ipmi_get_selected_smi(void)
+> >  	return ipmi_device;
+> >  }
+> >
+> > -static struct acpi_ipmi_msg *acpi_alloc_ipmi_msg(struct acpi_ipmi_device
+> *ipmi)
+> > +static struct acpi_ipmi_msg *ipmi_msg_alloc(void)
+> >  {
+> > +	struct acpi_ipmi_device *ipmi;
+> >  	struct acpi_ipmi_msg *ipmi_msg;
+> > -	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
+> >
+> > +	ipmi = acpi_ipmi_get_selected_smi();
+> > +	if (!ipmi)
+> > +		return NULL;
+> >  	ipmi_msg = kzalloc(sizeof(struct acpi_ipmi_msg), GFP_KERNEL);
+> > -	if (!ipmi_msg)	{
+> > -		dev_warn(&pnp_dev->dev, "Can't allocate memory for ipmi_msg\n");
+> > +	if (!ipmi_msg) {
+> > +		acpi_ipmi_dev_put(ipmi);
+> >  		return NULL;
+> >  	}
+> > +	atomic_set(&ipmi_msg->refcnt, 1);
+> >  	init_completion(&ipmi_msg->tx_complete);
+> >  	INIT_LIST_HEAD(&ipmi_msg->head);
+> >  	ipmi_msg->device = ipmi;
+> > +
+> >  	return ipmi_msg;
+> >  }
+> >
+> > +static struct acpi_ipmi_msg *
+> > +acpi_ipmi_msg_get(struct acpi_ipmi_msg *tx_msg)
+> > +{
+> > +	if (tx_msg)
+> > +		atomic_inc(&tx_msg->refcnt);
+> > +	return tx_msg;
+> > +}
+> > +
+> > +static void ipmi_msg_release(struct acpi_ipmi_msg *tx_msg)
+> > +{
+> > +	acpi_ipmi_dev_put(tx_msg->device);
+> > +	kfree(tx_msg);
+> > +}
+> > +
+> > +static void acpi_ipmi_msg_put(struct acpi_ipmi_msg *tx_msg)
+> > +{
+> > +	if (tx_msg && atomic_dec_and_test(&tx_msg->refcnt))
+> > +		ipmi_msg_release(tx_msg);
+> > +}
+> > +
+> >  #define		IPMI_OP_RGN_NETFN(offset)	((offset >> 8) & 0xff)
+> >  #define		IPMI_OP_RGN_CMD(offset)		(offset & 0xff)
+> >  static int acpi_format_ipmi_request(struct acpi_ipmi_msg *tx_msg,
+> > @@ -300,7 +326,7 @@ static void acpi_format_ipmi_response(struct
+> acpi_ipmi_msg *msg,
+> >
+> >  static void ipmi_flush_tx_msg(struct acpi_ipmi_device *ipmi)
+> >  {
+> > -	struct acpi_ipmi_msg *tx_msg, *temp;
+> > +	struct acpi_ipmi_msg *tx_msg;
+> >  	unsigned long flags;
+> >
+> >  	/*
+> > @@ -311,16 +337,46 @@ static void ipmi_flush_tx_msg(struct
+> acpi_ipmi_device *ipmi)
+> >  	 */
+> >  	while (atomic_read(&ipmi->refcnt) > 1) {
+> >  		spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+> > -		list_for_each_entry_safe(tx_msg, temp,
+> > -					 &ipmi->tx_msg_list, head) {
+> > +		while (!list_empty(&ipmi->tx_msg_list)) {
+> > +			tx_msg = list_first_entry(&ipmi->tx_msg_list,
+> > +						  struct acpi_ipmi_msg,
+> > +						  head);
+> > +			list_del(&tx_msg->head);
+> > +			spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+> > +
+> >  			/* wake up the sleep thread on the Tx msg */
+> >  			complete(&tx_msg->tx_complete);
+> > +			acpi_ipmi_msg_put(tx_msg);
+> > +			spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+> >  		}
+> >  		spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+> > +
+> >  		schedule_timeout_uninterruptible(msecs_to_jiffies(1));
+> >  	}
+> >  }
+> >
+> > +static void ipmi_cancel_tx_msg(struct acpi_ipmi_device *ipmi,
+> > +			       struct acpi_ipmi_msg *msg)
+> > +{
+> > +	struct acpi_ipmi_msg *tx_msg;
+> > +	int msg_found = 0;
+> 
+> Use bool?
 
-I tested a relocatable kernel forced to run at a non zero physical
-address (ie basically kdump). I verified CRCs were bad with your
-original patch backed out, and were good with this patch applied.
+OK.
+There are other int flags in the original codes, do I need to do a cleanup for all of them (dev_found)?
 
-Anton
+> 
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
+> > +	list_for_each_entry(tx_msg, &ipmi->tx_msg_list, head) {
+> > +		if (msg == tx_msg) {
+> > +			msg_found = 1;
+> > +			break;
+> > +		}
+> > +	}
+> > +	if (msg_found)
+> > +		list_del(&tx_msg->head);
+> 
+> The list_del() can be done when you set msg_found.
+
+Please see my concerns in another email.
+
+Thanks and best regards
+-Lv
+
+> 
+> > +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
+> > +
+> > +	if (msg_found)
+> > +		acpi_ipmi_msg_put(tx_msg);
+> > +}
+> > +
+> >  static void ipmi_msg_handler(struct ipmi_recv_msg *msg, void
+> *user_msg_data)
+> >  {
+> >  	struct acpi_ipmi_device *ipmi_device = user_msg_data;
+> > @@ -343,12 +399,15 @@ static void ipmi_msg_handler(struct
+> ipmi_recv_msg *msg, void *user_msg_data)
+> >  			break;
+> >  		}
+> >  	}
+> > +	if (msg_found)
+> > +		list_del(&tx_msg->head);
+> > +	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> >
+> >  	if (!msg_found) {
+> >  		dev_warn(&pnp_dev->dev,
+> >  			 "Unexpected response (msg id %ld) is returned.\n",
+> >  			 msg->msgid);
+> > -		goto out_lock;
+> > +		goto out_msg;
+> >  	}
+> >
+> >  	/* copy the response data to Rx_data buffer */
+> > @@ -360,14 +419,11 @@ static void ipmi_msg_handler(struct
+> ipmi_recv_msg *msg, void *user_msg_data)
+> >  	}
+> >  	tx_msg->rx_len = msg->msg.data_len;
+> >  	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
+> > -	/* tx_msg content must be valid before setting msg_done flag */
+> > -	smp_wmb();
+> >  	tx_msg->msg_done = 1;
+> >
+> >  out_comp:
+> >  	complete(&tx_msg->tx_complete);
+> > -out_lock:
+> > -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> > +	acpi_ipmi_msg_put(tx_msg);
+> >  out_msg:
+> >  	ipmi_free_recv_msg(msg);
+> >  }
+> > @@ -493,21 +549,17 @@ acpi_ipmi_space_handler(u32 function,
+> acpi_physical_address address,
+> >  	if ((function & ACPI_IO_MASK) == ACPI_READ)
+> >  		return AE_TYPE;
+> >
+> > -	ipmi_device = acpi_ipmi_get_selected_smi();
+> > -	if (!ipmi_device)
+> > +	tx_msg = ipmi_msg_alloc();
+> > +	if (!tx_msg)
+> >  		return AE_NOT_EXIST;
+> > -
+> > -	tx_msg = acpi_alloc_ipmi_msg(ipmi_device);
+> > -	if (!tx_msg) {
+> > -		status = AE_NO_MEMORY;
+> > -		goto out_ref;
+> > -	}
+> > +	ipmi_device = tx_msg->device;
+> >
+> >  	if (acpi_format_ipmi_request(tx_msg, address, value) != 0) {
+> > -		status = AE_TYPE;
+> > -		goto out_msg;
+> > +		ipmi_msg_release(tx_msg);
+> > +		return AE_TYPE;
+> >  	}
+> >
+> > +	acpi_ipmi_msg_get(tx_msg);
+> >  	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+> >  	list_add_tail(&tx_msg->head, &ipmi_device->tx_msg_list);
+> >  	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> > @@ -518,21 +570,16 @@ acpi_ipmi_space_handler(u32 function,
+> acpi_physical_address address,
+> >  				   NULL, 0, 0, 0);
+> >  	if (err) {
+> >  		status = AE_ERROR;
+> > -		goto out_list;
+> > +		goto out_msg;
+> >  	}
+> >  	rem_time = wait_for_completion_timeout(&tx_msg->tx_complete,
+> >  					       IPMI_TIMEOUT);
+> >  	acpi_format_ipmi_response(tx_msg, value, rem_time);
+> >  	status = AE_OK;
+> >
+> > -out_list:
+> > -	spin_lock_irqsave(&ipmi_device->tx_msg_lock, flags);
+> > -	list_del(&tx_msg->head);
+> > -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> >  out_msg:
+> > -	kfree(tx_msg);
+> > -out_ref:
+> > -	acpi_ipmi_dev_put(ipmi_device);
+> > +	ipmi_cancel_tx_msg(ipmi_device, tx_msg);
+> > +	acpi_ipmi_msg_put(tx_msg);
+> >  	return status;
+> >  }
+> >
+> >
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
