@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760761Ab3GZVpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:45:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50712 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759680Ab3GZUsP (ORCPT
+	id S1760766Ab3GZVpj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:45:39 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47839 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760599Ab3GZVpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:15 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Mamedov <rm@romanrm.ru>, David Miller <davem@davemloft.net>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Subject: [ 03/79] ipv6: only apply anti-spoofing checks to not-pointopoint tunnels
-Date: Fri, 26 Jul 2013 13:46:53 -0700
-Message-Id: <20130726204722.265616440@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
-References: <20130726204721.849052763@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 17:45:17 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH 1/5] rbtree: add postorder iteration functions
+Date: Fri, 26 Jul 2013 14:13:39 -0700
+Message-Id: <1374873223-25557-2-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072621-5406-0000-0000-00000ACD9DB3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Add postorder iteration functions for rbtree. These are useful for
+safely freeing an entire rbtree without modifying the tree at all.
 
-------------------
-
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-
-[ Upstream commit 5c29fb12e8fb8a8105ea048cb160fd79a85a52bb ]
-
-Because of commit 218774dc341f219bfcf940304a081b121a0e8099 ("ipv6: add
-anti-spoofing checks for 6to4 and 6rd") the sit driver dropped packets
-for 2002::/16 destinations and sources even when configured to work as a
-tunnel with fixed endpoint. We may only apply the 6rd/6to4 anti-spoofing
-checks if the device is not in pointopoint mode.
-
-This was an oversight from me in the above commit, sorry.  Thanks to
-Roman Mamedov for reporting this!
-
-Reported-by: Roman Mamedov <rm@romanrm.ru>
-Cc: David Miller <davem@davemloft.net>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 ---
- net/ipv6/sit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/rbtree.h |  4 ++++
+ lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -589,7 +589,7 @@ static int ipip6_rcv(struct sk_buff *skb
- 				tunnel->dev->stats.rx_errors++;
- 				goto out;
- 			}
--		} else {
-+		} else if (!(tunnel->dev->flags&IFF_POINTOPOINT)) {
- 			if (is_spoofed_6rd(tunnel, iph->saddr,
- 					   &ipv6_hdr(skb)->saddr) ||
- 			    is_spoofed_6rd(tunnel, iph->daddr,
-
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 0022c1b..2879e96 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
+ extern struct rb_node *rb_first(const struct rb_root *);
+ extern struct rb_node *rb_last(const struct rb_root *);
+ 
++/* Postorder iteration - always visit the parent after it's children */
++extern struct rb_node *rb_first_postorder(const struct rb_root *);
++extern struct rb_node *rb_next_postorder(const struct rb_node *);
++
+ /* Fast replacement of a single node without remove/rebalance/add/rebalance */
+ extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
+ 			    struct rb_root *root);
+diff --git a/lib/rbtree.c b/lib/rbtree.c
+index c0e31fe..65f4eff 100644
+--- a/lib/rbtree.c
++++ b/lib/rbtree.c
+@@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
+ 	*new = *victim;
+ }
+ EXPORT_SYMBOL(rb_replace_node);
++
++static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
++{
++	for (;;) {
++		if (node->rb_left)
++			node = node->rb_left;
++		else if (node->rb_right)
++			node = node->rb_right;
++		else
++			return (struct rb_node *)node;
++	}
++}
++
++struct rb_node *rb_next_postorder(const struct rb_node *node)
++{
++	const struct rb_node *parent;
++	if (!node)
++		return NULL;
++	parent = rb_parent(node);
++
++	/* If we're sitting on node, we've already seen our children */
++	if (parent && node == parent->rb_left && parent->rb_right) {
++		/* If we are the parent's left node, go to the parent's right
++		 * node then all the way down to the left */
++		return rb_left_deepest_node(parent->rb_right);
++	} else
++		/* Otherwise we are the parent's right node, and the parent
++		 * should be next */
++		return (struct rb_node *)parent;
++}
++EXPORT_SYMBOL(rb_next_postorder);
++
++struct rb_node *rb_first_postorder(const struct rb_root *root)
++{
++	if (!root->rb_node)
++		return NULL;
++
++	return rb_left_deepest_node(root->rb_node);
++}
++EXPORT_SYMBOL(rb_first_postorder);
+-- 
+1.8.3.4
 
