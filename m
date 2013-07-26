@@ -1,131 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760314Ab3GZXSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:18:07 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:57481 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760174Ab3GZXSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:18:03 -0400
-Message-ID: <51F3036D.3070900@infradead.org>
-Date: Fri, 26 Jul 2013 16:17:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1760342Ab3GZXS6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:18:58 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:60929 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758363Ab3GZXS5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 19:18:57 -0400
+Date: Fri, 26 Jul 2013 16:18:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: [PATCH RFC nohz_full 0/7] v4 Provide infrastructure for full-system
+ idle
+Message-ID: <20130726231848.GA12967@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v14 6/6] LSM: Multiple LSM Documentation and cleanup
-References: <51F16CFB.6040603@schaufler-ca.com> <51F16F3E.4040608@schaufler-ca.com>
-In-Reply-To: <51F16F3E.4040608@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072623-0320-0000-0000-000000729766
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/13 11:32, Casey Schaufler wrote:
-> Subject: [PATCH v14 6/6] LSM: Multiple LSM Documentation and cleanup
-> 
-> Add documentation and remove the obsolete capability LSM.
-> Clean up some comments in security.h
-> 
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-> 
-> ---
->  Documentation/security/LSM.txt |   56 +-
->  include/linux/security.h       |   48 +-
->  security/Makefile              |    1 -
->  security/capability.c          | 1106 ----------------------------------------
->  4 files changed, 77 insertions(+), 1134 deletions(-)
-> 
-> diff --git a/Documentation/security/LSM.txt b/Documentation/security/LSM.txt
-> index c335a76..69cf466 100644
-> --- a/Documentation/security/LSM.txt
-> +++ b/Documentation/security/LSM.txt
-> @@ -7,20 +7,56 @@ various security checks to be hooked by new kernel extensions. The name
->  loadable kernel modules. Instead, they are selectable at build-time via
->  CONFIG_DEFAULT_SECURITY and can be overridden at boot-time via the
->  "security=..." kernel command line argument, in the case where multiple
-> -LSMs were built into a given kernel.
-> +LSMs were built into a given kernel. The names of the active LSMs
-> +can be read from /sys/kernel/security/lsm.
-> +
-> +Both CONFIG_DEFAULT_SECURITY and the "security=" option take a comma
-> +separated list of LSM names. The LSM hooks are invoked in the order
-> +specified. All hooks provided are invoked regardless of the outcome
-> +of preceding hooks. Hooks that return success or failure results
-> +return success if all of the LSM provided hooks succeed and the error
-> +code of the last failing hook on error.
-> +
-> +Information from an LSM can come in one of two forms. The raw data
-> +used by the LSM is typically the preferred form. SELinux contexts and
-> +Smack labels are examples of raw LSM data. If the data from multiple
-> +LSMs is presented together it will be in the form:
-> +
-> +	lsmname='value'[lsmname='value']...
+Whenever there is at least one non-idle CPU, it is necessary to
+periodically update timekeeping information.  Before NO_HZ_FULL, this
+updating was carried out by the scheduling-clock tick, which ran on
+every non-idle CPU.  With the advent of NO_HZ_FULL, it is possible
+to have non-idle CPUs that are not receiving scheduling-clock ticks.
+This possibility is handled by assigning a timekeeping CPU that continues
+taking scheduling-clock ticks.
 
-no commas? just (made up example):
+Unfortunately, timekeeping CPU continues taking scheduling-clock
+interrupts even when all other CPUs are completely idle, which is
+not so good for energy efficiency and battery lifetime.  Clearly, it
+would be good to turn off the timekeeping CPU's scheduling-clock tick
+when all CPUs are completely idle.  This is conceptually simple, but
+we also need good performance and scalability on large systems, which
+rules out implementations based on frequently updated global counts of
+non-idle CPUs as well as implementations that frequently scan all CPUs.
+Nevertheless, we need a single global indicator in order to keep the
+overhead of checking acceptably low.
 
-	smack='label'selinux='notstrict'
+The chosen approach is to enforce hysteresis on the non-idle to
+full-system-idle transition, with the amount of hysteresis increasing
+linearly with the number of CPUs, thus keeping contention acceptably low.
+This approach piggybacks on RCU's existing force-quiescent-state scanning
+of idle CPUs, which has the advantage of avoiding the scan entirely on
+busy systems that have high levels of multiprogramming.  This scan
+takes per-CPU idleness information and feeds it into a state machine
+that applies the level of hysteresis required to arrive at a single
+full-system-idle indicator.
 
-> +
-> +Interfaces that accept LSM data as input accept this format as well,
-> +passing only the relevant portion of the data to each LSM.
-> +
-> +The /proc filesystem attribute interface supports files from a time
-> +when only one LSM could be used at a time. CONFIG_PRESENT_SECURITY
-> +defines which LSM uses these interfaces. The name of this LSM can be
-> +read from /sys/kernel/security/present. There are also LSM identified
-> +interfaces which should be used in preference to the undifferentiated
-> +interfaces. The attribute interface "context" always provides the
-> +data from all LSMs that maintain it in the lsmname='value' format.
-> +
-> +The three networking mechanisms supporting LSM attributes are
-> +restricted to providing those attributes for a single LSM each.
-> +CONFIG_SECMARK_LSM specifies which LSM will provide hooks for the
-> +secmark mechanism. CONFIG_NETLABEL_LSM specifies which LSM hooks
-> +are used by NetLabel to provide IPv4 CIPSO headers. CONFIG_XFRM_LSM
-> +specifies the LSM providing xfrm hooks. CONFIG_PEERSEC_LSM allows
-> +for either a specific LSM to provide data with SO_PEERSEC or for
-> +all LSMs that provide data to do so.
-> +
-> +The Linux capabilities system is used in conjunction with any LSMs.
-> +LSM hooks are called after the capability checks in most cases,
-                        ^^^^^
-> +but after in a small number of cases. All LSM hooks need to be aware
-       ^^^^^
+The individual patches are as follows:
 
-       one of these 'after's should be 'before' ??
+1.	Add a CONFIG_NO_HZ_FULL_SYSIDLE Kconfig parameter to enable
+	this feature.  Kernels built with CONFIG_NO_HZ_FULL_SYSIDLE=n
+	act exactly as they do today.
 
-> +of the potential interactions with the capability system. For more
-> +details on capabilities, see capabilities(7) in the Linux man-pages
-> +project.
->  
->  The primary users of the LSM interface are Mandatory Access Control
->  (MAC) extensions which provide a comprehensive security policy. Examples
->  include SELinux, Smack, Tomoyo, and AppArmor. In addition to the larger
-> -MAC extensions, other extensions can be built using the LSM to provide
-> -specific changes to system operation when these tweaks are not available
-> -in the core functionality of Linux itself.
-> -
-> -Without a specific LSM built into the kernel, the default LSM will be the
-> -Linux capabilities system. Most LSMs choose to extend the capabilities
-> -system, building their checks on top of the defined capability hooks.
-> -For more details on capabilities, see capabilities(7) in the Linux
-> -man-pages project.
-> +MAC extensions, other extensions such as Yama can be built using the LSM
-> +to provide specific changes to system operation when these tweaks are not
-> +available in the core functionality of Linux itself.
->  
->  Based on http://kerneltrap.org/Linux/Documenting_Security_Module_Intent,
->  a new LSM is accepted into the kernel when its intent (a description of
+2.	Add new fields to the rcu_dynticks structure that track CPU-idle
+	information.  These fields consider CPUs running usermode to be
+	non-idle, in contrast with the existing fields in that structure.
 
+3.	Track per-CPU idle states.
 
--- 
-~Randy
+4.	Add full-system idle states and state variables.
+
+5.	Expand force_qs_rnp(), dyntick_save_progress_counter(), and
+	rcu_implicit_dynticks_qs() APIs to enable passing full-system
+	idle state information.
+
+6.	Add full-system-idle state machine.
+
+7.	Force RCU's grace-period kthreads onto the timekeeping CPU.
+
+Changes since v3 (https://lkml.org/lkml/2013/7/8/441):
+
+o	Fix an embarrassing bug that allowed multiple kthreads to be
+	executing the state machine concurrently.
+
+Changes since v2 (https://lkml.org/lkml/2013/6/28/610):
+
+o	Completed removing NMI support (thanks to Frederic for spotting
+	the remaining cruft).
+
+o	Fix a state-machine bug, again spotted by Frederic.  See
+	http://lists-archives.com/linux-kernel/27865835-nohz_full-add-full-system-idle-state-machine.html
+	for the full details of the bug.
+
+o	Updated commit log and comment as suggested by Josh Triplett.
+
+Changes since v1 (https://lkml.org/lkml/2013/6/25/664):
+
+o	Removed NMI support because NMI handlers cannot safely read
+	the time anyway (thanks to Thomas Gleixner and Peter Zijlstra).
+
+						Thanx, Paul
+
+------------------------------------------------------------------------
+
+ b/include/linux/rcupdate.h |   18 +
+ b/kernel/rcutree.c         |   49 ++++-
+ b/kernel/rcutree.h         |   17 +
+ b/kernel/rcutree_plugin.h  |  430 ++++++++++++++++++++++++++++++++++++++++++++-
+ b/kernel/time/Kconfig      |   23 ++
+ 5 files changed, 522 insertions(+), 15 deletions(-)
+
