@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab3GZUwp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:52:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
+	id S932681Ab3GZUwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:52:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760016Ab3GZUs7 (ORCPT
+	with ESMTP id S1759956Ab3GZUtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:59 -0400
+	Fri, 26 Jul 2013 16:49:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 77/79] ALSA: hda - Remove NO_PRESENCE bit override for Dell 1420n Laptop
-Date: Fri, 26 Jul 2013 13:48:07 -0700
-Message-Id: <20130726204730.909846876@linuxfoundation.org>
+        Enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [ 62/79] usb: serial: option.c: remove ONDA MT825UP product ID fromdriver
+Date: Fri, 26 Jul 2013 13:47:52 -0700
+Message-Id: <20130726204729.181684276@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,39 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit f3e351eef3a7fd1e36a3e18d4f2f069b00deb23c upstream.
+commit 878c69aae986ae97084458c0183a8c0a059865b1 upstream.
 
-The quirk for Dell laptops with STAC9228 overrides the pin default
-config of NID 0x0f to the value with AC_DEFCFG_MISC_NO_PRESENCE bit
-on.  I'm not quite sure why this was done so, but can guess that this
-was introduced for avoiding this to be muted by another headphone
-plug.  Now, after transition to the generic parser, this workaround
-rather causes a problem (notably as unexpected speaker mutes) because
-the pin is seen as if it's always plugged in.
+Some (very few) early devices like mine, where not exposting a proper CDC
+descriptor. This was fixed with an immediate firmware update from the vendor,
+and pre-installed on newer devices.
+So actual devices can be driven by cdc_acm.c + cdc_ether.c.
 
-Since the generic parser can handle multiple headphone plugging
-gracefully, we can get rid of this override now.
-
-Reported-and-tested-by: Eric Shattow <lucent@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    7 -------
+ 1 file changed, 7 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -3227,7 +3227,7 @@ static const struct hda_fixup stac927x_f
- 			/* configure the analog microphone on some laptops */
- 			{ 0x0c, 0x90a79130 },
- 			/* correct the front output jack as a hp out */
--			{ 0x0f, 0x0227011f },
-+			{ 0x0f, 0x0221101f },
- 			/* correct the front input jack as a mic */
- 			{ 0x0e, 0x02a79130 },
- 			{}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -347,12 +347,6 @@ static void option_instat_callback(struc
+ #define CELOT_VENDOR_ID				0x211f
+ #define CELOT_PRODUCT_CT680M			0x6801
+ 
+-/* ONDA Communication vendor id */
+-#define ONDA_VENDOR_ID       0x1ee8
+-
+-/* ONDA MT825UP HSDPA 14.2 modem */
+-#define ONDA_MT825UP         0x000b
+-
+ /* Samsung products */
+ #define SAMSUNG_VENDOR_ID                       0x04e8
+ #define SAMSUNG_PRODUCT_GT_B3730                0x6889
+@@ -1260,7 +1254,6 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD145) },
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD200) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+-	{ USB_DEVICE(ONDA_VENDOR_ID, ONDA_MT825UP) }, /* ONDA MT825UP modem */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(SAMSUNG_VENDOR_ID, SAMSUNG_PRODUCT_GT_B3730, USB_CLASS_CDC_DATA, 0x00, 0x00) }, /* Samsung GT-B3730 LTE USB modem.*/
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM600) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CEM610) },
 
 
