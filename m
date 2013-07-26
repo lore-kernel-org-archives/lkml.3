@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab3GZJck (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:32:40 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:43009 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3GZJci (ORCPT
+	id S1758464Ab3GZJdh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:33:37 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:36644 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758353Ab3GZJdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:32:38 -0400
+	Fri, 26 Jul 2013 05:33:35 -0400
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CAKMK7uH7DeAzkFttkShxY=fSORKBGj2hnmP9Y_qXw_cWE_pkjA@mail.gmail.com>
-References: <20130725192248.GA13295@cantiga.alporthouse.com>
-	<CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
-	<CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
-	<20130725215259.GB13295@cantiga.alporthouse.com>
-	<CA+icZUXZKndg7==Y6v2Z45WZDp+tDC5FzaOC=KWTf4m=rjUKnA@mail.gmail.com>
-	<20130725232556.GF13295@cantiga.alporthouse.com>
-	<CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
-	<20130726072646.GH13295@cantiga.alporthouse.com>
-	<CA+icZUXuj1O3oUvr_43BZDD_ikWyY9GxfOdzb3GLWJ1X1hvxyQ@mail.gmail.com>
-	<CA+icZUWJynMr-OvXwN+2eRxWWOpt2s1-Q5UMrRt3rXDcCJpwkA@mail.gmail.com>
-	<20130726085035.GJ13295@cantiga.alporthouse.com>
-	<CAKMK7uGb5=-Ur4hJiVAviYeGKpup0ScHzsf436jHXEsKar+bCQ@mail.gmail.com>
-	<CA+icZUUZa=_nW1V6s_CVXNxCMPnxj-6vF+VafbPev3VpsCjfEg@mail.gmail.com>
-	<CA+icZUWQdmoPoR0GC8Nn63WtD2sdNpmGV9+5bmWv29eCTm8htw@mail.gmail.com>
-	<CAKMK7uH7DeAzkFttkShxY=fSORKBGj2hnmP9Y_qXw_cWE_pkjA@mail.gmail.com>
-Date: Fri, 26 Jul 2013 11:32:36 +0200
-Message-ID: <CA+icZUX2JWH=WtOM_BkJp1O91wHxA3oq_4c93iSDg599D++Xsg@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20130726103321.21238bbb@amdc308.digital.local>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+	<1374770011-22171-3-git-send-email-l.majewski@samsung.com>
+	<CAKohpom9QHf+XBYQcajv4tni4_KA2x+Y3BAXWhZkdCFnZxp3XA@mail.gmail.com>
+	<20130726103321.21238bbb@amdc308.digital.local>
+Date: Fri, 26 Jul 2013 15:03:34 +0530
+Message-ID: <CAKohpokBGyHa=jHYpf358Aaa2kRko9=NtkS_2H_ywAn59h1axQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/8] cpufreq: Add boost frequency support in core
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Lukasz Majewski <l.majewski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 11:16 AM, Daniel Vetter <daniel.vetter@ffwll.ch> wrote:
-> On Fri, Jul 26, 2013 at 11:11 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
->
->> I have compared next-20130725 VS. next-20130726:
+On 26 July 2013 14:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> On Fri, 26 Jul 2013 12:47:15 +0530 Viresh Kumar wrote,
+>> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+
+>> > +int cpufreq_boost_trigger_state(int state)
+>> > +{
+>> > +       unsigned long flags;
+>> > +       int ret = 0;
+>> > +
+>> > +       if (cpufreq_driver->boost_enabled == state)
+>> > +               return 0;
+>> > +
+>> > +       write_lock_irqsave(&cpufreq_driver_lock, flags);
+>> > +       cpufreq_driver->boost_enabled = state;
+>> > +       write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+>             ^^^^^^^^^^^^^^^^^^^^ [*]
 >>
->> $ head -2313 next-20130725-VS-next-20130726.diff | grep ^+ | grep i915
->> +      drm/i915: Colocate all GT access routines in the same file
->> +      drm/i915: Use a private interface for register access within GT
->> +      drm/i915: Use the common register access functions for NOTRACE variants
->> +      drm/i915: Squash gen lookup through multiple indirections
->> inside GT access
->> +      drm/i915: Convert the register access tracepoint to be conditional
->> +      drm/i915: fix the racy object accounting
->> +      drm/i915: dvo_ch7xxx: fix vsync polarity setting
->> +      drm/i915: initialize gt_lock early with other spin locks
->> +      Revert "ACPI / video / i915: No ACPI backlight if firmware
->> expects Windows 8"
->> + drivers/gpu/drm/i915/Makefile                      |    2 +
->> + drivers/gpu/drm/i915/dvo_ch7xxx.c                  |    2 +-
->> + drivers/gpu/drm/i915/i915_debugfs.c                |  836 +--
->> + drivers/gpu/drm/i915/i915_dma.c                    |   91 +-
->> + drivers/gpu/drm/i915/i915_drv.c                    |  292 +-
->> + drivers/gpu/drm/i915/i915_drv.h                    |  413 +-
->> + drivers/gpu/drm/i915/i915_gem.c                    |  411 +-
->> + drivers/gpu/drm/i915/i915_irq.c                    | 1347 ++---
->> + drivers/gpu/drm/i915/i915_trace.h                  |   16 +-
->> + drivers/gpu/drm/i915/intel_display.c               | 1065 ++--
->> + drivers/gpu/drm/i915/intel_drv.h                   |   36 +-
->> + drivers/gpu/drm/i915/intel_pm.c                    |  431 +-
->> + drivers/gpu/drm/i915/intel_uncore.c                |  595 +++
+>> Not sure if we should leave the lock at this point of time, as we
+>> haven't enabled boost until now.
+>
+> The problem here is with the cpufreq_driver->set_boost() call.
+>
+> I tried to avoid acquiring lock at one function and release it at
+> another (in this case cpufreq_boost_set_sw), especially since the
+> __cpufreq_governor() acquires its own lock - good place for deadlock.
+>
+> Is it OK for you to grab lock at one function
+> (cpufreq_boost_trigger_state()) and then at other function
+> (cpufreq_boost_set_sw) release it before calling __cpufreq_governor()
+> and grab it again after its completion?
+
+>> > +       ret = cpufreq_driver->set_boost(state);
+>> > +       if (ret) {
+>> > +               write_lock_irqsave(&cpufreq_driver_lock, flags);
+>> > +               cpufreq_driver->boost_enabled = 0;
 >>
->> Any hints which of the commits could be culprit?
+>> should be:
+>>                     cpufreq_driver->boost_enabled = !state;
 >
-> None, it's the vma offset manager stuff in drm-next.
->
-> diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
-> index 3613b50..1f76572 100644
-> --- a/drivers/gpu/drm/drm_gem.c
-> +++ b/drivers/gpu/drm/drm_gem.c
-> @@ -666,7 +666,7 @@ int drm_gem_mmap(struct file *filp, struct
-> vm_area_struct *vma)
->         }
->
->         obj = container_of(node, struct drm_gem_object, vma_node);
-> -       ret = drm_gem_mmap_obj(obj, drm_vma_node_size(node), vma);
-> +       ret = drm_gem_mmap_obj(obj, drm_vma_node_size(node) << PAGE_SHIFT, vma);
->
->         mutex_unlock(&dev->struct_mutex);
->
->
-> That should fix stuff up again, David Herrmann is working on a real
-> patch already.
->
+> For me = 0 (or = false) is more readable.
+> If you wish, I will change it to = !state.
 
-The fix can be found at [1].
+Its not about readability but logic... What if boost was enabled
+earlier and we are disabling it now.. and we reach here.. We
+need to enable boost again, whereas you are disabling it.
 
-- Sedat -
+>> > +int cpufreq_boost_supported(void)
+>> > +{
+>> > +       if (cpufreq_driver)
+>>
+>> This routine is always called from places where cpufreq_driver
+>> can't be NULL..
+>
+> It is also called from thermal. And it happens that thermal is
+> initialized earlier.
+> Then "NULL pointer dereference" happens.
 
-[1] https://patchwork.kernel.org/patch/2833932/
+Ok.. Put a likely() around this check for cpufreq_driver..
 
-> Cheers, Daniel
-> --
-> Daniel Vetter
-> Software Engineer, Intel Corporation
-> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> In my opinion at [1] we don't need the if (cpufreq_driver) check.
+> But it is up to you to decide.
+
+leave it as is.
+
+> If we agree about above comments, I will post v7 ASAP.
+
+Don't post it ASAP, wait for few more days for others to give
+comments.. And also I haven't finished reviewing it until
+now.
