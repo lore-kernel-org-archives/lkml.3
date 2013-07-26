@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab3GZHyX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:54:23 -0400
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:54681 "HELO
-	oproxy5.bluehost.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with SMTP id S1756101Ab3GZHyS (ORCPT
+	id S1757452Ab3GZH5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:57:38 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:33594 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248Ab3GZH5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:54:18 -0400
-Message-ID: <1374824839.3671.23.camel@slavad-ubuntu>
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reply-To: slava@dubeyko.com
-To: Taras Glek <tglek@mozilla.com>
-Cc: Dhaval Giani <dgiani@mozilla.com>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Fri, 26 Jul 2013 11:47:19 +0400
-In-Reply-To: <51F16B9A.5020006@mozilla.com>
-References: <1374699833.7083.2.camel@localhost>
-	 <20130724233628.GD3641@logfs.org> <51F14136.30409@mozilla.com>
-	 <51F1556A.20909@mozilla.com>
-	 <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
-	 <51F16B9A.5020006@mozilla.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.125.185 authed with slava@dubeyko.com}
+	Fri, 26 Jul 2013 03:57:36 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Alasdair Kergon <agk@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Cc: dm-devel@redhat.com, sparclinux@vger.kernel.org,
+        linux-hexagon@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] dm cache: Avoid conflicting remove_mapping() in mq policy
+Date: Fri, 26 Jul 2013 09:57:31 +0200
+Message-Id: <1374825451-30463-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 11:16 -0700, Taras Glek wrote:
-> 
-> 
-> Vyacheslav Dubeyko wrote: 
-> > On Jul 25, 2013, at 8:42 PM, Taras Glek wrote:
-> > 
-> > [snip]
-> > > > To introduce transparent decompression. Let someone else do the compression for us, and supply decompressed data on demand  (in this case a read call). Reduces the complexity which would otherwise have to be brought into the filesystem.
-> > > The main use for file compression for Firefox(it's useful on Linux desktop too) is to improve IO-throughput and reduce startup latency. In order for compression to be a net win an application should be aware of what is being compressed and what isn't. For example patterns for IO on large libraries (eg 30mb libxul.so) are well suited to compression, but SQLite databases are not.  Similarly for our disk cache: images should not be compressed, but javascript should be. Footprint wins are useful on android, but it's the increased IO throughput on crappy storage devices that makes this most attractive.
-> > > 
-> > > In addition of being aware of which files should be compressed, Firefox is aware of patterns of usage of various files it could schedule compression at the most optimal time.
-> > > 
-> > > Above needs tie in nicely with the simplification of not implementing compression at fs-level.
-> > 
-> > There are many filesystems that uses compression as internal technique. And, as I understand, implementation
-> > of compression in different Linux kernel filesystem drivers has similar code patterns. So, from my point of view,
-> > it makes sense to generalize compression/decompression code in the form of library. The API of such generalized
-> > compression kernel library can be used in drivers of different file systems. Also such generalized compression
-> > library will simplify support of compression in file system drivers that don't support compression feature currently.
-> > 
-> > Moreover, I think that it is possible to implement compression support on VFS level. Such feature gives
-> > opportunity to have compression support for filesystems that don't support compression feature as
-> > internal technique.
-> >From my conversations with Ted, it sounded like it was easier to
-> accomplish changes like this at fs level than vfs. Maybe things are
-> different now
+On sparc32, which includes <linux/swap.h> from <asm/pgtable_32.h>:
 
-If I understand the idea correctly, you want to have file-oriented
-compression. I mean that you want to have one type of files are
-compressed but another type of ones should be not compressed. So, from
-my understanding, a file is not ext4 specific concept. Every filesystem
-contains files. So, if you intend to implement compression support in
-ext4 then you need to use e2compr as basis for full-featured compression
-in ext4. But if you want to have something like file-oriented
-compression then it is not feature of concrete filesystem. Do you mean
-that Firefox will work only on ext4? So, it means for me that feature
-likewise file-oriented compression should be on VFS level or over VFS.
-And I am not fully confident that it should be a feature in
-kernel-space.
+drivers/md/dm-cache-policy-mq.c:962:13: error: conflicting types for 'remove_mapping'
+include/linux/swap.h:285:12: note: previous declaration of 'remove_mapping' was here
 
-> > 
-> > [snip]
-> > > This transparent decompression idea is based on our experience with HFS+. Apple uses the fs-attribute approach. OSX is able to compress application libraries at installation-time, apps remain blissfully unaware but get an extra boost in startup perf.
-> > > 
-> > 
-> > HFS+ supports compression as internal filesystem technique. It means that HFS+ volume layout has
-> > metadata structures for compression support (compressed xattrs or compressed resource forks).
-> > So, compression is supported on FS level. As I know, Mac OS X has native decompression support
-> > for compressed files but you need to use special tool for compression of files on HFS+. Maybe
-> > Mac OS X has internal library that give opportunity to compress application libraries at installation
-> > time. But I suppose that it is simply user-space tool or library that uses HFS+ compression support
-> > on kernel-space and volume layout levels.
-> OSX compression is done in userspace, all heuristics are done in
-> userspace. https://github.com/jrk/afsctool/blob/master/afsctool.c#L87 
-> Rest of the details are there too. 
+As mq_remove_mapping() already exists, and the local remove_mapping() is
+used only once, inline it manually to avoid the conflict.
 
-Anyway, HFS+ keeps compressed files' content in com.apple.decmpfs xattr
-or in resource fork. It means for me that HFS+ volume layout has special
-metadata structures for compression support. Because if you will try to
-work with HFS+ compressed file under Linux then you will see file with
-zero byte in size. And, moreover, Mac OS X filesystem driver should know
-about these metadata structures. Otherwise, it cannot process HFS+
-compressed files. We can discuss about HFS+ compression in more details
-but I think that it is not key topic for this patch set.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+I think this is also needed on hexagon, which includes <linux/swap.h> from
+<asm/pgtable.h>.
 
-With the best regards,
-Vyacheslav Dubeyko.
+ drivers/md/dm-cache-policy-mq.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
 
-> Taras
-> > 
-> > With the best regards,
-> > Vyacheslav Dubeyko.
-> > 
-
+diff --git a/drivers/md/dm-cache-policy-mq.c b/drivers/md/dm-cache-policy-mq.c
+index dc112a7..4296155 100644
+--- a/drivers/md/dm-cache-policy-mq.c
++++ b/drivers/md/dm-cache-policy-mq.c
+@@ -959,23 +959,21 @@ out:
+ 	return r;
+ }
+ 
+-static void remove_mapping(struct mq_policy *mq, dm_oblock_t oblock)
++static void mq_remove_mapping(struct dm_cache_policy *p, dm_oblock_t oblock)
+ {
+-	struct entry *e = hash_lookup(mq, oblock);
++	struct mq_policy *mq = to_mq_policy(p);
++	struct entry *e;
++
++	mutex_lock(&mq->lock);
++
++	e = hash_lookup(mq, oblock);
+ 
+ 	BUG_ON(!e || !e->in_cache);
+ 
+ 	del(mq, e);
+ 	e->in_cache = false;
+ 	push(mq, e);
+-}
+ 
+-static void mq_remove_mapping(struct dm_cache_policy *p, dm_oblock_t oblock)
+-{
+-	struct mq_policy *mq = to_mq_policy(p);
+-
+-	mutex_lock(&mq->lock);
+-	remove_mapping(mq, oblock);
+ 	mutex_unlock(&mq->lock);
+ }
+ 
+-- 
+1.7.9.5
 
