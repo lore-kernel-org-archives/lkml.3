@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933118Ab3GZUyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:54:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
+	id S933091Ab3GZUyK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:54:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab3GZUxk (ORCPT
+	with ESMTP id S932867Ab3GZUxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:40 -0400
+	Fri, 26 Jul 2013 16:53:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Krause <minipli@googlemail.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [ 23/59] af_key: fix info leaks in notify messages
-Date: Fri, 26 Jul 2013 13:52:47 -0700
-Message-Id: <20130726205016.296107554@linuxfoundation.org>
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 24/59] sh_eth: fix unhandled RFE interrupt
+Date: Fri, 26 Jul 2013 13:52:48 -0700
+Message-Id: <20130726205016.399656912@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -29,41 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Krause <minipli@googlemail.com>
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-[ Upstream commit a5cc68f3d63306d0d288f31edfc2ae6ef8ecd887 ]
+[ Upstream commit ca8c35852138ee0585eaffe6b9f10a5261ea7771 ]
 
-key_notify_sa_flush() and key_notify_policy_flush() miss to initialize
-the sadb_msg_reserved member of the broadcasted message and thereby
-leak 2 bytes of heap memory to listeners. Fix that.
+EESR.RFE (receive FIFO overflow) interrupt is enabled by the driver on all SoCs
+and sh_eth_error() handles it but it's not present in any initializer/assignment
+of the 'eesr_err_check' field of 'struct sh_eth_cpu_data'. This leads to that
+interrupt not being handled and cleared, and finally to disabling IRQ and the
+driver being non-functional.
 
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Modify DEFAULT_EESR_ERR_CHECK macro and all explicit initializers of the above
+mentioned field to contain the EESR.RFE bit. Remove useless backslashes from the
+initializers, while at it.
+
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/key/af_key.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/ethernet/renesas/sh_eth.c |   17 +++++++++--------
+ drivers/net/ethernet/renesas/sh_eth.h |    2 +-
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
---- a/net/key/af_key.c
-+++ b/net/key/af_key.c
-@@ -1705,6 +1705,7 @@ static int key_notify_sa_flush(const str
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
+--- a/drivers/net/ethernet/renesas/sh_eth.c
++++ b/drivers/net/ethernet/renesas/sh_eth.c
+@@ -137,8 +137,9 @@ static struct sh_eth_cpu_data sh_eth_my_
+ 	.rmcr_value	= 0x00000001,
  
- 	pfkey_broadcast(skb, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+ 	.tx_check	= EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | EESR_RTO,
+-	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RDE |
+-			  EESR_RFRMER | EESR_TFE | EESR_TDE | EESR_ECI,
++	.eesr_err_check	= EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE |
++			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE |
++			  EESR_ECI,
+ 	.tx_error_check	= EESR_TWB | EESR_TABT | EESR_TDE | EESR_TFE,
  
-@@ -2686,6 +2687,7 @@ static int key_notify_policy_flush(const
- 	hdr->sadb_msg_version = PF_KEY_V2;
- 	hdr->sadb_msg_errno = (uint8_t) 0;
- 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
-+	hdr->sadb_msg_reserved = 0;
- 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
- 	return 0;
+ 	.apr		= 1,
+@@ -252,9 +253,9 @@ static struct sh_eth_cpu_data sh_eth_my_
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
  
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 	.fdr_value	= 0x0000072f,
+@@ -361,9 +362,9 @@ static struct sh_eth_cpu_data sh_eth_my_
+ 	.eesipr_value	= DMAC_M_RFRMER | DMAC_M_ECI | 0x003fffff,
+ 
+ 	.tx_check	= EESR_TC1 | EESR_FTC,
+-	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT | \
+-			  EESR_RDE | EESR_RFRMER | EESR_TFE | EESR_TDE | \
+-			  EESR_ECI,
++	.eesr_err_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_RABT |
++			  EESR_RFE | EESR_RDE | EESR_RFRMER | EESR_TFE |
++			  EESR_TDE | EESR_ECI,
+ 	.tx_error_check	= EESR_TWB1 | EESR_TWB | EESR_TABT | EESR_TDE | \
+ 			  EESR_TFE,
+ 
+--- a/drivers/net/ethernet/renesas/sh_eth.h
++++ b/drivers/net/ethernet/renesas/sh_eth.h
+@@ -467,7 +467,7 @@ enum EESR_BIT {
+ 
+ #define DEFAULT_TX_CHECK	(EESR_FTC | EESR_CND | EESR_DLC | EESR_CD | \
+ 				 EESR_RTO)
+-#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | \
++#define DEFAULT_EESR_ERR_CHECK	(EESR_TWB | EESR_TABT | EESR_RABT | EESR_RFE | \
+ 				 EESR_RDE | EESR_RFRMER | EESR_ADE | \
+ 				 EESR_TFE | EESR_TDE | EESR_ECI)
+ #define DEFAULT_TX_ERROR_CHECK	(EESR_TWB | EESR_TABT | EESR_ADE | EESR_TDE | \
 
 
