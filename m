@@ -1,95 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab3GZMWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:22:45 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:62814 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757920Ab3GZMWk (ORCPT
+	id S1758588Ab3GZMXf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:23:35 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:37550 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757141Ab3GZMXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:22:40 -0400
-Message-ID: <51F26A0D.40302@monstr.eu>
-Date: Fri, 26 Jul 2013 14:22:37 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Fri, 26 Jul 2013 08:23:34 -0400
+Date: Fri, 26 Jul 2013 14:23:32 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>, albert.u.boot@aribaud.net,
+        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
+        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
+        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 04/10] ARM: sun6i: Add restart code for the A31
+Message-ID: <20130726122332.GB3056@lukather>
+References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1374618312-19001-5-git-send-email-maxime.ripard@free-electrons.com>
+ <20130726123559.66216580@skate>
 MIME-Version: 1.0
-To: arnd@arndb.de, gregkh@linuxfoundation.org
-CC: Srikanth Thokala <srikanth.thokala@xilinx.com>, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        grant.likely@linaro.org, Michal Simek <michal.simek@xilinx.com>,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: Re: [LINUX PATCH RFC v2] trafgen: xilinx: add axi traffic generator
- driver
-References: <477a2d56-a6f9-455f-b5c7-740ae9e9ba8e@CO1EHSMHS024.ehs.local>
-In-Reply-To: <477a2d56-a6f9-455f-b5c7-740ae9e9ba8e@CO1EHSMHS024.ehs.local>
-X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="SBtxg3PXtpPiecSBPAI8dSlKUT1hLrI3d"
+	protocol="application/pgp-signature"; boundary="i9LlY+UWpKt15+FH"
+Content-Disposition: inline
+In-Reply-To: <20130726123559.66216580@skate>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---SBtxg3PXtpPiecSBPAI8dSlKUT1hLrI3d
-Content-Type: text/plain; charset=ISO-8859-1
+
+--i9LlY+UWpKt15+FH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Greg and Arnd,
+Hi Thomas,
 
-On 07/20/2013 05:01 PM, Srikanth Thokala wrote:
-> This is the driver for AXI Traffic Generator IP. The AXI
-> Traffic Generator IP is a core that stresses the AXI4
-> interconnect and other AXI4 peripherals in the system.
-> It generates a wide variety of AXI4 transactions based on
-> the core programming.
+On Fri, Jul 26, 2013 at 12:35:59PM +0200, Thomas Petazzoni wrote:
+> Dear Maxime Ripard,
 >=20
-> Architecture of the core is broadly separated into a master
-> and slave block, each of which contains the write block and
-> read block. Other support functions are provided by the
-> control registers and three internal RAMs - Master RAM,
-> Command RAM, Parameter RAM. The initialisation sequence
-> includes programming Command RAM with commands, data into
-> Master RAM (optional Parameter RAM programming) and then
-> enable master logic using control register interface.
-> This sequence generates traffic to cores connected in the
-> h/w design.
+> On Wed, 24 Jul 2013 00:25:06 +0200, Maxime Ripard wrote:
+> > The Allwinner A31 has a sligthly different watchdog that requires a
+> > different restart code.
+> >=20
+> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> > ---
+> >  arch/arm/mach-sunxi/sunxi.c | 37 +++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 37 insertions(+)
+> >=20
+> > diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
+> > index 11326d9..c18ef3a 100644
+> > --- a/arch/arm/mach-sunxi/sunxi.c
+> > +++ b/arch/arm/mach-sunxi/sunxi.c
+> > @@ -32,6 +32,15 @@
+> >  #define SUN4I_WATCHDOG_MODE_ENABLE		(1 << 0)
+> >  #define SUN4I_WATCHDOG_MODE_RESET_ENABLE	(1 << 1)
+> > =20
+> > +#define SUN6I_WATCHDOG1_IRQ_REG		0x00
+> > +#define SUN6I_WATCHDOG1_CTRL_REG	0x10
+> > +#define SUN6I_WATCHDOG1_CTRL_RESTART		(1 << 0)
+> > +#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
+> > +#define SUN6I_WATCHDOG1_CONFIG_RESTART		(1 << 0)
+> > +#define SUN6I_WATCHDOG1_CONFIG_IRQ		(1 << 1)
+> > +#define SUN6I_WATCHDOG1_MODE_REG	0x18
+> > +#define SUN6I_WATCHDOG1_MODE_ENABLE		(1 << 0)
 >=20
-> The driver for this IP is designed to be a module with
-> sysfs interface.  All the control registers and internal
-> RAMs can be accessed through sysfs interface.
->=20
-> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> v2: Documented sysfs functions
+> Alignment is not nice, and the BIT() macro should be used.
 
-Do you have any concern about this patch?
+Actually, the alignment is the one you would expect in the code.
+
+Point taken for the BIT macro, I'll update it.
 
 Thanks,
-Michal
+Maxime
 
 --=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
 
-
-
---SBtxg3PXtpPiecSBPAI8dSlKUT1hLrI3d
+--i9LlY+UWpKt15+FH
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-iEYEARECAAYFAlHyag0ACgkQykllyylKDCHI0gCdFnD2oGgbQJa+edIN74pOcnRE
-5JcAn1w1Q9kI7u/8jydL04I+C0/vj739
-=6YRt
+iQIcBAEBAgAGBQJR8mpEAAoJEBx+YmzsjxAgujQP/2qHvw+7SivR6k9zIb8QZV0g
+8vfzTAbHO80AZMttZP1UDcKXEtVHM0gN9EfzaB724lSpITd2i78CY/wgn4pZr6I9
+mG2RIJNtCHbhYDodD5TwRfqPMMket6is8RQ0Kx+sE6fBGjclaQu/mnlkM1VoNrzE
+b3hjfFEC3TKHuR/dNfbgGYESdPwm2p78MHzA0eMl0TAc+D/HqATjBmM3jqB4RIsz
+cAVvD0pZ/aBfFmRlKsgBfDN9BrQx1e5Dphi0GZi1AX1Vr7BHDWC3+HaFsI4RAcV+
+kIHZmehc6NNKPPuoCz9bL0CeC+7smu22aNcD4O4t7Wafruqvovwo4AMy74+n7Ipt
+g0+JLtb32+e7TwTlwuuGFsXvQwiUUjvatvymaTpUpV2XwxXGfzzkaLjlA0t859lV
+m5N83QlqiiSFIfyl21XS/qY8C0uReOElNNv1NYZqN/+FjrUK2YxwEJqEAXDiNtA7
+lYYnN8I5kZ/bWnZyvpHrH+98OLSlxRUN6fJr2u91psoiMTiR7jl0ZDsNIeggao85
++Uxgjz0lkD8J5qAg23sIhAfi9NvCZ6+Y61F3TqSEXNZGFUg/Xan1FinxFW1/ofJ3
+UQmFp87umUyv3iedTAJiupsttLBZVy4ARYNs9LO4gC6JyPxfYg77G2u8CUKIvx4y
+rGINBqTBzU1T05Y5haAp
+=oz27
 -----END PGP SIGNATURE-----
 
---SBtxg3PXtpPiecSBPAI8dSlKUT1hLrI3d--
+--i9LlY+UWpKt15+FH--
