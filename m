@@ -1,114 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab3GZIZe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 04:25:34 -0400
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:58846 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753006Ab3GZIZ2 (ORCPT
+	id S1757637Ab3GZI0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 04:26:33 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:55435 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab3GZI02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 04:25:28 -0400
+	Fri, 26 Jul 2013 04:26:28 -0400
+Message-ID: <51F2328F.4050500@huawei.com>
+Date: Fri, 26 Jul 2013 16:25:51 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20130726072646.GH13295@cantiga.alporthouse.com>
-References: <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
-	<20130725190006.GD11514@cantiga.alporthouse.com>
-	<CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
-	<20130725192248.GA13295@cantiga.alporthouse.com>
-	<CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
-	<CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
-	<20130725215259.GB13295@cantiga.alporthouse.com>
-	<CA+icZUXZKndg7==Y6v2Z45WZDp+tDC5FzaOC=KWTf4m=rjUKnA@mail.gmail.com>
-	<20130725232556.GF13295@cantiga.alporthouse.com>
-	<CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
-	<20130726072646.GH13295@cantiga.alporthouse.com>
-Date: Fri, 26 Jul 2013 10:25:26 +0200
-Message-ID: <CA+icZUXuj1O3oUvr_43BZDD_ikWyY9GxfOdzb3GLWJ1X1hvxyQ@mail.gmail.com>
-Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
- drm-intel related? ]
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Sedat Dilek <sedat.dilek@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        linux-next <linux-next@vger.kernel.org>,
-        "s.dilek" <s.dilek@jpberlin.de>
-Content-Type: text/plain; charset=UTF-8
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Oliver Neukum <oneukum@suse.de>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH -v3 3/3] PCI,pciehp: use PCIe DSN to identify device change
+ during suspend
+References: <1373621543-54836-1-git-send-email-wangyijing@huawei.com> <1373621543-54836-4-git-send-email-wangyijing@huawei.com> <CAErSpo4XhONYq3CZnPKgdMD4V5o8fgFc=NGVUGgFz0y5zM3GyA@mail.gmail.com>
+In-Reply-To: <CAErSpo4XhONYq3CZnPKgdMD4V5o8fgFc=NGVUGgFz0y5zM3GyA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 9:26 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Fri, Jul 26, 2013 at 09:15:14AM +0200, Sedat Dilek wrote:
->> For example: I could start my X with even doing ugly hacks like this...
+Hi Bjorn,
+   Thanks for your review and comments!
+
+> 
+> I'm not sure this is implemented at the correct place.  The idea of
+> using the serial number to detect card swaps is not really specific to
+> pciehp.  I know the Device Serial Number capability is defined in the
+> PCIe spec, but it doesn't *require* any PCIe functionality, and
+> there's no reason a similar capability couldn't be defined for
+> conventional PCI.
+
+Yes, maybe implement this interface in PCI core is better.
+
+> 
+> I don't know much about it, but conventional PCI *does* in fact
+> support the VPD capability, which can contain a serial number.  I
+> wonder if we should enhance pci_device_serial_number() to look for a
+> VPD serial number if there's no PCIe DSN.  Then we would want this
+> check for card swap in a more generic place, e.g., somewhere in
+> pci_scan_slot(), so all forms of hotplug would benefit from it.
+
+This is a good idea, I will try to enhance pci_device_serial_number to
+support legacy PCI device VPD capability. Then I will try to move this to
+a more generic place.
+
+> 
+> Also, I think it's possible to use acpiphp for ExpressCard slots, and
+> this patch doesn't help acpiphp detect card swaps.  I don't see any
+> mention of suspend/resume in acpiphp, so I don't know if it does
+> anything at all to detect card changes while suspended.  Maybe Rafael
+> can shed some light?
+
+Acpiphp driver is not attached to a specific pci/pcie device, so i think
+there is no point to call driver->suspend/resume interface.
+Add cc Rafael J. Wysocki.
+
+> 
+> I put the first two patches on a pci/yijing-dsn-v3 branch while we
+> work out the details of this one.
+
+Thanks!
+
+> 
+> Bjorn
+> 
+>>         } else if (!list_empty(&pbus->devices)) {
+>>                 pciehp_disable_slot(slot);
+>>         }
+>> --
+>> 1.7.1
 >>
->> [ intel-ddx (git) ]
->> ...
->> Bool intel_uxa_create_screen_resources(ScreenPtr screen)
->> ...
->> #if 0
->>       if (drm_intel_gem_bo_map_gtt(bo))
->>               return FALSE;
->> #endif
->> ...
 >>
->> ...with any other kernel.
->
-> Yes. Acquiring the map there is just a bit of paranoia to ensure we
-> having the mapping into the scanout already in place in case of
-> emergencies (and so don't fail along failure paths due to resource
-> conflicts).
->
-> Hmm, though we only started checking for map failures in 2.20.10 - which
-> would explain why going back to the older ddx masks the issue. And yes,
-> this means we do require a kernel bisect - or some passing inspiron.
+> 
+> .
+> 
 
-First confirmation...
-OK, next-20130726 shows the same symptoms!
 
-I tried diverse intel-ddx release and went back to v2.21.9... and
-searched for a version like v2.20.0 which has no checking for map
-failures...
+-- 
+Thanks!
+Yijing
 
-[ intel-ddx (v2.20.0) ]
-...
-Bool intel_uxa_create_screen_resources(ScreenPtr screen)
-{
-        ScrnInfoPtr scrn = xf86ScreenToScrn(screen);
-        intel_screen_private *intel = intel_get_screen_private(scrn);
-        dri_bo *bo = intel->front_buffer;
-
-        if (!uxa_resources_init(screen))
-                return FALSE;
-
-        drm_intel_gem_bo_map_gtt(bo);
-
-        if (intel->use_shadow) {
-                intel_shadow_create(intel);
-        } else {
-                PixmapPtr pixmap = screen->GetScreenPixmap(screen);
-                intel_set_pixmap_bo(pixmap, bo);
-                intel_get_pixmap_private(pixmap)->pinned = 1;
-                screen->ModifyPixmapHeader(pixmap,
-                                           scrn->virtualX,
-                                           scrn->virtualY,
-                                           -1, -1,
-                                           intel->front_pitch,
-                                           NULL);
-                scrn->displayWidth = intel->front_pitch / intel->cpp;
-        }
-...
-... but does not start as well, so it seems to be a kernel-issue as
-assumed (2nd confirmation).
-
-X.log attached.
-
-- Sedat -
-
-> -Chris
->
-> --
-> Chris Wilson, Intel Open Source Technology Centre
