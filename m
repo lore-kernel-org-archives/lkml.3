@@ -1,246 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757107Ab3GZASU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 20:18:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:11180 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753924Ab3GZASS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 20:18:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,746,1367996400"; 
-   d="scan'208";a="337035049"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, "minyard@acm.org" <minyard@acm.org>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: RE: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
- ACPI IPMI transfers
-Thread-Topic: [PATCH 03/13] ACPI/IPMI: Fix race caused by the unprotected
- ACPI IPMI transfers
-Thread-Index: AQHOh3wQ2mCt+ewJ/06ynzhP2RS7T5lz+KeAgAC35UCAABk4AIAAZj4AgAAWVQCAANWjEA==
-Date: Fri, 26 Jul 2013 00:18:12 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435A8D@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <76401540.gtU1MiBxPY@vostro.rjw.lan> <51F16A96.6040706@acm.org>
- <4247086.coQxpiu2JB@vostro.rjw.lan>
-In-Reply-To: <4247086.coQxpiu2JB@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1757030Ab3GZA1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 20:27:21 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:64404 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755560Ab3GZA1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 20:27:18 -0400
 MIME-Version: 1.0
+In-Reply-To: <20130725231848.GJ24642@n2100.arm.linux.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+	<CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
+	<20130725193135.GT23879@titan.lakedaemon.net>
+	<20130725231848.GJ24642@n2100.arm.linux.org.uk>
+Date: Thu, 25 Jul 2013 20:27:15 -0400
+Message-ID: <CAKON4OwwOnP9kbN0JqR5L+F1svTucAQvz0RDwqU+Gy9UAFwHog@mail.gmail.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6Q0IOFJ008125
 
-> From: linux-acpi-owner@vger.kernel.org
-> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
-> Sent: Friday, July 26, 2013 3:33 AM
-> 
-> On Thursday, July 25, 2013 01:12:38 PM Corey Minyard wrote:
-> > On 07/25/2013 07:06 AM, Rafael J. Wysocki wrote:
-> > > On Thursday, July 25, 2013 03:09:35 AM Zheng, Lv wrote:
-> > >> -stable according to the previous conversation.
-> > >>
-> > >>> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > >>> Sent: Thursday, July 25, 2013 7:38 AM
-> > >>>
-> > >>> On Tuesday, July 23, 2013 04:09:15 PM Lv Zheng wrote:
-> > >>>> This patch fixes races caused by unprotected ACPI IPMI transfers.
-> > >>>>
-> > >>>> We can see the following crashes may occur:
-> > >>>> 1. There is no tx_msg_lock held for iterating tx_msg_list in
-> > >>>>     ipmi_flush_tx_msg() while it is parellel unlinked on failure in
-> > >>>>     acpi_ipmi_space_handler() under protection of tx_msg_lock.
-> > >>>> 2. There is no lock held for freeing tx_msg in acpi_ipmi_space_handler()
-> > >>>>     while it is parellel accessed in ipmi_flush_tx_msg() and
-> > >>>>     ipmi_msg_handler().
-> > >>>>
-> > >>>> This patch enhances tx_msg_lock to protect all tx_msg accesses to
-> > >>>> solve this issue.  Then tx_msg_lock is always held around
-> > >>>> complete() and tx_msg accesses.
-> > >>>> Calling smp_wmb() before setting msg_done flag so that messages
-> > >>>> completed due to flushing will not be handled as 'done' messages
-> > >>>> while their contents are not vaild.
-> > >>>>
-> > >>>> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > >>>> Cc: Zhao Yakui <yakui.zhao@intel.com>
-> > >>>> Reviewed-by: Huang Ying <ying.huang@intel.com>
-> > >>>> ---
-> > >>>>   drivers/acpi/acpi_ipmi.c |   10 ++++++++--
-> > >>>>   1 file changed, 8 insertions(+), 2 deletions(-)
-> > >>>>
-> > >>>> diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c
-> > >>>> index
-> > >>>> b37c189..527ee43 100644
-> > >>>> --- a/drivers/acpi/acpi_ipmi.c
-> > >>>> +++ b/drivers/acpi/acpi_ipmi.c
-> > >>>> @@ -230,11 +230,14 @@ static void ipmi_flush_tx_msg(struct
-> > >>> acpi_ipmi_device *ipmi)
-> > >>>>   	struct acpi_ipmi_msg *tx_msg, *temp;
-> > >>>>   	int count = HZ / 10;
-> > >>>>   	struct pnp_dev *pnp_dev = ipmi->pnp_dev;
-> > >>>> +	unsigned long flags;
-> > >>>>
-> > >>>> +	spin_lock_irqsave(&ipmi->tx_msg_lock, flags);
-> > >>>>   	list_for_each_entry_safe(tx_msg, temp, &ipmi->tx_msg_list,
-> head) {
-> > >>>>   		/* wake up the sleep thread on the Tx msg */
-> > >>>>   		complete(&tx_msg->tx_complete);
-> > >>>>   	}
-> > >>>> +	spin_unlock_irqrestore(&ipmi->tx_msg_lock, flags);
-> > >>>>
-> > >>>>   	/* wait for about 100ms to flush the tx message list */
-> > >>>>   	while (count--) {
-> > >>>> @@ -268,13 +271,12 @@ static void ipmi_msg_handler(struct
-> > >>> ipmi_recv_msg *msg, void *user_msg_data)
-> > >>>>   			break;
-> > >>>>   		}
-> > >>>>   	}
-> > >>>> -	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
-> > >>>>
-> > >>>>   	if (!msg_found) {
-> > >>>>   		dev_warn(&pnp_dev->dev,
-> > >>>>   			 "Unexpected response (msg id %ld) is returned.\n",
-> > >>>>   			 msg->msgid);
-> > >>>> -		goto out_msg;
-> > >>>> +		goto out_lock;
-> > >>>>   	}
-> > >>>>
-> > >>>>   	/* copy the response data to Rx_data buffer */ @@ -286,10
-> > >>>> +288,14 @@ static void ipmi_msg_handler(struct ipmi_recv_msg
-> > >>>> *msg, void
-> > >>> *user_msg_data)
-> > >>>>   	}
-> > >>>>   	tx_msg->rx_len = msg->msg.data_len;
-> > >>>>   	memcpy(tx_msg->data, msg->msg.data, tx_msg->rx_len);
-> > >>>> +	/* tx_msg content must be valid before setting msg_done flag */
-> > >>>> +	smp_wmb();
-> > >>> That's suspicious.
-> > >>>
-> > >>> If you need the write barrier here, you'll most likely need a read
-> > >>> barrier somewhere else.  Where's that?
-> > >> It might depend on whether the content written before the smp_wmb() is
-> used or not by the other side codes under the condition set after the
-> smp_wmb().
-> > >>
-> > >> So comment could be treated as 2 parts:
-> > >> 1. do we need a paired smp_rmb().
-> > >> 2. do we need a smp_wmb().
-> > >>
-> > >> For 1.
-> > >> If we want a paired smp_rmb(), then it will appear in this function:
-> > >>
-> > >> 186 static void acpi_format_ipmi_response(struct acpi_ipmi_msg *msg,
-> > >> 187                 acpi_integer *value, int rem_time)
-> > >> 188 {
-> > >> 189         struct acpi_ipmi_buffer *buffer;
-> > >> 190
-> > >> 191         /*
-> > >> 192          * value is also used as output parameter. It represents the
-> response
-> > >> 193          * IPMI message returned by IPMI command.
-> > >> 194          */
-> > >> 195         buffer = (struct acpi_ipmi_buffer *)value;
-> > >> 196         if (!rem_time && !msg->msg_done) {
-> > >> 197                 buffer->status = ACPI_IPMI_TIMEOUT;
-> > >> 198                 return;
-> > >> 199         }
-> > >> 200         /*
-> > >> 201          * If the flag of msg_done is not set or the recv length is
-> zero, it
-> > >> 202          * means that the IPMI command is not executed correctly.
-> > >> 203          * The status code will be ACPI_IPMI_UNKNOWN.
-> > >> 204          */
-> > >> 205         if (!msg->msg_done || !msg->rx_len) {
-> > >> 206                 buffer->status = ACPI_IPMI_UNKNOWN;
-> > >> 207                 return;
-> > >> 208         }
-> > >> +         smp_rmb();
-> > >> 209         /*
-> > >> 210          * If the IPMI response message is obtained correctly, the
-> status code
-> > >> 211          * will be ACPI_IPMI_OK
-> > >> 212          */
-> > >> 213         buffer->status = ACPI_IPMI_OK;
-> > >> 214         buffer->length = msg->rx_len;
-> > >> 215         memcpy(buffer->data, msg->rx_data, msg->rx_len);
-> > >> 216 }
-> > >>
-> > >> If we don't then there will only be msg content not correctly read from
-> msg->rx_data.
-> > >> Note that the rx_len is 0 during initialization and will never exceed the
-> sizeof(buffer->data), so the read is safe.
-> > >>
-> > >> Being without smp_rmb() is also OK in this case, since:
-> > >> 1. buffer->data will never be used when buffer->status is not
-> > >> ACPI_IPMI_OK and 2. the smp_rmb()/smp_wmb() added in this patch will
-> be deleted in [PATCH 07].
-> > >>
-> > >> So IMO, we needn't add the smp_rmb(), what do you think of this?
-> > >>
-> > >> For 2.
-> > >> If we don't add smp_wmb() in the ipmi_msg_handler(), then the codes
-> running on other thread in the acpi_format_ipmi_response() may read wrong
-> msg->rx_data (a timeout triggers this function, but when
-> acpi_format_ipmi_response() is entered, the msg->msg_done flag could be
-> seen as 1 but the msg->rx_data is not ready), this is what we want to avoid in
-> this quick fix.
-> > > Using smp_wmb() without the complementary smp_rmb() doesn't makes
-> > > sense, because each of them prevents only one flow of control from
-> > > being speculatively reordered, either by the CPU or by the compiler.
-> > > If only one of them is used without the other, then the flow of
-> > > control without the barrier may be reordered in a way that will
-> > > effectively cancel the effect of the barrier in the second flow of control.
-> > >
-> > > So, either we need *both* smp_wmb() and smp_rmb(), or we don't need
-> them at all.
-> >
-> > If I understand this correctly, the problem would be if:
-> >
-> > rem_time = wait_for_completion_timeout(&tx_msg->tx_complete,
-> >                                          IPMI_TIMEOUT);
-> >
-> > returns on a timeout, then checks msg_done and races with something
-> > setting msg_done.  If that is the case, you would need the smp_rmb()
-> > before checking msg_done.
-> 
-> I believe so.
-> 
-> > However, the timeout above is unnecessary.  You are using
-> > ipmi_request_settime(), so you can set the timeout when the IPMI
-> > command fails and returns a failure message.  The driver guarantees a
-> > return message for each request.  Just remove the timeout from the
-> > completion, set the timeout and retries in the ipmi request, and the
-> > completion should handle the barrier issues.
-> 
-> Good point.
-> 
-> > Plus, from a quick glance at the code, it doesn't look like it will
-> > properly handle a situation where the timeout occurs and is handled
-> > then the response comes in later.
-> 
-> Lv, what about this?
-
-Please refer to my reply to Corey's comment. :-)
-
-Thanks and best regards
--Lv
-
-> 
-> Rafael
-> 
+On Thu, Jul 25, 2013 at 7:18 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Thu, Jul 25, 2013 at 03:31:35PM -0400, Jason Cooper wrote:
+>> On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
+>> > On Thu, Jul 25, 2013 at 11:09 AM, Olof Johansson <olof@lixom.net> wrote:
+>>
+>> > > One problem that needs to be solved is obviously how a binding
+>> > > graduates from tentative to locked. This work isn't going to be very
+>> > > interesting to most people, I suspect. Think standards committee type
+>> > > work.
+>> >
+>> > I think a time based stabilization period would be better than a
+>> > separate directory to apply bindings too. Or time plus periodic review
+>> > perhaps.
+>>
+>> The only problem with a time-based versus separate directory is how do
+>> users who've downloaded the tree determine which bindings are stable?
+>> If they pull a tarball, or receive an SDK, there is most likely no git
+>> history attached.
+>>
+>> I think the idea of a 'tentative' directory (or 'locked') is churnish,
+>> but necessary.  If I DL'd a tarball and had to type 'tentative' to get
+>> to the binding doc I wanted, that would be a pretty clear clue to be
+>> delicate about how I trust/use/plan with that binding.
+>
+> It's actually extremely simple.  If the bindings are in development,
+> they must not appear in a -final released kernel.  Anything that appears
+> in a -final kernel becomes part of the ABI at that point.
+>
+> That obviously does not mean you remove them in the last -rc and put
+> them back during the merge window!
+>
+> That's how we handle every other ABI thing in the kernel tree, why should
+> DT files be any different?  (I've added Linus and Grant to this discussion.)
+>
+> As I've already stated, it is intended to eventually remove the DT files
+> from the kernel tree and have them as a separately maintained project,
+> which means they will be independent of the kernel version.
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in the body
-> of a message to majordomo@vger.kernel.org More majordomo info at
-> http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+Having a schema system for the device trees is closely related to this
+discussion.  In this case the schema would probably be equal to the
+stable set of nodes. This has been discussed before on the device tree
+mailing list. The dtc compiler would take this schema and validate the
+trees it compiles against it issuing warnings for 'non-standard'
+usage. Over time the schema would be updated to allow these usages
+when everyone agrees to it. Note that there would be a single schema
+describing all possible legal Linux device trees.
+
+The scheme is also quite useful for new tree developers since it will
+show them the universe of device tree attributes that have already
+been standardized. By using comments, you could probably turn the
+device tree documentation into the schema source files.
+
+-- 
+Jon Smirl
+jonsmirl@gmail.com
