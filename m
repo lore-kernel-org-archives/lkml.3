@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab3GZVEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:04:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
+	id S933223Ab3GZVEp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:04:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab3GZU63 (ORCPT
+	with ESMTP id S1760143Ab3GZU62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:29 -0400
+	Fri, 26 Jul 2013 16:58:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 30/45] SCSI: Fix incorrect memset in bnx2fc_parse_fcp_rsp
-Date: Fri, 26 Jul 2013 13:57:50 -0700
-Message-Id: <20130726205658.235055081@linuxfoundation.org>
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        Adam Radford <aradford@gmail.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 29/45] SCSI: megaraid_sas: fix memory leak if SGL has zero length entries
+Date: Fri, 26 Jul 2013 13:57:49 -0700
+Message-Id: <20130726205658.124090825@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,43 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit 16da05b1158d1bcb31656e636a8736a663b1cf1f upstream.
+commit 7a6a731bd00ca90d0e250867c3b9c05b5ff0fa49 upstream.
 
-gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
-the whole buffer. Use the correct buffer size and clear the whole sense
-buffer.
+commit 98cb7e44 ([SCSI] megaraid_sas: Sanity check user
+supplied length before passing it to dma_alloc_coherent())
+introduced a memory leak.  Memory allocated for entries
+following zero length SGL entries will not be freed.
 
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
-function 'bnx2fc_parse_fcp_rsp':
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
-warning: argument to 'sizeof' in 'memset' call is the same expression as
-the destination; did you mean to provide an explicit length?
-[-Wsizeof-pointer-memaccess]
-   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-                                         ^
+Reference: http://bugs.debian.org/688198
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Adam Radford <aradford@gmail.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/bnx2fc/bnx2fc_io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/bnx2fc/bnx2fc_io.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
-@@ -1618,7 +1618,7 @@ static void bnx2fc_parse_fcp_rsp(struct
- 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
- 		}
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -4746,10 +4746,12 @@ megasas_mgmt_fw_ioctl(struct megasas_ins
+ 				    sense, sense_handle);
+ 	}
  
--		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-+		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
- 		if (fcp_sns_len)
- 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
+-	for (i = 0; i < ioc->sge_count && kbuff_arr[i]; i++) {
+-		dma_free_coherent(&instance->pdev->dev,
+-				    kern_sge32[i].length,
+-				    kbuff_arr[i], kern_sge32[i].phys_addr);
++	for (i = 0; i < ioc->sge_count; i++) {
++		if (kbuff_arr[i])
++			dma_free_coherent(&instance->pdev->dev,
++					  kern_sge32[i].length,
++					  kbuff_arr[i],
++					  kern_sge32[i].phys_addr);
+ 	}
  
+ 	megasas_return_cmd(instance, cmd);
 
 
