@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760162Ab3GZXnK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:43:10 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:55700 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932840Ab3GZXnF (ORCPT
+	id S932850Ab3GZXnE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:43:04 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:60839 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932477Ab3GZXnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:43:05 -0400
+	Fri, 26 Jul 2013 19:43:00 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 06/21] context_tracking: Remove full dynticks' hacky dependency on wide context tracking
-Date: Sat, 27 Jul 2013 01:42:29 +0200
-Message-Id: <1374882164-32519-7-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 03/21] vtime: Update a few comments
+Date: Sat, 27 Jul 2013 01:42:26 +0200
+Message-Id: <1374882164-32519-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
 References: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
@@ -26,18 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the full dynticks subsystem only enables the context tracking
-on full dynticks CPUs, lets remove the dependency on CONTEXT_TRACKING_FORCE
-
-This dependency was a hack to enable the context tracking widely for the
-full dynticks susbsystem until the latter becomes able to enable it in a
-more CPU-finegrained fashion.
-
-Now CONTEXT_TRACKING_FORCE only stands for testing on archs that
-work on support for the context tracking while full dynticks can't be
-used yet due to unmet dependencies. It simulates a system where all CPUs
-are full dynticks so that RCU user extended quiescent states and dynticks
-cputime accounting can be tested on the given arch.
+Update a stale comment from the old vtime era and document some
+locking that might be non obvious.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -50,62 +40,56 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- init/Kconfig        |   28 ++++++++++++++++++++++------
- kernel/time/Kconfig |    1 -
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ include/linux/context_tracking.h |   10 ++++------
+ kernel/sched/cputime.c           |    7 +++++++
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 247084b..ffbf5d7 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -527,13 +527,29 @@ config RCU_USER_QS
- config CONTEXT_TRACKING_FORCE
- 	bool "Force context tracking"
- 	depends on CONTEXT_TRACKING
--	default CONTEXT_TRACKING
-+	default y if !NO_HZ_FULL
- 	help
--	  Probe on user/kernel boundaries by default in order to
--	  test the features that rely on it such as userspace RCU extended
--	  quiescent states.
--	  This test is there for debugging until we have a real user like the
--	  full dynticks mode.
-+	  The major pre-requirement for full dynticks to work is to
-+	  support the context tracking subsystem. But there are also
-+	  other dependencies to provide in order to make the full
-+	  dynticks working.
-+
-+	  This option stands for testing when an arch implements the
-+	  context tracking backend but doesn't yet fullfill all the
-+	  requirements to make the full dynticks feature working.
-+	  Without the full dynticks, there is no way to test the support
-+	  for context tracking and the subsystems that rely on it: RCU
-+	  userspace extended quiescent state and tickless cputime
-+	  accounting. This option copes with the absence of the full
-+	  dynticks subsystem by forcing the context tracking on all
-+	  CPUs in the system.
-+
-+	  Say Y only if you're working on the developpement of an
-+	  architecture backend for the context tracking.
-+
-+	  Say N otherwise, this option brings an overhead that you
-+	  don't want in production.
-+
+diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
+index 5984f25..d883ff0 100644
+--- a/include/linux/context_tracking.h
++++ b/include/linux/context_tracking.h
+@@ -72,8 +72,9 @@ extern void guest_exit(void);
+ static inline void guest_enter(void)
+ {
+ 	/*
+-	 * This is running in ioctl context so we can avoid
+-	 * the call to vtime_account() with its unnecessary idle check.
++	 * This is running in ioctl context so its safe
++	 * to assume that it's the stime pending cputime
++	 * to flush.
+ 	 */
+ 	vtime_account_system(current);
+ 	current->flags |= PF_VCPU;
+@@ -81,10 +82,7 @@ static inline void guest_enter(void)
  
- config RCU_FANOUT
- 	int "Tree-based hierarchical RCU fanout value"
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index 70f27e8..747bbc7 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -105,7 +105,6 @@ config NO_HZ_FULL
- 	select RCU_USER_QS
- 	select RCU_NOCB_CPU
- 	select VIRT_CPU_ACCOUNTING_GEN
--	select CONTEXT_TRACKING_FORCE
- 	select IRQ_WORK
- 	help
- 	 Adaptively try to shutdown the tick whenever possible, even when
+ static inline void guest_exit(void)
+ {
+-	/*
+-	 * This is running in ioctl context so we can avoid
+-	 * the call to vtime_account() with its unnecessary idle check.
+-	 */
++	/* Flush the guest cputime we spent on the guest */
+ 	vtime_account_system(current);
+ 	current->flags &= ~PF_VCPU;
+ }
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index a7959e0..223a35e 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -712,6 +712,13 @@ void vtime_user_enter(struct task_struct *tsk)
+ 
+ void vtime_guest_enter(struct task_struct *tsk)
+ {
++	/*
++	 * The flags must be updated under the lock with
++	 * the vtime_snap flush and update.
++	 * That enforces a right ordering and update sequence
++	 * synchronization against the reader (task_gtime())
++	 * that can thus safely catch up with a tickless delta.
++	 */
+ 	write_seqlock(&tsk->vtime_seqlock);
+ 	__vtime_account_system(tsk);
+ 	current->flags |= PF_VCPU;
 -- 
 1.7.5.4
 
