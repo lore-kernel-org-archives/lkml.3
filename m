@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab3GZVn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:43:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
+	id S1760007Ab3GZVny (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:43:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759908Ab3GZUsU (ORCPT
+	with ESMTP id S1759877Ab3GZUsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:20 -0400
+	Fri, 26 Jul 2013 16:48:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Timo Teras <timo.teras@iki.fi>, Pravin B Shelar <pshelar@nicira.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 10/79] ip_tunnels: Use skb-len to PMTU check.
-Date: Fri, 26 Jul 2013 13:47:00 -0700
-Message-Id: <20130726204723.032607382@linuxfoundation.org>
+Subject: [ 06/79] net: Swap ver and type in pppoe_hdr
+Date: Fri, 26 Jul 2013 13:46:56 -0700
+Message-Id: <20130726204722.608161811@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,152 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Changli Gao <xiaosuo@gmail.com>
 
-[ Upstream commit 23a3647bc4f93bac3776c66dc2c7f7f68b3cd662 ]
+[ Upstream commit b1a5a34bd0b8767ea689e68f8ea513e9710b671e ]
 
-In path mtu check, ip header total length works for gre device
-but not for gre-tap device.  Use skb len which is consistent
-for all tunneling types.  This is old bug in gre.
-This also fixes mtu calculation bug introduced by
-commit c54419321455631079c7d (GRE: Refactor GRE tunneling code).
+Ver and type in pppoe_hdr should be swapped as defined by RFC2516
+section-4.
 
-Reported-by: Timo Teras <timo.teras@iki.fi>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_tunnel.c |   97 ++++++++++++++++++++++++++++-----------------------
- 1 file changed, 54 insertions(+), 43 deletions(-)
+ include/uapi/linux/if_pppox.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -486,6 +486,53 @@ drop:
- }
- EXPORT_SYMBOL_GPL(ip_tunnel_rcv);
+--- a/include/uapi/linux/if_pppox.h
++++ b/include/uapi/linux/if_pppox.h
+@@ -135,11 +135,11 @@ struct pppoe_tag {
  
-+static int tnl_update_pmtu(struct net_device *dev, struct sk_buff *skb,
-+			    struct rtable *rt, __be16 df)
-+{
-+	struct ip_tunnel *tunnel = netdev_priv(dev);
-+	int pkt_size = skb->len - tunnel->hlen;
-+	int mtu;
-+
-+	if (df)
-+		mtu = dst_mtu(&rt->dst) - dev->hard_header_len
-+					- sizeof(struct iphdr) - tunnel->hlen;
-+	else
-+		mtu = skb_dst(skb) ? dst_mtu(skb_dst(skb)) : dev->mtu;
-+
-+	if (skb_dst(skb))
-+		skb_dst(skb)->ops->update_pmtu(skb_dst(skb), NULL, skb, mtu);
-+
-+	if (skb->protocol == htons(ETH_P_IP)) {
-+		if (!skb_is_gso(skb) &&
-+		    (df & htons(IP_DF)) && mtu < pkt_size) {
-+			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, htonl(mtu));
-+			return -E2BIG;
-+		}
-+	}
-+#if IS_ENABLED(CONFIG_IPV6)
-+	else if (skb->protocol == htons(ETH_P_IPV6)) {
-+		struct rt6_info *rt6 = (struct rt6_info *)skb_dst(skb);
-+
-+		if (rt6 && mtu < dst_mtu(skb_dst(skb)) &&
-+			   mtu >= IPV6_MIN_MTU) {
-+			if ((tunnel->parms.iph.daddr &&
-+			    !ipv4_is_multicast(tunnel->parms.iph.daddr)) ||
-+			    rt6->rt6i_dst.plen == 128) {
-+				rt6->rt6i_flags |= RTF_MODIFIED;
-+				dst_metric_set(skb_dst(skb), RTAX_MTU, mtu);
-+			}
-+		}
-+
-+		if (!skb_is_gso(skb) && mtu >= IPV6_MIN_MTU &&
-+					mtu < pkt_size) {
-+			icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
-+			return -E2BIG;
-+		}
-+	}
-+#endif
-+	return 0;
-+}
-+
- void ip_tunnel_xmit(struct sk_buff *skb, struct net_device *dev,
- 		    const struct iphdr *tnl_params)
- {
-@@ -499,7 +546,6 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 	struct net_device *tdev;	/* Device to other host */
- 	unsigned int max_headroom;	/* The extra header space needed */
- 	__be32 dst;
--	int mtu;
- 
- 	inner_iph = (const struct iphdr *)skb_inner_network_header(skb);
- 
-@@ -579,50 +625,11 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 		goto tx_error;
- 	}
- 
--	df = tnl_params->frag_off;
--
--	if (df)
--		mtu = dst_mtu(&rt->dst) - dev->hard_header_len
--					- sizeof(struct iphdr);
--	else
--		mtu = skb_dst(skb) ? dst_mtu(skb_dst(skb)) : dev->mtu;
--
--	if (skb_dst(skb))
--		skb_dst(skb)->ops->update_pmtu(skb_dst(skb), NULL, skb, mtu);
--
--	if (skb->protocol == htons(ETH_P_IP)) {
--		df |= (inner_iph->frag_off&htons(IP_DF));
--
--		if (!skb_is_gso(skb) &&
--		    (inner_iph->frag_off&htons(IP_DF)) &&
--		     mtu < ntohs(inner_iph->tot_len)) {
--			icmp_send(skb, ICMP_DEST_UNREACH, ICMP_FRAG_NEEDED, htonl(mtu));
--			ip_rt_put(rt);
--			goto tx_error;
--		}
--	}
--#if IS_ENABLED(CONFIG_IPV6)
--	else if (skb->protocol == htons(ETH_P_IPV6)) {
--		struct rt6_info *rt6 = (struct rt6_info *)skb_dst(skb);
--
--		if (rt6 && mtu < dst_mtu(skb_dst(skb)) &&
--		    mtu >= IPV6_MIN_MTU) {
--			if ((tunnel->parms.iph.daddr &&
--			    !ipv4_is_multicast(tunnel->parms.iph.daddr)) ||
--			    rt6->rt6i_dst.plen == 128) {
--				rt6->rt6i_flags |= RTF_MODIFIED;
--				dst_metric_set(skb_dst(skb), RTAX_MTU, mtu);
--			}
--		}
- 
--		if (!skb_is_gso(skb) && mtu >= IPV6_MIN_MTU &&
--		    mtu < skb->len) {
--			icmpv6_send(skb, ICMPV6_PKT_TOOBIG, 0, mtu);
--			ip_rt_put(rt);
--			goto tx_error;
--		}
-+	if (tnl_update_pmtu(dev, skb, rt, tnl_params->frag_off)) {
-+		ip_rt_put(rt);
-+		goto tx_error;
- 	}
--#endif
- 
- 	if (tunnel->err_count > 0) {
- 		if (time_before(jiffies,
-@@ -646,6 +653,10 @@ void ip_tunnel_xmit(struct sk_buff *skb,
- 			ttl = ip4_dst_hoplimit(&rt->dst);
- 	}
- 
-+	df = tnl_params->frag_off;
-+	if (skb->protocol == htons(ETH_P_IP))
-+		df |= (inner_iph->frag_off&htons(IP_DF));
-+
- 	max_headroom = LL_RESERVED_SPACE(tdev) + sizeof(struct iphdr)
- 					       + rt->dst.header_len;
- 	if (max_headroom > dev->needed_headroom) {
+ struct pppoe_hdr {
+ #if defined(__LITTLE_ENDIAN_BITFIELD)
+-	__u8 ver : 4;
+ 	__u8 type : 4;
++	__u8 ver : 4;
+ #elif defined(__BIG_ENDIAN_BITFIELD)
+-	__u8 type : 4;
+ 	__u8 ver : 4;
++	__u8 type : 4;
+ #else
+ #error	"Please fix <asm/byteorder.h>"
+ #endif
 
 
