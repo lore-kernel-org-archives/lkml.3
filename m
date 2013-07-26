@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933488Ab3GZV1H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:27:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51000 "EHLO
+	id S933220Ab3GZV04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:26:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932643Ab3GZUx0 (ORCPT
+	with ESMTP id S932729Ab3GZUx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:26 -0400
+	Fri, 26 Jul 2013 16:53:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [ 02/59] libata: skip SRST for all SIMG [34]7x port-multipliers
-Date: Fri, 26 Jul 2013 13:52:26 -0700
-Message-Id: <20130726205014.040783424@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Stanislaw Gruszka <stf_xl@wp.pl>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 06/59] rt2x00: read 5GHz TX power values from the correct offset
+Date: Fri, 26 Jul 2013 13:52:30 -0700
+Message-Id: <20130726205014.483949891@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -26,87 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 7a87718d92760fc688628ad6a430643dafa16f1f upstream.
+commit 0a6f3a8ebaf13407523c2c7d575b4ca2debd23ba upstream.
 
-For some reason, a lot of port-multipliers have issues with softreset.
-SIMG [34]7x series port-multipliers have been quite erratic in this
-regard.  I recall that it was better with some firmware revisions and
-the current list of quirks worked fine for a while.  I think it got
-worse with later firmwares or maybe my test coverage wasn't good
-enough.  Anyways, HPA is reporting that his 3726 setup suffers SRST
-failures and then the PMP gets confused and fails to probe the last
-port.
+The current code uses the same index value both
+for the channel information array and for the TX
+power table. The index starts from 14, however the
+index of the TX power table must start from zero.
 
-The hope was that we try to stick to the standard as much as possible
-and soonish the PMPs and their firmwares will improve in quality, so
-the quirk list was kept to minimum.  Well, it seems like that's never
-gonna happen.
+Fix it, in order to get the correct TX power value
+for a given channel.
 
-Let's set NO_SRST for all [34]7x PMPs so that whatever remaining
-userbase of the device suffer the least.  Maybe we should do the same
-for 57xx's but unfortunately I don't have any device left to test and
-I'm not even sure 57xx's have ever been made widely available, so
-let's leave those alone for now.
+The changes in rt61pci.c and rt73usb.c are compile
+tested only.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: "H. Peter Anvin" <hpa@zytor.com>
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Acked-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-pmp.c |   33 +++++++++++++++++----------------
- 1 file changed, 17 insertions(+), 16 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    4 ++--
+ drivers/net/wireless/rt2x00/rt61pci.c   |    3 ++-
+ drivers/net/wireless/rt2x00/rt73usb.c   |    3 ++-
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/ata/libata-pmp.c
-+++ b/drivers/ata/libata-pmp.c
-@@ -389,9 +389,13 @@ static void sata_pmp_quirks(struct ata_p
- 			/* link reports offline after LPM */
- 			link->flags |= ATA_LFLAG_NO_LPM;
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -4627,8 +4627,8 @@ int rt2800_probe_hw_mode(struct rt2x00_d
+ 		default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
  
--			/* Class code report is unreliable. */
-+			/*
-+			 * Class code report is unreliable and SRST times
-+			 * out under certain configurations.
-+			 */
- 			if (link->pmp < 5)
--				link->flags |= ATA_LFLAG_ASSUME_ATA;
-+				link->flags |= ATA_LFLAG_NO_SRST |
-+					       ATA_LFLAG_ASSUME_ATA;
- 
- 			/* port 5 is for SEMB device and it doesn't like SRST */
- 			if (link->pmp == 5)
-@@ -399,20 +403,17 @@ static void sata_pmp_quirks(struct ata_p
- 					       ATA_LFLAG_ASSUME_SEMB;
+ 		for (i = 14; i < spec->num_channels; i++) {
+-			info[i].default_power1 = default_power1[i];
+-			info[i].default_power2 = default_power2[i];
++			info[i].default_power1 = default_power1[i - 14];
++			info[i].default_power2 = default_power2[i - 14];
  		}
- 	} else if (vendor == 0x1095 && devid == 0x4723) {
--		/* sil4723 quirks */
--		ata_for_each_link(link, ap, EDGE) {
--			/* link reports offline after LPM */
--			link->flags |= ATA_LFLAG_NO_LPM;
--
--			/* class code report is unreliable */
--			if (link->pmp < 2)
--				link->flags |= ATA_LFLAG_ASSUME_ATA;
--
--			/* the config device at port 2 locks up on SRST */
--			if (link->pmp == 2)
--				link->flags |= ATA_LFLAG_NO_SRST |
--					       ATA_LFLAG_ASSUME_ATA;
--		}
-+		/*
-+		 * sil4723 quirks
-+		 *
-+		 * Link reports offline after LPM.  Class code report is
-+		 * unreliable.  SIMG PMPs never got SRST reliable and the
-+		 * config device at port 2 locks up on SRST.
-+		 */
-+		ata_for_each_link(link, ap, EDGE)
-+			link->flags |= ATA_LFLAG_NO_LPM |
-+				       ATA_LFLAG_NO_SRST |
-+				       ATA_LFLAG_ASSUME_ATA;
- 	} else if (vendor == 0x1095 && devid == 0x4726) {
- 		/* sil4726 quirks */
- 		ata_for_each_link(link, ap, EDGE) {
+ 	}
+ 
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2822,7 +2822,8 @@ static int rt61pci_probe_hw_mode(struct
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+ 		for (i = 14; i < spec->num_channels; i++) {
+ 			info[i].max_power = MAX_TXPOWER;
+-			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++			info[i].default_power1 =
++					TXPOWER_FROM_DEV(tx_power[i - 14]);
+ 		}
+ 	}
+ 
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2167,7 +2167,8 @@ static int rt73usb_probe_hw_mode(struct
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+ 		for (i = 14; i < spec->num_channels; i++) {
+ 			info[i].max_power = MAX_TXPOWER;
+-			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++			info[i].default_power1 =
++					TXPOWER_FROM_DEV(tx_power[i - 14]);
+ 		}
+ 	}
+ 
 
 
