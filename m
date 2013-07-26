@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760159Ab3GZXL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:11:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52557 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab3GZXL0 (ORCPT
+	id S1760128Ab3GZXNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:13:43 -0400
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:52818 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757607Ab3GZXNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:11:26 -0400
-Date: Fri, 26 Jul 2013 16:11:24 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        linux-serial@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>
-Subject: Re: [PATCH 0/4] pci_ids, 8250_pci: remove PCI_VENDOR_ID_ADDIDATA_OLD
-Message-ID: <20130726231124.GA10464@kroah.com>
-References: <1373987681-18245-1-git-send-email-abbotti@mev.co.uk>
- <CAErSpo4daNsF0BTJhqdZ0hrBpS+EQ3Z1_-C_LN=ec9fLafNkog@mail.gmail.com>
+	Fri, 26 Jul 2013 19:13:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAErSpo4daNsF0BTJhqdZ0hrBpS+EQ3Z1_-C_LN=ec9fLafNkog@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130726224813.GB9858@sirena.org.uk>
+References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
+	<1374863133-6745-2-git-send-email-eu@felipetonello.com>
+	<20130726185458.GX9858@sirena.org.uk>
+	<CAGrhNMy7qZ8CbAjFX5Gv8OqYkit+Eqzr2zZTYXeQ-cNO22+pTQ@mail.gmail.com>
+	<20130726224813.GB9858@sirena.org.uk>
+Date: Fri, 26 Jul 2013 16:13:40 -0700
+Message-ID: <CAGrhNMwGdMwhd5L2gGxQ=N=8nFk4L5txYmhEtLBVcFj-Etphnw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: Added jack detection kcontrol support
+From: Felipe Tonello <eu@felipetonello.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Wang Xingchao <xingchao.wang@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 19, 2013 at 03:37:26PM -0600, Bjorn Helgaas wrote:
-> On Tue, Jul 16, 2013 at 9:14 AM, Ian Abbott <abbotti@mev.co.uk> wrote:
-> > The 8250_pci driver uses PCI_VENDOR_ID_ADDIDATA_OLD (0x10e8),
-> > PCI_DEVICE_ID_ADDIDATA_APCI7800 (0x818e) to recognize the original
-> > ADDI-DATA APCI-7800 PCI serial card.  However vendor ID 0x10e8 was
-> > assigned by PCI-SIG to Applied Micro Circuits Corporation (AMCC) and the
-> > associated device ID 0x818e was assigned by AMCC to ADDI-DATA.
-> >
-> > Comedi already defines PCI_VENDOR_ID_AMCC as 0x10e8 in one of its header
-> > files, so that definition can be moved into pci_ids.h and the 8250_pci
-> > driver changed to use it.  The PCI_DEVICE_ID_ADDIDATA_APCI7800 define
-> > seems out of place in pci_ids.h since it isn't associated with
-> > ADDI-DATA's vendor ID but with AMCC's vendor ID.  It's only used in
-> > 8250_pci.c so it can be moved there and renamed to something more
-> > sensible.
-> >
-> > 1) pci_ids.h: move PCI_VENDOR_ID_AMCC here
-> > 2) serial: 8250_pci: replace PCI_VENDOR_ID_ADDIDATA_OLD
-> > 3) serial: 8250_pci: use local device ID for ADDI-DATA APCI-7800
-> > 4) pci_ids.h: remove PCI_VENDOR_ID_ADDIDATA_OLD and
-> >    PCI_DEVICE_ID_ADDIDATA_APCI7800
-> >
-> >  drivers/staging/comedi/comedidev.h | 1 -
-> >  drivers/tty/serial/8250/8250_pci.c | 9 +++++----
-> >  include/linux/pci_ids.h            | 4 ++--
-> >  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> For patches 1 & 4 (the ones that touch pci_ids.h):
-> 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
-> 
-> Please merge them along with the 8250 changes.
+Mark,
 
-Thanks, will do.
+On Fri, Jul 26, 2013 at 3:48 PM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jul 26, 2013 at 12:10:27PM -0700, Felipe Tonello wrote:
+>> On Fri, Jul 26, 2013 at 11:54 AM, Mark Brown <broonie@kernel.org> wrote:
+>
+>> > This isn't ideal for multi-function jacks like headsets - it will report
+>> > a single boolean value for the jack regardless of what's plugged in
+>> > meaning userpace can't do things like figure out if a headset or
+>> > headphone is present.  It's probably OK for any realistic input button
+>> > since you're not going to get an input button without other things being
+>> > present.
+>
+>> The KControl for Jack is boolean anyway. You can check it with "amixer
+>> contents". user-space can figure out based on the control name. At
+>> least PulseAudio does that way.
+>
+> No, it can't do that for headset jacks - these will be created with a
+> single jack reporting multiple states, there's a state for headphone and
+> a state for microphone.  The system can generally distinguish between
+> having a headset or just plain headphones inserted and act accordingly
+> (for example, recording from the built in microphone on a phone when
+> used with normal headpones).
+>
+>> > What I'd expect to happen here is that for multi function jacks we
+>> > create a control per function if the controls are valid.
 
-greg k-h
+Ok, so the idea is just to change the control to type integer instead
+of boolean, right?
+Because as you say, the user will be able to check the type of jack
+based on the status value, right?
+
+>
+>> Do you mean based on snd_jack_types?
+>
+> Yes.  If there's only one function supported the current code is fine
+> but for multiple functions it's going to discard useful information.
+
+So, what do you suggest to do that? I'm not sure if I understand what
+you are saying.
+When you mean function, do you mean the SND_JACK_BTN_n or the the jack
+types, such as SND_JACK_HEADPHONE, and so on?
+
+If a codec creates a jack type SND_JACK_HEADSET (= SND_JACK_HEADPHONE
+| SND_JACK_MICROPHONE). It should be created two controls, name +
+"Headphone Jack" and name + "Microphone Jack"? If so, what about the
+status to report? How to know which control to report?
+
+Felipe Tonello
