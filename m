@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757729Ab3GZRa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:30:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19951 "EHLO mx1.redhat.com"
+	id S1759119Ab3GZRbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:31:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5461 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751080Ab3GZRa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:30:56 -0400
-Date: Fri, 26 Jul 2013 19:25:32 +0200
+	id S1758252Ab3GZRbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:31:03 -0400
+Date: Fri, 26 Jul 2013 19:25:40 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -21,9 +21,9 @@ Cc: Alexander Z Lam <azl@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/6] tracing: Turn event/id->i_private into
-	call->event.type
-Message-ID: <20130726172532.GA3605@redhat.com>
+Subject: [PATCH v2 3/6] tracing: Change event_filter_read/write to verify
+	i_private != NULL
+Message-ID: <20130726172540.GA3619@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -33,79 +33,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-event_id_read() is racy, ftrace_event_call can be already freed
-by trace_remove_event_call() callers.
+event_filter_read/write() are racy, ftrace_event_call can be already
+freed by trace_remove_event_call() callers.
 
-Change event_create_dir() to pass "data = call->event.type", this
-is all event_id_read() needs. ftrace_event_id_fops no longer needs
-tracing_open_generic().
+1. Shift mutex_lock(event_mutex) from print/apply_event_filter to
+   the callers.
 
-We add the new helper, event_file_data(), to read ->i_private, it
-will have more users.
+2. Change the callers, event_filter_read() and event_filter_write()
+   to read i_private under this mutex and abort if it is NULL.
 
-Note: currently ACCESS_ONCE() and "id != 0" check are not needed,
-but we are going to change event_remove/rmdir to clear ->i_private.
+This fixes nothing, but now we can change debugfs_remove("filter")
+callers to nullify ->i_private and fix the the problem.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_events.c |   17 ++++++++++++-----
- 1 files changed, 12 insertions(+), 5 deletions(-)
+ kernel/trace/trace_events.c        |   28 +++++++++++++++++++---------
+ kernel/trace/trace_events_filter.c |   17 ++++++-----------
+ 2 files changed, 25 insertions(+), 20 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 76eed53..77990c4 100644
+index 39cb049..b5144c4 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -409,6 +409,11 @@ static void put_system(struct ftrace_subsystem_dir *dir)
- 	mutex_unlock(&event_mutex);
- }
- 
-+static void *event_file_data(struct file *filp)
-+{
-+	return ACCESS_ONCE(file_inode(filp)->i_private);
-+}
-+
- /*
-  * Open and update trace_array ref count.
-  * Must have the current trace_array passed to it.
-@@ -946,14 +951,17 @@ static int trace_format_open(struct inode *inode, struct file *file)
- static ssize_t
- event_id_read(struct file *filp, char __user *ubuf, size_t cnt, loff_t *ppos)
+@@ -978,24 +978,30 @@ static ssize_t
+ event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 		  loff_t *ppos)
  {
 -	struct ftrace_event_call *call = filp->private_data;
-+	int id = (long)event_file_data(filp);
- 	char buf[32];
- 	int len;
++	struct ftrace_event_call *call;
+ 	struct trace_seq *s;
+-	int r;
++	int r = -ENODEV;
  
  	if (*ppos)
  		return 0;
  
--	len = sprintf(buf, "%d\n", call->event.type);
-+	if (unlikely(!id))
-+		return -ENODEV;
+ 	s = kmalloc(sizeof(*s), GFP_KERNEL);
 +
-+	len = sprintf(buf, "%d\n", id);
- 	return simple_read_from_buffer(ubuf, cnt, ppos, buf, len);
+ 	if (!s)
+ 		return -ENOMEM;
+ 
+ 	trace_seq_init(s);
+ 
+-	print_event_filter(call, s);
+-	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
++	mutex_lock(&event_mutex);
++	call = event_file_data(filp);
++	if (call)
++		print_event_filter(call, s);
++	mutex_unlock(&event_mutex);
+ 
+-	kfree(s);
++	if (call)
++		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
+ 
++	kfree(s);
+ 	return r;
  }
  
-@@ -1240,7 +1248,6 @@ static const struct file_operations ftrace_event_format_fops = {
- };
+@@ -1003,9 +1009,9 @@ static ssize_t
+ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 		   loff_t *ppos)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
++	struct ftrace_event_call *call;
+ 	char *buf;
+-	int err;
++	int err = -ENODEV;
  
- static const struct file_operations ftrace_event_id_fops = {
--	.open = tracing_open_generic,
- 	.read = event_id_read,
- 	.llseek = default_llseek,
- };
-@@ -1488,8 +1495,8 @@ event_create_dir(struct dentry *parent,
+ 	if (cnt >= PAGE_SIZE)
+ 		return -EINVAL;
+@@ -1020,13 +1026,17 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 	}
+ 	buf[cnt] = '\0';
  
- #ifdef CONFIG_PERF_EVENTS
- 	if (call->event.type && call->class->reg)
--		trace_create_file("id", 0444, file->dir, call,
--		 		  id);
-+		trace_create_file("id", 0444, file->dir,
-+				  (void *)(long)call->event.type, id);
- #endif
+-	err = apply_event_filter(call, buf);
++	mutex_lock(&event_mutex);
++	call = event_file_data(filp);
++	if (call)
++		err = apply_event_filter(call, buf);
++	mutex_unlock(&event_mutex);
++
+ 	free_page((unsigned long) buf);
+ 	if (err < 0)
+ 		return err;
  
- 	/*
+ 	*ppos += cnt;
+-
+ 	return cnt;
+ }
+ 
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 0c7b75a..97daa8c 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -637,17 +637,15 @@ static void append_filter_err(struct filter_parse_state *ps,
+ 	free_page((unsigned long) buf);
+ }
+ 
++/* caller must hold event_mutex */
+ void print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
+ {
+-	struct event_filter *filter;
++	struct event_filter *filter = call->filter;
+ 
+-	mutex_lock(&event_mutex);
+-	filter = call->filter;
+ 	if (filter && filter->filter_string)
+ 		trace_seq_printf(s, "%s\n", filter->filter_string);
+ 	else
+ 		trace_seq_puts(s, "none\n");
+-	mutex_unlock(&event_mutex);
+ }
+ 
+ void print_subsystem_event_filter(struct event_subsystem *system,
+@@ -1841,23 +1839,22 @@ static int create_system_filter(struct event_subsystem *system,
+ 	return err;
+ }
+ 
++/* caller must hold event_mutex */
+ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ {
+ 	struct event_filter *filter;
+-	int err = 0;
+-
+-	mutex_lock(&event_mutex);
++	int err;
+ 
+ 	if (!strcmp(strstrip(filter_string), "0")) {
+ 		filter_disable(call);
+ 		filter = call->filter;
+ 		if (!filter)
+-			goto out_unlock;
++			return 0;
+ 		RCU_INIT_POINTER(call->filter, NULL);
+ 		/* Make sure the filter is not being used */
+ 		synchronize_sched();
+ 		__free_filter(filter);
+-		goto out_unlock;
++		return 0;
+ 	}
+ 
+ 	err = create_filter(call, filter_string, true, &filter);
+@@ -1884,8 +1881,6 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
+ 			__free_filter(tmp);
+ 		}
+ 	}
+-out_unlock:
+-	mutex_unlock(&event_mutex);
+ 
+ 	return err;
+ }
 -- 
 1.5.5.1
 
