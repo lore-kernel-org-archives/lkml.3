@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932796Ab3GZXnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:43:00 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:58346 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab3GZXmz (ORCPT
+	id S1760162Ab3GZXnK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:43:10 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:55700 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932840Ab3GZXnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:42:55 -0400
+	Fri, 26 Jul 2013 19:43:05 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
-        Alex Shi <alex.shi@intel.com>, Paul Turner <pjt@google.com>,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH 01/21] sched: Consolidate open coded preemptible() checks
-Date: Sat, 27 Jul 2013 01:42:24 +0200
-Message-Id: <1374882164-32519-2-git-send-email-fweisbec@gmail.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
+        Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 06/21] context_tracking: Remove full dynticks' hacky dependency on wide context tracking
+Date: Sat, 27 Jul 2013 01:42:29 +0200
+Message-Id: <1374882164-32519-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
 References: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
@@ -28,63 +26,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-preempt_schedule() and preempt_schedule_context() open
-code their preemptability checks.
+Now that the full dynticks subsystem only enables the context tracking
+on full dynticks CPUs, lets remove the dependency on CONTEXT_TRACKING_FORCE
 
-Use the standard API instead for consolidation.
+This dependency was a hack to enable the context tracking widely for the
+full dynticks susbsystem until the latter becomes able to enable it in a
+more CPU-finegrained fashion.
+
+Now CONTEXT_TRACKING_FORCE only stands for testing on archs that
+work on support for the context tracking while full dynticks can't be
+used yet due to unmet dependencies. It simulates a system where all CPUs
+are full dynticks so that RCU user extended quiescent states and dynticks
+cputime accounting can be tested on the given arch.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Kevin Hilman <khilman@linaro.org>
 ---
- kernel/context_tracking.c |    3 +--
- kernel/sched/core.c       |    4 +---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ init/Kconfig        |   28 ++++++++++++++++++++++------
+ kernel/time/Kconfig |    1 -
+ 2 files changed, 22 insertions(+), 7 deletions(-)
 
-diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 383f823..942835c 100644
---- a/kernel/context_tracking.c
-+++ b/kernel/context_tracking.c
-@@ -87,10 +87,9 @@ void user_enter(void)
-  */
- void __sched notrace preempt_schedule_context(void)
- {
--	struct thread_info *ti = current_thread_info();
- 	enum ctx_state prev_ctx;
+diff --git a/init/Kconfig b/init/Kconfig
+index 247084b..ffbf5d7 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -527,13 +527,29 @@ config RCU_USER_QS
+ config CONTEXT_TRACKING_FORCE
+ 	bool "Force context tracking"
+ 	depends on CONTEXT_TRACKING
+-	default CONTEXT_TRACKING
++	default y if !NO_HZ_FULL
+ 	help
+-	  Probe on user/kernel boundaries by default in order to
+-	  test the features that rely on it such as userspace RCU extended
+-	  quiescent states.
+-	  This test is there for debugging until we have a real user like the
+-	  full dynticks mode.
++	  The major pre-requirement for full dynticks to work is to
++	  support the context tracking subsystem. But there are also
++	  other dependencies to provide in order to make the full
++	  dynticks working.
++
++	  This option stands for testing when an arch implements the
++	  context tracking backend but doesn't yet fullfill all the
++	  requirements to make the full dynticks feature working.
++	  Without the full dynticks, there is no way to test the support
++	  for context tracking and the subsystems that rely on it: RCU
++	  userspace extended quiescent state and tickless cputime
++	  accounting. This option copes with the absence of the full
++	  dynticks subsystem by forcing the context tracking on all
++	  CPUs in the system.
++
++	  Say Y only if you're working on the developpement of an
++	  architecture backend for the context tracking.
++
++	  Say N otherwise, this option brings an overhead that you
++	  don't want in production.
++
  
--	if (likely(ti->preempt_count || irqs_disabled()))
-+	if (likely(!preemptible()))
- 		return;
- 
- 	/*
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b7c32cb..3fb7ace 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2510,13 +2510,11 @@ void __sched schedule_preempt_disabled(void)
-  */
- asmlinkage void __sched notrace preempt_schedule(void)
- {
--	struct thread_info *ti = current_thread_info();
--
- 	/*
- 	 * If there is a non-zero preempt_count or interrupts are disabled,
- 	 * we do not want to preempt the current task. Just return..
- 	 */
--	if (likely(ti->preempt_count || irqs_disabled()))
-+	if (likely(!preemptible()))
- 		return;
- 
- 	do {
+ config RCU_FANOUT
+ 	int "Tree-based hierarchical RCU fanout value"
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 70f27e8..747bbc7 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -105,7 +105,6 @@ config NO_HZ_FULL
+ 	select RCU_USER_QS
+ 	select RCU_NOCB_CPU
+ 	select VIRT_CPU_ACCOUNTING_GEN
+-	select CONTEXT_TRACKING_FORCE
+ 	select IRQ_WORK
+ 	help
+ 	 Adaptively try to shutdown the tick whenever possible, even when
 -- 
 1.7.5.4
 
