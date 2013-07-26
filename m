@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759109Ab3GZOjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:39:20 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:41762 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757011Ab3GZOjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:39:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI operation region handlers
-Date: Fri, 26 Jul 2013 16:49:23 +0200
-Message-ID: <3196577.UQScsUKI1B@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com> <2501577.sf07PMEtR1@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
+	id S1759159Ab3GZOjm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:39:42 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:49793 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759139Ab3GZOjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 10:39:39 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20130726142140.GR24642@n2100.arm.linux.org.uk>
+References: <51F168FC.9070906@wwwdotorg.org>
+	<20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+	<20130725184834.GA8296@netboy>
+	<20130725213753.GC17616@obsidianresearch.com>
+	<20130726080115.GA5436@netboy>
+	<1374831744.2923.42.camel@shinybook.infradead.org>
+	<20130726130927.GC4219@netboy>
+	<20130726132709.GH29916@titan.lakedaemon.net>
+	<1374846070.14574.92.camel@i7.infradead.org>
+	<CAKON4OzrkHzUzKkULWCgiEpAtJ5gLxUm78R5ctd7p6trqq_gCA@mail.gmail.com>
+	<20130726142140.GR24642@n2100.arm.linux.org.uk>
+Date: Fri, 26 Jul 2013 10:39:37 -0400
+Message-ID: <CAKON4Oyu2hXa959zeuMWwT7jNpVFb31FoWqcD3gkJVz63jLEMw@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>, Jason Cooper <jason@lakedaemon.net>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 26, 2013 01:54:00 AM Zheng, Lv wrote:
-> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > Sent: Friday, July 26, 2013 5:29 AM
-> > 
-> > On Tuesday, July 23, 2013 04:09:43 PM Lv Zheng wrote:
-> > > This patch adds reference couting for ACPI operation region handlers to fix
-> > > races caused by the ACPICA address space callback invocations.
-> > >
-> > > ACPICA address space callback invocation is not suitable for Linux
-> > > CONFIG_MODULE=y execution environment.
-> > 
-> > Actually, can you please explain to me what *exactly* the problem is?
-> 
-> OK.  I'll add race explanations in the next revision.
-> 
-> The problem is there is no "lock" held inside ACPICA for invoking operation
-> region handlers.
-> Thus races happens between the acpi_remove/install_address_space_handler and
-> the handler/setup callbacks.
+On Fri, Jul 26, 2013 at 10:21 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Jul 26, 2013 at 10:14:32AM -0400, jonsmirl@gmail.com wrote:
+>> Yes, yes - that's why the schema should be written down and used as a
+>> validation input to dtc. Then dtc can spit out errors for non-standard
+>> items. There would be two versions - the standard one and a legacy one
+>> that includes the standard one plus the hacks that can't be undone.
+>>
+>> But more importantly it provides a framework for people creating new
+>> node definitions. Now they can't work in a vacuum and come up with
+>> random names and structure for everything.
+>>
+>> Most of the problems express in the thread would go away if the schema
+>> was written down and discussed. The rule going forward would be no new
+>> nodes that aren't part of the standard schema.
+>
+> So this is why I'm seeing patches just a short time ago removing existing
+> compatible strings from the DT descriptions and associated driver, and
+> replacing them with new ones... meaning that the old DT files won't work
+> with newer kernels.
+>
+> What that means is using the descriptions as the schema won't catch that
+> because they're changing those as well to match.
+>
+> There's a solution to that: dtc becomes a separate project external to
+> the kernel which also contains the schemas that it verifies against.
+> That way, if you want to make changes such as that above, you need to
+> get it past not only kernel people but also past dtc maintainers -
+> which increases the chances of such stuff being caught.
 
-I see.  Now you're trying to introduce something that would prevent those
-races from happening, right?
+I don't see that it has to be outside of the kernel. It could still be
+inside and just have different maintainers.
 
-> This is correct per ACPI specification.
-> As if there is interpreter locks held for invoking operation region handlers,
-> the timeout implemented inside the operation region handlers will make all
-> locking facilities (Acquire or Sleep,...) timed out.
-> Please refer to ACPI specification "5.5.2 Control Method Execution":
-> Interpretation of a Control Method is not preemptive, but it can block. When
-> a control method does block, OSPM can initiate or continue the execution of
-> a different control method. A control method can only assume that access to
-> global objects is exclusive for any period the control method does not block.
-> 
-> So it is pretty much likely that ACPI IO transfers are locked inside the
-> operation region callback implementations.
-> Using locking facility to protect the callback invocation will risk dead locks.
+The real value of having that schema inside of the kernel is so that
+people writing new drivers have some rules to look at. It would really
+help in stopping 37 different descriptions of DMA controllers that are
+all slightly different. You'd have to match you DMA controller
+description to the generic form or making a convincing argument as to
+why you need the master schema to be changed.
 
-No.  If you use a single global lock around all invocations of operation region
-handlers, it won't deadlock, but it will *serialize* things.  This means that
-there won't be two handlers executing in parallel.  That may or may not be bad
-depending on what those handlers actually do.
-
-Your concern seems to be that if one address space handler is buggy and it
-blocks indefinitely, executing it under such a lock would affect the other
-address space handlers and in my opinion this is a valid concern.
-
-So the idea seems to be to add wrappers around acpi_install_address_space_handler()
-and acpi_remove_address_space_handler (but I don't see where the latter is called
-after the change?), such that they will know when it is safe to unregister the
-handler.  That is simple enough.
-
-However, I'm not sure it is needed in the context of IPMI.  Your address space
-handler's context is NULL, so even it if is executed after
-acpi_remove_address_space_handler() has been called for it (or in parallel),
-it doesn't depend on anything passed by the caller, so I don't see why the
-issue can't be addressed by a proper synchronization between
-acpi_ipmi_exit() and acpi_ipmi_space_handler().
-
-Clearly, acpi_ipmi_exit() should wait for all already running instances of
-acpi_ipmi_space_handler() to complete and all acpi_ipmi_space_handler()
-instances started after acpi_ipmi_exit() has been called must return
-immediately.
-
-I would imagine an algorithm like this:
-
-acpi_ipmi_exit()
- 1. Take "address space handler lock".
- 2. Set "unregistering address space handler" flag.
- 3. Check if "count of currently running handlers" is 0.  If so,
-    call acpi_remove_address_space_handler(), drop the lock (possibly clear the
-    flag) and return.
- 4. Otherwise drop the lock and go to sleep in "address space handler wait queue".
- 5. When woken up, take "address space handler lock" and go to 3.
-
-acpi_ipmi_space_handler()
- 1. Take "address space handler lock".
- 2. Check "unregistering address space handler" flag.  If set, drop the lock
-    and return.
- 3. Increment "count of currently running handlers".
- 4. Drop the lock.
- 5. Do your work.
- 6. Take "address space handler lock".
- 7. Decrement "count of currently running handlers" and if 0, signal the
-    tasks waiting on it to wake up.
- 8. Drop the lock.
-
-Thanks,
-Rafael
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jon Smirl
+jonsmirl@gmail.com
