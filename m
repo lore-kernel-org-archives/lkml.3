@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab3GZHdW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:33:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47154 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab3GZHdQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:33:16 -0400
-Message-ID: <51F2262F.1020203@ti.com>
-Date: Fri, 26 Jul 2013 10:33:03 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1757512Ab3GZHeL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:34:11 -0400
+Received: from mga14.intel.com ([143.182.124.37]:65359 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab3GZHeI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 03:34:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,749,1367996400"; 
+   d="scan'208";a="273614466"
+From: "Dilger, Andreas" <andreas.dilger@intel.com>
+To: Xiong Zhou <jencce.kernel@gmail.com>
+CC: Peng Tao <bergwolf@gmail.com>, Jiri Kosina <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH] staging/lustre: add BLOCK depends in Kconfig
+Thread-Topic: [PATCH] staging/lustre: add BLOCK depends in Kconfig
+Thread-Index: AQHOiQWa6Ypo0E8Su0K9tUbRNoTVL5l2GQ6AgADkFAD//6aYAA==
+Date: Fri, 26 Jul 2013 07:34:05 +0000
+Message-ID: <CE178240.57D7D%andreas.dilger@intel.com>
+In-Reply-To: <CADJHv_tL0R6m2YRu9d6jp3CuwC_z_0SQhpGD8YeAeU4wen98DA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.254.106.6]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <6F52E8465B606046BE36F2396DDFA47B@intel.com>
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Michal Simek <monstr@monstr.eu>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] video: xilinxfb: Fix compilation warning
-References: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
-In-Reply-To: <b8701d73538d37495b41ef465440a6d5f3018870.1374759923.git.michal.simek@xilinx.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="SKr076XwxEA5gGp0gIvKt3c95jPccDI96"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6Q7YF73009562
 
---SKr076XwxEA5gGp0gIvKt3c95jPccDI96
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 2013/07/26 12:54 AM, "Xiong Zhou" <jencce.kernel@gmail.com> wrote:
 
-On 25/07/13 16:45, Michal Simek wrote:
-> regs_phys is phys_addr_t (u32 or u64).
-> Lets use %pa printk format specifier.
->=20
-> Fixes compilation warning introduced by:
-> video: xilinxfb: Use drvdata->regs_phys instead of physaddr
-> (sha1: c88fafef0135e1e1c3e23c3e32ccbeeabc587f81)
->=20
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> Changes in v3:
-> - Fix commit message reported by Geert
->=20
-> Changes in v2:
-> - Use %pa instead of casting
->=20
-> ppc44x_defconfig
-> Fixes regressions in v3.11-rc2
->=20
-> ---
->  drivers/video/xilinxfb.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-> index f3d4a69..6629b29 100644
-> --- a/drivers/video/xilinxfb.c
-> +++ b/drivers/video/xilinxfb.c
-> @@ -341,8 +341,8 @@ static int xilinxfb_assign(struct platform_device *=
-pdev,
->=20
->  	if (drvdata->flags & BUS_ACCESS_FLAG) {
->  		/* Put a banner in the log (for DEBUG) */
-> -		dev_dbg(dev, "regs: phys=3D%x, virt=3D%p\n", drvdata->regs_phys,
-> -					drvdata->regs);
-> +		dev_dbg(dev, "regs: phys=3D%pa, virt=3D%p\n",
-> +			&drvdata->regs_phys, drvdata->regs);
->  	}
->  	/* Put a banner in the log (for DEBUG) */
->  	dev_dbg(dev, "fb: phys=3D%llx, virt=3D%p, size=3D%x\n",
-> --
-> 1.8.2.3
->=20
+>2013/7/26 Dilger, Andreas <andreas.dilger@intel.com>:
+>> On 2013/07/25 1:06 AM, "Xiong Zhou" <jencce.kernel@gmail.com> wrote:
+>>
+>>>From: Xiong Zhou <jencce.kernel@gmail.com>
+>>>
+>>>Add BLOCK depends in Kconfig for LUSTRE to fix this:
+>>>drivers/staging/lustre/lustre/fid/../include/linux/lustre_compat25.h:117
+>>>:2
+>>>:
+>>>error: implicit declaration of function  Ωunregister_blkdev º
+>>>
+>>>Signed-off-by: Xiong Zhou <jencce.kernel@gmail.com>
+>>>---
+>>> drivers/staging/lustre/lustre/Kconfig |    2 +-
+>>> 1 file changed, 1 insertion(+), 1 deletion(-)
+>>>
+>>>diff --git a/drivers/staging/lustre/lustre/Kconfig
+>>>b/drivers/staging/lustre/lustre/Kconfig
+>>>index 9ae7fa8..0b45de0 100644
+>>>--- a/drivers/staging/lustre/lustre/Kconfig
+>>>+++ b/drivers/staging/lustre/lustre/Kconfig
+>>>@@ -1,6 +1,6 @@
+>>> config LUSTRE_FS
+>>>       tristate "Lustre file system client support"
+>>>-      depends on STAGING && INET && m
+>>>+      depends on STAGING && INET && BLOCK && m
+>>>       select LNET
+>>>       select CRYPTO
+>>>       select CRYPTO_CRC32
+>>
+>> The Lustre client does not need a block device - it is a network
+>> filesystem.
+>> The one piece of code that is relevant here relates to a
+>>Lustre-optimized
+>> "loop" device that bypasses the VFS, data copying, and DLM locking for
+>>use
+>> by swap and such.  It would be better instead to make that code
+>>conditional
+>> and add a new CONFIG_LUSTRE_LLOOP or similar, and only make that part
+>> dependent on BLOCK.
+>
+>This makes sence. I noticed that this patch has gone into Greg's tree,
+>so a coming patch based on this patch is cool?
 
-Thanks, I've applied this into my 3.12/fbdev branch.
+That would be fine, thanks.
 
- Tomi
+Cheers, Andreas
+-- 
+Andreas Dilger
+
+Lustre Software Architect
+Intel High Performance Data Division
 
 
-
---SKr076XwxEA5gGp0gIvKt3c95jPccDI96
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJR8iYvAAoJEPo9qoy8lh71XSMP/0r7fsWbiFrlp8Ddf/VhiC5L
-X5w881FBNVBYhbg03G+JdadOPix4KBkB2JcyDxPUmsONVu9vFc3jHw+pobms7GKD
-T7uyNkbTAEjKnuwaAND3BtfHNSyhx+g/c6lGakx4rjC1Hzd3k8LSMIBcmpNsr2RE
-EBRxkwxHWRJ813sVe8IgjfP5cLkUf1IelzdaWQK13lRNpKRFyTrJqX/RWkWEnzgh
-ktcxgJR+draTbpzc48Ifeu4Kw4S6zmWiJqTGY8qLBw14xIxGVUWdlD2e+RyUqnCk
-L67uiE3bQWyBywJWc9TSKzSrgmxYJvmygeu7MthKqqhs58wTadd0S0VP94D5G+7M
-vsfWCz71mQUZABM+3nOD0w2e0+1wsJqBb9IyhPCJQY6CSw4B0V60q9wvIpERgIZp
-Nvz+LsPxXHwyvF522fb2bYwWuUUuzjvUh8V02PX5D4BFrJU6wOSy+Q4Ph/uTNtP6
-BQD4tmIMvciQY42WzE3gbFhyubQ/kq0LaiGRyxwT6dMpx9A2DtNRX1Sa2kGQ0MdM
-tEArmYQi6T2c3QezjFz52vzyLI/h9XR0YFJUY+rXFEc2+laDUpOIcRJM3lVCS/dI
-4eVS4vb3trgmYI9QxTr0Js0kRdPmNwysa8DcIdtGWmKH7HnICQKhJ416NzJSOrZF
-uNAqGZGE6AAwLCaDvRdq
-=gpQ8
------END PGP SIGNATURE-----
-
---SKr076XwxEA5gGp0gIvKt3c95jPccDI96--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
