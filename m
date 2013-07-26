@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab3GZH3I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:29:08 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49808 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753402Ab3GZH3E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:29:04 -0400
-Message-ID: <51F22425.6000801@debian.org>
-Date: Fri, 26 Jul 2013 12:54:21 +0530
-From: Ritesh Raj Sarraf <rrs@debian.org>
-Reply-To: rrs@debian.org
-Organization: RESEARCHUT
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1756679Ab3GZHaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:30:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41741 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752595Ab3GZHau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 03:30:50 -0400
+Message-ID: <51F225A0.90801@ti.com>
+Date: Fri, 26 Jul 2013 10:30:40 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-CC: Andy Grover <agrover@redhat.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        targetcli-fb-devel@lists.fedorahosted.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: targetcli -fb now also Apache 2.0 licensed
-References: <51EF73EF.1040305@redhat.com>  <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>  <1374697264.7382.39.camel@dabdike>  <1374699289.7397.1309.camel@haakon3.risingtidesystems.com>  <51F06C17.50306@redhat.com> <1374715140.7397.1390.camel@haakon3.risingtidesystems.com> <51F1ED9D.50300@redhat.com>
-In-Reply-To: <51F1ED9D.50300@redhat.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="----enig2SAWTHVNSUUCNELQKKVBS"
+To: Luis Henriques <luis.henriques@canonical.com>
+CC: <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] vga16fb: Remove unused variable
+References: <20130710225659.GA14107@hercules>
+In-Reply-To: <20130710225659.GA14107@hercules>
+X-Enigmail-Version: 1.5.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="RsG8ogCcBoo8VFhuj7elAuAaQDJPcJI6C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
-------enig2SAWTHVNSUUCNELQKKVBS
-Content-Type: text/plain; charset=ISO-8859-1
+--RsG8ogCcBoo8VFhuj7elAuAaQDJPcJI6C
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-On Friday 26 July 2013 09:01 AM, Andy Grover wrote:
->
-> It's one thing to claim a prerogative of "upstream", but for this to
-> make sense, there needs to be an actual community around the upstream.
-> And if there's going to be submissions for review, then there needs to
-> be someone in charge of the community with a high degree of skill in
-> the code base. Nick you have a great deal of technical expertise
-> around the C code in drivers/target, but Jerome was the one who wrote
-> rtslib, targetcli, and configshell. I believe you can assess the
-> technical aspects of how the user library interacts with the kernel
-> code, but the maintainer should also be extremely conversant in the
-> language the library is written in. In this case, Python. So it's not
-> clear to me if submitting the code would actually result in meaningful
-> code improvements.
->
-> Also, there has been no effort to sustain a community around this
-> code. There is no bug tracking, no separate mailing list, no regular
-> releases. Debian is running ancient, broken code because nothing's
-> been tagged in over two years.
->
-> I would love to have you maintain and improve this code, but if you
-> aren't then you can't just say "I'm the upstream bow to me!". We're
-> shipping this code in Fedora and it needs active maintenance. Now that
-> we're all on an even licensing footing, code can flow both ways, and
-> even into your commercial version.=20
+On 11/07/13 01:57, Luis Henriques wrote:
+> Fix build warning of unused variable:
+>=20
+> drivers/video/vga16fb.c:1268:26: warning: unused variable =E2=80=98dev=E2=
+=80=99 [-Wunused-variable]
+>=20
+> Signed-off-by: Luis Henriques<luis.henriques@canonical.com>
+> ---
+>  drivers/video/vga16fb.c | 1 -
+>  1 file changed, 1 deletion(-)
+>=20
+> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+> index 830ded4..2827333 100644
+> --- a/drivers/video/vga16fb.c
+> +++ b/drivers/video/vga16fb.c
+> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *inf=
+o, const struct fb_image *image
+> =20
+>  static void vga16fb_destroy(struct fb_info *info)
+>  {
+> -	struct platform_device *dev =3D container_of(info->device, struct pla=
+tform_device, dev);
+>  	iounmap(info->screen_base);
+>  	fb_dealloc_cmap(&info->cmap);
+>  	/* XXX unshare VGA regions */
+>=20
 
-Yes. Apart from reaching out the developers directly, I am not aware of
-other communication channels. There is a git and wiki though.
+Thanks, I've applied this into my 3.12/fbdev branch.
 
-Nick, if you guys have the same license now, nothing should stop you to
-pull the changes from the targetcli-fb repo. You can start afresh now
-and comply with what the community guidelines are. Licensing is just one
-part of it.
-
-And regarding this whole licensing dispute in the open, the kernel
-maintainers should have resolved this long ago, when it was decided to
-have LIO as the in-kernel target for Linux.
-You might say that the target component complied by the kernel's
-licensing requirements. But for a subsystem inclusion, you don't look
-just at the code, but also the maintainer. Their support tools. And
-their long term plans. These rules have been applied, in the past, for
-other features in the kernel.
-
---=20
-Ritesh Raj Sarraf | http://people.debian.org/~rrs
-Debian - The Universal Operating System
+ Tomi
 
 
 
-------enig2SAWTHVNSUUCNELQKKVBS
+--RsG8ogCcBoo8VFhuj7elAuAaQDJPcJI6C
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBCgAGBQJR8iQlAAoJEKY6WKPy4XVpkCgP/1AXMDLzzBYV1aueldK0yhwT
-DLAX4VvEByaPtq4eigA9S5AAS0CP+WO2v7umjCxHZ5LQ9WKhpgu2SBf1umEcSbet
-1cZ260FtlXemxMR4lfmrBtFi+835nq6YEx0M7gy1HciYSX9CfodPvhBXW4EFpEFB
-UUI9VgmAFOy+31IXXuVwnb55vKjQ8U7zkuVElWTjA38i3zYfAdCBeXW/w3LAUx02
-FdlQ/FNAeInsbLN9b5Mfm7UCwhn3Doz6P3MIJG5yC+iRHz3qQ9JTKHvGXSDkVJDP
-CW5xZawyu86vrnb85KdceMHRUuWXD35RW6238x4dP2veo3iI/9hxtzoTNxhuBLEE
-KygPwuRudPaQUEJhfGRxeaC7fJwL+R7asuom3/SPdIPcMqURBhHp/2s1pCPQu05v
-5DnYVybFqiTGZQkOXmATV08AEL8xDHhKoE6BkNOO6PGzsQBfM35Qu0RVIchdG8KF
-8h5QHiUlm7kwPgTOFinBMYMQ3I8Nn2HTuW7T/TSULIAIIs/lmkDkawet/BnaQVTw
-7chaj8/tJ1b4HT2F7C5fqG8nWaFrsO2eLVYbD5Uk863trpwaSFJcM48+I3VL9zCR
-lBY8+ukF6EgKaBF/C52xzKULfA3FJ5lkcXDNRD/wvqNWhurnkI48+qbziM+Khj2Z
-0lWUA2WYtXbdS9pX2mwX
-=Jn5D
+iQIcBAEBAgAGBQJR8iWkAAoJEPo9qoy8lh71N/4P/1E5knfrJW5+cdjT5G8656fa
+zJ6ZSqjVnB8SBp5jU7jC0gmssDC/02USD+qTNn1SH+VSEP4D8X1Lqof8yQgCP11g
+i7zzWcrDuKBFfZ6H92QavYtHPLws+tYU1w4jI2/cBF1rG+gKx7zruGc6ZiJm96pa
+CQNC0JYriwqs9yV1W+8DT0CXGPV3/eactw6msqEyNqAiczNgUsSjPKwZTDAvXx5C
+G/Rfrtqx6svoexJf7WOZw1sg3uLw9hjj/JReYgNWmDcfZ4TfFzVBezrJyfIYPPab
+UMjcU+oafFyvMPJOzvWboIFN5qAUqciaitkkT+96YmH8KkivCvwt2IOXLmBlBcOD
+puro89iXQe2sIe2hhz9c59WOd1/iYE/0a1+Oux51LaIqOpUIRyLMX3nOZZmllg0a
+pPMPwJaNhy2PilRHuN8mVsHdOpQU3lmTp8f8BcFGQWCM1M3NltXScteZuTVt3EOW
+IkyTFoZAQa8IfaoWvVMIUCcXs+KysrUuAu/N9iUDhVqoBEVn3oWNC7dmdffzrkB6
+jecpvzaMlpvMQgynHVWsIhxn9qv1pZLph49D51wib7OOzNQRUSKoGh/21sM3bNMc
+trvCQC+i3PsJUnTKgStkEyL2q2KZ73X2ZnxKVKyiin+RmT/10gAsphhsvxKobZiE
+0VlJZyOq9TrBmFOLW460
+=zqCr
 -----END PGP SIGNATURE-----
 
-------enig2SAWTHVNSUUCNELQKKVBS--
+--RsG8ogCcBoo8VFhuj7elAuAaQDJPcJI6C--
