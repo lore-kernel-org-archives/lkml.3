@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab3GZNR0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:17:26 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37953 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab3GZNRY (ORCPT
+	id S1758805Ab3GZNSq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:18:46 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38691 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758009Ab3GZNSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:17:24 -0400
-Message-ID: <51F276D8.9090906@free-electrons.com>
-Date: Fri, 26 Jul 2013 15:17:12 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Hector Palacios <hector.palacios@digi.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+	Fri, 26 Jul 2013 09:18:42 -0400
+Date: Fri, 26 Jul 2013 14:14:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>
-Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <51EE4300.7070802@metafoo.de> <51EE8445.6070603@digi.com>
-In-Reply-To: <51EE8445.6070603@digi.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+	people interested in device tree janitoring / cleanup?]
+Message-ID: <20130726131423.GL24642@n2100.arm.linux.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <51F168FC.9070906@wwwdotorg.org> <20130725182920.GA24955@e106331-lin.cambridge.arm.com> <20130725184834.GA8296@netboy> <20130725213753.GC17616@obsidianresearch.com> <20130726080115.GA5436@netboy> <1374831744.2923.42.camel@shinybook.infradead.org> <20130726130927.GC4219@netboy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726130927.GC4219@netboy>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/2013 15:25, Hector Palacios wrote:
-> Dear Lars,
->
-> On 07/23/2013 10:46 AM, Lars-Peter Clausen wrote:
->> On 07/22/2013 04:04 PM, Hector Palacios wrote:
->> [...]
->>>
->>> +static ssize_t mxs_lradc_show_scale_available_ch(struct device *dev,
->>> +        struct device_attribute *attr,
->>> +        char *buf,
->>> +        int ch)
->>> +{
->>> +    struct iio_dev *iio = dev_to_iio_dev(dev);
->>> +    struct mxs_lradc *lradc = iio_priv(iio);
->>> +    int i, len = 0;
->>> +
->>> +    for (i = 0; i < ARRAY_SIZE(lradc->scale_avail[ch]); i++)
->>> +        len += sprintf(buf + len, "%d.%09u ",
->>> +                   lradc->scale_avail[ch][i].integer,
->>> +                   lradc->scale_avail[ch][i].nano);
->>> +
->>> +    len += sprintf(buf + len, "\n");
->>> +
->>> +    return len;
->>> +}
->>> +
->>> +static ssize_t mxs_lradc_show_scale_available(struct device *dev,
->>> +        struct device_attribute *attr,
->>> +        char *buf)
->>> +{
->>> +    struct iio_dev_attr *iio_attr = to_iio_dev_attr(attr);
->>> +
->>> +    return mxs_lradc_show_scale_available_ch(dev, attr, buf,
->>> +                         iio_attr->address);
->>> +}
->>> +
->>> +#define SHOW_SCALE_AVAILABLE_ATTR(ch)                    \
->>> +static IIO_DEVICE_ATTR(in_voltage##ch##_scale_available, S_IRUGO,    \
->>> +               mxs_lradc_show_scale_available, NULL, ch)
->>> +
->>> +SHOW_SCALE_AVAILABLE_ATTR(0);
->>> +SHOW_SCALE_AVAILABLE_ATTR(1);
->>> +SHOW_SCALE_AVAILABLE_ATTR(2);
->>> +SHOW_SCALE_AVAILABLE_ATTR(3);
->>> +SHOW_SCALE_AVAILABLE_ATTR(4);
->>> +SHOW_SCALE_AVAILABLE_ATTR(5);
->>> +SHOW_SCALE_AVAILABLE_ATTR(6);
->>> +SHOW_SCALE_AVAILABLE_ATTR(7);
->>> +SHOW_SCALE_AVAILABLE_ATTR(8);
->>> +SHOW_SCALE_AVAILABLE_ATTR(9);
->>> +SHOW_SCALE_AVAILABLE_ATTR(10);
->>> +SHOW_SCALE_AVAILABLE_ATTR(11);
->>> +SHOW_SCALE_AVAILABLE_ATTR(12);
->>> +SHOW_SCALE_AVAILABLE_ATTR(13);
->>> +SHOW_SCALE_AVAILABLE_ATTR(14);
->>> +SHOW_SCALE_AVAILABLE_ATTR(15);
->>> +
->>> +static struct attribute *mxs_lradc_attributes[] = {
->>> +    &iio_dev_attr_in_voltage0_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage1_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage2_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage3_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage4_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage5_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage6_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage7_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage8_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage9_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage10_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage11_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage12_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage13_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage14_scale_available.dev_attr.attr,
->>> +    &iio_dev_attr_in_voltage15_scale_available.dev_attr.attr,
->>> +    NULL
->>> +};
->>
->> This should really be using the iio_chan_spec_ext_info
->> infrastructure. Bonus
->> points for factoring out the common code used to calculate and
->> display the
->> scales.
->
-> I perfectly understand. Sadly, I don't currently have the time and
-> expertise to try to work this out the proper way. It already took much
-> longer than expected to have this driver toggle a divider flag.
->
-> I'd appreciate if anyone wishes to complete this job.
-> @Alexander, please feel free to submit your other temp patch without
-> waiting for this one.
->
+On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
+> On Fri, Jul 26, 2013 at 10:42:24AM +0100, David Woodhouse wrote:
+> > On Fri, 2013-07-26 at 10:01 +0200, Richard Cochran wrote:
+> > > On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
+> > > > 
+> > > > We use DT has a kernel configuration input. Our environment is
+> > > > designed to guarantee 100% that the kernel and DT match exactly. DT
+> > > > very deliberately isn't an ABI boundary in our systems.
+> > > 
+> > > Think about what you just said.
+> > > 
+> > > The DT describes the *hardware* not the kernel. Why should you ever
+> > > need to update your DT at all?
+> > 
+> > Well, the nodes which describe hardware devices, according to the
+> > bindings which form an ABI contract between DT and drivers, should not
+> > normally change. Although they *can* change, if for example you change
+> > the MAC address and that's stored there. Or you change the PHY you want
+> > it to use. Or something like that. The *ABI* doesn't change, but the
+> > data you express *using* that ABI can change. That's kind of the point.
+> 
+> Unless I totally misunderstood, the thread is talking about letting
+> established bindings change with each new kernel version.  I am
+> opposed to that.
+> 
+> Of course, a user may want to change the values of his MAC addresses,
+> if he needs to. But he should never have to change *how* he specifies
+> those addresses.
+> 
+> So, as long as everyone can agree to the principle that a working DT
+> should remain working after a kernel upgrade, then I'll shut up. In
+> actual fact, this is not the case today, nor was it ever so in the
+> past, AFAICT, but it never hurts to set goals.
 
-Maybe, we can get the patch set as is and do further clean up later.
-Anyway, that driver is still in staging, right ?
+We agree.
 
-As said, I'm willing to propose something for the scale calculation.
+That's precisely why I'm saying that once a binding appears in a -final
+released kernel, it is _stable_ by that very fact.  If there were any
+doubts about it, it should never have been accepted into the kernel tree
+in the first place.
 
+It's no different from how we treat syscalls.  Once we accept a syscall
+and it's published in a -final kernel, it can't then be altered - it can
+be supplemented by a new syscall with a different interface, but the old
+one remains and keeps its semantics for a great many years.
 
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+There's no reason for DT to be any different in this regard.
