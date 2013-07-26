@@ -1,987 +1,1064 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594Ab3GZM2F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:28:05 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:47214 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757366Ab3GZM17 (ORCPT
+	id S1758627Ab3GZM3e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:29:34 -0400
+Received: from relay.parallels.com ([195.214.232.42]:54985 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757321Ab3GZM3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:27:59 -0400
+	Fri, 26 Jul 2013 08:29:32 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-fsdevel@vger.kernel.org>, <linux-mm@kvack.org>, <criu@openvz.org>,
+        <devel@openvz.org>, <xemul@parallels.com>
+Subject: [PATCH RFC] pram: persistent over-kexec memory file system
+Date: Fri, 26 Jul 2013 16:29:23 +0400
+Message-ID: <1374841763-11958-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <20130725211521.GE18254@gmail.com>
-References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
- <20130725112123.GT27075@twins.programming.kicks-ass.net> <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
- <20130725164051.GZ27075@twins.programming.kicks-ass.net> <20130725211521.GE18254@gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 26 Jul 2013 05:27:27 -0700
-Message-ID: <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
-Subject: PROBLEM: Persistent unfair sharing of a processor by auto groups in
- 3.11-rc2 (has twice regressed)
-To: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.30.24.234]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Moving to LKML]
+Hi,
 
-Max sent in the following (best ever) bug report:
+We want to propose a way to upgrade a kernel on a machine without
+restarting all the user-space services. This is to be done with CRIU
+project, but we need help from the kernel to preserve some data in
+memory while doing kexec.
 
-On Wed, Jul 24, 2013 at 8:41 AM, Max Hailperin <max@gustavus.edu> wrote:
-> [1.] One line summary of the problem:
-> Persistent unfair sharing of a processor by auto groups in 3.11-rc2 (has
-> twice regressed)
->
-> [2.] Full description of the problem/report:
-> Although I've used bisection to figure out where this problem originated and
-> have a one-line patch that fixes it, I don't understand the root cause and
-> don't have any reason to think my patch is the right one.
->
-> If I run a single processor-hogging loop in each of two terminal windows (so
-> one task in each of two auto groups) and use schedtool to pin each of them
-> on processor 0, they ought to each get 50% of that processor's time.
-> However, a substantial fraction of my trials of this experiment (detailed in
-> section 7 below) produce a different result: the two tasks get persistently
-> stuck in some ratio other than 50/50.  In the screenshot I have attached,
-> they are running 55/45, but I have observed as extreme as 66/33. Whatever
-> the ratio is, it remains fixed aside from minor fluctuations for as long as
-> I let it run, which has been over an hour.  This phenomenon doesn't show up
-> if I boot with nosmp rather than using schedtool or if I disable auto
-> grouping.  The tasks really are getting disproportionate CPU rather than
-> just looking that way due to some accounting malfunction; I've confirmed
-> this by having each produce output every N iterations so that I can see they
-> are running at different rates.
->
-> Bisection reveals that this problem most recently was introduced by commit
-> 17bc14b767cf0692420c43dbe5310ae98a5a7836 which reverted commit
-> f269ae0469fc882332bdfb5db15d3c1315fe2a10 (sched: Update_cfs_shares at period
-> edge). In between these two commits, I consistently get 50/50 sharing aside
-> from  small fluctuations.
->
-> As suggested by the problem having been (re-) introduced by a revert, it was
-> also present as of the parent commit of the reverted commit (that is, as of
-> 48a1675323fa1b7844e479ad2a4469f4558c0f79).  A second round of bisection
-> looking backward from there identifies the problem as having initially been
-> introduced in commit 82958366cfea1a50e7e90907b2d55ae29ed69974 (sched:
-> Replace update_shares weight distribution with per-entity computation).
->
-> I was able to make the problem go away by applying to 3.11-rc2 the one-line
-> patch I have attached, which is a subset of the reverted commit.
->
-> [3.] Keywords (i.e., modules, networking, kernel):
-> sched
->
-> [4.] Kernel information
-> [4.1.] Kernel version (from /proc/version):
-> Linux version 3.11.0-rc2 (max@max-st1-Inspiron-5423) (gcc version 4.7.3
-> (Ubuntu/Linaro 4.7.3-1ubuntu1) ) #1 SMP Tue Jul 23 13:09:32 CDT 2013
->
-> [4.2.] Kernel .config file:
-> See the attached config file.
->
-> [5.] Most recent kernel version which did not have the bug:
-> See bisection information above.
->
-> [6.] Output of Oops.. message (if applicable) with symbolic information
->      resolved (see Documentation/oops-tracing.txt)
-> N/A
->
-> [7.] A small shell script or example program which triggers the
->      problem (if possible)
-> In each of two terminal windows give the command
->   schedtool -a 0 -e bash -c 'while ((1)); do :; done'
-> while in a third terminal window running top to observe the result. See the
-> attached screenshot for an example.  The results are not consistent, but in
-> the buggy versions of the kernel, many of the attempts will show the tasks
-> running in a non-50/50 ratio (persistently). It's never taken me more than a
-> handful of tries to see the effect. Also, in the cases where the tasks are
-> running in more or less 50/50, if I stop one with control-z and then restart
-> it, sometimes that is enough to switch to disproportionate execution.
->
-> [8.] Environment
-> [8.1.] Software (add the output of the ver_linux script here)
-> If some fields are empty or look unusual you may have an old version.
-> Compare to the current minimal requirements in Documentation/Changes.
->
-> Linux max-st1-Inspiron-5423 3.11.0-rc2 #1 SMP Tue Jul 23 13:09:32 CDT 2013
-> x86_64 x86_64 x86_64 GNU/Linux
->
-> Gnu C                  4.7
-> Gnu make               3.81
-> binutils               2.23.2
-> util-linux             2.20.1
-> mount                  support
-> module-init-tools      9
-> e2fsprogs              1.42.5
-> pcmciautils            018
-> PPP                    2.4.5
-> Linux C Library        2.17
-> Dynamic linker (ldd)   2.17
-> Procps                 3.3.3
-> Net-tools              1.60
-> Kbd                    1.15.5
-> Sh-utils               8.20
-> wireless-tools         30
-> Modules Loaded         rfcomm parport_pc bnep ppdev arc4 iwldvm mac80211
-> i915 snd_hda_codec_hdmi snd_hda_codec_idt snd_hda_intel snd_hda_codec
-> iwlwifi drm_kms_helper drm uvcvideo btusb videobuf2_vmalloc videobuf2_memops
-> snd_hwdep videobuf2_core bluetooth snd_pcm videodev joydev snd_page_alloc
-> snd_seq_midi cfg80211 snd_seq_midi_event snd_rawmidi snd_seq snd_seq_device
-> snd_timer mei_me lp i2c_algo_bit psmouse snd mei video rts5139 dell_laptop
-> dcdbas dell_wmi lpc_ich parport sparse_keymap mac_hid serio_raw soundcore
-> wmi ahci libahci alx mdio
->
-> [8.2.] Processor information (from /proc/cpuinfo):
-> processor : 0
-> vendor_id : GenuineIntel
-> cpu family : 6
-> model : 58
-> model name : Intel(R) Core(TM) i3-3217U CPU @ 1.80GHz
-> stepping : 9
-> microcode : 0x15
-> cpu MHz : 864.000
-> cache size : 3072 KB
-> physical id : 0
-> siblings : 4
-> core id : 0
-> cpu cores : 2
-> apicid : 0
-> initial apicid : 0
-> fpu : yes
-> fpu_exception : yes
-> cpuid level : 13
-> wp : yes
-> flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat
-> pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm
-> constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc
-> aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3
-> cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave avx
-> f16c lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi
-> flexpriority ept vpid fsgsbase smep erms
-> bogomips : 3591.91
-> clflush size : 64
-> cache_alignment : 64
-> address sizes : 36 bits physical, 48 bits virtual
-> power management:
->
-> processor : 1
-> vendor_id : GenuineIntel
-> cpu family : 6
-> model : 58
-> model name : Intel(R) Core(TM) i3-3217U CPU @ 1.80GHz
-> stepping : 9
-> microcode : 0x15
-> cpu MHz : 990.000
-> cache size : 3072 KB
-> physical id : 0
-> siblings : 4
-> core id : 1
-> cpu cores : 2
-> apicid : 2
-> initial apicid : 2
-> fpu : yes
-> fpu_exception : yes
-> cpuid level : 13
-> wp : yes
-> flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat
-> pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm
-> constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc
-> aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3
-> cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave avx
-> f16c lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi
-> flexpriority ept vpid fsgsbase smep erms
-> bogomips : 3591.91
-> clflush size : 64
-> cache_alignment : 64
-> address sizes : 36 bits physical, 48 bits virtual
-> power management:
->
-> processor : 2
-> vendor_id : GenuineIntel
-> cpu family : 6
-> model : 58
-> model name : Intel(R) Core(TM) i3-3217U CPU @ 1.80GHz
-> stepping : 9
-> microcode : 0x15
-> cpu MHz : 792.000
-> cache size : 3072 KB
-> physical id : 0
-> siblings : 4
-> core id : 0
-> cpu cores : 2
-> apicid : 1
-> initial apicid : 1
-> fpu : yes
-> fpu_exception : yes
-> cpuid level : 13
-> wp : yes
-> flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat
-> pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm
-> constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc
-> aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3
-> cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave avx
-> f16c lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi
-> flexpriority ept vpid fsgsbase smep erms
-> bogomips : 3591.91
-> clflush size : 64
-> cache_alignment : 64
-> address sizes : 36 bits physical, 48 bits virtual
-> power management:
->
-> processor : 3
-> vendor_id : GenuineIntel
-> cpu family : 6
-> model : 58
-> model name : Intel(R) Core(TM) i3-3217U CPU @ 1.80GHz
-> stepping : 9
-> microcode : 0x15
-> cpu MHz : 1116.000
-> cache size : 3072 KB
-> physical id : 0
-> siblings : 4
-> core id : 1
-> cpu cores : 2
-> apicid : 3
-> initial apicid : 3
-> fpu : yes
-> fpu_exception : yes
-> cpuid level : 13
-> wp : yes
-> flags : fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat
-> pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx rdtscp lm
-> constant_tsc arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc
-> aperfmperf eagerfpu pni pclmulqdq dtes64 monitor ds_cpl vmx est tm2 ssse3
-> cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic popcnt tsc_deadline_timer xsave avx
-> f16c lahf_lm ida arat epb xsaveopt pln pts dtherm tpr_shadow vnmi
-> flexpriority ept vpid fsgsbase smep erms
-> bogomips : 3591.91
-> clflush size : 64
-> cache_alignment : 64
-> address sizes : 36 bits physical, 48 bits virtual
-> power management:
->
-> [8.3.] Module information (from /proc/modules):
-> rfcomm 42539 12 - Live 0x0000000000000000
-> parport_pc 32688 0 - Live 0x0000000000000000
-> bnep 18036 2 - Live 0x0000000000000000
-> ppdev 12934 0 - Live 0x0000000000000000
-> arc4 12615 2 - Live 0x0000000000000000
-> iwldvm 241420 0 - Live 0x0000000000000000
-> mac80211 601324 1 iwldvm, Live 0x0000000000000000
-> i915 659650 3 - Live 0x0000000000000000
-> snd_hda_codec_hdmi 41176 1 - Live 0x0000000000000000
-> snd_hda_codec_idt 50389 1 - Live 0x0000000000000000
-> snd_hda_intel 47930 3 - Live 0x0000000000000000
-> snd_hda_codec 188542 3 snd_hda_codec_hdmi,snd_hda_codec_idt,snd_hda_intel,
-> Live 0x0000000000000000
-> iwlwifi 166005 1 iwldvm, Live 0x0000000000000000
-> drm_kms_helper 52880 1 i915, Live 0x0000000000000000
-> drm 292458 4 i915,drm_kms_helper, Live 0x0000000000000000
-> uvcvideo 80784 0 - Live 0x0000000000000000
-> btusb 22517 0 - Live 0x0000000000000000
-> videobuf2_vmalloc 13056 1 uvcvideo, Live 0x0000000000000000
-> videobuf2_memops 13202 1 videobuf2_vmalloc, Live 0x0000000000000000
-> snd_hwdep 13602 1 snd_hda_codec, Live 0x0000000000000000
-> videobuf2_core 40513 1 uvcvideo, Live 0x0000000000000000
-> bluetooth 234284 22 rfcomm,bnep,btusb, Live 0x0000000000000000
-> snd_pcm 101975 3 snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec, Live
-> 0x0000000000000000
-> videodev 133456 2 uvcvideo,videobuf2_core, Live 0x0000000000000000
-> joydev 17377 0 - Live 0x0000000000000000
-> snd_page_alloc 18710 2 snd_hda_intel,snd_pcm, Live 0x0000000000000000
-> snd_seq_midi 13324 0 - Live 0x0000000000000000
-> cfg80211 488276 3 iwldvm,mac80211,iwlwifi, Live 0x0000000000000000
-> snd_seq_midi_event 14899 1 snd_seq_midi, Live 0x0000000000000000
-> snd_rawmidi 30180 1 snd_seq_midi, Live 0x0000000000000000
-> snd_seq 65684 2 snd_seq_midi,snd_seq_midi_event, Live 0x0000000000000000
-> snd_seq_device 14497 3 snd_seq_midi,snd_rawmidi,snd_seq, Live
-> 0x0000000000000000
-> snd_timer 29370 2 snd_pcm,snd_seq, Live 0x0000000000000000
-> mei_me 13684 0 - Live 0x0000000000000000
-> lp 17759 0 - Live 0x0000000000000000
-> i2c_algo_bit 13413 1 i915, Live 0x0000000000000000
-> psmouse 95952 0 - Live 0x0000000000000000
-> snd 69134 17
-> snd_hda_codec_hdmi,snd_hda_codec_idt,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm,snd_seq_midi,snd_rawmidi,snd_seq,snd_seq_device,snd_timer,
-> Live 0x0000000000000000
-> mei 54059 1 mei_me, Live 0x0000000000000000
-> video 19327 1 i915, Live 0x0000000000000000
-> rts5139 315256 0 - Live 0x0000000000000000 (C)
-> dell_laptop 17369 0 - Live 0x0000000000000000
-> dcdbas 14397 1 dell_laptop, Live 0x0000000000000000
-> dell_wmi 12681 0 - Live 0x0000000000000000
-> lpc_ich 21080 0 - Live 0x0000000000000000
-> parport 42214 3 parport_pc,ppdev,lp, Live 0x0000000000000000
-> sparse_keymap 13890 1 dell_wmi, Live 0x0000000000000000
-> mac_hid 13205 0 - Live 0x0000000000000000
-> serio_raw 13253 0 - Live 0x0000000000000000
-> soundcore 12680 1 snd, Live 0x0000000000000000
-> wmi 19070 1 dell_wmi, Live 0x0000000000000000
-> ahci 29915 2 - Live 0x0000000000000000
-> libahci 31885 1 ahci, Live 0x0000000000000000
-> alx 32175 0 - Live 0x0000000000000000
-> mdio 13807 1 alx, Live 0x0000000000000000
->
-> [8.4.] Loaded driver and hardware information (/proc/ioports, /proc/iomem)
-> 0000-0cf7 : PCI Bus 0000:00
->   0000-001f : dma1
->   0020-0021 : pic1
->   0040-0043 : timer0
->   0050-0053 : timer1
->   0060-0060 : keyboard
->   0064-0064 : keyboard
->   0070-0077 : rtc0
->   0080-008f : dma page reg
->   00a0-00a1 : pic2
->   00c0-00df : dma2
->   00f0-00ff : fpu
->   0400-0403 : ACPI PM1a_EVT_BLK
->   0404-0405 : ACPI PM1a_CNT_BLK
->   0408-040b : ACPI PM_TMR
->   0410-0415 : ACPI CPU throttle
->   0420-042f : ACPI GPE0_BLK
->   0430-0433 : iTCO_wdt
->   0450-0450 : ACPI PM2_CNT_BLK
->   0454-0457 : pnp 00:05
->   0458-047f : pnp 00:03
->     0460-047f : iTCO_wdt
->   04d0-04d1 : pnp 00:07
->   0500-057f : pnp 00:03
->   0680-069f : pnp 00:03
-> 0cf8-0cff : PCI conf1
-> 0d00-ffff : PCI Bus 0000:00
->   1000-100f : pnp 00:03
->   164e-164f : pnp 00:03
->   e000-efff : PCI Bus 0000:09
->     e000-e07f : 0000:09:00.0
->   f000-f03f : 0000:00:02.0
->   f040-f05f : 0000:00:1f.3
->   f060-f07f : 0000:00:1f.2
->     f060-f07f : ahci
->   f080-f083 : 0000:00:1f.2
->     f080-f083 : ahci
->   f090-f097 : 0000:00:1f.2
->     f090-f097 : ahci
->   f0a0-f0a3 : 0000:00:1f.2
->     f0a0-f0a3 : ahci
->   f0b0-f0b7 : 0000:00:1f.2
->     f0b0-f0b7 : ahci
->   ffff-ffff : pnp 00:03
->     ffff-ffff : pnp 00:03
->
-> 00000000-00000fff : reserved
-> 00001000-000917ff : System RAM
-> 00091800-0009ffff : reserved
-> 000a0000-000bffff : PCI Bus 0000:00
-> 000c0000-000cedff : Video ROM
-> 000cf000-000d97ff : Adapter ROM
-> 000d9800-000da7ff : Adapter ROM
-> 000dc000-000dffff : PCI Bus 0000:00
-> 000e0000-000fffff : reserved
->   000e0000-000e3fff : PCI Bus 0000:00
->   000e4000-000e7fff : PCI Bus 0000:00
->   000f0000-000fffff : System ROM
-> 00100000-1fffffff : System RAM
->   01000000-016fae8a : Kernel code
->   016fae8b-01d008bf : Kernel data
->   01e5a000-01fccfff : Kernel bss
-> 20000000-201fffff : reserved
->   20000000-201fffff : pnp 00:0b
-> 20200000-40003fff : System RAM
-> 40004000-40004fff : reserved
->   40004000-40004fff : pnp 00:0b
-> 40005000-d82c7fff : System RAM
-> d82c8000-d8d1cfff : reserved
-> d8d1d000-d8d2dfff : ACPI Tables
-> d8d2e000-d9bb7fff : ACPI Non-volatile Storage
-> d9bb8000-da582fff : reserved
-> da583000-da583fff : System RAM
-> da584000-da5c6fff : ACPI Non-volatile Storage
-> da5c7000-da9d7fff : System RAM
-> da9d8000-daff3fff : reserved
-> daff4000-daffffff : System RAM
-> db000000-db7fffff : RAM buffer
-> db800000-df9fffff : reserved
-> dfa00000-feafffff : PCI Bus 0000:00
->   dfa00000-dfa00fff : pnp 00:0a
->   e0000000-efffffff : 0000:00:02.0
->   f7800000-f7bfffff : 0000:00:02.0
->   f7c00000-f7cfffff : PCI Bus 0000:09
->     f7c00000-f7c3ffff : 0000:09:00.0
->       f7c00000-f7c3ffff : alx
->   f7d00000-f7dfffff : PCI Bus 0000:07
->     f7d00000-f7d01fff : 0000:07:00.0
->       f7d00000-f7d01fff : iwlwifi
->   f7e00000-f7e0ffff : 0000:00:14.0
->     f7e00000-f7e0ffff : xhci_hcd
->   f7e10000-f7e13fff : 0000:00:1b.0
->     f7e10000-f7e13fff : ICH HD audio
->   f7e15000-f7e150ff : 0000:00:1f.3
->   f7e16000-f7e167ff : 0000:00:1f.2
->     f7e16000-f7e167ff : ahci
->   f7e17000-f7e173ff : 0000:00:1d.0
->     f7e17000-f7e173ff : ehci_hcd
->   f7e18000-f7e183ff : 0000:00:1a.0
->     f7e18000-f7e183ff : ehci_hcd
->   f7e1b000-f7e1b00f : 0000:00:16.0
->     f7e1b000-f7e1b00f : mei_me
->   f8000000-fbffffff : PCI MMCONFIG 0000 [bus 00-3f]
->     f8000000-fbffffff : reserved
->       f8000000-fbffffff : pnp 00:0a
->   fe800000-fe802fff : pnp 00:07
-> fec00000-fec00fff : reserved
->   fec00000-fec003ff : IOAPIC 0
-> fed00000-fed03fff : reserved
->   fed00000-fed003ff : HPET 0
-> fed10000-fed17fff : pnp 00:0a
-> fed18000-fed18fff : pnp 00:0a
-> fed19000-fed19fff : pnp 00:0a
-> fed1c000-fed1ffff : reserved
->   fed1c000-fed1ffff : pnp 00:0a
->     fed1f410-fed1f414 : iTCO_wdt
-> fed20000-fed3ffff : pnp 00:0a
-> fed45000-fed8ffff : pnp 00:0a
-> fed90000-fed93fff : pnp 00:0a
-> fee00000-fee00fff : Local APIC
->   fee00000-fee00fff : reserved
-> ff000000-ffffffff : reserved
->   ff000000-ffffffff : pnp 00:0a
-> 100000000-11f5fffff : System RAM
-> 11f600000-11fffffff : RAM buffer
->
-> [8.5.] PCI information ('lspci -vvv' as root)
-> 00:00.0 Host bridge: Intel Corporation 3rd Gen Core processor DRAM
-> Controller (rev 09)
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort+ >SERR- <PERR- INTx-
-> Latency: 0
-> Capabilities: [e0] Vendor Specific Information: Len=0c <?>
->
-> 00:02.0 VGA compatible controller: Intel Corporation 3rd Gen Core processor
-> Graphics Controller (rev 09) (prog-if 00 [VGA controller])
-> Subsystem: Dell Device 057e
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin A routed to IRQ 45
-> Region 0: Memory at f7800000 (64-bit, non-prefetchable) [size=4M]
-> Region 2: Memory at e0000000 (64-bit, prefetchable) [size=256M]
-> Region 4: I/O ports at f000 [size=64]
-> Expansion ROM at <unassigned> [disabled]
-> Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
-> Address: fee0f00c  Data: 41e1
-> Capabilities: [d0] Power Management version 2
-> Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [a4] PCI Advanced Features
-> AFCap: TP+ FLR+
-> AFCtrl: FLR-
-> AFStatus: TP-
-> Kernel driver in use: i915
->
-> 00:14.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-> Family USB xHCI Host Controller (rev 04) (prog-if 30 [XHCI])
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin A routed to IRQ 40
-> Region 0: Memory at f7e00000 (64-bit, non-prefetchable) [size=64K]
-> Capabilities: [70] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0-,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [80] MSI: Enable+ Count=1/8 Maskable- 64bit+
-> Address: 00000000fee0f00c  Data: 4181
-> Kernel driver in use: xhci_hcd
->
-> 00:16.0 Communication controller: Intel Corporation 7 Series/C210 Series
-> Chipset Family MEI Controller #1 (rev 04)
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin A routed to IRQ 42
-> Region 0: Memory at f7e1b000 (64-bit, non-prefetchable) [size=16]
-> Capabilities: [50] Power Management version 3
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [8c] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> Address: 00000000fee0f00c  Data: 41a1
-> Kernel driver in use: mei_me
->
-> 00:1a.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-> Family USB Enhanced Host Controller #2 (rev 04) (prog-if 20 [EHCI])
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin A routed to IRQ 16
-> Region 0: Memory at f7e18000 (32-bit, non-prefetchable) [size=1K]
-> Capabilities: [50] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [58] Debug port: BAR=1 offset=00a0
-> Capabilities: [98] PCI Advanced Features
-> AFCap: TP+ FLR+
-> AFCtrl: FLR-
-> AFStatus: TP-
-> Kernel driver in use: ehci-pci
->
-> 00:1b.0 Audio device: Intel Corporation 7 Series/C210 Series Chipset Family
-> High Definition Audio Controller (rev 04)
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Interrupt: pin A routed to IRQ 44
-> Region 0: Memory at f7e10000 (64-bit, non-prefetchable) [size=16K]
-> Capabilities: [50] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [60] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> Address: 00000000fee0f00c  Data: 41d1
-> Capabilities: [70] Express (v1) Root Complex Integrated Endpoint, MSI 00
-> DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-> ExtTag- RBE- FLReset+
-> DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> MaxPayload 128 bytes, MaxReadReq 128 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #0, Speed unknown, Width x0, ASPM unknown, Latency L0 <64ns, L1
-> <1us
-> ClockPM- Surprise- LLActRep- BwNot-
-> LnkCtl: ASPM Disabled; Disabled- Retrain- CommClk-
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed unknown, Width x0, TrErr- Train- SlotClk- DLActive- BWMgmt-
-> ABWMgmt-
-> Capabilities: [100 v1] Virtual Channel
-> Caps: LPEVC=0 RefClk=100ns PATEntryBits=1
-> Arb: Fixed- WRR32- WRR64- WRR128-
-> Ctrl: ArbSelect=Fixed
-> Status: InProgress-
-> VC0: Caps: PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-> Arb: Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-> Ctrl: Enable+ ID=0 ArbSelect=Fixed TC/VC=01
-> Status: NegoPending- InProgress-
-> VC1: Caps: PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
-> Arb: Fixed- WRR32- WRR64- WRR128- TWRR128- WRR256-
-> Ctrl: Enable+ ID=1 ArbSelect=Fixed TC/VC=22
-> Status: NegoPending- InProgress-
-> Capabilities: [130 v1] Root Complex Link
-> Desc: PortNumber=0f ComponentID=00 EltType=Config
-> Link0: Desc: TargetPort=00 TargetComponent=00 AssocRCRB- LinkType=MemMapped
-> LinkValid+
-> Addr: 00000000fed1c000
-> Kernel driver in use: snd_hda_intel
->
-> 00:1c.0 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family
-> PCI Express Root Port 1 (rev c4) (prog-if 00 [Normal decode])
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Bus: primary=00, secondary=04, subordinate=04, sec-latency=0
-> I/O behind bridge: 0000f000-00000fff
-> Memory behind bridge: fff00000-000fffff
-> Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-> Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort+ <SERR- <PERR-
-> BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
-> PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-> Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
-> DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-> ExtTag- RBE+ FLReset-
-> DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> MaxPayload 128 bytes, MaxReadReq 128 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #1, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <1us, L1
-> <16us
-> ClockPM- Surprise- LLActRep+ BwNot-
-> LnkCtl: ASPM L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk-
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed 2.5GT/s, Width x0, TrErr- Train- SlotClk+ DLActive- BWMgmt-
-> ABWMgmt-
-> SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-> Slot #0, PowerLimit 10.000W; Interlock- NoCompl+
-> SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-> Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
-> SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet- Interlock-
-> Changed: MRL- PresDet- LinkState-
-> RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
-> RootCap: CRSVisible-
-> RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-> DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
-> DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
-> LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable
-> De-emphasis: -6dB
-> Transmit Margin: Normal Operating Range, EnterModifiedCompliance-
-> ComplianceSOS-
-> Compliance De-emphasis: -6dB
-> LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-,
-> EqualizationPhase1-
-> EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-> Address: 00000000  Data: 0000
-> Capabilities: [90] Subsystem: Dell Device 057e
-> Capabilities: [a0] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Kernel driver in use: pcieport
->
-> 00:1c.3 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family
-> PCI Express Root Port 4 (rev c4) (prog-if 00 [Normal decode])
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Bus: primary=00, secondary=07, subordinate=07, sec-latency=0
-> I/O behind bridge: 0000f000-00000fff
-> Memory behind bridge: f7d00000-f7dfffff
-> Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-> Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- <SERR- <PERR-
-> BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
-> PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-> Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
-> DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-> ExtTag- RBE+ FLReset-
-> DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> MaxPayload 128 bytes, MaxReadReq 128 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #4, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <512ns, L1
-> <16us
-> ClockPM- Surprise- LLActRep+ BwNot-
-> LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ BWMgmt+
-> ABWMgmt-
-> SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-> Slot #3, PowerLimit 10.000W; Interlock- NoCompl+
-> SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-> Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
-> SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-> Changed: MRL- PresDet- LinkState-
-> RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
-> RootCap: CRSVisible-
-> RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-> DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
-> DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
-> LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable
-> De-emphasis: -6dB
-> Transmit Margin: Normal Operating Range, EnterModifiedCompliance-
-> ComplianceSOS-
-> Compliance De-emphasis: -6dB
-> LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-,
-> EqualizationPhase1-
-> EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-> Address: 00000000  Data: 0000
-> Capabilities: [90] Subsystem: Dell Device 057e
-> Capabilities: [a0] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Kernel driver in use: pcieport
->
-> 00:1c.5 PCI bridge: Intel Corporation 7 Series/C210 Series Chipset Family
-> PCI Express Root Port 6 (rev c4) (prog-if 00 [Normal decode])
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Bus: primary=00, secondary=09, subordinate=09, sec-latency=0
-> I/O behind bridge: 0000e000-0000efff
-> Memory behind bridge: f7c00000-f7cfffff
-> Prefetchable memory behind bridge: 00000000fff00000-00000000000fffff
-> Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- <SERR- <PERR-
-> BridgeCtl: Parity- SERR- NoISA- VGA- MAbort- >Reset- FastB2B-
-> PriDiscTmr- SecDiscTmr- DiscTmrStat- DiscTmrSERREn-
-> Capabilities: [40] Express (v2) Root Port (Slot+), MSI 00
-> DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <64ns, L1 <1us
-> ExtTag- RBE+ FLReset-
-> DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> MaxPayload 128 bytes, MaxReadReq 128 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #6, Speed 5GT/s, Width x1, ASPM L0s L1, Latency L0 <512ns, L1
-> <16us
-> ClockPM- Surprise- LLActRep+ BwNot-
-> LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive+ BWMgmt+
-> ABWMgmt-
-> SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- PwrInd- HotPlug- Surprise-
-> Slot #5, PowerLimit 10.000W; Interlock- NoCompl+
-> SltCtl: Enable: AttnBtn- PwrFlt- MRL- PresDet- CmdCplt- HPIrq- LinkChg-
-> Control: AttnInd Unknown, PwrInd Unknown, Power- Interlock-
-> SltSta: Status: AttnBtn- PowerFlt- MRL- CmdCplt- PresDet+ Interlock-
-> Changed: MRL- PresDet- LinkState-
-> RootCtl: ErrCorrectable- ErrNon-Fatal- ErrFatal- PMEIntEna- CRSVisible-
-> RootCap: CRSVisible-
-> RootSta: PME ReqID 0000, PMEStatus- PMEPending-
-> DevCap2: Completion Timeout: Range BC, TimeoutDis+ ARIFwd-
-> DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis- ARIFwd-
-> LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable
-> De-emphasis: -6dB
-> Transmit Margin: Normal Operating Range, EnterModifiedCompliance-
-> ComplianceSOS-
-> Compliance De-emphasis: -6dB
-> LnkSta2: Current De-emphasis Level: -3.5dB, EqualizationComplete-,
-> EqualizationPhase1-
-> EqualizationPhase2-, EqualizationPhase3-, LinkEqualizationRequest-
-> Capabilities: [80] MSI: Enable- Count=1/1 Maskable- 64bit-
-> Address: 00000000  Data: 0000
-> Capabilities: [90] Subsystem: Dell Device 057e
-> Capabilities: [a0] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Kernel driver in use: pcieport
->
-> 00:1d.0 USB controller: Intel Corporation 7 Series/C210 Series Chipset
-> Family USB Enhanced Host Controller #1 (rev 04) (prog-if 20 [EHCI])
-> Subsystem: Dell Device 057e
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin A routed to IRQ 23
-> Region 0: Memory at f7e17000 (32-bit, non-prefetchable) [size=1K]
-> Capabilities: [50] Power Management version 2
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [58] Debug port: BAR=1 offset=00a0
-> Capabilities: [98] PCI Advanced Features
-> AFCap: TP+ FLR+
-> AFCtrl: FLR-
-> AFStatus: TP-
-> Kernel driver in use: ehci-pci
->
-> 00:1f.0 ISA bridge: Intel Corporation HM77 Express Chipset LPC Controller
-> (rev 04)
-> Subsystem: Dell Device 057e
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Capabilities: [e0] Vendor Specific Information: Len=0c <?>
-> Kernel driver in use: lpc_ich
->
-> 00:1f.2 RAID bus controller: Intel Corporation 82801 Mobile SATA Controller
-> [RAID mode] (rev 04)
-> Subsystem: Dell Device 057e
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0
-> Interrupt: pin B routed to IRQ 41
-> Region 0: I/O ports at f0b0 [size=8]
-> Region 1: I/O ports at f0a0 [size=4]
-> Region 2: I/O ports at f090 [size=8]
-> Region 3: I/O ports at f080 [size=4]
-> Region 4: I/O ports at f060 [size=32]
-> Region 5: Memory at f7e16000 (32-bit, non-prefetchable) [size=2K]
-> Capabilities: [80] MSI: Enable+ Count=1/1 Maskable- 64bit-
-> Address: fee0500c  Data: 4191
-> Capabilities: [70] Power Management version 3
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot+,D3cold-)
-> Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [a8] SATA HBA v1.0 BAR4 Offset=00000004
-> Capabilities: [b0] PCI Advanced Features
-> AFCap: TP+ FLR+
-> AFCtrl: FLR-
-> AFStatus: TP-
-> Kernel driver in use: ahci
->
-> 00:1f.3 SMBus: Intel Corporation 7 Series/C210 Series Chipset Family SMBus
-> Controller (rev 04)
-> Subsystem: Dell Device 057e
-> Control: I/O+ Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap- 66MHz- UDF- FastB2B+ ParErr- DEVSEL=medium >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Interrupt: pin C routed to IRQ 11
-> Region 0: Memory at f7e15000 (64-bit, non-prefetchable) [size=256]
-> Region 4: I/O ports at f040 [size=32]
->
-> 07:00.0 Network controller: Intel Corporation Centrino Wireless-N 2230 (rev
-> c4)
-> Subsystem: Intel Corporation Centrino Wireless-N 2230 BGN
-> Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx+
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Interrupt: pin A routed to IRQ 43
-> Region 0: Memory at f7d00000 (64-bit, non-prefetchable) [size=8K]
-> Capabilities: [c8] Power Management version 3
-> Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-> Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [d0] MSI: Enable+ Count=1/1 Maskable- 64bit+
-> Address: 00000000fee0400c  Data: 41b1
-> Capabilities: [e0] Express (v1) Endpoint, MSI 00
-> DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <512ns, L1 unlimited
-> ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset+
-> DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop+ FLReset-
-> MaxPayload 128 bytes, MaxReadReq 128 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <4us, L1
-> <32us
-> ClockPM+ Surprise- LLActRep- BwNot-
-> LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt-
-> ABWMgmt-
-> Capabilities: [100 v1] Advanced Error Reporting
-> UESta: DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP-
-> ECRC- UnsupReq- ACSViol-
-> UEMsk: DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP-
-> ECRC- UnsupReq- ACSViol-
-> UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+
-> ECRC- UnsupReq- ACSViol-
-> CESta: RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-> CEMsk: RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-> AERCap: First Error Pointer: 00, GenCap- CGenEn- ChkCap- ChkEn-
-> Capabilities: [140 v1] Device Serial Number 60-36-dd-ff-ff-32-f8-6b
-> Kernel driver in use: iwlwifi
->
-> 09:00.0 Ethernet controller: Qualcomm Atheros AR8162 Fast Ethernet (rev 10)
-> Subsystem: Dell Device 057e
-> Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
-> Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort-
-> <MAbort- >SERR- <PERR- INTx-
-> Latency: 0, Cache Line Size: 64 bytes
-> Interrupt: pin A routed to IRQ 46
-> Region 0: Memory at f7c00000 (64-bit, non-prefetchable) [size=256K]
-> Region 2: I/O ports at e000 [size=128]
-> Capabilities: [40] Power Management version 3
-> Flags: PMEClk- DSI- D1- D2- AuxCurrent=375mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
-> Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
-> Capabilities: [58] Express (v1) Endpoint, MSI 00
-> DevCap: MaxPayload 4096 bytes, PhantFunc 0, Latency L0s unlimited, L1
-> unlimited
-> ExtTag- AttnBtn+ AttnInd+ PwrInd+ RBE+ FLReset-
-> DevCtl: Report errors: Correctable+ Non-Fatal+ Fatal+ Unsupported+
-> RlxdOrd- ExtTag- PhantFunc- AuxPwr- NoSnoop-
-> MaxPayload 128 bytes, MaxReadReq 512 bytes
-> DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr+ TransPend-
-> LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited,
-> L1 unlimited
-> ClockPM+ Surprise- LLActRep- BwNot-
-> LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
-> ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
-> LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt-
-> ABWMgmt-
-> Capabilities: [c0] MSI: Enable+ Count=1/16 Maskable+ 64bit+
-> Address: 00000000fee0f00c  Data: 4122
-> Masking: 0000fffe  Pending: 00000000
-> Capabilities: [d8] MSI-X: Enable- Count=16 Masked-
-> Vector table: BAR=0 offset=00002000
-> PBA: BAR=0 offset=00003000
-> Capabilities: [100 v1] Advanced Error Reporting
-> UESta: DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP-
-> ECRC- UnsupReq- ACSViol-
-> UEMsk: DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP-
-> ECRC- UnsupReq- ACSViol-
-> UESvrt: DLP- SDES+ TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+
-> ECRC- UnsupReq- ACSViol-
-> CESta: RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-> CEMsk: RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr+
-> AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
-> Capabilities: [180 v1] Device Serial Number ff-ba-e6-31-78-45-c4-ff
-> Kernel driver in use: alx
->
-> [8.6.] SCSI information (from /proc/scsi/scsi)
-> Attached devices:
-> Host: scsi0 Channel: 00 Id: 00 Lun: 00
->   Vendor: ATA      Model: ST500LT012-9WS14 Rev: 0001
->   Type:   Direct-Access                    ANSI  SCSI revision: 05
-> Host: scsi1 Channel: 00 Id: 00 Lun: 00
->   Vendor: ATA      Model: Micron C400 Real Rev: 01MG
->   Type:   Direct-Access                    ANSI  SCSI revision: 05
-> Host: scsi4 Channel: 00 Id: 00 Lun: 00
->   Vendor: HL-DT-ST Model: DVD+-RW GU70N    Rev: A102
->   Type:   CD-ROM                           ANSI  SCSI revision: 05
-> Host: scsi6 Channel: 00 Id: 00 Lun: 00
->   Vendor: Generic- Model: xD/SD/M.S.       Rev: 1.00
->   Type:   Direct-Access                    ANSI  SCSI revision: 02
->
-> [8.7.] Other information that might be relevant to the problem
->        (please look in /proc and include all information that you
->        think to be relevant):
-> N/A
->
-> [X.] Other notes, patches, fixes, workarounds:
->
-> The following one-line patch to 3.11-rc2 seems to make the problem go away:
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index bb456f4..b2e659c 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1531,6 +1531,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq
-> *cfs_rq, int force_update)
->   }
->
->   __update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
-> + update_cfs_shares(cfs_rq);
->  }
->
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->
->
->
->
->
->
+The key point of our implementation is leaving process memory in-place
+during reboot. This should eliminate most io operations the services
+would produce during initialization. To achieve this, we have
+implemented a pseudo file system that preserves its content during
+kexec. We propose saving CRIU dump files to this file system, kexec'ing
+and then restoring the processes in the newly booted kernel.
 
-Peter replied:
+A typical usage scenario would look like this:
 
-> Hi Max,
->
-> Thanks for this elaborate bug report; I wish all of them were as
-> thorough. However, is there a reason you omitted CC'ing LKML?
-> > diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> > index bb456f4..b2e659c 100644
-> > --- a/kernel/sched/fair.c
-> > +++ b/kernel/sched/fair.c
-> > @@ -1531,6 +1531,7 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
-> >       }
-> >
-> >       __update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
-> > +     update_cfs_shares(cfs_rq);
-> >  }
-> >
-> >  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
->
-> Ah I see what's happening. Currently we only call update_cfs_shares()
-> from the enqueue/dequeue paths. However since your tasks never sleep and
-> cannot migrate they never pass this code. This in turns means that the
-> inter-cgroup relations (the shares) don't get updated.
->
-> I think your patch would indeed be a correct minimal fix in that it adds
-> a share update to the regular tick path ensuring it gets done even in
-> the absence of enqueues/dequeues.
+ 1) Boot kernel with 'pram_banned=MEMRANGE' boot option
+    (MEMRANGE=MEMMIN-MEMMAX).
+
+    This is to prevent kexec from overwriting persistent data while
+    loading the new kernel. Later on kexec will be forced to load kernel
+    to the range specified. MEMRANGE=0-128M should be enough.
+
+ 2) Mount pram file system and save dump files there:
+
+    # mount -t pram none /mnt
+    # criu dump -D /mnt -t $PID
+
+ 3) Run kexec passing pram location to the new kernel and forcing it to
+    load the kernel image to MEMRAGE:
+
+    # kexec --load /vmlinuz --initrd=initrd.img \
+            --append="$(cat /proc/cmdline | sed -e 's/pram=[^ ]*//g') pram=$(cat /sys/kernel/pram)" \
+            --mem-min=$MEMMIN --mem-max=$MEMMAX
+    # reboot
+
+ 4) After reboot mount pram, restore processes, and cleanup:
+
+    # mount -t pram none /mnt
+    # criu restore -d -D /mnt
+    # rm -f /mnt/*
+    # umount /mnt
+
+In this patch I introduce the pram pseudo file system that keeps its
+memory in place during kexec. pram is based on ramfs, but it serializes
+and leaves in memory its content on unmount, and restores it on the next
+mount. To survive over kexec, pram finds the serialized content, whose
+location should be specified by 'pram' boot param (exported via
+/sys/kernel/pram), and reserves it at early boot. To avoid conflicts
+with other parts of the kernel that make early reservation too, pram
+tracks all memory regions that have ever been reserved and avoids using
+them for storing its data. Plus, it adds 'pram_banned' boot param, which
+can be used to explicitly disallow pram to use specified memory regions.
+This may be useful for avoiding conflicts with kexec loading the new
+kernel image (as it is done in the usage scenario).
+
+This implementation serves as a proof of concept and so has a number of
+limitations:
+
+ * pram only supports regular files; directories, symlinks, etc are
+   ignored
+
+ * pram is implemented only for x86
+
+ * pram does not support swapping out
+
+ * pram checksums serialized content and drops it in case it is
+   corrupted with no possibility of restore
+
+What do you think about it, does it make sense to go on with this
+approach or should we reconsider it as a whole?
+
+Thanks.
+---
+ arch/x86/kernel/setup.c |    2 +
+ fs/Kconfig              |   13 +
+ fs/ramfs/Makefile       |    1 +
+ fs/ramfs/inode.c        |    2 +-
+ fs/ramfs/persistent.c   |  699 +++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/pram.h    |   18 ++
+ include/linux/ramfs.h   |    1 +
+ kernel/ksysfs.c         |   13 +
+ mm/bootmem.c            |    5 +
+ mm/memblock.c           |    7 +-
+ mm/nobootmem.c          |    2 +
+ mm/page_alloc.c         |    3 +
+ 12 files changed, 764 insertions(+), 2 deletions(-)
+ create mode 100644 fs/ramfs/persistent.c
+ create mode 100644 include/linux/pram.h
+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index f8ec578..7d22ad0 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -50,6 +50,7 @@
+ #include <linux/init_ohci1394_dma.h>
+ #include <linux/kvm_para.h>
+ #include <linux/dma-contiguous.h>
++#include <linux/pram.h>
+ 
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -1137,6 +1138,7 @@ void __init setup_arch(char **cmdline_p)
+ 	early_acpi_boot_init();
+ 
+ 	initmem_init();
++	pram_reserve();
+ 	memblock_find_dma_reserve();
+ 
+ #ifdef CONFIG_KVM_GUEST
+diff --git a/fs/Kconfig b/fs/Kconfig
+index c229f82..8d6943f 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -168,6 +168,19 @@ config HUGETLB_PAGE
+ 
+ source "fs/configfs/Kconfig"
+ 
++config PRAM
++	bool "Persistent over-kexec memory storage"
++	depends on X86
++	select CRC32
++	select LIBCRC32C
++	select CRYPTO_CRC32C
++	select CRYPTO_CRC32C_INTEL
++	default n
++	help
++	  pram is a filesystem that saves its content on unmount to be restored
++	  on the next mount after kexec. It can be used for speeding up system
++	  reboot by saving application memory images there.
++
+ endmenu
+ 
+ menuconfig MISC_FILESYSTEMS
+diff --git a/fs/ramfs/Makefile b/fs/ramfs/Makefile
+index c71e65d..e6953d4 100644
+--- a/fs/ramfs/Makefile
++++ b/fs/ramfs/Makefile
+@@ -7,3 +7,4 @@ obj-y += ramfs.o
+ file-mmu-y := file-nommu.o
+ file-mmu-$(CONFIG_MMU) := file-mmu.o
+ ramfs-objs += inode.o $(file-mmu-y)
++ramfs-$(CONFIG_PRAM) += persistent.o
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index c24f1e1..86f9f9a 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -250,7 +250,7 @@ static struct dentry *rootfs_mount(struct file_system_type *fs_type,
+ 	return mount_nodev(fs_type, flags|MS_NOUSER, data, ramfs_fill_super);
+ }
+ 
+-static void ramfs_kill_sb(struct super_block *sb)
++void ramfs_kill_sb(struct super_block *sb)
+ {
+ 	kfree(sb->s_fs_info);
+ 	kill_litter_super(sb);
+diff --git a/fs/ramfs/persistent.c b/fs/ramfs/persistent.c
+new file mode 100644
+index 0000000..a2fe629
+--- /dev/null
++++ b/fs/ramfs/persistent.c
+@@ -0,0 +1,699 @@
++#include <linux/bootmem.h>
++#include <linux/crc32.h>
++#include <linux/crc32c.h>
++#include <linux/err.h>
++#include <linux/fs.h>
++#include <linux/gfp.h>
++#include <linux/highmem.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/kobject.h>
++#include <linux/list.h>
++#include <linux/memblock.h>
++#include <linux/mm.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/namei.h>
++#include <linux/pagemap.h>
++#include <linux/pagevec.h>
++#include <linux/pfn.h>
++#include <linux/pram.h>
++#include <linux/ramfs.h>
++#include <linux/sched.h>
++#include <linux/spinlock.h>
++#include <linux/string.h>
++#include <linux/sysfs.h>
++#include <linux/types.h>
++
++#define PRAM_MAGIC			0x7072616D
++
++#define PRAM_PAGE_META			1
++#define PRAM_PAGE_DATA			2
++#define PRAM_PAGE_TYPE_MASK		0x00ff
++
++#define PRAM_PAGE_LRU			0x0100
++
++struct pram_entry {
++	__u32	flags;			/* PRAM_PAGE_* */
++	__u32	csum;
++	__u64	pfn;
++	__u64	index;
++};
++
++struct pram_link {
++	__u32	magic;
++	__u32	csum;
++	__u32	len;
++	__u64	link_pfn;
++	struct pram_entry entry[0];
++};
++
++#define PRAM_LINK_LEN_MAX \
++	((PAGE_SIZE-sizeof(struct pram_link))/sizeof(struct pram_entry))
++
++struct pram_chain {
++	struct page *head;
++	struct page *curr;
++	void *kmap;
++	unsigned int offset;
++	struct list_head banned;	/* list of allocated banned pages,
++					   linked via page::lru */
++};
++
++struct pram_file_image {
++	__u64	size;
++	__u32	mode;
++	__u32	name_len;
++	__u8	name[NAME_MAX];
++};
++
++struct banned_region {
++	unsigned long start, end;	/* pfn, inclusive */
++};
++
++#define MAX_NR_BANNED		(32 + MAX_NUMNODES * 2)
++
++/* arranged in ascending order, do not overlap */
++static struct banned_region banned[MAX_NR_BANNED];
++static unsigned int nr_banned;
++
++unsigned long __initdata pram_reserved_pages;
++static bool __meminitdata pram_reservation_in_progress;
++
++unsigned long pram_pfn;
++
++static int __init parse_pram_pfn(char *arg)
++{
++	return kstrtoul(arg, 16, &pram_pfn);
++}
++early_param("pram", parse_pram_pfn);
++
++static u32 pram_data_csum(struct page *page)
++{
++	u32 ret;
++	void *addr;
++
++	addr = kmap_atomic(page);
++	ret = crc32c(0, addr, PAGE_SIZE);
++	kunmap_atomic(addr);
++	return ret;
++}
++
++/* SSE-4.2 crc32c faster than crc32, but not available at early boot */
++static inline u32 pram_meta_csum(void *addr)
++{
++	/* skip magic and csum fields */
++	return crc32(0, addr + 8, PAGE_SIZE - 8);
++}
++
++static int __init pram_reserve_page(unsigned long pfn)
++{
++	int err = 0;
++	phys_addr_t base, size;
++
++	if (pfn >= max_pfn)
++		return -EINVAL;
++
++	base = PFN_PHYS(pfn);
++	size = PAGE_SIZE;
++
++#ifdef CONFIG_NO_BOOTMEM
++	if (memblock_is_region_reserved(base, size) ||
++	    memblock_reserve(base, size) < 0)
++		err = -EBUSY;
++#else
++	err = reserve_bootmem(base, size, BOOTMEM_EXCLUSIVE);
++#endif
++	if (err)
++		pr_err("PRAM: pfn:%lx busy\n", pfn);
++	else
++		pram_reserved_pages++;
++	return err;
++}
++
++static void __init pram_unreserve_page(unsigned long pfn)
++{
++	free_bootmem(PFN_PHYS(pfn), PAGE_SIZE);
++	pram_reserved_pages--;
++}
++
++static int __init pram_reserve_link(unsigned long pfn)
++{
++	int i, err = 0;
++	struct pram_link *link = pfn_to_kaddr(pfn);
++
++	err = pram_reserve_page(pfn);
++	if (err)
++		return err;
++	for (i = 0; i < link->len; i++) {
++		struct pram_entry *p = &link->entry[i];
++
++		err = pram_reserve_page(p->pfn);
++		if (err)
++			break;
++		p->flags &= ~PRAM_PAGE_LRU;
++	}
++	if (err) {
++		while (--i >= 0)
++			pram_unreserve_page(link->entry[i].pfn);
++		pram_unreserve_page(pfn);
++	}
++	return err;
++}
++
++static void __init pram_unreserve_link(unsigned long pfn)
++{
++	int i;
++	struct pram_link *link = pfn_to_kaddr(pfn);
++
++	for (i = 0; i < link->len; i++)
++		pram_unreserve_page(link->entry[i].pfn);
++	pram_unreserve_page(pfn);
++}
++
++void __init pram_reserve(void)
++{
++	unsigned long pfn = pram_pfn;
++	struct pram_link *link;
++	int err;
++
++	if (!pfn)
++		return;
++
++	pr_info("PRAM: Examining persistent memory...\n");
++	pram_reservation_in_progress = true;
++
++	do {
++		err = -EINVAL;
++		if (pfn >= max_low_pfn) {
++			pr_err("PRAM: pfn:%lx invalid\n", pfn);
++			break;
++		}
++		link = pfn_to_kaddr(pfn);
++		if (link->magic != PRAM_MAGIC ||
++		    link->csum != pram_meta_csum(link)) {
++			pr_err("PRAM: pfn:%lx corrupted\n", pfn);
++			break;
++		}
++		err = pram_reserve_link(pfn);
++		if (err)
++			break;
++		pfn = link->link_pfn;
++	} while (pfn != 0);
++
++	pram_reservation_in_progress = false;
++	if (err) {
++		unsigned long bad_pfn = pfn;
++
++		pfn = pram_pfn;
++		while (pfn != bad_pfn) {
++			link = pfn_to_kaddr(pfn);
++			pram_unreserve_link(pfn);
++			pfn = link->link_pfn;
++		}
++		pr_err("PRAM: Reservation failed: %d\n", err);
++		pram_pfn = 0;
++	} else
++		pr_info("PRAM: %lu pages reserved\n", pram_reserved_pages);
++}
++
++/* comma separated list of extra banned regions */
++static int __init parse_pram_banned(char *arg)
++{
++	char *cur = arg, *tmp;
++	unsigned long long start, end;
++
++	do {
++		start = memparse(cur, &tmp);
++		if (cur == tmp) {
++			pr_warning("pram_banned: Memory value expected\n");
++			return -EINVAL;
++		}
++		cur = tmp;
++		if (*cur != '-') {
++			pr_warning("pram_banned: '-' expected\n");
++			return -EINVAL;
++		}
++		cur++;
++		end = memparse(cur, &tmp);
++		if (cur == tmp) {
++			pr_warning("pram_banned: Memory value expected\n");
++			return -EINVAL;
++		}
++		if (end <= start) {
++			pr_warning("pram_banned: end <= start\n");
++			return -EINVAL;
++		}
++		pram_ban_region(PFN_DOWN(start), PFN_UP(end) - 1);
++	} while (*cur++ == ',');
++
++	return 0;
++}
++early_param("pram_banned", parse_pram_banned);
++
++void __meminit pram_ban_region(unsigned long start, unsigned long end)
++{
++	int i, merged = -1;
++
++	if (pram_reservation_in_progress)
++		return;
++
++	/* first try to merge the region with an existing one */
++	for (i = nr_banned - 1; i >= 0 && start <= banned[i].end + 1; i--) {
++		if (end + 1 >= banned[i].start) {
++			start = min(banned[i].start, start);
++			end = max(banned[i].end, end);
++			if (merged < 0)
++				merged = i;
++		} else
++			/* regions are arranged in ascending order and do not
++			 * intersect so the merged region cannot jump over its
++			 * predecessors */
++			BUG_ON(merged >= 0);
++	}
++
++	i++;
++	if (merged >= 0) {
++		banned[i].start = start;
++		banned[i].end = end;
++		/* shift if merged with more than one region */
++		memmove(banned + i + 1, banned + merged + 1,
++			sizeof(*banned) * (nr_banned - merged - 1));
++		nr_banned -= merged - i;
++		return;
++	}
++
++	/* the region does not intersect with anyone existing,
++	 * try to create a new one */
++	if (nr_banned == MAX_NR_BANNED) {
++		pr_err("PRAM: Failed to ban %lu-%lu: "
++		       "Too many banned regions\n", start, end);
++		return;
++	}
++
++	memmove(banned + i + 1, banned + i,
++		sizeof(*banned) * (nr_banned - i));
++	banned[i].start = start;
++	banned[i].end = end;
++	nr_banned++;
++}
++
++void __init pram_show_banned(void)
++{
++	int i;
++	unsigned long n, total = 0;
++
++	pr_info("PRAM: banned regions:\n");
++	for (i = 0; i < nr_banned; i++) {
++		n = banned[i].end - banned[i].start + 1;
++		pr_info("%4d: [%08lx - %08lx] %ld pages\n",
++			i, banned[i].start, banned[i].end, n);
++		total += n;
++	}
++	pr_info("Total banned: %lu pages in %u regions\n",
++		total, nr_banned);
++}
++
++static bool pram_page_banned(struct page *page)
++{
++	unsigned long pfn = page_to_pfn(page);
++	int l = 0, r = nr_banned - 1, m;
++
++	/* do binary search */
++	while (l <= r) {
++		m = (l + r) / 2;
++		if (pfn < banned[m].start)
++			r = m - 1;
++		else if (pfn > banned[m].end)
++			l = m + 1;
++		else
++			return true;
++	}
++	return false;
++}
++
++static struct page *pram_alloc_page(struct pram_chain *chain, gfp_t gfp_mask)
++{
++	struct page *page;
++
++	page = alloc_page(gfp_mask);
++	gfp_mask |= __GFP_COLD;
++	while (page && pram_page_banned(page)) {
++		list_add(&page->lru, &chain->banned);
++		page = alloc_page(gfp_mask);
++	}
++	return page;
++}
++
++static void pram_chain_init(struct pram_chain *chain, unsigned long pfn)
++{
++	memset(chain, 0, sizeof(*chain));
++	INIT_LIST_HEAD(&chain->banned);
++	if (pfn) {
++		chain->curr = chain->head = pfn_to_page(pfn);
++		chain->kmap = kmap(chain->curr);
++	}
++}
++
++static void pram_chain_free(struct pram_chain *chain)
++{
++	struct page *page;
++
++	while (!list_empty(&chain->banned)) {
++		page = list_first_entry(&chain->banned, struct page, lru);
++		list_del_init(&page->lru);
++		__free_page(page);
++	}
++}
++
++static void pram_finish_link(struct pram_chain *chain, struct page *next)
++{
++	struct pram_link *link = chain->kmap;
++
++	if (chain->curr) {
++		link->link_pfn = next ? page_to_pfn(next) : 0;
++		link->magic = PRAM_MAGIC;
++		link->csum = pram_meta_csum(link);
++		kunmap(chain->curr);
++	} else
++		chain->head = next;
++	chain->curr = next;
++	chain->kmap = next ? kmap(next) : NULL;
++	chain->offset = 0;
++}
++
++static int pram_write(struct pram_chain *chain,
++		      struct page *page, unsigned int flags, pgoff_t index)
++{
++	struct pram_link *link;
++	struct pram_entry *entry;
++	struct page *new = NULL;
++	int err = 0;
++
++	if (pram_page_banned(page)) {
++		new = pram_alloc_page(chain, GFP_HIGHUSER_MOVABLE);
++		if (!new)
++			return -ENOMEM;
++		copy_highpage(new, page);
++		page = new;
++		flags &= ~PRAM_PAGE_LRU;
++	}
++
++	if (!chain->curr || chain->offset >= PRAM_LINK_LEN_MAX) {
++		struct page *next;
++
++		next = pram_alloc_page(chain, GFP_KERNEL | __GFP_ZERO);
++		if (!next) {
++			err = -ENOMEM;
++			goto out;
++		}
++		pram_finish_link(chain, next);
++	}
++
++	get_page(page);
++	link = chain->kmap;
++	entry = &link->entry[chain->offset++];
++	entry->flags = flags;
++	entry->csum = pram_data_csum(page);
++	entry->pfn = page_to_pfn(page);
++	entry->index = index;
++	link->len++;
++out:
++	if (new)
++		put_page(new);
++	return err;
++}
++
++static void pram_advance_link(struct pram_chain *chain)
++{
++	struct pram_link *link = chain->kmap;
++	struct page *prev = chain->curr;
++
++	if (link->link_pfn) {
++		chain->curr = pfn_to_page(link->link_pfn);
++		chain->kmap = kmap(chain->curr);
++	} else {
++		chain->curr = NULL;
++		chain->kmap = NULL;
++	}
++	chain->offset = 0;
++	kunmap(prev);
++	ClearPageReserved(prev);
++	__free_page(prev);
++}
++
++static struct page *pram_read(struct pram_chain *chain,
++			      unsigned int *flags, pgoff_t *index)
++{
++	struct pram_link *link;
++	struct pram_entry *entry;
++	struct page *page;
++
++	if (!chain->curr)
++		return NULL;
++
++	link = chain->kmap;
++	entry = &link->entry[chain->offset];
++	page = pfn_to_page(entry->pfn);
++	if (entry->csum != pram_data_csum(page)) {
++		pr_err("PRAM: pfn:%lx corrupted\n", (unsigned long)entry->pfn);
++		return ERR_PTR(-EINVAL);
++	}
++	ClearPageReserved(page);
++	*flags = entry->flags;
++	*index = entry->index;
++
++	if (++chain->offset >= link->len)
++		pram_advance_link(chain);
++	return page;
++}
++
++static void pram_truncate(struct pram_chain *chain)
++{
++	struct pram_link *link;
++	struct page *page;
++
++	do {
++		link = chain->kmap;
++		for ( ; chain->offset < link->len; chain->offset++) {
++			page = pfn_to_page(link->entry[chain->offset].pfn);
++			ClearPageReserved(page);
++			put_page(page);
++		}
++		pram_advance_link(chain);
++	} while (chain->curr);
++}
++
++static int pram_save_file(struct pram_chain *chain, struct dentry *dentry)
++{
++	struct inode *inode = dentry->d_inode;
++	struct address_space *mapping = inode->i_mapping;
++	struct pram_file_image *img;
++	struct page *page;
++	struct pagevec pvec;
++	pgoff_t index, next = 0;
++	int i, err;
++
++	if (!S_ISREG(inode->i_mode)) {
++		pr_warn("PRAM: skipping non-regular file /%s\n",
++			dentry->d_name.name);
++		return 0;
++	}
++
++	page = pram_alloc_page(chain, GFP_HIGHUSER_MOVABLE);
++	if (!page)
++		return -ENOMEM;
++	img = kmap(page);
++	img->mode = inode->i_mode;
++	img->size = i_size_read(inode);
++	img->name_len = dentry->d_name.len;
++	memcpy(img->name, dentry->d_name.name, img->name_len);
++	kunmap(page);
++
++	err = pram_write(chain, page, PRAM_PAGE_META, 0);
++	put_page(page);
++	if (err)
++		return err;
++
++	pagevec_init(&pvec, 0);
++	while (pagevec_lookup(&pvec, mapping, next, PAGEVEC_SIZE)) {
++		for (i = 0; i < pagevec_count(&pvec); i++) {
++			page = pvec.pages[i];
++			lock_page(page);
++			if (unlikely(page->mapping != mapping)) {
++				unlock_page(page);
++				continue;
++			}
++			index = page->index;
++			if (index > next)
++				next = index;
++			next++;
++			err = pram_write(chain, page,
++					 PRAM_PAGE_DATA|PRAM_PAGE_LRU, index);
++			if (err) {
++				unlock_page(page);
++				return err;
++			}
++			delete_from_page_cache(page);
++			unlock_page(page);
++		}
++		pagevec_release(&pvec);
++		cond_resched();
++	}
++	return 0;
++}
++
++static void pram_save_tree(struct dentry *root)
++{
++	struct pram_chain chain;
++	struct dentry *dentry;
++	int err = 0;
++
++	pram_chain_init(&chain, 0);
++
++	mutex_lock(&root->d_inode->i_mutex);
++	spin_lock(&root->d_lock);
++	list_for_each_entry(dentry, &root->d_subdirs, d_u.d_child) {
++		if (d_unhashed(dentry) || !dentry->d_inode)
++			continue;
++		dget(dentry);
++		spin_unlock(&root->d_lock);
++		err = pram_save_file(&chain, dentry);
++		spin_lock(&root->d_lock);
++		dput(dentry);
++		if (err)
++			break;
++	}
++	spin_unlock(&root->d_lock);
++	mutex_unlock(&root->d_inode->i_mutex);
++
++	if (err) {
++		if (chain.head) {
++			chain.curr = chain.head;
++			chain.kmap = kmap(chain.curr);
++			chain.offset = 0;
++			pram_truncate(&chain);
++		}
++		pr_err("PRAM: Failed to save FS tree: %d\n", err);
++	} else {
++		if (chain.head) {
++			pram_finish_link(&chain, NULL);
++			pram_pfn = page_to_pfn(chain.head);
++		}
++	}
++	pram_chain_free(&chain);
++}
++
++static struct dentry *pram_mkfile(struct dentry *parent,
++				  struct pram_file_image *img)
++{
++	struct dentry *dentry;
++	int err;
++
++	if (!S_ISREG(img->mode) || img->name_len > NAME_MAX)
++		return ERR_PTR(-EINVAL);
++
++	mutex_lock_nested(&parent->d_inode->i_mutex, I_MUTEX_PARENT);
++	dentry = lookup_one_len(img->name, parent, img->name_len);
++	if (IS_ERR(dentry))
++		return dentry;
++	err = vfs_create(parent->d_inode, dentry, img->mode, NULL);
++	if (err) {
++		dput(dentry);
++		dentry = ERR_PTR(err);
++		goto out_unlock;
++	}
++	i_size_write(dentry->d_inode, img->size);
++out_unlock:
++	mutex_unlock(&parent->d_inode->i_mutex);
++	return dentry;
++}
++
++static void pram_load_tree(struct dentry *root)
++{
++	struct pram_chain chain;
++	struct pram_file_image *img;
++	struct dentry *dentry = NULL;
++	struct page *page;
++	unsigned int flags;
++	pgoff_t index;
++	int err;
++
++	if (!pram_pfn)
++		return;
++
++	pram_chain_init(&chain, pram_pfn);
++next:
++	page = pram_read(&chain, &flags, &index);
++	if (IS_ERR_OR_NULL(page)) {
++		dput(dentry);
++		err = PTR_ERR(page);
++		goto out;
++	}
++
++	if ((flags & PRAM_PAGE_TYPE_MASK) == PRAM_PAGE_META) {
++		img = kmap(page);
++		dput(dentry);
++		dentry = pram_mkfile(root, img);
++		if (IS_ERR(dentry))
++			err = PTR_ERR(dentry);
++		kunmap(page);
++	} else if ((flags & PRAM_PAGE_TYPE_MASK) == PRAM_PAGE_DATA && dentry) {
++		struct address_space *mapping = dentry->d_inode->i_mapping;
++
++		if (flags & PRAM_PAGE_LRU) {
++			lock_page(page);
++			err = add_to_page_cache(page, mapping,
++						index, GFP_KERNEL);
++			if (err)
++				unlock_page(page);
++		} else
++			err = add_to_page_cache_lru(page, mapping,
++						    index, GFP_KERNEL);
++		if (!err) {
++			SetPageUptodate(page);
++			set_page_dirty(page);
++			unlock_page(page);
++		}
++	} else
++		err = -EINVAL;
++	put_page(page);
++	if (!err)
++		goto next;
++out:
++	if (chain.curr)
++		pram_truncate(&chain);
++	pram_chain_free(&chain);
++	pram_pfn = 0;
++	if (err)
++		pr_err("PRAM: Failed to load FS tree: %d\n", err);
++}
++
++static struct dentry *pram_mount(struct file_system_type *fs_type,
++				 int flags, const char *dev_name, void *data)
++{
++	struct dentry *root;
++
++	root = mount_single(fs_type, flags, data, ramfs_fill_super);
++	if (!IS_ERR(root))
++		pram_load_tree(root);
++	return root;
++}
++
++static void pram_kill_sb(struct super_block *sb)
++{
++	pram_save_tree(sb->s_root);
++	ramfs_kill_sb(sb);
++}
++
++static struct file_system_type pram_fs_type = {
++	.name		= "pram",
++	.mount		= pram_mount,
++	.kill_sb	= pram_kill_sb,
++};
++
++static int __init pram_init(void)
++{
++	return register_filesystem(&pram_fs_type);
++}
++module_init(pram_init);
+diff --git a/include/linux/pram.h b/include/linux/pram.h
+new file mode 100644
+index 0000000..ba37782
+--- /dev/null
++++ b/include/linux/pram.h
+@@ -0,0 +1,18 @@
++#ifndef _LINUX_PRAM_H
++#define _LINUX_PRAM_H
++
++extern unsigned long pram_pfn;
++
++#ifdef CONFIG_PRAM
++extern unsigned long pram_reserved_pages;
++extern void pram_reserve(void);
++extern void pram_ban_region(unsigned long start, unsigned long end);
++extern void pram_show_banned(void);
++#else
++#define pram_reserved_pages 0UL
++static inline void pram_reserve(void) { }
++static inline void pram_ban_region(unsigned long start, unsigned long end) { }
++static inline void pram_show_banned(void) { }
++#endif
++
++#endif
+diff --git a/include/linux/ramfs.h b/include/linux/ramfs.h
+index 69e37c2..4fd5d7b 100644
+--- a/include/linux/ramfs.h
++++ b/include/linux/ramfs.h
+@@ -5,6 +5,7 @@ struct inode *ramfs_get_inode(struct super_block *sb, const struct inode *dir,
+ 	 umode_t mode, dev_t dev);
+ extern struct dentry *ramfs_mount(struct file_system_type *fs_type,
+ 	 int flags, const char *dev_name, void *data);
++extern void ramfs_kill_sb(struct super_block *sb);
+ 
+ #ifdef CONFIG_MMU
+ static inline int
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 6ada93c..1042120 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -18,6 +18,7 @@
+ #include <linux/stat.h>
+ #include <linux/sched.h>
+ #include <linux/capability.h>
++#include <linux/pram.h>
+ 
+ #define KERNEL_ATTR_RO(_name) \
+ static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
+@@ -132,6 +133,15 @@ KERNEL_ATTR_RO(vmcoreinfo);
+ 
+ #endif /* CONFIG_KEXEC */
+ 
++#ifdef CONFIG_KEXEC
++static ssize_t pram_show(struct kobject *kobj,
++			 struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%lx\n", pram_pfn);
++}
++KERNEL_ATTR_RO(pram);
++#endif
++
+ /* whether file capabilities are enabled */
+ static ssize_t fscaps_show(struct kobject *kobj,
+ 				  struct kobj_attribute *attr, char *buf)
+@@ -196,6 +206,9 @@ static struct attribute * kernel_attrs[] = {
+ 	&kexec_crash_size_attr.attr,
+ 	&vmcoreinfo_attr.attr,
+ #endif
++#ifdef CONFIG_PRAM
++	&pram_attr.attr,
++#endif
+ 	&rcu_expedited_attr.attr,
+ 	NULL
+ };
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 6ab7744..af02cd6 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -16,6 +16,7 @@
+ #include <linux/kmemleak.h>
+ #include <linux/range.h>
+ #include <linux/memblock.h>
++#include <linux/pram.h>
+ 
+ #include <asm/bug.h>
+ #include <asm/io.h>
+@@ -279,6 +280,7 @@ unsigned long __init free_all_bootmem(void)
+ 		total_pages += free_all_bootmem_core(bdata);
+ 
+ 	totalram_pages += total_pages;
++	totalram_pages += pram_reserved_pages;
+ 
+ 	return total_pages;
+ }
+@@ -321,6 +323,9 @@ static int __init __reserve(bootmem_data_t *bdata, unsigned long sidx,
+ 			bdebug("silent double reserve of PFN %lx\n",
+ 				idx + bdata->node_min_pfn);
+ 		}
++
++	pram_ban_region(sidx + bdata->node_min_pfn,
++			eidx + bdata->node_min_pfn - 1);
+ 	return 0;
+ }
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a847bfe..673fa17 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -19,6 +19,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/memblock.h>
++#include <linux/pram.h>
+ 
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS] __initdata_memblock;
+@@ -554,13 +555,17 @@ int __init_memblock memblock_free(phys_addr_t base, phys_addr_t size)
+ int __init_memblock memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
++	int err;
+ 
+ 	memblock_dbg("memblock_reserve: [%#016llx-%#016llx] %pF\n",
+ 		     (unsigned long long)base,
+ 		     (unsigned long long)base + size,
+ 		     (void *)_RET_IP_);
+ 
+-	return memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++	err = memblock_add_region(_rgn, base, size, MAX_NUMNODES);
++	if (!err)
++		pram_ban_region(PFN_DOWN(base), PFN_UP(base + size) - 1);
++	return err;
+ }
+ 
+ /**
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index 61107cf..9b99681 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -16,6 +16,7 @@
+ #include <linux/kmemleak.h>
+ #include <linux/range.h>
+ #include <linux/memblock.h>
++#include <linux/pram.h>
+ 
+ #include <asm/bug.h>
+ #include <asm/io.h>
+@@ -176,6 +177,7 @@ unsigned long __init free_all_bootmem(void)
+ 	 */
+ 	pages = free_low_memory_core_early();
+ 	totalram_pages += pages;
++	totalram_pages += pram_reserved_pages;
+ 
+ 	return pages;
+ }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index b100255..c3b07be 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -60,6 +60,7 @@
+ #include <linux/page-debug-flags.h>
+ #include <linux/hugetlb.h>
+ #include <linux/sched/rt.h>
++#include <linux/pram.h>
+ 
+ #include <asm/sections.h>
+ #include <asm/tlbflush.h>
+@@ -5313,6 +5314,8 @@ void __init mem_init_print_info(const char *str)
+ 	       totalhigh_pages << (PAGE_SHIFT-10),
+ #endif
+ 	       str ? ", " : "", str ? str : "");
++
++	pram_show_banned();
+ }
+ 
+ /**
+-- 
+1.7.10.4
+
