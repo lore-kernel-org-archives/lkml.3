@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab3GZJyn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:54:43 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:47912 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750699Ab3GZJym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:54:42 -0400
-Date: Fri, 26 Jul 2013 12:54:37 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Olof Johansson <olof@lixom.net>
-CC: Felipe Balbi <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: at91_udc: Check gpio lookup results
-Message-ID: <20130726095437.GB2970@radagast>
-Reply-To: <balbi@ti.com>
-References: <1374605750-29565-1-git-send-email-olof@lixom.net>
- <20130725161406.GD31835@radagast>
- <CAOesGMiupSqpqfyuJ_abr4UQj9Ot77aGJZTsCEY63v-XttgPgw@mail.gmail.com>
- <20130725171951.GD25415@radagast>
- <CAOesGMgn0H4pteeWQcBzcccHr+F9Cf=Y+wvKHr2gCMfBBieOWg@mail.gmail.com>
+	id S1758329Ab3GZJ4K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:56:10 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59417 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab3GZJ4G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 05:56:06 -0400
+Date: Fri, 26 Jul 2013 11:55:28 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm, sched, numa: Create a per-task MPOL_INTERLEAVE policy
+Message-ID: <20130726095528.GB20909@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+ <20130725104633.GQ27075@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yNb1oOkm5a9FJOVX"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAOesGMgn0H4pteeWQcBzcccHr+F9Cf=Y+wvKHr2gCMfBBieOWg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130725104633.GQ27075@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---yNb1oOkm5a9FJOVX
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 25, 2013 at 12:46:33PM +0200, Peter Zijlstra wrote:
+> @@ -2234,12 +2236,13 @@ static void sp_free(struct sp_node *n)
+>   * Policy determination "mimics" alloc_page_vma().
+>   * Called from fault path where we know the vma and faulting address.
+>   */
+> -int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr)
+> +int mpol_misplaced(struct page *page, struct vm_area_struct *vma, unsigned long addr, int *account_node)
+>  {
+>  	struct mempolicy *pol;
+>  	struct zone *zone;
+>  	int curnid = page_to_nid(page);
+>  	unsigned long pgoff;
+> +	int thisnid = numa_node_id();
+>  	int polnid = -1;
+>  	int ret = -1;
+>  
+> @@ -2261,7 +2264,7 @@ int mpol_misplaced(struct page *page, st
+>  
+>  	case MPOL_PREFERRED:
+>  		if (pol->flags & MPOL_F_LOCAL)
+> -			polnid = numa_node_id();
+> +			polnid = thisnid;
+>  		else
+>  			polnid = pol->v.preferred_node;
+>  		break;
+> @@ -2276,7 +2279,7 @@ int mpol_misplaced(struct page *page, st
+>  		if (node_isset(curnid, pol->v.nodes))
+>  			goto out;
+>  		(void)first_zones_zonelist(
+> -				node_zonelist(numa_node_id(), GFP_HIGHUSER),
+> +				node_zonelist(thisnid, GFP_HIGHUSER),
+>  				gfp_zone(GFP_HIGHUSER),
+>  				&pol->v.nodes, &zone);
+>  		polnid = zone->node;
+> @@ -2291,8 +2294,7 @@ int mpol_misplaced(struct page *page, st
+>  		int last_nidpid;
+>  		int this_nidpid;
+>  
+> -		polnid = numa_node_id();
+> -		this_nidpid = nid_pid_to_nidpid(polnid, current->pid);;
+> +		this_nidpid = nid_pid_to_nidpid(thisnid, current->pid);;
+>  
+>  		/*
+>  		 * Multi-stage node selection is used in conjunction
+> @@ -2318,6 +2320,39 @@ int mpol_misplaced(struct page *page, st
+>  		last_nidpid = page_nidpid_xchg_last(page, this_nidpid);
+>  		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != polnid)
 
-On Thu, Jul 25, 2013 at 01:59:51PM -0700, Olof Johansson wrote:
-> On Thu, Jul 25, 2013 at 10:19 AM, Felipe Balbi <balbi@ti.com> wrote:
-> > On Thu, Jul 25, 2013 at 09:18:39AM -0700, Olof Johansson wrote:
-> >> That's what the code does today, and I wasn't trying to second-guess
-> >> their decisions on that. Chances are firmware, in some instances, have
-> >> left power on so continuing might do no harm.
-> >
-> > fair enough, then let's just decrease the error message level to debug
-> > or info.
->=20
-> Fair enough. info seems appropriate (or warn). Want me to respin, or
-> can you edit when you apply?
+That should've become:
 
-please respin
+		if (!nidpid_pid_unset(last_nidpid) && nidpid_to_nid(last_nidpid) != thisnid)
 
---=20
-balbi
-
---yNb1oOkm5a9FJOVX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8kddAAoJEIaOsuA1yqREYMcQAKixbkKy2fpbpcfjdS7ZrMXj
-7RkOd7ZIB4exBGFO8g7kUxe83OdM14ARDBMVnEAnVo8DMqvDEwcj9m1145UnsDYm
-V9NEPW3EieT8llQ6OA1JU5V15OxyqH/4vp0sdKO1i5Kzc2uADOgY80QFgCkfa+t4
-APhn6eRm0K/hpshVq9yAk3qkpEkI5ldFeGbzrXJNzJHv/y/1bJyCrphkAPUZ9TKJ
-mnRV97Pt5qvD2BLj3RXIxzeiRLQC2JyOCkVTuR0SYCLtOyv1Nxh3FstRZ4nIakqT
-zj8sIAPQKDZbT1p5KblHYQmnqkHAPD3eukklwWbpmYoltCQElNW2TRFaKyT+N9FT
-516Gl8EiZOZsT4BFWGtWc+FmnWpFzrQXLMbq4idR2JaFIDufj7VXB7YKqj6HudnA
-O32GyXw0IUpd45kWFYb15A5/5WiTiKg9GdI6IjxCQcZccqYK/VH61vaoaEyTkJB4
-hVdZU/9RskDwOSYSwTZA21ZeOIlcT7CGbtiAmrqYPgNnchQi5leUubnpCng/4m43
-yP6v/vWQtj7GCJIAkh5LRqxR1vtWhSAOXi6Umu9jyOxAnAmSwP01lz4zISZcXL+f
-AXUUHWb4DJiiqicYpk6jhjclod0D9u6GTZyxARPHm/RYRVuZrWECDnjRCFgKyCq8
-dU1apuHHJea+gWBqLnJi
-=QKai
------END PGP SIGNATURE-----
-
---yNb1oOkm5a9FJOVX--
+>  			goto out;
+> +
+> +		/*
+> +		 * Preserve interleave pages while allowing useful
+> +		 * ->numa_faults[] statistics.
+> +		 *
+> +		 * When migrating into an interleave set, migrate to
+> +		 * the correct interleaved node but account against the
+> +		 * current node (where the task is running).
+> +		 *
+> +		 * Not doing this would result in ->numa_faults[] being
+> +		 * flat across the interleaved nodes, making it
+> +		 * impossible to shrink the node list even when all
+> +		 * tasks are running on a single node.
+> +		 *
+> +		 * src dst    migrate      account
+> +		 *  0   0  -- this_node    $page_node
+> +		 *  0   1  -- policy_node  this_node
+> +		 *  1   0  -- this_node    $page_node
+> +		 *  1   1  -- policy_node  this_node
+> +		 *
+> +		 */
+> +		switch (pol->mode) {
+> +		case MPOL_INTERLEAVE:
+> +			if (node_isset(thisnid, pol->v.nodes)) {
+> +				if (account_node)
+> +					*account_node = thisnid;
+> +			}
+> +			break;
+> +
+> +		default:
+> +			polnid = thisnid;
+> +			break;
+> +		}
+>  	}
+>  
+>  	if (curnid != polnid)
