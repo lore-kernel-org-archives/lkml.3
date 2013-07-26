@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769Ab3GZMno (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:43:44 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:35135 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757321Ab3GZMnm (ORCPT
+	id S1758799Ab3GZMoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:44:12 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:42518 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab3GZMoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:43:42 -0400
+	Fri, 26 Jul 2013 08:44:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130703014616.18745.34699.stgit@localhost.localdomain>
-References: <20130703014616.18745.34699.stgit@localhost.localdomain>
-From: Kay Sievers <kay@vrfy.org>
-Date: Fri, 26 Jul 2013 14:43:21 +0200
-Message-ID: <CAPXgP11HzstSBt1PQUgJeGC59yXc=DSYQuruB40LOsm=RZQBZA@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] Add a hash value for each line in /dev/kmsg
-To: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org,
-        davem@davemloft.net
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
+References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
+ <20130725112123.GT27075@twins.programming.kicks-ass.net> <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
+ <20130725164051.GZ27075@twins.programming.kicks-ass.net> <20130725211521.GE18254@gmail.com>
+ <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 26 Jul 2013 05:43:33 -0700
+Message-ID: <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com>
+Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
+ in 3.11-rc2 (has twice regressed)
+To: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 3, 2013 at 3:46 AM, Hidehiro Kawai
-<hidehiro.kawai.ez@hitachi.com> wrote:
+>> Ah I see what's happening. Currently we only call update_cfs_shares()
+>> from the enqueue/dequeue paths. However since your tasks never sleep and
+>> cannot migrate they never pass this code. This in turns means that the
+>> inter-cgroup relations (the shares) don't get updated.
+>>
+>> I think your patch would indeed be a correct minimal fix in that it adds
+>> a share update to the regular tick path ensuring it gets done even in
+>> the absence of enqueues/dequeues.
 
-> This patch series adds hash values of printk format strings into
-> each line of /dev/kmsg outputs as follows:
->
->         6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
+Hmm.. /me scratches head.
 
-/dev/kmsg is to a certain degree a kernel ABI. Having source code
-locations in exported log records might cause people / userspace tools
-to rely on these strings and expect stability here. The kernel though
-cannot make any promises of its source code layout.
+We definitely _used_ to have a call to update_cfs_shares() in
+update_cfs_rq_blocked_load() for _exactly_ this reason.
 
-The hash is supposed to identify the content of a message, but what if
-someone fixes the string? Maybe someone just fixes a one char typo,
-the hash will change and the message will not be recognizable any
-more.
+Let's see... a-ha.
 
-As much as "automated" hash creation sounds simple; I really think
-adding explicit "manually" created random message ids to the bunch of
-messages that are interesting is the better option long-term. It
-shouldn't be that many messages, most of the printk output is not
-really useful for automated inspection or to trigger specific actions.
+It was originally part of:
+  f269ae0469fc882332bdfb5db15d3c1315fe2a10 sched: Update_cfs_shares at
+period edge
 
-Messages ideally should not have any direct context to the code that
-emits them, they should just identify the message and add a few
-structured properties to the message.
+But we reverted that right at the end of the merge window because the
+amortization turned out to be too aggressive for interactive
+workloads.  This happened in 17bc14b767cf0692420c43dbe5310ae98a5a7836.
 
-This is how userspace identifies log messages and maintains abstract
-descriptions of the specific messages to act when they appear:
-  http://www.freedesktop.org/wiki/Software/systemd/catalog/
+Unfortunately, when we did that, we lost the call to update_cfs_shares().
 
-Connecting kernel log message texts and source code locations with
-message identifiers looks quite dangerous, hard to keep stable if
-things are evolving. It might cause serious problems over time.
+Yes, this wants to be there.
 
-Thanks,
-Kay
+Reviewed-by: Paul Turner <pjt@google.com>
+
+For a description how about something like:
+
+sched: ensure update_cfs_shares() is called for parents of
+continuously-running tasks
+
+We typically update a task_group's shares within the dequeue/enqueue
+path.  However, continuously running tasks sharing a CPU are not
+subject to these updates as they are only put/picked.  Unfortunately,
+when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
+periodic update that was supposed to account for this; resulting in a
+potential loss of fairness.
+
+To fix this, re-introduce the explicit update in
+update_cfs_rq_blocked_load() [called via entity_tick()].
