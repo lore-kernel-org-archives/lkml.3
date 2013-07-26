@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760508Ab3GZVRs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:17:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51128 "EHLO
+	id S1760534Ab3GZVSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:18:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932940Ab3GZUxw (ORCPT
+	with ESMTP id S932933Ab3GZUxu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:52 -0400
+	Fri, 26 Jul 2013 16:53:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
+        Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 40/59] atl1e: unmap partially mapped skb on dma error and free skb
-Date: Fri, 26 Jul 2013 13:53:04 -0700
-Message-Id: <20130726205018.107942949@linuxfoundation.org>
+Subject: [ 38/59] ifb: fix oops when loading the ifb failed
+Date: Fri, 26 Jul 2013 13:53:02 -0700
+Message-Id: <20130726205017.901095991@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -29,86 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-[ Upstream commit 584ec4355355ffac43571b02a314d43eb2f7fcbf ]
+[ Upstream commit f2966cd5691058b8674a20766525bedeaea9cbcf ]
 
-Ben Hutchings pointed out that my recent update to atl1e
-in commit 352900b583b2852152a1e05ea0e8b579292e731e
-("atl1e: fix dma mapping warnings") was missing a bit of code.
+If __rtnl_link_register() return faild when loading the ifb, it will
+take the wrong path and get oops, so fix it just like dummy.
 
-Specifically it reset the hardware tx ring to its origional state when
-we hit a dma error, but didn't unmap any exiting mappings from the
-operation.  This patch fixes that up.  It also remembers to free the
-skb in the event that an error occurs, so we don't leak.  Untested, as
-I don't have hardware.  I think its pretty straightforward, but please
-review closely.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Ben Hutchings <bhutchings@solarflare.com>
-CC: Jay Cliburn <jcliburn@gmail.com>
-CC: Chris Snook <chris.snook@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   24 +++++++++++++++++++++++-
- 1 file changed, 23 insertions(+), 1 deletion(-)
+ drivers/net/ifb.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1701,6 +1701,7 @@ static int atl1e_tx_map(struct atl1e_ada
- 	u16 f;
- 	int segment;
- 	int ring_start = adapter->tx_ring.next_to_use;
-+	int ring_end;
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -290,6 +290,8 @@ static int __init ifb_init_module(void)
  
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
-@@ -1744,6 +1745,15 @@ static int atl1e_tx_map(struct atl1e_ada
- 					map_len, PCI_DMA_TODEVICE);
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
++	if (err < 0)
++		goto out;
  
- 		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+			/* We need to unwind the mappings we've done */
-+			ring_end = adapter->tx_ring.next_to_use;
-+			adapter->tx_ring.next_to_use = ring_start;
-+			while (adapter->tx_ring.next_to_use != ring_end) {
-+				tpd = atl1e_get_tpd(adapter);
-+				tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
-+				pci_unmap_single(adapter->pdev, tx_buffer->dma,
-+						 tx_buffer->length, PCI_DMA_TODEVICE);
-+			}
- 			/* Reset the tx rings next pointer */
- 			adapter->tx_ring.next_to_use = ring_start;
- 			return -ENOSPC;
-@@ -1786,6 +1796,16 @@ static int atl1e_tx_map(struct atl1e_ada
- 							  DMA_TO_DEVICE);
- 
- 			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+				/* We need to unwind the mappings we've done */
-+				ring_end = adapter->tx_ring.next_to_use;
-+				adapter->tx_ring.next_to_use = ring_start;
-+				while (adapter->tx_ring.next_to_use != ring_end) {
-+					tpd = atl1e_get_tpd(adapter);
-+					tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
-+					dma_unmap_page(&adapter->pdev->dev, tx_buffer->dma,
-+						       tx_buffer->length, DMA_TO_DEVICE);
-+				}
-+
- 				/* Reset the ring next to use pointer */
- 				adapter->tx_ring.next_to_use = ring_start;
- 				return -ENOSPC;
-@@ -1876,8 +1896,10 @@ static netdev_tx_t atl1e_xmit_frame(stru
- 		return NETDEV_TX_OK;
+ 	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
+@@ -297,6 +299,8 @@ static int __init ifb_init_module(void)
  	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
++
++out:
+ 	rtnl_unlock();
  
--	if (atl1e_tx_map(adapter, skb, tpd))
-+	if (atl1e_tx_map(adapter, skb, tpd)) {
-+		dev_kfree_skb_any(skb);
- 		goto out;
-+	}
- 
- 	atl1e_tx_queue(adapter, tpd_req, tpd);
- 
+ 	return err;
 
 
