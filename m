@@ -1,81 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758402Ab3GZJ4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:56:23 -0400
-Received: from smtpbg63.qq.com ([103.7.29.150]:56915 "HELO smtpbg63.qq.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758360Ab3GZJ4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:56:20 -0400
-X-QQ-mid: bizesmtp1t1374832575t659t198
-X-QQ-SSF: 01400000000000F0FPF2000A0000000
-Message-ID: <51F24864.7070306@tnsoft.com.cn>
-Date: Fri, 26 Jul 2013 17:59:00 +0800
-From: Dennis Chen <xschen@tnsoft.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1758390Ab3GZJ44 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:56:56 -0400
+Received: from mail-qe0-f51.google.com ([209.85.128.51]:62502 "EHLO
+	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757952Ab3GZJ4x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 05:56:53 -0400
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: "'NeilBrown'" <neilb@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
+References: <000501ce85fc$d3a60a10$7af21e30$@lucidpixels.com> <20130722090257.2faa0874@notabene.brown> <009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com> <20130726103549.1e6b0b92@notabene.brown>
+In-Reply-To: <20130726103549.1e6b0b92@notabene.brown>
+Subject: RE: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x SSD)
+Date: Fri, 26 Jul 2013 05:56:51 -0400
+Message-ID: <001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org
-CC: Tejun Heo <tj@kernel.org>, xiyou.wangcong@gmail.com,
-        Dennis Chen <xschen@tnsoft.com.cn>
-Subject: Re: [PATCH] race condition fixing in sysfs_create_dir
-References: <51F24612.6030509@tnsoft.com.cn>
-In-Reply-To: <51F24612.6030509@tnsoft.com.cn>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQH8I1r+BgG/efe2pSqBd5Z4Tixg2AHT8x2TAb2IeWUC3a+m2Zjn7z7A
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 05:49 PM, Dennis Chen wrote:
 
-> The patch is trying its best to avoid creating a dir under a parent dir which is removing from
-> the system:
->      PATH0 (create a dir under 'PARENT/...')         PATH1 (remove the 'PARENT/...')
->           sysfs_create_dir() {                         sysfs_remove_dir() {
->           ...                                          ...
->           if (kobj->parent)                            spin_lock(&sysfs_assoc_lock);
->          parent_sd = kobj->parent->sd;  <----- kobj->sd = NULL;
->       else                                         spin_unlock(&sysfs_assoc_lock);
->          parent_sd = &sysfs_root;
-> Suppose PATH1 enter the critical section first, then PATH0 begin to execute before kobj->sd
-> has been reset to NULL, possibly PATH0 will get a non-NULL parent_sd since lack of the
-> sysfs_assoc_lock protection in PATH0. In this case, PATH0 think it has a valid parent_sd which
-> can be freed by PATH1 in the followed, refer to the comments in the patch. Maybe we need
-> to figure out a perfect solution to solve the race condition, although the codes in question are
-> in slow path...
-> Signed-off-by: Dennis Chen <xschen@tnsoft.com.cn>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Tejun Heo <teheo@suse.de>
 
-should be Tejun Heo <tj@kernel.org>
+-----Original Message-----
+From: NeilBrown [mailto:neilb@suse.de] 
+Sent: Thursday, July 25, 2013 8:36 PM
+To: Justin Piszcz
+Cc: linux-kernel@vger.kernel.org; linux-raid@vger.kernel.org
+Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
+SSD)
 
-> Cc: Wang Cong <xiyou.wangcong@gmail.com>
-> ---
-> fs/sysfs/dir.c |   11 ++++++++++-
-> 1 file changed, 10 insertions(+), 1 deletion(-)
-> diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-> index e068e74..114073d 100644
-> --- a/fs/sysfs/dir.c
-> +++ b/fs/sysfs/dir.c
-> @@ -746,13 +746,22 @@ int sysfs_create_dir(struct kobject * kobj)
->          BUG_ON(!kobj);
-> +       spin_lock(&sysfs_assoc_lock);
->      if (kobj->parent)
->          parent_sd = kobj->parent->sd;
->      else
->          parent_sd = &sysfs_root;
-> -       if (!parent_sd)
-> +       if (!parent_sd) {
-> +               spin_unlock(&sysfs_assoc_lock);
->                  return -ENOENT;
-> +       }
-> +       spin_unlock(&sysfs_assoc_lock);
-> +       /* TODO: although the sysfs is in a slow path, but in the operation
-> +       * followed, we still have a window to let the sysfs_remove_dir to
-> +       * free the memory space pointered by parent_sd till we inc its ref
-> +       * count in __sysfs_add_one()
-> +       */
->          if (sysfs_ns_type(parent_sd))
->                  ns = kobj->ktype->namespace(kobj);
+On Thu, 25 Jul 2013 19:10:50 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
+wrote:
 
-Re CC Tejun whose email addess <@suse.de> is obsolete :)
+> Did the fix by chance make it into 3.10.3?
+
+No, it looks like it missed again.  I gather there was a large inflow of
+patches for -stable in the 3.11-rc1 merge window and Greg has been
+processing
+them in batches.  Hopefully in 3.10.4.
+
+The relevant patch is commit 30bc9b53878a9921b02e3 in mainline.
+
+NeilBrown
+
+--
+
+Method to get patch via git and patch kernel:
+
+$ git clone
+git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+$ git log |grep 30bc9b53878a9921b02e3
+commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+$ git show 30bc9b53878a9921b02e3b5bc4283ac1c6de102a > /tmp/a
+# patch -p1 < /tmp/a
+patching file drivers/md/raid1.c
+Hunk #1 succeeded at 1848 (offset -1 lines).
+Hunk #2 succeeded at 1886 (offset -1 lines).
+Hunk #3 succeeded at 1915 (offset -1 lines).
+
+Reboot- tested, success, thanks..!
+
+One follow-up question:
+$ cat /sys/block/md1/md/mismatch_cnt
+314112
+-> On a live RAID-1 (root filesystem) without swap, is it normal to have
+such a high mismatch_cnt even after a repair?
+
+First repair:
+Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
+314112 sectors.
+Second repair:
+Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
+313600 sectors.
+
+Should I be concerned?
+
+
+Testing the patch:
+
+Personalities : [raid1]
+md1 : active raid1 sdc2[0] sdb2[1]
+      233381376 blocks [2/2] [UU]
+      [>....................]  check =  0.3% (838976/233381376)
+finish=9.2min speed=419488K/sec
+
+md0 : active raid1 sdc1[0] sdb1[1]
+      1048512 blocks [2/2] [UU]
+
+Personalities : [raid1]
+md1 : active raid1 sdc2[0] sdb2[1]
+      233381376 blocks [2/2] [UU]
+      [===============>.....]  check = 77.5% (180889856/233381376)
+finish=2.5min speed=342654K/sec
+
+md0 : active raid1 sdc1[0] sdb1[1]
+      1048512 blocks [2/2] [UU]
+
+Personalities : [raid1]
+md1 : active raid1 sdc2[0] sdb2[1]
+      233381376 blocks [2/2] [UU]
+
+md0 : active raid1 sdc1[0] sdb1[1]
+      1048512 blocks [2/2] [UU]
+
+
+Justin.
+
 
