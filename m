@@ -1,285 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab3GZGgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 02:36:17 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:64988 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab3GZGgQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 02:36:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130726025009.GE21982@dastard>
-References: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
-	<20130726025009.GE21982@dastard>
-Date: Fri, 26 Jul 2013 14:36:15 +0800
-Message-ID: <CAEH94Lh-UCCEs7hQi_t5v+X+ER1DH9dCtjr6e9GVNX5KJ-f1hQ@mail.gmail.com>
-Subject: Re: [PATCH] xfs: introduce object readahead to log recovery
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfstests <xfs@oss.sgi.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753391Ab3GZGtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 02:49:22 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:59349 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265Ab3GZGtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 02:49:20 -0400
+Message-ID: <1374821306.1956.34.camel@iivanov-dev.int.mm-sol.com>
+Subject: RE: [PATCH] usb: dwc3: core: modify IO memory resource after
+ deferred probe completes
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: "balbi@ti.com" <balbi@ti.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Jul 2013 09:48:26 +0300
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E030458DE12C9@US01WEMBX2.internal.synopsys.com>
+References: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
+	 <A2CA0424C0A6F04399FB9E1CD98E030458DE112E@US01WEMBX2.internal.synopsys.com>
+	 <20130725205224.GA12209@radagast>
+	 <A2CA0424C0A6F04399FB9E1CD98E030458DE12C9@US01WEMBX2.internal.synopsys.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Hi,
 
-All comments are good to me, and will be applied to next version, thanks a lot.
+On Fri, 2013-07-26 at 02:06 +0000, Paul Zimmerman wrote:
+> > From: Felipe Balbi [mailto:balbi@ti.com]
+> > Sent: Thursday, July 25, 2013 1:52 PM
+> > 
+> > On Thu, Jul 25, 2013 at 07:46:58PM +0000, Paul Zimmerman wrote:
+> > > > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> > > > index 607bef8..50c833f 100644
+> > > > --- a/drivers/usb/dwc3/core.c
+> > > > +++ b/drivers/usb/dwc3/core.c
+> > > > @@ -384,21 +384,6 @@ static int dwc3_probe(struct platform_device *pdev)
+> > > >  		dev_err(dev, "missing memory resource\n");
+> > > >  		return -ENODEV;
+> > > >  	}
+> > > > -	dwc->xhci_resources[0].start = res->start;
+> > > > -	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> > > > -					DWC3_XHCI_REGS_END;
+> > > > -	dwc->xhci_resources[0].flags = res->flags;
+> > > > -	dwc->xhci_resources[0].name = res->name;
+> > > > -
+> > > > -	res->start += DWC3_GLOBALS_REGS_START;
+> > > > -
+> > > > -	 /*
+> > > > -	  * Request memory region but exclude xHCI regs,
+> > > > -	  * since it will be requested by the xhci-plat driver.
+> > > > -	  */
+> > > > -	regs = devm_ioremap_resource(dev, res);
+> > > > -	if (IS_ERR(regs))
+> > > > -		return PTR_ERR(regs);
+> > > >
+> > > >  	if (node) {
+> > > >  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+> > > > @@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
+> > > >  		return -EPROBE_DEFER;
+> > > >  	}
+> > > >
+> > > > +	dwc->xhci_resources[0].start = res->start;
+> > > > +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> > > > +					DWC3_XHCI_REGS_END;
+> > > > +	dwc->xhci_resources[0].flags = res->flags;
+> > > > +	dwc->xhci_resources[0].name = res->name;
+> > > > +
+> > > > +	res->start += DWC3_GLOBALS_REGS_START;
+> > >
+> > > Ick. The driver is modifying the struct resource passed to it by the
+> > 
+> > heh...
+> > 
+> > > platform code? That seems like a layering violation, and is fragile as
+> > > hell. In addition to this bug, what would happen if the struct resource
+> > > was declared 'const'?
+> > 
+> > nothing would happen if it was declared const since platform_add_device
+> > makes a copy of what was declared, and that's always non-const.
+> 
+> OK.
+> 
+> > Also, this is not *modifying* what was passed, just skipping the xHCI
+> > address space so we don't request_mem_region() an area we won't really
+> > handle and prevent xhci-hcd.ko from probing.
+> 
+> Hmm? platform_get_resource() returns a pointer to an entry in the
+> platform_device's resource[] array. And "res->start +=" modifies the
+> entry pointed at. If it didn't, the bug fixed by this patch wouldn't
+> have happened.
+> 
+> Are you sure this code will work OK if you build the driver as a module,
+> modprobe it, rmmod it, and then modprobe it again? Seems like it won't,
+> unless the dev->resource[] array gets reinitialized in between somehow.
 
-On Fri, Jul 26, 2013 at 10:50 AM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Jul 25, 2013 at 04:23:39PM +0800, zwu.kernel@gmail.com wrote:
->> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
->>
->>   It can take a long time to run log recovery operation because it is
->> single threaded and is bound by read latency. We can find that it took
->> most of the time to wait for the read IO to occur, so if one object
->> readahead is introduced to log recovery, it will obviously reduce the
->> log recovery time.
->>
->>   In dirty log case as below:
->>     data device: 0xfd10
->>     log device: 0xfd10 daddr: 20480032 length: 20480
->>
->>     log tail: 7941 head: 11077 state: <DIRTY>
->
-> That's only a small log (10MB). As I've said on irc, readahead won't
-Yeah, it is one 10MB log, but how do you calculate it based on the above info?
+In addition, I think driver is wasting memory, because on every probe
+it will reallocate driver state variable. This also happens in several 
+other drivers which are using deferred probe.
 
-> show any real difference on this and you need to be testing with
-> large logs.
->
->>
->> This dirty ratio is about 15%. I am trying to do tests in larger scale
->> and dirtier filesystem environment.
->>
->> Log recovery time stat:
->>
->>             w/o this patch        w/ this patch
->>   real         0m1.051s             0m0.965s
->>   sys          0m0.033s             0m0.035s
->>
->>   iowait       0m1.018s             0m0.930s
->
-> Well, it's not made much of a difference there. That's probably
-> within the noise of repeated log recovery runs.
->
-> My simple test is:
->
-> $ cat recovery_time.sh
-> #!/bin/bash
->
-> cd /home/dave/src/compilebench-0.6/
->
-> mkfs.xfs -f /dev/vdc;
-> mount /dev/vdc /mnt/scratch
-> chmod 777 /mnt/scratch;
-> ./compilebench --no-sync -D /mnt/scratch &
-> sleep 55
-> /home/dave/src/xfstests-dev/src/godown /mnt/scratch
-> umount /mnt/scratch
-> xfs_logprint -t /dev/vdc |head -20
-> time mount /dev/vdc /mnt/scratch
-> umount /mnt/scratch
-> $
->
-> And the recovery time from this is between 15-17s:
->
-> ....
->     log device: 0xfd20 daddr: 107374182032 length: 4173824
->                                                    ^^^^^^^ almost 2GB
->         log tail: 19288 head: 264809 state: <DIRTY>
-> ....
-> real    0m17.913s
-> user    0m0.000s
-> sys     0m2.381s
->
-> And runs at 3-4000 read IOPs for most of that time. It's largely IO
-> bound, even on SSDs.
->
-> With your patch:
->
-> log tail: 35871 head: 308393 state: <DIRTY>
-> real    0m12.715s
-> user    0m0.000s
-> sys     0m2.247s
->
-> And it peaked at ~5000 read IOPS.
-How do you know its READ IOPS is ~5000?
-
->
-> It's definitely an improvement, but there's a lot of dead time still
-> spent waiting for IO that we should be able to remove. Let's have a
-> look at the code...
->
->
->> +STATIC void
->> +xlog_recover_inode_ra_pass2(
->> +     struct xlog                     *log,
->> +     struct xlog_recover_item        *item)
->> +{
->> +     xfs_inode_log_format_t  *in_f;
->> +     xfs_mount_t             *mp = log->l_mp;
->> +     int                     error;
->> +     int                     need_free = 0;
->> +
->> +     if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
->> +             in_f = item->ri_buf[0].i_addr;
->> +     } else {
->> +             in_f = kmem_alloc(sizeof(xfs_inode_log_format_t), KM_SLEEP);
->> +             need_free = 1;
->> +             error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
->> +             if (error)
->> +                     goto error;
->> +     }
->
-> I'd just put the conversion buffer on stack and avoid the need to
-> alloc/free memory here. There's plenty of stack space available
-> during recovery here, so let's use it to keep the overhead of
-> readahead down.
-OK, will use the buffer on stack.
->
->> +STATIC void
->> +xlog_recover_dquot_ra_pass2(
->> +     struct xlog                     *log,
->> +     struct xlog_recover_item        *item)
->> +{
->> +     xfs_mount_t             *mp = log->l_mp;
->> +     xfs_buf_t               *bp;
->> +     struct xfs_disk_dquot   *recddq;
->> +     int                     error;
->> +     xfs_dq_logformat_t      *dq_f;
->> +     uint                    type;
->> +
->> +
->> +     if (mp->m_qflags == 0)
->> +             return;
->> +
->> +     recddq = item->ri_buf[1].i_addr;
->> +     if (recddq == NULL)
->> +             return;
->> +     if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
->> +             return;
->> +
->> +     type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
->> +     ASSERT(type);
->> +     if (log->l_quotaoffs_flag & type)
->> +             return;
->> +
->> +     dq_f = item->ri_buf[0].i_addr;
->> +     ASSERT(dq_f);
->> +     error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
->> +                        "xlog_recover_dquot_ra_pass2 (log copy)");
->> +     if (error)
->> +             return;
->> +     ASSERT(dq_f->qlf_len == 1);
->> +
->> +     error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dq_f->qlf_blkno,
->> +                                XFS_FSB_TO_BB(mp, dq_f->qlf_len), 0, &bp,
->> +                                NULL);
->> +     if (!error)
->> +             xfs_buf_relse(bp);
->> +}
->
-> That's not doing readahead - that's an integrity check followed by a
-> blocking read.  Shouldn't it just be calling xfs_buf_readahead() on
-> dq_f->qlf_blkno/dq_f->qlf_len, after checking whether it had been
-> cancelled?
-ah, i miss tha it is one blocking read. will fix it
->
->>  STATIC int
->>  xlog_recover_commit_pass1(
->>       struct xlog                     *log,
->> @@ -3140,10 +3255,14 @@ xlog_recover_commit_pass2(
->>       struct xlog                     *log,
->>       struct xlog_recover             *trans,
->>       struct list_head                *buffer_list,
->> -     struct xlog_recover_item        *item)
->> +     struct xlog_recover_item        *item,
->> +     struct xlog_recover_item        *next_item)
->>  {
->>       trace_xfs_log_recover_item_recover(log, trans, item, XLOG_RECOVER_PASS2);
->>
->> +     if (next_item)
->> +             xlog_recover_ra_pass2(log, next_item);
->> +
->
-> Ah, that explains the limited improvement - it's only doing
-> readahead of a single item at a time. IOWs, we are completing
-> recovery of the current object before IO completion of the next
-> object has occurred. This generally means the read-ahead queue is
-Yes.
-> not deep enough...
->
->>       switch (ITEM_TYPE(item)) {
->>       case XFS_LI_BUF:
->>               return xlog_recover_buffer_pass2(log, buffer_list, item);
->> @@ -3181,7 +3300,7 @@ xlog_recover_commit_trans(
->>       int                     pass)
->>  {
->>       int                     error = 0, error2;
->> -     xlog_recover_item_t     *item;
->> +     xlog_recover_item_t     *item, *next_item, *temp_item;
->>       LIST_HEAD               (buffer_list);
->>
->>       hlist_del(&trans->r_list);
->> @@ -3190,14 +3309,18 @@ xlog_recover_commit_trans(
->>       if (error)
->>               return error;
->>
->> -     list_for_each_entry(item, &trans->r_itemq, ri_list) {
->> +     list_for_each_entry_safe(item, temp_item, &trans->r_itemq, ri_list) {
->>               switch (pass) {
->>               case XLOG_RECOVER_PASS1:
->>                       error = xlog_recover_commit_pass1(log, trans, item);
->>                       break;
->>               case XLOG_RECOVER_PASS2:
->> +                     if (&temp_item->ri_list != &trans->r_itemq)
->> +                             next_item = temp_item;
->> +                     else
->> +                             next_item = NULL;
->>                       error = xlog_recover_commit_pass2(log, trans,
->> -                                                       &buffer_list, item);
->> +                                       &buffer_list, item, next_item);
->
-> Ok, so you've based the readahead on the transaction item list
-> having a next pointer. What I think you should do is turn this into
-> a readahead queue by moving objects to a new list. i.e.
->
->         list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
->
->                 case XLOG_RECOVER_PASS2:
->                         if (ra_qdepth++ >= MAX_QDEPTH) {
->                                 recover_items(log, trans, &buffer_list, &ra_item_list);
->                                 ra_qdepth = 0;
->                         } else {
->                                 xlog_recover_item_readahead(log, item);
->                                 list_move_tail(&item->ri_list, &ra_item_list);
->                         }
->                         break;
->                 ...
->                 }
->         }
->         if (!list_empty(&ra_item_list))
->                 recover_items(log, trans, &buffer_list, &ra_item_list);
->
-> I'd suggest that a queue depth somewhere between 10 and 100 will
-> be necessary to keep enough IO in flight to keep the pipeline full
-> and prevent recovery from having to wait on IO...
-Good suggestion, will apply it to next version, thanks.
-
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
-
-
--- 
 Regards,
+Ivan
 
-Zhi Yong Wu
+> 
+> All this assumes I'm reading the code correctly, of course. If I'm not,
+> then never mind :)
+> 
+
+
