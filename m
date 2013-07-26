@@ -1,80 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759501Ab3GZSuc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 14:50:32 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50227 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337Ab3GZSu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 14:50:27 -0400
-Date: Fri, 26 Jul 2013 19:50:23 +0100
-From: Mark Brown <broonie@kernel.org>
-To: "Felipe F. Tonello" <eu@felipetonello.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Wang Xingchao <xingchao.wang@linux.intel.com>,
-        Jaroslav Kysela <perex@perex.cz>
-Message-ID: <20130726185023.GW9858@sirena.org.uk>
-References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
- <1374863133-6745-4-git-send-email-eu@felipetonello.com>
+	id S1759459Ab3GZSyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 14:54:18 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51070 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311Ab3GZSyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 14:54:15 -0400
+Date: Fri, 26 Jul 2013 14:54:07 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/6] mm: memcg: enable memcg OOM killer only for user
+ faults
+Message-ID: <20130726185407.GC17975@cmpxchg.org>
+References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
+ <1374791138-15665-6-git-send-email-hannes@cmpxchg.org>
+ <20130726141642.GG17761@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="lLYmlcOQv78n9rhj"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374863133-6745-4-git-send-email-eu@felipetonello.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] ALSA: SoC: Updating jack implementation according
- new ALSA Jacks
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <20130726141642.GG17761@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 26, 2013 at 04:16:42PM +0200, Michal Hocko wrote:
+> On Thu 25-07-13 18:25:37, Johannes Weiner wrote:
+> > System calls and kernel faults (uaccess, gup) can handle an out of
+> > memory situation gracefully and just return -ENOMEM.
+> > 
+> > Enable the memcg OOM killer only for user faults, where it's really
+> > the only option available.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> It looks OK to me, but I have few comments bellow. Nothing really huge
+> but I do not like mem_cgroup_xchg_may_oom for !MEMCG.
 
---lLYmlcOQv78n9rhj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+:-)
 
-On Fri, Jul 26, 2013 at 11:25:32AM -0700, Felipe F. Tonello wrote:
-> From: "Felipe F. Tonello" <eu@felipetonello.com>
->=20
-> ALSA standard jacks already are implemented using ALSA KControl.
-> So there is no need implement that itself or to use snd_jack for input
-> events only.
+> > ---
+> >  include/linux/memcontrol.h | 23 +++++++++++++++++++++++
+> >  include/linux/sched.h      |  3 +++
+> >  mm/filemap.c               | 11 ++++++++++-
+> >  mm/memcontrol.c            |  2 +-
+> >  mm/memory.c                | 40 ++++++++++++++++++++++++++++++----------
+> >  5 files changed, 67 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> > index 7b4d9d7..9bb5eeb 100644
+> > --- a/include/linux/memcontrol.h
+> > +++ b/include/linux/memcontrol.h
+> > @@ -125,6 +125,24 @@ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+> >  extern void mem_cgroup_replace_page_cache(struct page *oldpage,
+> >  					struct page *newpage);
+> >  
+> > +/**
+> > + * mem_cgroup_xchg_may_oom - toggle the memcg OOM killer for a task
+> > + * @p: task
+> 
+> Is this ever safe to call on !current? If not then I wouldn't allow to
+> give p as a parameter.
 
-This changelog doesn't correspond to the code change - what this is
-doing is updating the ASoC jack support to add the ability to specify a
-jack index when creating a jack.  There's nothing to do with removing
-duplicate kcontrol creation here at all.
+Makes sense, I removed the parameter.
 
-The change itself seems fine but it's not accurately described.
+> > @@ -1634,10 +1639,14 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  		 * We found the page, so try async readahead before
+> >  		 * waiting for the lock.
+> >  		 */
+> > +		may_oom = mem_cgroup_xchg_may_oom(current, 0);
+> 
+> s/0/false/
+> 
+> below ditto
 
---lLYmlcOQv78n9rhj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Oops, updated both sites.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+> >  		do_async_mmap_readahead(vma, ra, file, page, offset);
+> > +		mem_cgroup_xchg_may_oom(current, may_oom);
+> >  	} else if (!page) {
+> >  		/* No page in the page cache at all */
+> > +		may_oom = mem_cgroup_xchg_may_oom(current, 0);
+> >  		do_sync_mmap_readahead(vma, ra, file, offset);
+> > +		mem_cgroup_xchg_may_oom(current, may_oom);
+> >  		count_vm_event(PGMAJFAULT);
+> >  		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
+> >  		ret = VM_FAULT_MAJOR;
+> [...]
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index f2ab2a8..5ea7b47 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> [...]
+> > @@ -3851,6 +3843,34 @@ retry:
+> >  	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+> >  }
+> >  
+> > +int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> > +		    unsigned long address, unsigned int flags)
+> > +{
+> > +	int ret;
+> > +
+> > +	__set_current_state(TASK_RUNNING);
+> > +
+> > +	count_vm_event(PGFAULT);
+> > +	mem_cgroup_count_vm_event(mm, PGFAULT);
+> > +
+> > +	/* do counter updates before entering really critical section. */
+> > +	check_sync_rss_stat(current);
+> > +
+> > +	/*
+> > +	 * Enable the memcg OOM handling for faults triggered in user
+> > +	 * space.  Kernel faults are handled more gracefully.
+> > +	 */
+> > +	if (flags & FAULT_FLAG_USER)
+> > +		WARN_ON(mem_cgroup_xchg_may_oom(current, true) == true);
+> > +
+> > +	ret = __handle_mm_fault(mm, vma, address, flags);
+> > +
+> > +	if (flags & FAULT_FLAG_USER)
+> > +		WARN_ON(mem_cgroup_xchg_may_oom(current, false) == false);
+> 
+> Ohh, I see why you used !new in mem_cgroup_xchg_may_oom for !MEMCG case
+> above. This could be fixed easily if you add mem_cgroup_{enable,disable}_oom
+> which would be empty for !MEMCG.
 
-iQIcBAEBAgAGBQJR8sTrAAoJELSic+t+oim9jnAP/iG+7C8fHAL1I61ptK2dL8P4
-4WjyK101T3gfaHOn2ApBFqH5WKT/7HaQ0/d4nEwUoxs1I3DsWkQxqydjRtcT/6O+
-4qhqAONAWc4B0yyGZPRDwRAeuOC76+tMYQ7OpmiDP4tqFbzJtEHD1wmzg1+PxeLD
-jGXJ1MyTtO1u+/U8jMyx86oODqQz5GVVAsg7ti+Wz4D28+s8EBVQwl5+9MprvGu/
-1nZsrE1V2c3uvclKiJZ2qlYDs6RKckCRHQZBXwuRp63U7QAhJjJ0/UeiJ1v5paBh
-KHdsiQwM7Grsqm3/7BmbOMYh9Pxj/IPGSePDvFncSaYJQzOZXA2kEwJKjmujAQhf
-tVmkP+uDJOZMMYD+BoPrrHBhlOAjSfrYR3065MoCDac2XAN3uqvw2zZZc0nucDC6
-ig0RXgAt0IcoNOcw5hd6iR/a0JLLq3ySZK67IcAayCVHUrH19XP+vGErSWT06tw4
-qkqDjSmjSwOLmHy7/i8XT9Z2fNHGxiE4NM1RV2xBPaxhGsUxgCk/omJaVwD2R/eV
-MPtzUJN3pl52L3FYCR+Wj5WFSvoQSKrKSaVXF50rGFzOOVqFgITsUJNNEloTaGg0
-ftGWJn7IFf3PG/cKXdn/oapO1nkBPrr4aWPLsMt03cp6NMarAdSxJ6Vcnb2TBts0
-Ju9j7meG4Ysnaui5Yc7R
-=afiq
------END PGP SIGNATURE-----
+You're right, it's much cleaner this way.  I added the enable/disable
+functions, which has the advantage that the memcg-specific WARN_ON is
+also not in generic code but encapsulated nicely.
 
---lLYmlcOQv78n9rhj--
+Thanks for your feedback!
