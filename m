@@ -1,98 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab3GZEY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 00:24:57 -0400
-Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:37131 "EHLO
-	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750793Ab3GZEYx (ORCPT
+	id S1751304Ab3GZE3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:29:37 -0400
+Received: from countercultured.net ([209.51.175.25]:44771 "HELO
+	countercultured.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750793Ab3GZE3d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 00:24:53 -0400
-Date: Fri, 26 Jul 2013 00:25:51 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        runzhen@linux.vnet.ibm.com, runzhew@clemson.edu,
-        xiaoguangrong@linux.vnet.ibm.com, sukadev@linux.vnet.ibm.com,
-        tglx@linutronix.de, linux-tip-commits@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [tip:perf/core] perf tools: Make Power7 events available for
- perf
-In-Reply-To: <20130725134135.GA14744@concordia>
-Message-ID: <alpine.DEB.2.02.1307260012270.26524@pianoman.cluster.toy>
-References: <1372407297-6996-3-git-send-email-runzhen@linux.vnet.ibm.com> <tip-cfe0d8ba14a1d98245b371e486c68f37eba1ca52@git.kernel.org> <alpine.DEB.2.02.1307230129350.18266@pianoman.cluster.toy> <1374558969.5545.30.camel@concordia>
- <alpine.DEB.2.02.1307231731020.27628@pianoman.cluster.toy> <20130725134135.GA14744@concordia>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A02020A.51F1FA15.0037,ss=1,re=0.000,fgs=0
+	Fri, 26 Jul 2013 00:29:33 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 00:29:32 EDT
+References: <20130726134823.e4c0a1b7bad087c12b3ce782@canb.auug.org.au>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <20130726134823.e4c0a1b7bad087c12b3ce782@canb.auug.org.au>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <06EC4DE7-7DC5-4C80-BA1D-2A96527CA7BF@countercultured.net>
+Cc: Eric Paris <eparis@redhat.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Quigley <dpquigl@davequigley.com>,
+        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>,
+        Miguel Rodel Felipe <Rodel_FM@dsi.a-star.edu.sg>,
+        Phua Eu Gene <PHUA_Eu_Gene@dsi.a-star.edu.sg>,
+        Khin Mi Mi Aung <Mi_Mi_AUNG@dsi.a-star.edu.sg>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+X-Mailer: iPhone Mail (10B350)
+From: David Quigley <merlin@countercultured.net>
+Subject: Re: linux-next: manual merge of the selinux tree with Linus' tree
+Date: Thu, 25 Jul 2013 21:22:48 -0700
+To: Stephen Rothwell <sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Jul 2013, Michael Ellerman wrote:
+I guess my signed off got stripped somewhere. Originally I maintained those commits but Steve Dickson from red hat picked them up and they then made it into trond's tree and then into Linus'.
 
-> On Tue, Jul 23, 2013 at 05:38:21PM -0400, Vince Weaver wrote:
->
-> Well cursing is what witches do, but if you need someone to swear a bit
-> I can help you out, I am fuckin Australian after all.
+I unfortunately don't have my davequigley.com identities on my iPhone but you can add a sign off by dpquigl@davequigley.com for the commit.
 
-I should point out the cursing is directed at the code in question and the 
-overall downhill direction in the perf_event interface, and not directed 
-at anyone personally.
+Sent from my iPhone
 
-I've been fighting a (losing) battle for the past 5 years trying to keep 
-event definitions out of the kernel, I just didn't expect defeat to come 
-so swiftly and so suddenly from an unexpected corner (the power arch).
+On Jul 25, 2013, at 8:48 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-> But there are ~50 generic events in Linux, and our PMU supports ~500.
-> And our hardware designers use perf, and they need to test all 500
-> events. And they're getting sick of using raw event codes.
-
-And writing a small wrapper utility or patching perf is somehow harder 
-than sticking the whole mess in the kernel?  I get annoyed having to look 
-up the value of ANSI color escape codes now and then, but I don't expect 
-to submit a patch for /sys/tty/colors/red to the kernel and have it 
-accepted.
-
-> > Abusing sysfs to waste 100k of non-swappable kernel memory on every 
-> > running Linux kernel everwhere 
+> Hi Eric,
 > 
-> It's great that you're so concerned about memory wastage on _powerpc_
-> systems.
-
-It's a slippery slope.
-
-> > Especially as it's likely this becomes stable ABI, and then you'll 
-> > promptly break it as has already happenend in the last kernel release 
-> > with the existing in-kernel powerpc events.
+> Today's linux-next merge of the selinux tree got a conflict in
+> security/selinux/hooks.c between commit eb9ae686507b ("SELinux: Add new
+> labeling type native labels") from Linus' tree and commits 40d3d0b85fa2
+> ("SELinux: remove crazy contortions around proc") and a64c54cf0811
+> ("SELinux: pass a superblock to security_fs_use") from the selinux tree.
 > 
-> You're becoming the boy who cried "ABI break" Vince. Yes we renamed one
-> event, we knew full well that nothing was using it - not even trinity.
-
-Yes, the interface has only been around for one kernel version and you've 
-already broken the ABI once.  Not a very good track record.  Event name 
-renaming is a lot bigger problem on x86 where certain vendors like to fuss 
-with the event names every 3 months or so.
-
-trinity is just an example as the users tend to use -rc kernels and thus 
-find the breakages faster.  The main problem is tools like PAPI that deal 
-with events in much more critical fashion, but the kernel devs don't 
-really seem to care much about HPC use cases.
-
-> > I agree.  So why is this patch in tip?
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 > 
-> Because acme picked it up before that thread got going.
-
-once a patch gets into tip in my experience all public mailing list review 
-is done with, and the patch is more or less guaranteed to appear in the 
-next major release unless there's some sort of regression in linux-next.
-
-Hence this last attempt to get people to discuss this.  It will likely be 
-ignored, but at least I can feel like I tried.
-
-Vince
-
-
+> P.S. Unusually, that commit from Linus' tree has no Signed-off-by from
+> its purported author (David Quigley).
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> diff --cc security/selinux/hooks.c
+> index a5091ec,4fbf2c5..0000000
+> --- a/security/selinux/hooks.c
+> +++ b/security/selinux/hooks.c
+> @@@ -680,21 -702,14 +712,19 @@@ static int selinux_set_mnt_opts(struct 
+>      if (strcmp(sb->s_type->name, "proc") == 0)
+>          sbsec->flags |= SE_SBPROC;
+> 
+> -    /* Determine the labeling behavior to use for this filesystem type. */
+> -    rc = security_fs_use(sb);
+> -    if (rc) {
+> -        printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
+> -               __func__, sb->s_type->name, rc);
+> -        goto out;
+> +    if (!sbsec->behavior) {
+> +        /*
+> +         * Determine the labeling behavior to use for this
+> +         * filesystem type.
+> +         */
+> -        rc = security_fs_use((sbsec->flags & SE_SBPROC) ?
+> -                    "proc" : sb->s_type->name,
+> -                    &sbsec->behavior, &sbsec->sid);
+> ++        rc = security_fs_use(sb);
+> +        if (rc) {
+> +            printk(KERN_WARNING
+> +                "%s: security_fs_use(%s) returned %d\n",
+> +                    __func__, sb->s_type->name, rc);
+> +            goto out;
+> +        }
+>      }
+> -
+>      /* sets the context of the superblock for the fs being mounted. */
+>      if (fscontext_sid) {
+>          rc = may_context_mount_sb_relabel(fscontext_sid, sbsec, cred);
+> @@@ -2629,11 -2589,15 +2659,11 @@@ static int selinux_inode_init_security(
+>          isec->initialized = 1;
+>      }
+> 
+> -    if (!ss_initialized || !(sbsec->flags & SE_SBLABELSUPP))
+> +    if (!ss_initialized || !(sbsec->flags & SBLABEL_MNT))
+>          return -EOPNOTSUPP;
+> 
+> -    if (name) {
+> -        namep = kstrdup(XATTR_SELINUX_SUFFIX, GFP_NOFS);
+> -        if (!namep)
+> -            return -ENOMEM;
+> -        *name = namep;
+> -    }
+> +    if (name)
+> +        *name = XATTR_SELINUX_SUFFIX;
+> 
+>      if (value && len) {
+>          rc = security_sid_to_context_force(newsid, &context, &clen);
