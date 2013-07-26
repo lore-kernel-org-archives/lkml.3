@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760542Ab3GZXqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:46:15 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:42195 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760186Ab3GZXnN (ORCPT
+	id S1760652Ab3GZXqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:46:39 -0400
+Received: from mail-we0-f175.google.com ([74.125.82.175]:43796 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758330Ab3GZXnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:43:13 -0400
+	Fri, 26 Jul 2013 19:43:09 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 10/21] context_tracking: Optimize context switch off case with static keys
-Date: Sat, 27 Jul 2013 01:42:33 +0200
-Message-Id: <1374882164-32519-11-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/21] context_tracking: Optimize main APIs off case with static key
+Date: Sat, 27 Jul 2013 01:42:31 +0200
+Message-Id: <1374882164-32519-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
 References: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
@@ -26,8 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need for syscall slowpath if no CPU is full dynticks,
-rather nop this in this case.
+Optimize user and exception entry/exit APIs with static
+keys. This minimize the overhead for those who enable
+CONFIG_NO_HZ_FULL without always using it. Having no range
+passed to nohz_full= should result in the probes to be nopped
+(at least we hope so...).
+
+If this proves not be enough in the long term, we'll need
+to bring an exception slow path by re-routing the exception
+handlers.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -40,70 +47,103 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/context_tracking.h |   11 +++++++++--
- kernel/context_tracking.c        |    6 +++---
- 2 files changed, 12 insertions(+), 5 deletions(-)
+ include/linux/context_tracking.h |   27 ++++++++++++++++++++++-----
+ kernel/context_tracking.c        |   12 ++++++------
+ 2 files changed, 28 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index 03a32b0..66a8397 100644
+index f9356eb..e5ec0c9 100644
 --- a/include/linux/context_tracking.h
 +++ b/include/linux/context_tracking.h
-@@ -40,6 +40,8 @@ extern void context_tracking_cpu_set(int cpu);
+@@ -38,23 +38,40 @@ static inline bool context_tracking_active(void)
  
- extern void context_tracking_user_enter(void);
- extern void context_tracking_user_exit(void);
-+extern void __context_tracking_task_switch(struct task_struct *prev,
-+					   struct task_struct *next);
+ extern void context_tracking_cpu_set(int cpu);
  
- static inline void user_enter(void)
- {
-@@ -74,8 +76,12 @@ static inline void exception_exit(enum ctx_state prev_ctx)
- 	}
- }
- 
--extern void context_tracking_task_switch(struct task_struct *prev,
--					 struct task_struct *next);
-+static inline void context_tracking_task_switch(struct task_struct *prev,
-+						struct task_struct *next)
+-extern void user_enter(void);
+-extern void user_exit(void);
++extern void context_tracking_user_enter(void);
++extern void context_tracking_user_exit(void);
++
++static inline void user_enter(void)
 +{
 +	if (static_key_false(&context_tracking_enabled))
-+		__context_tracking_task_switch(prev, next);
-+}
- #else
- static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
-@@ -104,6 +110,7 @@ static inline void guest_exit(void)
- 	else
- 		current->flags &= ~PF_VCPU;
- }
++		context_tracking_user_enter();
 +
- #else
- static inline void guest_enter(void)
++}
++static inline void user_exit(void)
++{
++	if (static_key_false(&context_tracking_enabled))
++		context_tracking_user_exit();
++}
+ 
+ static inline enum ctx_state exception_enter(void)
  {
+ 	enum ctx_state prev_ctx;
+ 
++	if (!static_key_false(&context_tracking_enabled))
++		return 0;
++
+ 	prev_ctx = this_cpu_read(context_tracking.state);
+-	user_exit();
++	context_tracking_user_exit();
+ 
+ 	return prev_ctx;
+ }
+ 
+ static inline void exception_exit(enum ctx_state prev_ctx)
+ {
+-	if (prev_ctx == IN_USER)
+-		user_enter();
++	if (static_key_false(&context_tracking_enabled)) {
++		if (prev_ctx == IN_USER)
++			context_tracking_user_enter();
++	}
+ }
+ 
+ extern void context_tracking_task_switch(struct task_struct *prev,
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 5afa36b..ef21e4f 100644
+index f07505c..657f668 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -166,7 +166,7 @@ void context_tracking_user_exit(void)
+@@ -33,15 +33,15 @@ void context_tracking_cpu_set(int cpu)
  }
  
  /**
-- * context_tracking_task_switch - context switch the syscall callbacks
-+ * __context_tracking_task_switch - context switch the syscall callbacks
-  * @prev: the task that is being switched out
-  * @next: the task that is being switched in
+- * user_enter - Inform the context tracking that the CPU is going to
+- *              enter userspace mode.
++ * context_tracking_user_enter - Inform the context tracking that the CPU is going to
++ *                               enter userspace mode.
   *
-@@ -178,8 +178,8 @@ void context_tracking_user_exit(void)
-  * migrate to some CPU that doesn't do the context tracking. As such the TIF
-  * flag may not be desired there.
+  * This function must be called right before we switch from the kernel
+  * to userspace, when it's guaranteed the remaining kernel instructions
+  * to execute won't use any RCU read side critical section because this
+  * function sets RCU in extended quiescent state.
   */
--void context_tracking_task_switch(struct task_struct *prev,
--			     struct task_struct *next)
-+void __context_tracking_task_switch(struct task_struct *prev,
-+				    struct task_struct *next)
+-void user_enter(void)
++void context_tracking_user_enter(void)
  {
- 	clear_tsk_thread_flag(prev, TIF_NOHZ);
- 	set_tsk_thread_flag(next, TIF_NOHZ);
+ 	unsigned long flags;
+ 
+@@ -131,8 +131,8 @@ EXPORT_SYMBOL_GPL(preempt_schedule_context);
+ #endif /* CONFIG_PREEMPT */
+ 
+ /**
+- * user_exit - Inform the context tracking that the CPU is
+- *             exiting userspace mode and entering the kernel.
++ * context_tracking_user_exit - Inform the context tracking that the CPU is
++ *                              exiting userspace mode and entering the kernel.
+  *
+  * This function must be called after we entered the kernel from userspace
+  * before any use of RCU read side critical section. This potentially include
+@@ -141,7 +141,7 @@ EXPORT_SYMBOL_GPL(preempt_schedule_context);
+  * This call supports re-entrancy. This way it can be called from any exception
+  * handler without needing to know if we came from userspace or not.
+  */
+-void user_exit(void)
++void context_tracking_user_exit(void)
+ {
+ 	unsigned long flags;
+ 
 -- 
 1.7.5.4
 
