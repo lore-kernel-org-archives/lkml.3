@@ -1,113 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759431Ab3GZQEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:04:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35875 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759414Ab3GZQEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:04:33 -0400
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
-        Michel Lespinasse <walken@google.com>,
-        Greg Thelen <gthelen@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
-        Glauber Costa <glommer@gmail.com>
-Subject: [PATCH v5.1 8/8] memcg, vmscan: do not fall into reclaim-all pass too quickly
-Date: Fri, 26 Jul 2013 18:04:18 +0200
-Message-Id: <1374854658-26990-9-git-send-email-mhocko@suse.cz>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
-References: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
+	id S1759460Ab3GZQFW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:05:22 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:47654 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab3GZQFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 12:05:18 -0400
+Message-ID: <51F29E3A.6060202@wwwdotorg.org>
+Date: Fri, 26 Jul 2013 10:05:14 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Christian Ruppert <christian.ruppert@abilis.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Patrice CHOTARD <patrice.chotard@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
+        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
+References: <20130626115051.GC7095@ab42.lan> <51CB279A.1090404@wwwdotorg.org> <20130705094859.GA27196@ab42.lan> <51D71337.6030409@wwwdotorg.org> <20130708130222.GA6402@ab42.lan> <51DDB5B8.5060909@wwwdotorg.org> <20130716084755.GB10914@ab42.lan> <51E56EF3.5040506@wwwdotorg.org> <20130718160700.GA14482@ab42.lan> <51E847EA.9060302@wwwdotorg.org> <20130726094228.GA3232@ab42.lan>
+In-Reply-To: <20130726094228.GA3232@ab42.lan>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shrink_zone starts with soft reclaim pass first and then falls back to
-regular reclaim if nothing has been scanned. This behavior is natural
-but there is a catch. Memcg iterators, when used with the reclaim
-cookie, are designed to help to prevent from over reclaim by
-interleaving reclaimers (per node-zone-priority) so the tree walk might
-miss many (even all) nodes in the hierarchy e.g. when there are direct
-reclaimers racing with each other or with kswapd in the global case or
-multiple allocators reaching the limit for the target reclaim case.
-To make it even more complicated, targeted reclaim doesn't do the whole
-tree walk because it stops reclaiming once it reclaims sufficient pages.
-As a result groups over the limit might be missed, thus nothing is
-scanned, and reclaim would fall back to the reclaim all mode.
+On 07/26/2013 03:42 AM, Christian Ruppert wrote:
+> On Thu, Jul 18, 2013 at 01:54:18PM -0600, Stephen Warren wrote:
+>> On 07/18/2013 10:07 AM, Christian Ruppert wrote:
+>> ...
+>>> Well, perhaps my definition of "inside"/"outside" pins was not quite
+>>> clear: The pin groups define the set of (kernel internal) pin numbers of
+>>> "outside" pins which are used by pin controller to map a given
+>>> interface. Inside pins are not numbered and the inside interfaces are
+>>> only used to determine which outside pins are part of the same group
+>>> (namely those for which the pin controller hardware provides a mux
+>>> connection to the same inside interface):
+>>>
+>>>                        4
+>>>                 4  /|--/-- SPI
+>>>    PINS[0..3] --/--||  4
+>>>                    \|--/-- GPIO[0..3]
+>>>
+>>>                    4
+>>>    PINS[4..7] -----/------ GPIO[4..7]
+>>>
+>>>                        2
+>>>                 2  /|--/-- I2C
+>>>    PINS[8..9] --/--||  2
+>>>                    \|--/-- GPIO[8..9]
+>>>
+>>> Pins 0..3 are in the SPI group because on the "inside" they can be muxed
+>>> to the SPI interface.
+>>> Pins 8..9 are in the I2C group because on the "inside" they can be muxed
+>>> to the I2C interface.
+>>> Pins 0..9 are in the GPIO group because on the "inside" they can be
+>>> muxed to the GPIO controller.
+>>>
+>>> All pin numbers are relative to the "outside", however, or conflict
+>>> management would not be possible. I hope this is more understandable
+>>> than my previous explanations.
+>>> Both muxes are controlled by the same register. In our overly simplistic
+>>> example this is not strictly necessary but in reality you might have pin
+>>> conflicts between the different interfaces.
+>>
+>> Same register, or same field/bits in that register?
+>>
+>> If it's the same field/bits, I would expect to see the following pin groups:
+>>
+>> 1) PINS[0..3], PINS[8..9]
+>> 2) PINS[4..7]
+>>
+>> ... since those are the things that are independently muxable.
+>> Otherwise, I'd expect to see the following groups:
+>>
+>> 1) PINS[0..3]
+>> 2) PINS[4..7]
+>> 3) PINS[8..9]
+>>
+>>> After the discussion we had so far I'm not so sure if extending the
+>>> pinctrl system with this kind of features is a very good idea.
+>>
+>> That makes things simple:-)
+>>
+>> One thing I still don't understand; in a previous mail, you'd mentioned
+>> 3 DT properties for configuring the pinmux; one represented the pin
+>> group, one represented the mux function that was selected for that pin
+>> group, and there was a third ("config"?) property. I still don't
+>> understand that third property. I only see pins/pingroups and mux
+>> functions in the diagram I quoted above.
+> 
+> In my proposal, pin groups represent interfaces instead of ports: All
+> three pin groups are configured through the same bit field in the same
+> register but they represent _logically_ independent functionalities.
 
-This patch checks for the incomplete tree walk in shrink_zone. If no
-group has been visited and the hierarchy is soft reclaimable then we
-must have missed some groups, in which case the __shrink_zone is called
-again. This doesn't guarantee there will be some progress of course
-because the current reclaimer might be still racing with others but it
-would at least give a chance to start the walk without a big risk of
-reclaim latencies.
+Oh, that's a pretty "coupled" HW design!
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- mm/vmscan.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+I would suggest having a single pin group for all 10 pins (since that's
+what HW really has). I imagine with that HW design, there's very little
+potential for any kind of dynamic pin-muxing, since it would affect
+multiple unrelated HW modules (I2C, SPI), and hence the co-ordination
+required for dynamic muxing would make it impractical. As such I would
+also specify the pinctrl configuration as a "hog" in the pin controller,
+since each configuration bit affects multiple other devices, so it
+doesn't make logical sense to try to specify the pinctrl configuration
+anywhere other than the pin controller.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b45ff5b..6134708 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2157,10 +2157,11 @@ static inline bool should_continue_reclaim(struct zone *zone,
- 	}
- }
- 
--static void
-+static int
- __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- {
- 	unsigned long nr_reclaimed, nr_scanned;
-+	int groups_scanned = 0;
- 
- 	do {
- 		struct mem_cgroup *root = sc->target_mem_cgroup;
-@@ -2178,6 +2179,7 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- 		while ((memcg = mem_cgroup_iter_cond(root, memcg, &reclaim, filter))) {
- 			struct lruvec *lruvec;
- 
-+			groups_scanned++;
- 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
- 
- 			shrink_lruvec(lruvec, sc);
-@@ -2205,6 +2207,8 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- 
- 	} while (should_continue_reclaim(zone, sc->nr_reclaimed - nr_reclaimed,
- 					 sc->nr_scanned - nr_scanned, sc));
-+
-+	return groups_scanned;
- }
- 
- 
-@@ -2212,8 +2216,19 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
- {
- 	bool do_soft_reclaim = mem_cgroup_should_soft_reclaim(sc);
- 	unsigned long nr_scanned = sc->nr_scanned;
-+	int scanned_groups;
- 
--	__shrink_zone(zone, sc, do_soft_reclaim);
-+	scanned_groups = __shrink_zone(zone, sc, do_soft_reclaim);
-+	/*
-+         * memcg iterator might race with other reclaimer or start from
-+         * a incomplete tree walk so the tree walk in __shrink_zone
-+         * might have missed groups that are above the soft limit. Try
-+         * another loop to catch up with others. Do it just once to
-+         * prevent from reclaim latencies when other reclaimers always
-+         * preempt this one.
-+	 */
-+	if (do_soft_reclaim && !scanned_groups)
-+		__shrink_zone(zone, sc, do_soft_reclaim);
- 
- 	/*
- 	 * No group is over the soft limit or those that are do not have
--- 
-1.8.3.2
+> The three DT properties are:
+> 
+> 1. interface (which pins are we actually interested in when requesting
+>    this)
+> 2. port (which bit field/register is used to configure this)
+> 3. configuration of that port (which mux function(s) in that bit
+>    field/register are possible to make the interface available)
 
