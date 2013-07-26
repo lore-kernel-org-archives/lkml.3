@@ -1,102 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760303Ab3GZVMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:12:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933026Ab3GZUyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandr Ivanov <alexandr.sky@gmail.com>
-Subject: [ 51/59] USB: option: add D-Link DWM-152/C1 and DWM-156/C1
-Date: Fri, 26 Jul 2013 13:53:15 -0700
-Message-Id: <20130726205019.292409872@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	id S1760335Ab3GZVM2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:12:28 -0400
+Received: from www.sr71.net ([198.145.64.142]:46756 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760311Ab3GZVMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 17:12:23 -0400
+Message-ID: <51F2E636.50001@sr71.net>
+Date: Fri, 26 Jul 2013 14:12:22 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Aaron Lu <aaron.lu@intel.com>
+CC: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Shane Huang <shane.huang@amd.com>
+Subject: Re: SATA hotplug not detecting new disks
+References: <51F1B179.4070309@sr71.net> <51F1D63A.2010403@intel.com>
+In-Reply-To: <51F1D63A.2010403@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 07/25/2013 06:51 PM, Aaron Lu wrote:
+> On 07/26/2013 07:15 AM, Dave Hansen wrote:
+>> > I've got a relatively new system that doesn't seem to be able to hotplug
+>> > SATA disks.  I see the same behavior on 3.10, 3.11-rc2, and Ubuntu's
+>> > 3.8.0-25-generic.  The disks are detected right away on reboots, but
+>> > even after poking the /sys/class/scsi_host/host*/scan files, new disks
+>> > are never detected.  I've disabled link power management.
+>> > 
+>> > Am I doing something stupid here?  I thought this "just worked" on my
+>> > previous hardware.
+> My vague memory reminds me that not all SATA ports are hot pluggable -
+> you can check the port's "External SATA port" bit and "Hot Plug Capable"
+> bit of the PxCMD register like this:
+> 
+> $ grep ahci /proc/iomem 
+>     e1a40000-e1a407ff : ahci
+> # dd if=/dev/mem of=ahcidump bs=4096 count=1 skip=0xe1a40
+> You will need to change 0xe1a40 to decimal format.
+> 
+> Then the PxCMD is at offset 0x118 for port 0, check bit 21 for E-SATA or
+> bit 18 for hot pluggable bits. If any of them set to 1, this port
+> should be hot pluggable; otherwise, it doesn't have this capability.
 
-------------------
+<sigh>
 
-From: "Alexandr \\\"Sky\\\" Ivanov" <alexandr.sky@gmail.com>
+I went digging back through the BIOS settings, and found a nice checkbox
+to enable hotplug support on the ports.  All seems happy now.
 
-commit ca24763588844b14f019ffc45c7df6d9e8f932c5 upstream.
-
-Adding support for D-Link DWM-152/C1 and DWM-156/C1 devices.
-
-DWM-152/C1:
-T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  6 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=07d1 ProdID=3e01 Rev= 0.00
-S:  Product=USB Configuration
-S:  SerialNumber=1234567890ABCDEF
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-DWM-156/C1:
-T:  Bus=01 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  8 Spd=480 MxCh= 0
-D:  Ver= 2.00 Cls=00(>ifc ) Sub=00 Prot=00 MxPS=64 #Cfgs=  1
-P:  Vendor=07d1 ProdID=3e02 Rev= 0.00
-S:  Product=DataCard Device
-S:  SerialNumber=1234567890ABCDEF
-C:* #Ifs= 5 Cfg#= 1 Atr=e0 MxPwr=500mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=81(I) Atr=03(Int.) MxPS=  64 Ivl=2ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=01(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=83(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=84(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=03(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 3 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=option
-E:  Ad=85(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=04(O) Atr=02(Bulk) MxPS= 512 Ivl=4ms
-I:* If#= 4 Alt= 0 #EPs= 2 Cls=08(stor.) Sub=06 Prot=50 Driver=usb-storage
-E:  Ad=05(O) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-E:  Ad=86(I) Atr=02(Bulk) MxPS= 512 Ivl=0ms
-
-Signed-off-by: Alexandr Ivanov <alexandr.sky@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1361,6 +1361,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d02, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x02, 0x01) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d03, 0xff, 0x00, 0x00) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e01, 0xff, 0xff, 0xff) }, /* D-Link DWM-152/C1 */
-+	{ USB_DEVICE_AND_INTERFACE_INFO(0x07d1, 0x3e02, 0xff, 0xff, 0xff) }, /* D-Link DWM-156/C1 */
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
-
+Thanks for the help.  I hope someone else googling will hit this thread. :)
 
