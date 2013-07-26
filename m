@@ -1,266 +1,395 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab3GZCvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:51:02 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:39124 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757036Ab3GZCu5 (ORCPT
+	id S1758293Ab3GZCvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:51:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16343 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757847Ab3GZCvg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:50:57 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AscNAKXj8VF5LPxH/2dsb2JhbABagwY1gnOnNQKOUIU6gRMXdIIkAQEEAScTHCMFCwgDFQMJJQ8FDRgDNId+AwkFsCsNiF4WjH+BM4E1B4MSbgOVdoFojCiFJoMmKoEsBA
-Date: Fri, 26 Jul 2013 12:50:09 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH] xfs: introduce object readahead to log recovery
-Message-ID: <20130726025009.GE21982@dastard>
-References: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
+	Thu, 25 Jul 2013 22:51:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,747,1367996400"; 
+   d="scan'208";a="351904799"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
+Subject: RE: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in reduced
+ hardware sleep path
+Thread-Topic: [PATCH v3 1/3] acpi: Call acpi_os_prepare_sleep hook in
+ reduced hardware sleep path
+Thread-Index: AQHOcnac189PXIyTT0GA11YOlMneHJlQ7d+w///Zo4CAIr75sP//2WoAgAAVrYCAAAE8AIAAFSaAgAAJ4gCAABXVAIABGJaQ//9/24AAETff8AAEqI4AAC+Ir5A=
+Date: Fri, 26 Jul 2013 02:51:30 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435C4C@SHSMSX101.ccr.corp.intel.com>
+References: <1AE640813FDE7649BE1B193DEA596E88024352D2@SHSMSX101.ccr.corp.intel.com>
+ <51EFC1FE.5000609@citrix.com>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA87FF@ORSMSX103.amr.corp.intel.com>
+ <51EFD536.8070209@citrix.com>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E36FEA884D@ORSMSX103.amr.corp.intel.com>
+ <51EFEF3E.8020001@citrix.com> <20130724163214.GB6308@phenom.dumpdata.com>
+ <1AE640813FDE7649BE1B193DEA596E88024356ED@SHSMSX101.ccr.corp.intel.com>
+ <CAOvdn6WZFu7TssoML3J9SPpqH_AKSi4cjvZ7Tb0zdBtq46QO0Q@mail.gmail.com>
+ <1AE640813FDE7649BE1B193DEA596E8802435734@SHSMSX101.ccr.corp.intel.com>
+ <20130725120414.GA22964@konrad-lan.dumpdata.com>
+In-Reply-To: <20130725120414.GA22964@konrad-lan.dumpdata.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 04:23:39PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Thursday, July 25, 2013 8:04 PM
 > 
->   It can take a long time to run log recovery operation because it is
-> single threaded and is bound by read latency. We can find that it took
-> most of the time to wait for the read IO to occur, so if one object
-> readahead is introduced to log recovery, it will obviously reduce the
-> log recovery time.
+> CC-ing some of the tboot maintainers.
+> > As what I've said, it's up to the others to determine if the patch is OK.
+> > I just need to make my concerns visible in the community. :-)
 > 
->   In dirty log case as below:
->     data device: 0xfd10
->     log device: 0xfd10 daddr: 20480032 length: 20480
+> If I understand your concerns you don't want the hook to depend on any
+> of the bit manipulations the existing code does for the pm1 values. The
+> hook should do it itself case it needs to tweak them or what not.
 > 
->     log tail: 7941 head: 11077 state: <DIRTY>
+> And it also frees you from altering the ACPICA code without having to
+> worry about being dependent on what the input values the hook requires?
+> 
+> Is this what you had in mind? (not compile tested nor tested).
 
-That's only a small log (10MB). As I've said on irc, readahead won't
-show any real difference on this and you need to be testing with
-large logs.
+Actually I've drafted such a patch that had conflicts with the Xen/tboot hooks.
+Then the patchset has to first delete the hooks to make test possible for testers.
+It is here:
+https://bugzilla.kernel.org/show_bug.cgi?id=54181
 
 > 
-> This dirty ratio is about 15%. I am trying to do tests in larger scale
-> and dirtier filesystem environment.
+> I am not even sure if outside the drivers/acpi you can call
+> acpi_hw_get_bit_register_info ..
+
+If we want this patch to be accepted without modification, then someone can help to do such cleanup in the future when ACPICA change happens.
+
 > 
-> Log recovery time stat:
+> And since the Xen bits would do the same exact bit manipulation it
+> probably could use a library to do pm1* stuff so both tboot and Xen
+> can use it.
+
+This sounds better.
+I think Xen and tboot will need such a library to atomically accessing PM register fields.
+
+Thanks and best regards
+-Lv
+
 > 
->             w/o this patch        w/ this patch
->   real         0m1.051s             0m0.965s
->   sys          0m0.033s             0m0.035s
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> index f84fe00..59570b1 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -273,20 +273,75 @@ static void tboot_copy_fadt(const struct
+> acpi_table_fadt *fadt)
+>  		offsetof(struct acpi_table_facs, firmware_waking_vector);
+>  }
 > 
->   iowait       0m1.018s             0m0.930s
-
-Well, it's not made much of a difference there. That's probably
-within the noise of repeated log recovery runs.
-
-My simple test is:
-
-$ cat recovery_time.sh
-#!/bin/bash
-
-cd /home/dave/src/compilebench-0.6/
-
-mkfs.xfs -f /dev/vdc;
-mount /dev/vdc /mnt/scratch
-chmod 777 /mnt/scratch;
-./compilebench --no-sync -D /mnt/scratch &
-sleep 55
-/home/dave/src/xfstests-dev/src/godown /mnt/scratch
-umount /mnt/scratch
-xfs_logprint -t /dev/vdc |head -20
-time mount /dev/vdc /mnt/scratch
-umount /mnt/scratch
-$
-
-And the recovery time from this is between 15-17s:
-
-....
-    log device: 0xfd20 daddr: 107374182032 length: 4173824
-                                                   ^^^^^^^ almost 2GB
-        log tail: 19288 head: 264809 state: <DIRTY>
-....
-real    0m17.913s
-user    0m0.000s
-sys     0m2.381s
-
-And runs at 3-4000 read IOPs for most of that time. It's largely IO
-bound, even on SSDs.
-
-With your patch:
-
-log tail: 35871 head: 308393 state: <DIRTY>
-real    0m12.715s
-user    0m0.000s
-sys     0m2.247s
-
-And it peaked at ~5000 read IOPS.
-
-It's definitely an improvement, but there's a lot of dead time still
-spent waiting for IO that we should be able to remove. Let's have a
-look at the code...
-
-
-> +STATIC void
-> +xlog_recover_inode_ra_pass2(
-> +	struct xlog                     *log,
-> +	struct xlog_recover_item        *item)
+> -static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+> +static int tboot_get_pm_control(bool legacy)
 > +{
-> +	xfs_inode_log_format_t	*in_f;
-> +	xfs_mount_t		*mp = log->l_mp;
-> +	int			error;
-> +	int			need_free = 0;
+> +	u32 pm1a_control;
+> +	u32 pm1b_control;
+> +	u32 in_value;
+> +	acpi_status status;
+> +	struct acpi_bit_register_info *sleep_type_reg_info;
+> +	struct acpi_bit_register_info *sleep_enable_reg_info;
 > +
-> +	if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
-> +		in_f = item->ri_buf[0].i_addr;
-> +	} else {
-> +		in_f = kmem_alloc(sizeof(xfs_inode_log_format_t), KM_SLEEP);
-> +		need_free = 1;
-> +		error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
-> +		if (error)
-> +			goto error;
+> +	if (!legacy)
+> +		return -ENOSPC;
+> +
+> +	status = acpi_hw_register_read(ACPI_REGISTER_PM1_CONTROL,
+> +				       &pm1a_control);
+> +	if (ACPI_FAILURE(status)) {
+> +		return -EXXX /* something */;
 > +	}
-
-I'd just put the conversion buffer on stack and avoid the need to
-alloc/free memory here. There's plenty of stack space available
-during recovery here, so let's use it to keep the overhead of
-readahead down.
-
-> +STATIC void
-> +xlog_recover_dquot_ra_pass2(
-> +	struct xlog			*log,
-> +	struct xlog_recover_item	*item)
-> +{
-> +	xfs_mount_t		*mp = log->l_mp;
-> +	xfs_buf_t		*bp;
-> +	struct xfs_disk_dquot	*recddq;
-> +	int			error;
-> +	xfs_dq_logformat_t	*dq_f;
-> +	uint			type;
+> +	sleep_type_reg_info =
+> acpi_hw_get_bit_register_info(ACPI_BITREG_SLEEP_TYPE);
+> +	sleep_enable_reg_info =
+> acpi_hw_get_bit_register_info(ACPI_BITREG_SLEEP_ENABLE);
+> +	/* Clear the SLP_EN and SLP_TYP fields */
 > +
+> +	pm1a_control &= ~(sleep_type_reg_info->access_bit_mask |
+> +			  sleep_enable_reg_info->access_bit_mask);
+> +	pm1b_control = pm1a_control;
 > +
-> +	if (mp->m_qflags == 0)
-> +		return;
+> +	/* Insert the SLP_TYP bits */
 > +
-> +	recddq = item->ri_buf[1].i_addr;
-> +	if (recddq == NULL)
-> +		return;
-> +	if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
-> +		return;
+> +	pm1a_control |=
+> +	    (acpi_gbl_sleep_type_a << sleep_type_reg_info->bit_position);
+> +	pm1b_control |=
+> +	    (acpi_gbl_sleep_type_b << sleep_type_reg_info->bit_position);
 > +
-> +	type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
-> +	ASSERT(type);
-> +	if (log->l_quotaoffs_flag & type)
-> +		return;
+> +	/*
+> +	 * We split the writes of SLP_TYP and SLP_EN to workaround
+> +	 * poorly implemented hardware.
+> +	 */
 > +
-> +	dq_f = item->ri_buf[0].i_addr;
-> +	ASSERT(dq_f);
-> +	error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
-> +			   "xlog_recover_dquot_ra_pass2 (log copy)");
-> +	if (error)
-> +		return;
-> +	ASSERT(dq_f->qlf_len == 1);
+> +	/* Write #1: write the SLP_TYP data to the PM1 Control registers */
 > +
-> +	error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dq_f->qlf_blkno,
-> +				   XFS_FSB_TO_BB(mp, dq_f->qlf_len), 0, &bp,
-> +				   NULL);
-> +	if (!error)
-> +		xfs_buf_relse(bp);
+> +	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
+> +	if (ACPI_FAILURE(status)) {
+> +		return -EXXX /* something */;
+> +	}
+> +
+> +	/* Insert the sleep enable (SLP_EN) bit */
+> +
+> +	pm1a_control |= sleep_enable_reg_info->access_bit_mask;
+> +	pm1b_control |= sleep_enable_reg_info->access_bit_mask;
+> +	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
+> +	tboot->acpi_sinfo.pm1b_cnt_val = pm1b_control;
+> +	return 0;
 > +}
-
-That's not doing readahead - that's an integrity check followed by a
-blocking read.  Shouldn't it just be calling xfs_buf_readahead() on
-dq_f->qlf_blkno/dq_f->qlf_len, after checking whether it had been
-cancelled?
-
->  STATIC int
->  xlog_recover_commit_pass1(
->  	struct xlog			*log,
-> @@ -3140,10 +3255,14 @@ xlog_recover_commit_pass2(
->  	struct xlog			*log,
->  	struct xlog_recover		*trans,
->  	struct list_head		*buffer_list,
-> -	struct xlog_recover_item	*item)
-> +	struct xlog_recover_item	*item,
-> +	struct xlog_recover_item	*next_item)
+> +static int tboot_sleep(u8 sleep_state);
 >  {
->  	trace_xfs_log_recover_item_recover(log, trans, item, XLOG_RECOVER_PASS2);
->  
-> +	if (next_item)
-> +		xlog_recover_ra_pass2(log, next_item);
+>  	static u32 acpi_shutdown_map[ACPI_S_STATE_COUNT] = {
+>  		/* S0,1,2: */ -1, -1, -1,
+>  		/* S3: */ TB_SHUTDOWN_S3,
+>  		/* S4: */ TB_SHUTDOWN_S4,
+>  		/* S5: */ TB_SHUTDOWN_S5 };
+> +	int rc;
+> 
+>  	if (!tboot_enabled())
+>  		return 0;
+> 
+>  	tboot_copy_fadt(&acpi_gbl_FADT);
+> -	tboot->acpi_sinfo.pm1a_cnt_val = pm1a_control;
+> -	tboot->acpi_sinfo.pm1b_cnt_val = pm1b_control;
 > +
-
-Ah, that explains the limited improvement - it's only doing
-readahead of a single item at a time. IOWs, we are completing
-recovery of the current object before IO completion of the next
-object has occurred. This generally means the read-ahead queue is
-not deep enough...
-
->  	switch (ITEM_TYPE(item)) {
->  	case XFS_LI_BUF:
->  		return xlog_recover_buffer_pass2(log, buffer_list, item);
-> @@ -3181,7 +3300,7 @@ xlog_recover_commit_trans(
->  	int			pass)
+> +	rc = tboot_get_pm_control();
+> +	if (rc < 0)
+> +		return -1;
+>  	/* we always use the 32b wakeup vector */
+>  	tboot->acpi_sinfo.vector_width = 32;
+> 
+> diff --git a/drivers/acpi/acpica/hwesleep.c b/drivers/acpi/acpica/hwesleep.c
+> index 5e5f762..a8e98f9 100644
+> --- a/drivers/acpi/acpica/hwesleep.c
+> +++ b/drivers/acpi/acpica/hwesleep.c
+> @@ -113,6 +113,15 @@ acpi_status acpi_hw_extended_sleep(u8
+> sleep_state)
+>  	    !acpi_gbl_FADT.sleep_status.address) {
+>  		return_ACPI_STATUS(AE_NOT_EXIST);
+>  	}
+> +       /*
+> +        * If using tboot or other platforms that need tweaks then
+> +        * do them here, and also bail out if neccessary.
+> +        */
+> +       status = acpi_os_prepare_sleep(sleep_state);
+> +       if (ACPI_SKIP(status))
+> +               return_ACPI_STATUS(AE_OK);
+> +       if (ACPI_FAILURE(status))
+> +               return_ACPI_STATUS(status);
+> 
+>  	/* Clear wake status (WAK_STS) */
+> 
+> diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+> index e3828cc..909b23b 100644
+> --- a/drivers/acpi/acpica/hwsleep.c
+> +++ b/drivers/acpi/acpica/hwsleep.c
+> @@ -108,6 +108,16 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+>  		return_ACPI_STATUS(status);
+>  	}
+> 
+> +	/*
+> +	 * If using tboot or other platforms that need tweaks then
+> +	 * do them here, and also bail out if neccessary.
+> +	 */
+> +	status = acpi_os_prepare_sleep(sleep_state);
+> +	if (ACPI_SKIP(status))
+> +		return_ACPI_STATUS(AE_OK);
+> +	if (ACPI_FAILURE(status))
+> +		return_ACPI_STATUS(status);
+> +
+>  	/* Get current value of PM1A control */
+> 
+>  	status = acpi_hw_register_read(ACPI_REGISTER_PM1_CONTROL,
+> @@ -152,12 +162,6 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
+> 
+>  	ACPI_FLUSH_CPU_CACHE();
+> 
+> -	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> -				       pm1b_control);
+> -	if (ACPI_SKIP(status))
+> -		return_ACPI_STATUS(AE_OK);
+> -	if (ACPI_FAILURE(status))
+> -		return_ACPI_STATUS(status);
+>  	/* Write #2: Write both SLP_TYP + SLP_EN */
+> 
+>  	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index e721863..ffcc364 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -77,8 +77,7 @@ EXPORT_SYMBOL(acpi_in_debugger);
+>  extern char line_buf[80];
+>  #endif				/*ENABLE_DEBUGGER */
+> 
+> -static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> -				      u32 pm1b_ctrl);
+> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state);
+> 
+>  static acpi_osd_handler acpi_irq_handler;
+>  static void *acpi_irq_context;
+> @@ -1757,13 +1756,11 @@ acpi_status acpi_os_terminate(void)
+>  	return AE_OK;
+>  }
+> 
+> -acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> -				  u32 pm1b_control)
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state)
 >  {
->  	int			error = 0, error2;
-> -	xlog_recover_item_t	*item;
-> +	xlog_recover_item_t	*item, *next_item, *temp_item;
->  	LIST_HEAD		(buffer_list);
->  
->  	hlist_del(&trans->r_list);
-> @@ -3190,14 +3309,18 @@ xlog_recover_commit_trans(
->  	if (error)
->  		return error;
->  
-> -	list_for_each_entry(item, &trans->r_itemq, ri_list) {
-> +	list_for_each_entry_safe(item, temp_item, &trans->r_itemq, ri_list) {
->  		switch (pass) {
->  		case XLOG_RECOVER_PASS1:
->  			error = xlog_recover_commit_pass1(log, trans, item);
->  			break;
->  		case XLOG_RECOVER_PASS2:
-> +			if (&temp_item->ri_list != &trans->r_itemq)
-> +				next_item = temp_item;
-> +			else
-> +				next_item = NULL;
->  			error = xlog_recover_commit_pass2(log, trans,
-> -							  &buffer_list, item);
-> +					  &buffer_list, item, next_item);
-
-Ok, so you've based the readahead on the transaction item list
-having a next pointer. What I think you should do is turn this into
-a readahead queue by moving objects to a new list. i.e.
-
-	list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
-
-		case XLOG_RECOVER_PASS2:
-			if (ra_qdepth++ >= MAX_QDEPTH) {
-				recover_items(log, trans, &buffer_list, &ra_item_list);
-				ra_qdepth = 0;
-			} else {
-				xlog_recover_item_readahead(log, item);
-				list_move_tail(&item->ri_list, &ra_item_list);
-			}
-			break;
-		...
-		}
-	}
-	if (!list_empty(&ra_item_list))
-		recover_items(log, trans, &buffer_list, &ra_item_list);
-
-I'd suggest that a queue depth somewhere between 10 and 100 will
-be necessary to keep enough IO in flight to keep the pipeline full
-and prevent recovery from having to wait on IO...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+>  	int rc = 0;
+>  	if (__acpi_os_prepare_sleep)
+> -		rc = __acpi_os_prepare_sleep(sleep_state,
+> -					     pm1a_control, pm1b_control);
+> +		rc = __acpi_os_prepare_sleep(sleep_state);
+>  	if (rc < 0)
+>  		return AE_ERROR;
+>  	else if (rc > 0)
+> @@ -1772,8 +1769,7 @@ acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> u32 pm1a_control,
+>  	return AE_OK;
+>  }
+> 
+> -void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> -			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state))
+>  {
+>  	__acpi_os_prepare_sleep = func;
+>  }
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 17b5b59..8de1043 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -480,8 +480,7 @@ static inline bool acpi_driver_match_device(struct
+> device *dev,
+>  void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+>  			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> 
+> -acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> -				  u32 pm1a_control, u32 pm1b_control);
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state);
+>  #ifdef CONFIG_X86
+>  void arch_reserve_mem_area(acpi_physical_address addr, size_t size);
+>  #else
+> 
+> .. massive snip..
+> > > > On 07/24/2013 10:38 AM, Moore, Robert wrote:
+> > > > > I haven't found a high-level description of "acpi_os_prepare_sleep",
+> > > perhaps I missed it.
+> > > > >
+> > > > > Can someone point me to the overall description of this change and why
+> it is
+> > > being considered?
+> > > >
+> > > > Hi Bob,
+> > > >
+> > > > For this series, the v6 of this series does a decent job of what it is
+> > > > trying to accomplish:
+> > > > https://lkml.org/lkml/2013/7/1/205
+> > > >
+> > > > However, I recognize that this does not really describe *why*
+> > > > acpi_os_prepare_sleep is necessary to begin with. For that, we need to
+> > > > go back a little more.
+> > > >
+> > > > The summary for the series that introduced it is a good description,
+> > > > of the reasons it is necessary:
+> > > > http://lkml.indiana.edu/hypermail/linux/kernel/1112.2/00450.html
+> > > >
+> > > > In summary though - in the case of Xen (and I believe this is also
+> > > > true in tboot) a value inappropriate for a VM (which dom0 is a special
+> > > > case
+> > > > of) was being written to cr3, and the physical machine would never
+> > > > come out of S3.
+> > > >
+> > > > This mechanism gives an os specific hook to do something else down at
+> > > > the lower levels, while still being able to take advantage of the
+> > > > large amount of OS independent code in ACPICA.
+> > >
+> > > It might be also prudent to look at original 'hook' that was added by Intel in
+> the
+> > > Linux code to support TXT:
+> > >
+> > >
+> > > commit 86886e55b273f565935491816c7c96b82469d4f8
+> > > Author: Joseph Cihula <joseph.cihula@intel.com>
+> > > Date:   Tue Jun 30 19:31:07 2009 -0700
+> > >
+> > >     x86, intel_txt: Intel TXT Sx shutdown support
+> > >
+> > >     Support for graceful handling of sleep states (S3/S4/S5) after an
+> Intel(R)
+> > > TXT launch.
+> > >
+> > >     Without this patch, attempting to place the system in one of the ACPI
+> > > sleep
+> > >     states (S3/S4/S5) will cause the TXT hardware to treat this as an
+> attack
+> > > and
+> > >     will cause a system reset, with memory locked.  Not only may the
+> > > subsequent
+> > >     memory scrub take some time, but the platform will be unable to
+> enter
+> > > the
+> > >     requested power state.
+> > >
+> > >     This patch calls back into the tboot so that it may properly and
+> securely
+> > > clean
+> > >     up system state and clear the secrets-in-memory flag, after which it
+> will
+> > > place
+> > >     the system into the requested sleep state using ACPI information
+> passed
+> > > by the kernel.
+> > >
+> > >      arch/x86/kernel/smpboot.c     |    2 ++
+> > >      drivers/acpi/acpica/hwsleep.c |    3 +++
+> > >      kernel/cpu.c                  |    7 ++++++-
+> > >      3 files changed, 11 insertions(+), 1 deletion(-)
+> > >
+> > >     Signed-off-by: Joseph Cihula <joseph.cihula@intel.com>
+> > >     Signed-off-by: Shane Wang <shane.wang@intel.com>
+> > >     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> > >
+> > > I suspect that if tboot was used with a different OS (Solaris?) it would hit the
+> > > same case and a similar hook would be needed.
+> > >
+> > > Said 'hook' (which was a call to tboot_sleep) was converted to be a more
+> > > neutral 'acpi_os_prepare_sleep' which tboot can use (and incidently Xen
+> too).
+> > >
+> > > I think what Bob is saying that if said hook is neccessary (and I believe it is -
+> and
+> > > Intel TXT maintainer thinks so too since he added it in the first place), then
+> the
+> > > right way of adding it is via the ACPICA tree.
+> > >
+> > > Should the discussion for this be moved there ?
+> (https://acpica.org/community)
+> > > and an generic 'os_prepare_sleep' patch added in
+> > > git://github.com/acpica/acpica.git?
+> > >
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe linux-acpi" in the
+> body
+> > > of a message to majordomo@vger.kernel.org More majordomo info at
+> > > http://vger.kernel.org/majordomo-info.html
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
