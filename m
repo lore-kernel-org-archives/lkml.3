@@ -1,62 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758308Ab3GZQld (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:41:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28295 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab3GZQl2 (ORCPT
+	id S1758688Ab3GZQlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:41:37 -0400
+Received: from 17.mo5.mail-out.ovh.net ([46.105.56.132]:50982 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758278Ab3GZQld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:41:28 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=lIv9asz7BPEA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=Fo3TpyNZN6kA:10 a=VwQbUJbxAAAA:8 a=Q-fNiiVtAAAA:8 a=oCcaPWc0AAAA:8 a=UL2k7pEv8CQRPwfSxDIA:9 a=QEXdDO2ut3YA:10 a=lcTMV_K9oDIA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374856886.6580.39.camel@gandalf.local.home>
-Subject: Re: [PATCH 9/9] tracing: Remove locking trace_types_lock from
- tracing_reset_all_online_cpus()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Z Lam <azl@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, stable@vger.kernel.org
-Date: Fri, 26 Jul 2013 12:41:26 -0400
-In-Reply-To: <51F2A08B.2090207@broadcom.com>
-References: <20130726130327.911599518@goodmis.org>
-	 <20130726130513.428993451@goodmis.org> <51F2A08B.2090207@broadcom.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Fri, 26 Jul 2013 12:41:33 -0400
+Message-ID: <51F2A6B9.1010401@overkiz.com>
+Date: Fri, 26 Jul 2013 18:41:29 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 02/42] ARM: at91: add PMC main clock
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
+In-Reply-To: <1374068404-13654-1-git-send-email-b.brezillon@overkiz.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 12009411357578786937
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -85
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -85
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-26 at 18:15 +0200, Arend van Spriel wrote:
+On 17/07/2013 15:40, Boris BREZILLON wrote:
+> This is the at91 main oscillator clock implementation using common
+> clk framework.
+>
+> If rate is not provided during clock registraction it is computed using
+> the slow clock (main clk parent in this case) rate and the MCFR register.
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
+> ---
+>   drivers/clk/at91/Makefile   |    5 ++
+>   drivers/clk/at91/clk-main.c |  106 +++++++++++++++++++++++++++++++++++++++++++
+>   include/linux/clk/at91.h    |   10 ++++
+>   3 files changed, 121 insertions(+)
+>   create mode 100644 drivers/clk/at91/Makefile
+>   create mode 100644 drivers/clk/at91/clk-main.c
+>
+> diff --git a/drivers/clk/at91/Makefile b/drivers/clk/at91/Makefile
+> new file mode 100644
+> index 0000000..42c084e
+> --- /dev/null
+> +++ b/drivers/clk/at91/Makefile
+> @@ -0,0 +1,5 @@
+> +#
+> +# Makefile for at91 specific clk
+> +#
+> +
+> +obj-y += clk-main.o
+> diff --git a/drivers/clk/at91/clk-main.c b/drivers/clk/at91/clk-main.c
+> new file mode 100644
+> index 0000000..738fa39
+> --- /dev/null
+> +++ b/drivers/clk/at91/clk-main.c
+> @@ -0,0 +1,106 @@
+> +/*
+> + * drivers/clk/at91/clk-main.c
+> + *
+> + *  Copyright (C) 2013 Boris BREZILLON <b.brezillon@overkiz.com>
+> + *
+> + * This mainram is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + */
+> +
+> +#include <linux/clk-provider.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/clk/at91.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +
+> +#define to_clk_main(hw) container_of(hw, struct clk_main, hw)
+> +struct clk_main {
+> +	struct clk_hw hw;
+> +	unsigned long rate;
+> +};
+> +
+> +static unsigned long clk_main_recalc_rate(struct clk_hw *hw,
+> +					  unsigned long parent_rate)
+> +{
+> +	u32 tmp;
+> +	struct clk_main *clkmain = to_clk_main(hw);
+> +	if (clkmain->rate)
+> +		return clkmain->rate;
+> +	while ((tmp = at91_pmc_read(AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY)
+> +		;
+wrong test here, should be:
 
-> > Link:http://lkml.kernel.org/r/51EEC646.7070306@broadcom.com
-> >
-> > Reported-by: Arend van *Spril*<arend@broadcom.com>
-> 
-> Nasty dutch names, huh. If we ever meet on a summit you may try to 
-> pronounce it :-) Way easier than Finnish.
+while (!((tmp = at91_pmc_read(AT91_CKGR_MCFR)) & AT91_PMC_MAINRDY))
+	;
 
-Eek! How did that happen?? You would think cut and paste would work. I
-did cut off the quotes that I had from the place that I cut it from. I
-must have cropped off the 'e' there somehow too?
 
-Sorry about that.
-
-> 
-> Regards,
-> Arend
-> 
-> > Tested-by: Arend van *Spriel*<arend@broadcom.com>
-
-Well, at least I got this part right.
-
--- Steve
+> +	tmp &= AT91_PMC_MAINF;
+> +	clkmain->rate = (tmp * parent_rate) / 16;
+> +	return clkmain->rate;
+> +}
+> +
+> +static const struct clk_ops main_ops = {
+> +	.recalc_rate = clk_main_recalc_rate,
+> +};
+> +
+> +struct clk * __init
+> +at91_clk_register_main(const char *name,
+> +		       const char *parent_name,
+> +		       unsigned long rate)
+> +{
+> +	struct clk_main *clkmain;
+> +	struct clk *clk = NULL;
+> +	struct clk_init_data init;
+> +
+> +	if (!rate && !parent_name)
+> +		return ERR_PTR(-EINVAL);
+> +
+> +	clkmain = kzalloc(sizeof(*clkmain), GFP_KERNEL);
+> +	if (!clkmain)
+> +		return ERR_PTR(-ENOMEM);
+> +
+> +	init.name = name;
+> +	init.ops = &main_ops;
+> +	init.parent_names = parent_name ? &parent_name : NULL;
+> +	init.num_parents = parent_name ? 1 : 0;
+> +	init.flags = parent_name ? 0 : CLK_IS_ROOT;
+> +
+> +	clkmain->hw.init = &init;
+> +	clkmain->rate = rate;
+> +
+> +	clk = clk_register(NULL, &clkmain->hw);
+> +
+> +	if (IS_ERR(clk))
+> +		kfree(clkmain);
+> +
+> +	return clk;
+> +}
+> +
+> +
+> +
+> +#if defined(CONFIG_OF)
+> +static void __init
+> +of_at91_clk_main_setup(struct device_node *np)
+> +{
+> +	struct clk *clk;
+> +	const char *parent_name;
+> +	const char *name = np->name;
+> +	u32 rate = 0;
+> +
+> +	parent_name = of_clk_get_parent_name(np, 0);
+> +	of_property_read_string(np, "clock-output-names", &name);
+> +	of_property_read_u32(np, "clock-frequency", &rate);
+> +
+> +	clk = at91_clk_register_main(name, parent_name, rate);
+> +
+> +	if (!IS_ERR(clk))
+> +		return;
+> +
+> +	of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +}
+> +
+> +static void __init of_at91rm9200_clk_main_setup(struct device_node *np)
+> +{
+> +	of_at91_clk_main_setup(np);
+> +}
+> +CLK_OF_DECLARE(at91rm9200_clk_main, "atmel,at91rm9200-clk-main",
+> +	       of_at91rm9200_clk_main_setup);
+> +#endif
+> diff --git a/include/linux/clk/at91.h b/include/linux/clk/at91.h
+> index 0ce9586..8e83942 100644
+> --- a/include/linux/clk/at91.h
+> +++ b/include/linux/clk/at91.h
+> @@ -16,6 +16,8 @@
+>   #ifndef AT91_PMC_H
+>   #define AT91_PMC_H
+>   
+> +#include <linux/clk-provider.h>
+> +
+>   #ifndef __ASSEMBLY__
+>   extern void __iomem *at91_pmc_base;
+>   
+> @@ -187,4 +189,12 @@ extern void __iomem *at91_pmc_base;
+>   #define			AT91_PMC_PCR_DIV8	0x3			/* Peripheral clock is MCK/8 */
+>   #define		AT91_PMC_PCR_EN		(0x1  <<  28)		/* Enable */
+>   
+> +
+> +
+> +
+> +struct clk * __init
+> +at91_clk_register_main(const char *name,
+> +		       const char *parent_name,
+> +		       unsigned long rate);
+> +
+>   #endif
 
