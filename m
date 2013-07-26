@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab3GZEtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 00:49:03 -0400
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:54022 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab3GZEsn (ORCPT
+	id S1751526Ab3GZEyv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:54:51 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:39649 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3GZEys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 00:48:43 -0400
-From: Andreas Platschek <andi.platschek@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: jslaby@suse.cz, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Platschek <andi.platschek@gmail.com>
-Subject: [PATCH] tty: Remove dead code
-Date: Fri, 26 Jul 2013 06:46:37 +0200
-Message-Id: <1374813997-24671-1-git-send-email-andi.platschek@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 26 Jul 2013 00:54:48 -0400
+Date: Fri, 26 Jul 2013 06:54:33 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+Message-ID: <20130726045433.GB4100@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725213753.GC17616@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--> The ledptrs[] array is never initialized.
--> There is no place where kbd->ledmode is set to LED_SHOW_MEM therefore the if
-   statement does not make much sense.
--> Since LED_SHOW_MEM is not used, it can be removed from the header file as well.
+On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
 
-Signed-off-by: Andreas Platschek <andi.platschek@gmail.com>
----
- drivers/tty/vt/keyboard.c |   21 +--------------------
- include/linux/kbd_kern.h  |    3 +--
- 2 files changed, 2 insertions(+), 22 deletions(-)
+> We use DT has a kernel configuration input. Our environment is
+> designed to guarantee 100% that the kernel and DT match exactly. DT
+> very deliberately isn't an ABI boundary in our systems.
 
-diff --git a/drivers/tty/vt/keyboard.c b/drivers/tty/vt/keyboard.c
-index a9af1b9a..d0e3a44 100644
---- a/drivers/tty/vt/keyboard.c
-+++ b/drivers/tty/vt/keyboard.c
-@@ -132,12 +132,6 @@ static int shift_state = 0;
- static unsigned char ledstate = 0xff;			/* undefined */
- static unsigned char ledioctl;
+It is nice that you use DT in that way, but that is not how DT is
+supposed to work. If you must keep your DT in sync with the kernel,
+then there is no advantage over the old platfrom device method. At
+least that had the virtue of being a C language interface (ABI), and
+some mistakes were be caught by the compiler.
+
+> We've been doing this for years and have a proven in the field track
+> record of upgrades from pre-2.6.16 to 3.7 and beyond with multiple
+> SOCs. The same bootloader that was shipped to support non-DT 2.6.16
+> boots DT 3.7 just fine.
+
+Try that with Freescale PowerPCs.  Good luck.
+
+Heck, even Paul's OMAP test reports have been spoiled by his not
+deleting old dtb files. Of course, that is his fault (and not DT's, no
+never).
  
--static struct ledptr {
--	unsigned int *addr;
--	unsigned int mask;
--	unsigned char valid:1;
--} ledptrs[3];
--
- /*
-  * Notifier list for console keyboard events
-  */
-@@ -994,24 +988,11 @@ void setledstate(struct kbd_struct *kbd, unsigned int led)
- static inline unsigned char getleds(void)
- {
- 	struct kbd_struct *kbd = kbd_table + fg_console;
--	unsigned char leds;
--	int i;
- 
- 	if (kbd->ledmode == LED_SHOW_IOCTL)
- 		return ledioctl;
- 
--	leds = kbd->ledflagstate;
--
--	if (kbd->ledmode == LED_SHOW_MEM) {
--		for (i = 0; i < 3; i++)
--			if (ledptrs[i].valid) {
--				if (*ledptrs[i].addr & ledptrs[i].mask)
--					leds |= (1 << i);
--				else
--					leds &= ~(1 << i);
--			}
--	}
--	return leds;
-+	return kbd->ledflagstate;
- }
- 
- static int kbd_update_leds_helper(struct input_handle *handle, void *data)
-diff --git a/include/linux/kbd_kern.h b/include/linux/kbd_kern.h
-index b7c8cdc..c164c04 100644
---- a/include/linux/kbd_kern.h
-+++ b/include/linux/kbd_kern.h
-@@ -36,10 +36,9 @@ struct kbd_struct {
- #define VC_CTRLRLOCK	KG_CTRLR 	/* ctrlr lock mode */
- 	unsigned char slockstate; 	/* for `sticky' Shift, Ctrl, etc. */
- 
--	unsigned char ledmode:2; 	/* one 2-bit value */
-+	unsigned char ledmode:1;
- #define LED_SHOW_FLAGS 0        /* traditional state */
- #define LED_SHOW_IOCTL 1        /* only change leds upon ioctl */
--#define LED_SHOW_MEM 2          /* `heartbeat': peek into memory */
- 
- 	unsigned char ledflagstate:4;	/* flags, not lights */
- 	unsigned char default_ledflagstate:4;
--- 
-1.7.10.4
+> For closed system embedded DT has proven *WONDERFUL*.
+
+I too work on commercial embedded systems, and DT has proven to be
+one gigantic *PITA*.
+
+Thanks,
+Richard
+
 
