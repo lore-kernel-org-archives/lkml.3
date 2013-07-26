@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab3GZTCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 15:02:54 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:64564 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab3GZTCx (ORCPT
+	id S1759526Ab3GZTEU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 15:04:20 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:54706 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab3GZTET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 15:02:53 -0400
+	Fri, 26 Jul 2013 15:04:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <20130726185609.GY9858@sirena.org.uk>
+In-Reply-To: <20130726184644.GV9858@sirena.org.uk>
 References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
-	<1374863133-6745-5-git-send-email-eu@felipetonello.com>
-	<20130726185609.GY9858@sirena.org.uk>
-Date: Fri, 26 Jul 2013 12:02:51 -0700
-Message-ID: <CAGrhNMzaBcUb4GHLXr5uR2g4YNSD60vcDpDKQO=S9H2jAx6pgA@mail.gmail.com>
-Subject: Re: [PATCH 4/4] ALSA: oxygen: Updating jack implementation according
- new ALSA Jacks
+	<1374863133-6745-2-git-send-email-eu@felipetonello.com>
+	<20130726184644.GV9858@sirena.org.uk>
+Date: Fri, 26 Jul 2013 12:04:17 -0700
+Message-ID: <CAGrhNMznQrbCxMs=0pVRDL9ott8kBX15yT9EyyS8zpzq03Fwuw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] ALSA: Added jack detection kcontrol support
 From: Felipe Tonello <eu@felipetonello.com>
 To: Mark Brown <broonie@kernel.org>
 Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
@@ -30,28 +29,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Mark,
 
-On Fri, Jul 26, 2013 at 11:56 AM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Jul 26, 2013 at 11:25:33AM -0700, Felipe F. Tonello wrote:
->> From: "Felipe F. Tonello" <eu@felipetonello.com>
->>
->> ALSA standard jacks already are implemented using ALSA KControl.
->> So there is no need implement that itself or to use snd_jack
->> for input events only.
+On Fri, Jul 26, 2013 at 11:46 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jul 26, 2013 at 11:25:30AM -0700, Felipe F. Tonello wrote:
 >
-> Similar changlog comment as on the ASoC patch and...
+>> -     snprintf(kctl->id.name, sizeof(kctl->id.name), "%s Jack", name);
+>> +
+>> +     strlcpy(kctl->id.name, name, sizeof(kctl->id.name));
+>
+> This looks like it'd break existing users unless they are updated to
+> remove the "Jack" from their calls?
+
+Yes, that's why I appended the " Jack" in snd_jack_new().
+
+>
+>>   * @type:  a bitmask of enum snd_jack_type values that can be detected by
+>>   *         this jack
+>> + * @idx:   index of this control item
+>>   * @jjack: Used to provide the allocated jack object to the caller.
+>
+> "The index of the ALSA control created to represent the jack.
 
 Ok.
-
->
->>       snd_jack_new(chip->card, "Headphone",
->> -                  SND_JACK_HEADPHONE, &data->hp_jack);
->> +                  SND_JACK_HEADPHONE, 0, &data->hp_jack);
->>       xonar_ds_handle_hp_jack(chip);
->
-> ...this really ought to be done as part of the commit that adds the
-> parameter since it breaks the build until this patch is applied.
-
-But that's why is a patch series. But as you say, are you suggesting
-me to propose this changes in one patch only?
 
 Felipe Tonello
