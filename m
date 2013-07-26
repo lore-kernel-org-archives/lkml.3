@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758671Ab3GZMNJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:13:09 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:51321 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757545Ab3GZMNE (ORCPT
+	id S1758652Ab3GZMOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:14:55 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48817 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757003Ab3GZMOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:13:04 -0400
-X-AuditID: 85900ec0-d4ccab900000151e-22-51f267cd2237
-Message-ID: <51F267CE.1040008@hitachi.com>
-Date: Fri, 26 Jul 2013 21:13:02 +0900
-From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	Fri, 26 Jul 2013 08:14:52 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+QRJBPZMHUJn/skevHcxrI+8Jb6XjXwYw=
+Date: Fri, 26 Jul 2013 08:14:38 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130726121438.GF29916@titan.lakedaemon.net>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
+ <20130725193135.GT23879@titan.lakedaemon.net>
+ <CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
+ <20130725203228.GX23879@titan.lakedaemon.net>
+ <20130725215315.GV7729@decadent.org.uk>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        akpm@linux-foundation.org, gregkh@linuxfoundation.org, kay@vrfy.org,
-        davem@davemloft.net, itoukzo@nttdata.co.jp
-Subject: Re: Re: [RESEND RFC PATCH 0/5] Add a hash value for each line
- in /dev/kmsg
-References: <20130725083730.20349.50797.stgit@localhost.localdomain> <1374771118.1957.8.camel@joe-AO722>
-In-Reply-To: <1374771118.1957.8.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725215315.GV7729@decadent.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 25, 2013 at 10:53:15PM +0100, Ben Hutchings wrote:
+> On Thu, Jul 25, 2013 at 04:32:28PM -0400, Jason Cooper wrote:
+> [...]
+> > One of the things I've been trying to square up in my head is how to
+> > retain the history of the binding when moving to the new tree.  My
+> > current idea was to clone the kernel tree, add one patch deleting
+> > everything but the bindings and dts files, and one more patch moving
+> > things where we want them (arch/{powerpc,arm}/boot/dts -> dts).
+> > 
+> > Then, as needed, we could merge a kernel version tag and delete
+> > everything we don't need (code) in the merge commit.
+> > 
+> > The downside of this is it would be messy, the upside is that we could
+> > closely track the kernel tree (until the bindings and dts are moved
+> > out), and retain the history of the bindings and dts files.
+> [...]
+> 
+> It's *extremely* messy, but 'git filter-branch' might help to make a
+> clean tracking branch preserving history of just DT files.  David
+> Woodhouse did something like that for the linux-firmware repo
+> initially.
 
-(2013/07/26 1:51), Joe Perches wrote:> On Thu, 2013-07-25 at 17:37 +0900, Hidehiro Kawai wrote:
->> ================
->> This patch series adds hash values of printk format strings into
->> each line of /dev/kmsg outputs as follows:
->>
->>         6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
->>
->> These hash values allow use space to identify messages easily and
->> do valuable things.  There is no guarantee that the hash values
->> are unique.  However, user space can know which one collides to
->> others from a message-and-hash catalog generated at build time, so
->> finally it should be able to identify the messages.  User space
->> can also use filename:lineno information to do that, although the
->> information is not portable among various kernel versions.
->>
->>
->> Background
->> ==========
->> We sometimes want to identify each kernel message automatically
->> because of the following purposes:
->>
->> (1) Show more detailed information about the message by cooperating
->>     with external system
->> (2) Take actions automatically depending on the message, for example
->>     trigger a fail over or collect related information to analyze the
->>     problem
->
-> If there are really "take action" uses, perhaps
-> it'd be better to mark the specific areas of code
-> where this needs to be done and add a notifier
-> function there instead of depending on post effect
-> processing.
+ok, but once that is setup, asking patch submitters to keep binding doc
+and dts file changes in separate patches from code changes would allow
+us to put those patches in a separate branch, mergable into both trees.
 
-It is one of the solution if we can add such notifiers easily, but I think
-it's not true.  Adding a notifier means that it gives the portion of
-the codes fixed meaning.  This is similar to adding a tracepoint.
-Maintainer and developers have to keep the meaning consistent, but they
-wouldn't like to do that so much.  Moreover, events users want to
-handle differ depending on users and system vendors.  As the result,
-we would have to add many notifiers into many places.
+thx,
 
-On the other hand, printk message handling is a flexible, readily
-available and multipurpose way.
-
-Regards,
--- 
-Hidehiro Kawai
-Hitachi, Yokohama Research Laboratory
-Linux Technology Center
-
-
+Jason.
