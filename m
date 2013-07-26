@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab3GZU4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:56:53 -0400
-Received: from mxout5.masterweb.com ([103.11.75.235]:37266 "EHLO
-	mxout5.masterweb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519Ab3GZU4F (ORCPT
+	id S933203Ab3GZU5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:57:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51210 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933042Ab3GZUyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:56:05 -0400
-X-Greylist: delayed 1018 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 16:56:05 EDT
-Message-ID: <0606a3a54d5aa477dab19503ea85140a.squirrel@server42536x.masterweb.net>
-Date: Fri, 26 Jul 2013 16:01:06 +0100
-Subject: IMPORTANT MESSAGE
-From: "Y H K" <yhk.promos@yahoo.com.hk>
-Reply-To: promos_yhk@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.22
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Filter-ID: XtLePq6GTMn8G68F0EmQvSJ58MM7SzDTzXCcwWk1drGVdcSt/qTJEvUnaKUiekbLGUm2aKjP8j+R
- LeAsKxYjZSTNfFyd2AlrPIrxss13/UwxghEYuWSBeSBijmrXz2YrSJP4S/ud5O+v185LJgNSBAz3
- E3i+oMsTQc8pgDYcZW4YMtpLiuk4l34LbsXTvZpBj/7EJrpwK40W4wEq5eU9U5IyMVg/eJDHt7ec
- /jgalKuoE0bcRAZKQZEkBXa72ZPWgoqlyc7e7sRgimJROmqw7TXE5eb14b70a5Ceio4WYjLUPjvU
- H5UEmJWV0IA4qA/nP1SQmcqRGBBnUEFrBfyGmtoReBExdSXBLuNWQtqiFF/LiRL/g2wMHYDuqapK
- YwmFUtW8H1jqn2M/ixRmP5ZOxefU/6UR8R1WkRoday34rDzNkR8ADXOzs5i622cNkFyYEbpq7z94
- 03XxHwVE1wJsfuwxasXNLFg+u0sWgXOk1ck/eBl4dNk0tIMuC6DoLclK+UJT2yo1jrouhK/mrq/3
- uvAOWAZORFUHvMRJEHXVZOG3wL2Y4F0412ezGCyTUPanYA+rs8EAv3cXUIjgmTg7tfRrfMjGXWDE
- wo9B6IOO6+RGL+oq86LJlSAOPV0hj/Ly0jj8Xp8byGGv2Yai48k3IPo65DrpnTrqoL7iy9jd3D5I
- BXFp/Eb7tn0MwbZVJ6gFLIat95CKvzjEgNdpX8tnTlfTkkpQt54aBZ4kmZlzfXn2nuy3MGHbMBjm
- QX1RfAF7aklnr8TtwaDSxsX92vDz6sx9A5yRKEltZYxjQIVR1awGXPu3+Jr6QKkvziqBrAfyhCYN
- +cpkRqL9UsEG1L+Zt5N4ffc0D7OUEcFhRqaSTLTKEYafXAwc9fu3+e2OCunaGBC2BFEM9Jj8+ZnV
- M0yXx6RdGHIOIySDIByI6Kg3aNGlK1qaIwFphV3fWl8iTPebPelwgJ/6mnXr9MXLLW9MYa47KiF2
- j51YO06ojW3epJmtd6GPG28J108kmwxGxPzgASJFC/49WOPBr5nlEUI4xIc5L/Bvm3GDaSV7fv+S
- Zvpxys5RXNz2j+qHJpeNiAU7sT2ZNuhUdbygv6k8Ch8DY7PFhTp6y5xSNem7XTOZupk=
-X-Originating-IP: 103.11.74.2
-X-SpamExperts-Domain: server42536x.masterweb.com
-X-SpamExperts-Username: 103.11.74.2
-Authentication-Results: masterweb.com; auth=pass smtp.auth=103.11.74.2
-X-SpamExperts-Outgoing-Class: unsure
-X-SpamExperts-Outgoing-Evidence: Combined (0.50)
-X-Recommended-Action: accept
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 26 Jul 2013 16:54:03 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        David Jeffery <djeffery@redhat.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 56/59] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
+Date: Fri, 26 Jul 2013 13:53:20 -0700
+Message-Id: <20130726205019.821963297@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
+From: David Jeffery <djeffery@redhat.com>
 
-Congrats!! your Email has Won the Yahoo HK Lotto Cash Prize valued at
-Three Million Five Hundred Thousand Dollars. Please Contact Fran Mayer
-on Tel: +447031909741 or Email: promos_yhk@yahoo.com.hk to claim your
-prize Money.
+commit 1c327d962fc420aea046c16215a552710bde8231 upstream.
+
+In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
+the pointer of the first entry is unprotected by any lock.  This allows a rare
+race condition when there is only one entry on the list.  A function such as
+nlmsvc_grant_callback() can be called, which will temporarily remove the entry
+from the list.  Between the list_empty() and list_entry(),the list may become
+empty, causing an invalid pointer to be used as an nlm_block, leading to a
+possible crash.
+
+This patch adds the nlm_block_lock around these calls to prevent concurrent
+use of the nlm_blocked list.
+
+This was a regression introduced by
+f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
+the server".
+
+Signed-off-by: David Jeffery <djeffery@redhat.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/lockd/svclock.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/fs/lockd/svclock.c
++++ b/fs/lockd/svclock.c
+@@ -941,6 +941,7 @@ nlmsvc_retry_blocked(void)
+ 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
+ 	struct nlm_block *block;
+ 
++	spin_lock(&nlm_blocked_lock);
+ 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
+ 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
+ 
+@@ -950,6 +951,7 @@ nlmsvc_retry_blocked(void)
+ 			timeout = block->b_when - jiffies;
+ 			break;
+ 		}
++		spin_unlock(&nlm_blocked_lock);
+ 
+ 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
+ 			block, block->b_when);
+@@ -959,7 +961,9 @@ nlmsvc_retry_blocked(void)
+ 			retry_deferred_block(block);
+ 		} else
+ 			nlmsvc_grant_blocked(block);
++		spin_lock(&nlm_blocked_lock);
+ 	}
++	spin_unlock(&nlm_blocked_lock);
+ 
+ 	return timeout;
+ }
+
 
