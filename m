@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab3GZL0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 07:26:14 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:50799 "EHLO
+	id S1758648Ab3GZL03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 07:26:29 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50843 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756723Ab3GZL0M (ORCPT
+	with ESMTP id S1758543Ab3GZL01 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 07:26:12 -0400
-X-AuditID: cbfee68d-b7f096d0000043fc-17-51f25cd2104e
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
-        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
-        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>
-Cc: "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
-        "'Joerg Roedel'" <joro@8bytes.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Prathyush'" <prathyush.k@samsung.com>,
-        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
-        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
-        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
-        "'Grant Grundler'" <grundler@chromium.org>,
-        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
-        kvmarm@lists.cs.columbia.edu,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>
-Subject: [PATCH v8 01/12] iommu/exynos: do not include removed header
-Date: Fri, 26 Jul 2013 20:26:10 +0900
-Message-id: <003701ce89f2$eda94ef0$c8fbecd0$@samsung.com>
+	Fri, 26 Jul 2013 07:26:27 -0400
+X-AuditID: cbfee61a-b7f196d000007dfa-ad-51f25ce25a2f
+Date: Fri, 26 Jul 2013 13:26:17 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
+Subject: Re: [PATCH v6 6/8] cpufreq:exynos:Extend Exynos cpufreq driver to
+ support boost framework
+Message-id: <20130726132617.567f2cbf@amdc308.digital.local>
+In-reply-to: <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-7-git-send-email-l.majewski@samsung.com>
+ <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
+Content-type: text/plain; charset=US-ASCII
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac6J8YDulexy5cd1TPWjw3BJWmK8lw==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+Zke6lmE+BBu+eylvcuXuO1eLVkR9M
-	Fgv2W1t0zt7AbrH54DoWi94FV9ksGu9NYLP4eOo4u8Wmx9dYLS7vmsNmMeP8PiaLCys2sltM
-	WXSY1eLkn15Gi5brvUwO/B5PDs5j8pjdcJHF4861PWwe5zetYfbYvKTeY/KN5YwefVtWMXp8
-	3iTnceXoGaYAzigum5TUnMyy1CJ9uwSujL5pM9kLJrNVPDpg2sDYy9rFyMkhIWAiMfPIXihb
-	TOLCvfVsILaQwDJGiatP7GFqmv7sYO5i5AKKL2KUONjRxwTh/GWUeNO8CaybTUBLYvXc44wg
-	tojAXUaJl+d5QIqYBW4zS0z7+QoowcEhLOAqse2kH0gNi4CqxMQd09hBbF4BS4kDzU0sELag
-	xI/J98BsZqCZ63ceZ4Kw5SU2r3nLDHGRgsSOs6/BRooI6ElcuBMGUSIise/FO0aQtRICSzkk
-	Jr3fxQyxS0Di2+RDLCD1EgKyEpsOQI2RlDi44gbLBEaxWUg2z0KyeRaSzbOQrFjAyLKKUTS1
-	ILmgOCm9yFCvODG3uDQvXS85P3cTIyT+e3cw3j5gfYgxGWj9RGYp0eR8YPrIK4k3NDYzsjA1
-	MTU2Mrc0I01YSZxXrcU6UEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPjrcdeNldWWO0y2vNp
-	3WvJsrN20hZJabnT68T4l7+/l2pu0JrinRT8R+Vm35/piRL2161WLnz2xMrA89WK3wciPUMm
-	sOWdXntmXlyqsayat6S65aqDc51yLV8wTpy/9Ua9tmjwJU/hubqHaxkDJ86bHuXUUXBTrT7k
-	r8IukYjND/gvV91vcshWYinOSDTUYi4qTgQAEHXvxRUDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrAKsWRmVeSWpSXmKPExsVy+t9jAd1LMZ8CDX7ulba4c/ccq8WrIz+Y
-	LBbst7bonL2B3WLzwXUsFr0LrrJZNN6bwGbx8dRxdotNj6+xWlzeNYfNYsb5fUwWF1ZsZLeY
-	sugwq8XJP72MFi3Xe5kc+D2eHJzH5DG74SKLx51re9g8zm9aw+yxeUm9x+Qbyxk9+rasYvT4
-	vEnO48rRM0wBnFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkou
-	PgG6bpk5QB8oKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnrGDP6ps1kL5jM
-	VvHogGkDYy9rFyMnh4SAiUTTnx3MELaYxIV769m6GLk4hAQWMUoc7OhjgnD+Mkq8ad4E1sEm
-	oCWxeu5xRhBbROAuo8TL8zwgRcwCt5klpv18BZTg4BAWcJXYdtIPpIZFQFVi4o5p7CA2r4Cl
-	xIHmJhYIW1Dix+R7YDYz0Mz1O48zQdjyEpvXvIW6SEFix9nXYCNFBPQkLtwJgygRkdj34h3j
-	BEaBWUgmzUIyaRaSSbOQtCxgZFnFKJpakFxQnJSea6hXnJhbXJqXrpecn7uJEZxenkntYFzZ
-	YHGIUYCDUYmHV8HpY6AQa2JZcWXuIUYJDmYlEd7r3p8ChXhTEiurUovy44tKc1KLDzEmAz06
-	kVlKNDkfmPrySuINjU3MjCyNzCyMTMzNSRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFx
-	o+t/Me/mI6d8Be+stZuWM7X9X0L66akvul9s15b4q9vTs4Dd7+u9NSfrvjU+EHb2CFu9eoP5
-	oauLtYud2VfPD5ir6l+yjvPazLXasawPNNvEtdnTN1xu8TP2y1R/77AqwrftZB/b0qaFZ9a0
-	SM6QX3C+J9P0yBrhuT9X2XUmOBxNSGm9lHJAiaU4I9FQi7moOBEA+mISUHMDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42I5/e+xgO6jmE+BBif2C1hsnLGe1eJp0w92
+	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRtcXnXHDaLz71HGC36F/YyWTx52MdmsfGr
+	hwOvx+I9L5k87lzbw+axbtpbZo++LasYPR4tbmH0OH5jO5PH501yAexRXDYpqTmZZalF+nYJ
+	XBkv39xiLvjOXdF+5iJTA+M6zi5GTg4JAROJi3N3MEPYYhIX7q1n62Lk4hASWMQosaf5DQuE
+	084kcfFGKyNIFYuAqsTfdS/YQGw2AT2Jz3efMnUxcnCICGhJvLyZClLPLPCXWaLvUQMbSFxY
+	IEXi7qp8kHJeAWuJq9e7wZZxCgRL3GiZzA4xv41JYv2uU+wgCX4BSYn2fz+gLrKTOPdpAztE
+	s6DEj8n3WEBsZqBdm7c1sULY8hKb17xlnsAoOAtJ2SwkZbOQlC1gZF7FKJpakFxQnJSea6hX
+	nJhbXJqXrpecn7uJERxJz6R2MK5ssDjEKMDBqMTDq+D0MVCINbGsuDL3EKMEB7OSCO9170+B
+	QrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqemFqQWwWSZODilGhj7g6QOH5zO
+	KWx5/egnUx/lDhGJKSmmKW81OXcdClx8wOWqfd1jnknH3mx6FqvG97A56mC0/rel1x0rkz84
+	dZu/LHGYuuSZZaPsXJHFCyJPvTAwVkuzSygWSGlxa/PSe+x/dre12M43L9p26NlkzlRhzVVu
+	uJtpznh6b9izJQqMfNNrVqgIGCqxFGckGmoxFxUnAgAFIRMYoAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit remove <mach/sysmmu.h> which is removed.
+On Fri, 26 Jul 2013 15:56:53 +0530 Viresh Kumar wrote,
+> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> 
+> > diff --git a/drivers/cpufreq/exynos-cpufreq.c
+> > b/drivers/cpufreq/exynos-cpufreq.c index 9ae1871..175172d9 100644
+> > --- a/drivers/cpufreq/exynos-cpufreq.c
+> > +++ b/drivers/cpufreq/exynos-cpufreq.c
+> > @@ -270,6 +270,9 @@ static int exynos_cpufreq_cpu_exit(struct
+> > cpufreq_policy *policy)
+> >
+> >  static struct freq_attr *exynos_cpufreq_attr[] = {
+> >         &cpufreq_freq_attr_scaling_available_freqs,
+> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+  	    ^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+> 
+> Use ARM_EXYNOS_CPU_FREQ_BOOST_SW instead.
 
-Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
----
- drivers/iommu/exynos-iommu.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+For the reasons explained at [PATCH v6 5/8] I would prefer to leave [*]
+here.
 
-diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 3f32d64..233f382 100644
---- a/drivers/iommu/exynos-iommu.c
-+++ b/drivers/iommu/exynos-iommu.c
-@@ -12,6 +12,7 @@
- #define DEBUG
- #endif
- 
-+#include <linux/kernel.h>
- #include <linux/io.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
-@@ -29,8 +30,6 @@
- #include <asm/cacheflush.h>
- #include <asm/pgtable.h>
- 
--#include <mach/sysmmu.h>
--
- /* We does not consider super section mapping (16MB) */
- #define SECT_ORDER 20
- #define LPAGE_ORDER 16
+> 
+> > +       &cpufreq_freq_attr_scaling_boost_freqs,
+> > +#endif
+> >         NULL,
+> >  };
+> >
+> > @@ -332,6 +335,9 @@ static int __init exynos_cpufreq_probe(struct
+> > platform_device *pdev)
+> >
+> >         locking_frequency = exynos_getspeed(0);
+> >
+> > +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+> > +       exynos_driver.boost_supported = true;
+> > +#endif
+> 
+> So, why here and not in the definition of exynos_driver?
+
+Right. I will move this to struct cpufreq_driver exynos_driver.
+
+> 
+> >         register_pm_notifier(&exynos_cpufreq_nb);
+> >
+> >         if (cpufreq_register_driver(&exynos_driver)) {
+> > --
+> > 1.7.10.4
+> >
+
+
+
 -- 
-1.7.2.5
+Best regards,
 
+Lukasz Majewski
 
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
