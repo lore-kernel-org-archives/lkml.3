@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933675Ab3GZVax (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:30:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
+	id S933598Ab3GZVak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:30:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50911 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759921Ab3GZUsu (ORCPT
+	with ESMTP id S1759987Ab3GZUsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:50 -0400
+	Fri, 26 Jul 2013 16:48:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: [ 47/79] fuse: readdirplus: sanity checks
-Date: Fri, 26 Jul 2013 13:47:37 -0700
-Message-Id: <20130726204727.416142495@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [ 49/79] bcache: Advertise that flushes are supported
+Date: Fri, 26 Jul 2013 13:47:39 -0700
+Message-Id: <20130726204727.672361489@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,50 +26,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Kent Overstreet <kmo@daterainc.com>
 
-commit a28ef45cbb1e7fadd5159deb17b02de15c6e4aaf upstream.
+commit 54d12f2b4fd0f218590d1490b41a18d0e2328a9a upstream.
 
-Add sanity checks before adding or updating an entry with data received
-from readdirplus.
+Whoops - bcache's flush/FUA was mostly correct, but flushes get filtered
+out unless we say we support them...
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ drivers/md/bcache/request.c |    8 +++++++-
+ drivers/md/bcache/super.c   |    2 ++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1225,6 +1225,12 @@ static int fuse_direntplus_link(struct f
- 		if (name.name[1] == '.' && name.len == 2)
- 			return 0;
+--- a/drivers/md/bcache/request.c
++++ b/drivers/md/bcache/request.c
+@@ -489,6 +489,12 @@ static void bch_insert_data_loop(struct
+ 		bch_queue_gc(op->c);
  	}
-+
-+	if (invalid_nodeid(o->nodeid))
-+		return -EIO;
-+	if (!fuse_valid_type(o->attr.mode))
-+		return -EIO;
-+
- 	fc = get_fuse_conn(dir);
  
- 	name.hash = full_name_hash(name.name, name.len);
-@@ -1233,10 +1239,14 @@ static int fuse_direntplus_link(struct f
- 		inode = dentry->d_inode;
- 		if (!inode) {
- 			d_drop(dentry);
--		} else if (get_node_id(inode) != o->nodeid) {
-+		} else if (get_node_id(inode) != o->nodeid ||
-+			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
- 			err = d_invalidate(dentry);
- 			if (err)
- 				goto out;
-+		} else if (is_bad_inode(inode)) {
-+			err = -EIO;
-+			goto out;
- 		} else {
- 			struct fuse_inode *fi;
- 			fi = get_fuse_inode(inode);
++	/*
++	 * Journal writes are marked REQ_FLUSH; if the original write was a
++	 * flush, it'll wait on the journal write.
++	 */
++	bio->bi_rw &= ~(REQ_FLUSH|REQ_FUA);
++
+ 	do {
+ 		unsigned i;
+ 		struct bkey *k;
+@@ -716,7 +722,7 @@ static struct search *search_alloc(struc
+ 	s->task			= current;
+ 	s->orig_bio		= bio;
+ 	s->write		= (bio->bi_rw & REQ_WRITE) != 0;
+-	s->op.flush_journal	= (bio->bi_rw & REQ_FLUSH) != 0;
++	s->op.flush_journal	= (bio->bi_rw & (REQ_FLUSH|REQ_FUA)) != 0;
+ 	s->op.skip		= (bio->bi_rw & REQ_DISCARD) != 0;
+ 	s->recoverable		= 1;
+ 	s->start_time		= jiffies;
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -781,6 +781,8 @@ static int bcache_device_init(struct bca
+ 	set_bit(QUEUE_FLAG_NONROT,	&d->disk->queue->queue_flags);
+ 	set_bit(QUEUE_FLAG_DISCARD,	&d->disk->queue->queue_flags);
+ 
++	blk_queue_flush(q, REQ_FLUSH|REQ_FUA);
++
+ 	return 0;
+ }
+ 
 
 
