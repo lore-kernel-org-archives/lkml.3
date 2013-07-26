@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab3GZQfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:35:01 -0400
-Received: from mail1.bemta8.messagelabs.com ([216.82.243.200]:47466 "EHLO
-	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756754Ab3GZQfA (ORCPT
+	id S1758268Ab3GZQgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:36:00 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60101 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab3GZQf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:35:00 -0400
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-8.tower-131.messagelabs.com!1374856494!4583532!11
-X-Originating-IP: [216.166.12.180]
-X-StarScan-Received: 
-X-StarScan-Version: 6.9.11; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "kernel@wantstofly.org" <kernel@wantstofly.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Date: Fri, 26 Jul 2013 11:32:41 -0500
-Subject: RE: [PATCH v2 0/4] usb: ohci-ep93xx: do a bit of housecleaning
-Thread-Topic: [PATCH v2 0/4] usb: ohci-ep93xx: do a bit of housecleaning
-Thread-Index: Ac52rbm8TK0EBcRsSsWeCbNvhOef7gTb+Dpw
-Message-ID: <ADE657CA350FB648AAC2C43247A983F0021DAC5C212C@AUSP01VMBX24.collaborationhost.net>
-References: <201307011552.29868.hartleys@visionengravers.com>
-In-Reply-To: <201307011552.29868.hartleys@visionengravers.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 26 Jul 2013 12:35:58 -0400
+Date: Fri, 26 Jul 2013 17:35:28 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Laxman Dewangan <ldewangan@nvidia.com>, akpm@linux-foundation.org,
+        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
+        gg@slimlogic.co.uk, kishon@ti.com, Stephen Warren <swarren@nvidia.com>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Message-ID: <20130726163528.GS9858@sirena.org.uk>
+References: <1374755343-32573-1-git-send-email-ldewangan@nvidia.com>
+ <51F2985F.60202@wwwdotorg.org>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OwXA+KufQS8ol7Xv"
+Content-Disposition: inline
+In-Reply-To: <51F2985F.60202@wwwdotorg.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: support for backup battery
+ charging
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6QGZ84J013126
 
-On Monday, July 01, 2013 3:52 PM, H Hartley Sweeten wrote:
-> Tidy up this driver a bit.
->
-> v2: redo patch 4 based on suggestions from Alan Stern
->
-> H Hartley Sweeten (4):
->   usb: ohci-ep93xx: use devm_ioremap_resource()
->   usb: ohci-ep93xx: use platform_get_irq()
->   usb: ohci-ep93xx: use devm_clk_get()
->   usb: ohci-ep93xx: tidy up driver (*probe) and (*remove)
->
->  drivers/usb/host/ohci-ep93xx.c | 137 ++++++++++++++++-------------------------
->  1 file changed, 52 insertions(+), 85 deletions(-)
 
-All of these have been Acked-by: Alan Stern.
+--OwXA+KufQS8ol7Xv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Any ideas when they might be picked up and applied?
+On Fri, Jul 26, 2013 at 09:40:15AM -0600, Stephen Warren wrote:
 
-Thanks,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Given there's only 1 battery, I think "back-" is redundant in the
+> property names. Since that shortens the names a bit, I'd suggest
+> spelling everything out in full, perhaps:
+
+Isn't there an integrated charger on the PMIC?  If there is then it's
+useful to identify which is being talked about (even if it should be
+relatively obvious).
+
+--OwXA+KufQS8ol7Xv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8qVNAAoJELSic+t+oim9OD0P/jwcu1Kn8OG4dhN4NX1S44xG
+1s/yXTl4jVmPkKy7M1x+tkzoJk0m4Qkb40QIv5QlI89Ni2mu0sJUKo+ATF8Gb2NT
++O7dDe/Ho2V0BdwkbT7dc8N7EvQTdTTq0YscwsqIZjOmYJ5qzWKrurcbHIlQAVte
+TwLFPHgIU/6TsapdD56eVckss9oeYaqWdmxa34bt8nM2tacvqjX3Z/ZfkTJrRr75
+FyEzVokphF5BX60ZBsWNqJt39juyRogL+yxA41FJ1JZT83H4gWrJBqlCE3w+0ht8
+rogD5q7Yoq9uRCDBeoxjxjXks6xUrwUkYI/JU6CYvjMh4Cn7FgclXciyxhS9Kl3K
+1A94mIhpt0oaCFezy4CqHKKrTyAZQiX0EW0clINUrsPD5SdKWMVBCkl1GPFLOkB8
+V1kZfXFZgvf79c+DYOfy+ENHvwPZ9rvmIHTO8SmrQqKtDNPI2dLYAh8GDZlgzr/E
+mT3706XxLT5GPY++Y4cZ9avB//PDiLjp8Gmg0dNoUCpyEucTqINd+b8Pp62ElRHz
+sdeEhXhz2ZqPGVlhm/Zxi1kfpmFayqoHvscj6ZrWR3NEphZpcAc2IVNrxfrE5TsA
+vN2oc9s8y0eDFsknw2juECwoT8t5u2sdaflLO7K3G8NjmyxNSTT9MnCOKNj6JGof
+morhUEPTCPPVnj1g7wA0
+=naha
+-----END PGP SIGNATURE-----
+
+--OwXA+KufQS8ol7Xv--
