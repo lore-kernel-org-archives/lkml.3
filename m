@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758407Ab3GZJYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:24:12 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:58816 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756125Ab3GZJYI (ORCPT
+	id S1758427Ab3GZJ3X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:29:23 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:36590 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab3GZJ3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:24:08 -0400
+	Fri, 26 Jul 2013 05:29:19 -0400
+Message-ID: <51F2400B.1060701@free-electrons.com>
+Date: Fri, 26 Jul 2013 11:23:23 +0200
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Organization: Free Electrons
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130726100940.1974559e@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-4-git-send-email-l.majewski@samsung.com>
-	<CAKohpo=3+JP0ppru5DSo72yWiN3Qg9xjNJX+6KgCNiEupZEMjA@mail.gmail.com>
-	<20130726100940.1974559e@amdc308.digital.local>
-Date: Fri, 26 Jul 2013 14:54:07 +0530
-Message-ID: <CAKohpokjgpiCmynmecs5XtWazz23qJ8USPVtKY-6sk-=MN19Hw@mail.gmail.com>
-Subject: Re: [PATCH v6 3/8] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code
- to work with common boost solution
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
+To: Marek Vasut <marex@denx.de>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        Hector Palacios <hector.palacios@digi.com>, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        jic23@kernel.org, fabio.estevam@freescale.com,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
+ LRADC
+References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-3-git-send-email-hector.palacios@digi.com> <51ED7B47.2090104@metafoo.de> <201307230006.53434.marex@denx.de>
+In-Reply-To: <201307230006.53434.marex@denx.de>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 July 2013 13:39, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> On Fri, 26 Jul 2013 12:58:02 +0530 Viresh Kumar wrote,
->> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
->> > diff --git a/drivers/cpufreq/acpi-cpufreq.c
->> > b/drivers/cpufreq/acpi-cpufreq.c
->>
->> >  static void __init acpi_cpufreq_boost_init(void)
->> >  {
->> > +       acpi_cpufreq_driver.boost_supported = false;
->             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
->>
->> Would be better if we do this in else of below if.
+On 23/07/2013 00:06, Marek Vasut wrote:
+> Dear Lars-Peter Clausen,
 >
-> We need to set boost_supported = false at [*] for the case when:
-> 1. msrs_alloc fails
-> or
-> 2. acpi_cpufreq is built as a module and can be inserted and removed
-> several times. Without [*] we could end up with wrong (not false)
-> initial state.
-
-Hmm.. Now that I see the code again, we don't need to set it to false
-as it is a global variable and this field is already set to false..
-
->> >         if (boot_cpu_has(X86_FEATURE_CPB) ||
->> > boot_cpu_has(X86_FEATURE_IDA)) { msrs = msrs_alloc();
+>> On 07/22/2013 04:04 PM, Hector Palacios wrote:
+>>> Some LRADC channels have fixed pre-dividers so they can measure
+>>> different voltages at full scale. The reference voltage allows to
+>>> expose a scaling attribute through the IIO sysfs so that a user can
+>>> compute the real voltage out of a measured sample value.
+>> I've said before that I'm not convinced that this is the right way to
+>> implement this. And considering what Thomas said here
+>> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg36691.ht
+>> ml I guess I'm not alone with that opinion.
 >>
->>
->> > @@ -1021,12 +995,11 @@ static int __init acpi_cpufreq_init(void)
->> >                         *iter = &cpb;
->> >         }
->> >  #endif
->> > +       acpi_cpufreq_boost_init();
->             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [**]
->>
->> We are calling it before registering cpufreq driver. Will this have
->> any complications?
->
-> When we call [**] after the cpufreq_register_driver [***] we end up with
-> sysfs boost attribute not exported at x86.
-> The boost attribute is exported at [***] only when
-> acpi_cpufreq.boost_supported = true. However support for boost at x86
-> is evaluated at acpi_cpufreq_boost_init().
+>> - Lars
+> He's talking about different versions of the IP block, this is the same IP 
+> block, just connected to different inputs.
 
-I understand why you moved it above cpufreq driver register. I was thinking
-if there can be few side effects of this..
+I don't have any strong opinion on that and I'm certainly not an expert
+but thinking about that, I feel this is different from the discussion
+Thomas had. Those are reference voltages and describe how the IP block
+is connected whereas what Thomas was describing is supporting multiple
+versions of an IP block by describing heaps of registers in the DT. It
+may look ugly here because you have a lot of channels but I find that
+quite acceptable.
+
+Regards,
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
