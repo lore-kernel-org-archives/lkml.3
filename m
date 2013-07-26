@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab3GZU4J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:56:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51182 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab3GZUyE (ORCPT
+	id S933185Ab3GZU4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:56:53 -0400
+Received: from mxout5.masterweb.com ([103.11.75.235]:37266 "EHLO
+	mxout5.masterweb.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932519Ab3GZU4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        xen-devel@lists.xen.org
-Subject: [ 58/59] hrtimers: Move SMP function call to thread context
-Date: Fri, 26 Jul 2013 13:53:22 -0700
-Message-Id: <20130726205020.059979760@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 16:56:05 -0400
+X-Greylist: delayed 1018 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 16:56:05 EDT
+Message-ID: <0606a3a54d5aa477dab19503ea85140a.squirrel@server42536x.masterweb.net>
+Date: Fri, 26 Jul 2013 16:01:06 +0100
+Subject: IMPORTANT MESSAGE
+From: "Y H K" <yhk.promos@yahoo.com.hk>
+Reply-To: promos_yhk@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Filter-ID: XtLePq6GTMn8G68F0EmQvSJ58MM7SzDTzXCcwWk1drGVdcSt/qTJEvUnaKUiekbLGUm2aKjP8j+R
+ LeAsKxYjZSTNfFyd2AlrPIrxss13/UwxghEYuWSBeSBijmrXz2YrSJP4S/ud5O+v185LJgNSBAz3
+ E3i+oMsTQc8pgDYcZW4YMtpLiuk4l34LbsXTvZpBj/7EJrpwK40W4wEq5eU9U5IyMVg/eJDHt7ec
+ /jgalKuoE0bcRAZKQZEkBXa72ZPWgoqlyc7e7sRgimJROmqw7TXE5eb14b70a5Ceio4WYjLUPjvU
+ H5UEmJWV0IA4qA/nP1SQmcqRGBBnUEFrBfyGmtoReBExdSXBLuNWQtqiFF/LiRL/g2wMHYDuqapK
+ YwmFUtW8H1jqn2M/ixRmP5ZOxefU/6UR8R1WkRoday34rDzNkR8ADXOzs5i622cNkFyYEbpq7z94
+ 03XxHwVE1wJsfuwxasXNLFg+u0sWgXOk1ck/eBl4dNk0tIMuC6DoLclK+UJT2yo1jrouhK/mrq/3
+ uvAOWAZORFUHvMRJEHXVZOG3wL2Y4F0412ezGCyTUPanYA+rs8EAv3cXUIjgmTg7tfRrfMjGXWDE
+ wo9B6IOO6+RGL+oq86LJlSAOPV0hj/Ly0jj8Xp8byGGv2Yai48k3IPo65DrpnTrqoL7iy9jd3D5I
+ BXFp/Eb7tn0MwbZVJ6gFLIat95CKvzjEgNdpX8tnTlfTkkpQt54aBZ4kmZlzfXn2nuy3MGHbMBjm
+ QX1RfAF7aklnr8TtwaDSxsX92vDz6sx9A5yRKEltZYxjQIVR1awGXPu3+Jr6QKkvziqBrAfyhCYN
+ +cpkRqL9UsEG1L+Zt5N4ffc0D7OUEcFhRqaSTLTKEYafXAwc9fu3+e2OCunaGBC2BFEM9Jj8+ZnV
+ M0yXx6RdGHIOIySDIByI6Kg3aNGlK1qaIwFphV3fWl8iTPebPelwgJ/6mnXr9MXLLW9MYa47KiF2
+ j51YO06ojW3epJmtd6GPG28J108kmwxGxPzgASJFC/49WOPBr5nlEUI4xIc5L/Bvm3GDaSV7fv+S
+ Zvpxys5RXNz2j+qHJpeNiAU7sT2ZNuhUdbygv6k8Ch8DY7PFhTp6y5xSNem7XTOZupk=
+X-Originating-IP: 103.11.74.2
+X-SpamExperts-Domain: server42536x.masterweb.com
+X-SpamExperts-Username: 103.11.74.2
+Authentication-Results: masterweb.com; auth=pass smtp.auth=103.11.74.2
+X-SpamExperts-Outgoing-Class: unsure
+X-SpamExperts-Outgoing-Evidence: Combined (0.50)
+X-Recommended-Action: accept
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 5ec2481b7b47a4005bb446d176e5d0257400c77d upstream.
-
-smp_call_function_* must not be called from softirq context.
-
-But clock_was_set() which calls on_each_cpu() is called from softirq
-context to implement a delayed clock_was_set() for the timer interrupt
-handler. Though that almost never gets invoked. A recent change in the
-resume code uses the softirq based delayed clock_was_set to support
-Xens resume mechanism.
-
-linux-next contains a new warning which warns if smp_call_function_*
-is called from softirq context which gets triggered by that Xen
-change.
-
-Fix this by moving the delayed clock_was_set() call to a work context.
-
-Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>,
-Cc: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: xen-devel@lists.xen.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/hrtimer.c |   28 +++++++++++++---------------
- 1 file changed, 13 insertions(+), 15 deletions(-)
-
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -707,17 +707,20 @@ static int hrtimer_switch_to_hres(void)
- 	return 1;
- }
- 
-+static void clock_was_set_work(struct work_struct *work)
-+{
-+	clock_was_set();
-+}
-+
-+static DECLARE_WORK(hrtimer_work, clock_was_set_work);
-+
- /*
-- * Called from timekeeping code to reprogramm the hrtimer interrupt
-- * device. If called from the timer interrupt context we defer it to
-- * softirq context.
-+ * Called from timekeeping and resume code to reprogramm the hrtimer
-+ * interrupt device on all cpus.
-  */
- void clock_was_set_delayed(void)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	cpu_base->clock_was_set = 1;
--	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+	schedule_work(&hrtimer_work);
- }
- 
- #else
-@@ -766,8 +769,10 @@ void hrtimers_resume(void)
- 	WARN_ONCE(!irqs_disabled(),
- 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
- 
-+	/* Retrigger on the local CPU */
- 	retrigger_next_event(NULL);
--	timerfd_clock_was_set();
-+	/* And schedule a retrigger for all others */
-+	clock_was_set_delayed();
- }
- 
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
-@@ -1416,13 +1421,6 @@ void hrtimer_peek_ahead_timers(void)
- 
- static void run_hrtimer_softirq(struct softirq_action *h)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	if (cpu_base->clock_was_set) {
--		cpu_base->clock_was_set = 0;
--		clock_was_set();
--	}
--
- 	hrtimer_peek_ahead_timers();
- }
- 
-
+Congrats!! your Email has Won the Yahoo HK Lotto Cash Prize valued at
+Three Million Five Hundred Thousand Dollars. Please Contact Fran Mayer
+on Tel: +447031909741 or Email: promos_yhk@yahoo.com.hk to claim your
+prize Money.
 
