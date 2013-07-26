@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933666Ab3GZVd3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:33:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
+	id S933770Ab3GZVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:34:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759906Ab3GZUsn (ORCPT
+	with ESMTP id S1759945Ab3GZUsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:43 -0400
+	Fri, 26 Jul 2013 16:48:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 55/79] SCSI: mpt3sas: Infinite loops can occur if MPI2_IOCSTATUS_CONFIG_INVALID_PAGE is not returned
-Date: Fri, 26 Jul 2013 13:47:45 -0700
-Message-Id: <20130726204728.404596092@linuxfoundation.org>
+        Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 22/79] ifb: fix rcu_sched self-detected stalls
+Date: Fri, 26 Jul 2013 13:47:12 -0700
+Message-Id: <20130726204724.272198395@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,101 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit 14be49ac965ebd3f8561d57e01ddb22f93f9b454 upstream.
+[ Upstream commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa ]
 
-Infinite loop can occur if IOCStatus is not equal to
-MPI2_IOCSTATUS_CONFIG_INVALID_PAGE value in the while loops in functions
-_scsih_search_responding_sas_devices,
-_scsih_search_responding_raid_devices and
-_scsih_search_responding_expanders
+According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
+(dummy: fix rcu_sched self-detected stalls)
 
-So, Instead of checking for MPI2_IOCSTATUS_CONFIG_INVALID_PAGE value,
-in this patch code is modified to check for IOCStatus not equals to
-MPI2_IOCSTATUS_SUCCESS to break the while loop.
+Eric Dumazet fix the problem in dummy, but the ifb will occur the
+same problem like the dummy modules.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Trying to "modprobe ifb numifbs=30000" triggers :
+
+INFO: rcu_sched self-detected stall on CPU
+
+After this splat, RTNL is locked and reboot is needed.
+
+We must call cond_resched() to avoid this, even holding RTNL.
+
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/scsi/mpt3sas/mpt3sas_scsih.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+ drivers/net/ifb.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-+++ b/drivers/scsi/mpt3sas/mpt3sas_scsih.c
-@@ -6392,7 +6392,7 @@ _scsih_search_responding_sas_devices(str
- 	    handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 		handle = le16_to_cpu(sas_device_pg0.DevHandle);
- 		device_info = le32_to_cpu(sas_device_pg0.DeviceInfo);
-@@ -6494,7 +6494,7 @@ _scsih_search_responding_raid_devices(st
- 	    &volume_pg1, MPI2_RAID_VOLUME_PGAD_FORM_GET_NEXT_HANDLE, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 		handle = le16_to_cpu(volume_pg1.DevHandle);
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -292,8 +292,10 @@ static int __init ifb_init_module(void)
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
  
-@@ -6518,7 +6518,7 @@ _scsih_search_responding_raid_devices(st
- 		    phys_disk_num))) {
- 			ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 			    MPI2_IOCSTATUS_MASK;
--			if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+			if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 				break;
- 			phys_disk_num = pd_pg0.PhysDiskNum;
- 			handle = le16_to_cpu(pd_pg0.DevHandle);
-@@ -6597,7 +6597,7 @@ _scsih_search_responding_expanders(struc
- 
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
-+		if (ioc_status != MPI2_IOCSTATUS_SUCCESS)
- 			break;
- 
- 		handle = le16_to_cpu(expander_pg0.DevHandle);
-@@ -6742,8 +6742,6 @@ _scsih_scan_for_devices_after_reset(stru
- 	    MPI2_SAS_EXPAND_PGAD_FORM_GET_NEXT_HNDL, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from expander scan: " \
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6787,8 +6785,6 @@ _scsih_scan_for_devices_after_reset(stru
- 	    phys_disk_num))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from phys disk scan: "\
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6854,8 +6850,6 @@ _scsih_scan_for_devices_after_reset(stru
- 	    &volume_pg1, MPI2_RAID_VOLUME_PGAD_FORM_GET_NEXT_HANDLE, handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from volume scan: " \
- 			    "ioc_status(0x%04x), loginfo(0x%08x)\n",
-@@ -6914,8 +6908,6 @@ _scsih_scan_for_devices_after_reset(stru
- 	    handle))) {
- 		ioc_status = le16_to_cpu(mpi_reply.IOCStatus) &
- 		    MPI2_IOCSTATUS_MASK;
--		if (ioc_status == MPI2_IOCSTATUS_CONFIG_INVALID_PAGE)
--			break;
- 		if (ioc_status != MPI2_IOCSTATUS_SUCCESS) {
- 			pr_info(MPT3SAS_FMT "\tbreak from end device scan:"\
- 			    " ioc_status(0x%04x), loginfo(0x%08x)\n",
+-	for (i = 0; i < numifbs && !err; i++)
++	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
++		cond_resched();
++	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
+ 	rtnl_unlock();
 
 
