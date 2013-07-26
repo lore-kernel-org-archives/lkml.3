@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab3GZU62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:58:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
+	id S1760262Ab3GZU6w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:58:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760116Ab3GZU6W (ORCPT
+	with ESMTP id S1760159Ab3GZU6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:22 -0400
+	Fri, 26 Jul 2013 16:58:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        dingtianhong <dingtianhong@huawei.com>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Chen Weilong <chenweilong@huawei.com>, Cong Wang <amwang@redhat.com>
-Subject: [ 20/45] ipv6,mcast: always hold idev->lock before mca_lock
-Date: Fri, 26 Jul 2013 13:57:40 -0700
-Message-Id: <20130726205657.107956655@linuxfoundation.org>
+        Daniil Bolsun <dan.bolsun@gmail.com>
+Subject: [ 35/45] USB: option: append Petatel NP10T device to GSM modems list
+Date: Fri, 26 Jul 2013 13:57:55 -0700
+Message-Id: <20130726205658.787668155@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -30,239 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amerigo Wang <amwang@redhat.com>
+From: Daniil Bolsun <dan.bolsun@gmail.com>
 
-[ Upstream commit 8965779d2c0e6ab246c82a405236b1fb2adae6b2, with
-  some bits from commit b7b1bfce0bb68bd8f6e62a28295922785cc63781
-  ("ipv6: split duplicate address detection and router solicitation timer")
-  to get the __ipv6_get_lladdr() used by this patch. ]
+commit c38e83b6cc2adf80e3f091fd92cfbeacc9748347 upstream.
 
-dingtianhong reported the following deadlock detected by lockdep:
+This patch was tested on 3.10.1 kernel.
 
- ======================================================
- [ INFO: possible circular locking dependency detected ]
- 3.4.24.05-0.1-default #1 Not tainted
- -------------------------------------------------------
- ksoftirqd/0/3 is trying to acquire lock:
-  (&ndev->lock){+.+...}, at: [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
+Same models of Petatel NP10T modems have different device IDs.
+Unfortunately they have no additional revision information on a board
+which may treat them as different devices. Currently I've seen only
+two NP10T devices with various IDs. Possibly Petatel NP10T list will
+be appended upon devices with new IDs will appear.
 
- but task is already holding lock:
-  (&mc->mca_lock){+.+...}, at: [<ffffffff8149d130>] mld_send_report+0x40/0x150
-
- which lock already depends on the new lock.
-
- the existing dependency chain (in reverse order) is:
-
- -> #1 (&mc->mca_lock){+.+...}:
-        [<ffffffff810a8027>] validate_chain+0x637/0x730
-        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
-        [<ffffffff810a8734>] lock_acquire+0x114/0x150
-        [<ffffffff814f691a>] rt_spin_lock+0x4a/0x60
-        [<ffffffff8149e4bb>] igmp6_group_added+0x3b/0x120
-        [<ffffffff8149e5d8>] ipv6_mc_up+0x38/0x60
-        [<ffffffff81480a4d>] ipv6_find_idev+0x3d/0x80
-        [<ffffffff81483175>] addrconf_notify+0x3d5/0x4b0
-        [<ffffffff814fae3f>] notifier_call_chain+0x3f/0x80
-        [<ffffffff81073471>] raw_notifier_call_chain+0x11/0x20
-        [<ffffffff813d8722>] call_netdevice_notifiers+0x32/0x60
-        [<ffffffff813d92d4>] __dev_notify_flags+0x34/0x80
-        [<ffffffff813d9360>] dev_change_flags+0x40/0x70
-        [<ffffffff813ea627>] do_setlink+0x237/0x8a0
-        [<ffffffff813ebb6c>] rtnl_newlink+0x3ec/0x600
-        [<ffffffff813eb4d0>] rtnetlink_rcv_msg+0x160/0x310
-        [<ffffffff814040b9>] netlink_rcv_skb+0x89/0xb0
-        [<ffffffff813eb357>] rtnetlink_rcv+0x27/0x40
-        [<ffffffff81403e20>] netlink_unicast+0x140/0x180
-        [<ffffffff81404a9e>] netlink_sendmsg+0x33e/0x380
-        [<ffffffff813c4252>] sock_sendmsg+0x112/0x130
-        [<ffffffff813c537e>] __sys_sendmsg+0x44e/0x460
-        [<ffffffff813c5544>] sys_sendmsg+0x44/0x70
-        [<ffffffff814feab9>] system_call_fastpath+0x16/0x1b
-
- -> #0 (&ndev->lock){+.+...}:
-        [<ffffffff810a798e>] check_prev_add+0x3de/0x440
-        [<ffffffff810a8027>] validate_chain+0x637/0x730
-        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
-        [<ffffffff810a8734>] lock_acquire+0x114/0x150
-        [<ffffffff814f6c82>] rt_read_lock+0x42/0x60
-        [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
-        [<ffffffff8149b036>] mld_newpack+0xb6/0x160
-        [<ffffffff8149b18b>] add_grhead+0xab/0xc0
-        [<ffffffff8149d03b>] add_grec+0x3ab/0x460
-        [<ffffffff8149d14a>] mld_send_report+0x5a/0x150
-        [<ffffffff8149f99e>] igmp6_timer_handler+0x4e/0xb0
-        [<ffffffff8105705a>] call_timer_fn+0xca/0x1d0
-        [<ffffffff81057b9f>] run_timer_softirq+0x1df/0x2e0
-        [<ffffffff8104e8c7>] handle_pending_softirqs+0xf7/0x1f0
-        [<ffffffff8104ea3b>] __do_softirq_common+0x7b/0xf0
-        [<ffffffff8104f07f>] __thread_do_softirq+0x1af/0x210
-        [<ffffffff8104f1c1>] run_ksoftirqd+0xe1/0x1f0
-        [<ffffffff8106c7de>] kthread+0xae/0xc0
-        [<ffffffff814fff74>] kernel_thread_helper+0x4/0x10
-
-actually we can just hold idev->lock before taking pmc->mca_lock,
-and avoid taking idev->lock again when iterating idev->addr_list,
-since the upper callers of mld_newpack() already take
-read_lock_bh(&idev->lock).
-
-Reported-by: dingtianhong <dingtianhong@huawei.com>
-Cc: dingtianhong <dingtianhong@huawei.com>
-Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Tested-by: Ding Tianhong <dingtianhong@huawei.com>
-Tested-by: Chen Weilong <chenweilong@huawei.com>
-Signed-off-by: Cong Wang <amwang@redhat.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/addrconf.h |    3 +++
- net/ipv6/addrconf.c    |   28 ++++++++++++++++++----------
- net/ipv6/mcast.c       |   18 ++++++++++--------
- 3 files changed, 31 insertions(+), 18 deletions(-)
 
---- a/include/net/addrconf.h
-+++ b/include/net/addrconf.h
-@@ -81,6 +81,9 @@ extern int			ipv6_dev_get_saddr(struct n
- 					       const struct in6_addr *daddr,
- 					       unsigned int srcprefs,
- 					       struct in6_addr *saddr);
-+extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
-+						  struct in6_addr *addr,
-+						  unsigned char banned_flags);
- extern int			ipv6_get_lladdr(struct net_device *dev,
- 						struct in6_addr *addr,
- 						unsigned char banned_flags);
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1235,6 +1235,23 @@ try_nextdev:
- }
- EXPORT_SYMBOL(ipv6_dev_get_saddr);
+---
+ drivers/usb/serial/option.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -445,7 +445,8 @@ static void option_instat_callback(struc
  
-+int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
-+		      unsigned char banned_flags)
-+{
-+	struct inet6_ifaddr *ifp;
-+	int err = -EADDRNOTAVAIL;
-+
-+	list_for_each_entry(ifp, &idev->addr_list, if_list) {
-+		if (ifp->scope == IFA_LINK &&
-+		    !(ifp->flags & banned_flags)) {
-+			ipv6_addr_copy(addr, &ifp->addr);
-+			err = 0;
-+			break;
-+		}
-+	}
-+	return err;
-+}
-+
- int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
- 		    unsigned char banned_flags)
- {
-@@ -1244,17 +1261,8 @@ int ipv6_get_lladdr(struct net_device *d
- 	rcu_read_lock();
- 	idev = __in6_dev_get(dev);
- 	if (idev) {
--		struct inet6_ifaddr *ifp;
--
- 		read_lock_bh(&idev->lock);
--		list_for_each_entry(ifp, &idev->addr_list, if_list) {
--			if (ifp->scope == IFA_LINK &&
--			    !(ifp->flags & banned_flags)) {
--				ipv6_addr_copy(addr, &ifp->addr);
--				err = 0;
--				break;
--			}
--		}
-+		err = __ipv6_get_lladdr(idev, addr, banned_flags);
- 		read_unlock_bh(&idev->lock);
- 	}
- 	rcu_read_unlock();
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1334,8 +1334,9 @@ mld_scount(struct ifmcaddr6 *pmc, int ty
- 	return scount;
- }
+ /* Hyundai Petatel Inc. products */
+ #define PETATEL_VENDOR_ID			0x1ff4
+-#define PETATEL_PRODUCT_NP10T			0x600e
++#define PETATEL_PRODUCT_NP10T_600A		0x600a
++#define PETATEL_PRODUCT_NP10T_600E		0x600e
  
--static struct sk_buff *mld_newpack(struct net_device *dev, int size)
-+static struct sk_buff *mld_newpack(struct inet6_dev *idev, int size)
- {
-+	struct net_device *dev = idev->dev;
- 	struct net *net = dev_net(dev);
- 	struct sock *sk = net->ipv6.igmp_sk;
- 	struct sk_buff *skb;
-@@ -1358,7 +1359,7 @@ static struct sk_buff *mld_newpack(struc
- 
- 	skb_reserve(skb, LL_RESERVED_SPACE(dev));
- 
--	if (ipv6_get_lladdr(dev, &addr_buf, IFA_F_TENTATIVE)) {
-+	if (__ipv6_get_lladdr(idev, &addr_buf, IFA_F_TENTATIVE)) {
- 		/* <draft-ietf-magma-mld-source-05.txt>:
- 		 * use unspecified address as the source address
- 		 * when a valid link-local address is not available.
-@@ -1461,7 +1462,7 @@ static struct sk_buff *add_grhead(struct
- 	struct mld2_grec *pgr;
- 
- 	if (!skb)
--		skb = mld_newpack(dev, dev->mtu);
-+		skb = mld_newpack(pmc->idev, dev->mtu);
- 	if (!skb)
- 		return NULL;
- 	pgr = (struct mld2_grec *)skb_put(skb, sizeof(struct mld2_grec));
-@@ -1481,7 +1482,8 @@ static struct sk_buff *add_grhead(struct
- static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
- 	int type, int gdeleted, int sdeleted)
- {
--	struct net_device *dev = pmc->idev->dev;
-+	struct inet6_dev *idev = pmc->idev;
-+	struct net_device *dev = idev->dev;
- 	struct mld2_report *pmr;
- 	struct mld2_grec *pgr = NULL;
- 	struct ip6_sf_list *psf, *psf_next, *psf_prev, **psf_list;
-@@ -1510,7 +1512,7 @@ static struct sk_buff *add_grec(struct s
- 		    AVAILABLE(skb) < grec_size(pmc, type, gdeleted, sdeleted)) {
- 			if (skb)
- 				mld_sendpack(skb);
--			skb = mld_newpack(dev, dev->mtu);
-+			skb = mld_newpack(idev, dev->mtu);
- 		}
- 	}
- 	first = 1;
-@@ -1537,7 +1539,7 @@ static struct sk_buff *add_grec(struct s
- 				pgr->grec_nsrcs = htons(scount);
- 			if (skb)
- 				mld_sendpack(skb);
--			skb = mld_newpack(dev, dev->mtu);
-+			skb = mld_newpack(idev, dev->mtu);
- 			first = 1;
- 			scount = 0;
- 		}
-@@ -1592,8 +1594,8 @@ static void mld_send_report(struct inet6
- 	struct sk_buff *skb = NULL;
- 	int type;
- 
-+	read_lock_bh(&idev->lock);
- 	if (!pmc) {
--		read_lock_bh(&idev->lock);
- 		for (pmc=idev->mc_list; pmc; pmc=pmc->next) {
- 			if (pmc->mca_flags & MAF_NOREPORT)
- 				continue;
-@@ -1605,7 +1607,6 @@ static void mld_send_report(struct inet6
- 			skb = add_grec(skb, pmc, type, 0, 0);
- 			spin_unlock_bh(&pmc->mca_lock);
- 		}
--		read_unlock_bh(&idev->lock);
- 	} else {
- 		spin_lock_bh(&pmc->mca_lock);
- 		if (pmc->mca_sfcount[MCAST_EXCLUDE])
-@@ -1615,6 +1616,7 @@ static void mld_send_report(struct inet6
- 		skb = add_grec(skb, pmc, type, 0, 0);
- 		spin_unlock_bh(&pmc->mca_lock);
- 	}
-+	read_unlock_bh(&idev->lock);
- 	if (skb)
- 		mld_sendpack(skb);
- }
+ /* TP-LINK Incorporated products */
+ #define TPLINK_VENDOR_ID			0x2357
+@@ -1347,7 +1348,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+-	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
 
 
