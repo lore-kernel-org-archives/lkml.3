@@ -1,98 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759147Ab3GZOk7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:40:59 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:33428 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758757Ab3GZOkz (ORCPT
+	id S1759148Ab3GZOml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:42:41 -0400
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:41406 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757231Ab3GZOmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:40:55 -0400
-Date: Fri, 26 Jul 2013 15:40:47 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Message-ID: <20130726144047.GH9858@sirena.org.uk>
-References: <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <20130725213753.GC17616@obsidianresearch.com>
- <20130726080115.GA5436@netboy>
- <1374831744.2923.42.camel@shinybook.infradead.org>
- <20130726130927.GC4219@netboy>
- <20130726132709.GH29916@titan.lakedaemon.net>
- <1374846070.14574.92.camel@i7.infradead.org>
- <CAKON4OzrkHzUzKkULWCgiEpAtJ5gLxUm78R5ctd7p6trqq_gCA@mail.gmail.com>
- <20130726142140.GR24642@n2100.arm.linux.org.uk>
+	Fri, 26 Jul 2013 10:42:38 -0400
+Date: Fri, 26 Jul 2013 16:42:30 +0200 (CEST)
+From: John Kacur <jkacur@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Stephen Cameron <scameron@beardog.cce.hp.com>,
+        linux-scsi@vger.kernel.org
+cc: James Bottomley <jbottomley@parallels.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>
+Subject: [PATCH] hpsa: fix warning with smp_processor_id() in preemptible
+Message-ID: <alpine.LFD.2.03.1307261640170.2642@tycho>
+User-Agent: Alpine 2.03 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="koElQQqmLVmRs57w"
-Content-Disposition: inline
-In-Reply-To: <20130726142140.GR24642@n2100.arm.linux.org.uk>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From 4c01ac362210c38cdbaddd0a75c24c7070e77dfa Mon Sep 17 00:00:00 2001
+From: John Kacur <jkacur@redhat.com>
+Date: Fri, 26 Jul 2013 16:06:18 +0200
+Subject: [PATCH] hpsa: fix warning with smp_processor_id() in preemptible
+ section Signed-off-by: John Kacur <jkacur@redhat.com>
 
---koElQQqmLVmRs57w
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On a 3.6-rt (real-time patch) kernel we are seeing the following BUG
+However, it appears to be relevant for non-realtime (mainline) as well.
 
-On Fri, Jul 26, 2013 at 03:21:40PM +0100, Russell King - ARM Linux wrote:
+[   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
+[   49.749928] scsi0 : hpsa
+[   49.784437] BUG: using smp_processor_id() in preemptible [00000000
+00000000] code: kworker/u:0/6
+[   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+[   49.784468] Pid: 6, comm: kworker/u:0 Not tainted
+3.6.11.5-rt37.52.el6rt.x86_64.debug #1
+[   49.784471] Call Trace:
+[   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
+[   49.784520]  [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100
+[hpsa]
+[   49.784529]  [<ffffffffa00905cb>]
+hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
+[   49.784537]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+[   49.784544]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+[   49.784553]  [<ffffffffa0090701>]
+hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
+[   49.784562]  [<ffffffffa0093558>]
+hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
+[   49.784571]  [<ffffffffa00935ea>]
+hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
+[   49.784580]  [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0
+[hpsa]
+[   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
+[   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
+[   49.784613]  [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
+[   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
+[   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
+[   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
+[   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
+[   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
+[   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
+[   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
+[   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
+[   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
+[   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
+[   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
+[   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
+[   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
+[   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
+[   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
+[   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
 
-> So this is why I'm seeing patches just a short time ago removing existing
-> compatible strings from the DT descriptions and associated driver, and
-> replacing them with new ones... meaning that the old DT files won't work
-> with newer kernels.
+-------------------
 
-The big question is if you're seeing such patches merged.  People making
-mistakes on submissions is totally normal.
+This is caused by
+enqueue_cmd_and_start_io()->
+        set_performant_mode()->
+                smp_processor_id()
+Which if you have debugging enabled calls debug_processor_id() and triggers the warning.
 
-If it's the case I think you mean TBH I'm not sure anyone cares, I don't
-think anyone is using that stuff in production yet as those chips go
-almost exclusively into Android phones.
+The code here is
+ c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
 
---koElQQqmLVmRs57w
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Since it is not critical that the code complete on the same processor,
+but the cpu is a hint used in generating the ReplyQueue and will still work if
+the cpu migrates or is preempted, it is safe to use the raw_smp_processor_id()
+to surpress the false positve warning.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Signed-off-by: John Kacur <jkacur@redhat.com>
+Acked-by: Stephen <scameron@beardog.cce.hp.com>
+---
+ drivers/scsi/hpsa.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-iQIcBAEBAgAGBQJR8opsAAoJELSic+t+oim9Rh0P/04SxSGMkLPCB2lZ532/7yTR
-DuD1QKn09hybTdjqHGkUMr/zKKFUtUgwtX5HK7KMnyd7KKdnHPyoCDimx2sperDJ
-4+Ci9CZvewIMKMv9nLvxyC6Zh8uxwFBq52zlJMYGe4oauXk3nQVwYfY4tPSPh6Kf
-+LGnIUQ7x9bLk8t8WC4b0NUZI/IVud1LSGqFDL774HuuaHFwdBnWrZQTo5W99hyn
-kTUx6jnHpD6KyyW4k4Hbmwht8zRNDzkt2AbvKW3mRN6HKWiA0u9ljKCk5rMLXV+x
-EA/IsCBCwfymySulY++Yu87h2aXKHNzLQA/Azt4dtBrSabEQesv41vaoVWDGstYB
-NtjUS1UYzl6Q0kxlwZGGs0HYJ6M8OLr4iTdnAMTfrul2UQzfQiQAWthhL9hltQDD
-SWooca3jQduAnctOfAQ/e1MTc1hMgiSwuwE9Z77C8u+sZEGTDdhYaP2Xs1jl+uvm
-B+AIXVAdNxVvlbdTsJ6Q24DRwJWetrtJ1Yjs10J92KPPsEp0AJ224u0hg7YJZ5PI
-DVfJ52Qg0RmdaqvlCnMfF9W0h6B/3ChXY0EafSZgCcM0Tx7QUeOaG4vvHiPJFYiI
-MV6rrPDAMLW765Lp+b9p+SdOPEfXGcGfP39uhwsv2ftnrBXkl8qOv9P/5tYry/f/
-ALI3VUvNpAGli9InTRfX
-=kOfF
------END PGP SIGNATURE-----
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 7f4f790..4e19267 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h, struct CommandList *c)
+ 		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+ 		if (likely(h->msix_vector))
+ 			c->Header.ReplyQueue =
+-				smp_processor_id() % h->nreply_queues;
++				raw_smp_processor_id() % h->nreply_queues;
+ 	}
+ }
+ 
+-- 
+1.7.11.7
 
---koElQQqmLVmRs57w--
