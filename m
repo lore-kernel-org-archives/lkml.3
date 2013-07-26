@@ -1,59 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760559Ab3GZVSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:18:53 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:57557 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760477Ab3GZVSs (ORCPT
+	id S1760518Ab3GZVSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:18:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51023 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935Ab3GZUxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:18:48 -0400
-Date: Sat, 27 Jul 2013 01:18:44 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
-Message-ID: <20130726211844.GB8508@moon>
-References: <20130726201807.GJ8661@moon>
- <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Jul 2013 16:53:51 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Jay Cliburn <jcliburn@gmail.com>,
+        Chris Snook <chris.snook@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/59] atl1e: fix dma mapping warnings
+Date: Fri, 26 Jul 2013 13:53:03 -0700
+Message-Id: <20130726205018.004397497@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 01:55:04PM -0700, Andy Lutomirski wrote:
-> On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > Andy reported that if file page get reclaimed we loose soft-dirty bit
-> > if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
-> > get encoded into pte entry. Thus when #pf happens on such non-present
-> > pte we can restore it back.
-> >
-> 
-> Unless I'm misunderstanding this, it's saving the bit in the
-> non-present PTE.  This sounds wrong -- what happens if the entire pmd
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-It's the same as encoding pgoff in pte entry (pte is not present),
-but together with pgoff we save soft-bit status, later on #pf we decode
-pgoff and restore softbit back if it was there, pte itself can't disappear
-since it holds pgoff information.
+------------------
 
-> (or whatever the next level is called) gets zapped?  (Also, what
-> happens if you unmap a file and map a different file there?)
+From: Neil Horman <nhorman@tuxdriver.com>
 
-If file pages are remapped to a new place we remember softdity
-bit status previously has and propagate it to a new pte (as in
-install_file_pte, old ptes are cleared).
+[ Upstream commit 352900b583b2852152a1e05ea0e8b579292e731e ]
 
-If file unmapped then new one mapped, pmd/ptes are cleared
-(including softbit) and it remains clear until new write
-happens, if only i've not missed something obvious.
+Recently had this backtrace reported:
+WARNING: at lib/dma-debug.c:937 check_unmap+0x47d/0x930()
+Hardware name: System Product Name
+ATL1E 0000:02:00.0: DMA-API: device driver failed to check map error[device
+address=0x00000000cbfd1000] [size=90 bytes] [mapped as single]
+Modules linked in: xt_conntrack nf_conntrack ebtable_filter ebtables
+ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek iTCO_wdt
+iTCO_vendor_support snd_hda_intel acpi_cpufreq mperf coretemp btrfs zlib_deflate
+snd_hda_codec snd_hwdep microcode raid6_pq libcrc32c snd_seq usblp serio_raw xor
+snd_seq_device joydev snd_pcm snd_page_alloc snd_timer snd lpc_ich i2c_i801
+soundcore mfd_core atl1e asus_atk0110 ata_generic pata_acpi radeon i2c_algo_bit
+drm_kms_helper ttm drm i2c_core pata_marvell uinput
+Pid: 314, comm: systemd-journal Not tainted 3.9.0-0.rc6.git2.3.fc19.x86_64 #1
+Call Trace:
+ <IRQ>  [<ffffffff81069106>] warn_slowpath_common+0x66/0x80
+ [<ffffffff8106916c>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff8138151d>] check_unmap+0x47d/0x930
+ [<ffffffff810ad048>] ? sched_clock_cpu+0xa8/0x100
+ [<ffffffff81381a2f>] debug_dma_unmap_page+0x5f/0x70
+ [<ffffffff8137ce30>] ? unmap_single+0x20/0x30
+ [<ffffffffa01569a1>] atl1e_intr+0x3a1/0x5b0 [atl1e]
+ [<ffffffff810d53fd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff81119636>] handle_irq_event_percpu+0x56/0x390
+ [<ffffffff811199ad>] handle_irq_event+0x3d/0x60
+ [<ffffffff8111cb6a>] handle_fasteoi_irq+0x5a/0x100
+ [<ffffffff8101c36f>] handle_irq+0xbf/0x150
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff81073b10>] ? irq_enter+0x50/0xa0
+ [<ffffffff8172738d>] do_IRQ+0x4d/0xc0
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff8171c6b2>] common_interrupt+0x72/0x72
+ <EOI>  [<ffffffff810db5b2>] ? lock_release+0xc2/0x310
+ [<ffffffff8109ea04>] lg_local_unlock_cpu+0x24/0x50
+ [<ffffffff811dcb2f>] file_sb_list_del+0x3f/0x50
+ [<ffffffff811dcb6d>] fput+0x2d/0xc0
+ [<ffffffff811d8ea1>] filp_close+0x61/0x90
+ [<ffffffff811fae4d>] __close_fd+0x8d/0x150
+ [<ffffffff811d8ef0>] sys_close+0x20/0x50
+ [<ffffffff81725699>] system_call_fastpath+0x16/0x1b
+
+The usual straighforward failure to check for dma_mapping_error after a map
+operation is completed.
+
+This patch should fix it, the reporter wandered off after filing this bz:
+https://bugzilla.redhat.com/show_bug.cgi?id=954170
+
+and I don't have hardware to test, but the fix is pretty straightforward, so I
+figured I'd post it for review.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Jay Cliburn <jcliburn@gmail.com>
+CC: Chris Snook <chris.snook@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   28 +++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1688,8 +1688,8 @@ check_sum:
+ 	return 0;
+ }
+ 
+-static void atl1e_tx_map(struct atl1e_adapter *adapter,
+-		      struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
++static int atl1e_tx_map(struct atl1e_adapter *adapter,
++			struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
+ {
+ 	struct atl1e_tpd_desc *use_tpd = NULL;
+ 	struct atl1e_tx_buffer *tx_buffer = NULL;
+@@ -1700,6 +1700,7 @@ static void atl1e_tx_map(struct atl1e_ad
+ 	u16 nr_frags;
+ 	u16 f;
+ 	int segment;
++	int ring_start = adapter->tx_ring.next_to_use;
+ 
+ 	nr_frags = skb_shinfo(skb)->nr_frags;
+ 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
+@@ -1712,6 +1713,9 @@ static void atl1e_tx_map(struct atl1e_ad
+ 		tx_buffer->length = map_len;
+ 		tx_buffer->dma = pci_map_single(adapter->pdev,
+ 					skb->data, hdr_len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma))
++			return -ENOSPC;
++
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1738,6 +1742,13 @@ static void atl1e_tx_map(struct atl1e_ad
+ 		tx_buffer->dma =
+ 			pci_map_single(adapter->pdev, skb->data + mapped_len,
+ 					map_len, PCI_DMA_TODEVICE);
++
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++			/* Reset the tx rings next pointer */
++			adapter->tx_ring.next_to_use = ring_start;
++			return -ENOSPC;
++		}
++
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len  += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1773,6 +1784,13 @@ static void atl1e_tx_map(struct atl1e_ad
+ 							  (i * MAX_TX_BUF_LEN),
+ 							  tx_buffer->length,
+ 							  DMA_TO_DEVICE);
++
++			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++				/* Reset the ring next to use pointer */
++				adapter->tx_ring.next_to_use = ring_start;
++				return -ENOSPC;
++			}
++
+ 			ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_PAGE);
+ 			use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+ 			use_tpd->word2 = (use_tpd->word2 & (~TPD_BUFLEN_MASK)) |
+@@ -1790,6 +1808,7 @@ static void atl1e_tx_map(struct atl1e_ad
+ 	/* The last buffer info contain the skb address,
+ 	   so it will be free after unmap */
+ 	tx_buffer->skb = skb;
++	return 0;
+ }
+ 
+ static void atl1e_tx_queue(struct atl1e_adapter *adapter, u16 count,
+@@ -1857,10 +1876,13 @@ static netdev_tx_t atl1e_xmit_frame(stru
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+-	atl1e_tx_map(adapter, skb, tpd);
++	if (atl1e_tx_map(adapter, skb, tpd))
++		goto out;
++
+ 	atl1e_tx_queue(adapter, tpd_req, tpd);
+ 
+ 	netdev->trans_start = jiffies; /* NETIF_F_LLTX driver :( */
++out:
+ 	spin_unlock_irqrestore(&adapter->tx_lock, flags);
+ 	return NETDEV_TX_OK;
+ }
+
+
