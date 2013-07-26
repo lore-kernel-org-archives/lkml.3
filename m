@@ -1,86 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab3GZEM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 00:12:29 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:46334 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab3GZEMZ convert rfc822-to-8bit (ORCPT
+	id S1751338Ab3GZEOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:14:39 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:57549 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3GZEOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 00:12:25 -0400
-Date: Thu, 25 Jul 2013 23:12:20 -0500
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 5/5] initmpfs v2: Use initramfs if rootfstype= or root=
- specified.
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jens Axboe <axboe@kernel.dk>, Stephen Warren <swarren@nvidia.com>
-In-Reply-To: <20130719125718.2227f52ccf642dda060f0ae8@linux-foundation.org>
-	(from akpm@linux-foundation.org on Fri Jul 19 14:57:18 2013)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1374811940.3031.15@driftwood>
+	Fri, 26 Jul 2013 00:14:35 -0400
+Message-ID: <51F1F6F9.1050102@linux.vnet.ibm.com>
+Date: Fri, 26 Jul 2013 09:41:37 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: deepthi@linux.vnet.ibm.com, shangw@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, geoff@infradead.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, paulus@samba.org,
+        srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        john.stultz@linaro.org, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
+        linuxppc-dev@lists.ozlabs.org, chenhui.zhao@freescale.com
+Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
+ arch-specific constraints
+References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com> <20130725090302.12500.42998.stgit@preeti.in.ibm.com> <20130725133044.GA7400@somewhere> <51F1E15B.3050106@linux.vnet.ibm.com>
+In-Reply-To: <51F1E15B.3050106@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072604-9574-0000-0000-000008E42363
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 02:57:18 PM, Andrew Morton wrote:
-> On Tue, 16 Jul 2013 16:45:39 -0700 (PDT) Rob Landley  
-> <rob@landley.net> wrote:
+Hi Frederic,
+
+I apologise for the confusion. As Paul pointed out maybe the usage of
+the term lapic is causing a large amount of confusion. So please see the
+clarification below. Maybe it will help answer your question.
+
+On 07/26/2013 08:09 AM, Preeti U Murthy wrote:
+> Hi Frederic,
 > 
-> > Command line option rootfstype=ramfs to obtain old initramfs  
-> behavior,
-> > and use ramfs instead of tmpfs for stub when root= defined (for  
-> cosmetic
-> > reasons).
+> On 07/25/2013 07:00 PM, Frederic Weisbecker wrote:
+>> On Thu, Jul 25, 2013 at 02:33:02PM +0530, Preeti U Murthy wrote:
+>>> In the current design of timer offload framework, the broadcast cpu should
+>>> *not* go into tickless idle so as to avoid missed wakeups on CPUs in deep idle states.
+>>>
+>>> Since we prevent the CPUs entering deep idle states from programming the lapic of the
+>>> broadcast cpu for their respective next local events for reasons mentioned in
+>>> PATCH[3/5], the broadcast CPU checks if there are any CPUs to be woken up during
+>>> each of its timer interrupt programmed to its local events.
+>>>
+>>> With tickless idle, the broadcast CPU might not get a timer interrupt till after
+>>> many ticks which can result in missed wakeups on CPUs in deep idle states. By
+>>> disabling tickless idle, worst case, the tick_sched hrtimer will trigger a
+>>> timer interrupt every period to check for broadcast.
+>>>
+>>> However the current setup of tickless idle does not let us make the choice
+>>> of tickless on individual cpus. NOHZ_MODE_INACTIVE which disables tickless idle,
+>>> is a system wide setting. Hence resort to an arch specific call to check if a cpu
+>>> can go into tickless idle.
+>>
+>> Hi Preeti,
+>>
+>> I'm not exactly sure why you can't enter the broadcast CPU in dynticks idle mode.
+>> I read in the previous patch that's because in dynticks idle mode the broadcast
+>> CPU deactivates its lapic so it doesn't receive the IPI. But may be I misunderstood.
+>> Anyway that's not good for powersaving.
+
+Firstly, when CPUs enter deep idle states, their local clock event
+devices get switched off. In the case of powerpc, local clock event
+device is the decrementer. Hence such CPUs *do not get timer interrupts*
+but are still *capable of taking IPIs.*
+
+So we need to ensure that some other CPU, in this case the broadcast
+CPU, makes note of when the timer interrupt of the CPU in such deep idle
+states is to trigger and at that moment issue an IPI to that CPU.
+
+*The broadcast CPU however should have its decrementer active always*,
+meaning it is disallowed from entering deep idle states, where the
+decrementer switches off, precisely because the other idling CPUs bank
+on it for the above mentioned reason.
+
+> *The lapic of a broadcast CPU is active always*. Say CPUX, wants the
+> broadcast CPU to wake it up at timeX.  Since we cannot program the lapic
+> of a remote CPU, CPUX will need to send an IPI to the broadcast CPU,
+> asking it to program its lapic to fire at timeX so as to wake up CPUX.
+> *With multiple CPUs the overhead of sending IPI, could result in
+> performance bottlenecks and may not scale well.*
+
+Rewording the above. The decrementer of the broadcast CPU is active
+always. Since we cannot program the clock event device
+of a remote CPU, CPUX will need to send an IPI to the broadcast CPU,
+(which the broadcast CPU is very well capable of receiving), asking it
+to program its decrementer to fire at timeX so as to wake up CPUX
+*With multiple CPUs the overhead of sending IPI, could result in
+performance bottlenecks and may not scale well.*
+
 > 
-> Could we get a Documentation/kernel-parameters.txt update please?
+> Hence the workaround is that the broadcast CPU on each of its timer
+> interrupt checks if any of the next timer event of a CPU in deep idle
+> state has expired, which can very well be found from dev->next_event of
+> that CPU. For example the timeX that has been mentioned above has
+> expired. If so the broadcast handler is called to send an IPI to the
+> idling CPU to wake it up.
+> 
+> *If the broadcast CPU, is in tickless idle, its timer interrupt could be
+> many ticks away. It could miss waking up a CPU in deep idle*, if its
+> wakeup is much before this timer interrupt of the broadcast CPU. But
+> without tickless idle, atleast at each period we are assured of a timer
+> interrupt. At which time broadcast handling is done as stated in the
+> previous paragraph and we will not miss wakeup of CPUs in deep idle states.
+> 
+> Yeah it is true that not allowing the broadcast CPU to enter tickless
+> idle is bad for power savings, but for the use case that we are aiming
+> at in this patch series, the current approach seems to be the best, with
+> minimal trade-offs in performance, power savings, scalability and no
+> change in the broadcast framework that exists today in the kernel.
+> 
 
-Sorry for the delay, traveling. Behind on email...
+Regards
+Preeti U Murthy
 
-"rootfstype" is already documented in kernel parameters:
-
-         rootfstype=     [KNL] Set root filesystem type
-
-I just applied the existing definition to initramfs now that it has  
-more than one filesystem option there. Do you want me to add a special  
-case here to say that rootfstype= still works when the root filesystem  
-is initramfs? Or would it instead make more sense to add:
-
-Signed-off-by: Rob Landley <rob@landley.net>
-
-Document that rootfstype= applies to initmpfs too.
-
---- a/Documentation/filesystems/ramfs-rootfs-initramfs.txt
-+++ b/Documentation/filesystems/ramfs-rootfs-initramfs.txt
-@@ -79,6 +79,9 @@ to just make sure certain lists can't become empty.
-  Most systems just mount another filesystem over rootfs and ignore  
-it.  The
-  amount of space an empty instance of ramfs takes up is tiny.
-
-+If CONFIG_TMPFS is enabled, rootfs will use tmpfs instead of ramfs by  
-default.
-+To force ramfs, add "rootfstype=ramfs" to the kernel command line.
-+
-  What is initramfs?
-  ------------------
-
-
-(What I _didn't_ do yet is hook up rootflags= to initmpfs, so you can  
-specify size= as something other than 50%. Partly because if you have  
-an empty cpio archive and the rootflags= applies to ext3 or something,  
-those flags could potentially confuse tmpfs with unknown options and  
-throw errors. And partly because mount -o remount,size=20% works fine  
-after the fact, so it's not time critical and I easily can do a  
-follow-up patch. The one potential downside is if you want to have a  
-cpio archive eat more than 50% of the kernel's memory, it'll fail to  
-extract into tmpfs with the size limits. But the rootfstype=ramfs  
-downgrade also works around that for now...)
-
-There are a number of follow up patches I could do, but the basic  
-functionality doesn't depend on them...
-
-Rob
