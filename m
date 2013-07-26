@@ -1,62 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759201Ab3GZPKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:10:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38767 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757231Ab3GZPKg (ORCPT
+	id S1759168Ab3GZPQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:16:36 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:35794 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757489Ab3GZPQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:10:36 -0400
-Date: Fri, 26 Jul 2013 16:10:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org
-Subject: Re: [RFC/RFT PATCH 0/5] mm: ARM nobootmem and few dma_mask fixes
-Message-ID: <20130726151021.GU24642@n2100.arm.linux.org.uk>
-References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com>
+	Fri, 26 Jul 2013 11:16:33 -0400
+Date: Fri, 26 Jul 2013 10:16:21 -0500
+From: Robert Jennings <rcj@linux.vnet.ibm.com>
+To: Dave Hansen <dave@sr71.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Matt Helsley <matt.helsley@gmail.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Michael Roth <mdroth@linux.vnet.ibm.com>,
+        Lei Li <lilei@linux.vnet.ibm.com>,
+        Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 1/2] vmsplice unmap gifted pages for recipient
+Message-ID: <20130726151621.GA5037@linux.vnet.ibm.com>
+Mail-Followup-To: Dave Hansen <dave@sr71.net>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Rik van Riel <riel@redhat.com>,
+	Andrea Arcangeli <aarcange@redhat.com>,
+	Matt Helsley <matt.helsley@gmail.com>,
+	Anthony Liguori <aliguori@us.ibm.com>,
+	Michael Roth <mdroth@linux.vnet.ibm.com>,
+	Lei Li <lilei@linux.vnet.ibm.com>,
+	Leonardo Garcia <lagarcia@linux.vnet.ibm.com>
+References: <1374772906-21511-1-git-send-email-rcj@linux.vnet.ibm.com>
+ <1374772906-21511-2-git-send-email-rcj@linux.vnet.ibm.com>
+ <51F160A5.2040004@sr71.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <51F160A5.2040004@sr71.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072615-3864-0000-0000-00000946A75E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 12, 2013 at 05:48:09PM -0400, Santosh Shilimkar wrote:
-> The series is an attempt to move ARM port to NO_BOOTMEM. As discussed
-> on list NO_BOOTMEM move needed updates to max*pfn meaning to be maximum
-> PFNs but that breaks the dma_mask for few block layer drivers since
-> ARM start of physical memory is not PFN0 unlike most of the architectures.
-> Some more read on it is here:
-> 	http://lwn.net/Articles/543408/
-> 	http://lwn.net/Articles/543424/
+* Dave Hansen (dave@sr71.net) wrote:
+> On 07/25/2013 10:21 AM, Robert Jennings wrote:
+> > +static void zap_buf_page(unsigned long useraddr)
+> > +{
+> > +	struct vm_area_struct *vma;
+> > +
+> > +	down_read(&current->mm->mmap_sem);
+> > +	vma = find_vma_intersection(current->mm, useraddr,
+> > +			useraddr + PAGE_SIZE);
+> > +	if (!IS_ERR_OR_NULL(vma))
+> > +		zap_page_range(vma, useraddr, PAGE_SIZE, NULL);
+> > +	up_read(&current->mm->mmap_sem);
+> > +}
+> > +
+> >  /**
+> >   * splice_to_pipe - fill passed data into a pipe
+> >   * @pipe:	pipe to fill
+> > @@ -212,8 +224,16 @@ ssize_t splice_to_pipe(struct pipe_inode_info *pipe,
+> >  			buf->len = spd->partial[page_nr].len;
+> >  			buf->private = spd->partial[page_nr].private;
+> >  			buf->ops = spd->ops;
+> > -			if (spd->flags & SPLICE_F_GIFT)
+> > +			if (spd->flags & SPLICE_F_GIFT) {
+> > +				unsigned long useraddr =
+> > +						spd->partial[page_nr].useraddr;
+> > +
+> > +				if ((spd->flags & SPLICE_F_MOVE) &&
+> > +				    !buf->offset && (buf->len == PAGE_SIZE))
+> > +					/* Can move page aligned buf */
+> > +					zap_buf_page(useraddr);
+> >  				buf->flags |= PIPE_BUF_FLAG_GIFT;
+> > +			}
 > 
-> To address this issue, we introduce generic dma_max_pfn() helper which
-> can be overridden from the architectures.
-> 	
-> Another intention behind move to nobootmem is also to convert ARM to
-> switch to memblock and getting rid of bootmem allocator dependency which
-> don't work for LPAE machines which has physical memory starting beyond
-> 4 GB boundary. It needs changes to core kernel and also a new memblock
-> API. More on this can be found here:
-> 	https://lkml.org/lkml/2013/6/29/77
-> 
-> I have been trying to cook up these patches with kind help from Russell
-> and we know series don't solve all the dma_mask bad assumptions. But at
-> least I am hoping that it can get the ball rolling.	
-> 
-> Comments/testing help is welcome !!
+> There isn't quite enough context here, but is it going to do this
+> zap_buf_page() very often?  Seems a bit wasteful to do the up/down and
+> find_vma() every trip through the loop.
 
-As this is related to some of the cleanup of dma_mask which I've been
-doing, I think it may make sense to roll this into one tree.  Any
-objection to that?
+The call to zap_buf_page() is in a loop where each pipe buffer is being
+processed, but in that loop we have a pipe_wait() where we schedule().
+So as things are structured I don't have the ability to hold mmap_sem
+for multiple find_vma() calls.
 
-Can we get any acks on this stuff from Jens and Jejb etc - especially
-for the bits which touch block/ and for the scsi bits as these are
-touching other subsystems.  (oddly, linux-scsi wasn't on the original
-mail for this series summary.)
