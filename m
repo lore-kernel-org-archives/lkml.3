@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932851Ab3GZVYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:24:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51018 "EHLO
+	id S932976Ab3GZVZD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:25:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932810Ab3GZUxd (ORCPT
+	with ESMTP id S932780Ab3GZUxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:33 -0400
+	Fri, 26 Jul 2013 16:53:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 12/59] perf: Clone child context from parent context pmu
-Date: Fri, 26 Jul 2013 13:52:36 -0700
-Message-Id: <20130726205015.128107817@linuxfoundation.org>
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 10/59] tracing: Use current_uid() for critical time tracing
+Date: Fri, 26 Jul 2013 13:52:34 -0700
+Message-Id: <20130726205014.919010575@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -31,85 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
+commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
 
-Currently when the child context for inherited events is
-created, it's based on the pmu object of the first event
-of the parent context.
+The irqsoff tracer records the max time that interrupts are disabled.
+There are hooks in the assembly code that calls back into the tracer when
+interrupts are disabled or enabled.
 
-This is wrong for the following scenario:
+When they are enabled, the tracer checks if the amount of time they
+were disabled is larger than the previous recorded max interrupts off
+time. If it is, it creates a snapshot of the currently running trace
+to store where the last largest interrupts off time was held and how
+it happened.
 
-  - HW context having HW and SW event
-  - HW event got removed (closed)
-  - SW event stays in HW context as the only event
-    and its pmu is used to clone the child context
+During testing, this RCU lockdep dump appeared:
 
-The issue starts when the cpu context object is touched
-based on the pmu context object (__get_cpu_context). In
-this case the HW context will work with SW cpu context
-ending up with following WARN below.
+[ 1257.829021] ===============================
+[ 1257.829021] [ INFO: suspicious RCU usage. ]
+[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
+[ 1257.829021] -------------------------------
+[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
+[ 1257.829021]
+[ 1257.829021] other info that might help us debug this:
+[ 1257.829021]
+[ 1257.829021]
+[ 1257.829021] RCU used illegally from idle CPU!
+[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
+[ 1257.829021] RCU used illegally from extended quiescent state!
+[ 1257.829021] 2 locks held by trace-cmd/4831:
+[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
+[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
+[ 1257.829021]
+[ 1257.829021] stack backtrace:
+[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
+[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
+[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
+[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
+[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
+[ 1257.829021] Call Trace:
+[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
+[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
+[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
+[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
+[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
+[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
+[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
+[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
+[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
+[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
 
-Fixing this by using parent context pmu object to clone
-from child context.
+What happened was entering into the user code, the interrupts were enabled
+and a max interrupts off was recorded. The trace buffer was saved along with
+various information about the task: comm, pid, uid, priority, etc.
 
-Addresses the following warning reported by Vince Weaver:
+The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
+to retrieve the data, and this happened to happen where RCU is blind (user_enter).
 
-[ 2716.472065] ------------[ cut here ]------------
-[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
-[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
-[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
-[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
-[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
-[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
-[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
-[ 2716.476035] Call Trace:
-[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
-[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
-[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
-[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
-[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
-[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
-[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
-[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
-[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
-[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
-[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
-[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
-[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
-[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
-[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
-[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
-[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
+As only the preempt and irqs off tracers can have this happen, and they both
+only have the tsk == current, if tsk == current, use current_uid() instead of
+task_uid(), as current_uid() does not use RCU as only current can change its uid.
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+This fixes the RCU suspicious splat.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6933,7 +6933,7 @@ inherit_task_group(struct perf_event *ev
- 		 * child.
- 		 */
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -687,7 +687,15 @@ __update_max_tr(struct trace_array *tr,
  
--		child_ctx = alloc_perf_context(event->pmu, child);
-+		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
- 		if (!child_ctx)
- 			return -ENOMEM;
- 
+ 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
+ 	max_data->pid = tsk->pid;
+-	max_data->uid = task_uid(tsk);
++	/*
++	 * If tsk == current, then use current_uid(), as that does not use
++	 * RCU. The irq tracer can be called out of RCU scope.
++	 */
++	if (tsk == current)
++		max_data->uid = current_uid();
++	else
++		max_data->uid = task_uid(tsk);
++
+ 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
+ 	max_data->policy = tsk->policy;
+ 	max_data->rt_priority = tsk->rt_priority;
 
 
