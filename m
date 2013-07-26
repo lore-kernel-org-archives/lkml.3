@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758400Ab3GZKFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:05:11 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:19078 "EHLO
+	id S1758441Ab3GZKFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:05:15 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:19089 "EHLO
 	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758309Ab3GZKEv (ORCPT
+	with ESMTP id S1758317Ab3GZKE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:04:51 -0400
+	Fri, 26 Jul 2013 06:04:57 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 26 Jul 2013 03:04:50 -0700
+	by hqnvupgp08.nvidia.com on Fri, 26 Jul 2013 03:03:42 -0700
 From: Laxman Dewangan <ldewangan@nvidia.com>
 To: <grant.likely@linaro.org>, <linus.walleij@linaro.org>
 CC: <rob.herring@calxeda.com>, <rob@landley.net>, <sameo@linux.intel.com>,
@@ -16,9 +16,9 @@ CC: <rob.herring@calxeda.com>, <rob@landley.net>, <sameo@linux.intel.com>,
         <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <gg@slimlogic.co.uk>, <kishon@ti.com>, <swarren@nvidia.com>,
         <devicetree@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 1/2] pinctrl: pinconf_generic: add utility functions for add map/configs
-Date: Fri, 26 Jul 2013 15:45:53 +0530
-Message-ID: <1374833754-19659-2-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH 2/2] pinctrl: palmas: add pincontrol driver
+Date: Fri, 26 Jul 2013 15:45:54 +0530
+Message-ID: <1374833754-19659-3-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com>
 References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com>
@@ -28,196 +28,1432 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some of pincontrol driver needs the utility function to create map
-list. The utility function needed for adding mux, configs etc.
+TI Palam series Power Management IC have multiple pins which can be
+configured for different functionality. This pins can be configured
+for different function. Also their properties like pull up/down,
+open drain enable/disable are configurable.
 
-In place of duplicating this in each driver, add the common utility
-function in pin_conf and use from device specific driver. This will
-reduce the duplicating of code across drivers.
+Add support for pincontrol driver Palmas series device like TPS65913,
+TPS80036. The driver supports to be register from DT only.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/pinctrl/pinconf-generic.c       |  105 +++++++++++++++++++++++++++++++
- include/linux/pinctrl/pinconf-generic.h |   52 +++++++++++++++
- 2 files changed, 157 insertions(+), 0 deletions(-)
+ .../devicetree/bindings/pinctrl/pinctrl-palmas.txt |   91 ++
+ drivers/pinctrl/Kconfig                            |   10 +
+ drivers/pinctrl/Makefile                           |    1 +
+ drivers/pinctrl/pinctrl-palmas.c                   | 1211 ++++++++++++++++++++
+ include/linux/mfd/palmas.h                         |   35 +-
+ 5 files changed, 1337 insertions(+), 11 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt
+ create mode 100644 drivers/pinctrl/pinctrl-palmas.c
 
-diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
-index 8594f03..d9eae95 100644
---- a/drivers/pinctrl/pinconf-generic.c
-+++ b/drivers/pinctrl/pinconf-generic.c
-@@ -236,4 +236,109 @@ out:
- 	kfree(cfg);
- 	return ret;
- }
+diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt
+new file mode 100644
+index 0000000..20b4527
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-palmas.txt
+@@ -0,0 +1,91 @@
++Palmas Pincontrol bindings
 +
-+int pinconf_generic_reserve_map(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, unsigned reserve)
-+{
-+	unsigned old_num = *reserved_maps;
-+	unsigned new_num = *num_maps + reserve;
-+	struct pinctrl_map *new_map;
++The pins of palmas device can be set on different option and provides
++the configuration for Pull UP/DOWN, open drain etc.
 +
-+	if (old_num >= new_num)
-+		return 0;
++Required properties:
++- compatible: It must be one of following:
++  - "ti,palams-pinctrl" for palma series of the pincontrol.
++  - "ti,tps65913-pinctrl" for Palma series device TPS65913.
++  - "ti,tps80036-pinctrl" for palma series device TPS80036.
 +
-+	new_map = krealloc(*map, sizeof(*new_map) * new_num, GFP_KERNEL);
-+	if (!new_map) {
-+		dev_err(dev, "krealloc(map) failed\n");
-+		return -ENOMEM;
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++Palmas's pin configuration nodes act as a container for an abitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin, a group, or a list of pins or groups. This configuration can include the
++mux function to select on those pin(s)/group(s), and various pin configuration
++parameters, such as pull-up, open drain.
++
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
++
++Each subnode only affects those parameters that are explicitly listed. In
++other words, a subnode that lists a mux function but no pin configuration
++parameters implies no information about any pin configuration parameters.
++Similarly, a pin subnode that describes a pullup parameter implies no
++information about e.g. the mux function.
++
++Optional properties:
++- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1 mode.
++- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2 mode.
++
++Required subnode-properties:
++- ti,pins: An array of strings. Each string contains the name of a pin or
++    group. Valid values for these names are listed below.
++
++Optional subnode-properties:
++- ti,function:  string containing the name of the function to mux to the
++  pin or group. Valid values for function names are listed below. Please
++  refer the datasheet of the device to determine which are valid for each
++  pin or group.
++- ti,pull: Integer, representing the pull-down/up to apply to the pin.
++    0: none, 1: up, 2: down.
++- ti,open-drain" Integer, representing the open drain to be enable/disable
++  to the pin.
++    0: Disable, 1: Enable.
++
++
++Note that many of these properties are only valid for certain specific pins
++or groups. See the Palma device datasheet for complete details regarding which
++groups support which functionality.
++
++Valid values for pin and group names are:
++pins: gpio0_id, gpio1_vbus_det_led1_pwm1, gpio2_regen_led2_pwm2, gpio3_chrg_det,
++	gpio4_sysen1, gpio5_clk32kgaudio_usb_psel, gpio6_sysen2,
++	gpio7_msecure_pwrhold, gpio8_sim1rsti, gpio9_low_vbat,
++	gpio10_wireless_chrg1, gpio11_rcm, gpio12_sim2rsto, gpio13, gpio14,
++	gpio15_sim2rsti, vac, powergood_usb_psel, nreswarm, pwrdown,
++	gpadc_start, reset_in, nsleep, enable1, enable2, int.
++
++function: gpio, led, pwm, regen, sysen, clk32kgaudio, id, vbus_det, chrg_det,
++	vac, vacok, powergood, usb_psel, msecure, pwrhold, int, nreswarm,
++	simrsto, simrsti, low_vbat, wireless_chrg1, rcm, pwrdown, gpadc_start,
++	reset_in, nsleep, enable.
++
++Example:
++	palmas: tps65913@58 {
++		:::::::::::
++
++		pinctrl {
++			compatible = "ti,tps65913-pinctrl";
++			ti,palams-enable-dvfs1;
++			pinctrl-names = "default";
++			pinctrl-0 = <&palmas_pins_state>;
++
++			palmas_pins_state: pinmux {
++				gpio0_id {
++					ti,pins = "gpio0_id";
++					ti,function = "id";
++				};
++
++				vac {
++					ti,pins = "vac";
++					ti,function = "vacok";
++				};
++			};
++		};
++		:::::::::::
++	};
+diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+index 5a8ad51..b62c331 100644
+--- a/drivers/pinctrl/Kconfig
++++ b/drivers/pinctrl/Kconfig
+@@ -261,6 +261,16 @@ config PINCTRL_EXYNOS5440
+ 	select PINMUX
+ 	select PINCONF
+ 
++config PINCTRL_PALMAS
++	bool "Pinctrl driver for the PALMA Series MFD devices"
++	depends on OF && MFD_PALMAS
++	select GENERIC_PINCONF
++	help
++	  Palma device suppots the configuration of pins  for different
++	  functionality. This driver supports the pinmux, pushpull and
++	  open drain configuration for the palmas series devices like
++	  TPS65913, TPS80036 etc.
++
+ config PINCTRL_S3C24XX
+ 	bool "Samsung S3C24XX SoC pinctrl driver"
+ 	depends on ARCH_S3C24XX
+diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+index d64563b..2251b30 100644
+--- a/drivers/pinctrl/Makefile
++++ b/drivers/pinctrl/Makefile
+@@ -32,6 +32,7 @@ obj-$(CONFIG_PINCTRL_NOMADIK)	+= pinctrl-nomadik.o
+ obj-$(CONFIG_PINCTRL_STN8815)	+= pinctrl-nomadik-stn8815.o
+ obj-$(CONFIG_PINCTRL_DB8500)	+= pinctrl-nomadik-db8500.o
+ obj-$(CONFIG_PINCTRL_DB8540)	+= pinctrl-nomadik-db8540.o
++obj-$(CONFIG_PINCTRL_PALMAS)	+= pinctrl-palmas.o
+ obj-$(CONFIG_PINCTRL_ROCKCHIP)	+= pinctrl-rockchip.o
+ obj-$(CONFIG_PINCTRL_SINGLE)	+= pinctrl-single.o
+ obj-$(CONFIG_PINCTRL_SIRF)	+= sirf/
+diff --git a/drivers/pinctrl/pinctrl-palmas.c b/drivers/pinctrl/pinctrl-palmas.c
+new file mode 100644
+index 0000000..eb954f5
+--- /dev/null
++++ b/drivers/pinctrl/pinctrl-palmas.c
+@@ -0,0 +1,1211 @@
++/*
++ * pinctrl-palmas.c -- TI PALMAS series pin control driver.
++ *
++ * Copyright (c) 2013, NVIDIA Corporation.
++ *
++ * Author: Laxman Dewangan <ldewangan@nvidia.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation version 2.
++ *
++ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
++ * whether express or implied; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
++ * 02111-1307, USA
++ */
++
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/mfd/palmas.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/pinctrl/machine.h>
++#include <linux/pinctrl/pinctrl.h>
++#include <linux/pinctrl/pinconf-generic.h>
++#include <linux/pinctrl/pinconf.h>
++#include <linux/pinctrl/pinmux.h>
++#include <linux/pm.h>
++#include <linux/slab.h>
++
++#include "core.h"
++
++#define PALMAS_PIN_GPIO0_ID				0
++#define PALMAS_PIN_GPIO1_VBUS_LED1_PWM1			1
++#define PALMAS_PIN_GPIO2_REGEN_LED2_PWM2		2
++#define PALMAS_PIN_GPIO3_CHRG_DET			3
++#define PALMAS_PIN_GPIO4_SYSEN1				4
++#define PALMAS_PIN_GPIO5_CLK32KGAUDIO_USB_PSEL		5
++#define PALMAS_PIN_GPIO6_SYSEN2				6
++#define PALMAS_PIN_GPIO7_MSECURE_PWRHOLD		7
++#define PALMAS_PIN_GPIO8_SIM1RSTI			8
++#define PALMAS_PIN_GPIO9_LOW_VBAT			9
++#define PALMAS_PIN_GPIO10_WIRELESS_CHRG1		10
++#define PALMAS_PIN_GPIO11_RCM				11
++#define PALMAS_PIN_GPIO12_SIM2RSTO			12
++#define PALMAS_PIN_GPIO13				13
++#define PALMAS_PIN_GPIO14				14
++#define PALMAS_PIN_GPIO15_SIM2RSTI			15
++#define PALMAS_PIN_VAC					16
++#define PALMAS_PIN_POWERGOOD_USB_PSEL			17
++#define PALMAS_PIN_NRESWARM				18
++#define PALMAS_PIN_PWRDOWN				19
++#define PALMAS_PIN_GPADC_START				20
++#define PALMAS_PIN_RESET_IN				21
++#define PALMAS_PIN_NSLEEP				22
++#define PALMAS_PIN_ENABLE1				23
++#define PALMAS_PIN_ENABLE2				24
++#define PALMAS_PIN_INT					25
++
++#define PALMAS_PIN_NUM					(PALMAS_PIN_INT + 1)
++
++#define PALMAS_PINCONF_PACK(p, a)		(((p) << 16) | (a))
++#define PALMAS_PINCONF_UNPACK_PARAM(c)		(((c) >> 16) & 0xFFFFUL)
++#define PALMAS_PINCONF_UNPACK_ARG(c)		((c) & 0xFFFFUL)
++
++enum palmas_pinconf_param {
++	PALMAS_PINCONF_PARAM_PULL,
++	PALMAS_PINCONF_PARAM_OPEN_DRAIN,
++};
++
++struct palmas_cfg_param {
++	const char *property;
++	enum palmas_pinconf_param param;
++};
++
++struct palmas_pin_function {
++	const char *name;
++	const char * const *groups;
++	unsigned ngroups;
++};
++
++struct palmas_pctrl_chip_info {
++	struct device *dev;
++	struct pinctrl_dev *pctl;
++	struct palmas *palmas;
++	int pins_current_opt[PALMAS_PIN_NUM];
++	const struct palmas_pin_function *functions;
++	unsigned num_functions;
++	const struct palmas_pingroup *pin_groups;
++	int num_pin_groups;
++	const struct pinctrl_pin_desc *pins;
++	unsigned num_pins;
++};
++
++static const struct palmas_cfg_param palams_cfg_params[] = {
++	{.property = "ti,pull",	.param = PALMAS_PINCONF_PARAM_PULL},
++	{.property = "ti,open-drain", .param = PALMAS_PINCONF_PARAM_OPEN_DRAIN},
++};
++
++static const struct pinctrl_pin_desc palmas_pins_desc[] = {
++	PINCTRL_PIN(PALMAS_PIN_GPIO0_ID, "GPIO0 ID"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO1_VBUS_LED1_PWM1, "GPIO1 VBUS LED1 PWM1"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO2_REGEN_LED2_PWM2, "GPIO2 REGEN LED2 PWM2"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO3_CHRG_DET, "GPIO3 CHRG_DET"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO4_SYSEN1, "GPIO4 SYSEN1"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO5_CLK32KGAUDIO_USB_PSEL,
++							"GPIO5 CLK32KGAUDIO"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO6_SYSEN2, "GPIO6 SYSNE2"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO7_MSECURE_PWRHOLD, "GPIO7 MSECURE PWRHOLD"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO8_SIM1RSTI, "GPIO8 SIM1RSTI"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO9_LOW_VBAT, "GPIO9 LOW_VBAT"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO10_WIRELESS_CHRG1, "GPIO10 WIRELESS_CHRG1"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO11_RCM, "GPIO11 RCM"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO12_SIM2RSTO, "GPIO12 SIM2RSTO"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO13, "GPIO13"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO14, "GPIO14"),
++	PINCTRL_PIN(PALMAS_PIN_GPIO15_SIM2RSTI, "GPIO15 SIM2RSTI"),
++	PINCTRL_PIN(PALMAS_PIN_VAC, "VAC VACOK"),
++	PINCTRL_PIN(PALMAS_PIN_POWERGOOD_USB_PSEL, "POWRGOOD USB_PSEL"),
++	PINCTRL_PIN(PALMAS_PIN_NRESWARM, "NRESWARM"),
++	PINCTRL_PIN(PALMAS_PIN_PWRDOWN, "PWRDOWN"),
++	PINCTRL_PIN(PALMAS_PIN_GPADC_START, "GPADC_START"),
++	PINCTRL_PIN(PALMAS_PIN_RESET_IN, "RESET_IN"),
++	PINCTRL_PIN(PALMAS_PIN_NSLEEP, "NSLEEP"),
++	PINCTRL_PIN(PALMAS_PIN_ENABLE1, "ENABLE1"),
++	PINCTRL_PIN(PALMAS_PIN_ENABLE2, "ENABLE2"),
++	PINCTRL_PIN(PALMAS_PIN_INT, "INT"),
++};
++
++static const unsigned palmas_pin_gpio0_id_pins[] = {
++	PALMAS_PIN_GPIO0_ID,
++};
++
++static const unsigned palmas_pin_gpio1_vbus_det_led1_pwm1_pins[] = {
++	PALMAS_PIN_GPIO1_VBUS_LED1_PWM1,
++};
++
++static const unsigned palmas_pin_gpio2_regen_led2_pwm2_pins[] = {
++	PALMAS_PIN_GPIO2_REGEN_LED2_PWM2,
++};
++
++static const unsigned palmas_pin_gpio3_chrg_det_pins[] = {
++	PALMAS_PIN_GPIO3_CHRG_DET,
++};
++
++static const unsigned palmas_pin_gpio4_sysen1_pins[] = {
++	PALMAS_PIN_GPIO4_SYSEN1,
++};
++
++static const unsigned palmas_pin_gpio5_clk32kgaudio_usb_psel_pins[] = {
++	PALMAS_PIN_GPIO5_CLK32KGAUDIO_USB_PSEL,
++};
++
++static const unsigned palmas_pin_gpio6_sysen2_pins[] = {
++	PALMAS_PIN_GPIO6_SYSEN2,
++};
++
++static const unsigned palmas_pin_gpio7_msecure_pwrhold_pins[] = {
++	PALMAS_PIN_GPIO7_MSECURE_PWRHOLD,
++};
++
++static const unsigned palmas_pin_gpio8_sim1rsti_pins[] = {
++	PALMAS_PIN_GPIO8_SIM1RSTI,
++};
++
++static const unsigned palmas_pin_gpio9_low_vbat_pins[] = {
++	PALMAS_PIN_GPIO9_LOW_VBAT,
++};
++
++static const unsigned palmas_pin_gpio10_wireless_chrg1_pins[] = {
++	PALMAS_PIN_GPIO10_WIRELESS_CHRG1,
++};
++
++static const unsigned palmas_pin_gpio11_rcm_pins[] = {
++	PALMAS_PIN_GPIO11_RCM,
++};
++
++static const unsigned palmas_pin_gpio12_sim2rsto_pins[] = {
++	PALMAS_PIN_GPIO12_SIM2RSTO,
++};
++
++static const unsigned palmas_pin_gpio13_pins[] = {
++	PALMAS_PIN_GPIO13,
++};
++
++static const unsigned palmas_pin_gpio14_pins[] = {
++	PALMAS_PIN_GPIO14,
++};
++
++static const unsigned palmas_pin_gpio15_sim2rsti_pins[] = {
++	PALMAS_PIN_GPIO15_SIM2RSTI,
++};
++
++static const unsigned palmas_pin_vac_pins[] = {
++	PALMAS_PIN_VAC,
++};
++
++static const unsigned palmas_pin_powergood_usb_psel_pins[] = {
++	PALMAS_PIN_POWERGOOD_USB_PSEL,
++};
++
++static const unsigned palmas_pin_nreswarm_pins[] = {
++	PALMAS_PIN_NRESWARM,
++};
++
++static const unsigned palmas_pin_pwrdown_pins[] = {
++	PALMAS_PIN_PWRDOWN,
++};
++
++static const unsigned palmas_pin_gpadc_start_pins[] = {
++	PALMAS_PIN_GPADC_START,
++};
++
++static const unsigned palmas_pin_reset_in_pins[] = {
++	PALMAS_PIN_RESET_IN,
++};
++
++static const unsigned palmas_pin_nsleep_pins[] = {
++	PALMAS_PIN_NSLEEP,
++};
++
++static const unsigned palmas_pin_enable1_pins[] = {
++	PALMAS_PIN_ENABLE1,
++};
++
++static const unsigned palmas_pin_enable2_pins[] = {
++	PALMAS_PIN_ENABLE2,
++};
++
++static const unsigned palmas_pin_int_pins[] = {
++	PALMAS_PIN_INT,
++};
++
++static const char * const gpio_group[] = {
++	"gpio0_id",
++	"gpio1_vbus_det_led1_pwm1",
++	"gpio2_regen_led2_pwm2",
++	"gpio3_chrg_det",
++	"gpio4_sysen1",
++	"gpio5_clk32kgaudio_usb_psel",
++	"gpio6_sysen2",
++	"gpio7_msecure_pwrhold",
++	"gpio8_sim1rsti",
++	"gpio9_low_vbat",
++	"gpio10_wireless_chrg1",
++	"gpio11_rcm",
++	"gpio12_sim2rsto",
++	"gpio13",
++	"gpio14",
++	"gpio15_sim2rsti",
++};
++
++static const char * const led_group[] = {
++	"gpio1_vbus_det_led1_pwm1",
++	"gpio2_regen_led2_pwm2",
++};
++
++static const char * const pwm_group[] = {
++	"gpio1_vbus_det_led1_pwm1",
++	"gpio2_regen_led2_pwm2",
++};
++
++static const char * const regen_group[] = {
++	"gpio2_regen_led2_pwm2",
++};
++
++static const char * const sysen_group[] = {
++	"gpio4_sysen1",
++	"gpio6_sysen2",
++};
++
++static const char * const clk32kgaudio_group[] = {
++	"gpio5_clk32kgaudio_usb_psel",
++};
++
++static const char * const id_group[] = {
++	"gpio0_id",
++};
++
++static const char * const vbus_det_group[] = {
++	"gpio1_vbus_det_led1_pwm1",
++};
++
++static const char * const chrg_det_group[] = {
++	"gpio3_chrg_det",
++};
++
++static const char * const vac_group[] = {
++	"vac",
++};
++
++static const char * const vacok_group[] = {
++	"vac",
++};
++
++static const char * const powergood_group[] = {
++	"powergood_usb_psel",
++};
++
++static const char * const usb_psel_group[] = {
++	"gpio5_clk32kgaudio_usb_psel",
++	"powergood_usb_psel",
++};
++
++static const char * const msecure_group[] = {
++	"gpio7_msecure_pwrhold",
++};
++
++static const char * const pwrhold_group[] = {
++	"gpio7_msecure_pwrhold",
++};
++
++static const char * const int_group[] = {
++	"int",
++};
++
++static const char * const nreswarm_group[] = {
++	"nreswarm",
++};
++
++static const char * const simrsto_group[] = {
++	"gpio12_sim2rsto",
++};
++
++static const char * const simrsti_group[] = {
++	"gpio8_sim1rsti",
++	"gpio15_sim2rsti",
++};
++
++static const char * const low_vbat_group[] = {
++	"gpio9_low_vbat",
++};
++
++static const char * const wireless_chrg1_group[] = {
++	"gpio10_wireless_chrg1",
++};
++
++static const char * const rcm_group[] = {
++	"gpio11_rcm",
++};
++
++static const char * const pwrdown_group[] = {
++	"pwrdown",
++};
++
++static const char * const gpadc_start_group[] = {
++	"gpadc_start",
++};
++
++static const char * const reset_in_group[] = {
++	"reset_in",
++};
++
++static const char * const nsleep_group[] = {
++	"nsleep",
++};
++
++static const char * const enable_group[] = {
++	"enable1",
++	"enable2",
++};
++
++#define FUNCTION_GROUPS					\
++	FUNCTION_GROUP(gpio, GPIO),			\
++	FUNCTION_GROUP(led, LED),			\
++	FUNCTION_GROUP(pwm, PWM),			\
++	FUNCTION_GROUP(regen, REGEN),			\
++	FUNCTION_GROUP(sysen, SYSEN),			\
++	FUNCTION_GROUP(clk32kgaudio, CLK32KGAUDIO),	\
++	FUNCTION_GROUP(id, ID),				\
++	FUNCTION_GROUP(vbus_det, VBUS_DET),		\
++	FUNCTION_GROUP(chrg_det, CHRG_DET),		\
++	FUNCTION_GROUP(vac, VAC),			\
++	FUNCTION_GROUP(vacok, VACOK),			\
++	FUNCTION_GROUP(powergood, POWERGOOD),		\
++	FUNCTION_GROUP(usb_psel, USB_PSEL),		\
++	FUNCTION_GROUP(msecure, MSECURE),		\
++	FUNCTION_GROUP(pwrhold, PWRHOLD),		\
++	FUNCTION_GROUP(int, INT),			\
++	FUNCTION_GROUP(nreswarm, NRESWARM),		\
++	FUNCTION_GROUP(simrsto, SIMRSTO),		\
++	FUNCTION_GROUP(simrsti, SIMRSTI),		\
++	FUNCTION_GROUP(low_vbat, LOW_VBAT),		\
++	FUNCTION_GROUP(wireless_chrg1, WIRELESS_CHRG1),	\
++	FUNCTION_GROUP(rcm, RCM),			\
++	FUNCTION_GROUP(pwrdown, PWRDOWN),		\
++	FUNCTION_GROUP(gpadc_start, GPADC_START),	\
++	FUNCTION_GROUP(reset_in, RESET_IN),		\
++	FUNCTION_GROUP(nsleep, NSLEEP),			\
++	FUNCTION_GROUP(enable, ENABLE)
++
++static const struct palmas_pin_function palmas_pin_function[] = {
++#undef FUNCTION_GROUP
++#define FUNCTION_GROUP(fname, mux)			\
++	{						\
++		.name = #fname,				\
++		.groups = fname##_group,		\
++		.ngroups = ARRAY_SIZE(fname##_group),	\
 +	}
 +
-+	memset(new_map + old_num, 0, (new_num - old_num) * sizeof(*new_map));
++	FUNCTION_GROUPS,
++};
 +
-+	*map = new_map;
-+	*reserved_maps = new_num;
-+	return 0;
++enum palmas_pinmux {
++#undef FUNCTION_GROUP
++#define FUNCTION_GROUP(fname, mux)	PALMAS_PINMUX_##mux
++	FUNCTION_GROUPS,
++	PALMAS_PINMUX_INVALID = 0xFFFF,
++	PALMAS_PINMUX_NA = PALMAS_PINMUX_INVALID,
++};
++
++struct palmas_pins_pullup_dn_info {
++	int pullup_dn_reg_base;
++	int pullup_dn_reg_add;
++	int pullup_dn_mask;
++	int normal_val;
++	int pull_up_val;
++	int pull_dn_val;
++};
++
++struct palmas_pins_od_info {
++	int od_reg_base;
++	int od_reg_add;
++	int od_mask;
++	int od_enable;
++	int od_disable;
++};
++
++struct palmas_pin_info {
++	enum palmas_pinmux mux_opt;
++	const struct palmas_pins_pullup_dn_info *pud_info;
++	const struct palmas_pins_od_info *od_info;
++};
++
++struct palmas_pingroup {
++	const char *name;
++	const unsigned *pins;
++	unsigned npins;
++	unsigned mux_reg_base;
++	unsigned mux_reg_add;
++	unsigned mux_reg_mask;
++	unsigned mux_bit_shift;
++	const struct palmas_pin_info *opt[4];
++};
++
++#define PULL_UP_DN(_name, _rbase, _add, _mask, _nv, _uv, _dv)		\
++static const struct palmas_pins_pullup_dn_info pud_##_name##_info = {	\
++	.pullup_dn_reg_base = PALMAS_##_rbase##_BASE,			\
++	.pullup_dn_reg_add = _add,					\
++	.pullup_dn_mask = _mask,					\
++	.normal_val = _nv,						\
++	.pull_up_val = _uv,						\
++	.pull_dn_val = _dv,						\
 +}
-+EXPORT_SYMBOL_GPL(pinconf_generic_reserve_map);
 +
-+int pinconf_generic_add_map_mux(struct pinctrl_map **map,
-+		unsigned *reserved_maps, unsigned *num_maps,
-+		const char *group, const char *function)
-+{
-+	if (WARN_ON(*num_maps == *reserved_maps))
-+		return -ENOSPC;
++PULL_UP_DN(nreswarm,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL1,	0x2,	0x0,	0x2,	-1);
++PULL_UP_DN(pwrdown,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL1,	0x4,	0x0,	-1,	0x4);
++PULL_UP_DN(gpadc_start,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL1,	0x30,	0x0,	0x20,	0x10);
++PULL_UP_DN(reset_in,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL1,	0x40,	0x0,	-1,	0x40);
++PULL_UP_DN(nsleep,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x3,	0x0,	0x2,	0x1);
++PULL_UP_DN(enable1,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0xC,	0x0,	0x8,	0x4);
++PULL_UP_DN(enable2,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x30,	0x0,	0x20,	0x10);
++PULL_UP_DN(vacok,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x40,	0x0,	-1,	0x40);
++PULL_UP_DN(chrg_det,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x10,	0x0,	-1,	0x10);
++PULL_UP_DN(pwrhold,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x4,	0x0,	-1,	0x4);
++PULL_UP_DN(msecure,	PU_PD_OD,	PALMAS_PU_PD_INPUT_CTRL2,	0x1,	0x0,	-1,	0x1);
++PULL_UP_DN(id,		USB_OTG,	PALMAS_USB_ID_CTRL_SET,		0x40,	0x0,	0x40,	-1);
++PULL_UP_DN(gpio0,	GPIO,		PALMAS_PU_PD_GPIO_CTRL1,	0x04,	0,	-1,	1);
++PULL_UP_DN(gpio1,	GPIO,		PALMAS_PU_PD_GPIO_CTRL1,	0x0C,	0,	0x8,	0x4);
++PULL_UP_DN(gpio2,	GPIO,		PALMAS_PU_PD_GPIO_CTRL1,	0x30,	0x0,	0x20,	0x10);
++PULL_UP_DN(gpio3,	GPIO,		PALMAS_PU_PD_GPIO_CTRL1,	0x40,	0x0,	-1,	0x40);
++PULL_UP_DN(gpio4,	GPIO,		PALMAS_PU_PD_GPIO_CTRL2,	0x03,	0x0,	0x2,	0x1);
++PULL_UP_DN(gpio5,	GPIO,		PALMAS_PU_PD_GPIO_CTRL2,	0x0c,	0x0,	0x8,	0x4);
++PULL_UP_DN(gpio6,	GPIO,		PALMAS_PU_PD_GPIO_CTRL2,	0x30,	0x0,	0x20,	0x10);
++PULL_UP_DN(gpio7,	GPIO,		PALMAS_PU_PD_GPIO_CTRL2,	0x40,	0x0,	-1,	0x40);
++PULL_UP_DN(gpio9,	GPIO,		PALMAS_PU_PD_GPIO_CTRL3,	0x0C,	0x0,	0x8,	0x4);
++PULL_UP_DN(gpio10,	GPIO,		PALMAS_PU_PD_GPIO_CTRL3,	0x30,	0x0,	0x20,	0x10);
++PULL_UP_DN(gpio11,	GPIO,		PALMAS_PU_PD_GPIO_CTRL3,	0xC0,	0x0,	0x80,	0x40);
++PULL_UP_DN(gpio13,	GPIO,		PALMAS_PU_PD_GPIO_CTRL4,	0x04,	0x0,	-1,	0x04);
++PULL_UP_DN(gpio14,	GPIO,		PALMAS_PU_PD_GPIO_CTRL4,	0x30,	0x0,	0x20,	0x10);
 +
-+	(*map)[*num_maps].type = PIN_MAP_TYPE_MUX_GROUP;
-+	(*map)[*num_maps].data.mux.group = group;
-+	(*map)[*num_maps].data.mux.function = function;
-+	(*num_maps)++;
-+
-+	return 0;
++#define OD_INFO(_name, _rbase, _add, _mask, _ev, _dv)		\
++static const struct palmas_pins_od_info od_##_name##_info = {	\
++	.od_reg_base = PALMAS_##_rbase##_BASE,			\
++	.od_reg_add = _add,					\
++	.od_mask = _mask,					\
++	.od_enable = _ev,					\
++	.od_disable = _dv,					\
 +}
-+EXPORT_SYMBOL_GPL(pinconf_generic_add_map_mux);
 +
-+int pinconf_generic_add_map_configs(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, const char *group,
-+		unsigned long *configs, unsigned num_configs)
-+{
-+	unsigned long *dup_configs;
++OD_INFO(gpio1,	GPIO,	PALMAS_OD_OUTPUT_GPIO_CTRL,	0x1,	0x1,	0x0);
++OD_INFO(gpio2,	GPIO,	PALMAS_OD_OUTPUT_GPIO_CTRL,	0x2,	0x2,	0x0);
++OD_INFO(gpio5,	GPIO,	PALMAS_OD_OUTPUT_GPIO_CTRL,	0x20,	0x20,	0x0);
++OD_INFO(gpio10,	GPIO,	PALMAS_OD_OUTPUT_GPIO_CTRL2,	0x04,	0x04,	0x0);
++OD_INFO(gpio13,	GPIO,	PALMAS_OD_OUTPUT_GPIO_CTRL2,	0x20,	0x20,	0x0);
++OD_INFO(int,		PU_PD_OD,	PALMAS_OD_OUTPUT_CTRL,	0x8,	0x8,	0x0);
++OD_INFO(pwm1,		PU_PD_OD,	PALMAS_OD_OUTPUT_CTRL,	0x20,	0x20,	0x0);
++OD_INFO(pwm2,		PU_PD_OD,	PALMAS_OD_OUTPUT_CTRL,	0x80,	0x80,	0x0);
++OD_INFO(vbus_det,	PU_PD_OD,	PALMAS_OD_OUTPUT_CTRL,	0x40,	0x40,	0x0);
 +
-+	if (WARN_ON(*num_maps == *reserved_maps))
-+		return -ENOSPC;
++#define PIN_INFO(_name, _id, _pud_info, _od_info)		\
++static const struct palmas_pin_info pin_##_name##_info = {	\
++	.mux_opt = PALMAS_PINMUX_##_id,				\
++	.pud_info = _pud_info,					\
++	.od_info = _od_info					\
++}
 +
-+	dup_configs = kmemdup(configs, num_configs * sizeof(*dup_configs),
-+			      GFP_KERNEL);
-+	if (!dup_configs) {
-+		dev_err(dev, "kmemdup(configs) failed\n");
-+		return -ENOMEM;
++PIN_INFO(gpio0,		GPIO,		&pud_gpio0_info,	NULL);
++PIN_INFO(gpio1,		GPIO,		&pud_gpio1_info,	&od_gpio1_info);
++PIN_INFO(gpio2,		GPIO,		&pud_gpio2_info,	&od_gpio2_info);
++PIN_INFO(gpio3,		GPIO,		&pud_gpio3_info,	NULL);
++PIN_INFO(gpio4,		GPIO,		&pud_gpio4_info,	NULL);
++PIN_INFO(gpio5,		GPIO,		&pud_gpio5_info,	&od_gpio5_info);
++PIN_INFO(gpio6,		GPIO,		&pud_gpio6_info,	NULL);
++PIN_INFO(gpio7,		GPIO,		&pud_gpio7_info,	NULL);
++PIN_INFO(gpio8,		GPIO,		NULL,			NULL);
++PIN_INFO(gpio9,		GPIO,		&pud_gpio9_info,	NULL);
++PIN_INFO(gpio10,	GPIO,		&pud_gpio10_info,	&od_gpio10_info);
++PIN_INFO(gpio11,	GPIO,		&pud_gpio11_info,	NULL);
++PIN_INFO(gpio12,	GPIO,		NULL,			NULL);
++PIN_INFO(gpio13,	GPIO,		&pud_gpio13_info,	&od_gpio13_info);
++PIN_INFO(gpio14,	GPIO,		&pud_gpio14_info,	NULL);
++PIN_INFO(gpio15,	GPIO,		NULL,			NULL);
++PIN_INFO(id,		ID,		&pud_id_info,		NULL);
++PIN_INFO(led1,		LED,		NULL,			NULL);
++PIN_INFO(led2,		LED,		NULL,			NULL);
++PIN_INFO(regen,		REGEN,		NULL,			NULL);
++PIN_INFO(sysen1,	SYSEN,		NULL,			NULL);
++PIN_INFO(sysen2,	SYSEN,		NULL,			NULL);
++PIN_INFO(int,		INT,		NULL,			&od_int_info);
++PIN_INFO(pwm1,		PWM,		NULL,			&od_pwm1_info);
++PIN_INFO(pwm2,		PWM,		NULL,			&od_pwm2_info);
++PIN_INFO(vacok,		VACOK,		&pud_vacok_info,	NULL);
++PIN_INFO(chrg_det,	CHRG_DET,	&pud_chrg_det_info,	NULL);
++PIN_INFO(pwrhold,	PWRHOLD,	&pud_pwrhold_info,	NULL);
++PIN_INFO(msecure,	MSECURE,	&pud_msecure_info,	NULL);
++PIN_INFO(nreswarm,	NA,		&pud_nreswarm_info,	NULL);
++PIN_INFO(pwrdown,	NA,		&pud_pwrdown_info,	NULL);
++PIN_INFO(gpadc_start,	NA,		&pud_gpadc_start_info,	NULL);
++PIN_INFO(reset_in,	NA,		&pud_reset_in_info,	NULL);
++PIN_INFO(nsleep,	NA,		&pud_nsleep_info,	NULL);
++PIN_INFO(enable1,	NA,		&pud_enable1_info,	NULL);
++PIN_INFO(enable2,	NA,		&pud_enable2_info,	NULL);
++PIN_INFO(clk32kgaudio,	CLK32KGAUDIO,	NULL,			NULL);
++PIN_INFO(usb_psel,	USB_PSEL,	NULL,			NULL);
++PIN_INFO(vac,		VAC,		NULL,			NULL);
++PIN_INFO(powergood,	POWERGOOD,	NULL,			NULL);
++PIN_INFO(vbus_det,	VBUS_DET,	NULL,			&od_vbus_det_info);
++PIN_INFO(sim1rsti,	SIMRSTI,	NULL,			NULL);
++PIN_INFO(low_vbat,	LOW_VBAT,	NULL,			NULL);
++PIN_INFO(rcm,		RCM,		NULL,			NULL);
++PIN_INFO(sim2rsto,	SIMRSTO,	NULL,			NULL);
++PIN_INFO(sim2rsti,	SIMRSTI,	NULL,			NULL);
++PIN_INFO(wireless_chrg1,	WIRELESS_CHRG1,	NULL,		NULL);
++
++#define PALMAS_PRIMARY_SECONDARY_NONE	0
++#define PALMAS_NONE_BASE		0
++#define PALMAS_PRIMARY_SECONDARY_INPUT3 PALMAS_PU_PD_INPUT_CTRL3
++
++#define PALMAS_PINGROUP(pg_name, base, reg, _mask, _bshift, o0, o1, o2, o3)  \
++	{								\
++		.name = #pg_name,					\
++		.pins = palmas_pin_##pg_name##_pins,			\
++		.npins = ARRAY_SIZE(palmas_pin_##pg_name##_pins),	\
++		.mux_reg_base = PALMAS_##base##_BASE,			\
++		.mux_reg_add = PALMAS_PRIMARY_SECONDARY_##reg,		\
++		.mux_reg_mask = _mask,					\
++		.mux_bit_shift = _bshift,				\
++		.opt = {						\
++			o0,						\
++			o1,						\
++			o2,						\
++			o3,						\
++		},							\
 +	}
 +
-+	(*map)[*num_maps].type = PIN_MAP_TYPE_CONFIGS_GROUP;
-+	(*map)[*num_maps].data.configs.group_or_pin = group;
-+	(*map)[*num_maps].data.configs.configs = dup_configs;
-+	(*map)[*num_maps].data.configs.num_configs = num_configs;
-+	(*num_maps)++;
++static const struct palmas_pingroup tps65913_pingroups[] = {
++	PALMAS_PINGROUP(gpio0_id,			PU_PD_OD,	PAD1,	0x4,	0x2,	&pin_gpio0_info,	&pin_id_info,		NULL,		NULL),
++	PALMAS_PINGROUP(gpio1_vbus_det_led1_pwm1,	PU_PD_OD,	PAD1,	0x18,	0x3,	&pin_gpio1_info,	&pin_vbus_det_info,	&pin_led1_info,	&pin_pwm1_info),
++	PALMAS_PINGROUP(gpio2_regen_led2_pwm2,		PU_PD_OD,	PAD1,	0x60,	0x5,	&pin_gpio2_info,	&pin_regen_info,	&pin_led2_info,	&pin_pwm2_info),
++	PALMAS_PINGROUP(gpio3_chrg_det,			PU_PD_OD,	PAD1,	0x80,	0x7,	&pin_gpio3_info,	&pin_chrg_det_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio4_sysen1,			PU_PD_OD,	PAD1,	0x01,	0x0,	&pin_gpio4_info,	&pin_sysen1_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio5_clk32kgaudio_usb_psel,	PU_PD_OD,	PAD2,	0x6,	0x1,	&pin_gpio5_info,	&pin_clk32kgaudio_info,	&pin_usb_psel_info,	NULL),
++	PALMAS_PINGROUP(gpio6_sysen2,			PU_PD_OD,	PAD2,	0x08,	0x3,	&pin_gpio6_info,	&pin_sysen2_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio7_msecure_pwrhold,		PU_PD_OD,	PAD2,	0x30,	0x4,	&pin_gpio7_info,	&pin_msecure_info,	&pin_pwrhold_info,	NULL),
++	PALMAS_PINGROUP(vac,				PU_PD_OD,	INPUT3,	0x02,	0x1,	&pin_vac_info,		&pin_vacok_info,	NULL,		NULL),
++	PALMAS_PINGROUP(powergood_usb_psel,		PU_PD_OD,	INPUT3,	0x01,	0x0,	&pin_powergood_info,	&pin_usb_psel_info,	NULL,	NULL),
++	PALMAS_PINGROUP(nreswarm,			NONE,		NONE,	0x0,	0x0,	&pin_nreswarm_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(pwrdown,			NONE,		NONE,	0x0,	0x0,	&pin_pwrdown_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(gpadc_start,			NONE,		NONE,	0x0,	0x0,	&pin_gpadc_start_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(reset_in,			NONE,		NONE,	0x0,	0x0,	&pin_reset_in_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(nsleep,				NONE,		NONE,	0x0,	0x0,	&pin_nsleep_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(enable1,			NONE,		NONE,	0x0,	0x0,	&pin_enable1_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(enable2,			NONE,		NONE,	0x0,	0x0,	&pin_enable2_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(int,				NONE,		NONE,	0x0,	0x0,	&pin_int_info,		NULL,			NULL,		NULL),
++};
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pinconf_generic_add_map_configs);
++static const struct palmas_pingroup tps80036_pingroups[] = {
++	PALMAS_PINGROUP(gpio0_id,			PU_PD_OD,	PAD1,	0x4,	0x2,	&pin_gpio0_info,	&pin_id_info,		NULL,		NULL),
++	PALMAS_PINGROUP(gpio1_vbus_det_led1_pwm1,	PU_PD_OD,	PAD1,	0x18,	0x3,	&pin_gpio1_info,	&pin_vbus_det_info,	&pin_led1_info,	&pin_pwm1_info),
++	PALMAS_PINGROUP(gpio2_regen_led2_pwm2,		PU_PD_OD,	PAD1,	0x60,	0x5,	&pin_gpio2_info,	&pin_regen_info,	&pin_led2_info,	&pin_pwm2_info),
++	PALMAS_PINGROUP(gpio3_chrg_det,			PU_PD_OD,	PAD1,	0x80,	0x7,	&pin_gpio3_info,	&pin_chrg_det_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio4_sysen1,			PU_PD_OD,	PAD1,	0x01,	0x0,	&pin_gpio4_info,	&pin_sysen1_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio5_clk32kgaudio_usb_psel,	PU_PD_OD,	PAD2,	0x6,	0x1,	&pin_gpio5_info,	&pin_clk32kgaudio_info,	&pin_usb_psel_info,	NULL),
++	PALMAS_PINGROUP(gpio6_sysen2,			PU_PD_OD,	PAD2,	0x08,	0x3,	&pin_gpio6_info,	&pin_sysen2_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio7_msecure_pwrhold,		PU_PD_OD,	PAD2,	0x30,	0x4,	&pin_gpio7_info,	&pin_msecure_info,	&pin_pwrhold_info,	NULL),
++	PALMAS_PINGROUP(gpio8_sim1rsti,			PU_PD_OD,	PAD4,	0x01,	0x0,	&pin_gpio8_info,	&pin_sim1rsti_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio9_low_vbat,			PU_PD_OD,	PAD4,	0x02,	0x1,	&pin_gpio9_info,	&pin_low_vbat_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio10_wireless_chrg1,		PU_PD_OD,	PAD4,	0x04,	0x2,	&pin_gpio10_info,	&pin_wireless_chrg1_info,	NULL,	NULL),
++	PALMAS_PINGROUP(gpio11_rcm,			PU_PD_OD,	PAD4,	0x08,	0x3,	&pin_gpio11_info,	&pin_rcm_info,		NULL,		NULL),
++	PALMAS_PINGROUP(gpio12_sim2rsto,		PU_PD_OD,	PAD4,	0x10,	0x4,	&pin_gpio12_info,	&pin_sim2rsto_info,	NULL,		NULL),
++	PALMAS_PINGROUP(gpio13,				NONE,		NONE,	0x00,	0x0,	&pin_gpio13_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(gpio14,				NONE,		NONE,	0x00,	0x0,	&pin_gpio14_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(gpio15_sim2rsti,		PU_PD_OD,	PAD4,	0x80,	0x7,	&pin_gpio15_info,	&pin_sim2rsti_info,	NULL,		NULL),
++	PALMAS_PINGROUP(vac,				PU_PD_OD,	INPUT3,	0x02,	0x1,	&pin_vac_info,		&pin_vacok_info,	NULL,		NULL),
++	PALMAS_PINGROUP(powergood_usb_psel,		PU_PD_OD,	INPUT3,	0x01,	0x0,	&pin_powergood_info,	&pin_usb_psel_info,	NULL,	NULL),
++	PALMAS_PINGROUP(nreswarm,			NONE,		NONE,	0x0,	0x0,	&pin_nreswarm_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(pwrdown,			NONE,		NONE,	0x0,	0x0,	&pin_pwrdown_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(gpadc_start,			NONE,		NONE,	0x0,	0x0,	&pin_gpadc_start_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(reset_in,			NONE,		NONE,	0x0,	0x0,	&pin_reset_in_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(nsleep,				NONE,		NONE,	0x0,	0x0,	&pin_nsleep_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(enable1,			NONE,		NONE,	0x0,	0x0,	&pin_enable1_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(enable2,			NONE,		NONE,	0x0,	0x0,	&pin_enable2_info,	NULL,			NULL,		NULL),
++	PALMAS_PINGROUP(int,				NONE,		NONE,	0x0,	0x0,	&pin_int_info,		NULL,			NULL,		NULL),
++};
 +
-+int pinconf_generic_add_config(struct device *dev, unsigned long **configs,
-+		      unsigned *num_configs, unsigned long config)
++static int palmas_pinctrl_get_pin_mux(struct palmas_pctrl_chip_info *pci)
 +{
-+	unsigned old_num = *num_configs;
-+	unsigned new_num = old_num + 1;
-+	unsigned long *new_configs;
-+
-+	new_configs = krealloc(*configs, sizeof(*new_configs) * new_num,
-+			       GFP_KERNEL);
-+	if (!new_configs) {
-+		dev_err(dev, "krealloc(configs) failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	new_configs[old_num] = config;
-+
-+	*configs = new_configs;
-+	*num_configs = new_num;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(pinconf_generic_add_config);
-+
-+void pinconf_generic_dt_free_map(struct pinctrl_dev *pctldev,
-+		      struct pinctrl_map *map, unsigned num_maps)
-+{
++	const struct palmas_pingroup *g;
++	unsigned int val;
++	int ret;
 +	int i;
 +
-+	for (i = 0; i < num_maps; i++)
-+		if (map[i].type == PIN_MAP_TYPE_CONFIGS_GROUP)
-+			kfree(map[i].data.configs.configs);
-+
-+	kfree(map);
++	for (i = 0; i < pci->num_pin_groups; ++i) {
++		g = &pci->pin_groups[i];
++		if (g->mux_reg_base == PALMAS_NONE_BASE) {
++			pci->pins_current_opt[i] = 0;
++			continue;
++		}
++		ret = palmas_read(pci->palmas, g->mux_reg_base,
++				g->mux_reg_add, &val);
++		if (ret < 0) {
++			dev_err(pci->dev, "mux_reg 0x%02x read failed: %d\n",
++					g->mux_reg_add, ret);
++			return ret;
++		}
++		val &= g->mux_reg_mask;
++		pci->pins_current_opt[i] = val >> g->mux_bit_shift;
++	}
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(pinconf_generic_dt_free_map);
 +
- #endif
-diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
-index bf7e989..694ea5c 100644
---- a/include/linux/pinctrl/pinconf-generic.h
-+++ b/include/linux/pinctrl/pinconf-generic.h
-@@ -137,6 +137,58 @@ static inline unsigned long pinconf_to_config_packed(enum pin_config_param param
- 	return PIN_CONF_PACKED(param, argument);
- }
++static int palmas_pinctrl_set_dvfs1(struct palmas_pctrl_chip_info *pci,
++		bool enable)
++{
++	int ret;
++	int val;
++
++	val = (enable) ? PALMAS_PRIMARY_SECONDARY_PAD3_DVFS1 : 0;
++	ret = palmas_update_bits(pci->palmas, PALMAS_PU_PD_OD_BASE,
++			PALMAS_PRIMARY_SECONDARY_PAD3,
++			PALMAS_PRIMARY_SECONDARY_PAD3_DVFS1, val);
++	if (ret < 0)
++		dev_err(pci->dev, "SECONDARY_PAD3 update failed %d\n", ret);
++	return ret;
++}
++
++static int palmas_pinctrl_set_dvfs2(struct palmas_pctrl_chip_info *pci,
++		bool enable)
++{
++	int ret;
++	int val;
++
++	val = (enable) ? PALMAS_PRIMARY_SECONDARY_PAD3_DVFS2 : 0;
++	ret = palmas_update_bits(pci->palmas, PALMAS_PU_PD_OD_BASE,
++			PALMAS_PRIMARY_SECONDARY_PAD3,
++			PALMAS_PRIMARY_SECONDARY_PAD3_DVFS2, val);
++	if (ret < 0)
++		dev_err(pci->dev, "SECONDARY_PAD3 update failed %d\n", ret);
++	return ret;
++}
++
++static int palmas_pinctrl_get_groups_count(struct pinctrl_dev *pctldev)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return pci->num_pin_groups;
++}
++
++static const char *palmas_pinctrl_get_group_name(struct pinctrl_dev *pctldev,
++		unsigned group)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return pci->pin_groups[group].name;
++}
++
++static int palmas_pinctrl_get_group_pins(struct pinctrl_dev *pctldev,
++		unsigned group, const unsigned **pins, unsigned *num_pins)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*pins = pci->pin_groups[group].pins;
++	*num_pins = pci->pin_groups[group].npins;
++	return 0;
++}
++
++static int palmas_pinctrl_dt_subnode_to_map(struct device *dev,
++		struct device_node *np, struct pinctrl_map **map,
++		unsigned *reserved_maps, unsigned *num_maps)
++{
++	int ret, i;
++	const char *function;
++	u32 val;
++	unsigned long config;
++	unsigned long *configs = NULL;
++	unsigned num_configs = 0;
++	unsigned reserve;
++	struct property *prop;
++	const char *group;
++
++	ret = of_property_read_string(np, "ti,function", &function);
++	if (ret < 0) {
++		/* EINVAL=missing, which is fine since it's optional */
++		if (ret != -EINVAL)
++			dev_err(dev,
++				"could not parse property nvidia,function\n");
++		function = NULL;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(palams_cfg_params); i++) {
++		ret = of_property_read_u32(np,
++				palams_cfg_params[i].property, &val);
++		if (!ret) {
++			config = PALMAS_PINCONF_PACK(
++					palams_cfg_params[i].param, val);
++			ret = pinconf_generic_add_config(dev, &configs,
++					 &num_configs, config);
++			if (ret < 0)
++				goto exit;
++		/* EINVAL=missing, which is fine since it's optional */
++		} else if (ret != -EINVAL) {
++			dev_err(dev, "could not parse property %s\n",
++				palams_cfg_params[i].property);
++		}
++	}
++
++	reserve = 0;
++	if (function != NULL)
++		reserve++;
++	if (num_configs)
++		reserve++;
++	ret = of_property_count_strings(np, "ti,pins");
++	if (ret < 0) {
++		dev_err(dev, "could not parse property nvidia,pins\n");
++		goto exit;
++	}
++	reserve *= ret;
++
++	ret = pinconf_generic_reserve_map(dev, map, reserved_maps,
++			num_maps, reserve);
++	if (ret < 0)
++		goto exit;
++
++	of_property_for_each_string(np, "ti,pins", prop, group) {
++		if (function) {
++			ret = pinconf_generic_add_map_mux(map, reserved_maps,
++					num_maps, group, function);
++			if (ret < 0)
++				goto exit;
++		}
++
++		if (num_configs) {
++			ret = pinconf_generic_add_map_configs(dev, map,
++					reserved_maps, num_maps, group, configs,
++					num_configs);
++			if (ret < 0)
++				goto exit;
++		}
++	}
++
++	ret = 0;
++
++exit:
++	kfree(configs);
++	return ret;
++}
++
++static int palmas_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
++		struct device_node *np_config, struct pinctrl_map **map,
++		unsigned *num_maps)
++{
++	unsigned reserved_maps;
++	struct device_node *np;
++	int ret;
++
++	reserved_maps = 0;
++	*map = NULL;
++	*num_maps = 0;
++
++	for_each_child_of_node(np_config, np) {
++		ret = palmas_pinctrl_dt_subnode_to_map(pctldev->dev, np, map,
++						&reserved_maps, num_maps);
++		if (ret < 0) {
++			pinconf_generic_dt_free_map(pctldev, *map, *num_maps);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static const struct pinctrl_ops palmas_pinctrl_ops = {
++	.get_groups_count = palmas_pinctrl_get_groups_count,
++	.get_group_name = palmas_pinctrl_get_group_name,
++	.get_group_pins = palmas_pinctrl_get_group_pins,
++	.dt_node_to_map = palmas_pinctrl_dt_node_to_map,
++	.dt_free_map = pinconf_generic_dt_free_map,
++};
++
++static int palmas_pinctrl_get_funcs_count(struct pinctrl_dev *pctldev)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return pci->num_functions;
++}
++
++static const char *palmas_pinctrl_get_func_name(struct pinctrl_dev *pctldev,
++			unsigned function)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	return pci->functions[function].name;
++}
++
++static int palmas_pinctrl_get_func_groups(struct pinctrl_dev *pctldev,
++		unsigned function, const char * const **groups,
++		unsigned * const num_groups)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++
++	*groups = pci->functions[function].groups;
++	*num_groups = pci->functions[function].ngroups;
++	return 0;
++}
++
++static int palmas_pinctrl_enable(struct pinctrl_dev *pctldev, unsigned function,
++		unsigned group)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++	const struct palmas_pingroup *g;
++	int i;
++	int ret;
++
++	g = &pci->pin_groups[group];
++
++	if (g->mux_reg_base == PALMAS_NONE_BASE) {
++		if (WARN_ON(function != 0))
++			return -EINVAL;
++		return 0;
++	}
++
++	for (i = 0; i < ARRAY_SIZE(g->opt); i++) {
++		if (g->opt[i]->mux_opt == function)
++			break;
++	}
++	if (WARN_ON(i == ARRAY_SIZE(g->opt)))
++		return -EINVAL;
++
++	ret = palmas_update_bits(pci->palmas, g->mux_reg_base, g->mux_reg_add,
++			g->mux_reg_mask, i << g->mux_bit_shift);
++	if (ret < 0) {
++		dev_err(pci->dev, "Reg 0x%02x update failed: %d\n",
++				g->mux_reg_add, ret);
++		return ret;
++	}
++	return 0;
++}
++
++static const struct pinmux_ops palmas_pinmux_ops = {
++	.get_functions_count = palmas_pinctrl_get_funcs_count,
++	.get_function_name = palmas_pinctrl_get_func_name,
++	.get_function_groups = palmas_pinctrl_get_func_groups,
++	.enable = palmas_pinctrl_enable,
++};
++
++static int palmas_pinconf_get(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long *config)
++{
++	dev_err(pctldev->dev, "pin_config_get op not supported\n");
++	return -ENOTSUPP;
++}
++
++static int palmas_pinconf_set(struct pinctrl_dev *pctldev,
++			unsigned pin, unsigned long config)
++{
++	dev_err(pctldev->dev, "pin_config_set op not supported\n");
++	return -ENOTSUPP;
++}
++
++static int palmas_pinconf_group_get(struct pinctrl_dev *pctldev,
++				unsigned group, unsigned long *config)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++	enum palmas_pinconf_param param = PALMAS_PINCONF_UNPACK_PARAM(*config);
++	const struct palmas_pingroup *g;
++	const struct palmas_pin_info *opt;
++	int ret;
++	int base, add;
++	int rval;
++	unsigned int val;
++	int arg;
++	bool valid_param = false;
++
++	g = &pci->pin_groups[group];
++	opt = g->opt[pci->pins_current_opt[group]];
++	if (!opt) {
++		dev_err(pci->dev, "Pinconf is not supported for pin %s\n",
++			g->name);
++		return -ENOTSUPP;
++	}
++
++	if (param == PALMAS_PINCONF_PARAM_PULL) {
++		if (!opt->pud_info) {
++			dev_err(pci->dev,
++				"PULL control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		base = opt->pud_info->pullup_dn_reg_base;
++		add = opt->pud_info->pullup_dn_reg_add;
++		ret = palmas_read(pci->palmas, base, add, &val);
++		if (ret < 0) {
++			dev_err(pci->dev, "Reg 0x%02x read failed: %d\n",
++			add, ret);
++			return ret;
++		}
++
++		rval = val & opt->pud_info->pullup_dn_mask;
++		arg = -1;
++		if ((opt->pud_info->normal_val >= 0) &&
++				(opt->pud_info->normal_val == rval))
++			arg = 0;
++		else if ((opt->pud_info->pull_up_val >= 0) &&
++				(opt->pud_info->pull_up_val == rval))
++			arg = 1;
++		else if ((opt->pud_info->pull_dn_val >= 0) &&
++				(opt->pud_info->pull_dn_val == rval))
++			arg = 2;
++		if (arg < 0) {
++			dev_err(pci->dev, "PULL control not found for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		valid_param = true;
++	}
++
++	if (param == PALMAS_PINCONF_PARAM_OPEN_DRAIN) {
++		if (!opt->od_info) {
++			dev_err(pci->dev,
++				"OD control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		base = opt->od_info->od_reg_base;
++		add = opt->od_info->od_reg_add;
++		ret = palmas_read(pci->palmas, base, add, &val);
++		if (ret < 0) {
++			dev_err(pci->dev, "Reg 0x%02x read failed: %d\n",
++			add, ret);
++			return ret;
++		}
++		rval = val & opt->od_info->od_mask;
++		arg = -1;
++		if ((opt->od_info->od_disable >= 0) &&
++					(opt->od_info->od_disable == rval))
++			arg = 0;
++		else if ((opt->od_info->od_enable >= 0) &&
++					(opt->od_info->od_enable == rval))
++			arg = 1;
++		if (arg < 0) {
++			dev_err(pci->dev,
++				"OD control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		valid_param = true;
++	}
++
++	if (!valid_param) {
++		dev_err(pci->dev, "Invalid Parameter\n");
++		return -ENOTSUPP;
++	}
++	*config = PALMAS_PINCONF_PACK(param, arg);
++	return 0;
++}
++
++static int palmas_pinconf_group_set(struct pinctrl_dev *pctldev,
++				unsigned group, unsigned long config)
++{
++	struct palmas_pctrl_chip_info *pci = pinctrl_dev_get_drvdata(pctldev);
++	enum palmas_pinconf_param param = PALMAS_PINCONF_UNPACK_PARAM(config);
++	int param_val = PALMAS_PINCONF_UNPACK_ARG(config);
++	const struct palmas_pingroup *g;
++	const struct palmas_pin_info *opt;
++	int ret;
++	int base, add, mask;
++	int rval;
++	bool valid_param = false;
++
++	g = &pci->pin_groups[group];
++	opt = g->opt[pci->pins_current_opt[group]];
++	if (!opt) {
++		dev_err(pci->dev, "Pinconf is not supported for pin %s\n",
++			g->name);
++		return -ENOTSUPP;
++	}
++
++	if (param == PALMAS_PINCONF_PARAM_PULL) {
++		if (!opt->pud_info) {
++			dev_err(pci->dev,
++				"PULL control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		base = opt->pud_info->pullup_dn_reg_base;
++		add = opt->pud_info->pullup_dn_reg_add;
++		mask = opt->pud_info->pullup_dn_mask;
++		if (param_val == 0)
++			rval = opt->pud_info->normal_val;
++		else if (param_val == 1)
++			rval = opt->pud_info->pull_up_val;
++		else
++			rval = opt->pud_info->pull_dn_val;
++		if (rval < 0) {
++			dev_err(pci->dev,
++				"PULL control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		valid_param = true;
++	}
++
++	if (param == PALMAS_PINCONF_PARAM_OPEN_DRAIN) {
++		if (!opt->od_info) {
++			dev_err(pci->dev,
++				"OD control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		base = opt->od_info->od_reg_base;
++		add = opt->od_info->od_reg_add;
++		mask = opt->od_info->od_mask;
++		if (param_val == 0)
++			rval = opt->od_info->od_disable;
++		else
++			rval = opt->od_info->od_enable;
++		if (rval < 0) {
++			dev_err(pci->dev,
++				"OD control not supported for pin %s\n",
++				g->name);
++			return -ENOTSUPP;
++		}
++		valid_param = true;
++	}
++	if (!valid_param) {
++		dev_err(pci->dev, "Invalid parameter\n");
++		return -ENOTSUPP;
++	}
++
++	ret = palmas_update_bits(pci->palmas, base, add, mask, rval);
++	if (ret < 0) {
++		dev_err(pci->dev, "Reg 0x%02x update failed: %d\n", add, ret);
++		return ret;
++	}
++	return 0;
++}
++
++static const struct pinconf_ops palmas_pinconf_ops = {
++	.pin_config_get = palmas_pinconf_get,
++	.pin_config_set = palmas_pinconf_set,
++	.pin_config_group_get = palmas_pinconf_group_get,
++	.pin_config_group_set = palmas_pinconf_group_set,
++};
++
++static struct pinctrl_desc palmas_pinctrl_desc = {
++	.pctlops = &palmas_pinctrl_ops,
++	.pmxops = &palmas_pinmux_ops,
++	.confops = &palmas_pinconf_ops,
++	.owner = THIS_MODULE,
++};
++
++struct palams_pinctrl_data {
++	const struct palmas_pingroup *pin_groups;
++	int num_pin_groups;
++};
++
++static struct palams_pinctrl_data tps65913_pinctrl_data = {
++	.pin_groups = tps65913_pingroups,
++	.num_pin_groups = ARRAY_SIZE(tps65913_pingroups),
++};
++
++static struct palams_pinctrl_data tps80036_pinctrl_data = {
++	.pin_groups = tps80036_pingroups,
++	.num_pin_groups = ARRAY_SIZE(tps80036_pingroups),
++};
++
++static struct of_device_id palmas_pinctrl_of_match[] = {
++	{ .compatible = "ti,palmas-pinctrl", .data = &tps65913_pinctrl_data},
++	{ .compatible = "ti,tps65913-pinctrl", .data = &tps65913_pinctrl_data},
++	{ .compatible = "ti,tps80036-pinctrl", .data = &tps80036_pinctrl_data},
++	{ },
++};
++MODULE_DEVICE_TABLE(of, palmas_pinctrl_of_match);
++
++static int palmas_pinctrl_probe(struct platform_device *pdev)
++{
++	struct palmas_pctrl_chip_info *pci;
++	const struct palams_pinctrl_data *pinctrl_data = &tps65913_pinctrl_data;
++	int ret;
++	bool enable_dvfs1 = false;
++	bool enable_dvfs2 = false;
++
++	if (pdev->dev.of_node) {
++		const struct of_device_id *match;
++		match = of_match_device(palmas_pinctrl_of_match, &pdev->dev);
++		pinctrl_data = match->data;
++		enable_dvfs1 = of_property_read_bool(pdev->dev.of_node,
++					"ti,palams-enable-dvfs1");
++		enable_dvfs2 = of_property_read_bool(pdev->dev.of_node,
++					"ti,palams-enable-dvfs2");
++	}
++
++	pci = devm_kzalloc(&pdev->dev, sizeof(*pci), GFP_KERNEL);
++	if (!pci) {
++		dev_err(&pdev->dev, "Malloc for pci failed\n");
++		return -ENOMEM;
++	}
++
++	pci->dev = &pdev->dev;
++	pci->palmas = dev_get_drvdata(pdev->dev.parent);
++
++	pci->pins = palmas_pins_desc;
++	pci->num_pins = ARRAY_SIZE(palmas_pins_desc);
++	pci->functions = palmas_pin_function;
++	pci->num_functions = ARRAY_SIZE(palmas_pin_function);
++	pci->pin_groups = pinctrl_data->pin_groups;
++	pci->num_pin_groups = pinctrl_data->num_pin_groups;
++
++	platform_set_drvdata(pdev, pci);
++
++	palmas_pinctrl_set_dvfs1(pci, enable_dvfs1);
++	palmas_pinctrl_set_dvfs2(pci, enable_dvfs2);
++	ret = palmas_pinctrl_get_pin_mux(pci);
++	if (ret < 0) {
++		dev_err(&pdev->dev,
++			"Reading pinctrol option register failed: %d\n", ret);
++		return ret;
++	}
++
++	palmas_pinctrl_desc.name = dev_name(&pdev->dev);
++	palmas_pinctrl_desc.pins = palmas_pins_desc;
++	palmas_pinctrl_desc.npins = ARRAY_SIZE(palmas_pins_desc);
++	pci->pctl = pinctrl_register(&palmas_pinctrl_desc, &pdev->dev, pci);
++	if (!pci->pctl) {
++		dev_err(&pdev->dev, "Couldn't register pinctrl driver\n");
++		return -ENODEV;
++	}
++	return 0;
++}
++
++static int palmas_pinctrl_remove(struct platform_device *pdev)
++{
++	struct palmas_pctrl_chip_info *pci = platform_get_drvdata(pdev);
++
++	pinctrl_unregister(pci->pctl);
++	return 0;
++}
++
++static struct platform_driver palmas_pinctrl_driver = {
++	.driver = {
++		.name = "palmas-pinctrl",
++		.owner = THIS_MODULE,
++		.of_match_table = palmas_pinctrl_of_match,
++	},
++	.probe = palmas_pinctrl_probe,
++	.remove = palmas_pinctrl_remove,
++};
++
++static int __init palmas_pinctrl_init(void)
++{
++	return platform_driver_register(&palmas_pinctrl_driver);
++}
++subsys_initcall(palmas_pinctrl_init);
++
++static void __exit palmas_pinctrl_exit(void)
++{
++	platform_driver_unregister(&palmas_pinctrl_driver);
++}
++module_exit(palmas_pinctrl_exit);
++
++MODULE_DESCRIPTION("palmas pin control driver");
++MODULE_AUTHOR("Laxman Dewangan<ldewangan@nvidia.com>");
++MODULE_ALIAS("platform:palmas-pinctrl");
++MODULE_LICENSE("GPL v2");
+diff --git a/include/linux/mfd/palmas.h b/include/linux/mfd/palmas.h
+index 1a8dd7a..2891f7c 100644
+--- a/include/linux/mfd/palmas.h
++++ b/include/linux/mfd/palmas.h
+@@ -449,7 +449,7 @@ enum usb_irq_events {
+ #define PALMAS_DVFS_BASE					0x180
+ #define PALMAS_PMU_CONTROL_BASE					0x1A0
+ #define PALMAS_RESOURCE_BASE					0x1D4
+-#define PALMAS_PU_PD_OD_BASE					0x1F4
++#define PALMAS_PU_PD_OD_BASE					0x1F0
+ #define PALMAS_LED_BASE						0x200
+ #define PALMAS_INTERRUPT_BASE					0x210
+ #define PALMAS_USB_OTG_BASE					0x250
+@@ -1734,16 +1734,20 @@ enum usb_irq_events {
+ #define PALMAS_REGEN3_CTRL_MODE_ACTIVE_SHIFT			0
  
-+int pinconf_generic_reserve_map(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, unsigned reserve);
-+
-+int pinconf_generic_add_map_mux(struct pinctrl_map **map,
-+		unsigned *reserved_maps, unsigned *num_maps,
-+		const char *group, const char *function);
-+
-+int pinconf_generic_add_map_configs(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, const char *group,
-+		unsigned long *configs, unsigned num_configs);
-+
-+int pinconf_generic_add_config(struct device *dev, unsigned long **configs,
-+		unsigned *num_configs, unsigned long config);
-+
-+void pinconf_generic_dt_free_map(struct pinctrl_dev *pctldev,
-+		struct pinctrl_map *map, unsigned num_maps);
-+#else
-+static inline int pinconf_generic_reserve_map(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, unsigned reserve)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline int pinconf_generic_add_map_mux(struct pinctrl_map **map,
-+		unsigned *reserved_maps, unsigned *num_maps,
-+		const char *group, const char *function)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline int pinconf_generic_add_map_configs(struct device *dev,
-+		struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, const char *group,
-+		unsigned long *configs, unsigned num_configs)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline int pinconf_generic_add_config(struct device *dev,
-+		unsigned long **configs, unsigned *num_configs,
-+		unsigned long config)
-+{
-+	return -ENOTSUPP;
-+}
-+
-+static inline void pinconf_generic_dt_free_map(struct pinctrl_dev *pctldev,
-+		struct pinctrl_map *map, unsigned num_maps)
-+{
-+}
- #endif /* CONFIG_GENERIC_PINCONF */
+ /* Registers for function PAD_CONTROL */
+-#define PALMAS_PU_PD_INPUT_CTRL1				0x0
+-#define PALMAS_PU_PD_INPUT_CTRL2				0x1
+-#define PALMAS_PU_PD_INPUT_CTRL3				0x2
+-#define PALMAS_OD_OUTPUT_CTRL					0x4
+-#define PALMAS_POLARITY_CTRL					0x5
+-#define PALMAS_PRIMARY_SECONDARY_PAD1				0x6
+-#define PALMAS_PRIMARY_SECONDARY_PAD2				0x7
+-#define PALMAS_I2C_SPI						0x8
+-#define PALMAS_PU_PD_INPUT_CTRL4				0x9
+-#define PALMAS_PRIMARY_SECONDARY_PAD3				0xA
++#define PALMAS_OD_OUTPUT_CTRL2					0x2
++#define PALMAS_POLARITY_CTRL2					0x3
++#define PALMAS_PU_PD_INPUT_CTRL1				0x4
++#define PALMAS_PU_PD_INPUT_CTRL2				0x5
++#define PALMAS_PU_PD_INPUT_CTRL3				0x6
++#define PALMAS_PU_PD_INPUT_CTRL5				0x7
++#define PALMAS_OD_OUTPUT_CTRL					0x8
++#define PALMAS_POLARITY_CTRL					0x9
++#define PALMAS_PRIMARY_SECONDARY_PAD1				0xA
++#define PALMAS_PRIMARY_SECONDARY_PAD2				0xB
++#define PALMAS_I2C_SPI						0xC
++#define PALMAS_PU_PD_INPUT_CTRL4				0xD
++#define PALMAS_PRIMARY_SECONDARY_PAD3				0xE
++#define PALMAS_PRIMARY_SECONDARY_PAD4				0xF
  
- #endif /* __LINUX_PINCTRL_PINCONF_GENERIC_H */
+ /* Bit definitions for PU_PD_INPUT_CTRL1 */
+ #define PALMAS_PU_PD_INPUT_CTRL1_RESET_IN_PD			0x40
+@@ -2501,6 +2505,15 @@ enum usb_irq_events {
+ #define PALMAS_PU_PD_GPIO_CTRL1					0x6
+ #define PALMAS_PU_PD_GPIO_CTRL2					0x7
+ #define PALMAS_OD_OUTPUT_GPIO_CTRL				0x8
++#define PALMAS_GPIO_DATA_IN2					0x9
++#define PALMAS_GPIO_DATA_DIR2					0x0A
++#define PALMAS_GPIO_DATA_OUT2					0x0B
++#define PALMAS_GPIO_DEBOUNCE_EN2				0x0C
++#define PALMAS_GPIO_CLEAR_DATA_OUT2				0x0D
++#define PALMAS_GPIO_SET_DATA_OUT2				0x0E
++#define PALMAS_PU_PD_GPIO_CTRL3					0x0F
++#define PALMAS_PU_PD_GPIO_CTRL4					0x10
++#define PALMAS_OD_OUTPUT_GPIO_CTRL2				0x11
+ 
+ /* Bit definitions for GPIO_DATA_IN */
+ #define PALMAS_GPIO_DATA_IN_GPIO_7_IN				0x80
 -- 
 1.7.1.1
 
