@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab3GZHjL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:39:11 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:51456 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756515Ab3GZHi6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:38:58 -0400
-Date: Fri, 26 Jul 2013 17:38:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Quigley <merlin@countercultured.net>
-Cc: Eric Paris <eparis@redhat.com>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Quigley <dpquigl@davequigley.com>,
-        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>,
-        Miguel Rodel Felipe <Rodel_FM@dsi.a-star.edu.sg>,
-        Phua Eu Gene <PHUA_Eu_Gene@dsi.a-star.edu.sg>,
-        Khin Mi Mi Aung <Mi_Mi_AUNG@dsi.a-star.edu.sg>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: linux-next: manual merge of the selinux tree with Linus' tree
-Message-Id: <20130726173849.4dabf5c94991228efa0bf03b@canb.auug.org.au>
-In-Reply-To: <06EC4DE7-7DC5-4C80-BA1D-2A96527CA7BF@countercultured.net>
-References: <20130726134823.e4c0a1b7bad087c12b3ce782@canb.auug.org.au>
-	<06EC4DE7-7DC5-4C80-BA1D-2A96527CA7BF@countercultured.net>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+	id S1756675Ab3GZHnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:43:42 -0400
+Received: from know-smtprelay-omc-4.server.virginmedia.net ([80.0.253.68]:50592
+	"EHLO know-smtprelay-omc-4.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752946Ab3GZHnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 03:43:39 -0400
+X-Originating-IP: [81.99.114.138]
+X-Spam: 0
+X-Authority: v=2.0 cv=JuSpN7EC c=1 sm=1 a=rTb9Q+mClrhkGV9Ah9iRIA==:17
+ a=Fov_KbFzXGIA:10 a=IkcTkHD0fZMA:10 a=xqWC_Br6kY4A:10 a=N1CowNylAAAA:8
+ a=FRpz2uVkEx4A:10 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=1GhcjoaP9TfIvqN0zToA:9
+ a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=RT-k-radQS555kWI:21
+ a=ubqhyRkJ84-5_2Wc:21 a=rTb9Q+mClrhkGV9Ah9iRIA==:117
+Message-ID: <1374824590.2254.3.camel@artifact>
+Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
+From: Steven Newbury <steve@snewbury.org.uk>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Aaron Lu <aaron.lu@intel.com>, Kalle Valo <kvalo@adurom.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Date: Fri, 26 Jul 2013 08:43:10 +0100
+In-Reply-To: <2218913.HKGjJcYT1G@vostro.rjw.lan>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
+	 <CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
+	 <9012759.Alzqtdvh5b@vostro.rjw.lan> <2218913.HKGjJcYT1G@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.9.4 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2013-07-25 at 15:00 +0200, Rafael J. Wysocki wrote:
+> On Monday, July 22, 2013 09:54:21 PM Rafael J. Wysocki wrote:
+> > On Monday, July 22, 2013 11:11:54 AM Linus Torvalds wrote:
+> > > On Mon, Jul 22, 2013 at 6:02 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > >
+> > > > Linus, do you want me to send a pull request reverting 8c5bd7a and efaa14c?
+> > > 
+> > > Yes, but let's wait a while. Not because I think we'll fix the problem
+> > > (hey, miracles might happen), but because I think it would be useful
+> > > to couple the reverts with information about the particular machines
+> > > that broke (and the people who reported it). So that when we
+> > > inevitably try again, we can perhaps get some testing effort with
+> > > those machines/people.
+> > > 
+> > > It doesn't seem to be a show-stopped for a large number of people, so
+> > > there's no huge hurry. I'd suggest doing the revert just in time for
+> > > rc3, but waiting until then to gather info about people who see
+> > > breakage.
+> > > 
+> > > Sound like a plan?
+> > 
+> > Yes, it does.
+> 
+> OK, time to revert I guess.
+> 
+> James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
+> fixes the backlight for you.
+> 
+> Aaron, please double check if acpi_video_backlight_quirks() will still work as
+> needed.
+> 
+> Thanks,
+> Rafael
+> 
+> 
+> ---
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Subject: Revert "ACPI / video / i915: No ACPI backlight if firmware expects Windows 8"
+> 
+> We attempted to address a regression introduced by commit a57f7f9
+> (ACPICA: Add Windows8/Server2012 string for _OSI method.) after which
+> ACPI video backlight support doesn't work on a number of systems,
+> because the relevant AML methods in the ACPI tables in their BIOSes
+> become useless after the BIOS has been told that the OS is compatible
+> with Windows 8.  That problem is tracked by the bug entry at:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=51231
+> 
+> Commit 8c5bd7a (ACPI / video / i915: No ACPI backlight if firmware
+> expects Windows 8) introduced for this purpose essentially prevented
+> the ACPI backlight support from being used if the BIOS had been told
+> that the OS was compatible with Windows 8 and the i915 driver was
+> loaded, in which case the backlight would always be handled by i915.
+> Unfortunately, however, that turned out to cause problems with
+> backlight to appear on multiple systems with symptoms indicating that
+> i915 was unable to control the backlight on those systems as
+> expected.
+> 
+> For this reason, revert commit 8c5bd7a, but leave the function
+> acpi_video_backlight_quirks() introduced by it, because another
+> commit on top of it uses that function.
+> 
+Works fine for me.
 
-Hi David,
+Tested-by: Steven Newbury <steve@snewbury.org.uk>
 
-On Thu, 25 Jul 2013 21:22:48 -0700 David Quigley <merlin@countercultured.ne=
-t> wrote:
->
-> I guess my signed off got stripped somewhere. Originally I maintained tho=
-se commits but Steve Dickson from red hat picked them up and they then made=
- it into trond's tree and then into Linus'.
->=20
-> I unfortunately don't have my davequigley.com identities on my iPhone
-> but you can add a sign off by dpquigl@davequigley.com for the commit.
+By the way, I'm willing to test any i915 backlight patches if it helps.
 
-Noone can, it is set in stone in Linus' tree, now.  My comment was just a
-heads up that something went wrong in the process.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR8ieNAAoJEECxmPOUX5FECQYQAI5ZyyA8ba1B7Aolxk2y6JMP
-Dy5FAe27Jgj/TK8sThUsxNyDzWQtmecLqQdD8AfJX4pmlK5eGP5s5K8g5bhlx2Q3
-9Fxs55PgbKRI/vrabzzLVp93371gGRXgU4mxG24kSzg+JraFOg9Yh47mCAbXrsGg
-Ao4do5at6TE2SfxAFhaCc7mC2cU4wCrPukykBlSF2J62t7XV1t80SyszPtAG6PFQ
-CnBDFOd0v7ePxJJT7exrD4h8FaNq9M9oPDpy5IprEkdCaZBf1/h3anU/oiXjb/0f
-rU08OKqOh+eHa8CnI+F12Jh2TNPkwTSSDSzVn1KmbrzPRsDcCcpu0Wbme0PH1mWe
-Cta1GG5cE+CrXTqJSSFA8sdnk9gmF3mzOnYMeSXzwaPzySSty0UFWXHF49B1V3lL
-kSKGZdPE2e/cJZW8fdxlj5nTJREZPsjNqpnRda/imUpS5JzUp81CP95HWyL7YpjA
-HKBrX3IxVKpuX2Icfy66vc+NEXeVncBdYL3Tb6UJChJIxFdVrRa3Fgk2FtDUKsBV
-QTQOloFrBdbQb8zxUqkuYTMWkr5Uso640pL6YA4gktHh39SiAcTNi8Xn8kmfUqcs
-bAZIKFBWHu3RKJbTW7TPbYqtiNooqBoLSntgX7Qf3oopLiuT7AuZjhiOXFLj8dAI
-EbrEPfDBklBj7eXMb03x
-=a8qC
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr--
