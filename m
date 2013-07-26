@@ -1,51 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760705Ab3GZVhT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:37:19 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:46632 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760010Ab3GZVhM (ORCPT
+	id S1760700Ab3GZVhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:37:43 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:64179 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760692Ab3GZVhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:37:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130726211844.GB8508@moon>
-References: <20130726201807.GJ8661@moon> <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
- <20130726211844.GB8508@moon>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Jul 2013 14:36:51 -0700
-Message-ID: <CALCETrW7Ukh8KfKzpNgRc1D_5OK1o7bmEmFbtQTYoSoFiOSeKw@mail.gmail.com>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Jul 2013 17:37:15 -0400
+From: Zubair Lutfullah <zubair.lutfullah@gmail.com>
+To: linux-doc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org
+Subject: [PATCH] mfd: input: arm: dts: doc: ti_am335x: typo fix (coordiante -> coordinate)
+Date: Fri, 26 Jul 2013 22:37:09 +0100
+Message-Id: <1374874630-25457-1-git-send-email-zubair.lutfullah@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 2:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Fri, Jul 26, 2013 at 01:55:04PM -0700, Andy Lutomirski wrote:
->> On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->> > Andy reported that if file page get reclaimed we loose soft-dirty bit
->> > if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
->> > get encoded into pte entry. Thus when #pf happens on such non-present
->> > pte we can restore it back.
->> >
->>
->> Unless I'm misunderstanding this, it's saving the bit in the
->> non-present PTE.  This sounds wrong -- what happens if the entire pmd
->
-> It's the same as encoding pgoff in pte entry (pte is not present),
-> but together with pgoff we save soft-bit status, later on #pf we decode
-> pgoff and restore softbit back if it was there, pte itself can't disappear
-> since it holds pgoff information.
+ 
+Small typo fix. Received ack from mfd already.
+Awaiting acks from all the rest.
 
-Isn't that only the case for nonlinear mappings?
+As Lee from mfd stated, we can remove these during staging now.
+or we'll have to leave typos as is later on.
 
---Andy
+Zubair Lutfullah (1):
+  mfd: input: arm: dts: doc: ti_am335x: typo fixes (coordiante ->
+    coordinate)
+
+ .../bindings/input/touchscreen/ti-tsc-adc.txt      |    4 ++--
+ arch/arm/boot/dts/am335x-evm.dts                   |    2 +-
+ drivers/input/touchscreen/ti_am335x_tsc.c          |    2 +-
+ drivers/mfd/ti_am335x_tscadc.c                     |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
+
+-- 
+1.7.9.5
+
