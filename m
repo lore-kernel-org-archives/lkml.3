@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758468Ab3GZKOd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:14:33 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:41490 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756558Ab3GZKOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:14:30 -0400
+	id S1758448Ab3GZKPu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:15:50 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4295 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756558Ab3GZKPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 06:15:49 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <51F24C47.8060802@broadcom.com>
+Date: Fri, 26 Jul 2013 12:15:35 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374770011-22171-2-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-2-git-send-email-l.majewski@samsung.com>
-Date: Fri, 26 Jul 2013 15:44:29 +0530
-Message-ID: <CAKohpoktwZUvs2ap7wk1tudVsiKjbhFkoM5=+AaFZP=+73fEyg@mail.gmail.com>
-Subject: Re: [PATCH v6 1/8] cpufreq: Store cpufreq policies in a list
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Joel Fernandes" <joelf@ti.com>
+cc: "Roger Quadros" <rogerq@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
+ ethernet
+References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
+ <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com>
+ <51E7E1B7.6090104@broadcom.com> <51E7E2AD.8020106@ti.com>
+ <51F122D5.80205@broadcom.com> <51F1E39D.2030902@ti.com>
+ <51F1E65B.4020005@ti.com> <51F24BD6.9010405@broadcom.com>
+In-Reply-To: <51F24BD6.9010405@broadcom.com>
+X-WSS-ID: 7DEC94ED31W56117046-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> Policies available in a cpufreq framework are now linked together. They are
-> accessible via cpufreq_policy_list defined at cpufreq core.
+On 07/26/2013 12:13 PM, Arend van Spriel wrote:
+> On 07/26/2013 05:00 AM, Joel Fernandes wrote:
+>> On 07/25/2013 09:49 PM, Joel Fernandes wrote:
+>>
+>> [..]
+>>
+>>>> Can I get back on this topic. When USB and ethernet was working for me
+>>>> as stated above, I was not doing tftpboot. When I use tftpboot the
+>>>> images are obtained from the tftp server, but after kernel has started
+>>>> there is nothing in /sys/bus/usb/devices/.
+>>>
+>>> I quickly tried 3.11-rc2 + Roger's USB PHY clock patch on omap4-panda-es
+>>> and enabled following USB options:
+>>>
+>>> CONFIG_USB_MUSB_HDRC=y
+>>> CONFIG_USB_PHY=y
+>>> CONFIG_OMAP_USB2=y
+>>> CONFIG_OMAP_CONTROL_USB=y
+>>> CONFIG_USB_MUSB_OMAP2PLUS=y
+>>> CONFIG_MFD_OMAP_USB_HOST=y
+>>> CONFIG_USB_EHCI_HCD=y
+
+Aaargh. Missing this one. Will retry.
+
+>>> CONFIG_USB_OHCI_HCD=y
+>>> CONFIG_USB_EHCI_HCD_OMAP=y
+>>
+>> Sorry I missed saying I also set had to set CONFIG_NOP_USB_XCEIV=y
 >
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Here are the results of the dutch jury ;-)
+>
+> [    2.537109] HS USB OTG: no transceiver configured
+> [    2.542541] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
+> with status -517
+> [    2.542541] platform musb-hdrc.0.auto: Driver musb-hdrc requests
+> probe deferral
+>
+> I am surely missing something here. Either in device tree or .config.
+>
+> Regards,
+> Arend
 
-Looks good but would have been better if you could have moved
-existing code to use this infrastructure..
 
-For example, this code in __cpufreq_add_dev()
-
-#ifdef CONFIG_HOTPLUG_CPU
-	/* Check if this cpu was hot-unplugged earlier and has siblings */
-	read_lock_irqsave(&cpufreq_driver_lock, flags);
-	for_each_online_cpu(sibling) {
-
-         ---
-
-	}
-	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
-#endif
