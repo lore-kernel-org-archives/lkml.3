@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab3GZQ2T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:28:19 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1868 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756754Ab3GZQ2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:28:15 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51F2A08B.2090207@broadcom.com>
-Date: Fri, 26 Jul 2013 18:15:07 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1759396Ab3GZQ26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:28:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48405 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab3GZQ25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 12:28:57 -0400
+Date: Fri, 26 Jul 2013 09:28:56 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely on
+ list_empty(d_subdirs)
+Message-ID: <20130726162856.GA12531@kroah.com>
+References: <20130723205854.GA9036@redhat.com>
+ <20130724184640.GA21322@redhat.com>
+ <20130725192742.GA14060@redhat.com>
+ <20130725200423.GA22274@redhat.com>
+ <20130725234357.GA14958@kroah.com>
+ <20130726151151.GA19472@redhat.com>
+ <1374852613.6580.35.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: "Steven Rostedt" <rostedt@goodmis.org>
-cc: linux-kernel@vger.kernel.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Alexander Z Lam" <azl@google.com>,
-        "Vaibhav Nagarnaik" <vnagarnaik@google.com>,
-        "David Sharp" <dhsharp@google.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 9/9] tracing: Remove locking trace_types_lock from
- tracing_reset_all_online_cpus()
-References: <20130726130327.911599518@goodmis.org>
- <20130726130513.428993451@goodmis.org>
-In-Reply-To: <20130726130513.428993451@goodmis.org>
-X-WSS-ID: 7DEC7D2431W56242533-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374852613.6580.35.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 03:03 PM, Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)"<rostedt@goodmis.org>
->
-> Commit a82274151af "tracing: Protect ftrace_trace_arrays list in trace_events.c"
-> added taking the trace_types_lock mutex in trace_events.c as there were
-> several locations that needed it for protection. Unfortunately, it also
-> encapsulated a call to tracing_reset_all_online_cpus() which also takes
-> the trace_types_lock, causing a deadlock.
->
-> This happens when a module has tracepoints and has been traced. When the
-> module is removed, the trace events module notifier will grab the
-> trace_types_lock, do a bunch of clean ups, and also clears the buffer
-> by calling tracing_reset_all_online_cpus. This doesn't happen often
-> which explains why it wasn't caught right away.
->
-> Commit a82274151af was marked for stable, which means this must be
-> sent to stable too.
->
-> Link:http://lkml.kernel.org/r/51EEC646.7070306@broadcom.com
->
-> Reported-by: Arend van *Spril*<arend@broadcom.com>
+On Fri, Jul 26, 2013 at 11:30:13AM -0400, Steven Rostedt wrote:
+> On Fri, 2013-07-26 at 17:11 +0200, Oleg Nesterov wrote:
+> > 
+> > Steven, Greg. Assuming that nobody objects and the patch is fine.
+> > Perhaps this patch can be routed via rostedt/linux-trace tree?
+> 
+> I'm fine with pushing it. But that requires Greg's Acked-by.
 
-Nasty dutch names, huh. If we ever meet on a summit you may try to 
-pronounce it :-) Way easier than Finnish.
+I can take it through my driver-core tree, which normally handles
+debugfs patches, so it's no problem for me to take it.
 
-Regards,
-Arend
+Let me beat on it a bit first...
 
-> Tested-by: Arend van *Spriel*<arend@broadcom.com>
-> Cc: Alexander Z Lam<azl@google.com>
-> Cc: Vaibhav Nagarnaik<vnagarnaik@google.com>
-> Cc: David Sharp<dhsharp@google.com>
-> Cc:stable@vger.kernel.org  # 3.10
-> Signed-off-by: Steven Rostedt<rostedt@goodmis.org>
-> ---
->   kernel/trace/trace.c |    3 +--
->   1 file changed, 1 insertion(+), 2 deletions(-)
+thanks,
 
-
+greg k-h
