@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442Ab3GZVQc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:16:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51182 "EHLO
+	id S1760437Ab3GZVRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:17:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51168 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932874Ab3GZUxz (ORCPT
+	with ESMTP id S932956Ab3GZUxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:55 -0400
+	Fri, 26 Jul 2013 16:53:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>,
-        Zhouping Liu <zliu@redhat.com>
-Subject: [ 45/59] [SCSI] zfcp: block queue limits with data router
-Date: Fri, 26 Jul 2013 13:53:09 -0700
-Message-Id: <20130726205018.672065114@linuxfoundation.org>
+        Bert De Jonghe <Bert.DeJonghe@amplidata.com>, Jan Kara <jack@suse.cz>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [ 42/59] writeback: Fix periodic writeback after fs mount
+Date: Fri, 26 Jul 2013 13:53:06 -0700
+Message-Id: <20130726205018.322446610@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -29,76 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 5fea4291deacd80188b996d2f555fc6a1940e5d4 upstream.
+commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
 
-Commit 86a9668a8d29ea711613e1cb37efa68e7c4db564
-"[SCSI] zfcp: support for hardware data router"
-reduced the initial block queue limits in the scsi_host_template to the
-absolute minimum and adjusted them later on. However, the adjustment was
-too late for the BSG devices of Scsi_Host and fc_host.
+Code in blkdev.c moves a device inode to default_backing_dev_info when
+the last reference to the device is put and moves the device inode back
+to its bdi when the first reference is acquired. This includes moving to
+wb.b_dirty list if the device inode is dirty. The code however doesn't
+setup timer to wake corresponding flusher thread and while wb.b_dirty
+list is non-empty __mark_inode_dirty() will not set it up either. Thus
+periodic writeback is effectively disabled until a sync(2) call which can
+lead to unexpected data loss in case of crash or power failure.
 
-Therefore, ioctl(..., SG_IO, ...) with request or response size > 4kB to a
-BSG device of an fc_host or a Scsi_Host fails with EINVAL. As a result,
-users of such ioctl such as HBA_SendCTPassThru() in libzfcphbaapi return
-with error HBA_STATUS_ERROR.
+Fix the problem by setting up a timer for periodic writeback in case we
+add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
 
-Initialize the block queue limits in zfcp_scsi_host_template to the
-greatest common denominator (GCD).
-
-While we cannot exploit the slightly enlarged maximum request size with
-data router, this should be neglectible. Doing so also avoids running into
-trouble after live guest relocation (LGR) / migration from a data router
-FCP device to an FCP device that does not support data router. In that
-case, zfcp would figure out the new limits on adapter recovery, but the
-fc_host and Scsi_Host (plus in fact all sdevs) still exist with the old and
-now too large queue limits.
-
-It should also OK, not to use half the size as in the DIX case, because
-fc_host and Scsi_Host do not transport FCP requests including SCSI commands
-using protection data.
-
-[Backported for 3.4-stable. commit a53c8fa since v3.6-rc1 unified
-copyright messages, e.g: revise such messages 'Copyright IBM Corporation'
-as 'Copyright IBM Corp', so updated the messages as a53c8fa did. - zliu]
-
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Zhouping Liu <zliu@redhat.com>
+Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/s390/scsi/zfcp_scsi.c |   10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+ fs/block_dev.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/s390/scsi/zfcp_scsi.c
-+++ b/drivers/s390/scsi/zfcp_scsi.c
-@@ -3,7 +3,7 @@
-  *
-  * Interface to Linux SCSI midlayer.
-  *
-- * Copyright IBM Corporation 2002, 2010
-+ * Copyright IBM Corp. 2002, 2013
-  */
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -57,17 +57,24 @@ static void bdev_inode_switch_bdi(struct
+ 			struct backing_dev_info *dst)
+ {
+ 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
++	bool wakeup_bdi = false;
  
- #define KMSG_COMPONENT "zfcp"
-@@ -311,8 +311,12 @@ static struct scsi_host_template zfcp_sc
- 	.proc_name		 = "zfcp",
- 	.can_queue		 = 4096,
- 	.this_id		 = -1,
--	.sg_tablesize		 = 1, /* adjusted later */
--	.max_sectors		 = 8, /* adjusted later */
-+	.sg_tablesize		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2),
-+				   /* GCD, adjusted later */
-+	.max_sectors		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
-+				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2) * 8,
-+				   /* GCD, adjusted later */
- 	.dma_boundary		 = ZFCP_QDIO_SBALE_LEN - 1,
- 	.cmd_per_lun		 = 1,
- 	.use_clustering		 = 1,
+ 	if (unlikely(dst == old))		/* deadlock avoidance */
+ 		return;
+ 	bdi_lock_two(&old->wb, &dst->wb);
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_data.backing_dev_info = dst;
+-	if (inode->i_state & I_DIRTY)
++	if (inode->i_state & I_DIRTY) {
++		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
++			wakeup_bdi = true;
+ 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
++	}
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&old->wb.list_lock);
+ 	spin_unlock(&dst->wb.list_lock);
++
++	if (wakeup_bdi)
++		bdi_wakeup_thread_delayed(dst);
+ }
+ 
+ sector_t blkdev_max_block(struct block_device *bdev)
 
 
