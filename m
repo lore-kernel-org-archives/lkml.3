@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760114Ab3GZU6U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:58:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51309 "EHLO
+	id S1760144Ab3GZU62 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:58:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760067Ab3GZU6L (ORCPT
+	with ESMTP id S1760116Ab3GZU6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:11 -0400
+	Fri, 26 Jul 2013 16:58:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 06/45] tracing: Use current_uid() for critical time tracing
-Date: Fri, 26 Jul 2013 13:57:26 -0700
-Message-Id: <20130726205655.604113843@linuxfoundation.org>
+        dingtianhong <dingtianhong@huawei.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chen Weilong <chenweilong@huawei.com>, Cong Wang <amwang@redhat.com>
+Subject: [ 20/45] ipv6,mcast: always hold idev->lock before mca_lock
+Date: Fri, 26 Jul 2013 13:57:40 -0700
+Message-Id: <20130726205657.107956655@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -26,101 +30,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Amerigo Wang <amwang@redhat.com>
 
-commit f17a5194859a82afe4164e938b92035b86c55794 upstream.
+[ Upstream commit 8965779d2c0e6ab246c82a405236b1fb2adae6b2, with
+  some bits from commit b7b1bfce0bb68bd8f6e62a28295922785cc63781
+  ("ipv6: split duplicate address detection and router solicitation timer")
+  to get the __ipv6_get_lladdr() used by this patch. ]
 
-The irqsoff tracer records the max time that interrupts are disabled.
-There are hooks in the assembly code that calls back into the tracer when
-interrupts are disabled or enabled.
+dingtianhong reported the following deadlock detected by lockdep:
 
-When they are enabled, the tracer checks if the amount of time they
-were disabled is larger than the previous recorded max interrupts off
-time. If it is, it creates a snapshot of the currently running trace
-to store where the last largest interrupts off time was held and how
-it happened.
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.4.24.05-0.1-default #1 Not tainted
+ -------------------------------------------------------
+ ksoftirqd/0/3 is trying to acquire lock:
+  (&ndev->lock){+.+...}, at: [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
 
-During testing, this RCU lockdep dump appeared:
+ but task is already holding lock:
+  (&mc->mca_lock){+.+...}, at: [<ffffffff8149d130>] mld_send_report+0x40/0x150
 
-[ 1257.829021] ===============================
-[ 1257.829021] [ INFO: suspicious RCU usage. ]
-[ 1257.829021] 3.10.0-rc1-test+ #171 Tainted: G        W
-[ 1257.829021] -------------------------------
-[ 1257.829021] /home/rostedt/work/git/linux-trace.git/include/linux/rcupdate.h:780 rcu_read_lock() used illegally while idle!
-[ 1257.829021]
-[ 1257.829021] other info that might help us debug this:
-[ 1257.829021]
-[ 1257.829021]
-[ 1257.829021] RCU used illegally from idle CPU!
-[ 1257.829021] rcu_scheduler_active = 1, debug_locks = 0
-[ 1257.829021] RCU used illegally from extended quiescent state!
-[ 1257.829021] 2 locks held by trace-cmd/4831:
-[ 1257.829021]  #0:  (max_trace_lock){......}, at: [<ffffffff810e2b77>] stop_critical_timing+0x1a3/0x209
-[ 1257.829021]  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff810dae5a>] __update_max_tr+0x88/0x1ee
-[ 1257.829021]
-[ 1257.829021] stack backtrace:
-[ 1257.829021] CPU: 3 PID: 4831 Comm: trace-cmd Tainted: G        W    3.10.0-rc1-test+ #171
-[ 1257.829021] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./To be filled by O.E.M., BIOS SDBLI944.86P 05/08/2007
-[ 1257.829021]  0000000000000001 ffff880065f49da8 ffffffff8153dd2b ffff880065f49dd8
-[ 1257.829021]  ffffffff81092a00 ffff88006bd78680 ffff88007add7500 0000000000000003
-[ 1257.829021]  ffff88006bd78680 ffff880065f49e18 ffffffff810daebf ffffffff810dae5a
-[ 1257.829021] Call Trace:
-[ 1257.829021]  [<ffffffff8153dd2b>] dump_stack+0x19/0x1b
-[ 1257.829021]  [<ffffffff81092a00>] lockdep_rcu_suspicious+0x109/0x112
-[ 1257.829021]  [<ffffffff810daebf>] __update_max_tr+0xed/0x1ee
-[ 1257.829021]  [<ffffffff810dae5a>] ? __update_max_tr+0x88/0x1ee
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810dbf85>] update_max_tr_single+0x11d/0x12d
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e2b15>] stop_critical_timing+0x141/0x209
-[ 1257.829021]  [<ffffffff8109569a>] ? trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810e3057>] time_hardirqs_on+0x2a/0x2f
-[ 1257.829021]  [<ffffffff811002b9>] ? user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff8109550c>] trace_hardirqs_on_caller+0x16/0x197
-[ 1257.829021]  [<ffffffff8109569a>] trace_hardirqs_on+0xd/0xf
-[ 1257.829021]  [<ffffffff811002b9>] user_enter+0xfd/0x107
-[ 1257.829021]  [<ffffffff810029b4>] do_notify_resume+0x92/0x97
-[ 1257.829021]  [<ffffffff8154bdca>] int_signal+0x12/0x17
+ which lock already depends on the new lock.
 
-What happened was entering into the user code, the interrupts were enabled
-and a max interrupts off was recorded. The trace buffer was saved along with
-various information about the task: comm, pid, uid, priority, etc.
+ the existing dependency chain (in reverse order) is:
 
-The uid is recorded with task_uid(tsk). But this is a macro that uses rcu_read_lock()
-to retrieve the data, and this happened to happen where RCU is blind (user_enter).
+ -> #1 (&mc->mca_lock){+.+...}:
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f691a>] rt_spin_lock+0x4a/0x60
+        [<ffffffff8149e4bb>] igmp6_group_added+0x3b/0x120
+        [<ffffffff8149e5d8>] ipv6_mc_up+0x38/0x60
+        [<ffffffff81480a4d>] ipv6_find_idev+0x3d/0x80
+        [<ffffffff81483175>] addrconf_notify+0x3d5/0x4b0
+        [<ffffffff814fae3f>] notifier_call_chain+0x3f/0x80
+        [<ffffffff81073471>] raw_notifier_call_chain+0x11/0x20
+        [<ffffffff813d8722>] call_netdevice_notifiers+0x32/0x60
+        [<ffffffff813d92d4>] __dev_notify_flags+0x34/0x80
+        [<ffffffff813d9360>] dev_change_flags+0x40/0x70
+        [<ffffffff813ea627>] do_setlink+0x237/0x8a0
+        [<ffffffff813ebb6c>] rtnl_newlink+0x3ec/0x600
+        [<ffffffff813eb4d0>] rtnetlink_rcv_msg+0x160/0x310
+        [<ffffffff814040b9>] netlink_rcv_skb+0x89/0xb0
+        [<ffffffff813eb357>] rtnetlink_rcv+0x27/0x40
+        [<ffffffff81403e20>] netlink_unicast+0x140/0x180
+        [<ffffffff81404a9e>] netlink_sendmsg+0x33e/0x380
+        [<ffffffff813c4252>] sock_sendmsg+0x112/0x130
+        [<ffffffff813c537e>] __sys_sendmsg+0x44e/0x460
+        [<ffffffff813c5544>] sys_sendmsg+0x44/0x70
+        [<ffffffff814feab9>] system_call_fastpath+0x16/0x1b
 
-As only the preempt and irqs off tracers can have this happen, and they both
-only have the tsk == current, if tsk == current, use current_uid() instead of
-task_uid(), as current_uid() does not use RCU as only current can change its uid.
+ -> #0 (&ndev->lock){+.+...}:
+        [<ffffffff810a798e>] check_prev_add+0x3de/0x440
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f6c82>] rt_read_lock+0x42/0x60
+        [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
+        [<ffffffff8149b036>] mld_newpack+0xb6/0x160
+        [<ffffffff8149b18b>] add_grhead+0xab/0xc0
+        [<ffffffff8149d03b>] add_grec+0x3ab/0x460
+        [<ffffffff8149d14a>] mld_send_report+0x5a/0x150
+        [<ffffffff8149f99e>] igmp6_timer_handler+0x4e/0xb0
+        [<ffffffff8105705a>] call_timer_fn+0xca/0x1d0
+        [<ffffffff81057b9f>] run_timer_softirq+0x1df/0x2e0
+        [<ffffffff8104e8c7>] handle_pending_softirqs+0xf7/0x1f0
+        [<ffffffff8104ea3b>] __do_softirq_common+0x7b/0xf0
+        [<ffffffff8104f07f>] __thread_do_softirq+0x1af/0x210
+        [<ffffffff8104f1c1>] run_ksoftirqd+0xe1/0x1f0
+        [<ffffffff8106c7de>] kthread+0xae/0xc0
+        [<ffffffff814fff74>] kernel_thread_helper+0x4/0x10
 
-This fixes the RCU suspicious splat.
+actually we can just hold idev->lock before taking pmc->mca_lock,
+and avoid taking idev->lock again when iterating idev->addr_list,
+since the upper callers of mld_newpack() already take
+read_lock_bh(&idev->lock).
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: dingtianhong <dingtianhong@huawei.com>
+Cc: dingtianhong <dingtianhong@huawei.com>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Tested-by: Ding Tianhong <dingtianhong@huawei.com>
+Tested-by: Chen Weilong <chenweilong@huawei.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/trace/trace.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ include/net/addrconf.h |    3 +++
+ net/ipv6/addrconf.c    |   28 ++++++++++++++++++----------
+ net/ipv6/mcast.c       |   18 ++++++++++--------
+ 3 files changed, 31 insertions(+), 18 deletions(-)
 
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -628,7 +628,15 @@ __update_max_tr(struct trace_array *tr,
+--- a/include/net/addrconf.h
++++ b/include/net/addrconf.h
+@@ -81,6 +81,9 @@ extern int			ipv6_dev_get_saddr(struct n
+ 					       const struct in6_addr *daddr,
+ 					       unsigned int srcprefs,
+ 					       struct in6_addr *saddr);
++extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
++						  struct in6_addr *addr,
++						  unsigned char banned_flags);
+ extern int			ipv6_get_lladdr(struct net_device *dev,
+ 						struct in6_addr *addr,
+ 						unsigned char banned_flags);
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1235,6 +1235,23 @@ try_nextdev:
+ }
+ EXPORT_SYMBOL(ipv6_dev_get_saddr);
  
- 	memcpy(max_data->comm, tsk->comm, TASK_COMM_LEN);
- 	max_data->pid = tsk->pid;
--	max_data->uid = task_uid(tsk);
-+	/*
-+	 * If tsk == current, then use current_uid(), as that does not use
-+	 * RCU. The irq tracer can be called out of RCU scope.
-+	 */
-+	if (tsk == current)
-+		max_data->uid = current_uid();
-+	else
-+		max_data->uid = task_uid(tsk);
++int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
++		      unsigned char banned_flags)
++{
++	struct inet6_ifaddr *ifp;
++	int err = -EADDRNOTAVAIL;
 +
- 	max_data->nice = tsk->static_prio - 20 - MAX_RT_PRIO;
- 	max_data->policy = tsk->policy;
- 	max_data->rt_priority = tsk->rt_priority;
++	list_for_each_entry(ifp, &idev->addr_list, if_list) {
++		if (ifp->scope == IFA_LINK &&
++		    !(ifp->flags & banned_flags)) {
++			ipv6_addr_copy(addr, &ifp->addr);
++			err = 0;
++			break;
++		}
++	}
++	return err;
++}
++
+ int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
+ 		    unsigned char banned_flags)
+ {
+@@ -1244,17 +1261,8 @@ int ipv6_get_lladdr(struct net_device *d
+ 	rcu_read_lock();
+ 	idev = __in6_dev_get(dev);
+ 	if (idev) {
+-		struct inet6_ifaddr *ifp;
+-
+ 		read_lock_bh(&idev->lock);
+-		list_for_each_entry(ifp, &idev->addr_list, if_list) {
+-			if (ifp->scope == IFA_LINK &&
+-			    !(ifp->flags & banned_flags)) {
+-				ipv6_addr_copy(addr, &ifp->addr);
+-				err = 0;
+-				break;
+-			}
+-		}
++		err = __ipv6_get_lladdr(idev, addr, banned_flags);
+ 		read_unlock_bh(&idev->lock);
+ 	}
+ 	rcu_read_unlock();
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1334,8 +1334,9 @@ mld_scount(struct ifmcaddr6 *pmc, int ty
+ 	return scount;
+ }
+ 
+-static struct sk_buff *mld_newpack(struct net_device *dev, int size)
++static struct sk_buff *mld_newpack(struct inet6_dev *idev, int size)
+ {
++	struct net_device *dev = idev->dev;
+ 	struct net *net = dev_net(dev);
+ 	struct sock *sk = net->ipv6.igmp_sk;
+ 	struct sk_buff *skb;
+@@ -1358,7 +1359,7 @@ static struct sk_buff *mld_newpack(struc
+ 
+ 	skb_reserve(skb, LL_RESERVED_SPACE(dev));
+ 
+-	if (ipv6_get_lladdr(dev, &addr_buf, IFA_F_TENTATIVE)) {
++	if (__ipv6_get_lladdr(idev, &addr_buf, IFA_F_TENTATIVE)) {
+ 		/* <draft-ietf-magma-mld-source-05.txt>:
+ 		 * use unspecified address as the source address
+ 		 * when a valid link-local address is not available.
+@@ -1461,7 +1462,7 @@ static struct sk_buff *add_grhead(struct
+ 	struct mld2_grec *pgr;
+ 
+ 	if (!skb)
+-		skb = mld_newpack(dev, dev->mtu);
++		skb = mld_newpack(pmc->idev, dev->mtu);
+ 	if (!skb)
+ 		return NULL;
+ 	pgr = (struct mld2_grec *)skb_put(skb, sizeof(struct mld2_grec));
+@@ -1481,7 +1482,8 @@ static struct sk_buff *add_grhead(struct
+ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 	int type, int gdeleted, int sdeleted)
+ {
+-	struct net_device *dev = pmc->idev->dev;
++	struct inet6_dev *idev = pmc->idev;
++	struct net_device *dev = idev->dev;
+ 	struct mld2_report *pmr;
+ 	struct mld2_grec *pgr = NULL;
+ 	struct ip6_sf_list *psf, *psf_next, *psf_prev, **psf_list;
+@@ -1510,7 +1512,7 @@ static struct sk_buff *add_grec(struct s
+ 		    AVAILABLE(skb) < grec_size(pmc, type, gdeleted, sdeleted)) {
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 		}
+ 	}
+ 	first = 1;
+@@ -1537,7 +1539,7 @@ static struct sk_buff *add_grec(struct s
+ 				pgr->grec_nsrcs = htons(scount);
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 			first = 1;
+ 			scount = 0;
+ 		}
+@@ -1592,8 +1594,8 @@ static void mld_send_report(struct inet6
+ 	struct sk_buff *skb = NULL;
+ 	int type;
+ 
++	read_lock_bh(&idev->lock);
+ 	if (!pmc) {
+-		read_lock_bh(&idev->lock);
+ 		for (pmc=idev->mc_list; pmc; pmc=pmc->next) {
+ 			if (pmc->mca_flags & MAF_NOREPORT)
+ 				continue;
+@@ -1605,7 +1607,6 @@ static void mld_send_report(struct inet6
+ 			skb = add_grec(skb, pmc, type, 0, 0);
+ 			spin_unlock_bh(&pmc->mca_lock);
+ 		}
+-		read_unlock_bh(&idev->lock);
+ 	} else {
+ 		spin_lock_bh(&pmc->mca_lock);
+ 		if (pmc->mca_sfcount[MCAST_EXCLUDE])
+@@ -1615,6 +1616,7 @@ static void mld_send_report(struct inet6
+ 		skb = add_grec(skb, pmc, type, 0, 0);
+ 		spin_unlock_bh(&pmc->mca_lock);
+ 	}
++	read_unlock_bh(&idev->lock);
+ 	if (skb)
+ 		mld_sendpack(skb);
+ }
 
 
