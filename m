@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411Ab3GZVII (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:08:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
+	id S933368Ab3GZVID (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:08:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51342 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760099Ab3GZU6R (ORCPT
+	with ESMTP id S1760101Ab3GZU6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:58:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Bob Picco <bob.picco@oracle.com>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 12/45] sparc: tsb must be flushed before tlb
-Date: Fri, 26 Jul 2013 13:57:32 -0700
-Message-Id: <20130726205656.276917432@linuxfoundation.org>
+Subject: [ 13/45] bridge: fix switched interval for MLD Query types
+Date: Fri, 26 Jul 2013 13:57:33 -0700
+Message-Id: <20130726205656.378911441@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,35 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Linus Lüssing <linus.luessing@web.de>
 
-This fixes a race where a cpu may re-load a tlb from a stale tsb right
-after it has been flushed by a remote function call.
+[ Upstream commit 32de868cbc6bee010d2cee95b5071b25ecbec8c3 ]
 
-I still see some instability when stressing the system with parallel
-kernel builds while creating memory pressure by writing to
-/proc/sys/vm/nr_hugepages, but this patch improves the stability
-significantly.
+General Queries (the one with the Multicast Address field
+set to zero / '::') are supposed to have a Maximum Response Delay
+of [Query Response Interval], while for Multicast-Address-Specific
+Queries it is [Last Listener Query Interval] - not the other way
+round. (see RFC2710, section 7.3+7.8)
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Bob Picco <bob.picco@oracle.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/mm/tlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/bridge/br_multicast.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -115,8 +115,8 @@ no_cache_flush:
- 	}
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -467,8 +467,9 @@ static struct sk_buff *br_ip6_multicast_
+ 	skb_set_transport_header(skb, skb->len);
+ 	mldq = (struct mld_msg *) icmp6_hdr(skb);
  
- 	if (!tb->active) {
--		global_flush_tlb_page(mm, vaddr);
- 		flush_tsb_user_page(mm, vaddr);
-+		global_flush_tlb_page(mm, vaddr);
- 		goto out;
- 	}
+-	interval = ipv6_addr_any(group) ? br->multicast_last_member_interval :
+-					  br->multicast_query_response_interval;
++	interval = ipv6_addr_any(group) ?
++			br->multicast_query_response_interval :
++			br->multicast_last_member_interval;
  
+ 	mldq->mld_type = ICMPV6_MGM_QUERY;
+ 	mldq->mld_code = 0;
 
 
