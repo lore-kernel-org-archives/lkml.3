@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab3GZUsU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:48:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50703 "EHLO
+	id S1759981Ab3GZUsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:48:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757268Ab3GZUsN (ORCPT
+	with ESMTP id S1759926Ab3GZUsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:13 -0400
+	Fri, 26 Jul 2013 16:48:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bert De Jonghe <Bert.DeJonghe@amplidata.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 01/79] writeback: Fix periodic writeback after fs mount
-Date: Fri, 26 Jul 2013 13:46:51 -0700
-Message-Id: <20130726204722.039189527@linuxfoundation.org>
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/79] tuntap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
+Date: Fri, 26 Jul 2013 13:47:29 -0700
+Message-Id: <20130726204726.024472887@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,58 +28,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jason Wang <jasowang@redhat.com>
 
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
+[ Upstream commit 885291761dba2bfe04df4c0f7bb75e4c920ab82e ]
 
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
+We try to linearize part of the skb when the number of iov is greater than
+MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
+one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
+network.
 
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
+Solve this problem by calculate the pages needed for iov before trying to do
+zerocopy and switch to use copy instead of zerocopy if it needs more than
+MAX_SKB_FRAGS.
 
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+This is done through introducing a new helper to count the pages for iov, and
+call uarg->callback() manually when switching from zerocopy to copy to notify
+vhost.
+
+We can do further optimization on top.
+
+The bug were introduced from commit 0690899b4d4501b3505be069b9a687e68ccbe15b
+(tun: experimental zero copy tx support)
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/block_dev.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/net/tun.c |   62 +++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 38 insertions(+), 24 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -58,17 +58,24 @@ static void bdev_inode_switch_bdi(struct
- 			struct backing_dev_info *dst)
- {
- 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+	bool wakeup_bdi = false;
- 
- 	if (unlikely(dst == old))		/* deadlock avoidance */
- 		return;
- 	bdi_lock_two(&old->wb, &dst->wb);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&old->wb.list_lock);
- 	spin_unlock(&dst->wb.list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1037,6 +1037,29 @@ static int zerocopy_sg_from_iovec(struct
+ 	return 0;
  }
  
- /* Kill _all_ buffers and pagecache , dirty or not.. */
++static unsigned long iov_pages(const struct iovec *iv, int offset,
++			       unsigned long nr_segs)
++{
++	unsigned long seg, base;
++	int pages = 0, len, size;
++
++	while (nr_segs && (offset >= iv->iov_len)) {
++		offset -= iv->iov_len;
++		++iv;
++		--nr_segs;
++	}
++
++	for (seg = 0; seg < nr_segs; seg++) {
++		base = (unsigned long)iv[seg].iov_base + offset;
++		len = iv[seg].iov_len - offset;
++		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
++		pages += size;
++		offset = 0;
++	}
++
++	return pages;
++}
++
+ /* Get packet from user space buffer */
+ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			    void *msg_control, const struct iovec *iv,
+@@ -1084,32 +1107,18 @@ static ssize_t tun_get_user(struct tun_s
+ 			return -EINVAL;
+ 	}
+ 
+-	if (msg_control)
+-		zerocopy = true;
+-
+-	if (zerocopy) {
+-		/* Userspace may produce vectors with count greater than
+-		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
+-		 * to let the rest of data to be fit in the frags.
+-		 */
+-		if (count > MAX_SKB_FRAGS) {
+-			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
+-			if (copylen < offset)
+-				copylen = 0;
+-			else
+-				copylen -= offset;
+-		} else
+-				copylen = 0;
+-		/* There are 256 bytes to be copied in skb, so there is enough
+-		 * room for skb expand head in case it is used.
++	if (msg_control) {
++		/* There are 256 bytes to be copied in skb, so there is
++		 * enough room for skb expand head in case it is used.
+ 		 * The rest of the buffer is mapped from userspace.
+ 		 */
+-		if (copylen < gso.hdr_len)
+-			copylen = gso.hdr_len;
+-		if (!copylen)
+-			copylen = GOODCOPY_LEN;
++		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
+ 		linear = copylen;
+-	} else {
++		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
++			zerocopy = true;
++	}
++
++	if (!zerocopy) {
+ 		copylen = len;
+ 		linear = gso.hdr_len;
+ 	}
+@@ -1123,8 +1132,13 @@ static ssize_t tun_get_user(struct tun_s
+ 
+ 	if (zerocopy)
+ 		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
+-	else
++	else {
+ 		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
++		if (!err && msg_control) {
++			struct ubuf_info *uarg = msg_control;
++			uarg->callback(uarg, false);
++		}
++	}
+ 
+ 	if (err) {
+ 		tun->dev->stats.rx_dropped++;
 
 
