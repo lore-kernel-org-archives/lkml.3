@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451Ab3GZSia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 14:38:30 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:57729 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab3GZSi1 (ORCPT
+	id S1751245Ab3GZSkY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 14:40:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27814 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932Ab3GZSkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 14:38:27 -0400
-Message-ID: <51F2C220.5040407@gmail.com>
-Date: Fri, 26 Jul 2013 13:38:24 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: Mark Langsdorf <mark.langsdorf@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>
-Subject: Re: [PATCH 4/5] sata, highbank: set tx_atten override bits
-References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com> <1374851518-4802-4-git-send-email-mark.langsdorf@calxeda.com> <20130726162231.GD3528@e106331-lin.cambridge.arm.com>
-In-Reply-To: <20130726162231.GD3528@e106331-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Jul 2013 14:40:23 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=nb7EXMkRL1gA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=TPSRDgTb3zUA:10 a=20KFwNOVAAAA:8 a=ag1SF4gXAAAA:8 a=24K-Pi3Ekky5IT0VrzgA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=1TSTQ8KKaH4A:10 a=Y3G1v2uiLx0A:10 a=HwvuMbrV-i0A:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374864018.6580.40.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/1] debugfs: debugfs_remove_recursive() must not rely
+ on list_empty(d_subdirs)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Date: Fri, 26 Jul 2013 14:40:18 -0400
+In-Reply-To: <20130726173857.GB15013@kroah.com>
+References: <20130723205854.GA9036@redhat.com>
+	 <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com>
+	 <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com>
+	 <20130726151151.GA19472@redhat.com> <20130726151256.GC19472@redhat.com>
+	 <20130726173857.GB15013@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 11:22 AM, Mark Rutland wrote:
-> On Fri, Jul 26, 2013 at 04:11:57PM +0100, Mark Langsdorf wrote:
->> Some board designs do not drive the SATA transmit lines within the
->> specification. The ECME can provide override settings, on a per board
->> basis, to bring the transmit lines within spec. Read those settings
->> from the DTB and program them in.
+On Fri, 2013-07-26 at 10:38 -0700, Greg Kroah-Hartman wrote:
+
+> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 > 
-> How variable is the use of this property going to be? Would it instead
-> be possible to decide that this was necessary, and choose the
-> appropriate values based on a compatible property?
+> Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-It is based on compliance testing of the particular board design. Basing
-on a compatible property would not work in this case.
+Thanks Greg, I appreciate this.
 
-Rob
+-- Steve
+
 
