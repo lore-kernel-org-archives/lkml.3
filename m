@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758427Ab3GZJ3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:29:23 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:36590 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755017Ab3GZJ3T (ORCPT
+	id S1758434Ab3GZJa0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:30:26 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:41366 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755017Ab3GZJaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:29:19 -0400
-Message-ID: <51F2400B.1060701@free-electrons.com>
-Date: Fri, 26 Jul 2013 11:23:23 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Organization: Free Electrons
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Fri, 26 Jul 2013 05:30:25 -0400
+Date: Fri, 26 Jul 2013 11:30:15 +0200
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <djbw@fb.com>
+Subject: Re: [PATCH 15/16] dmaengine: add transfered member to
+ dma_async_tx_descriptor
+Message-ID: <20130726093015.GA2439@breakpoint.cc>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+ <1374516607-2705-16-git-send-email-bigeasy@linutronix.de>
+ <51F13CEB.7030408@metafoo.de>
+ <51F1404B.7070207@linutronix.de>
+ <51F14513.5030200@metafoo.de>
 MIME-Version: 1.0
-To: Marek Vasut <marex@denx.de>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        Hector Palacios <hector.palacios@digi.com>, linux-iio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        jic23@kernel.org, fabio.estevam@freescale.com,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v3 2/5] ARM: dts: add reference voltage property for MXS
- LRADC
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-3-git-send-email-hector.palacios@digi.com> <51ED7B47.2090104@metafoo.de> <201307230006.53434.marex@denx.de>
-In-Reply-To: <201307230006.53434.marex@denx.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F14513.5030200@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/07/2013 00:06, Marek Vasut wrote:
-> Dear Lars-Peter Clausen,
->
->> On 07/22/2013 04:04 PM, Hector Palacios wrote:
->>> Some LRADC channels have fixed pre-dividers so they can measure
->>> different voltages at full scale. The reference voltage allows to
->>> expose a scaling attribute through the IIO sysfs so that a user can
->>> compute the real voltage out of a measured sample value.
->> I've said before that I'm not convinced that this is the right way to
->> implement this. And considering what Thomas said here
->> http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg36691.ht
->> ml I guess I'm not alone with that opinion.
->>
->> - Lars
-> He's talking about different versions of the IP block, this is the same IP 
-> block, just connected to different inputs.
+On Thu, Jul 25, 2013 at 05:32:35PM +0200, Lars-Peter Clausen wrote:
+> > I see. But it can't be reused before calling the callback if it is
+> > going to call the callback, right?
+> > So if this is a no-no, I'm left with an additional argument to the
+> > complete callback?
+> 
+> Hm, maybe using dmaengine_tx_status() and checking the residue field of the
+> state struct. transferred is basically len - residue.
 
-I don't have any strong opinion on that and I'm certainly not an expert
-but thinking about that, I feel this is different from the discussion
-Thomas had. Those are reference voltages and describe how the IP block
-is connected whereas what Thomas was describing is supporting multiple
-versions of an IP block by describing heaps of registers in the DT. It
-may look ugly here because you have a lot of channels but I find that
-quite acceptable.
+This might actually work. So this would reduce the patch to simply update the
+kernel doc for residue in struct dma_tx_state that it might also be valid for
+DMA_SUCCESS.
 
-Regards,
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
+Sebastian
