@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752976Ab3GZGDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 02:03:14 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:54747 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751439Ab3GZGDL (ORCPT
+	id S1753340Ab3GZGTz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 02:19:55 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:59443 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149Ab3GZGTt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 02:03:11 -0400
-Date: Fri, 26 Jul 2013 16:02:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eli Billauer <eli.billauer@gmail.com>
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+	Fri, 26 Jul 2013 02:19:49 -0400
+Date: Fri, 26 Jul 2013 08:19:53 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Mark Brown <broonie@kernel.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/4] ASoc: kirkwood: change the pcm/dma stream data
+ pointer
+Message-ID: <20130726081953.785c8527@armhf>
+In-Reply-To: <20130725182356.GN9858@sirena.org.uk>
+References: <20130725111314.66b811bc@armhf>
+	<20130725093855.GB24642@n2100.arm.linux.org.uk>
+	<20130725182356.GN9858@sirena.org.uk>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Jul_2013_16_02_54_+1000_Uqwq/J+VDHs+VWL/"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Jul_2013_16_02_54_+1000_Uqwq/J+VDHs+VWL/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, 25 Jul 2013 19:23:56 +0100
+Mark Brown <broonie@kernel.org> wrote:
 
-Hi Greg,
+> On Thu, Jul 25, 2013 at 10:38:55AM +0100, Russell King - ARM Linux wrote:
+> 
+> > There's a much better solution to this, which is to get rid of
+> > kirkwood_dma_priv entirely:
+> 
+> This does seem a lot nicer, can we either grab the relevant patch from
+> your tree or update this one to use the same approach?
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Russel's solution works fine for me, so my patch 1/4 may be cancelled.
 
-drivers/staging/xillybus/xillybus_pcie.o:(.data+0x6d8): multiple definition=
- of `xillyname'
-drivers/staging/xillybus/xillybus_core.o:(.data+0x888): first defined here
-
-Caused by commit 48bae0507410 ("staging: New driver: Xillybus generic
-interface for FPGA").
-
-I have disabled that driver.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__26_Jul_2013_16_02_54_+1000_Uqwq/J+VDHs+VWL/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR8hEUAAoJEECxmPOUX5FESIcQAJIrqr0d+QFldpu+/OFZPKHe
-I47MX2QAdbZK5rMe6mZoCLAiyeDzggxLa1Tpu6XsYzSJpiz37ZwYgn4smtcuOihv
-CWE6i8otVwT8a86tZ/2/DDoa6rSw6MD3lYdl6GwYO6UwjpQmq78dC/mzIR5tSP2/
-wtJm93tKc/XTK8TpNHpGB/27Jxw4g80HfbdNzuFeT/EhxtuLVq+krMZz8HG8FmMZ
-IU0b7rDj1/RrivGtD7R76kAdHqzLsNCtBgxJnXg+0c/kcc5/q0XqKe8CuWkaUyJn
-WIg5i0FN3Tzfwfnypa7XMpJHimQ9EupKT8jgv8MMoV3vD3oKJV23TUvWElQsjuH9
-brVUEEYkm7HQ0H0lKijFz6f0OWR30wcl6GKdYpmJo6TxYMCyqPXD9HzRYot1z2Gu
-zPrUf/ZncfYetIS00sBt06SjVi3Dqc/N05KqoCKW+0+zWI+Iv4AU9nEY/KaMRg2p
-qnsZ3OsGVQELX3Y5yQJjzYvEvkwgYACa/zBaMxsqJsYipB119jsNvVObrCua8SrH
-0kGIz8/RhymZ9Uol/KB0E8Co3l2NEGPM054c4iMfd2r2zDiwC8vBIE8QH6H4akhT
-k201+6bEsOuk+PKAzIF+ELQubp20fLR5Bjx3pUM+NBWDMESdrOd7bavXMhvh8Jrq
-jdEca3YxwmKt8KgOJQVg
-=sZw0
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Jul_2013_16_02_54_+1000_Uqwq/J+VDHs+VWL/--
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
