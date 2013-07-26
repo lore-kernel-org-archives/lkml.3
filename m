@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760138Ab3GZVKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:10:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51305 "EHLO
+	id S1760241Ab3GZVLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:11:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760060Ab3GZU6K (ORCPT
+	with ESMTP id S1759956Ab3GZU6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:10 -0400
+	Fri, 26 Jul 2013 16:58:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 05/45] SCSI: mpt2sas: fix firmware failure with wrong task attribute
-Date: Fri, 26 Jul 2013 13:57:25 -0700
-Message-Id: <20130726205655.507293792@linuxfoundation.org>
+        Oskar Schirmer <oskar@scara.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@linaro.org>
+Subject: [ 02/45] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
+Date: Fri, 26 Jul 2013 13:57:22 -0700
+Message-Id: <20130726205655.198418941@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -27,35 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
+commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
 
-When SCSI command is received with task attribute not set, set it to SIMPLE.
-Previously it is set to untagged. This causes the firmware to fail the commands.
+SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
+register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
 
-Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ sound/soc/codecs/sgtl5000.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -3740,11 +3740,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
- 			else
- 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 		} else
--/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
--/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
-- */
--			mpi_control |= (0x500);
--
-+			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	} else
- 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
- 	/* Make sure Device is not raid volume.
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -347,7 +347,7 @@
+ #define SGTL5000_PLL_INT_DIV_MASK		0xf800
+ #define SGTL5000_PLL_INT_DIV_SHIFT		11
+ #define SGTL5000_PLL_INT_DIV_WIDTH		5
+-#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
++#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
+ #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
+ #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
+ 
 
 
