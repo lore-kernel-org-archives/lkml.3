@@ -1,84 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760437Ab3GZVRA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:17:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51168 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932956Ab3GZUxy (ORCPT
+	id S1760493Ab3GZVRM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:17:12 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:41451 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760395Ab3GZVRG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bert De Jonghe <Bert.DeJonghe@amplidata.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 42/59] writeback: Fix periodic writeback after fs mount
-Date: Fri, 26 Jul 2013 13:53:06 -0700
-Message-Id: <20130726205018.322446610@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 17:17:06 -0400
+Message-ID: <51F2E74E.2060107@wwwdotorg.org>
+Date: Fri, 26 Jul 2013 15:17:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Andrew Chew <achew@nvidia.com>
+CC: rob.herring@calxeda.com, pawel.moll@arm.com, mark.rutland@arm.com,
+        ian.campbell@citrix.com, rob@landley.net, sameo@linux.intel.com,
+        lee.jones@linaro.org, grant.likely@linaro.org, ian@slimlogic.co.uk,
+        j-keerthy@ti.com, gg@slimlogic.co.uk, ldewangan@nvidia.com,
+        rklein@nvidia.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: palmas: Add DVFS mux setting
+References: <1374871308-490-1-git-send-email-achew@nvidia.com>
+In-Reply-To: <1374871308-490-1-git-send-email-achew@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On 07/26/2013 02:41 PM, Andrew Chew wrote:
+> There exists a PRIMARY_SECONDARY_PAD3 in the same register base as
+> PRIMARY_SECONDARY_PAD2, which controls the function of certain pins. Add
+> a property for this setting.
 
-------------------
+How does this interact with the pinctrl driver that Laxman just sent for
+Palmas?
 
-From: Jan Kara <jack@suse.cz>
-
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
-
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
-
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
-
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/block_dev.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -57,17 +57,24 @@ static void bdev_inode_switch_bdi(struct
- 			struct backing_dev_info *dst)
- {
- 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
-+	bool wakeup_bdi = false;
- 
- 	if (unlikely(dst == old))		/* deadlock avoidance */
- 		return;
- 	bdi_lock_two(&old->wb, &dst->wb);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&old->wb.list_lock);
- 	spin_unlock(&dst->wb.list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
- }
- 
- sector_t blkdev_max_block(struct block_device *bdev)
-
+https://lkml.org/lkml/2013/7/26/141
+[PATCH 0/2] pinctrl: palmas: add pincontrol driver
 
