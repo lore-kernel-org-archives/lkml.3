@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933037Ab3GZUyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:54:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51035 "EHLO
+	id S1760064Ab3GZU5r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:57:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51172 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932711Ab3GZUxl (ORCPT
+	with ESMTP id S933031Ab3GZUyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:41 -0400
+	Fri, 26 Jul 2013 16:54:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bob Picco <bob.picco@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [ 16/59] sparc64 address-congruence property
-Date: Fri, 26 Jul 2013 13:52:40 -0700
-Message-Id: <20130726205015.534630940@linuxfoundation.org>
+        Luiz Angelo Daros de Luca <luizluca@gmail.com>
+Subject: [ 53/59] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
+Date: Fri, 26 Jul 2013 13:53:17 -0700
+Message-Id: <20130726205019.499679862@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -27,37 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: bob picco <bpicco@meloft.net>
+From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
 
-The Machine Description (MD) property "address-congruence-offset" is
-optional. According to the MD specification the value is assumed 0UL when
-not present. This caused early boot failure on T5.
+commit 90625070c4253377025878c4e82feed8b35c7116 upstream.
 
-Signed-off-by: Bob Picco <bob.picco@oracle.com>
-CC: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
+USB ID (0846:0110) to the cp210x driver. Without this, the serial
+adapter is not recognized in Linux. Description was obtained from
+an Netgear Eng.
+
+Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/mm/init_64.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -1067,7 +1067,14 @@ static int __init grab_mblocks(struct md
- 		m->size = *val;
- 		val = mdesc_get_property(md, node,
- 					 "address-congruence-offset", NULL);
--		m->offset = *val;
-+
-+		/* The address-congruence-offset property is optional.
-+		 * Explicity zero it be identifty this.
-+		 */
-+		if (val)
-+			m->offset = *val;
-+		else
-+			m->offset = 0UL;
- 
- 		numadbg("MBLOCK[%d]: base[%llx] size[%llx] offset[%llx]\n",
- 			count - 1, m->base, m->size, m->offset);
+---
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -60,6 +60,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
+ 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
+ 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
++	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
+ 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
+ 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
+ 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
 
 
