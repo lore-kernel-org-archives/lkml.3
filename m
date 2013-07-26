@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab3GZTZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 15:25:28 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:58646 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab3GZTZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 15:25:25 -0400
-Message-ID: <51F2CD20.6030700@wwwdotorg.org>
-Date: Fri, 26 Jul 2013 13:25:20 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1759544Ab3GZT0P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 15:26:15 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57084 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405Ab3GZT0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 15:26:12 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,752,1367996400"; 
+   d="scan'208";a="273870258"
+Date: Fri, 26 Jul 2013 12:26:09 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Heinz Diehl <htd@fritha.org>
+Cc: Frantisek Hrbata <fhrbata@redhat.com>, linux-usb@vger.kernel.org,
+        gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        dzickus@redhat.com, kernel-team@fedoraproject.org
+Subject: Re: NULL pointer dereference in xhci_free_dev
+Message-ID: <20130726192609.GC15302@xanatos>
+References: <20130507140333.GB3380@dhcp-26-164.brq.redhat.com>
+ <20130509221559.GD10305@xanatos>
+ <20130510065644.GA3320@dhcp-26-164.brq.redhat.com>
+ <20130511140925.GA9240@fritha.org>
 MIME-Version: 1.0
-To: Richard Zhao <rizhao@nvidia.com>
-CC: devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-spi@vger.kernel.org,
-        linux-serial@vger.kernel.org, alsa-devel@alsa-project.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        vinod.koul@intel.com, djbw@fb.com, broonie@kernel.org,
-        gregkh@linuxfoundation.org, lgirdwood@gmail.com, linuxzsc@gmail.com,
-        ldewangan@nvidia.com, dev@lynxeye.de
-Subject: Re: [PATCH 0/9] ARM: tegra: move to generic DMA DT binding
-References: <1374639002-16753-1-git-send-email-rizhao@nvidia.com>
-In-Reply-To: <1374639002-16753-1-git-send-email-rizhao@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130511140925.GA9240@fritha.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2013 10:09 PM, Richard Zhao wrote:
-> The patch series aim to move apbdma to generic DT binding.
-> 
-> Changes:
-> - It add dmas/dma-names properties while leave
->   nvidia,dma-request-selector to be compatible.
-> - update apbdma driver and dma client drivers
-> - ASoC tegra adds a new struct to pass device and dma-name.
-> - at last, remove legacy nvidia,dma-request-selector
+Heinz and Frantisek,
 
-I would like to take this series through the Tegra tree to simplify
-dependencies. So, I'm looking for ack's on the drivers rather than for
-them to be applied. I had hoped Richard would point this out when
-posting the patches.
+I believe your issue should be fixed by this patch:
+
+http://marc.info/?l=linux-usb&m=137476546506888&w=2
+
+Please let me know if it doesn't.
+
+Sarah Sharp
+
+On Sat, May 11, 2013 at 04:09:25PM +0200, Heinz Diehl wrote:
+> On 11.05.2013, Frantisek Hrbata wrote: 
+> 
+> > I haven't tried to reproduce. I was asked to help with Fedora's bugs triage and
+> > these come up. The goal was just to contact the right people and bring this to
+> > their attention. If you have a patch for this, I guess we can try to ask Heinz,
+> > or other people reporting this problem, to help with testing.
+> 
+> I'm willing to help, of course. I'll try to install latest 3.9 on the
+> machine this bug occurs and see if I manage to reproduce it. As far as
+> I remember, it happened when I changed some USB 2.0 devices on an USB
+> 3 port. The machine is re-installed and runs F18 now.
+>  
+> > Heinz: Sorry I forgot to add you to CC in the first mail, but Sarah fixed it.
+> 
+> Never mind, I'm subscribed to lkml and saw the thread there ;-)
+> 
