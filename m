@@ -1,130 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab3GZCDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:03:53 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:58800 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756932Ab3GZCDv (ORCPT
+	id S1758160Ab3GZCG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:06:59 -0400
+Received: from us02smtp1.synopsys.com ([198.182.60.75]:47313 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757049Ab3GZCG6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:03:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AhoHAPfX8VF5LPxH/2dsb2JhbABagwaDKLYHhTqBExd0giQBAQQBJxMcIwULCAMUAQMJJQ8FDRgDNId+AwkFsCoNiF4WjH+CaAeDEm4DlXaBaIwohSaDJiqBLAQ
-Date: Fri, 26 Jul 2013 12:03:18 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: zwu.kernel@gmail.com
-Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Subject: Re: [PATCH] xfs: fix an assertion failure
-Message-ID: <20130726020318.GD21982@dastard>
-References: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
+	Thu, 25 Jul 2013 22:06:58 -0400
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] usb: dwc3: core: modify IO memory resource after
+ deferred probe completes
+Thread-Topic: [PATCH] usb: dwc3: core: modify IO memory resource after
+ deferred probe completes
+Thread-Index: AQHOiVPvkmnt8PfOUEep6UDMuSIK7Jl1y1AggACJGwD//92QsA==
+Date: Fri, 26 Jul 2013 02:06:55 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DE12C9@US01WEMBX2.internal.synopsys.com>
+References: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
+ <A2CA0424C0A6F04399FB9E1CD98E030458DE112E@US01WEMBX2.internal.synopsys.com>
+ <20130725205224.GA12209@radagast>
+In-Reply-To: <20130725205224.GA12209@radagast>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.9.64.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 09:38:44PM +0800, zwu.kernel@gmail.com wrote:
-> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Thursday, July 25, 2013 1:52 PM
 > 
->   When running the compilebench, one assertion failure was found.
-> This related line of code was introduced by commit 5f6bed76c0.
+> On Thu, Jul 25, 2013 at 07:46:58PM +0000, Paul Zimmerman wrote:
+> > > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> > > index 607bef8..50c833f 100644
+> > > --- a/drivers/usb/dwc3/core.c
+> > > +++ b/drivers/usb/dwc3/core.c
+> > > @@ -384,21 +384,6 @@ static int dwc3_probe(struct platform_device *pdev)
+> > >  		dev_err(dev, "missing memory resource\n");
+> > >  		return -ENODEV;
+> > >  	}
+> > > -	dwc->xhci_resources[0].start = res->start;
+> > > -	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> > > -					DWC3_XHCI_REGS_END;
+> > > -	dwc->xhci_resources[0].flags = res->flags;
+> > > -	dwc->xhci_resources[0].name = res->name;
+> > > -
+> > > -	res->start += DWC3_GLOBALS_REGS_START;
+> > > -
+> > > -	 /*
+> > > -	  * Request memory region but exclude xHCI regs,
+> > > -	  * since it will be requested by the xhci-plat driver.
+> > > -	  */
+> > > -	regs = devm_ioremap_resource(dev, res);
+> > > -	if (IS_ERR(regs))
+> > > -		return PTR_ERR(regs);
+> > >
+> > >  	if (node) {
+> > >  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
+> > > @@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
+> > >  		return -EPROBE_DEFER;
+> > >  	}
+> > >
+> > > +	dwc->xhci_resources[0].start = res->start;
+> > > +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
+> > > +					DWC3_XHCI_REGS_END;
+> > > +	dwc->xhci_resources[0].flags = res->flags;
+> > > +	dwc->xhci_resources[0].name = res->name;
+> > > +
+> > > +	res->start += DWC3_GLOBALS_REGS_START;
+> >
+> > Ick. The driver is modifying the struct resource passed to it by the
 > 
-> commit 5f6bed76c0c85cb4d04885a5de00b629deee550b
-> Author: Dave Chinner <david@fromorbit.com>
-> Date:   Thu Jun 27 16:04:52 2013 +1000
+> heh...
 > 
->     xfs: Introduce an ordered buffer item
+> > platform code? That seems like a layering violation, and is fragile as
+> > hell. In addition to this bug, what would happen if the struct resource
+> > was declared 'const'?
+> 
+> nothing would happen if it was declared const since platform_add_device
+> makes a copy of what was declared, and that's always non-const.
 
-Ok, so the assert was introduced there, and for good reason: if we
-are about to free the xfs_buf_log_item, then it better not still be
-referenced by the AIL.
+OK.
 
-> XFS: Assertion failed: !(bip->bli_item.li_flags & XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 942
-> ------------[ cut here ]------------
-> kernel BUG at fs/xfs/xfs_message.c:108!
-> invalid opcode: 0000 [#1] SMP
-> Modules linked in:
-> CPU: 0 PID: 40 Comm: kworker/u2:1 Not tainted 3.11.0-rc2+ #955
-> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
-> Workqueue: writeback bdi_writeback_workfn (flush-8:0)
-....
->  [<ffffffff813428df>] xfs_buf_item_relse+0x4f/0xd0
->  [<ffffffff81342aeb>] xfs_buf_item_unlock+0x18b/0x1e0
->  [<ffffffff8133ac3d>] xfs_trans_free_items+0x7d/0xb0
->  [<ffffffff8133b35c>] xfs_trans_cancel+0x13c/0x1b0
->  [<ffffffff812d8d89>] xfs_iomap_write_allocate+0x249/0x350
->  [<ffffffff812c6af2>] xfs_map_blocks+0x2e2/0x350
->  [<ffffffff812c7a76>] xfs_vm_writepage+0x236/0x5e0
+> Also, this is not *modifying* what was passed, just skipping the xHCI
+> address space so we don't request_mem_region() an area we won't really
+> handle and prevent xhci-hcd.ko from probing.
 
-And what we see here is a buffer item being released and freed after
-a cancelled allocation transaction while it is in the AIL. That's
-indicative of a bug in the buffer item code, and will cause
-user-after-free issues. Hence:
+Hmm? platform_get_resource() returns a pointer to an entry in the
+platform_device's resource[] array. And "res->start +=" modifies the
+entry pointed at. If it didn't, the bug fixed by this patch wouldn't
+have happened.
 
-> diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
-> index bfc4e0c..b4d42ae 100644
-> --- a/fs/xfs/xfs_buf_item.c
-> +++ b/fs/xfs/xfs_buf_item.c
-> @@ -939,7 +939,6 @@ xfs_buf_item_relse(
->  	xfs_buf_log_item_t	*bip = bp->b_fspriv;
->  
->  	trace_xfs_buf_item_relse(bp, _RET_IP_);
-> -	ASSERT(!(bip->bli_item.li_flags & XFS_LI_IN_AIL));
+Are you sure this code will work OK if you build the driver as a module,
+modprobe it, rmmod it, and then modprobe it again? Seems like it won't,
+unless the dev->resource[] array gets reinitialized in between somehow.
 
-Removing the assert is not going to fix the bug that it is telling
-us is ocurring.
+All this assumes I'm reading the code correctly, of course. If I'm not,
+then never mind :)
 
-Indeed, it points out that the calling code - xfs_buf_item_unlock()
-- is probably doing the wrong this. i.e. that it assumes that a
-clean buffer item is only referenced in this transaction and so it
-can unconditionally free it. That's an invalid assumption, and
-exactly the situation that the above assert was designed to catch.
-
-Can you try the patch below? It should fix the problem....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Paul
 
-xfs: use reference counts to free clean buffer items
-
-From: Dave Chinner <dchinner@redhat.com>
-
-When a transaction is cancelled and the buffer log item is clean in
-the transaction, the buffer log item is unconditionally freed. If
-the log item is in the AIL, however, this leads to a use after free
-condition as the item still has other users.
-
-In this case, xfs_buf_item_relse() should only be called on clean
-buffer items if the reference count has dropped to zero. This
-ensures only the last user frees the item.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/xfs/xfs_buf_item.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
-index 9358504..3a944b1 100644
---- a/fs/xfs/xfs_buf_item.c
-+++ b/fs/xfs/xfs_buf_item.c
-@@ -613,11 +613,9 @@ xfs_buf_item_unlock(
- 			}
- 		}
- 	}
--	if (clean)
--		xfs_buf_item_relse(bp);
--	else if (aborted) {
-+	if (clean || aborted) {
- 		if (atomic_dec_and_test(&bip->bli_refcount)) {
--			ASSERT(XFS_FORCED_SHUTDOWN(lip->li_mountp));
-+			ASSERT(!aborted || XFS_FORCED_SHUTDOWN(lip->li_mountp));
- 			xfs_buf_item_relse(bp);
- 		}
- 	} else
