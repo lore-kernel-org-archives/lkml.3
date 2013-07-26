@@ -1,80 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab3GZVHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:07:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760105Ab3GZU6T (ORCPT
+	id S933333Ab3GZVHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:07:37 -0400
+Received: from qmta11.emeryville.ca.mail.comcast.net ([76.96.27.211]:35006
+	"EHLO qmta11.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933300Ab3GZVHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Jones <davej@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/45] ipv6: ip6_sk_dst_check() must not assume ipv6 dst
-Date: Fri, 26 Jul 2013 13:57:35 -0700
-Message-Id: <20130726205656.578098370@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
-References: <20130726205654.896050165@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 17:07:32 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: rafael.j.wysocki@intel.com, bhelgaas@google.com, fengguang.wu@intel.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, shuahkhan@gmail.com
+Subject: [PATCH v2] pnp: convert pnp driver bus legacy pm_ops to dev_pm_ops
+Date: Fri, 26 Jul 2013 15:07:26 -0600
+Message-Id: <1374872846-29606-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+Convert drivers/pnp/driver.c bus legacy pm_ops to dev_pm_ops using
+existing suspend and resume routines. Added freeze interface to
+handle PM_EVENT_FREEZE correctly with dev_pm_ops. pm_op() looks for
+freeze interface when the event is PM_EVENT_FREEZE.
 
-------------------
-
-From: Eric Dumazet <edumazet@google.com>
-
-[ Upstream commit a963a37d384d71ad43b3e9e79d68d42fbe0901f3 ]
-
-It's possible to use AF_INET6 sockets and to connect to an IPv4
-destination. After this, socket dst cache is a pointer to a rtable,
-not rt6_info.
-
-ip6_sk_dst_check() should check the socket dst cache is IPv6, or else
-various corruptions/crashes can happen.
-
-Dave Jones can reproduce immediate crash with
-trinity -q -l off -n -c sendmsg -c connect
-
-With help from Hannes Frederic Sowa
-
-Reported-by: Dave Jones <davej@redhat.com>
-Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- net/ipv6/ip6_output.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+Changes since v1: Fixed the following warning found in kbuild test robot
+drivers/pnp/driver.c:223:25: sparse: symbol 'pnp_bus_dev_pm_ops' was not declared. Should it be static?
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -925,11 +925,17 @@ static struct dst_entry *ip6_sk_dst_chec
- 					  const struct flowi6 *fl6)
+ drivers/pnp/driver.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pnp/driver.c b/drivers/pnp/driver.c
+index c3f9e89..a39ee38 100644
+--- a/drivers/pnp/driver.c
++++ b/drivers/pnp/driver.c
+@@ -154,7 +154,7 @@ static int pnp_bus_match(struct device *dev, struct device_driver *drv)
+ 	return 1;
+ }
+ 
+-static int pnp_bus_suspend(struct device *dev, pm_message_t state)
++static int __pnp_bus_suspend(struct device *dev, pm_message_t state)
  {
- 	struct ipv6_pinfo *np = inet6_sk(sk);
--	struct rt6_info *rt = (struct rt6_info *)dst;
-+	struct rt6_info *rt;
+ 	struct pnp_dev *pnp_dev = to_pnp_dev(dev);
+ 	struct pnp_driver *pnp_drv = pnp_dev->driver;
+@@ -187,6 +187,16 @@ static int pnp_bus_suspend(struct device *dev, pm_message_t state)
+ 	return 0;
+ }
  
- 	if (!dst)
- 		goto out;
- 
-+	if (dst->ops->family != AF_INET6) {
-+		dst_release(dst);
-+		return NULL;
-+	}
++static int pnp_bus_suspend(struct device *dev)
++{
++	return __pnp_bus_suspend(dev, PMSG_SUSPEND);
++}
 +
-+	rt = (struct rt6_info *)dst;
- 	/* Yes, checking route validity in not connected
- 	 * case is not very simple. Take into account,
- 	 * that we do not support routing by source, TOS,
-
++static int pnp_bus_freeze(struct device *dev)
++{
++	return __pnp_bus_suspend(dev, PMSG_FREEZE);
++}
++
+ static int pnp_bus_resume(struct device *dev)
+ {
+ 	struct pnp_dev *pnp_dev = to_pnp_dev(dev);
+@@ -223,14 +233,19 @@ static int pnp_bus_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static const struct dev_pm_ops pnp_bus_dev_pm_ops = {
++	.suspend = pnp_bus_suspend,
++	.freeze = pnp_bus_freeze,
++	.resume = pnp_bus_resume,
++};
++
+ struct bus_type pnp_bus_type = {
+ 	.name    = "pnp",
+ 	.match   = pnp_bus_match,
+ 	.probe   = pnp_device_probe,
+ 	.remove  = pnp_device_remove,
+ 	.shutdown = pnp_device_shutdown,
+-	.suspend = pnp_bus_suspend,
+-	.resume  = pnp_bus_resume,
++	.pm	 = &pnp_bus_dev_pm_ops,
+ 	.dev_attrs = pnp_interface_attrs,
+ };
+ 
+-- 
+1.7.10.4
 
