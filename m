@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab3GZIBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 04:01:32 -0400
-Received: from oproxy13-pub.unifiedlayer.com ([69.89.16.30]:58419 "HELO
-	oproxy13-pub.unifiedlayer.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752919Ab3GZIBa (ORCPT
+	id S1757698Ab3GZIBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 04:01:40 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:54663 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752919Ab3GZIBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 04:01:30 -0400
-Message-ID: <1374825683.3671.35.camel@slavad-ubuntu>
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-From: Vyacheslav Dubeyko <slava@dubeyko.com>
-Reply-To: slava@dubeyko.com
-To: Dhaval Giani <dgiani@mozilla.com>
-Cc: Taras Glek <tglek@mozilla.com>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Date: Fri, 26 Jul 2013 12:01:23 +0400
-In-Reply-To: <51F17005.7030309@mozilla.com>
-References: <1374699833.7083.2.camel@localhost>
-	 <20130724233628.GD3641@logfs.org> <51F14136.30409@mozilla.com>
-	 <51F1556A.20909@mozilla.com>
-	 <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
-	 <51F17005.7030309@mozilla.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Identified-User: {2172:host202.hostmonster.com:dubeykoc:dubeyko.com} {sentby:smtp auth 109.188.125.185 authed with slava@dubeyko.com}
+	Fri, 26 Jul 2013 04:01:35 -0400
+Date: Fri, 26 Jul 2013 10:01:15 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+Message-ID: <20130726080115.GA5436@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725213753.GC17616@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-07-25 at 14:35 -0400, Dhaval Giani wrote:
-> On 2013-07-25 2:15 PM, Vyacheslav Dubeyko wrote:
-> > On Jul 25, 2013, at 8:42 PM, Taras Glek wrote:
-> >
-> > [snip]
-> >>> To introduce transparent decompression. Let someone else do the compression for us, and supply decompressed data on demand  (in this case a read call). Reduces the complexity which would otherwise have to be brought into the filesystem.
-> >> The main use for file compression for Firefox(it's useful on Linux desktop too) is to improve IO-throughput and reduce startup latency. In order for compression to be a net win an application should be aware of what is being compressed and what isn't. For example patterns for IO on large libraries (eg 30mb libxul.so) are well suited to compression, but SQLite databases are not.  Similarly for our disk cache: images should not be compressed, but javascript should be. Footprint wins are useful on android, but it's the increased IO throughput on crappy storage devices that makes this most attractive.
-> >>
-> >> In addition of being aware of which files should be compressed, Firefox is aware of patterns of usage of various files it could schedule compression at the most optimal time.
-> >>
-> >> Above needs tie in nicely with the simplification of not implementing compression at fs-level.
-> > There are many filesystems that uses compression as internal technique. And, as I understand, implementation
-> > of compression in different Linux kernel filesystem drivers has similar code patterns. So, from my point of view,
-> > it makes sense to generalize compression/decompression code in the form of library. The API of such generalized
-> > compression kernel library can be used in drivers of different file systems. Also such generalized compression
-> > library will simplify support of compression in file system drivers that don't support compression feature currently.
-> >
-> > Moreover, I think that it is possible to implement compression support on VFS level. Such feature gives
-> > opportunity to have compression support for filesystems that don't support compression feature as
-> > internal technique.
+On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
 > 
-> I am not sure it is a very good idea at this stage.
+> We use DT has a kernel configuration input. Our environment is
+> designed to guarantee 100% that the kernel and DT match exactly. DT
+> very deliberately isn't an ABI boundary in our systems.
 
-We are discussing not about good or bad idea. We need to elaborate a
-right solution. I think that suggested idea is not clear. Do you want to
-support compression in ext4? Or do you want to add some new compression
-feature (likewise file-oriented compression)? If we are talking about
-compression in ext4 then it needs to use e2compr patch set. Otherwise,
-if we are talking about file compression then it is not question of
-concrete filesystem. And we need to make implementation on VFS level. It
-is only architectural point of view.
+Think about what you just said.
 
-> > [snip]
-> >> This transparent decompression idea is based on our experience with HFS+. Apple uses the fs-attribute approach. OSX is able to compress application libraries at installation-time, apps remain blissfully unaware but get an extra boost in startup perf.
-> >>
-> > HFS+ supports compression as internal filesystem technique. It means that HFS+ volume layout has
-> > metadata structures for compression support (compressed xattrs or compressed resource forks).
-> > So, compression is supported on FS level. As I know, Mac OS X has native decompression support
-> > for compressed files but you need to use special tool for compression of files on HFS+. Maybe
-> > Mac OS X has internal library that give opportunity to compress application libraries at installation
-> > time. But I suppose that it is simply user-space tool or library that uses HFS+ compression support
-> > on kernel-space and volume layout levels.
-> In addition to what Taras mentioned, there is a similar approach being 
-> followed here. There is a compression tool to compress files at 
-> https://github.com/glandium/faulty.lib/blob/master/linker/szip.cpp .
-> 
+The DT describes the *hardware* not the kernel. Why should you ever
+need to update your DT at all?
 
-Why do you try to implement likewise concept on kernel level? It looks
-like you try to move some user-space concept in kernel-space.
+(Hint: the answer is, because the DT system is broken.)
 
-With the best regards,
-Vyacheslav Dubeyko.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
-
+Thanks,
+Richard
