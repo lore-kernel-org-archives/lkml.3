@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab3GZWqQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:46:16 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:59906 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757933Ab3GZWpr (ORCPT
+	id S932765Ab3GZWqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:46:38 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:38362 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759964Ab3GZWpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:45:47 -0400
+	Fri, 26 Jul 2013 18:45:44 -0400
 From: "Felipe F. Tonello" <eu@felipetonello.com>
 To: alsa-devel@alsa-project.org
 Cc: "Felipe F. Tonello" <eu@felipetonello.com>, linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: "Felipe F. Tonello" <eu@felipetonello.com>, linux-kernel@vger.kernel.org,
         David Henningsson <david.henningsson@canonical.com>,
         Wang Xingchao <xingchao.wang@linux.intel.com>,
         Jaroslav Kysela <perex@perex.cz>
-Subject: [PATCH v2 3/3] ALSA: SoC: Updating jack implementation according new ALSA Jacks
-Date: Fri, 26 Jul 2013 15:45:13 -0700
-Message-Id: <1374878713-11922-4-git-send-email-eu@felipetonello.com>
+Subject: [PATCH v2 1/3] ALSA: Added jack detection kcontrol support
+Date: Fri, 26 Jul 2013 15:45:11 -0700
+Message-Id: <1374878713-11922-2-git-send-email-eu@felipetonello.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1374878713-11922-1-git-send-email-eu@felipetonello.com>
 References: <1374878713-11922-1-git-send-email-eu@felipetonello.com>
@@ -28,420 +28,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Felipe F. Tonello" <eu@felipetonello.com>
 
-Updating the ASoC jack support to add the ability to specify a
-jack index when creating it.
+This patch adds jack support for alsa kcontrol.
+
+This support is necessary since the new kcontrol is used by user-space
+daemons, such as PulseAudio(>=2.0), to do jack detection.)
 
 Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
 ---
- include/sound/soc.h                |  2 +-
- sound/soc/fsl/wm1133-ev1.c         |  4 ++--
- sound/soc/mid-x86/mfld_machine.c   |  6 +++---
- sound/soc/omap/ams-delta.c         |  2 +-
- sound/soc/omap/omap-abe-twl6040.c  |  4 ++--
- sound/soc/omap/omap-twl4030.c      |  4 ++--
- sound/soc/omap/rx51.c              |  6 +++---
- sound/soc/pxa/hx4700.c             |  4 ++--
- sound/soc/pxa/palm27x.c            |  4 ++--
- sound/soc/pxa/ttc-dkb.c            |  8 ++++----
- sound/soc/pxa/z2.c                 |  4 ++--
- sound/soc/samsung/goni_wm8994.c    |  4 ++--
- sound/soc/samsung/h1940_uda1380.c  |  4 ++--
- sound/soc/samsung/littlemill.c     | 10 +++++-----
- sound/soc/samsung/lowland.c        |  6 +++---
- sound/soc/samsung/rx1950_uda1380.c |  4 ++--
- sound/soc/samsung/smartq_wm8987.c  |  4 ++--
- sound/soc/samsung/speyside.c       |  6 +++---
- sound/soc/samsung/tobermory.c      |  4 ++--
- sound/soc/soc-jack.c               |  4 ++--
- sound/soc/tegra/tegra_alc5632.c    |  4 ++--
- sound/soc/tegra/tegra_rt5640.c     |  2 +-
- sound/soc/tegra/tegra_wm8903.c     |  8 ++++----
- 23 files changed, 54 insertions(+), 54 deletions(-)
+ include/sound/jack.h |  6 ++++--
+ sound/core/Kconfig   |  1 +
+ sound/core/ctljack.c |  3 ++-
+ sound/core/jack.c    | 29 +++++++++++++++++++++++++++--
+ 4 files changed, 34 insertions(+), 5 deletions(-)
 
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index 6eabee7..31bea52 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -436,7 +436,7 @@ int snd_soc_platform_trigger(struct snd_pcm_substream *substream,
+diff --git a/include/sound/jack.h b/include/sound/jack.h
+index 5891657..dc62b74 100644
+--- a/include/sound/jack.h
++++ b/include/sound/jack.h
+@@ -26,6 +26,7 @@
+ #include <sound/core.h>
  
- /* Jack reporting */
- int snd_soc_jack_new(struct snd_soc_codec *codec, const char *id, int type,
--		     struct snd_soc_jack *jack);
-+                     int idx, struct snd_soc_jack *jack);
- void snd_soc_jack_report(struct snd_soc_jack *jack, int status, int mask);
- int snd_soc_jack_add_pins(struct snd_soc_jack *jack, int count,
- 			  struct snd_soc_jack_pin *pins);
-diff --git a/sound/soc/fsl/wm1133-ev1.c b/sound/soc/fsl/wm1133-ev1.c
-index fce6325..50f96d4 100644
---- a/sound/soc/fsl/wm1133-ev1.c
-+++ b/sound/soc/fsl/wm1133-ev1.c
-@@ -221,14 +221,14 @@ static int wm1133_ev1_init(struct snd_soc_pcm_runtime *rtd)
- 				ARRAY_SIZE(wm1133_ev1_map));
+ struct input_dev;
++struct snd_kcontrol;
  
- 	/* Headphone jack detection */
--	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE, &hp_jack);
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE, 0, &hp_jack);
- 	snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(hp_jack_pins),
- 			      hp_jack_pins);
- 	wm8350_hp_jack_detect(codec, WM8350_JDR, &hp_jack, SND_JACK_HEADPHONE);
+ /**
+  * Jack types which can be reported.  These values are used as a
+@@ -58,6 +59,7 @@ enum snd_jack_types {
  
- 	/* Microphone jack detection */
- 	snd_soc_jack_new(codec, "Microphone",
--			 SND_JACK_MICROPHONE | SND_JACK_BTN_0, &mic_jack);
-+	                 SND_JACK_MICROPHONE | SND_JACK_BTN_0, 0, &mic_jack);
- 	snd_soc_jack_add_pins(&mic_jack, ARRAY_SIZE(mic_jack_pins),
- 			      mic_jack_pins);
- 	wm8350_mic_jack_detect(codec, &mic_jack, SND_JACK_MICROPHONE,
-diff --git a/sound/soc/mid-x86/mfld_machine.c b/sound/soc/mid-x86/mfld_machine.c
-index ee36384..e2c7978 100644
---- a/sound/soc/mid-x86/mfld_machine.c
-+++ b/sound/soc/mid-x86/mfld_machine.c
-@@ -253,9 +253,9 @@ static int mfld_init(struct snd_soc_pcm_runtime *runtime)
- 	snd_soc_dapm_disable_pin(dapm, "LINEINR");
+ struct snd_jack {
+ 	struct input_dev *input_dev;
++	struct snd_kcontrol *kctl;
+ 	int registered;
+ 	int type;
+ 	const char *id;
+@@ -70,7 +72,7 @@ struct snd_jack {
+ #ifdef CONFIG_SND_JACK
  
- 	/* Headset and button jack detection */
--	ret_val = snd_soc_jack_new(codec, "Intel(R) MID Audio Jack",
--			SND_JACK_HEADSET | SND_JACK_BTN_0 |
--			SND_JACK_BTN_1, &mfld_jack);
-+	ret_val = snd_soc_jack_new(codec, "Intel(R) MID Audio",
-+	                           SND_JACK_HEADSET | SND_JACK_BTN_0 |
-+	                           SND_JACK_BTN_1, 0, &mfld_jack);
- 	if (ret_val) {
- 		pr_err("jack creation failed\n");
- 		return ret_val;
-diff --git a/sound/soc/omap/ams-delta.c b/sound/soc/omap/ams-delta.c
-index 6294464..4ffa38e 100644
---- a/sound/soc/omap/ams-delta.c
-+++ b/sound/soc/omap/ams-delta.c
-@@ -491,7 +491,7 @@ static int ams_delta_cx20442_init(struct snd_soc_pcm_runtime *rtd)
- 	/* Add hook switch - can be used to control the codec from userspace
- 	 * even if line discipline fails */
- 	ret = snd_soc_jack_new(rtd->codec, "hook_switch",
--				SND_JACK_HEADSET, &ams_delta_hook_switch);
-+	                       SND_JACK_HEADSET, 0, &ams_delta_hook_switch);
- 	if (ret)
- 		dev_warn(card->dev,
- 				"Failed to allocate resources for hook switch, "
-diff --git a/sound/soc/omap/omap-abe-twl6040.c b/sound/soc/omap/omap-abe-twl6040.c
-index 70cd5c7..45ff3bc 100644
---- a/sound/soc/omap/omap-abe-twl6040.c
-+++ b/sound/soc/omap/omap-abe-twl6040.c
-@@ -193,8 +193,8 @@ static int omap_abe_twl6040_init(struct snd_soc_pcm_runtime *rtd)
+ int snd_jack_new(struct snd_card *card, const char *id, int type,
+-		 struct snd_jack **jack);
++                 int idx, struct snd_jack **jack);
+ void snd_jack_set_parent(struct snd_jack *jack, struct device *parent);
+ int snd_jack_set_key(struct snd_jack *jack, enum snd_jack_types type,
+ 		     int keytype);
+@@ -80,7 +82,7 @@ void snd_jack_report(struct snd_jack *jack, int status);
+ #else
  
- 	/* Headset jack detection only if it is supported */
- 	if (priv->jack_detection) {
--		ret = snd_soc_jack_new(codec, "Headset Jack",
--					SND_JACK_HEADSET, &hs_jack);
-+		ret = snd_soc_jack_new(codec, "Headset",
-+		                       SND_JACK_HEADSET, 0, &hs_jack);
- 		if (ret)
- 			return ret;
- 
-diff --git a/sound/soc/omap/omap-twl4030.c b/sound/soc/omap/omap-twl4030.c
-index 2a9324f..0619ecb 100644
---- a/sound/soc/omap/omap-twl4030.c
-+++ b/sound/soc/omap/omap-twl4030.c
-@@ -189,8 +189,8 @@ static int omap_twl4030_init(struct snd_soc_pcm_runtime *rtd)
- 	if (priv->jack_detect > 0) {
- 		hs_jack_gpios[0].gpio = priv->jack_detect;
- 
--		ret = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
--				       &priv->hs_jack);
-+		ret = snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
-+		                       0, &priv->hs_jack);
- 		if (ret)
- 			return ret;
- 
-diff --git a/sound/soc/omap/rx51.c b/sound/soc/omap/rx51.c
-index 611179c..46fe697 100644
---- a/sound/soc/omap/rx51.c
-+++ b/sound/soc/omap/rx51.c
-@@ -317,9 +317,9 @@ static int rx51_aic34_init(struct snd_soc_pcm_runtime *rtd)
- 		return err;
- 
- 	/* AV jack detection */
--	err = snd_soc_jack_new(codec, "AV Jack",
--			       SND_JACK_HEADSET | SND_JACK_VIDEOOUT,
--			       &rx51_av_jack);
-+	err = snd_soc_jack_new(codec, "AV",
-+	                       SND_JACK_HEADSET | SND_JACK_VIDEOOUT,
-+	                       0, &rx51_av_jack);
- 	if (err)
- 		return err;
- 	err = snd_soc_jack_add_gpios(&rx51_av_jack,
-diff --git a/sound/soc/pxa/hx4700.c b/sound/soc/pxa/hx4700.c
-index dcc9b04..3ffe48b 100644
---- a/sound/soc/pxa/hx4700.c
-+++ b/sound/soc/pxa/hx4700.c
-@@ -137,8 +137,8 @@ static int hx4700_ak4641_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_nc_pin(dapm, "AUX");
- 
- 	/* Jack detection API stuff */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
--				SND_JACK_HEADPHONE, &hs_jack);
-+	err = snd_soc_jack_new(codec, "Headphone",
-+	                       SND_JACK_HEADPHONE, 0, &hs_jack);
- 	if (err)
- 		return err;
- 
-diff --git a/sound/soc/pxa/palm27x.c b/sound/soc/pxa/palm27x.c
-index e1ffcdd..7caba46 100644
---- a/sound/soc/pxa/palm27x.c
-+++ b/sound/soc/pxa/palm27x.c
-@@ -97,8 +97,8 @@ static int palm27x_ac97_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_nc_pin(dapm, "MIC2");
- 
- 	/* Jack detection API stuff */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
--				SND_JACK_HEADPHONE, &hs_jack);
-+	err = snd_soc_jack_new(codec, "Headphone",
-+	                       SND_JACK_HEADPHONE, 0, &hs_jack);
- 	if (err)
- 		return err;
- 
-diff --git a/sound/soc/pxa/ttc-dkb.c b/sound/soc/pxa/ttc-dkb.c
-index f4ea4f6..1220a51 100644
---- a/sound/soc/pxa/ttc-dkb.c
-+++ b/sound/soc/pxa/ttc-dkb.c
-@@ -86,13 +86,13 @@ static int ttc_pm860x_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "Headset Stereophone");
- 
- 	/* Headset jack detection */
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE
- 			| SND_JACK_BTN_0 | SND_JACK_BTN_1 | SND_JACK_BTN_2,
--			&hs_jack);
-+	                 0, &hs_jack);
- 	snd_soc_jack_add_pins(&hs_jack, ARRAY_SIZE(hs_jack_pins),
- 			      hs_jack_pins);
--	snd_soc_jack_new(codec, "Microphone Jack", SND_JACK_MICROPHONE,
--			 &mic_jack);
-+	snd_soc_jack_new(codec, "Microphone", SND_JACK_MICROPHONE,
-+	                 0, &mic_jack);
- 	snd_soc_jack_add_pins(&mic_jack, ARRAY_SIZE(mic_jack_pins),
- 			      mic_jack_pins);
- 
-diff --git a/sound/soc/pxa/z2.c b/sound/soc/pxa/z2.c
-index 76ccb17..2bbb2de 100644
---- a/sound/soc/pxa/z2.c
-+++ b/sound/soc/pxa/z2.c
-@@ -143,8 +143,8 @@ static int z2_wm8750_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "MONO1");
- 
- 	/* Jack detection API stuff */
--	ret = snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
--				&hs_jack);
-+	ret = snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
-+	                       0, &hs_jack);
- 	if (ret)
- 		goto err;
- 
-diff --git a/sound/soc/samsung/goni_wm8994.c b/sound/soc/samsung/goni_wm8994.c
-index 415ad81..d76072d 100644
---- a/sound/soc/samsung/goni_wm8994.c
-+++ b/sound/soc/samsung/goni_wm8994.c
-@@ -115,8 +115,8 @@ static int goni_wm8994_init(struct snd_soc_pcm_runtime *rtd)
- 
- 	/* Headset jack detection */
- 	ret = snd_soc_jack_new(codec, "Headset Jack",
--			SND_JACK_HEADSET | SND_JACK_MECHANICAL | SND_JACK_AVOUT,
--			&jack);
-+	                       SND_JACK_HEADSET | SND_JACK_MECHANICAL | SND_JACK_AVOUT,
-+	                       0, &jack);
- 	if (ret)
- 		return ret;
- 
-diff --git a/sound/soc/samsung/h1940_uda1380.c b/sound/soc/samsung/h1940_uda1380.c
-index fa91376..f8cf0cf 100644
---- a/sound/soc/samsung/h1940_uda1380.c
-+++ b/sound/soc/samsung/h1940_uda1380.c
-@@ -186,8 +186,8 @@ static int h1940_uda1380_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_enable_pin(dapm, "Speaker");
- 	snd_soc_dapm_enable_pin(dapm, "Mic Jack");
- 
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
--		&hp_jack);
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
-+	                 0, &hp_jack);
- 
- 	snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(hp_jack_pins),
- 		hp_jack_pins);
-diff --git a/sound/soc/samsung/littlemill.c b/sound/soc/samsung/littlemill.c
-index bfb91f3..46344f3 100644
---- a/sound/soc/samsung/littlemill.c
-+++ b/sound/soc/samsung/littlemill.c
-@@ -261,11 +261,11 @@ static int littlemill_late_probe(struct snd_soc_card *card)
- 		return ret;
- 
- 	ret = snd_soc_jack_new(codec, "Headset",
--			       SND_JACK_HEADSET | SND_JACK_MECHANICAL |
--			       SND_JACK_BTN_0 | SND_JACK_BTN_1 |
--			       SND_JACK_BTN_2 | SND_JACK_BTN_3 |
--			       SND_JACK_BTN_4 | SND_JACK_BTN_5,
--			       &littlemill_headset);
-+	                       SND_JACK_HEADSET | SND_JACK_MECHANICAL |
-+	                       SND_JACK_BTN_0 | SND_JACK_BTN_1 |
-+	                       SND_JACK_BTN_2 | SND_JACK_BTN_3 |
-+	                       SND_JACK_BTN_4 | SND_JACK_BTN_5,
-+	                       0, &littlemill_headset);
- 	if (ret)
- 		return ret;
- 
-diff --git a/sound/soc/samsung/lowland.c b/sound/soc/samsung/lowland.c
-index 570cf52..1e6a3df 100644
---- a/sound/soc/samsung/lowland.c
-+++ b/sound/soc/samsung/lowland.c
-@@ -57,9 +57,9 @@ static int lowland_wm5100_init(struct snd_soc_pcm_runtime *rtd)
- 	}
- 
- 	ret = snd_soc_jack_new(codec, "Headset",
--			       SND_JACK_LINEOUT | SND_JACK_HEADSET |
--			       SND_JACK_BTN_0,
--			       &lowland_headset);
-+	                       SND_JACK_LINEOUT | SND_JACK_HEADSET |
-+	                       SND_JACK_BTN_0,
-+	                       0, &lowland_headset);
- 	if (ret)
- 		return ret;
- 
-diff --git a/sound/soc/samsung/rx1950_uda1380.c b/sound/soc/samsung/rx1950_uda1380.c
-index 704460a..f62b845 100644
---- a/sound/soc/samsung/rx1950_uda1380.c
-+++ b/sound/soc/samsung/rx1950_uda1380.c
-@@ -231,8 +231,8 @@ static int rx1950_uda1380_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_enable_pin(dapm, "Speaker");
- 	snd_soc_dapm_enable_pin(dapm, "Mic Jack");
- 
--	snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
--		&hp_jack);
-+	snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
-+	                 0, &hp_jack);
- 
- 	snd_soc_jack_add_pins(&hp_jack, ARRAY_SIZE(hp_jack_pins),
- 		hp_jack_pins);
-diff --git a/sound/soc/samsung/smartq_wm8987.c b/sound/soc/samsung/smartq_wm8987.c
-index 58ae323..053ceea 100644
---- a/sound/soc/samsung/smartq_wm8987.c
-+++ b/sound/soc/samsung/smartq_wm8987.c
-@@ -166,8 +166,8 @@ static int smartq_wm8987_init(struct snd_soc_pcm_runtime *rtd)
- 	snd_soc_dapm_disable_pin(dapm, "Headphone Jack");
- 
- 	/* Headphone jack detection */
--	err = snd_soc_jack_new(codec, "Headphone Jack",
--			       SND_JACK_HEADPHONE, &smartq_jack);
-+	err = snd_soc_jack_new(codec, "Headphone",
-+	                       SND_JACK_HEADPHONE, 0, &smartq_jack);
- 	if (err)
- 		return err;
- 
-diff --git a/sound/soc/samsung/speyside.c b/sound/soc/samsung/speyside.c
-index 57df90d..feff3fb 100644
---- a/sound/soc/samsung/speyside.c
-+++ b/sound/soc/samsung/speyside.c
-@@ -154,9 +154,9 @@ static int speyside_wm8996_init(struct snd_soc_pcm_runtime *rtd)
- 	gpio_direction_output(WM8996_HPSEL_GPIO, speyside_jack_polarity);
- 
- 	ret = snd_soc_jack_new(codec, "Headset",
--			       SND_JACK_LINEOUT | SND_JACK_HEADSET |
--			       SND_JACK_BTN_0,
--			       &speyside_headset);
-+	                       SND_JACK_LINEOUT | SND_JACK_HEADSET |
-+	                       SND_JACK_BTN_0,
-+	                       0, &speyside_headset);
- 	if (ret)
- 		return ret;
- 
-diff --git a/sound/soc/samsung/tobermory.c b/sound/soc/samsung/tobermory.c
-index f21ff60..e498e7c 100644
---- a/sound/soc/samsung/tobermory.c
-+++ b/sound/soc/samsung/tobermory.c
-@@ -178,8 +178,8 @@ static int tobermory_late_probe(struct snd_soc_card *card)
- 		return ret;
- 
- 	ret = snd_soc_jack_new(codec, "Headset",
--			       SND_JACK_HEADSET | SND_JACK_BTN_0,
--			       &tobermory_headset);
-+	                       SND_JACK_HEADSET | SND_JACK_BTN_0,
-+	                       0, &tobermory_headset);
- 	if (ret)
- 		return ret;
- 
-diff --git a/sound/soc/soc-jack.c b/sound/soc/soc-jack.c
-index 0bb5ccc..ecd1601 100644
---- a/sound/soc/soc-jack.c
-+++ b/sound/soc/soc-jack.c
-@@ -34,7 +34,7 @@
-  * On success jack will be initialised.
-  */
- int snd_soc_jack_new(struct snd_soc_codec *codec, const char *id, int type,
--		     struct snd_soc_jack *jack)
-+                     int idx, struct snd_soc_jack *jack)
+ static inline int snd_jack_new(struct snd_card *card, const char *id, int type,
+-			       struct snd_jack **jack)
++                               int idx, struct snd_jack **jack)
  {
- 	mutex_init(&jack->mutex);
- 	jack->codec = codec;
-@@ -42,7 +42,7 @@ int snd_soc_jack_new(struct snd_soc_codec *codec, const char *id, int type,
- 	INIT_LIST_HEAD(&jack->jack_zones);
- 	BLOCKING_INIT_NOTIFIER_HEAD(&jack->notifier);
- 
--	return snd_jack_new(codec->card->snd_card, id, type, &jack->jack);
-+	return snd_jack_new(codec->card->snd_card, id, type, idx, &jack->jack);
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(snd_soc_jack_new);
+diff --git a/sound/core/Kconfig b/sound/core/Kconfig
+index c0c2f57..8167615 100644
+--- a/sound/core/Kconfig
++++ b/sound/core/Kconfig
+@@ -20,6 +20,7 @@ config SND_COMPRESS_OFFLOAD
+ # to avoid having to force INPUT on.
+ config SND_JACK
+ 	bool
++	select SND_KCTL_JACK
  
-diff --git a/sound/soc/tegra/tegra_alc5632.c b/sound/soc/tegra/tegra_alc5632.c
-index 48d05d9..cfacc27 100644
---- a/sound/soc/tegra/tegra_alc5632.c
-+++ b/sound/soc/tegra/tegra_alc5632.c
-@@ -109,8 +109,8 @@ static int tegra_alc5632_asoc_init(struct snd_soc_pcm_runtime *rtd)
- 	struct snd_soc_dapm_context *dapm = &codec->dapm;
- 	struct tegra_alc5632 *machine = snd_soc_card_get_drvdata(codec->card);
+ config SND_SEQUENCER
+ 	tristate "Sequencer support"
+diff --git a/sound/core/ctljack.c b/sound/core/ctljack.c
+index e4b38fb..59aa6d0 100644
+--- a/sound/core/ctljack.c
++++ b/sound/core/ctljack.c
+@@ -38,7 +38,8 @@ snd_kctl_jack_new(const char *name, int idx, void *private_data)
+ 	kctl = snd_ctl_new1(&jack_detect_kctl, private_data);
+ 	if (!kctl)
+ 		return NULL;
+-	snprintf(kctl->id.name, sizeof(kctl->id.name), "%s Jack", name);
++
++	strlcpy(kctl->id.name, name, sizeof(kctl->id.name));
+ 	kctl->id.index = idx;
+ 	kctl->private_value = 0;
+ 	return kctl;
+diff --git a/sound/core/jack.c b/sound/core/jack.c
+index b35fe73..b2757b1 100644
+--- a/sound/core/jack.c
++++ b/sound/core/jack.c
+@@ -24,6 +24,7 @@
+ #include <linux/module.h>
+ #include <sound/jack.h>
+ #include <sound/core.h>
++#include <sound/control.h>
  
--	snd_soc_jack_new(codec, "Headset Jack", SND_JACK_HEADSET,
--			 &tegra_alc5632_hs_jack);
-+	snd_soc_jack_new(codec, "Headset", SND_JACK_HEADSET,
-+	                 0, &tegra_alc5632_hs_jack);
- 	snd_soc_jack_add_pins(&tegra_alc5632_hs_jack,
- 			ARRAY_SIZE(tegra_alc5632_hs_jack_pins),
- 			tegra_alc5632_hs_jack_pins);
-diff --git a/sound/soc/tegra/tegra_rt5640.c b/sound/soc/tegra/tegra_rt5640.c
-index 08794f9..aad20f2 100644
---- a/sound/soc/tegra/tegra_rt5640.c
-+++ b/sound/soc/tegra/tegra_rt5640.c
-@@ -112,7 +112,7 @@ static int tegra_rt5640_asoc_init(struct snd_soc_pcm_runtime *rtd)
- 	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(codec->card);
+ static int jack_switch_types[SND_JACK_SWITCH_TYPES] = {
+ 	SW_HEADPHONE_INSERT,
+@@ -48,6 +49,7 @@ static int snd_jack_dev_free(struct snd_device *device)
+ 	else
+ 		input_free_device(jack->input_dev);
  
- 	snd_soc_jack_new(codec, "Headphones", SND_JACK_HEADPHONE,
--			 &tegra_rt5640_hp_jack);
-+	                 0, &tegra_rt5640_hp_jack);
- 	snd_soc_jack_add_pins(&tegra_rt5640_hp_jack,
- 			ARRAY_SIZE(tegra_rt5640_hp_jack_pins),
- 			tegra_rt5640_hp_jack_pins);
-diff --git a/sound/soc/tegra/tegra_wm8903.c b/sound/soc/tegra/tegra_wm8903.c
-index 4ac7373..cd297f5 100644
---- a/sound/soc/tegra/tegra_wm8903.c
-+++ b/sound/soc/tegra/tegra_wm8903.c
-@@ -178,8 +178,8 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
++	snd_ctl_remove(device->card, jack->kctl);
+ 	kfree(jack->id);
+ 	kfree(jack);
  
- 	if (gpio_is_valid(machine->gpio_hp_det)) {
- 		tegra_wm8903_hp_jack_gpio.gpio = machine->gpio_hp_det;
--		snd_soc_jack_new(codec, "Headphone Jack", SND_JACK_HEADPHONE,
--				&tegra_wm8903_hp_jack);
-+		snd_soc_jack_new(codec, "Headphone", SND_JACK_HEADPHONE,
-+		                 0, &tegra_wm8903_hp_jack);
- 		snd_soc_jack_add_pins(&tegra_wm8903_hp_jack,
- 					ARRAY_SIZE(tegra_wm8903_hp_jack_pins),
- 					tegra_wm8903_hp_jack_pins);
-@@ -188,8 +188,8 @@ static int tegra_wm8903_init(struct snd_soc_pcm_runtime *rtd)
- 					&tegra_wm8903_hp_jack_gpio);
+@@ -85,26 +87,36 @@ static int snd_jack_dev_register(struct snd_device *device)
+ 	if (err == 0)
+ 		jack->registered = 1;
+ 
++	/* We don't need to free the control, it's freed by snd_ctl_add itself
++	   if an error occur */
++	err = snd_ctl_add(card, jack->kctl);
++
+ 	return err;
+ }
+ 
+ /**
+  * snd_jack_new - Create a new jack
+  * @card:  the card instance
+- * @id:    an identifying string for this jack
++ * @id:    an identifying string for this jack, " Jack" is appended to the
++ *         string
+  * @type:  a bitmask of enum snd_jack_type values that can be detected by
+  *         this jack
++ * @idx:   index of this control item
+  * @jjack: Used to provide the allocated jack object to the caller.
+  *
+  * Creates a new jack object.
+  *
++ * This function creates a Jack Kcontrol, which is exported to user space via
++ * ALSA Controls.
++ *
+  * Return: Zero if successful, or a negative error code on failure.
+  * On success @jjack will be initialised.
+  */
+ int snd_jack_new(struct snd_card *card, const char *id, int type,
+-		 struct snd_jack **jjack)
++                 int idx, struct snd_jack **jjack)
+ {
+ 	struct snd_jack *jack;
++	struct snd_kcontrol *kctl;
+ 	int err;
+ 	int i;
+ 	static struct snd_device_ops ops = {
+@@ -117,6 +129,7 @@ int snd_jack_new(struct snd_card *card, const char *id, int type,
+ 		return -ENOMEM;
+ 
+ 	jack->id = kstrdup(id, GFP_KERNEL);
++	sprintf((char *)jack->id, "%s Jack", jack->id);
+ 
+ 	jack->input_dev = input_allocate_device();
+ 	if (jack->input_dev == NULL) {
+@@ -137,6 +150,15 @@ int snd_jack_new(struct snd_card *card, const char *id, int type,
+ 	if (err < 0)
+ 		goto fail_input;
+ 
++	/* card is the private_data */
++	kctl = snd_kctl_jack_new(jack->id, idx, card);
++	if (!kctl) {
++		err = -ENOMEM;
++		goto fail_input;
++	}
++
++	jack->kctl = kctl;
++
+ 	*jjack = jack;
+ 
+ 	return 0;
+@@ -239,6 +261,9 @@ void snd_jack_report(struct snd_jack *jack, int status)
  	}
  
--	snd_soc_jack_new(codec, "Mic Jack", SND_JACK_MICROPHONE,
--			 &tegra_wm8903_mic_jack);
-+	snd_soc_jack_new(codec, "Mic", SND_JACK_MICROPHONE,
-+	                 0, &tegra_wm8903_mic_jack);
- 	snd_soc_jack_add_pins(&tegra_wm8903_mic_jack,
- 			      ARRAY_SIZE(tegra_wm8903_mic_jack_pins),
- 			      tegra_wm8903_mic_jack_pins);
+ 	input_sync(jack->input_dev);
++
++	/* Update ALSA KControl interface */
++	snd_kctl_jack_report((struct snd_card *)jack->kctl->private_data, jack->kctl, !!status);
+ }
+ EXPORT_SYMBOL(snd_jack_report);
+ 
 -- 
 1.8.1.4
 
