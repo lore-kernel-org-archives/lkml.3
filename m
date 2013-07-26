@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759962Ab3GZUso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:48:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50814 "EHLO
+	id S933616Ab3GZVdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:33:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759922Ab3GZUsb (ORCPT
+	with ESMTP id S1759916Ab3GZUsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:31 -0400
+	Fri, 26 Jul 2013 16:48:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 37/79] hyperv: Fix the NETIF_F_SG flag setting in netvsc
-Date: Fri, 26 Jul 2013 13:47:27 -0700
-Message-Id: <20130726204725.808145355@linuxfoundation.org>
+        Borislav Petkov <bp@suse.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Tony Luck <tony.luck@intel.com>
+Subject: [ 54/79] EDAC: Fix lockdep splat
+Date: Fri, 26 Jul 2013 13:47:44 -0700
+Message-Id: <20130726204728.283723793@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,35 +29,219 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
+From: Borislav Petkov <bp@suse.de>
 
-[ Upstream commit f45708209dc445bac0844f6ce86e315a2ffe8a29 ]
+commit 88d84ac97378c2f1d5fec9af1e8b7d9a662d6b00 upstream.
 
-SG mode is not currently supported by netvsc, so remove this flag for now.
-Otherwise, it will be unconditionally enabled by commit ec5f0615642
-    "Kill link between CSUM and SG features"
-Previously, the SG feature is disabled because CSUM is not set here.
+Fix the following:
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+BUG: key ffff88043bdd0330 not in .data!
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:2987 lockdep_init_map+0x565/0x5a0()
+DEBUG_LOCKS_WARN_ON(1)
+Modules linked in: glue_helper sb_edac(+) edac_core snd acpi_cpufreq lrw gf128mul ablk_helper iTCO_wdt evdev i2c_i801 dcdbas button cryptd pcspkr iTCO_vendor_support usb_common lpc_ich mfd_core soundcore mperf processor microcode
+CPU: 2 PID: 599 Comm: modprobe Not tainted 3.10.0 #1
+Hardware name: Dell Inc. Precision T3600/0PTTT9, BIOS A08 01/24/2013
+ 0000000000000009 ffff880439a1d920 ffffffff8160a9a9 ffff880439a1d958
+ ffffffff8103d9e0 ffff88043af4a510 ffffffff81a16e11 0000000000000000
+ ffff88043bdd0330 0000000000000000 ffff880439a1d9b8 ffffffff8103dacc
+Call Trace:
+  dump_stack
+  warn_slowpath_common
+  warn_slowpath_fmt
+  lockdep_init_map
+  ? trace_hardirqs_on_caller
+  ? trace_hardirqs_on
+  debug_mutex_init
+  __mutex_init
+  bus_register
+  edac_create_sysfs_mci_device
+  edac_mc_add_mc
+  sbridge_probe
+  pci_device_probe
+  driver_probe_device
+  __driver_attach
+  ? driver_probe_device
+  bus_for_each_dev
+  driver_attach
+  bus_add_driver
+  driver_register
+  __pci_register_driver
+  ? 0xffffffffa0010fff
+  sbridge_init
+  ? 0xffffffffa0010fff
+  do_one_initcall
+  load_module
+  ? unset_module_init_ro_nx
+  SyS_init_module
+  tracesys
+---[ end trace d24a70b0d3ddf733 ]---
+EDAC MC0: Giving out device to 'sbridge_edac.c' 'Sandy Bridge Socket#0': DEV 0000:3f:0e.0
+EDAC sbridge: Driver loaded.
+
+What happens is that bus_register needs a statically allocated lock_key
+because the last is handed in to lockdep. However, struct mem_ctl_info
+embeds struct bus_type (the whole struct, not a pointer to it) and the
+whole thing gets dynamically allocated.
+
+Fix this by using a statically allocated struct bus_type for the MC bus.
+
+Signed-off-by: Borislav Petkov <bp@suse.de>
+Acked-by: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/hyperv/netvsc_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -431,8 +431,8 @@ static int netvsc_probe(struct hv_device
- 	net->netdev_ops = &device_ops;
+---
+ drivers/edac/edac_mc.c       |    9 +++++++++
+ drivers/edac/edac_mc_sysfs.c |   28 +++++++++++++++-------------
+ drivers/edac/i5100_edac.c    |    2 +-
+ include/linux/edac.h         |    7 ++++++-
+ 4 files changed, 31 insertions(+), 15 deletions(-)
+
+--- a/drivers/edac/edac_mc.c
++++ b/drivers/edac/edac_mc.c
+@@ -48,6 +48,8 @@ static LIST_HEAD(mc_devices);
+  */
+ static void const *edac_mc_owner;
  
- 	/* TODO: Add GSO and Checksum offload */
--	net->hw_features = NETIF_F_SG;
--	net->features = NETIF_F_SG | NETIF_F_HW_VLAN_CTAG_TX;
-+	net->hw_features = 0;
-+	net->features = NETIF_F_HW_VLAN_CTAG_TX;
++static struct bus_type mc_bus[EDAC_MAX_MCS];
++
+ unsigned edac_dimm_info_location(struct dimm_info *dimm, char *buf,
+ 			         unsigned len)
+ {
+@@ -723,6 +725,11 @@ int edac_mc_add_mc(struct mem_ctl_info *
+ 	int ret = -EINVAL;
+ 	edac_dbg(0, "\n");
  
- 	SET_ETHTOOL_OPS(net, &ethtool_ops);
- 	SET_NETDEV_DEV(net, &dev->device);
++	if (mci->mc_idx >= EDAC_MAX_MCS) {
++		pr_warn_once("Too many memory controllers: %d\n", mci->mc_idx);
++		return -ENODEV;
++	}
++
+ #ifdef CONFIG_EDAC_DEBUG
+ 	if (edac_debug_level >= 3)
+ 		edac_mc_dump_mci(mci);
+@@ -762,6 +769,8 @@ int edac_mc_add_mc(struct mem_ctl_info *
+ 	/* set load time so that error rate can be tracked */
+ 	mci->start_time = jiffies;
+ 
++	mci->bus = &mc_bus[mci->mc_idx];
++
+ 	if (edac_create_sysfs_mci_device(mci)) {
+ 		edac_mc_printk(mci, KERN_WARNING,
+ 			"failed to create sysfs device\n");
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -370,7 +370,7 @@ static int edac_create_csrow_object(stru
+ 		return -ENODEV;
+ 
+ 	csrow->dev.type = &csrow_attr_type;
+-	csrow->dev.bus = &mci->bus;
++	csrow->dev.bus = mci->bus;
+ 	device_initialize(&csrow->dev);
+ 	csrow->dev.parent = &mci->dev;
+ 	csrow->mci = mci;
+@@ -605,7 +605,7 @@ static int edac_create_dimm_object(struc
+ 	dimm->mci = mci;
+ 
+ 	dimm->dev.type = &dimm_attr_type;
+-	dimm->dev.bus = &mci->bus;
++	dimm->dev.bus = mci->bus;
+ 	device_initialize(&dimm->dev);
+ 
+ 	dimm->dev.parent = &mci->dev;
+@@ -975,11 +975,13 @@ int edac_create_sysfs_mci_device(struct
+ 	 * The memory controller needs its own bus, in order to avoid
+ 	 * namespace conflicts at /sys/bus/edac.
+ 	 */
+-	mci->bus.name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
+-	if (!mci->bus.name)
++	mci->bus->name = kasprintf(GFP_KERNEL, "mc%d", mci->mc_idx);
++	if (!mci->bus->name)
+ 		return -ENOMEM;
+-	edac_dbg(0, "creating bus %s\n", mci->bus.name);
+-	err = bus_register(&mci->bus);
++
++	edac_dbg(0, "creating bus %s\n", mci->bus->name);
++
++	err = bus_register(mci->bus);
+ 	if (err < 0)
+ 		return err;
+ 
+@@ -988,7 +990,7 @@ int edac_create_sysfs_mci_device(struct
+ 	device_initialize(&mci->dev);
+ 
+ 	mci->dev.parent = mci_pdev;
+-	mci->dev.bus = &mci->bus;
++	mci->dev.bus = mci->bus;
+ 	dev_set_name(&mci->dev, "mc%d", mci->mc_idx);
+ 	dev_set_drvdata(&mci->dev, mci);
+ 	pm_runtime_forbid(&mci->dev);
+@@ -997,8 +999,8 @@ int edac_create_sysfs_mci_device(struct
+ 	err = device_add(&mci->dev);
+ 	if (err < 0) {
+ 		edac_dbg(1, "failure: create device %s\n", dev_name(&mci->dev));
+-		bus_unregister(&mci->bus);
+-		kfree(mci->bus.name);
++		bus_unregister(mci->bus);
++		kfree(mci->bus->name);
+ 		return err;
+ 	}
+ 
+@@ -1064,8 +1066,8 @@ fail:
+ 	}
+ fail2:
+ 	device_unregister(&mci->dev);
+-	bus_unregister(&mci->bus);
+-	kfree(mci->bus.name);
++	bus_unregister(mci->bus);
++	kfree(mci->bus->name);
+ 	return err;
+ }
+ 
+@@ -1098,8 +1100,8 @@ void edac_unregister_sysfs(struct mem_ct
+ {
+ 	edac_dbg(1, "Unregistering device %s\n", dev_name(&mci->dev));
+ 	device_unregister(&mci->dev);
+-	bus_unregister(&mci->bus);
+-	kfree(mci->bus.name);
++	bus_unregister(mci->bus);
++	kfree(mci->bus->name);
+ }
+ 
+ static void mc_attr_release(struct device *dev)
+--- a/drivers/edac/i5100_edac.c
++++ b/drivers/edac/i5100_edac.c
+@@ -974,7 +974,7 @@ static int i5100_setup_debugfs(struct me
+ 	if (!i5100_debugfs)
+ 		return -ENODEV;
+ 
+-	priv->debugfs = debugfs_create_dir(mci->bus.name, i5100_debugfs);
++	priv->debugfs = debugfs_create_dir(mci->bus->name, i5100_debugfs);
+ 
+ 	if (!priv->debugfs)
+ 		return -ENOMEM;
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -622,7 +622,7 @@ struct edac_raw_error_desc {
+  */
+ struct mem_ctl_info {
+ 	struct device			dev;
+-	struct bus_type			bus;
++	struct bus_type			*bus;
+ 
+ 	struct list_head link;	/* for global list of mem_ctl_info structs */
+ 
+@@ -742,4 +742,9 @@ struct mem_ctl_info {
+ #endif
+ };
+ 
++/*
++ * Maximum number of memory controllers in the coherent fabric.
++ */
++#define EDAC_MAX_MCS	16
++
+ #endif
 
 
