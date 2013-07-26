@@ -1,122 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759567Ab3GZSzi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 14:55:38 -0400
-Received: from mail-qe0-f42.google.com ([209.85.128.42]:36410 "EHLO
-	mail-qe0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759544Ab3GZSzf convert rfc822-to-8bit (ORCPT
+	id S1759559Ab3GZS4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 14:56:34 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49417 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab3GZS4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 14:55:35 -0400
+	Fri, 26 Jul 2013 14:56:32 -0400
+Date: Fri, 26 Jul 2013 19:56:09 +0100
+From: Mark Brown <broonie@kernel.org>
+To: "Felipe F. Tonello" <eu@felipetonello.com>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Wang Xingchao <xingchao.wang@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Message-ID: <20130726185609.GY9858@sirena.org.uk>
+References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
+ <1374863133-6745-5-git-send-email-eu@felipetonello.com>
 MIME-Version: 1.0
-In-Reply-To: <51F2AB71.3070102@arm.com>
-References: <1374069984-20567-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-	<1374492747-13879-1-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-	<1374492747-13879-8-git-send-email-Sudeep.KarkadaNagesha@arm.com>
-	<51F2AB71.3070102@arm.com>
-Date: Fri, 26 Jul 2013 13:55:34 -0500
-Message-ID: <CAL_JsqK5i8fxskOtdqmPYL1pPicesAYHfW6+2NLR41t_fkf+6A@mail.gmail.com>
-Subject: Re: [PATCH v3 07/16] of/device: add helper to get cpu device node
- from logical cpu index
-From: Rob Herring <robherring2@gmail.com>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yeHj6vyFcpxC+65j"
+Content-Disposition: inline
+In-Reply-To: <1374863133-6745-5-git-send-email-eu@felipetonello.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 4/4] ALSA: oxygen: Updating jack implementation according
+ new ALSA Jacks
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 12:01 PM, Sudeep KarkadaNagesha
-<Sudeep.KarkadaNagesha@arm.com> wrote:
-> Rob,
->
-> On 22/07/13 12:32, Sudeep KarkadaNagesha wrote:
->> From: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->>
->> Multiple drivers need to get the cpu device node from the cpu logical
->> index and then access the of_node.
->>
->> This patch adds helper function to fetch the device node directly.
->>
->> Cc: Rob Herring <rob.herring@calxeda.com>
->> Signed-off-by: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
->
-> If you have no objections with this patch, can I add your ACK ?
 
-Yes.
+--yeHj6vyFcpxC+65j
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+On Fri, Jul 26, 2013 at 11:25:33AM -0700, Felipe F. Tonello wrote:
+> From: "Felipe F. Tonello" <eu@felipetonello.com>
+>=20
+> ALSA standard jacks already are implemented using ALSA KControl.
+> So there is no need implement that itself or to use snd_jack
+> for input events only.
 
->
-> Regards,
-> Sudeep
->
->> ---
->>  include/linux/of_device.h | 15 +++++++++++++++
->>  1 file changed, 15 insertions(+)
->>
->> diff --git a/include/linux/of_device.h b/include/linux/of_device.h
->> index 9d27475..82ce324 100644
->> --- a/include/linux/of_device.h
->> +++ b/include/linux/of_device.h
->> @@ -1,6 +1,7 @@
->>  #ifndef _LINUX_OF_DEVICE_H
->>  #define _LINUX_OF_DEVICE_H
->>
->> +#include <linux/cpu.h>
->>  #include <linux/platform_device.h>
->>  #include <linux/of_platform.h> /* temporary until merge */
->>
->> @@ -43,6 +44,15 @@ static inline void of_device_node_put(struct device *dev)
->>       of_node_put(dev->of_node);
->>  }
->>
->> +static inline struct device_node *of_cpu_device_node_get(int cpu)
->> +{
->> +     struct device *cpu_dev;
->> +     cpu_dev = get_cpu_device(cpu);
->> +     if (!cpu_dev)
->> +             return NULL;
->> +     return of_node_get(cpu_dev->of_node);
->> +}
->> +
->>  #else /* CONFIG_OF */
->>
->>  static inline int of_driver_match_device(struct device *dev,
->> @@ -67,6 +77,11 @@ static inline const struct of_device_id *of_match_device(
->>  {
->>       return NULL;
->>  }
->> +
->> +static inline struct device_node *of_cpu_device_node_get(int cpu)
->> +{
->> +     return NULL;
->> +}
->>  #endif /* CONFIG_OF */
->>
->>  #endif /* _LINUX_OF_DEVICE_H */
->>
->
->
-> -- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Similar changlog comment as on the ASoC patch and...
+
+>  	snd_jack_new(chip->card, "Headphone",
+> -		     SND_JACK_HEADPHONE, &data->hp_jack);
+> +	             SND_JACK_HEADPHONE, 0, &data->hp_jack);
+>  	xonar_ds_handle_hp_jack(chip);
+
+=2E..this really ought to be done as part of the commit that adds the
+parameter since it breaks the build until this patch is applied.
+
+--yeHj6vyFcpxC+65j
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8sZGAAoJELSic+t+oim9vh4P/jlvew18ahVcBJTWRcPFq2Za
+EtvX0IiAe9IDKAobeV+q4Vf68KJDZ9wTfkaq8QQJHu1gCAmoPK5WtVXOsIuuwGWx
+NBIc4gF+0+i7AzsWWpu93qN47/1HC15PQoMQxsebR2jSAthaQ89E2yZovYVpPCqe
+fbuJxsnuDzSjNiWfRGozz23/mNgkTsx5HmsVIkXluW5S4LNV1EqgKrv8m/Zh0NDv
+lHnzWfYggfDh06XEeDXRmDmaoT0q99S/izpJ2I02lNjkCfkLt/gpzsIQsidzIXBK
+S4AMWDIlflHHOiL7eBDFquUU2gGnONmrVY+8ViL5bNSQdm5kX8ESYQdUDlPfR6W4
+F1dtIbeDtIayFkt1jsa571tTGyt2ztv1npgDOlxeA9nIdeiYvWz3TxBLjkMXj8V7
+oBEDDmNQYsgWND8gmn7NK5TMFKEW4oUTU0Pj3fG28rqvTRGZf5yHLIh81lcjxiR3
+hUAO/ka2hk8SG7jxFoiAx7aZoONlJWMOVNsSsWtP4CktAhNiFCM9QVLJqN7Mr31n
+iXGUwAT76R7hYEXYpKJw6l/JGLjH4u5uHDPTRvURo+KBNdvxPFUXQ4oKaWidbGcQ
+x2b/Xm2i9WPNPRLy14cr5Imc1gdAi3WnqAKksB4xVH4ux9Mw8p99LeBIEwrD5+3/
+Fw5yQ55rAMyjqXKqNhug
+=0QtY
+-----END PGP SIGNATURE-----
+
+--yeHj6vyFcpxC+65j--
