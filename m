@@ -1,271 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758460Ab3GZKac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:30:32 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:43252 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754659Ab3GZKab (ORCPT
+	id S1758497Ab3GZKdB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:33:01 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:58697 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756558Ab3GZKdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:30:31 -0400
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 06:30:31 EDT
-From: Jeff Layton <jlayton@redhat.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Neil Brown <neilb@suse.de>
-Subject: [PATCH] vfs: allow umount to handle mountpoints without revalidating them
-Date: Fri, 26 Jul 2013 06:23:25 -0400
-Message-Id: <1374834205-4406-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Fri, 26 Jul 2013 06:33:00 -0400
+Date: Fri, 26 Jul 2013 11:32:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20130726103250.GX9858@sirena.org.uk>
+References: <20130725111357.7c976963@armhf>
+ <20130725191059.GO9858@sirena.org.uk>
+ <20130726082818.480d2a02@armhf>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="x9eD2RskteXOQWXz"
+Content-Disposition: inline
+In-Reply-To: <20130726082818.480d2a02@armhf>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/4] ASoc: kirkwood: simplify probe error
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christopher reported a regression where he was unable to unmount a NFS
-filesystem where the root had gone stale. The problem is that
-d_revalidate handles the root of the filesystem differently from other
-dentries, but d_weak_revalidate does not. We could simply fix this by
-making d_weak_revalidate return success on IS_ROOT dentries, but there
-are cases where we do want to revalidate the root of the fs.
 
-A umount is really a special case. We generally aren't interested in
-anything but the dentry and vfsmount that's attached at that point. If
-the inode turns out to be stale we just don't care since the intent is
-to stop using it anyway.
+--x9eD2RskteXOQWXz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Try to handle this situation better by treating umount as a special
-case in the lookup code. Have it resolve the parent using normal
-means, and then do a lookup of the final dentry without revalidating
-it. In most cases, the final lookup will come out of the dcache, but
-the case where there's a trailing symlink or !LAST_NORM entry on the
-end complicates things a bit.
+On Fri, Jul 26, 2013 at 08:28:18AM +0200, Jean-Francois Moine wrote:
+> Mark Brown <broonie@kernel.org> wrote:
 
-Cc: Neil Brown <neilb@suse.de>
-Reported-by: Christopher T Vogan <cvogan@us.ibm.com>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/namei.c            | 182 ++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/namespace.c        |   2 +-
- include/linux/namei.h |   1 +
- 3 files changed, 184 insertions(+), 1 deletion(-)
+> > This seems fine but doesn't apply against current code but otherwise
+> > seems fine.
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 8b61d10..d9f65bd 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2184,6 +2184,188 @@ user_path_parent(int dfd, const char __user *path, struct nameidata *nd,
- 	return s;
- }
- 
-+/**
-+ * umount_lookup_last - look up last component for umount
-+ * @nd:   pathwalk nameidata - currently pointing at parent directory of "last"
-+ * @path: pointer to container for result
-+ *
-+ * This is a special lookup_last function just for umount. In this case, we
-+ * need to resolve the path without doing any revalidation.
-+ *
-+ * The nameidata should be the result of doing a LOOKUP_PARENT pathwalk. Since
-+ * mountpoints are always pinned in the dcache, their ancestors are too. Thus,
-+ * in almost all cases, this lookup will be served out of the dcache. The only
-+ * cases where it won't are if nd->last refers to a symlink or the path is
-+ * bogus and it doesn't exist.
-+ *
-+ * Returns:
-+ * -error: if there was an error during lookup. This includes -ENOENT if the
-+ *         lookup found a negative dentry. The nd->path reference will also be
-+ *         put in this case.
-+ *
-+ * 0:      if we successfully resolved nd->path and found it to not to be a
-+ *         symlink that needs to be followed. "path" will also be populated.
-+ *         The nd->path reference will also be put.
-+ *
-+ * 1:      if we successfully resolved nd->last and found it to be a symlink
-+ *         that needs to be followed. "path" will be populated with the path
-+ *         to the link, and nd->path will *not* be put.
-+ */
-+static int
-+umount_lookup_last(struct nameidata *nd, struct path *path)
-+{
-+	int error = 0;
-+	struct dentry *dentry;
-+	struct dentry *dir = nd->path.dentry;
-+
-+	if (unlikely(nd->flags & LOOKUP_RCU)) {
-+		WARN_ON_ONCE(1);
-+		error = -ECHILD;
-+		goto error_check;
-+	}
-+
-+	nd->flags &= ~LOOKUP_PARENT;
-+
-+	if (unlikely(nd->last_type != LAST_NORM)) {
-+		error = handle_dots(nd, nd->last_type);
-+		if (!error)
-+			dentry = dget(nd->path.dentry);
-+		goto error_check;
-+	}
-+
-+	mutex_lock(&dir->d_inode->i_mutex);
-+	dentry = d_lookup(dir, &nd->last);
-+	if (!dentry) {
-+		/*
-+		 * No cached dentry. Mounted dentries are pinned in the cache,
-+		 * so that means that this dentry is probably a symlink or the
-+		 * path doesn't actually point to a mounted dentry.
-+		 */
-+		dentry = d_alloc(dir, &nd->last);
-+		if (!dentry) {
-+			error = -ENOMEM;
-+		} else {
-+			dentry = lookup_real(dir->d_inode, dentry, nd->flags);
-+			if (IS_ERR(dentry))
-+				error = PTR_ERR(dentry);
-+		}
-+	}
-+	mutex_unlock(&dir->d_inode->i_mutex);
-+
-+error_check:
-+	if (!error) {
-+		if (!dentry->d_inode) {
-+			error = -ENOENT;
-+			dput(dentry);
-+		} else {
-+			path->dentry = dentry;
-+			path->mnt = mntget(nd->path.mnt);
-+			if (should_follow_link(dentry->d_inode,
-+						nd->flags & LOOKUP_FOLLOW))
-+				return 1;
-+			follow_mount(path);
-+		}
-+	}
-+	terminate_walk(nd);
-+	return error;
-+}
-+
-+/**
-+ * path_umountat - look up a path to be umounted
-+ * @dfd:	directory file descriptor to start walk from
-+ * @name:	full pathname to walk
-+ * @flags:	lookup flags
-+ * @nd:		pathwalk nameidata
-+ *
-+ * Look up the given name, but don't attempt to revalidate the last component.
-+ * Returns 0 and "path" will be valid on success; Retuns error otherwise.
-+ */
-+static int
-+path_umountat(int dfd, const char *name, struct path *path, unsigned int flags)
-+{
-+	struct file *base = NULL;
-+	struct nameidata nd;
-+	int err;
-+
-+	err = path_init(dfd, name, flags | LOOKUP_PARENT, &nd, &base);
-+	if (unlikely(err))
-+		return err;
-+
-+	current->total_link_count = 0;
-+	err = link_path_walk(name, &nd);
-+	if (err)
-+		goto out;
-+
-+	/* If we're in rcuwalk, drop out of it to handle last component */
-+	if (nd.flags & LOOKUP_RCU) {
-+		err = unlazy_walk(&nd, NULL);
-+		if (err) {
-+			terminate_walk(&nd);
-+			goto out;
-+		}
-+	}
-+
-+	err = umount_lookup_last(&nd, path);
-+	while (err > 0) {
-+		void *cookie;
-+		struct path link = *path;
-+		err = may_follow_link(&link, &nd);
-+		if (unlikely(err))
-+			break;
-+		nd.flags |= LOOKUP_PARENT;
-+		err = follow_link(&link, &nd, &cookie);
-+		if (err)
-+			break;
-+		err = umount_lookup_last(&nd, path);
-+		put_link(&nd, &link, cookie);
-+	}
-+out:
-+	if (base)
-+		fput(base);
-+
-+	if (nd.root.mnt && !(nd.flags & LOOKUP_ROOT))
-+		path_put(&nd.root);
-+
-+	return err;
-+}
-+
-+/**
-+ * user_path_umountat - lookup a path from userland in order to umount it
-+ * @dfd:	directory file descriptor
-+ * @name:	pathname from userland
-+ * @flags:	lookup flags
-+ * @path:	pointer to container to hold result
-+ *
-+ * A umount is a special case for path walking. We're not actually interested
-+ * in the inode in this situation, and ESTALE errors can be a problem. We
-+ * simply want track down the dentry and vfsmount attached at the mountpoint
-+ * and avoid revalidating the last component.
-+ *
-+ * Returns 0 and populates "path" on success.
-+ */
-+int
-+user_path_umountat(int dfd, const char __user *name, unsigned int flags,
-+			struct path *path)
-+{
-+	struct filename *s = getname(name);
-+	int error;
-+
-+	if (IS_ERR(s))
-+		return PTR_ERR(s);
-+
-+	error = path_umountat(dfd, s->name, path, flags | LOOKUP_RCU);
-+	if (unlikely(error == -ECHILD))
-+		error = path_umountat(dfd, s->name, path, flags);
-+	if (unlikely(error == -ESTALE))
-+		error = path_umountat(dfd, s->name, path, flags | LOOKUP_REVAL);
-+
-+	if (likely(!error))
-+		audit_inode(s, path->dentry, 0);
-+
-+	putname(s);
-+	return error;
-+}
-+
- /*
-  * It's inline, so penalty for filesystems that don't use sticky bit is
-  * minimal.
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 7b1ca9b..5d2676a 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1318,7 +1318,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
- 	if (!(flags & UMOUNT_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
- 
--	retval = user_path_at(AT_FDCWD, name, lookup_flags, &path);
-+	retval = user_path_umountat(AT_FDCWD, name, lookup_flags, &path);
- 	if (retval)
- 		goto out;
- 	mnt = real_mount(path.mnt);
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 5a5ff57..cd09751 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -58,6 +58,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- 
- extern int user_path_at(int, const char __user *, unsigned, struct path *);
- extern int user_path_at_empty(int, const char __user *, unsigned, struct path *, int *empty);
-+extern int user_path_umountat(int, const char __user *, unsigned int, struct path *);
- 
- #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
- #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
--- 
-1.8.3.1
+> My base is 3.11-rc2.
 
+Always submit against where the code will be applied - -next in this
+case.
+
+--x9eD2RskteXOQWXz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR8lBPAAoJELSic+t+oim9zmkP/iAVMMZdWXAVm7B+SvNMPfqG
+Iwa7wsV6m83cXPzGisvS4rIIL1ygbtZBnfoKYJE8uq+QDgFd/lBGQlGYkBkbWhYt
+EqhXkHT47Be9b9CmfOI0tfe29WJbk1goubqz/no5Nb3fpuOBxtmUVdiEo5cHyFcf
+Y/1iYIVwafYN5lJLHa5B7C1aOkPDhVN0GkMdWQDBnVnNwA66MXbNjuvz5+BwRoij
+c7JpI2PHDtDjYypNu6cRaMBHKo2+BR+dTz4X4bKVXFfuFGCX6YsXk2SiXgAEEzqs
+6OBQ+bZ9iDdYFRI1zFwe1SI20Xtofn3vph4SrqQP/FmH1kWCGoNap3pReRQb5/ZT
+jo9ryNwORUKY7O3iEp+bcwmqlp+vPsfMXI1v+pF6PCQ6RScrgjNAhZeXOTIX6xiV
+TGbYWDtE90THit0nVscvJWhRzOq6T0TszJgZP8oY9bAe2IhptIyJ5aMtgRYlFbZp
+ZAlh3YU+tORHiR8wVwsak0ygSQXssb1zVpoqdR64Q7p2OriR35etnbgkE4aMjRdC
+5rH0FuSJw+8+hTdPHihWtiScFdpHfKLr4D/LtbeRJ8R4UXXYynvyPjiHpvSfr+ad
+x2A0riLmmhfBIH/Fob3kEvCMBLSYqQbvVgg1ApkNfv3erXXykAG59Rw/ci6XYtP/
+R6TrfBpPf9PUQjLDIXy7
+=X1z7
+-----END PGP SIGNATURE-----
+
+--x9eD2RskteXOQWXz--
