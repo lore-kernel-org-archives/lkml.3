@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341Ab3GZJMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:12:33 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:40573 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758320Ab3GZJM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:12:28 -0400
-Message-ID: <1374829895.1956.39.camel@iivanov-dev.int.mm-sol.com>
-Subject: Re: [PATCH 1/7] usb: phy: msm: Move mach dependent code to platform
- data
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Bryan Huntsman <bryanh@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 26 Jul 2013 12:11:35 +0300
-In-Reply-To: <20130724155505.GA26371@codeaurora.org>
-References: <1372087664-26396-1-git-send-email-iivanov@mm-sol.com>
-	 <1372087664-26396-2-git-send-email-iivanov@mm-sol.com>
-	 <20130724155505.GA26371@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1758344Ab3GZJNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:13:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:58397 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755173Ab3GZJM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 05:12:56 -0400
+Date: Fri, 26 Jul 2013 11:12:45 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Dave Hansen <dave@sr71.net>, x86@kernel.org
+Subject: Re: [PATCH] x86, tsc add an initial read offset to __cycles_2_ns()
+ calculations
+Message-ID: <20130726091245.GF27075@twins.programming.kicks-ass.net>
+References: <1374681800-7237-1-git-send-email-prarit@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374681800-7237-1-git-send-email-prarit@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-07-24 at 08:55 -0700, David Brown wrote:
-> On Mon, Jun 24, 2013 at 06:27:38PM +0300, Ivan T. Ivanov wrote:
-> >From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >
-> >This patch fix compilation error and is an intermediate step
-> >before the addition of DeviceTree support for newer targets.
-> >Fix suggested here: https://lkml.org/lkml/2013/6/19/381
-> >
-> >Cc: David Brown <davidb@codeaurora.org>
-> >Cc: Daniel Walker <dwalker@fifo99.com>
-> >Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> >Cc: Russell King <linux@arm.linux.org.uk>
-> >Cc: Felipe Balbi <balbi@ti.com>
-> >Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> >Cc: Stephen Boyd <sboyd@codeaurora.org>
-> >Cc: linux-arm-kernel@lists.infradead.org
-> >Cc: linux-kernel@vger.kernel.org
-> >
-> >Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> >---
-> > arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
-> > arch/arm/mach-msm/board-qsd8x50.c |   34 +++++++++++++++++++++++
-> > drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------------
-> > include/linux/usb/msm_hsusb.h     |    2 ++
-> > 4 files changed, 85 insertions(+), 41 deletions(-)
+On Wed, Jul 24, 2013 at 12:03:20PM -0400, Prarit Bhargava wrote:
 > 
-> Acked-by: David Brown <davidb@codeaurora.org>
+> The TSC can have non-zero values at boot time on Intel Xeon E5 (family 6,
+> model 45) aka "SandyBridge" processors.  This is documented in the Errata
+> for the E5 processors as BT81.
 > 
+> The __cycles_2_ns() calculation is known to overflow if a large value of
+> cycles is passed into the function.  This is done by design to improve
+> precision for smaller significant digits in the calculation.  Since the E5
+> processor can pass in a large value,  we need to snapshot the TSC's
+> initial value to avoid calculation overflows in the conversions of cycles
+> to nanoseconds.
+> 
+> Tested successfully on various Sandybridge systems as well as a few older
+> and newer systems without any issues.
+> 
+> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Dave Hansen <dave@sr71.net>
+> Cc: x86@kernel.org
+> ---
+>  arch/x86/include/asm/timer.h |   15 +++------------
+>  arch/x86/kernel/tsc.c        |   13 +++++++++++++
+>  2 files changed, 16 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+> index 34baa0e..f9d666b 100644
+> --- a/arch/x86/include/asm/timer.h
+> +++ b/arch/x86/include/asm/timer.h
+> @@ -12,6 +12,8 @@ extern int recalibrate_cpu_khz(void);
+>  
+>  extern int no_timer_check;
+>  
+> +extern unsigned long long tsc_initial_value;
+> +
+>  /* Accelerators for sched_clock()
+>   * convert from cycles(64bits) => nanoseconds (64bits)
+>   *  basic equation:
+> @@ -59,21 +61,10 @@ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+>  {
+>  	int cpu = smp_processor_id();
+>  	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+> +	cyc -= tsc_initial_value;
+>  	ns += mult_frac(cyc, per_cpu(cyc2ns, cpu),
+>  			(1UL << CYC2NS_SCALE_FACTOR));
+>  	return ns;
+>  }
 
-Thank you David, but I am afraid that I have screwup this patch. It
-doesn't build fine. I will send second version.
-Sorry. Ivan
+Hurm.. but eventually the TSC value _will_ get that large again, right?
+So shouldn't we fix the actual problem?
 
