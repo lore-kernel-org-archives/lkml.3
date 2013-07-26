@@ -1,135 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932276Ab3GZRcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:32:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41523 "EHLO mx1.redhat.com"
+	id S1759107Ab3GZRdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:33:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42594 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759144Ab3GZRbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:31:10 -0400
-Date: Fri, 26 Jul 2013 19:25:47 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 5/6] tracing: Introduce remove_event_file_dir()
-Message-ID: <20130726172547.GA3629@redhat.com>
+	id S1752229Ab3GZRdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:33:12 -0400
+Date: Fri, 26 Jul 2013 13:33:06 -0400
+From: Jeremy Eder <jeder@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: rafael.j.wysocki@intel.com, riel@redhat.com, youquan.song@intel.com,
+        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
+        arjan@linux.intel.com, len.brown@intel.com
+Subject: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
+Message-ID: <20130726173306.GB17985@jeder.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130726172513.GA3586@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparation for the next patch. Extract the common code from
-remove_event_from_tracers() and __trace_remove_event_dirs()
-into the new helper, remove_event_file_dir().
+Hello,
 
-The patch looks more complicated than it actually is, it also
-moves remove_subsystem() up to avoid the forward declaration.
+We believe we've identified a particular commit to the cpuidle code that
+seems to be impacting performance of variety of workloads.  The simplest way to
+reproduce is using netperf TCP_RR test, so we're using that, on a pair of
+Sandy Bridge based servers.  We also have data from a large database setup
+where performance is also measurably/positively impacted, though that test
+data isn't easily share-able.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace_events.c |   47 +++++++++++++++++++++----------------------
- 1 files changed, 23 insertions(+), 24 deletions(-)
+Included below are test results from 3 test kernels:
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 3de2aca..2a4f68a 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -409,11 +409,31 @@ static void put_system(struct ftrace_subsystem_dir *dir)
- 	mutex_unlock(&event_mutex);
- }
- 
-+static void remove_subsystem(struct ftrace_subsystem_dir *dir)
-+{
-+	if (!dir)
-+		return;
-+
-+	if (!--dir->nr_events) {
-+		debugfs_remove_recursive(dir->entry);
-+		list_del(&dir->list);
-+		__put_system_dir(dir);
-+	}
-+}
-+
- static void *event_file_data(struct file *filp)
- {
- 	return ACCESS_ONCE(file_inode(filp)->i_private);
- }
- 
-+static void remove_event_file_dir(struct ftrace_event_file *file)
-+{
-+	list_del(&file->list);
-+	debugfs_remove_recursive(file->dir);
-+	remove_subsystem(file->system);
-+	kmem_cache_free(file_cachep, file);
-+}
-+
- /*
-  * Open and update trace_array ref count.
-  * Must have the current trace_array passed to it.
-@@ -1545,33 +1565,16 @@ event_create_dir(struct dentry *parent,
- 	return 0;
- }
- 
--static void remove_subsystem(struct ftrace_subsystem_dir *dir)
--{
--	if (!dir)
--		return;
--
--	if (!--dir->nr_events) {
--		debugfs_remove_recursive(dir->entry);
--		list_del(&dir->list);
--		__put_system_dir(dir);
--	}
--}
--
- static void remove_event_from_tracers(struct ftrace_event_call *call)
- {
- 	struct ftrace_event_file *file;
- 	struct trace_array *tr;
- 
- 	do_for_each_event_file_safe(tr, file) {
--
- 		if (file->event_call != call)
- 			continue;
- 
--		list_del(&file->list);
--		debugfs_remove_recursive(file->dir);
--		remove_subsystem(file->system);
--		kmem_cache_free(file_cachep, file);
--
-+		remove_event_file_dir(file);
- 		/*
- 		 * The do_for_each_event_file_safe() is
- 		 * a double loop. After finding the call for this
-@@ -2301,12 +2304,8 @@ __trace_remove_event_dirs(struct trace_array *tr)
- {
- 	struct ftrace_event_file *file, *next;
- 
--	list_for_each_entry_safe(file, next, &tr->events, list) {
--		list_del(&file->list);
--		debugfs_remove_recursive(file->dir);
--		remove_subsystem(file->system);
--		kmem_cache_free(file_cachep, file);
--	}
-+	list_for_each_entry_safe(file, next, &tr->events, list)
-+		remove_event_file_dir(file);
- }
- 
- static void
--- 
-1.5.5.1
+kernel       reverts
+-----------------------------------------------------------
+1) vanilla   upstream (no reverts)
 
+2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
+
+3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
+                     e11538d1f03914eb92af5a1a378375c05ae8520c
+
+In summary, netperf TCP_RR numbers improve by approximately 4% after
+reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
+69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency never
+seems to get above 40%.  Taking that patch out gets C0 near 100% quite
+often, and performance increases.
+
+The below data are histograms representing the %c0 residency @ 1-second
+sample rates (using turbostat), while under netperf test.
+
+- If you look at the first 4 histograms, you can see %c0 residency almost
+  entirely in the 30,40% bin.
+- The last pair, which reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4,
+  shows %c0 in the 80,90,100% bins.
+
+Below each kernel name are netperf TCP_RR trans/s numbers for the
+particular kernel that can be disclosed publicly, comparing the 3 test
+kernels.  We ran a 4th test with the vanilla kernel where we've also set
+/dev/cpu_dma_latency=0 to show overall impact boosting single-threaded
+TCP_RR performance over 11% above baseline.
+
+3.10-rc2 vanilla RX + c0 lock (/dev/cpu_dma_latency=0):  
+TCP_RR trans/s 54323.78
+
+-----------------------------------------------------------
+3.10-rc2 vanilla RX (no reverts)
+TCP_RR trans/s 48192.47
+
+Receiver %c0 
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     0]: 
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [    59]: 
+***********************************************************
+   40.0000 -    50.0000 [     1]: *
+   50.0000 -    60.0000 [     0]: 
+   60.0000 -    70.0000 [     0]: 
+   70.0000 -    80.0000 [     0]: 
+   80.0000 -    90.0000 [     0]: 
+   90.0000 -   100.0000 [     0]: 
+
+Sender %c0
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     0]: 
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [    11]: ***********
+   40.0000 -    50.0000 [    49]:
+*************************************************
+   50.0000 -    60.0000 [     0]: 
+   60.0000 -    70.0000 [     0]: 
+   70.0000 -    80.0000 [     0]: 
+   80.0000 -    90.0000 [     0]: 
+   90.0000 -   100.0000 [     0]: 
+
+-----------------------------------------------------------
+3.10-rc2 perfteam2 RX (reverts commit
+e11538d1f03914eb92af5a1a378375c05ae8520c)
+TCP_RR trans/s 49698.69
+
+Receiver %c0 
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     1]: *
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [    59]:
+***********************************************************
+   40.0000 -    50.0000 [     0]: 
+   50.0000 -    60.0000 [     0]: 
+   60.0000 -    70.0000 [     0]: 
+   70.0000 -    80.0000 [     0]: 
+   80.0000 -    90.0000 [     0]: 
+   90.0000 -   100.0000 [     0]: 
+
+Sender %c0 
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     0]: 
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [     2]: **
+   40.0000 -    50.0000 [    58]:
+**********************************************************
+   50.0000 -    60.0000 [     0]: 
+   60.0000 -    70.0000 [     0]: 
+   70.0000 -    80.0000 [     0]: 
+   80.0000 -    90.0000 [     0]: 
+   90.0000 -   100.0000 [     0]: 
+
+-----------------------------------------------------------
+3.10-rc2 test RX (reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 and
+e11538d1f03914eb92af5a1a378375c05ae8520c)
+TCP_RR trans/s 47766.95
+
+Receiver %c0
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     1]: *
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [    27]: ***************************
+   40.0000 -    50.0000 [     2]: **
+   50.0000 -    60.0000 [     0]: 
+   60.0000 -    70.0000 [     2]: **
+   70.0000 -    80.0000 [     0]: 
+   80.0000 -    90.0000 [     0]: 
+   90.0000 -   100.0000 [    28]: ****************************
+
+Sender:
+    0.0000 -    10.0000 [     1]: *
+   10.0000 -    20.0000 [     0]: 
+   20.0000 -    30.0000 [     0]: 
+   30.0000 -    40.0000 [    11]: ***********
+   40.0000 -    50.0000 [     0]: 
+   50.0000 -    60.0000 [     1]: *
+   60.0000 -    70.0000 [     0]: 
+   70.0000 -    80.0000 [     3]: ***
+   80.0000 -    90.0000 [     7]: *******
+   90.0000 -   100.0000 [    38]: **************************************
+
+These results demonstrate gaining back the tendency of the CPU to stay in
+more responsive, performant C-states (and thus yield measurably better
+performance), by reverting commit 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.
+
+While taking into account the changing landscape with regards to CPU
+governors, and both P- and C-states, we think that a single-thread should
+still be able to achieve maximum performance.  With the current upstream
+code base, workloads with a low number of "hot" threads are not able to
+achieve maximum performance "out of the box".
+
+Also recently, Intel's LAD has posted upstream performance results that
+include an interesting column with their table of results.  See upstream
+commit 0a4db187a999, column #3 within the "Performance numbers" table.  It
+seems known, even within Intel, that the deeper C-states incur a cost too
+high to bear, as they've explicitly tested restricting the CPU to higher
+c-states of C0,1.
+
+-- Jeremy Eder
