@@ -1,111 +1,326 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab3GZIKu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 04:10:50 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:13339 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab3GZIK0 (ORCPT
+	id S1757836Ab3GZILW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 04:11:22 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:54853 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757607Ab3GZILE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 04:10:26 -0400
-X-AuditID: cbfee61a-b7f196d000007dfa-d3-51f22eefa47c
-Date: Fri, 26 Jul 2013 10:09:40 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Subject: Re: [PATCH v6 3/8] cpufreq:acpi:x86: Adjust the acpi-cpufreq.c code to
- work with common boost solution
-Message-id: <20130726100940.1974559e@amdc308.digital.local>
-In-reply-to: <CAKohpo=3+JP0ppru5DSo72yWiN3Qg9xjNJX+6KgCNiEupZEMjA@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-4-git-send-email-l.majewski@samsung.com>
- <CAKohpo=3+JP0ppru5DSo72yWiN3Qg9xjNJX+6KgCNiEupZEMjA@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t9jAd33ep8CDY6eMrPYOGM9q8XTph/s
-	FvM+y1r0/bzCbLFm/08mi86zT5gtehdcZbN484jb4vKuOWwWn3uPMFrcblzBZtG/sJfJ4snD
-	PjaLjV89HPg8Fu95yeRx59oeNo91094ye/RtWcXo8WhxC6PH8RvbmTw+b5ILYI/isklJzcks
-	Sy3St0vgylj0tIOl4D1vxenHu5kaGDdwdTFyckgImEisbnzHDmGLSVy4t56ti5GLQ0hgEaPE
-	hV8/mSCcdiaJ07famECqWARUJaZf+MoIYrMJ6El8vvsUKM7BISKgJfHyZipIPbPAChaJ/X8m
-	g9UICxRKbF5xihnE5hWwlng8dzIzSD2nQLDEkr/eEPPbmCRuPZ4PdgW/gKRE+78fzBAX2Umc
-	+7SBHaJXUOLH5HssIDYz0K7N25pYIWx5ic1r3jJPYBSchaRsFpKyWUjKFjAyr2IUTS1ILihO
-	Ss811CtOzC0uzUvXS87P3cQIjqlnUjsYVzZYHGIU4GBU4uFVcPoYKMSaWFZcmXuIUYKDWUmE
-	t+EYUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvgVbrQCGB9MSS1OzU1ILUIpgsEwenVAMjf4Hd
-	1inffXYVNR34vXPn8g1p/GcXLLOUjDe6xfhgQ01j94zlNd+ESteqJL5+qXEjbLP22lu3g6q6
-	y91/bfi9QK9+lfCNbvtCafPOyW1/DRcYcxZtvhrwIviBa+PdwAYhLfYabea7Vya8Oz8t6vQ2
-	b/2dCUWlbnb+lcrp8yTUzl3mDE7JZHyjxFKckWioxVxUnAgALt/rn6UCAAA=
+	Fri, 26 Jul 2013 04:11:04 -0400
+Date: Fri, 26 Jul 2013 10:10:44 +0200
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, torvalds@linux-foundation.org, tglx@linutronix.de,
+        hpa@zytor.com
+Subject: Re: [Intel-gfx] [PATCH 2/2] x86: add early quirk for reserving Intel
+ graphics stolen memory v3
+Message-ID: <20130726081044.GA6084@phenom.ffwll.local>
+Mail-Followup-To: Jesse Barnes <jbarnes@virtuousgeek.org>,
+	intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+	mingo@elte.hu, torvalds@linux-foundation.org, tglx@linutronix.de,
+	hpa@zytor.com
+References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
+ <1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374770269-3223-3-git-send-email-jbarnes@virtuousgeek.org>
+X-Operating-System: Linux phenom 3.11.0-rc2+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Jul 2013 12:58:02 +0530 Viresh Kumar wrote,
-> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > diff --git a/drivers/cpufreq/acpi-cpufreq.c
-> > b/drivers/cpufreq/acpi-cpufreq.c
+On Thu, Jul 25, 2013 at 09:37:49AM -0700, Jesse Barnes wrote:
+> Systems with Intel graphics controllers set aside memory exclusively for
+> gfx driver use.  This memory is not marked in the E820 as reserved or as
+> RAM, and so is subject to overlap from E820 manipulation later in the
+> boot process.  On some systems, MMIO space is allocated on top, despite
+> the efforts of the "RAM buffer" approach, which simply rounds memory
+> boundaries up to 64M to try to catch space that may decode as RAM and so
+> is not suitable for MMIO.
 > 
-> >  static void __init acpi_cpufreq_boost_init(void)
-> >  {
-> > +       acpi_cpufreq_driver.boost_supported = false;
-	    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [*]
+> v2: use read_pci_config for 32 bit reads instead of adding a new one
+>     (Chris)
+>     add gen6 stolen size function (Chris)
+>     use a function pointer (Chris)
+>     drop gen2 bits (Daniel)
 > 
-> Would be better if we do this in else of below if.
+> Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-We need to set boost_supported = false at [*] for the case when:
-1. msrs_alloc fails 
-or 
-2. acpi_cpufreq is built as a module and can be inserted and removed
-several times. Without [*] we could end up with wrong (not false)
-initial state.
+Our QA seems to be happy with this.
 
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66844
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66726
+Tested-by: lu hua <huax.lu@intel.com>
+
+Cheers, Daniel
+> ---
+>  arch/x86/kernel/early-quirks.c  |  158 +++++++++++++++++++++++++++++++++++++++
+>  drivers/gpu/drm/i915/i915_reg.h |   15 ----
+>  include/drm/i915_drm.h          |   32 ++++++++
+>  3 files changed, 190 insertions(+), 15 deletions(-)
 > 
-> >         if (boot_cpu_has(X86_FEATURE_CPB) ||
-> > boot_cpu_has(X86_FEATURE_IDA)) { msrs = msrs_alloc();
+> diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+> index 94ab6b9..bff8a6f 100644
+> --- a/arch/x86/kernel/early-quirks.c
+> +++ b/arch/x86/kernel/early-quirks.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/pci.h>
+>  #include <linux/acpi.h>
+>  #include <linux/pci_ids.h>
+> +#include <drm/i915_drm.h>
+>  #include <asm/pci-direct.h>
+>  #include <asm/dma.h>
+>  #include <asm/io_apic.h>
+> @@ -208,6 +209,161 @@ static void __init intel_remapping_check(int num, int slot, int func)
+>  
+>  }
+>  
+> +/*
+> + * Systems with Intel graphics controllers set aside memory exclusively
+> + * for gfx driver use.  This memory is not marked in the E820 as reserved
+> + * or as RAM, and so is subject to overlap from E820 manipulation later
+> + * in the boot process.  On some systems, MMIO space is allocated on top,
+> + * despite the efforts of the "RAM buffer" approach, which simply rounds
+> + * memory boundaries up to 64M to try to catch space that may decode
+> + * as RAM and so is not suitable for MMIO.
+> + *
+> + * And yes, so far on current devices the base addr is always under 4G.
+> + */
+> +static u32 __init intel_stolen_base(int num, int slot, int func)
+> +{
+> +	u32 base;
+> +
+> +	/*
+> +	 * Almost universally we can find the Graphics Base of Stolen Memory
+> +	 * at offset 0x5c in the igfx configuration space. On a few (desktop)
+> +	 * machines this is also mirrored in the bridge device at different
+> +	 * locations, or in the MCHBAR.
+> +	 */
+> +	base = read_pci_config(num, slot, func, 0x5c);
+> +	base &= ~((1<<20) - 1);
+> +
+> +	return base;
+> +}
+> +
+> +#define KB(x)	((x) * 1024)
+> +#define MB(x)	(KB (KB (x)))
+> +#define GB(x)	(MB (KB (x)))
+> +
+> +static size_t __init gen3_stolen_size(int num, int slot, int func)
+> +{
+> +	size_t stolen_size;
+> +	u16 gmch_ctrl;
+> +
+> +	gmch_ctrl = read_pci_config_16(0, 0, 0, I830_GMCH_CTRL);
+> +
+> +	switch (gmch_ctrl & I855_GMCH_GMS_MASK) {
+> +	case I855_GMCH_GMS_STOLEN_1M:
+> +		stolen_size = MB(1);
+> +		break;
+> +	case I855_GMCH_GMS_STOLEN_4M:
+> +		stolen_size = MB(4);
+> +		break;
+> +	case I855_GMCH_GMS_STOLEN_8M:
+> +		stolen_size = MB(8);
+> +		break;
+> +	case I855_GMCH_GMS_STOLEN_16M:
+> +		stolen_size = MB(16);
+> +		break;
+> +	case I855_GMCH_GMS_STOLEN_32M:
+> +		stolen_size = MB(32);
+> +		break;
+> +	case I915_GMCH_GMS_STOLEN_48M:
+> +		stolen_size = MB(48);
+> +		break;
+> +	case I915_GMCH_GMS_STOLEN_64M:
+> +		stolen_size = MB(64);
+> +		break;
+> +	case G33_GMCH_GMS_STOLEN_128M:
+> +		stolen_size = MB(128);
+> +		break;
+> +	case G33_GMCH_GMS_STOLEN_256M:
+> +		stolen_size = MB(256);
+> +		break;
+> +	case INTEL_GMCH_GMS_STOLEN_96M:
+> +		stolen_size = MB(96);
+> +		break;
+> +	case INTEL_GMCH_GMS_STOLEN_160M:
+> +		stolen_size = MB(160);
+> +		break;
+> +	case INTEL_GMCH_GMS_STOLEN_224M:
+> +		stolen_size = MB(224);
+> +		break;
+> +	case INTEL_GMCH_GMS_STOLEN_352M:
+> +		stolen_size = MB(352);
+> +		break;
+> +	default:
+> +		stolen_size = 0;
+> +		break;
+> +	}
+> +
+> +	return stolen_size;
+> +}
+> +
+> +static size_t __init gen6_stolen_size(int num, int slot, int func)
+> +{
+> +	u16 gmch_ctrl;
+> +
+> +	gmch_ctrl = read_pci_config_16(num, slot, func, SNB_GMCH_CTRL);
+> +	gmch_ctrl >>= SNB_GMCH_GMS_SHIFT;
+> +	gmch_ctrl &= SNB_GMCH_GMS_MASK;
+> +
+> +	return gmch_ctrl << 25; /* 32 MB units */
+> +}
+> +
+> +typedef size_t (*stolen_size_fn)(int num, int slot, int func);
+> +
+> +static struct pci_device_id intel_stolen_ids[] __initdata = {
+> +	INTEL_I915G_IDS(gen3_stolen_size),
+> +	INTEL_I915GM_IDS(gen3_stolen_size),
+> +	INTEL_I945G_IDS(gen3_stolen_size),
+> +	INTEL_I945GM_IDS(gen3_stolen_size),
+> +	INTEL_VLV_M_IDS(gen3_stolen_size),
+> +	INTEL_VLV_D_IDS(gen3_stolen_size),
+> +	INTEL_PINEVIEW_IDS(gen3_stolen_size),
+> +	INTEL_I965G_IDS(gen3_stolen_size),
+> +	INTEL_G33_IDS(gen3_stolen_size),
+> +	INTEL_I965GM_IDS(gen3_stolen_size),
+> +	INTEL_GM45_IDS(gen3_stolen_size),
+> +	INTEL_G45_IDS(gen3_stolen_size),
+> +	INTEL_IRONLAKE_D_IDS(gen3_stolen_size),
+> +	INTEL_IRONLAKE_M_IDS(gen3_stolen_size),
+> +	INTEL_SNB_D_IDS(gen6_stolen_size),
+> +	INTEL_SNB_M_IDS(gen6_stolen_size),
+> +	INTEL_IVB_M_IDS(gen6_stolen_size),
+> +	INTEL_IVB_D_IDS(gen6_stolen_size),
+> +	INTEL_HSW_D_IDS(gen6_stolen_size),
+> +	INTEL_HSW_M_IDS(gen6_stolen_size),
+> +};
+> +
+> +static void __init intel_graphics_stolen(int num, int slot, int func)
+> +{
+> +	size_t size;
+> +	int i;
+> +	u32 start;
+> +	u16 device, subvendor, subdevice;
+> +
+> +	device = read_pci_config_16(num, slot, func, PCI_DEVICE_ID);
+> +	subvendor = read_pci_config_16(num, slot, func,
+> +				       PCI_SUBSYSTEM_VENDOR_ID);
+> +	subdevice = read_pci_config_16(num, slot, func, PCI_SUBSYSTEM_ID);
+> +
+> +	for (i = 0; i < ARRAY_SIZE(intel_stolen_ids); i++) {
+> +		if (intel_stolen_ids[i].device == device) {
+> +			stolen_size_fn stolen_size =
+> +				(stolen_size_fn)intel_stolen_ids[i].driver_data;
+> +			size = stolen_size(num, slot, func);
+> +			start = intel_stolen_base(num, slot, func);
+> +			if (size && start)
+> +				goto found;
+> +			else
+> +				break;
+> +		}
+> +	}
+> +
+> +	/* No match or invalid data, don't bother reserving */
+> +	return;
+> +found:
+> +	/* Mark this space as reserved */
+> +	e820_add_region(start, size, E820_RESERVED);
+> +	return;
+> +}
+> +
+>  #define QFLAG_APPLY_ONCE 	0x1
+>  #define QFLAG_APPLIED		0x2
+>  #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+> @@ -241,6 +397,8 @@ static struct chipset early_qrk[] __initdata = {
+>  	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+>  	{ PCI_VENDOR_ID_INTEL, 0x3406, PCI_CLASS_BRIDGE_HOST,
+>  	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
+> +	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA, PCI_ANY_ID,
+> +	  QFLAG_APPLY_ONCE, intel_graphics_stolen },
+>  	{}
+>  };
+>  
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+> index 5e58a44..d707ce6 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -33,21 +33,6 @@
+>  #define _MASKED_BIT_ENABLE(a) (((a) << 16) | (a))
+>  #define _MASKED_BIT_DISABLE(a) ((a) << 16)
+>  
+> -/*
+> - * The Bridge device's PCI config space has information about the
+> - * fb aperture size and the amount of pre-reserved memory.
+> - * This is all handled in the intel-gtt.ko module. i915.ko only
+> - * cares about the vga bit for the vga rbiter.
+> - */
+> -#define INTEL_GMCH_CTRL		0x52
+> -#define INTEL_GMCH_VGA_DISABLE  (1 << 1)
+> -#define SNB_GMCH_CTRL		0x50
+> -#define    SNB_GMCH_GGMS_SHIFT	8 /* GTT Graphics Memory Size */
+> -#define    SNB_GMCH_GGMS_MASK	0x3
+> -#define    SNB_GMCH_GMS_SHIFT   3 /* Graphics Mode Select */
+> -#define    SNB_GMCH_GMS_MASK    0x1f
+> -
+> -
+>  /* PCI config space */
+>  
+>  #define HPLLCC	0xc0 /* 855 only */
+> diff --git a/include/drm/i915_drm.h b/include/drm/i915_drm.h
+> index 7276a72..3abfa6e 100644
+> --- a/include/drm/i915_drm.h
+> +++ b/include/drm/i915_drm.h
+> @@ -36,4 +36,36 @@ extern bool i915_gpu_lower(void);
+>  extern bool i915_gpu_busy(void);
+>  extern bool i915_gpu_turbo_disable(void);
+>  
+> +/*
+> + * The Bridge device's PCI config space has information about the
+> + * fb aperture size and the amount of pre-reserved memory.
+> + * This is all handled in the intel-gtt.ko module. i915.ko only
+> + * cares about the vga bit for the vga rbiter.
+> + */
+> +#define INTEL_GMCH_CTRL		0x52
+> +#define INTEL_GMCH_VGA_DISABLE  (1 << 1)
+> +#define SNB_GMCH_CTRL		0x50
+> +#define    SNB_GMCH_GGMS_SHIFT	8 /* GTT Graphics Memory Size */
+> +#define    SNB_GMCH_GGMS_MASK	0x3
+> +#define    SNB_GMCH_GMS_SHIFT   3 /* Graphics Mode Select */
+> +#define    SNB_GMCH_GMS_MASK    0x1f
+> +
+> +#define I830_GMCH_CTRL			0x52
+> +
+> +#define I855_GMCH_GMS_MASK		0xF0
+> +#define I855_GMCH_GMS_STOLEN_0M		0x0
+> +#define I855_GMCH_GMS_STOLEN_1M		(0x1 << 4)
+> +#define I855_GMCH_GMS_STOLEN_4M		(0x2 << 4)
+> +#define I855_GMCH_GMS_STOLEN_8M		(0x3 << 4)
+> +#define I855_GMCH_GMS_STOLEN_16M	(0x4 << 4)
+> +#define I855_GMCH_GMS_STOLEN_32M	(0x5 << 4)
+> +#define I915_GMCH_GMS_STOLEN_48M	(0x6 << 4)
+> +#define I915_GMCH_GMS_STOLEN_64M	(0x7 << 4)
+> +#define G33_GMCH_GMS_STOLEN_128M	(0x8 << 4)
+> +#define G33_GMCH_GMS_STOLEN_256M	(0x9 << 4)
+> +#define INTEL_GMCH_GMS_STOLEN_96M	(0xa << 4)
+> +#define INTEL_GMCH_GMS_STOLEN_160M	(0xb << 4)
+> +#define INTEL_GMCH_GMS_STOLEN_224M	(0xc << 4)
+> +#define INTEL_GMCH_GMS_STOLEN_352M	(0xd << 4)
+> +
+>  #endif				/* _I915_DRM_H_ */
+> -- 
+> 1.7.9.5
 > 
-> 
-> > @@ -1021,12 +995,11 @@ static int __init acpi_cpufreq_init(void)
-> >                         *iter = &cpb;
-> >         }
-> >  #endif
-> > +       acpi_cpufreq_boost_init();
-	    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ [**]
-> 
-> We are calling it before registering cpufreq driver. Will this have
-> any complications?
-
-When we call [**] after the cpufreq_register_driver [***] we end up with
-sysfs boost attribute not exported at x86.
-The boost attribute is exported at [***] only when
-acpi_cpufreq.boost_supported = true. However support for boost at x86
-is evaluated at acpi_cpufreq_boost_init().
-
-
-> 
-> >         ret = cpufreq_register_driver(&acpi_cpufreq_driver);
-> >         if (ret)
-> >                 free_acpi_perf_data();
-> > -       else
-> > -               acpi_cpufreq_boost_init();
-> >
-> >         return ret;
-
-
+> _______________________________________________
+> Intel-gfx mailing list
+> Intel-gfx@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/intel-gfx
 
 -- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
