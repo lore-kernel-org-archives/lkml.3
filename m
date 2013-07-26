@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab3GZV0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:26:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
+	id S933468Ab3GZV1B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:27:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932758Ab3GZUxa (ORCPT
+	with ESMTP id S932624Ab3GZUx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:30 -0400
+	Fri, 26 Jul 2013 16:53:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
-        Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 08/59] SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
-Date: Fri, 26 Jul 2013 13:52:32 -0700
-Message-Id: <20130726205014.696828830@linuxfoundation.org>
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [ 05/59] tick: Prevent uncontrolled switch to oneshot mode
+Date: Fri, 26 Jul 2013 13:52:29 -0700
+Message-Id: <20130726205014.373241828@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -28,46 +29,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
+commit 1f73a9806bdd07a5106409bbcab3884078bd34fe upstream.
 
-FCP device remains in status ERP_FAILED when device is switched online
-or adapter recovery is triggered  while link to SAN is down.
+When the system switches from periodic to oneshot mode, the broadcast
+logic causes a possibility that a CPU which has not yet switched to
+oneshot mode puts its own clock event device into oneshot mode without
+updating the state and the timer handler.
 
-When Exchange Configuration Data command returns the FSF status
-FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
-The only retries are done during the common error recovery procedure
-(i.e. max. 3 retries with 8sec sleep between) and remains in status
-ERP_FAILED with QDIO down.
+CPU0				CPU1
+				per cpu tickdev is in periodic mode
+				and switched to broadcast
 
-This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
-(zfcp: Fix adapter activation on link down).
-When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
-adapter recovery will be finished without any retries. QDIO will be
-up now and status changes such as LINK UP will be received now.
+Switch to oneshot mode
+ tick_broadcast_switch_to_oneshot()
+  cpumask_copy(tick_oneshot_broacast_mask,
+	       tick_broadcast_mask);
 
-Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+  broadcast device mode = oneshot
+
+				Timer interrupt
+
+				irq_enter()
+				 tick_check_oneshot_broadcast()
+				  dev->set_mode(ONESHOT);
+
+				tick_handle_periodic()
+				 if (dev->mode == ONESHOT)
+				   dev->next_event += period;
+				   FAIL.
+
+We fail, because dev->next_event contains KTIME_MAX, if the device was
+in periodic mode before the uncontrolled switch to oneshot happened.
+
+We must copy the broadcast bits over to the oneshot mask, because
+otherwise a CPU which relies on the broadcast would not been woken up
+anymore after the broadcast device switched to oneshot mode.
+
+So we need to verify in tick_check_oneshot_broadcast() whether the CPU
+has already switched to oneshot mode. If not, leave the device
+untouched and let the CPU switch controlled into oneshot mode.
+
+This is a long standing bug, which was never noticed, because the main
+user of the broadcast x86 cannot run into that scenario, AFAICT. The
+nonarchitected timer mess of ARM creates a gazillion of differently
+broken abominations which trigger the shortcomings of that broadcast
+code, which better had never been necessary in the first place.
+
+Reported-and-tested-by: Stehle Vincent-B46079 <B46079@freescale.com>
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+Cc: Mark Rutland <mark.rutland@arm.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/scsi/zfcp_fsf.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ kernel/time/tick-broadcast.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/s390/scsi/zfcp_fsf.c
-+++ b/drivers/s390/scsi/zfcp_fsf.c
-@@ -563,6 +563,10 @@ static void zfcp_fsf_exchange_config_dat
- 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
- 		adapter->hydra_version = 0;
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -400,7 +400,15 @@ void tick_check_oneshot_broadcast(int cp
+ 	if (cpumask_test_cpu(cpu, to_cpumask(tick_broadcast_oneshot_mask))) {
+ 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
  
-+		/* avoids adapter shutdown to be able to recognize
-+		 * events such as LINK UP */
-+		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
-+				&adapter->status);
- 		zfcp_fsf_link_down_info_eval(req,
- 			&qtcb->header.fsf_status_qual.link_down_info);
- 		break;
+-		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
++		/*
++		 * We might be in the middle of switching over from
++		 * periodic to oneshot. If the CPU has not yet
++		 * switched over, leave the device alone.
++		 */
++		if (td->mode == TICKDEV_MODE_ONESHOT) {
++			clockevents_set_mode(td->evtdev,
++					     CLOCK_EVT_MODE_ONESHOT);
++		}
+ 	}
+ }
+ 
 
 
