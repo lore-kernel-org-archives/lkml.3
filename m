@@ -1,146 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759369Ab3GZQNM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:13:12 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:45083 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757878Ab3GZQNK (ORCPT
+	id S1759345Ab3GZQRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:17:06 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:55426 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab3GZQRB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:13:10 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <51F276D8.9090906@free-electrons.com>
-References: <1374501843-19651-1-git-send-email-hector.palacios@digi.com> <1374501843-19651-5-git-send-email-hector.palacios@digi.com> <51EE4300.7070802@metafoo.de> <51EE8445.6070603@digi.com> <51F276D8.9090906@free-electrons.com>
+	Fri, 26 Jul 2013 12:17:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v3 4/5] iio: mxs-lradc: add scale_available file to channels
-From: Jonathan Cameron <jic23@kernel.org>
-Date: Fri, 26 Jul 2013 17:13:02 +0100
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Hector Palacios <hector.palacios@digi.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "fabio.estevam@freescale.com" <fabio.estevam@freescale.com>,
-        "marex@denx.de" <marex@denx.de>
-Message-ID: <d838f30e-30ca-49ca-a9f3-ebf4e523c7eb@email.android.com>
+In-Reply-To: <003901ce89f3$126c0390$37440ab0$@samsung.com>
+References: <003901ce89f3$126c0390$37440ab0$@samsung.com>
+Date: Fri, 26 Jul 2013 09:16:59 -0700
+X-Google-Sender-Auth: _x90FDIlEmVzqhPxBYCUoNIYOKk
+Message-ID: <CANEJEGvp1msjkMLN-8TfykYXmrT+sq8dMkNsVEoh9i2vDoh=tg@mail.gmail.com>
+Subject: Re: [PATCH v8 03/12] iommu/exynos: fix page table maintenance
+From: Grant Grundler <grundler@chromium.org>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        Keyyoung Park <keyyoung.park@samsung.com>,
+        Grant Grundler <grundler@chromium.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu, Sachin Kamat <sachin.kamat@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
->On 23/07/2013 15:25, Hector Palacios wrote:
->> Dear Lars,
->>
->> On 07/23/2013 10:46 AM, Lars-Peter Clausen wrote:
->>> On 07/22/2013 04:04 PM, Hector Palacios wrote:
->>> [...]
->>>>
->>>> +static ssize_t mxs_lradc_show_scale_available_ch(struct device
->*dev,
->>>> +        struct device_attribute *attr,
->>>> +        char *buf,
->>>> +        int ch)
->>>> +{
->>>> +    struct iio_dev *iio = dev_to_iio_dev(dev);
->>>> +    struct mxs_lradc *lradc = iio_priv(iio);
->>>> +    int i, len = 0;
->>>> +
->>>> +    for (i = 0; i < ARRAY_SIZE(lradc->scale_avail[ch]); i++)
->>>> +        len += sprintf(buf + len, "%d.%09u ",
->>>> +                   lradc->scale_avail[ch][i].integer,
->>>> +                   lradc->scale_avail[ch][i].nano);
->>>> +
->>>> +    len += sprintf(buf + len, "\n");
->>>> +
->>>> +    return len;
->>>> +}
->>>> +
->>>> +static ssize_t mxs_lradc_show_scale_available(struct device *dev,
->>>> +        struct device_attribute *attr,
->>>> +        char *buf)
->>>> +{
->>>> +    struct iio_dev_attr *iio_attr = to_iio_dev_attr(attr);
->>>> +
->>>> +    return mxs_lradc_show_scale_available_ch(dev, attr, buf,
->>>> +                         iio_attr->address);
->>>> +}
->>>> +
->>>> +#define SHOW_SCALE_AVAILABLE_ATTR(ch)                    \
->>>> +static IIO_DEVICE_ATTR(in_voltage##ch##_scale_available, S_IRUGO, 
->  \
->>>> +               mxs_lradc_show_scale_available, NULL, ch)
->>>> +
->>>> +SHOW_SCALE_AVAILABLE_ATTR(0);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(1);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(2);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(3);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(4);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(5);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(6);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(7);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(8);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(9);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(10);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(11);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(12);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(13);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(14);
->>>> +SHOW_SCALE_AVAILABLE_ATTR(15);
->>>> +
->>>> +static struct attribute *mxs_lradc_attributes[] = {
->>>> +    &iio_dev_attr_in_voltage0_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage1_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage2_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage3_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage4_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage5_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage6_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage7_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage8_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage9_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage10_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage11_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage12_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage13_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage14_scale_available.dev_attr.attr,
->>>> +    &iio_dev_attr_in_voltage15_scale_available.dev_attr.attr,
->>>> +    NULL
->>>> +};
->>>
->>> This should really be using the iio_chan_spec_ext_info
->>> infrastructure. Bonus
->>> points for factoring out the common code used to calculate and
->>> display the
->>> scales.
->>
->> I perfectly understand. Sadly, I don't currently have the time and
->> expertise to try to work this out the proper way. It already took
->much
->> longer than expected to have this driver toggle a divider flag.
->>
->> I'd appreciate if anyone wishes to complete this job.
->> @Alexander, please feel free to submit your other temp patch without
->> waiting for this one.
->>
+On Fri, Jul 26, 2013 at 4:27 AM, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> This prevents allocating lv2 page table for the lv1 page table entry
+> that already has 1MB page mapping. In addition some BUG_ON() is
+> changed to WARN_ON().
 >
->Maybe, we can get the patch set as is and do further clean up later.
->Anyway, that driver is still in staging, right ?
+> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+
+Reviewed-by: Grant Grundler <grundler@chromium.org>
+
+In reviewing this, I noticed another issue that is related, but not
+caused by this patch. See below.
+
+> ---
+>  drivers/iommu/exynos-iommu.c |   52 +++++++++++++++++++++++++++++------------
+>  1 files changed, 37 insertions(+), 15 deletions(-)
 >
->As said, I'm willing to propose something for the scale calculation.
+> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> index e3be3e5..6c4ecce 100644
+> --- a/drivers/iommu/exynos-iommu.c
+> +++ b/drivers/iommu/exynos-iommu.c
+> @@ -52,11 +52,11 @@
+>  #define lv2ent_large(pent) ((*(pent) & 3) == 1)
+>
+>  #define section_phys(sent) (*(sent) & SECT_MASK)
+> -#define section_offs(iova) ((iova) & 0xFFFFF)
+> +#define section_offs(iova) ((iova) & ~SECT_MASK)
+>  #define lpage_phys(pent) (*(pent) & LPAGE_MASK)
+> -#define lpage_offs(iova) ((iova) & 0xFFFF)
+> +#define lpage_offs(iova) ((iova) & ~LPAGE_MASK)
+>  #define spage_phys(pent) (*(pent) & SPAGE_MASK)
+> -#define spage_offs(iova) ((iova) & 0xFFF)
+> +#define spage_offs(iova) ((iova) & ~SPAGE_MASK)
+>
+>  #define lv1ent_offset(iova) ((iova) >> SECT_ORDER)
+>  #define lv2ent_offset(iova) (((iova) & 0xFF000) >> SPAGE_ORDER)
+> @@ -862,12 +862,14 @@ static unsigned long *alloc_lv2entry(unsigned long *sent, unsigned long iova,
+>                 pent = kzalloc(LV2TABLE_SIZE, GFP_ATOMIC);
+>                 BUG_ON((unsigned long)pent & (LV2TABLE_SIZE - 1));
+>                 if (!pent)
+> -                       return NULL;
+> +                       return ERR_PTR(-ENOMEM);
+>
+>                 *sent = mk_lv1ent_page(__pa(pent));
+>                 *pgcounter = NUM_LV2ENTRIES;
+>                 pgtable_flush(pent, pent + NUM_LV2ENTRIES);
+>                 pgtable_flush(sent, sent + 1);
+> +       } else if (lv1ent_section(sent)) {
+> +               return ERR_PTR(-EADDRINUSE);
+>         }
+>
+>         return page_entry(sent, iova);
+> @@ -894,6 +896,12 @@ static int lv1set_section(unsigned long *sent, phys_addr_t paddr, short *pgcnt)
+>         return 0;
+>  }
+>
+> +static void clear_page_table(unsigned long *ent, int n)
+> +{
+> +       if (n > 0)
+> +               memset(ent, 0, sizeof(*ent) * n);
+> +}
+> +
+>  static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
+>                                                                 short *pgcnt)
+>  {
+> @@ -908,7 +916,7 @@ static int lv2set_page(unsigned long *pent, phys_addr_t paddr, size_t size,
+>                 int i;
+>                 for (i = 0; i < SPAGES_PER_LPAGE; i++, pent++) {
+>                         if (!lv2ent_fault(pent)) {
+> -                               memset(pent, 0, sizeof(*pent) * i);
+> +                               clear_page_table(pent - i, i);
+>                                 return -EADDRINUSE;
 
-My thoughts exactly. Long term plans include generic handling of available attributes for the whole of IIO.
+I am wondering about two issues with this error handling:
+1) we don't call pgtable_flush() in this case - I think just for
+consistency we should - don't rush to add since my next comment is to
+change this error handling completely.
 
-It will take me a little while to catch up my backlog though!
+2) If  -EADDRINUSE is correct, why does the code clear the IO Page
+table entries?
 
-Jonathan
+   I think this error path should either
+   (a) BUG_ON (ie panic) since this is an inconsistency between
+generic IOMMU page allocation and chip specific IOMMU mapping code OR
+   (b) WARN_ON, not clear the entries, and hope whoever was using it
+can finish using the system before crashing or gracefully shutting
+down.
 
+In any case, I'm pretty sure this code needs to change and it should
+be in a follow up to this series.
 
+thanks,
+grant
 
--- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+>                         }
+>
+> @@ -944,17 +952,16 @@ static int exynos_iommu_map(struct iommu_domain *domain, unsigned long iova,
+>                 pent = alloc_lv2entry(entry, iova,
+>                                         &priv->lv2entcnt[lv1ent_offset(iova)]);
+>
+> -               if (!pent)
+> -                       ret = -ENOMEM;
+> +               if (IS_ERR(pent))
+> +                       ret = PTR_ERR(pent);
+>                 else
+>                         ret = lv2set_page(pent, paddr, size,
+>                                         &priv->lv2entcnt[lv1ent_offset(iova)]);
+>         }
+>
+> -       if (ret) {
+> -               pr_debug("%s: Failed to map iova 0x%lx/0x%x bytes\n",
+> -                                                       __func__, iova, size);
+> -       }
+> +       if (ret)
+> +               pr_err("%s: Failed(%d) to map 0x%#x bytes @ %#lx\n",
+> +                       __func__, ret, size, iova);
+>
+>         spin_unlock_irqrestore(&priv->pgtablelock, flags);
+>
+> @@ -968,6 +975,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+>         struct sysmmu_drvdata *data;
+>         unsigned long flags;
+>         unsigned long *ent;
+> +       size_t err_pgsize;
+>
+>         BUG_ON(priv->pgtable == NULL);
+>
+> @@ -976,7 +984,10 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+>         ent = section_entry(priv->pgtable, iova);
+>
+>         if (lv1ent_section(ent)) {
+> -               BUG_ON(size < SECT_SIZE);
+> +               if (WARN_ON(size < SECT_SIZE)) {
+> +                       err_pgsize = SECT_SIZE;
+> +                       goto err;
+> +               }
+>
+>                 *ent = 0;
+>                 pgtable_flush(ent, ent + 1);
+> @@ -1008,9 +1019,12 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+>         }
+>
+>         /* lv1ent_large(ent) == true here */
+> -       BUG_ON(size < LPAGE_SIZE);
+> +       if (WARN_ON(size < LPAGE_SIZE)) {
+> +               err_pgsize = LPAGE_SIZE;
+> +               goto err;
+> +       }
+>
+> -       memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
+> +       clear_page_table(ent, SPAGES_PER_LPAGE);
+>         pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
+>
+>         size = LPAGE_SIZE;
+> @@ -1023,8 +1037,16 @@ done:
+>                 sysmmu_tlb_invalidate_entry(data->dev, iova);
+>         spin_unlock_irqrestore(&priv->lock, flags);
+>
+> -
+>         return size;
+> +err:
+> +       spin_unlock_irqrestore(&priv->pgtablelock, flags);
+> +
+> +       pr_err("%s: Failed due to size(%#x) @ %#lx is"\
+> +               " smaller than page size %#x\n",
+> +               __func__, size, iova, err_pgsize);
+> +
+> +       return 0;
+> +
+>  }
+>
+>  static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
+> --
+> 1.7.2.5
+>
+>
