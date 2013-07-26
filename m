@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab3GZU6l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:58:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51347 "EHLO
+	id S1760256Ab3GZVAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:00:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760049Ab3GZU6W (ORCPT
+	with ESMTP id S1760193Ab3GZU6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:22 -0400
+	Fri, 26 Jul 2013 16:58:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 19/45] net: Swap ver and type in pppoe_hdr
-Date: Fri, 26 Jul 2013 13:57:39 -0700
-Message-Id: <20130726205657.008520123@linuxfoundation.org>
+        Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 45/45] ALSA: usb-audio: 6fire: return correct XRUN indication
+Date: Fri, 26 Jul 2013 13:58:05 -0700
+Message-Id: <20130726205659.923857879@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -26,34 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Changli Gao <xiaosuo@gmail.com>
+From: Eldad Zack <eldad@fogrefinery.com>
 
-[ Upstream commit b1a5a34bd0b8767ea689e68f8ea513e9710b671e ]
+commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
 
-Ver and type in pppoe_hdr should be swapped as defined by RFC2516
-section-4.
+Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
+SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
+function of 6fire, as expected by snd_pcm_update_hw_ptr0().
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Caught by sparse.
+
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/if_pppox.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/include/linux/if_pppox.h
-+++ b/include/linux/if_pppox.h
-@@ -127,11 +127,11 @@ struct pppoe_tag {
+---
+ sound/usb/6fire/pcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -541,7 +541,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
+ 	snd_pcm_uframes_t ret;
  
- struct pppoe_hdr {
- #if defined(__LITTLE_ENDIAN_BITFIELD)
--	__u8 ver : 4;
- 	__u8 type : 4;
-+	__u8 ver : 4;
- #elif defined(__BIG_ENDIAN_BITFIELD)
--	__u8 type : 4;
- 	__u8 ver : 4;
-+	__u8 type : 4;
- #else
- #error	"Please fix <asm/byteorder.h>"
- #endif
+ 	if (rt->panic || !sub)
+-		return SNDRV_PCM_STATE_XRUN;
++		return SNDRV_PCM_POS_XRUN;
+ 
+ 	spin_lock_irqsave(&sub->lock, flags);
+ 	ret = sub->dma_off;
 
 
