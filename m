@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758447Ab3GZKLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:11:33 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:18394 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454Ab3GZKLb (ORCPT
+	id S1758471Ab3GZKL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:11:57 -0400
+Received: from mail-qe0-f54.google.com ([209.85.128.54]:43138 "EHLO
+	mail-qe0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab3GZKLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:11:31 -0400
-X-AuditID: cbfee61b-b7efe6d000007b11-37-51f24b526ce7
-Date: Fri, 26 Jul 2013 12:11:23 +0200
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v6 2/8] cpufreq: Add boost frequency support in core
-Message-id: <20130726121123.2d7da79a@amdc308.digital.local>
-In-reply-to: <CAKohpokK8eNid3yNGTEax_-3CZNaJ4T6Osz8RrXk11hn+Mmxxg@mail.gmail.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
- <1374770011-22171-3-git-send-email-l.majewski@samsung.com>
- <CAKohpom9QHf+XBYQcajv4tni4_KA2x+Y3BAXWhZkdCFnZxp3XA@mail.gmail.com>
- <20130726103321.21238bbb@amdc308.digital.local>
- <CAKohpokK8eNid3yNGTEax_-3CZNaJ4T6Osz8RrXk11hn+Mmxxg@mail.gmail.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprOIsWRmVeSWpSXmKPExsVy+t9jAd0g70+BBq+PSVlsnLGe1eJp0w92
-	i3mfZS36fl5htliz/yeTRefZJ8wWvQuuslm8ecRt8f7QM2aLy7vmsFl87j3CaNG/sJfJ4snD
-	PjaLjV89HPg8Fu95yeRx59oeNo/b/x4ze6yb9pbZo2/LKkaPR4tbGD2O39jO5PF5k1wARxSX
-	TUpqTmZZapG+XQJXxtWPLewFX9krOn7fZG5gXM7WxcjJISFgIjHp8xomCFtM4sK99UBxLg4h
-	gUWMEuf+/meCcNqZJH78PcQKUsUioCqxZOJqsG42AT2Jz3efAhVxcIgIaEm8vJkKUs8ssJVF
-	4tWGB2BThQU8JI78+gZm8wpYS3w5sY0RxOYUCJZoevWFGcQWEvjPJLHyjD6IzS8gKdH+7wcz
-	xEV2Euc+bWCH6BWU+DH5HguIzQy0a/O2JlYIW15i85q3zBMYBWchKZuFpGwWkrIFjMyrGEVT
-	C5ILipPSc430ihNzi0vz0vWS83M3MYKj65n0DsZVDRaHGAU4GJV4eBWcPgYKsSaWFVfmHmKU
-	4GBWEuFd6/gpUIg3JbGyKrUoP76oNCe1+BCjNAeLkjjvwVbrQCGB9MSS1OzU1ILUIpgsEwen
-	VANjwetrt6yF/KS2de6pXbcq8ujKUoYcj5cOl1sfHlzqcd7h8tPawq2JU1JXLPqzeIdn5Y8l
-	W93/t/RzXdBWsej6fo4vJGy76+Nns1zCpp/7cuNiIDvnVH/+8OCuyDK+0+tfGzF5TXYuZdzF
-	0BO1L9NpriPfROWUx1PWHTUykNgRc1ZIRma6/9e5SizFGYmGWsxFxYkAom03lKoCAAA=
+	Fri, 26 Jul 2013 06:11:54 -0400
+MIME-Version: 1.0
+X-Originating-IP: [86.59.245.170]
+In-Reply-To: <1374703539-9705-22-git-send-email-gregkh@linuxfoundation.org>
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	<1374703539-9705-22-git-send-email-gregkh@linuxfoundation.org>
+Date: Fri, 26 Jul 2013 12:11:53 +0200
+Message-ID: <CAJfpegtNoFJ8hATfikX6Hi0V=P15c-m1tULTq7oJhh12j54YJw@mail.gmail.com>
+Subject: Re: [PATCH 21/36] cuse: convert class code to use dev_groups
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Jul 2013 15:06:45 +0530 Viresh Kumar wrote,
-> On 26 July 2013 14:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> > The problem here is with the cpufreq_driver->set_boost() call.
-> >
-> > I tried to avoid acquiring lock at one function and release it at
-> > another (in this case cpufreq_boost_set_sw), especially since the
-> > __cpufreq_governor() acquires its own lock - good place for
-> > deadlock.
-> >
-> > Is it OK for you to grab lock at one function
-> > (cpufreq_boost_trigger_state()) and then at other function
-> > (cpufreq_boost_set_sw) release it before calling
-> > __cpufreq_governor() and grab it again after its completion?
-> 
-> Problem is not only that.. but we shouldn't call boost_set() of
-> drivers like acpi-cpufreq with this lock..... Leave it as it is for
-> now.. Let me see if I can think of any problems that can happen due
-> to this.
+On Thu, Jul 25, 2013 at 12:05 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> The dev_attrs field of struct class is going away soon, dev_groups
+> should be used instead.  This converts the cuse class code to use the
+> correct field.
+>
+> Cc: Miklos Szeredi <miklos@szeredi.hu>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+>
+> Miklos, feel free to take this through your tree, or ACK it and I can
+> take it through mine.
 
-Ok. No problem.
+Thanks, Greg.  Please take it through your tree.
 
--- 
-Best regards,
+Acked-by: Miklos Szeredi <mszeredi@suse.cz>
 
-Lukasz Majewski
+Thanks,
+Miklos
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+>
+>  fs/fuse/cuse.c | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+>
+> diff --git a/fs/fuse/cuse.c b/fs/fuse/cuse.c
+> index aef34b1e..adbfd66b 100644
+> --- a/fs/fuse/cuse.c
+> +++ b/fs/fuse/cuse.c
+> @@ -568,6 +568,7 @@ static ssize_t cuse_class_waiting_show(struct device *dev,
+>
+>         return sprintf(buf, "%d\n", atomic_read(&cc->fc.num_waiting));
+>  }
+> +static DEVICE_ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL);
+>
+>  static ssize_t cuse_class_abort_store(struct device *dev,
+>                                       struct device_attribute *attr,
+> @@ -578,12 +579,14 @@ static ssize_t cuse_class_abort_store(struct device *dev,
+>         fuse_abort_conn(&cc->fc);
+>         return count;
+>  }
+> +static DEVICE_ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store);
+>
+> -static struct device_attribute cuse_class_dev_attrs[] = {
+> -       __ATTR(waiting, S_IFREG | 0400, cuse_class_waiting_show, NULL),
+> -       __ATTR(abort, S_IFREG | 0200, NULL, cuse_class_abort_store),
+> -       { }
+> +static struct attribute *cuse_class_dev_attrs[] = {
+> +       &dev_attr_waiting.attr,
+> +       &dev_attr_abort.attr,
+> +       NULL,
+>  };
+> +ATTRIBUTE_GROUPS(cuse_class_dev);
+>
+>  static struct miscdevice cuse_miscdev = {
+>         .minor          = MISC_DYNAMIC_MINOR,
+> @@ -609,7 +612,7 @@ static int __init cuse_init(void)
+>         if (IS_ERR(cuse_class))
+>                 return PTR_ERR(cuse_class);
+>
+> -       cuse_class->dev_attrs = cuse_class_dev_attrs;
+> +       cuse_class->dev_groups = cuse_class_dev_groups;
+>
+>         rc = misc_register(&cuse_miscdev);
+>         if (rc) {
+> --
+> 1.8.3.rc0.20.gb99dd2e
+>
