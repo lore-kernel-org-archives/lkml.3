@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760518Ab3GZVSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:18:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51023 "EHLO
+	id S1760477Ab3GZVTY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:19:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932935Ab3GZUxv (ORCPT
+	with ESMTP id S932931Ab3GZUxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:51 -0400
+	Fri, 26 Jul 2013 16:53:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>, Jay Cliburn <jcliburn@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/59] atl1e: fix dma mapping warnings
-Date: Fri, 26 Jul 2013 13:53:03 -0700
-Message-Id: <20130726205018.004397497@linuxfoundation.org>
+Subject: [ 36/59] 9p: fix off by one causing access violations and memory corruption
+Date: Fri, 26 Jul 2013 13:53:00 -0700
+Message-Id: <20130726205017.678544807@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -28,150 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 352900b583b2852152a1e05ea0e8b579292e731e ]
+[ Upstream commit 110ecd69a9feea82a152bbf9b12aba57e6396883 ]
 
-Recently had this backtrace reported:
-WARNING: at lib/dma-debug.c:937 check_unmap+0x47d/0x930()
-Hardware name: System Product Name
-ATL1E 0000:02:00.0: DMA-API: device driver failed to check map error[device
-address=0x00000000cbfd1000] [size=90 bytes] [mapped as single]
-Modules linked in: xt_conntrack nf_conntrack ebtable_filter ebtables
-ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek iTCO_wdt
-iTCO_vendor_support snd_hda_intel acpi_cpufreq mperf coretemp btrfs zlib_deflate
-snd_hda_codec snd_hwdep microcode raid6_pq libcrc32c snd_seq usblp serio_raw xor
-snd_seq_device joydev snd_pcm snd_page_alloc snd_timer snd lpc_ich i2c_i801
-soundcore mfd_core atl1e asus_atk0110 ata_generic pata_acpi radeon i2c_algo_bit
-drm_kms_helper ttm drm i2c_core pata_marvell uinput
-Pid: 314, comm: systemd-journal Not tainted 3.9.0-0.rc6.git2.3.fc19.x86_64 #1
-Call Trace:
- <IRQ>  [<ffffffff81069106>] warn_slowpath_common+0x66/0x80
- [<ffffffff8106916c>] warn_slowpath_fmt+0x4c/0x50
- [<ffffffff8138151d>] check_unmap+0x47d/0x930
- [<ffffffff810ad048>] ? sched_clock_cpu+0xa8/0x100
- [<ffffffff81381a2f>] debug_dma_unmap_page+0x5f/0x70
- [<ffffffff8137ce30>] ? unmap_single+0x20/0x30
- [<ffffffffa01569a1>] atl1e_intr+0x3a1/0x5b0 [atl1e]
- [<ffffffff810d53fd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff81119636>] handle_irq_event_percpu+0x56/0x390
- [<ffffffff811199ad>] handle_irq_event+0x3d/0x60
- [<ffffffff8111cb6a>] handle_fasteoi_irq+0x5a/0x100
- [<ffffffff8101c36f>] handle_irq+0xbf/0x150
- [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
- [<ffffffff81073b10>] ? irq_enter+0x50/0xa0
- [<ffffffff8172738d>] do_IRQ+0x4d/0xc0
- [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
- [<ffffffff8171c6b2>] common_interrupt+0x72/0x72
- <EOI>  [<ffffffff810db5b2>] ? lock_release+0xc2/0x310
- [<ffffffff8109ea04>] lg_local_unlock_cpu+0x24/0x50
- [<ffffffff811dcb2f>] file_sb_list_del+0x3f/0x50
- [<ffffffff811dcb6d>] fput+0x2d/0xc0
- [<ffffffff811d8ea1>] filp_close+0x61/0x90
- [<ffffffff811fae4d>] __close_fd+0x8d/0x150
- [<ffffffff811d8ef0>] sys_close+0x20/0x50
- [<ffffffff81725699>] system_call_fastpath+0x16/0x1b
+p9_release_pages() would attempt to dereference one value past the end of
+pages[]. This would cause the following crashes:
 
-The usual straighforward failure to check for dma_mapping_error after a map
-operation is completed.
+[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
+[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
+[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 6293.180060] Modules linked in:
+[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
+[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
+[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
+[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
+[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
+[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
+[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
+[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
+[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
+[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
+[ 6293.256784] Stack:
+[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
+[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
+[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
+[ 6293.256784] Call Trace:
+[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
+[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
+[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
+[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
+[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
+[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
+[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
+[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
+[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
+[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
+[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
+[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.256784]  RSP <ffff880787ddfc28>
+[ 6293.256784] CR2: ffff8807c96f3000
+[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
 
-This patch should fix it, the reporter wandered off after filing this bz:
-https://bugzilla.redhat.com/show_bug.cgi?id=954170
-
-and I don't have hardware to test, but the fix is pretty straightforward, so I
-figured I'd post it for review.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Jay Cliburn <jcliburn@gmail.com>
-CC: Chris Snook <chris.snook@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   28 +++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ net/9p/trans_common.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1688,8 +1688,8 @@ check_sum:
- 	return 0;
- }
- 
--static void atl1e_tx_map(struct atl1e_adapter *adapter,
--		      struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
-+static int atl1e_tx_map(struct atl1e_adapter *adapter,
-+			struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
+--- a/net/9p/trans_common.c
++++ b/net/9p/trans_common.c
+@@ -24,11 +24,11 @@
+  */
+ void p9_release_pages(struct page **pages, int nr_pages)
  {
- 	struct atl1e_tpd_desc *use_tpd = NULL;
- 	struct atl1e_tx_buffer *tx_buffer = NULL;
-@@ -1700,6 +1700,7 @@ static void atl1e_tx_map(struct atl1e_ad
- 	u16 nr_frags;
- 	u16 f;
- 	int segment;
-+	int ring_start = adapter->tx_ring.next_to_use;
- 
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
-@@ -1712,6 +1713,9 @@ static void atl1e_tx_map(struct atl1e_ad
- 		tx_buffer->length = map_len;
- 		tx_buffer->dma = pci_map_single(adapter->pdev,
- 					skb->data, hdr_len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma))
-+			return -ENOSPC;
+-	int i = 0;
+-	while (pages[i] && nr_pages--) {
+-		put_page(pages[i]);
+-		i++;
+-	}
++	int i;
 +
- 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
- 		mapped_len += map_len;
- 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
-@@ -1738,6 +1742,13 @@ static void atl1e_tx_map(struct atl1e_ad
- 		tx_buffer->dma =
- 			pci_map_single(adapter->pdev, skb->data + mapped_len,
- 					map_len, PCI_DMA_TODEVICE);
-+
-+		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+			/* Reset the tx rings next pointer */
-+			adapter->tx_ring.next_to_use = ring_start;
-+			return -ENOSPC;
-+		}
-+
- 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
- 		mapped_len  += map_len;
- 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
-@@ -1773,6 +1784,13 @@ static void atl1e_tx_map(struct atl1e_ad
- 							  (i * MAX_TX_BUF_LEN),
- 							  tx_buffer->length,
- 							  DMA_TO_DEVICE);
-+
-+			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+				/* Reset the ring next to use pointer */
-+				adapter->tx_ring.next_to_use = ring_start;
-+				return -ENOSPC;
-+			}
-+
- 			ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_PAGE);
- 			use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
- 			use_tpd->word2 = (use_tpd->word2 & (~TPD_BUFLEN_MASK)) |
-@@ -1790,6 +1808,7 @@ static void atl1e_tx_map(struct atl1e_ad
- 	/* The last buffer info contain the skb address,
- 	   so it will be free after unmap */
- 	tx_buffer->skb = skb;
-+	return 0;
++	for (i = 0; i < nr_pages; i++)
++		if (pages[i])
++			put_page(pages[i]);
  }
+ EXPORT_SYMBOL(p9_release_pages);
  
- static void atl1e_tx_queue(struct atl1e_adapter *adapter, u16 count,
-@@ -1857,10 +1876,13 @@ static netdev_tx_t atl1e_xmit_frame(stru
- 		return NETDEV_TX_OK;
- 	}
- 
--	atl1e_tx_map(adapter, skb, tpd);
-+	if (atl1e_tx_map(adapter, skb, tpd))
-+		goto out;
-+
- 	atl1e_tx_queue(adapter, tpd_req, tpd);
- 
- 	netdev->trans_start = jiffies; /* NETIF_F_LLTX driver :( */
-+out:
- 	spin_unlock_irqrestore(&adapter->tx_lock, flags);
- 	return NETDEV_TX_OK;
- }
 
 
