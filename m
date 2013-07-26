@@ -1,122 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab3GZPse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:48:34 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:33829 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757489Ab3GZPsc (ORCPT
+	id S1759298Ab3GZPtt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:49:49 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:37115 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758095Ab3GZPtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:48:32 -0400
-Message-ID: <51F29A4D.6010307@gmail.com>
-Date: Fri, 26 Jul 2013 10:48:29 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 26 Jul 2013 11:49:46 -0400
 MIME-Version: 1.0
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com
-Subject: Re: [PATCH 5/5] sata, highbank: send extra clock cycles in SGPIO
- patterns
-References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com> <1374851518-4802-5-git-send-email-mark.langsdorf@calxeda.com>
-In-Reply-To: <1374851518-4802-5-git-send-email-mark.langsdorf@calxeda.com>
+X-Originating-IP: [2620:0:1000:1b02:6e3b:e5ff:fe16:f1aa]
+In-Reply-To: <20130726141016.GF9858@sirena.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+	<20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+	<51F168FC.9070906@wwwdotorg.org>
+	<20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+	<20130725184834.GA8296@netboy>
+	<20130725213753.GC17616@obsidianresearch.com>
+	<20130726080115.GA5436@netboy>
+	<1374831744.2923.42.camel@shinybook.infradead.org>
+	<20130726130927.GC4219@netboy>
+	<20130726141016.GF9858@sirena.org.uk>
+Date: Fri, 26 Jul 2013 08:49:43 -0700
+Message-ID: <CAOesGMhEr3DiFm5uSgoHPFUMY4jWu4HkeTU2UmOGj=dS75Vk+g@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+From: Olof Johansson <olof@lixom.net>
+To: Mark Brown <broonie@kernel.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 10:11 AM, Mark Langsdorf wrote:
-> Some SGPIO PICs don't follow the standard very well and expect a
-> certain number of clock cycles or port frames in each SGPIO pattern.
-> Add two optional parameters in the DTB that can provide the number of
-> extra clock cycles to be sent before and after each SGPIO pattern.
-> Read those parameters from the DTB and send the extra clock cycles.
-> 
-> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+On Fri, Jul 26, 2013 at 7:10 AM, Mark Brown <broonie@kernel.org> wrote:
+> On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
+>
+>> Unless I totally misunderstood, the thread is talking about letting
+>> established bindings change with each new kernel version.  I am
+>> opposed to that.
+>
+> No, nobody is really saying that is a particularly good idea.  There is
+> some debate about how we work out what an established binding is but
+> there's no serious suggestion that we don't want stable bindings.
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+Yes, what Mark said -- _today_ all bindings are subject to change and
+can be changed in lockstep with the kernel. This has been necessary as
+part of development to sort out all of the various bootstrapping
+issues across platforms.
 
-> ---
->  Documentation/devicetree/bindings/ata/sata_highbank.txt |  4 ++++
->  drivers/ata/sata_highbank.c                             | 16 +++++++++++++---
->  2 files changed, 17 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> index d692e9e..a05eb92 100644
-> --- a/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-> @@ -22,6 +22,10 @@ Optional properties:
->  			SGPIO bitstream.
->  - calxeda,tx-atten  : a u8 array that contains TX attenuation override
->  			codes, one per port.
-> +- calxeda,pre-clocks : a u32 that indicates the number of additional clock
-> +			cycles to transmit before sending an SGPIO pattern
-> +- calxeda,post-clocks: a u32 that indicates the number of additional clock
-> +			cycles to transmit after sending an SGPIO pattern
->  
->  Example:
->          sata@ffe08000 {
-> diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-> index 4c8444f..0ca27fe 100644
-> --- a/drivers/ata/sata_highbank.c
-> +++ b/drivers/ata/sata_highbank.c
-> @@ -82,9 +82,11 @@ static DEFINE_SPINLOCK(sgpio_lock);
->  #define SGPIO_PINS			3
->  #define SGPIO_PORTS			8
->  
-> -/* can be cast as an ahci_host_priv for compatibility with most functions */
->  struct ecx_plat_data {
->  	u32		n_ports;
-> +	/* number of extra clocks that the SGPIO PIC controller expects */
-> +	u32		pre_clocks;
-> +	u32		post_clocks;
->  	unsigned	sgpio_gpio[SGPIO_PINS];
->  	u32		sgpio_pattern;
->  	u32		port_to_sgpio[SGPIO_PORTS];
-> @@ -144,7 +146,7 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
->  	struct ecx_plat_data *pdata = (struct ecx_plat_data *) hpriv->plat_data;
->  	struct ahci_port_priv *pp = ap->private_data;
->  	unsigned long flags;
-> -	int pmp, i;
-> +	int pmp, i, patt_len;
->  	struct ahci_em_priv *emp;
->  	u32 sgpio_out;
->  
-> @@ -161,6 +163,9 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
->  	spin_lock_irqsave(&sgpio_lock, flags);
->  	ecx_parse_sgpio(pdata, ap->port_no, state);
->  	sgpio_out = pdata->sgpio_pattern;
-> +	for (i = 0; i < pdata->pre_clocks; i++)
-> +		ecx_led_cycle_clock(pdata);
-> +
->  	gpio_set_value(pdata->sgpio_gpio[SLOAD], 1);
->  	ecx_led_cycle_clock(pdata);
->  	gpio_set_value(pdata->sgpio_gpio[SLOAD], 0);
-> @@ -168,11 +173,14 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
->  	 * bit-bang out the SGPIO pattern, by consuming a bit and then
->  	 * clocking it out.
->  	 */
-> -	for (i = 0; i < (SGPIO_SIGNALS * pdata->n_ports); i++) {
-> +	patt_len = SGPIO_SIGNALS * pdata->n_ports;
-> +	for (i = 0; i < patt_len; i++) {
->  		gpio_set_value(pdata->sgpio_gpio[SDATA], sgpio_out & 1);
->  		sgpio_out >>= 1;
->  		ecx_led_cycle_clock(pdata);
->  	}
-> +	for (i = 0; i < pdata->post_clocks; i++)
-> +		ecx_led_cycle_clock(pdata);
->  
->  	/* save off new led state for port/slot */
->  	emp->led_state = state;
-> @@ -207,6 +215,8 @@ static void highbank_set_em_messages(struct device *dev,
->  	of_property_read_u32_array(np, "calxeda,led-order",
->  						pdata->port_to_sgpio,
->  						pdata->n_ports);
-> +	of_property_read_u32(np, "calxeda,pre-clocks", &pdata->pre_clocks);
-> +	of_property_read_u32(np, "calxeda,post-clocks", &pdata->post_clocks);
->  
->  	/* store em_loc */
->  	hpriv->em_loc = 0;
-> 
+What we're talking about is to end that mode of operation, and moving
+over to locking in bindings. Device tree contents, as mentioned
+elsewhere, might still be changed just like code is -- bugs are fixed,
+etc. But it's time to start locking down the bindings, in particular
+no longer change the established ones.
 
+Long term, final goal is likely to be close to what Russell is saying
+-- nothing should go into the kernel tree unless the binding is in a
+fully stable state. However, we have a transitional period between now
+and then, and even when we're at the final state there will be need to
+have some sort of sandbox for development and test of future bindings.
+Dealing with all that, as well as the actual process for locking in
+bindings, is what needs to be sorted out.
+
+I think we're all in agreement that bindings that change over time are
+nothing but pain, but we're arguing that in circles anyway.
+
+
+-Olof
