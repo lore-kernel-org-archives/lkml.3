@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab3GZUt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:49:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50976 "EHLO
+	id S1760058Ab3GZUtY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:49:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50961 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932520Ab3GZUtG (ORCPT
+	with ESMTP id S932499Ab3GZUtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:49:06 -0400
+	Fri, 26 Jul 2013 16:49:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 60/79] usb: option: add TP-LINK MA260
-Date: Fri, 26 Jul 2013 13:47:50 -0700
-Message-Id: <20130726204728.945640931@linuxfoundation.org>
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>, Juergen Beisert <jbe@pengutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [ 66/79] ARM: S3C24XX: Add missing clkdev entries for s3c2440 UART
+Date: Fri, 26 Jul 2013 13:47:56 -0700
+Message-Id: <20130726204729.703315005@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,27 +29,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
 
-commit 94190301ffa059c2d127b3a67ec5d161d5c62681 upstream.
+commit d817468c4b2892b9468e2a0c92116e38a3a61370 upstream.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+This patch restores serial port operation which has been broken since
+commit 60e93575476f ("serial: samsung: enable clock before clearing
+pending interrupts during init")
+
+That commit only uncovered the real issue which was missing clkdev
+entries for the "uart" clocks on S3C2440. It went unnoticed so far
+because return value of clk API calls were not being checked at all
+in the samsung serial port driver.
+
+This patch should be backported to at least 3.10 stable kernel, since
+the serial port has not been working on s3c2440 since 3.10-rc5.
+
+Signed-off-by: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: Chander Kashyap <chander.kashyap@linaro.org>
+[on S3C2440 SoC based Mini2440 board]
+Tested-by: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
+Tested-by: Juergen Beisert <jbe@pengutronix.de>
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/arm/mach-s3c24xx/clock-s3c2410.c      |  161 +++++++++++++++++------------
+ arch/arm/mach-s3c24xx/clock-s3c2440.c      |    3 
+ arch/arm/plat-samsung/include/plat/clock.h |    5 
+ 3 files changed, 106 insertions(+), 63 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1333,6 +1333,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
+--- a/arch/arm/mach-s3c24xx/clock-s3c2410.c
++++ b/arch/arm/mach-s3c24xx/clock-s3c2410.c
+@@ -119,66 +119,101 @@ static struct clk init_clocks_off[] = {
+ 	}
+ };
+ 
+-static struct clk init_clocks[] = {
+-	{
+-		.name		= "lcd",
+-		.parent		= &clk_h,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_LCDC,
+-	}, {
+-		.name		= "gpio",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_GPIO,
+-	}, {
+-		.name		= "usb-host",
+-		.parent		= &clk_h,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_USBH,
+-	}, {
+-		.name		= "usb-device",
+-		.parent		= &clk_h,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_USBD,
+-	}, {
+-		.name		= "timers",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_PWMT,
+-	}, {
+-		.name		= "uart",
+-		.devname	= "s3c2410-uart.0",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_UART0,
+-	}, {
+-		.name		= "uart",
+-		.devname	= "s3c2410-uart.1",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_UART1,
+-	}, {
+-		.name		= "uart",
+-		.devname	= "s3c2410-uart.2",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_UART2,
+-	}, {
+-		.name		= "rtc",
+-		.parent		= &clk_p,
+-		.enable		= s3c2410_clkcon_enable,
+-		.ctrlbit	= S3C2410_CLKCON_RTC,
+-	}, {
+-		.name		= "watchdog",
+-		.parent		= &clk_p,
+-		.ctrlbit	= 0,
+-	}, {
+-		.name		= "usb-bus-host",
+-		.parent		= &clk_usb_bus,
+-	}, {
+-		.name		= "usb-bus-gadget",
+-		.parent		= &clk_usb_bus,
+-	},
++static struct clk clk_lcd = {
++	.name		= "lcd",
++	.parent		= &clk_h,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_LCDC,
++};
++
++static struct clk clk_gpio = {
++	.name		= "gpio",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_GPIO,
++};
++
++static struct clk clk_usb_host = {
++	.name		= "usb-host",
++	.parent		= &clk_h,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_USBH,
++};
++
++static struct clk clk_usb_device = {
++	.name		= "usb-device",
++	.parent		= &clk_h,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_USBD,
++};
++
++static struct clk clk_timers = {
++	.name		= "timers",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_PWMT,
++};
++
++struct clk s3c24xx_clk_uart0 = {
++	.name		= "uart",
++	.devname	= "s3c2410-uart.0",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_UART0,
++};
++
++struct clk s3c24xx_clk_uart1 = {
++	.name		= "uart",
++	.devname	= "s3c2410-uart.1",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_UART1,
++};
++
++struct clk s3c24xx_clk_uart2 = {
++	.name		= "uart",
++	.devname	= "s3c2410-uart.2",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_UART2,
++};
++
++static struct clk clk_rtc = {
++	.name		= "rtc",
++	.parent		= &clk_p,
++	.enable		= s3c2410_clkcon_enable,
++	.ctrlbit	= S3C2410_CLKCON_RTC,
++};
++
++static struct clk clk_watchdog = {
++	.name		= "watchdog",
++	.parent		= &clk_p,
++	.ctrlbit	= 0,
++};
++
++static struct clk clk_usb_bus_host = {
++	.name		= "usb-bus-host",
++	.parent		= &clk_usb_bus,
++};
++
++static struct clk clk_usb_bus_gadget = {
++	.name		= "usb-bus-gadget",
++	.parent		= &clk_usb_bus,
++};
++
++static struct clk *init_clocks[] = {
++	&clk_lcd,
++	&clk_gpio,
++	&clk_usb_host,
++	&clk_usb_device,
++	&clk_timers,
++	&s3c24xx_clk_uart0,
++	&s3c24xx_clk_uart1,
++	&s3c24xx_clk_uart2,
++	&clk_rtc,
++	&clk_watchdog,
++	&clk_usb_bus_host,
++	&clk_usb_bus_gadget,
+ };
+ 
+ /* s3c2410_baseclk_add()
+@@ -195,7 +230,6 @@ int __init s3c2410_baseclk_add(void)
+ {
+ 	unsigned long clkslow = __raw_readl(S3C2410_CLKSLOW);
+ 	unsigned long clkcon  = __raw_readl(S3C2410_CLKCON);
+-	struct clk *clkp;
+ 	struct clk *xtal;
+ 	int ret;
+ 	int ptr;
+@@ -207,8 +241,9 @@ int __init s3c2410_baseclk_add(void)
+ 
+ 	/* register clocks from clock array */
+ 
+-	clkp = init_clocks;
+-	for (ptr = 0; ptr < ARRAY_SIZE(init_clocks); ptr++, clkp++) {
++	for (ptr = 0; ptr < ARRAY_SIZE(init_clocks); ptr++) {
++		struct clk *clkp = init_clocks[ptr];
++
+ 		/* ensure that we note the clock state */
+ 
+ 		clkp->usage = clkcon & clkp->ctrlbit ? 1 : 0;
+--- a/arch/arm/mach-s3c24xx/clock-s3c2440.c
++++ b/arch/arm/mach-s3c24xx/clock-s3c2440.c
+@@ -166,6 +166,9 @@ static struct clk_lookup s3c2440_clk_loo
+ 	CLKDEV_INIT(NULL, "clk_uart_baud1", &s3c24xx_uclk),
+ 	CLKDEV_INIT(NULL, "clk_uart_baud2", &clk_p),
+ 	CLKDEV_INIT(NULL, "clk_uart_baud3", &s3c2440_clk_fclk_n),
++	CLKDEV_INIT("s3c2440-uart.0", "uart", &s3c24xx_clk_uart0),
++	CLKDEV_INIT("s3c2440-uart.1", "uart", &s3c24xx_clk_uart1),
++	CLKDEV_INIT("s3c2440-uart.2", "uart", &s3c24xx_clk_uart2),
+ 	CLKDEV_INIT("s3c2440-camif", "camera", &s3c2440_clk_cam_upll),
+ };
+ 
+--- a/arch/arm/plat-samsung/include/plat/clock.h
++++ b/arch/arm/plat-samsung/include/plat/clock.h
+@@ -83,6 +83,11 @@ extern struct clk clk_ext;
+ extern struct clksrc_clk clk_epllref;
+ extern struct clksrc_clk clk_esysclk;
+ 
++/* S3C24XX UART clocks */
++extern struct clk s3c24xx_clk_uart0;
++extern struct clk s3c24xx_clk_uart1;
++extern struct clk s3c24xx_clk_uart2;
++
+ /* S3C64XX specific clocks */
+ extern struct clk clk_h2;
+ extern struct clk clk_27m;
 
 
