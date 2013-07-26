@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933770Ab3GZVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:34:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50823 "EHLO
+	id S933752Ab3GZVeH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:34:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759945Ab3GZUsk (ORCPT
+	with ESMTP id S1759950Ab3GZUsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:48:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ding Tianhong <dingtianhong@huawei.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/79] ifb: fix rcu_sched self-detected stalls
-Date: Fri, 26 Jul 2013 13:47:12 -0700
-Message-Id: <20130726204724.272198395@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [ 51/79] bcache: Fix a sysfs splat on shutdown
+Date: Fri, 26 Jul 2013 13:47:41 -0700
+Message-Id: <20130726204727.905469344@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,44 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dingtianhong <dingtianhong@huawei.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-[ Upstream commit 440d57bc5ff55ec1efb3efc9cbe9420b4bbdfefa ]
+commit c9502ea4424b31728703d113fc6b30bfead14633 upstream.
 
-According to the commit 16b0dc29c1af9df341428f4c49ada4f626258082
-(dummy: fix rcu_sched self-detected stalls)
+If we stopped a bcache device when we were already detaching (or
+something like that), bcache_device_unlink() would try to remove a
+symlink from sysfs that was already gone because the bcache dev kobject
+had already been removed from sysfs.
 
-Eric Dumazet fix the problem in dummy, but the ifb will occur the
-same problem like the dummy modules.
+So keep track of whether we've removed stuff from sysfs.
 
-Trying to "modprobe ifb numifbs=30000" triggers :
-
-INFO: rcu_sched self-detected stall on CPU
-
-After this splat, RTNL is locked and reboot is needed.
-
-We must call cond_resched() to avoid this, even holding RTNL.
-
-Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ifb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/ifb.c
-+++ b/drivers/net/ifb.c
-@@ -292,8 +292,10 @@ static int __init ifb_init_module(void)
- 	rtnl_lock();
- 	err = __rtnl_link_register(&ifb_link_ops);
+---
+ drivers/md/bcache/bcache.h |    1 +
+ drivers/md/bcache/super.c  |   11 ++++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+--- a/drivers/md/bcache/bcache.h
++++ b/drivers/md/bcache/bcache.h
+@@ -437,6 +437,7 @@ struct bcache_device {
  
--	for (i = 0; i < numifbs && !err; i++)
-+	for (i = 0; i < numifbs && !err; i++) {
- 		err = ifb_init_one(i);
-+		cond_resched();
-+	}
- 	if (err)
- 		__rtnl_link_unregister(&ifb_link_ops);
- 	rtnl_unlock();
+ 	/* If nonzero, we're detaching/unregistering from cache set */
+ 	atomic_t		detaching;
++	int			flush_done;
+ 
+ 	atomic_long_t		sectors_dirty;
+ 	unsigned long		sectors_dirty_gc;
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -704,7 +704,8 @@ static void bcache_device_detach(struct
+ 		atomic_set(&d->detaching, 0);
+ 	}
+ 
+-	bcache_device_unlink(d);
++	if (!d->flush_done)
++		bcache_device_unlink(d);
+ 
+ 	d->c->devices[d->id] = NULL;
+ 	closure_put(&d->c->caching);
+@@ -1016,6 +1017,14 @@ static void cached_dev_flush(struct clos
+ 	struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
+ 	struct bcache_device *d = &dc->disk;
+ 
++	mutex_lock(&bch_register_lock);
++	d->flush_done = 1;
++
++	if (d->c)
++		bcache_device_unlink(d);
++
++	mutex_unlock(&bch_register_lock);
++
+ 	bch_cache_accounting_destroy(&dc->accounting);
+ 	kobject_del(&d->kobj);
+ 
 
 
