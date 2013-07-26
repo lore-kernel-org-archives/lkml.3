@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758530Ab3GZKwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:52:30 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47603 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757844Ab3GZKw2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:52:28 -0400
-Date: Fri, 26 Jul 2013 11:52:25 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes - regular pull req
-Message-ID: <alpine.DEB.2.00.1307261150280.5725@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758536Ab3GZKzu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:55:50 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:44081 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab3GZKzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 06:55:47 -0400
+Date: Fri, 26 Jul 2013 11:55:19 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130726105519.GZ9858@sirena.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rF/K8g1/cqPmwA9E"
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is just a regular fixes pull apart from the qxl one, it has radeon 
-and intel bits in it,
+--rF/K8g1/cqPmwA9E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-the intel fixes are for a regression with the RC6 fix and a 3.10 hdmi 
-regression, whereas radeon is more DPM fixes, a few lockup fixes and 
-some rn50/r100 DAC fixes.
+On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
 
-Dave.
+> I would argue that little has gone in (if reviewed) with the
+> expectation that the binding will change. Many of the common bindings
+> have had many rounds of review and they have not changed. My position
+> any time I see an incompatible change has been that it require anyone
+> affected to be okay with the change. This has pretty much been limited
+> to specific platforms from what I've seen.
 
-The following changes since commit 07bc9dc1b01bad7084fed3d2659e5d83317869bc:
+The big exception I've seen has been the OMAP hwmod stuff.  Plus of
+course the case where things get moved into the DT bindings from the
+board file as things are built up, but this should be becoming a non
+issue as people move onto DT only boards (though I am worried about
+people on systems where the SoC is described in DT).
 
-  Merge branch 'merge' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2013-07-24 11:07:18 -0700)
+--rF/K8g1/cqPmwA9E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-are available in the git repository at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR8lWUAAoJELSic+t+oim9UH0P/R7oRtO4An4tjF6iqo7gHp0Z
+Bx5V5GeP6PRC2ZLz266cgjB3/1hSZZFgGjPvBsox4tSQGdPTlEmAbdgqbKYFeNch
+48DTTZhHfSu4UL0x4jx4Fqiv7RUAN2bOPDkdmGnc6XBZZ5u3QtAzhfVbEZHTl0g/
+B4xjRtK63hC5yRzQzsisLNt+KOHeDzyBqxQQBqK3MXk+yg+L4onKgLkAv014Ej2y
+zmAEwvxG3fMYPHSdbrAAnOhdqXxZVy9gff4Abt3ApEMsS1hyyufDJnJvnMwlmz8m
+XJpxI9Jq9LbahatrUS2668lfpvkjtkOXDJwisJPgwalNMr4yC7T8suDQ9qys22ao
+t/GfsnxwM5veptXbVDpKvja8K1SWy+4P8xAWNH1h/gdYTpIqc2Kx3TGvr8P50oXA
+b/kGPU4cQsNCE5Bgh8q+y1Ndi+gnPxlqh7RM9lGYjRvuOKgvXhMQWdQmY0CqRUvd
+tducQkbISXmW6HnhkHFkMSz5QNxhyaVCyqL/jwkdRcy8c+GkdwUxleyJ1CQjJ7Aa
++iYMus+6gEmT0dDFLDFefqZe3NZRXRoQuqKJnc6www2aoNXulkWIlmh7DUbLKRul
+8LqnaB6NB3+5Naq/mMeXHJckxRdv5IRtpgI18N+iqMyO7606mB2SagUalP8UCgOH
+IhjO9LrpLtEg5FsKFWTy
+=VU8c
+-----END PGP SIGNATURE-----
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-for you to fetch changes up to bf903e4141fce4b35072d5b8fa0ddd299aaf01ea:
-
-  Merge tag 'drm-intel-fixes-2013-07-25' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes (2013-07-26 20:38:14 +1000)
-
-----------------------------------------------------------------
-
-Alex Deucher (8):
-      drm/radeon: wait for 3D idle before using CP DMA
-      drm/radeon/vm: only align the pt base to 32k
-      drm/radeon: fix endian issues with DP handling (v3)
-      drm/radeon: improve dac adjust heuristics for legacy pdac
-      drm/radeon/dpm: fix a typo in the rv6xx mclk setup
-      drm/radeon/dpm: fix displaygap programming on rv6xx
-      drm/radeon/dpm: implement force performance levels for rv6xx
-      drm/radeon/dpm: fix r600_enable_sclk_control()
-
-Daniel Vetter (1):
-      drm/i915: fix hdmi portclock limits
-
-Dave Airlie (2):
-      Merge branch 'drm-fixes-3.11' of git://people.freedesktop.org/~agd5f/linux into drm-fixes
-      Merge tag 'drm-intel-fixes-2013-07-25' of git://people.freedesktop.org/~danvet/drm-intel into drm-fixes
-
-Jani Nikula (1):
-      drm/i915: initialize gt_lock early with other spin locks
-
-Mark Kettenis (1):
-      drm/radeon: fix combios tables on older cards
-
-Ondrej Zary (1):
-      drm/radeon: Another card with wrong primary dac adj
-
- drivers/gpu/drm/i915/i915_dma.c         |   1 +
- drivers/gpu/drm/i915/intel_hdmi.c       |  19 +++-
- drivers/gpu/drm/i915/intel_pm.c         |   2 -
- drivers/gpu/drm/radeon/atombios_dp.c    |  43 ++++++++-
- drivers/gpu/drm/radeon/r600.c           |   5 +-
- drivers/gpu/drm/radeon/r600_dpm.c       |   4 +-
- drivers/gpu/drm/radeon/radeon_asic.c    |   1 +
- drivers/gpu/drm/radeon/radeon_asic.h    |   2 +
- drivers/gpu/drm/radeon/radeon_combios.c | 159 ++++++++++----------------------
- drivers/gpu/drm/radeon/radeon_gart.c    |   8 +-
- drivers/gpu/drm/radeon/rv6xx_dpm.c      |  41 +++++++-
- 11 files changed, 158 insertions(+), 127 deletions(-)
+--rF/K8g1/cqPmwA9E--
