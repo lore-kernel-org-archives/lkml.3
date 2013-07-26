@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758561Ab3GZVs2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:48:28 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:38573 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752595Ab3GZVs1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:48:27 -0400
-Message-ID: <1374875305.2009.16.camel@joe-AO722>
-Subject: Re: [PATCH 1/2] Staging: bcm: InterfaceIdleMode: Fixed
- spacing/tabing issues
-From: Joe Perches <joe@perches.com>
-To: Lilis Iskandar <veeableful@gmail.com>
-Cc: gregkh@linuxfoundation.org, tulinizer@gmail.com, klmckinney1@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Fri, 26 Jul 2013 14:48:25 -0700
-In-Reply-To: <1374843573.1802.3.camel@desktop>
-References: <1374843573.1802.3.camel@desktop>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759744Ab3GZVuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:50:14 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:19726 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab3GZVuK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 17:50:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 26 Jul 2013 14:50:09 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Jul 2013 14:50:09 -0700
+Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
+Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
+Thread-Index: Ac6KSIXnk5PcdWTMRhSUGym0izAYeQAAOmsA
+Message-ID: <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com>
+References: <1374871308-490-1-git-send-email-achew@nvidia.com>
+ <51F2E74E.2060107@wwwdotorg.org>
+ <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
+ <51F2EC66.2080200@wwwdotorg.org>
+In-Reply-To: <51F2EC66.2080200@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-26 at 20:59 +0800, Lilis Iskandar wrote:
-> Fixed spacing/tabing issues.
+> >> How does this interact with the pinctrl driver that Laxman just sent
+> >> for Palmas?
+> >>
+> >> https://lkml.org/lkml/2013/7/26/141
+> >> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
+> >
+> > Thanks for pointing this out.  Given this:
+> >
+> > +Optional properties:
+> > +- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1 mode.
+> > +- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2 mode.
+> >
+> > I think his work already encompasses what my patch is supposed to do.
+> >
+> > Abandoning this patch.
+> 
+> OK, that's simple!
+> 
+> Are the existing ti,mux-pad1/ti,mux-pad2 properties already in the binding
+> redundant with Laxman's pinctrl driver?
 
-two b's in tabbing.
-
-First send the emails to yourself and make sure
-they apply with git am
-
-Remember mentioning git diff -w.
-
-You also might try to use
-
-$ ./scripts/checkpatch.pl -f --fix --test-only=space drivers/staging/bcm/*.[ch] 
-$ ls drivers/staging/bcm/*EXPERIMENTAL-checkpatch-fixes | \
-  while read file ; do \
-    mv $file ${file%.EXPERIMENTAL-checkpatch-fixes}; \
-  done
-$ git diff drivers/staging/bcm
-
-
+In linux-next (where I based my work), yes, those two properties already exist,
+and as far as I understand it, are redundant with Laxman's pinctrl driver.
+I expect those properties will go away with Laxman's pinctrl driver.
