@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933180Ab3GZUzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:55:32 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:49838 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932519Ab3GZUz0 (ORCPT
+	id S933131Ab3GZUzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:55:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933060Ab3GZUyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:55:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130726201807.GJ8661@moon>
-References: <20130726201807.GJ8661@moon>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 26 Jul 2013 13:55:04 -0700
-Message-ID: <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Jul 2013 16:54:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 59/59] ALSA: usb-audio: 6fire: return correct XRUN indication
+Date: Fri, 26 Jul 2013 13:53:23 -0700
+Message-Id: <20130726205020.147187537@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> Andy reported that if file page get reclaimed we loose soft-dirty bit
-> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
-> get encoded into pte entry. Thus when #pf happens on such non-present
-> pte we can restore it back.
->
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Unless I'm misunderstanding this, it's saving the bit in the
-non-present PTE.  This sounds wrong -- what happens if the entire pmd
-(or whatever the next level is called) gets zapped?  (Also, what
-happens if you unmap a file and map a different file there?)
+------------------
 
---Andy
+From: Eldad Zack <eldad@fogrefinery.com>
+
+commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
+
+Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
+SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
+function of 6fire, as expected by snd_pcm_update_hw_ptr0().
+
+Caught by sparse.
+
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/usb/6fire/pcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -540,7 +540,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
+ 	snd_pcm_uframes_t ret;
+ 
+ 	if (rt->panic || !sub)
+-		return SNDRV_PCM_STATE_XRUN;
++		return SNDRV_PCM_POS_XRUN;
+ 
+ 	spin_lock_irqsave(&sub->lock, flags);
+ 	ret = sub->dma_off;
+
+
