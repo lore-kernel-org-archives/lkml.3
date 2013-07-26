@@ -1,150 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754994Ab3GZJEs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:04:48 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51237 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757748Ab3GZJET (ORCPT
+	id S1756828Ab3GZJJI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:09:08 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:41949 "EHLO smtp5-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752149Ab3GZJJF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:04:19 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <balbi@ti.com>, <tony@atomide.com>
-CC: <kishon@ti.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: [PATCH 1/2] usb: musb: omap: remove using PLATFORM_DEVID_AUTO in omap2430.c
-Date: Fri, 26 Jul 2013 14:33:37 +0530
-Message-ID: <1374829418-27503-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1374829418-27503-1-git-send-email-kishon@ti.com>
-References: <1374829418-27503-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 26 Jul 2013 05:09:05 -0400
+Date: Fri, 26 Jul 2013 11:09:13 +0200
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 4/4] ASoc: kirkwood: add DT support
+Message-ID: <20130726110913.0a193918@armhf>
+In-Reply-To: <20130725230533.GH24642@n2100.arm.linux.org.uk>
+References: <20130725111459.145a4aa4@armhf>
+	<20130725191905.GR9858@sirena.org.uk>
+	<20130725230533.GH24642@n2100.arm.linux.org.uk>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the platform devices are created using PLATFORM_DEVID_AUTO, the
-device names given in usb_bind_phy (in board file) does not match with
-the actual device name causing the USB PHY library not to return the
-PHY reference when the MUSB controller request for the PHY in the non-dt boot
-case.
-So removed creating platform devices using PLATFORM_DEVID_AUTO in omap2430.c.
-This is also needed for the Generic PHY Framework.
+On Fri, 26 Jul 2013 00:05:33 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- drivers/usb/musb/musb_core.c |   31 ++++++++++++++++++++++++++++++-
- drivers/usb/musb/musb_core.h |    2 ++
- drivers/usb/musb/omap2430.c  |   16 ++++++++++++++--
- 3 files changed, 46 insertions(+), 3 deletions(-)
+> On Thu, Jul 25, 2013 at 08:19:05PM +0100, Mark Brown wrote:
+> > On Thu, Jul 25, 2013 at 11:14:59AM +0200, Jean-Francois Moine wrote:
+	[snip]
+> > > -	priv->clk = devm_clk_get(&pdev->dev, NULL);
+> > > +	priv->clk = devm_clk_get(&pdev->dev, "internal");
+> > >  	if (IS_ERR(priv->clk)) {
+> > > -		dev_err(&pdev->dev, "no clock\n");
+> > > +		dev_err(&pdev->dev, "no internal clock\n");
+> > >  		return PTR_ERR(priv->clk);
+> > >  	}
+> > 
+> > Does the code providing it already name the clock?  If not are updates
+> > needed to do that?
 
-diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index 29a24ce..eb5d876 100644
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -121,7 +121,7 @@ MODULE_DESCRIPTION(DRIVER_INFO);
- MODULE_AUTHOR(DRIVER_AUTHOR);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:" MUSB_DRIVER_NAME);
--
-+static DEFINE_IDA(musb_ida);
- 
- /*-------------------------------------------------------------------------*/
- 
-@@ -132,6 +132,35 @@ static inline struct musb *dev_to_musb(struct device *dev)
- 
- /*-------------------------------------------------------------------------*/
- 
-+int musb_get_id(struct device *dev, gfp_t gfp_mask)
-+{
-+	int ret;
-+	int id;
-+
-+	ret = ida_pre_get(&musb_ida, gfp_mask);
-+	if (!ret) {
-+		dev_err(dev, "failed to reserve resource for id\n");
-+		return -ENOMEM;
-+	}
-+
-+	ret = ida_get_new(&musb_ida, &id);
-+	if (ret < 0) {
-+		dev_err(dev, "failed to allocate a new id\n");
-+		return ret;
-+		}
-+
-+	return id;
-+}
-+EXPORT_SYMBOL_GPL(musb_get_id);
-+
-+void musb_put_id(struct device *dev, int id)
-+{
-+
-+	dev_dbg(dev, "removing id %d\n", id);
-+	ida_remove(&musb_ida, id);
-+}
-+EXPORT_SYMBOL_GPL(musb_put_id);
-+
- #ifndef CONFIG_BLACKFIN
- static int musb_ulpi_read(struct usb_phy *phy, u32 offset)
- {
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7d341c3..79545a4 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -511,6 +511,8 @@ static inline void musb_configure_ep0(struct musb *musb)
- extern const char musb_driver_name[];
- 
- extern void musb_stop(struct musb *musb);
-+extern int musb_get_id(struct device *dev, gfp_t gfp_mask);
-+extern void musb_put_id(struct device *dev, int id);
- 
- extern void musb_write_fifo(struct musb_hw_ep *ep, u16 len, const u8 *src);
- extern void musb_read_fifo(struct musb_hw_ep *ep, u16 len, u8 *dst);
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 6708a3b..812a7fc 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -489,6 +489,7 @@ static int omap2430_probe(struct platform_device *pdev)
- 	struct device_node		*np = pdev->dev.of_node;
- 	struct musb_hdrc_config		*config;
- 	int				ret = -ENOMEM;
-+	int				musbid;
- 
- 	glue = devm_kzalloc(&pdev->dev, sizeof(*glue), GFP_KERNEL);
- 	if (!glue) {
-@@ -496,10 +497,18 @@ static int omap2430_probe(struct platform_device *pdev)
- 		goto err0;
- 	}
- 
--	musb = platform_device_alloc("musb-hdrc", PLATFORM_DEVID_AUTO);
-+	/* get the musb id */
-+	musbid = musb_get_id(&pdev->dev, GFP_KERNEL);
-+	if (musbid < 0) {
-+		dev_err(&pdev->dev, "failed to allocate musb id\n");
-+		ret = -ENOMEM;
-+		goto err0;
-+	}
-+
-+	musb = platform_device_alloc("musb-hdrc", musbid);
- 	if (!musb) {
- 		dev_err(&pdev->dev, "failed to allocate musb device\n");
--		goto err0;
-+		goto err1;
- 	}
- 
- 	musb->dev.parent		= &pdev->dev;
-@@ -607,6 +616,9 @@ static int omap2430_probe(struct platform_device *pdev)
- err2:
- 	platform_device_put(musb);
- 
-+err1:
-+	musb_put_id(&pdev->dev, musbid);
-+
- err0:
- 	return ret;
- }
+I don't know. I will reset the clock name to NULL when no DT, so it
+will be compatible.
+
+> > > -	priv->extclk = clk_get(&pdev->dev, "extclk");
+> > > +	priv->extclk = clk_get(&pdev->dev, "external");
+> > 
+> > Is the clock actually called extclk in the datasheet and so on?  If so
+> > it seems better to stick with that name.  Do any boards need updates for
+> > the new name?
+> 
+> "AU_EXTCLK" is the exact name (pasted out of the documentation).
+> I don't see any purpose to this name changing.
+
+On Tue, Jul 23, 2013 at 02:59:06PM +0200, Sebastian Hesselbarth wrote:
+> As Sascha Hauer pointed out, clocks should be distinguished by names
+> (clock-names property) instead of position and then use
+> devm_clk_get(&pdev->dev, "internal") and
+> devm_clk_get(&pdev->dev, "external") respectively.  
+> 
+> This will possibly also require to update platform_data and legacy
+> users of kirkwood-i2s or have different setup functions for non-DT
+> and DT.  
+
+The A510 documentation uses the names "DCO PLL" for the internal clock
+and "AU_EXTCLK" for the external clock. So, what about "dcopll" and
+"extclk"?
+
+
 -- 
-1.7.10.4
-
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
