@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759663Ab3GZUQs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:16:48 -0400
-Received: from www.linutronix.de ([62.245.132.108]:38973 "EHLO
+	id S1759685Ab3GZURI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:17:08 -0400
+Received: from www.linutronix.de ([62.245.132.108]:38970 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759557Ab3GZUQI (ORCPT
+	with ESMTP id S1756522Ab3GZUQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:16:08 -0400
+	Fri, 26 Jul 2013 16:16:07 -0400
 From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 To: balbi@ti.com
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         george.cherian@ti.com,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH 3/4] usb: musb: dsps: remove the hardcoded phy pieces
-Date: Fri, 26 Jul 2013 22:15:56 +0200
-Message-Id: <1374869757-923-4-git-send-email-bigeasy@linutronix.de>
+Subject: [PATCH 2/4] usb: phy: add am335x pieces to generic phy
+Date: Fri, 26 Jul 2013 22:15:55 +0200
+Message-Id: <1374869757-923-3-git-send-email-bigeasy@linutronix.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374869757-923-1-git-send-email-bigeasy@linutronix.de>
 References: <1374869757-923-1-git-send-email-bigeasy@linutronix.de>
@@ -25,177 +25,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dsps uses a nop driver which is added in dsps itself and does the PHY
-on/off calls within dsps. Since those calls are now moved the nop driver
-itself, we can now request the phy proper phy and remove those calls.
-Currently only the first musb interface is used so we only add one phy
-node for now.
+This patch copies the phy support bits from dsps into the generic phy
+driver. Most code can be re-used except for the on/off.
+The additional am335x can be removed once we have a phy driver that does
+more than this.
 
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/usb/musb/musb_dsps.c | 97 +-------------------------------------------
- 1 file changed, 1 insertion(+), 96 deletions(-)
+ drivers/usb/phy/phy-generic.c | 116 +++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 104 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/usb/musb/musb_dsps.c b/drivers/usb/musb/musb_dsps.c
-index 23f511f..19819fd 100644
---- a/drivers/usb/musb/musb_dsps.c
-+++ b/drivers/usb/musb/musb_dsps.c
-@@ -120,49 +120,8 @@ struct dsps_glue {
- 	const struct dsps_musb_wrapper *wrp; /* wrapper register offsets */
- 	struct timer_list timer[2];	/* otg_workaround timer */
- 	unsigned long last_timer[2];    /* last timer data for each instance */
--	u32 __iomem *usb_ctrl[2];
+diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+index 57a0bf0..efc778a 100644
+--- a/drivers/usb/phy/phy-generic.c
++++ b/drivers/usb/phy/phy-generic.c
+@@ -35,6 +35,7 @@
+ #include <linux/clk.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/of.h>
++#include <linux/of_address.h>
+ 
+ struct usb_phy_gen_xceiv {
+ 	struct usb_phy phy;
+@@ -42,6 +43,14 @@ struct usb_phy_gen_xceiv {
+ 	struct clk *clk;
+ 	struct regulator *vcc;
+ 	struct regulator *reset;
++
++	void __iomem *priv_reg;
++};
++
++struct phy_data {
++	int	(*phy_init)(struct usb_phy *x);
++	void	(*phy_shutdown)(struct usb_phy *x);
++	int	(*reg_init)(struct platform_device *pdev);
  };
  
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_0	0x44e10620
--#define	DSPS_AM33XX_CONTROL_MODULE_PHYS_1	0x44e10628
+ static struct platform_device *pd;
+@@ -139,8 +148,91 @@ static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	return 0;
+ }
+ 
++const struct phy_data usb_gen_phy_data = {
++	.phy_init	= nop_init,
++	.phy_shutdown	= nop_shutdown,
++};
++
++#ifdef CONFIG_SOC_AM33XX
++static int am335x_reg_init(struct platform_device *pdev)
++{
++	struct device_node *node = pdev->dev.of_node;
++	struct usb_phy_gen_xceiv *nop;
++	struct resource res;
++	int ret;
++
++	nop = platform_get_drvdata(pdev);
++	ret = of_address_to_resource(node, 0, &res);
++	if (ret)
++		return ret;
++
++	nop->priv_reg = devm_request_and_ioremap(&pdev->dev, &res);
++	if (!nop->priv_reg)
++		return -EINVAL;
++	return 0;
++}
++
++#define AM335X_USB_CTRL	0x00
++#define AM335x_USB_STS	0x04
++
++#define USBPHY_CM_PWRDN		(1 << 0)
++#define USBPHY_OTG_PWRDN	(1 << 1)
++#define USBPHY_OTGVDET_EN	(1 << 19)
++#define USBPHY_OTGSESSEND_EN	(1 << 20)
++static void am335x_phy_power(struct usb_phy_gen_xceiv *nop, bool on)
++{
++	u32 val;
++
++	val = readl(nop->priv_reg);
++	if (on) {
++		val &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
++		val |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
++	} else {
++		val |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
++	}
++
++	writel(val, nop->priv_reg);
++}
++
++static int am335x_phy_init(struct usb_phy *phy)
++{
++	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
++	int ret;
++
++	ret = nop_init(phy);
++	if (ret)
++		return ret;
++	am335x_phy_power(nop, true);
++	return 0;
++}
++
++static void am335x_phy_shutdown(struct usb_phy *phy)
++{
++	struct usb_phy_gen_xceiv *nop = dev_get_drvdata(phy->dev);
++
++	am335x_phy_power(nop, false);
++	nop_shutdown(phy);
++}
++
++const struct phy_data am335x_phy_data = {
++	.reg_init	= am335x_reg_init,
++	.phy_init	= am335x_phy_init,
++	.phy_shutdown	= am335x_phy_shutdown,
++};
++#endif
++
++static const struct of_device_id nop_xceiv_dt_ids[] = {
++	{ .compatible = "usb-nop-xceiv", },
++#ifdef CONFIG_SOC_AM33XX
++	{ .compatible = "ti,am335x-usb-phy", .data = &am335x_phy_data },
++#endif
++	{ }
++};
++MODULE_DEVICE_TABLE(of, nop_xceiv_dt_ids);
++
+ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ {
++	const struct phy_data *phy_data = &usb_gen_phy_data;
+ 	struct device *dev = &pdev->dev;
+ 	struct usb_phy_gen_xceiv_platform_data *pdata = pdev->dev.platform_data;
+ 	struct usb_phy_gen_xceiv	*nop;
+@@ -154,6 +246,8 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 	if (!nop)
+ 		return -ENOMEM;
+ 
++	platform_set_drvdata(pdev, nop);
++
+ 	nop->phy.otg = devm_kzalloc(&pdev->dev, sizeof(*nop->phy.otg),
+ 							GFP_KERNEL);
+ 	if (!nop->phy.otg)
+@@ -161,13 +255,20 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 
+ 	if (dev->of_node) {
+ 		struct device_node *node = dev->of_node;
++		const struct of_device_id *of_id;
+ 
+ 		if (of_property_read_u32(node, "clock-frequency", &clk_rate))
+ 			clk_rate = 0;
+ 
+ 		needs_vcc = of_property_read_bool(node, "vcc-supply");
+ 		needs_reset = of_property_read_bool(node, "reset-supply");
 -
--static const resource_size_t dsps_control_module_phys[] = {
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_0,
--	DSPS_AM33XX_CONTROL_MODULE_PHYS_1,
++		of_id = of_match_node(nop_xceiv_dt_ids, node);
++		if (of_id) {
++			phy_data = of_id->data;
++			err = phy_data->reg_init(pdev);
++			if (err)
++				return err;
++		}
+ 	} else if (pdata) {
+ 		type = pdata->type;
+ 		clk_rate = pdata->clk_rate;
+@@ -217,8 +318,8 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 	nop->phy.dev		= nop->dev;
+ 	nop->phy.label		= "nop-xceiv";
+ 	nop->phy.set_suspend	= nop_set_suspend;
+-	nop->phy.init		= nop_init;
+-	nop->phy.shutdown	= nop_shutdown;
++	nop->phy.init		= phy_data->phy_init;
++	nop->phy.shutdown	= phy_data->phy_shutdown;
+ 	nop->phy.state		= OTG_STATE_UNDEFINED;
+ 	nop->phy.type		= type;
+ 
+@@ -233,8 +334,6 @@ static int usb_phy_gen_xceiv_probe(struct platform_device *pdev)
+ 		goto err_add;
+ 	}
+ 
+-	platform_set_drvdata(pdev, nop);
+-
+ 	ATOMIC_INIT_NOTIFIER_HEAD(&nop->phy.notifier);
+ 
+ 	return 0;
+@@ -257,13 +356,6 @@ static int usb_phy_gen_xceiv_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static const struct of_device_id nop_xceiv_dt_ids[] = {
+-	{ .compatible = "usb-nop-xceiv" },
+-	{ }
 -};
 -
--#define USBPHY_CM_PWRDN		(1 << 0)
--#define USBPHY_OTG_PWRDN	(1 << 1)
--#define USBPHY_OTGVDET_EN	(1 << 19)
--#define USBPHY_OTGSESSEND_EN	(1 << 20)
+-MODULE_DEVICE_TABLE(of, nop_xceiv_dt_ids);
 -
--/**
-- * musb_dsps_phy_control - phy on/off
-- * @glue: struct dsps_glue *
-- * @id: musb instance
-- * @on: flag for phy to be switched on or off
-- *
-- * This is to enable the PHY using usb_ctrl register in system control
-- * module space.
-- *
-- * XXX: This function will be removed once we have a seperate driver for
-- * control module
-- */
--static void musb_dsps_phy_control(struct dsps_glue *glue, u8 id, u8 on)
--{
--	u32 usbphycfg;
--
--	usbphycfg = readl(glue->usb_ctrl[id]);
--
--	if (on) {
--		usbphycfg &= ~(USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN);
--		usbphycfg |= USBPHY_OTGVDET_EN | USBPHY_OTGSESSEND_EN;
--	} else {
--		usbphycfg |= USBPHY_CM_PWRDN | USBPHY_OTG_PWRDN;
--	}
--
--	writel(usbphycfg, glue->usb_ctrl[id]);
--}
- /**
-  * dsps_musb_enable - enable interrupts
-  */
-@@ -407,8 +366,7 @@ static int dsps_musb_init(struct musb *musb)
- 	musb->mregs += wrp->musb_core_offset;
- 
- 	/* NOP driver needs change if supporting dual instance */
--	usb_nop_xceiv_register();
--	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
-+	musb->xceiv = devm_usb_get_phy_by_phandle(glue->dev, "phys", 0);
- 	if (IS_ERR_OR_NULL(musb->xceiv))
- 		return -EPROBE_DEFER;
- 
-@@ -426,9 +384,6 @@ static int dsps_musb_init(struct musb *musb)
- 	/* Reset the musb */
- 	dsps_writel(reg_base, wrp->control, (1 << wrp->reset));
- 
--	/* Start the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 1);
--
- 	musb->isr = dsps_interrupt;
- 
- 	/* reset the otgdisable bit, needed for host mode to work */
-@@ -438,8 +393,6 @@ static int dsps_musb_init(struct musb *musb)
- 
- 	return 0;
- err0:
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
- 	return status;
- }
- 
-@@ -451,14 +404,7 @@ static int dsps_musb_exit(struct musb *musb)
- 
- 	del_timer_sync(&glue->timer[pdev->id]);
- 
--	/* Shutdown the on-chip PHY and its PLL. */
--	musb_dsps_phy_control(glue, pdev->id, 0);
- 	usb_phy_shutdown(musb->xceiv);
--
--	/* NOP driver needs change if supporting dual instance */
--	usb_put_phy(musb->xceiv);
--	usb_nop_xceiv_unregister();
--
- 	return 0;
- }
- 
-@@ -487,16 +433,6 @@ static int dsps_create_musb_pdev(struct dsps_glue *glue, u8 id)
- 	char res_name[11];
- 	int ret;
- 
--	resources[0].start = dsps_control_module_phys[id];
--	resources[0].end = resources[0].start + SZ_4 - 1;
--	resources[0].flags = IORESOURCE_MEM;
--
--	glue->usb_ctrl[id] = devm_ioremap_resource(&pdev->dev, resources);
--	if (IS_ERR(glue->usb_ctrl[id])) {
--		ret = PTR_ERR(glue->usb_ctrl[id]);
--		goto err0;
--	}
--
- 	/* first resource is for usbss, so start index from 1 */
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, id + 1);
- 	if (!res) {
-@@ -680,36 +616,6 @@ static int dsps_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
--#ifdef CONFIG_PM_SLEEP
--static int dsps_suspend(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 0);
--
--	return 0;
--}
--
--static int dsps_resume(struct device *dev)
--{
--	struct platform_device *pdev = to_platform_device(dev->parent);
--	struct dsps_glue *glue = platform_get_drvdata(pdev);
--	const struct dsps_musb_wrapper *wrp = glue->wrp;
--	int i;
--
--	for (i = 0; i < wrp->instances; i++)
--		musb_dsps_phy_control(glue, i, 1);
--
--	return 0;
--}
--#endif
--
--static SIMPLE_DEV_PM_OPS(dsps_pm_ops, dsps_suspend, dsps_resume);
--
- static const struct dsps_musb_wrapper am33xx_driver_data = {
- 	.revision		= 0x00,
- 	.control		= 0x14,
-@@ -752,7 +658,6 @@ static struct platform_driver dsps_usbss_driver = {
- 	.remove         = dsps_remove,
- 	.driver         = {
- 		.name   = "musb-dsps",
--		.pm	= &dsps_pm_ops,
- 		.of_match_table	= of_match_ptr(musb_dsps_of_match),
- 	},
- };
+ static struct platform_driver usb_phy_gen_xceiv_driver = {
+ 	.probe		= usb_phy_gen_xceiv_probe,
+ 	.remove		= usb_phy_gen_xceiv_remove,
 -- 
 1.8.3.2
 
