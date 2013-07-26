@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758470Ab3GZKjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:39:17 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:37073 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299Ab3GZKjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:39:15 -0400
-Date: Fri, 26 Jul 2013 12:39:12 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, albert.u.boot@aribaud.net,
-        Emilio Lopez <emilio@elopez.com.ar>, linux-kernel@vger.kernel.org,
-        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 08/10] ARM: sunxi: dt: Add PIO controller to A31 DTSI
-Message-ID: <20130726123912.3dd65bb7@skate>
-In-Reply-To: <1374618312-19001-9-git-send-email-maxime.ripard@free-electrons.com>
-References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
-	<1374618312-19001-9-git-send-email-maxime.ripard@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758372Ab3GZKlF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:41:05 -0400
+Received: from mms2.broadcom.com ([216.31.210.18]:2221 "EHLO mms2.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751983Ab3GZKlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 06:41:03 -0400
+X-Server-Uuid: 4500596E-606A-40F9-852D-14843D8201B2
+Message-ID: <51F25230.3090207@broadcom.com>
+Date: Fri, 26 Jul 2013 12:40:48 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Roger Quadros" <rogerq@ti.com>
+cc: "Joel Fernandes" <joelf@ti.com>, tony@atomide.com,
+        linux-omap@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
+ ethernet
+References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
+ <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com>
+ <51E7E1B7.6090104@broadcom.com> <51E7E2AD.8020106@ti.com>
+ <51F122D5.80205@broadcom.com> <51F1E39D.2030902@ti.com>
+ <51F1E65B.4020005@ti.com> <51F24BD6.9010405@broadcom.com>
+ <51F24C47.8060802@broadcom.com> <51F24E38.4090008@broadcom.com>
+ <51F2515F.8060001@ti.com>
+In-Reply-To: <51F2515F.8060001@ti.com>
+X-WSS-ID: 7DEC8F411R048277948-01-01
+Content-Type: text/plain;
+ charset=utf-8;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Maxime Ripard,
+On 07/26/2013 12:37 PM, Roger Quadros wrote:
+> On 07/26/2013 01:23 PM, Arend van Spriel wrote:
+>> On 07/26/2013 12:15 PM, Arend van Spriel wrote:
+>>> On 07/26/2013 12:13 PM, Arend van Spriel wrote:
+>>>> On 07/26/2013 05:00 AM, Joel Fernandes wrote:
+>>>>> On 07/25/2013 09:49 PM, Joel Fernandes wrote:
+>>>>>
+>>>>> [..]
+>>>>>
+>>>>>>> Can I get back on this topic. When USB and ethernet was working for me
+>>>>>>> as stated above, I was not doing tftpboot. When I use tftpboot the
+>>>>>>> images are obtained from the tftp server, but after kernel has started
+>>>>>>> there is nothing in /sys/bus/usb/devices/.
+>>>>>>
+>>>>>> I quickly tried 3.11-rc2 + Roger's USB PHY clock patch on
+>>>>>> omap4-panda-es
+>>>>>> and enabled following USB options:
+>>>>>>
+>>>>>> CONFIG_USB_MUSB_HDRC=y
+>>>>>> CONFIG_USB_PHY=y
+>>>>>> CONFIG_OMAP_USB2=y
+>>>>>> CONFIG_OMAP_CONTROL_USB=y
+>>>>>> CONFIG_USB_MUSB_OMAP2PLUS=y
+>>>>>> CONFIG_MFD_OMAP_USB_HOST=y
+>>>>>> CONFIG_USB_EHCI_HCD=y
+>>>
+>>> Aaargh. Missing this one. Will retry.
+>>
+>> Yes. That is working although it seems I don't need the MUSB stuff.
+>
+> MUSB is required for the micro OTG port and not USB host ports.
 
-On Wed, 24 Jul 2013 00:25:10 +0200, Maxime Ripard wrote:
-> The A31 has a different set of pins than the one found on the A10 and
-> A13, so we will need a different compatible string, even though the IP
-> is the same.
+Roger that (apologies for my corny sense of humor).
 
-Why "we will" ? Isn't this patch presently using a different compatible
-string?
+> cheers,
+> -roger
+>
+>
 
-Thomas
--- 
-Thomas Petazzoni, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+
