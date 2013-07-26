@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933203Ab3GZU5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:57:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51210 "EHLO
+	id S1760015Ab3GZU51 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:57:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933042Ab3GZUyD (ORCPT
+	with ESMTP id S932938Ab3GZUyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:03 -0400
+	Fri, 26 Jul 2013 16:54:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        David Jeffery <djeffery@redhat.com>,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 56/59] lockd: protect nlm_blocked access in nlmsvc_retry_blocked
-Date: Fri, 26 Jul 2013 13:53:20 -0700
-Message-Id: <20130726205019.821963297@linuxfoundation.org>
+        Barry Grussling <barry@grussling.com>
+Subject: [ 55/59] usb: cp210x support SEL C662 Vendor/Device
+Date: Fri, 26 Jul 2013 13:53:19 -0700
+Message-Id: <20130726205019.712947127@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -28,61 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Barry Grussling <barry@grussling.com>
 
-commit 1c327d962fc420aea046c16215a552710bde8231 upstream.
+commit b579fa52f6be0b4157ca9cc5e94d44a2c89a7e95 upstream.
 
-In nlmsvc_retry_blocked, the check that the list is non-empty and acquiring
-the pointer of the first entry is unprotected by any lock.  This allows a rare
-race condition when there is only one entry on the list.  A function such as
-nlmsvc_grant_callback() can be called, which will temporarily remove the entry
-from the list.  Between the list_empty() and list_entry(),the list may become
-empty, causing an invalid pointer to be used as an nlm_block, leading to a
-possible crash.
+This patch adds support for the Schweitzer Engineering Laboratories
+C662 USB cable based off the CP210x driver.
 
-This patch adds the nlm_block_lock around these calls to prevent concurrent
-use of the nlm_blocked list.
-
-This was a regression introduced by
-f904be9cc77f361d37d71468b13ff3d1a1823dea  "lockd: Mostly remove BKL from
-the server".
-
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Barry Grussling <barry@grussling.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/lockd/svclock.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/lockd/svclock.c
-+++ b/fs/lockd/svclock.c
-@@ -941,6 +941,7 @@ nlmsvc_retry_blocked(void)
- 	unsigned long	timeout = MAX_SCHEDULE_TIMEOUT;
- 	struct nlm_block *block;
- 
-+	spin_lock(&nlm_blocked_lock);
- 	while (!list_empty(&nlm_blocked) && !kthread_should_stop()) {
- 		block = list_entry(nlm_blocked.next, struct nlm_block, b_list);
- 
-@@ -950,6 +951,7 @@ nlmsvc_retry_blocked(void)
- 			timeout = block->b_when - jiffies;
- 			break;
- 		}
-+		spin_unlock(&nlm_blocked_lock);
- 
- 		dprintk("nlmsvc_retry_blocked(%p, when=%ld)\n",
- 			block, block->b_when);
-@@ -959,7 +961,9 @@ nlmsvc_retry_blocked(void)
- 			retry_deferred_block(block);
- 		} else
- 			nlmsvc_grant_blocked(block);
-+		spin_lock(&nlm_blocked_lock);
- 	}
-+	spin_unlock(&nlm_blocked_lock);
- 
- 	return timeout;
- }
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -157,6 +157,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
++	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
+ 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
+ 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
 
 
