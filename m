@@ -1,110 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594Ab3GZUTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:19:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50606 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751884Ab3GZUTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:19:43 -0400
-Message-ID: <51F2D9D2.8050405@zytor.com>
-Date: Fri, 26 Jul 2013 13:19:30 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1759633Ab3GZUYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:24:23 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:47369 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752253Ab3GZUYV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 16:24:21 -0400
+Date: Fri, 26 Jul 2013 22:24:18 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        torvalds@linux-foundation.org
+Subject: Re: Ugly patches for stolen reservation
+Message-ID: <20130726202418.GD21415@gmail.com>
+References: <rddfy5e894xuv6d47gu7hbuh.1374804892449@email.android.com>
+ <51F1ED8F.40703@zytor.com>
+ <20130726083314.4e2e333f@jbarnes-desktop>
 MIME-Version: 1.0
-To: linux-stable <stable@vger.kernel.org>, stable@vger.kernel.org,
-        hpa@linux.intel.com, hjl.tools@gmail.com
-CC: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de,
-        "tip-bot for H.J. Lu" <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86, fpu: correct the asm constraints for fxsave
- , unbreak mxcsr.daz
-References: <tip-eaa5a990191d204ba0f9d35dbe5505ec2cdd1460@git.kernel.org>
-In-Reply-To: <tip-eaa5a990191d204ba0f9d35dbe5505ec2cdd1460@git.kernel.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726083314.4e2e333f@jbarnes-desktop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
 
-I have tagged this one for -stable, but it is a definite "maybe", so I
-wanted to:
+* Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
 
-a) qualify that tagging, and
-b) perhaps use it as a boundary case for policy clarification.
-
-This patch is an old bug, an incorrect assembly constraint, but as
-happens with this type of bug it is being exposed by a change in gcc.
-Therefore, although this is neither a regression per se in the kernel
-nor in gcc, it is a regression in the combined output.
-
-The bug is obvious; the fix at the very least *should* be obvious; the
-main source of risk would appear that it might trigger bugs in very old
-versions of gcc.
-
-The gain is less inherently obvious: currently the only MXCSR bit
-affected is DAZ, although this also affects any future MXCSR bits.  Most
-users do not care about DAZ, but the ones that do generally care *a lot*
-about it as their applications may suffer very bad performance otherwise.
-
-There is a kernel bugzilla for this:
-
-	https://bugzilla.kernel.org/show_bug.cgi?id=60633
-
-... but it doesn't really add any additional information.
-
-	-hpa
-
-On 07/26/2013 09:19 AM, tip-bot for H.J. Lu wrote:
-> Commit-ID:  eaa5a990191d204ba0f9d35dbe5505ec2cdd1460
-> Gitweb:     http://git.kernel.org/tip/eaa5a990191d204ba0f9d35dbe5505ec2cdd1460
-> Author:     H.J. Lu <hjl.tools@gmail.com>
-> AuthorDate: Fri, 26 Jul 2013 09:11:56 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Fri, 26 Jul 2013 09:11:56 -0700
+> On Thu, 25 Jul 2013 20:31:27 -0700
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
 > 
-> x86, fpu: correct the asm constraints for fxsave, unbreak mxcsr.daz
+> > On 07/25/2013 07:14 PM, Jesse Barnes wrote:
+> > > To clarify: it'll either be marked reserved or not listed at all in e820, which is why I did this early, before any other e820 stuff like the "RAM buffer" are allocated, and before we could use the iomem resource (or maybe we could even early per Linus? I'll check). 
+> > > 
+> > > Jesse
+> > 
+> > If it is marked reserved or not listed at all it is much less of an
+> > issue.  Reserved is in fact the correct thing; not listed at all really
+> > isn't very problematic in most cases.
 > 
-> GCC will optimize mxcsr_feature_mask_init in arch/x86/kernel/i387.c:
+> Yeah the problems seem to fall into two categories:
+>   1) mmio space is allocated in this range:
+>      https://bugs.freedesktop.org/show_bug.cgi?id=66726
+>   2) range gets partially allocated to the "RAM buffer"
+>      https://bugs.freedesktop.org/show_bug.cgi?id=66844
 > 
-> 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
-> 		asm volatile("fxsave %0" : : "m" (fx_scratch));
-> 		mask = fx_scratch.mxcsr_mask;
-> 		if (mask == 0)
-> 			mask = 0x0000ffbf;
+> Case (1) is the one that worries me.  I'm guessing it'll mainly be a
+> problem on machines where MMIO space is limited or somehow structured
+> such that PCI resources end up there when we allocate them.  Depending
+> on what gets put there and the decode priority, behavior may be poor.
 > 
-> to
+> Case (2) isn't harmful, but ends up causing our driver to skip stolen
+> memory initialization, because of the conflict.
 > 
-> 		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
-> 		asm volatile("fxsave %0" : : "m" (fx_scratch));
-> 		mask = 0x0000ffbf;
-> 
-> since asm statement doesn’t say it will update fx_scratch.  As the
-> result, the DAZ bit will be cleared.  This patch fixes it. This bug
-> dates back to at least kernel 2.6.12.
-> 
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-> Cc: <stable@vger.kernel.org>
-> ---
->  arch/x86/kernel/i387.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 202d24f..5d576ab 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -116,7 +116,7 @@ static void mxcsr_feature_mask_init(void)
->  
->  	if (cpu_has_fxsr) {
->  		memset(&fx_scratch, 0, sizeof(struct i387_fxsave_struct));
-> -		asm volatile("fxsave %0" : : "m" (fx_scratch));
-> +		asm volatile("fxsave %0" : "+m" (fx_scratch));
->  		mask = fx_scratch.mxcsr_mask;
->  		if (mask == 0)
->  			mask = 0x0000ffbf;
-> 
+> Anyway I'll look at Linus's suggestion of reserving in the iomem
+> resource really early and roll in Chris's stuff if that doesn't work
+> out.
 
+Am I being too pedantic in expecting that we still mark it 
+e820-reserved?
+
+This area really isnt an ordinary PCI resource such as a 
+BAR or an MMIO region. It's truly system RAM (which cannot 
+be moved/reallocated), used by graphics hardware, and the 
+firmware should have marked it reserved.
+
+(The end result should be the same in any case, so this is 
+a detail.)
+
+Thanks,
+
+	Ingo
