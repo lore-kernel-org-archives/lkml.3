@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268Ab3GZQgA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:36:00 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60101 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755325Ab3GZQf6 (ORCPT
+	id S1758647Ab3GZQgU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:36:20 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45775 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755325Ab3GZQgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:35:58 -0400
-Date: Fri, 26 Jul 2013 17:35:28 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, akpm@linux-foundation.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        gg@slimlogic.co.uk, kishon@ti.com, Stephen Warren <swarren@nvidia.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Message-ID: <20130726163528.GS9858@sirena.org.uk>
-References: <1374755343-32573-1-git-send-email-ldewangan@nvidia.com>
- <51F2985F.60202@wwwdotorg.org>
+	Fri, 26 Jul 2013 12:36:16 -0400
+Message-ID: <51F2A57D.1090704@gmail.com>
+Date: Fri, 26 Jul 2013 11:36:13 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OwXA+KufQS8ol7Xv"
-Content-Disposition: inline
-In-Reply-To: <51F2985F.60202@wwwdotorg.org>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: support for backup battery
- charging
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Olof Johansson <olof@lixom.net>
+CC: Mark Brown <broonie@kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <51F168FC.9070906@wwwdotorg.org> <20130725182920.GA24955@e106331-lin.cambridge.arm.com> <20130725184834.GA8296@netboy> <20130725213753.GC17616@obsidianresearch.com> <20130726080115.GA5436@netboy> <1374831744.2923.42.camel@shinybook.infradead.org> <20130726130927.GC4219@netboy> <20130726141016.GF9858@sirena.org.uk> <CAOesGMhEr3DiFm5uSgoHPFUMY4jWu4HkeTU2UmOGj=dS75Vk+g@mail.gmail.com>
+In-Reply-To: <CAOesGMhEr3DiFm5uSgoHPFUMY4jWu4HkeTU2UmOGj=dS75Vk+g@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/26/2013 10:49 AM, Olof Johansson wrote:
+> On Fri, Jul 26, 2013 at 7:10 AM, Mark Brown <broonie@kernel.org> wrote:
+>> On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
+>>
+>>> Unless I totally misunderstood, the thread is talking about letting
+>>> established bindings change with each new kernel version.  I am
+>>> opposed to that.
+>>
+>> No, nobody is really saying that is a particularly good idea.  There is
+>> some debate about how we work out what an established binding is but
+>> there's no serious suggestion that we don't want stable bindings.
+> 
+> Yes, what Mark said -- _today_ all bindings are subject to change and
+> can be changed in lockstep with the kernel. This has been necessary as
+> part of development to sort out all of the various bootstrapping
+> issues across platforms.
 
---OwXA+KufQS8ol7Xv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is absolutely not true on a global basis. Any binding used on
+powerpc or sparc is not subject to change. Furthermore, there are ARM
+platforms such as highbank where the bindings are expected to be stable.
+That's not saying they don't change (new properties for SATA just
+today), but they only change in a backwards compatible way.
 
-On Fri, Jul 26, 2013 at 09:40:15AM -0600, Stephen Warren wrote:
+Rob
 
-> Given there's only 1 battery, I think "back-" is redundant in the
-> property names. Since that shortens the names a bit, I'd suggest
-> spelling everything out in full, perhaps:
+> 
+> What we're talking about is to end that mode of operation, and moving
+> over to locking in bindings. Device tree contents, as mentioned
+> elsewhere, might still be changed just like code is -- bugs are fixed,
+> etc. But it's time to start locking down the bindings, in particular
+> no longer change the established ones.
+> 
+> Long term, final goal is likely to be close to what Russell is saying
+> -- nothing should go into the kernel tree unless the binding is in a
+> fully stable state. However, we have a transitional period between now
+> and then, and even when we're at the final state there will be need to
+> have some sort of sandbox for development and test of future bindings.
+> Dealing with all that, as well as the actual process for locking in
+> bindings, is what needs to be sorted out.
+> 
+> I think we're all in agreement that bindings that change over time are
+> nothing but pain, but we're arguing that in circles anyway.
+> 
+> 
+> -Olof
+> 
 
-Isn't there an integrated charger on the PMIC?  If there is then it's
-useful to identify which is being talked about (even if it should be
-relatively obvious).
-
---OwXA+KufQS8ol7Xv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8qVNAAoJELSic+t+oim9OD0P/jwcu1Kn8OG4dhN4NX1S44xG
-1s/yXTl4jVmPkKy7M1x+tkzoJk0m4Qkb40QIv5QlI89Ni2mu0sJUKo+ATF8Gb2NT
-+O7dDe/Ho2V0BdwkbT7dc8N7EvQTdTTq0YscwsqIZjOmYJ5qzWKrurcbHIlQAVte
-TwLFPHgIU/6TsapdD56eVckss9oeYaqWdmxa34bt8nM2tacvqjX3Z/ZfkTJrRr75
-FyEzVokphF5BX60ZBsWNqJt39juyRogL+yxA41FJ1JZT83H4gWrJBqlCE3w+0ht8
-rogD5q7Yoq9uRCDBeoxjxjXks6xUrwUkYI/JU6CYvjMh4Cn7FgclXciyxhS9Kl3K
-1A94mIhpt0oaCFezy4CqHKKrTyAZQiX0EW0clINUrsPD5SdKWMVBCkl1GPFLOkB8
-V1kZfXFZgvf79c+DYOfy+ENHvwPZ9rvmIHTO8SmrQqKtDNPI2dLYAh8GDZlgzr/E
-mT3706XxLT5GPY++Y4cZ9avB//PDiLjp8Gmg0dNoUCpyEucTqINd+b8Pp62ElRHz
-sdeEhXhz2ZqPGVlhm/Zxi1kfpmFayqoHvscj6ZrWR3NEphZpcAc2IVNrxfrE5TsA
-vN2oc9s8y0eDFsknw2juECwoT8t5u2sdaflLO7K3G8NjmyxNSTT9MnCOKNj6JGof
-morhUEPTCPPVnj1g7wA0
-=naha
------END PGP SIGNATURE-----
-
---OwXA+KufQS8ol7Xv--
