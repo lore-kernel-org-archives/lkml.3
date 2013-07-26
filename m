@@ -1,75 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab3GZB5O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 21:57:14 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:63666 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756932Ab3GZB5L (ORCPT
+	id S1757995Ab3GZCDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:03:53 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:58800 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756932Ab3GZCDv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 21:57:11 -0400
+	Thu, 25 Jul 2013 22:03:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AhoHAPfX8VF5LPxH/2dsb2JhbABagwaDKLYHhTqBExd0giQBAQQBJxMcIwULCAMUAQMJJQ8FDRgDNId+AwkFsCoNiF4WjH+CaAeDEm4DlXaBaIwohSaDJiqBLAQ
+Date: Fri, 26 Jul 2013 12:03:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: zwu.kernel@gmail.com
+Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] xfs: fix an assertion failure
+Message-ID: <20130726020318.GD21982@dastard>
+References: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
 MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 25 Jul 2013 18:56:50 -0700
-Message-ID: <CALCETrUTyLO4BKX0SrmRd=nb2jvvZEhD9iTyFpSM23OUdQLhsA@mail.gmail.com>
-Subject: Should unprivileged linkat(..., AT_EMPTY_PATH) work on O_TMPFILE files?
-To: linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The change:
+On Thu, Jul 25, 2013 at 09:38:44PM +0800, zwu.kernel@gmail.com wrote:
+> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+> 
+>   When running the compilebench, one assertion failure was found.
+> This related line of code was introduced by commit 5f6bed76c0.
+> 
+> commit 5f6bed76c0c85cb4d04885a5de00b629deee550b
+> Author: Dave Chinner <david@fromorbit.com>
+> Date:   Thu Jun 27 16:04:52 2013 +1000
+> 
+>     xfs: Introduce an ordered buffer item
 
-commit f4e0c30c191f87851c4a53454abb55ee276f4a7e
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Tue Jun 11 08:34:36 2013 +0400
+Ok, so the assert was introduced there, and for good reason: if we
+are about to free the xfs_buf_log_item, then it better not still be
+referenced by the AIL.
 
-    allow the temp files created by open() to be linked to
+> XFS: Assertion failed: !(bip->bli_item.li_flags & XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 942
+> ------------[ cut here ]------------
+> kernel BUG at fs/xfs/xfs_message.c:108!
+> invalid opcode: 0000 [#1] SMP
+> Modules linked in:
+> CPU: 0 PID: 40 Comm: kworker/u2:1 Not tainted 3.11.0-rc2+ #955
+> Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+> Workqueue: writeback bdi_writeback_workfn (flush-8:0)
+....
+>  [<ffffffff813428df>] xfs_buf_item_relse+0x4f/0xd0
+>  [<ffffffff81342aeb>] xfs_buf_item_unlock+0x18b/0x1e0
+>  [<ffffffff8133ac3d>] xfs_trans_free_items+0x7d/0xb0
+>  [<ffffffff8133b35c>] xfs_trans_cancel+0x13c/0x1b0
+>  [<ffffffff812d8d89>] xfs_iomap_write_allocate+0x249/0x350
+>  [<ffffffff812c6af2>] xfs_map_blocks+0x2e2/0x350
+>  [<ffffffff812c7a76>] xfs_vm_writepage+0x236/0x5e0
 
-    O_TMPFILE | O_CREAT => linkat() with AT_SYMLINK_FOLLOW and /proc/self/fd/<n>
-    as oldpath (i.e. flink()) will create a link
-    O_TMPFILE | O_CREAT | O_EXCL => ENOENT on attempt to link those guys
+And what we see here is a buffer item being released and freed after
+a cancelled allocation transaction while it is in the AIL. That's
+indicative of a bug in the buffer item code, and will cause
+user-after-free issues. Hence:
 
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
+> index bfc4e0c..b4d42ae 100644
+> --- a/fs/xfs/xfs_buf_item.c
+> +++ b/fs/xfs/xfs_buf_item.c
+> @@ -939,7 +939,6 @@ xfs_buf_item_relse(
+>  	xfs_buf_log_item_t	*bip = bp->b_fspriv;
+>  
+>  	trace_xfs_buf_item_relse(bp, _RET_IP_);
+> -	ASSERT(!(bip->bli_item.li_flags & XFS_LI_IN_AIL));
 
-makes it possible to hardlink an O_TMPFILE file using procfs.  Should
-linkat(fd, "", newdirfd, newpath, AT_EMPTY_PATH) also work?
+Removing the assert is not going to fix the bug that it is telling
+us is ocurring.
 
-AFAICS it currently requires CAP_DAC_READ_SEARCH, but I'm a bit
-confused as to why linkat(..., AT_EMPTY_PATH) should have a stricter
-check than linkat(AT_FDCWD, "/proc/self/fd/n", ...,
-AT_SYMLINK_FOLLOW),  (The relevant change is
-11a7b371b64ef39fc5fb1b6f2218eef7c4d035e3.)
+Indeed, it points out that the calling code - xfs_buf_item_unlock()
+- is probably doing the wrong this. i.e. that it assumes that a
+clean buffer item is only referenced in this transaction and so it
+can unconditionally free it. That's an invalid assumption, and
+exactly the situation that the above assert was designed to catch.
 
-FWIW, this program works on Linux 3.9, which makes me doubt that the
-security restriction on linkat is doing any good:
+Can you try the patch below? It should fix the problem....
 
-#include <stdio.h>
-#include <err.h>
-#include <fcntl.h>
-#include <unistd.h>
+Cheers,
 
-int main(int argc, char **argv)
-{
-  char buf[128];
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
 
-  if (argc != 3)
-    errx(1, "Usage: flink FD PATH");
+xfs: use reference counts to free clean buffer items
 
-  sprintf(buf, "/proc/self/fd/%d", atoi(argv[1]));
-  if (linkat(AT_FDCWD, buf, AT_FDCWD, argv[2], AT_SYMLINK_FOLLOW) != 0)
-    err(1, "linkat");
-  return 0;
-}
+From: Dave Chinner <dchinner@redhat.com>
 
+When a transaction is cancelled and the buffer log item is clean in
+the transaction, the buffer log item is unconditionally freed. If
+the log item is in the AIL, however, this leads to a use after free
+condition as the item still has other users.
 
-Removing the check from the AT_EMPTY_PATH case would simplify code
-that wants to write a file, fsync it, and then flink it in.
+In this case, xfs_buf_item_relse() should only be called on clean
+buffer items if the reference count has dropped to zero. This
+ensures only the last user frees the item.
 
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/xfs_buf_item.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---Andy
-
-P.S. For even more fun, I'd *love* a linkat flag that would allow the
-destination to be overwritten, but that's a different can of worms.
+diff --git a/fs/xfs/xfs_buf_item.c b/fs/xfs/xfs_buf_item.c
+index 9358504..3a944b1 100644
+--- a/fs/xfs/xfs_buf_item.c
++++ b/fs/xfs/xfs_buf_item.c
+@@ -613,11 +613,9 @@ xfs_buf_item_unlock(
+ 			}
+ 		}
+ 	}
+-	if (clean)
+-		xfs_buf_item_relse(bp);
+-	else if (aborted) {
++	if (clean || aborted) {
+ 		if (atomic_dec_and_test(&bip->bli_refcount)) {
+-			ASSERT(XFS_FORCED_SHUTDOWN(lip->li_mountp));
++			ASSERT(!aborted || XFS_FORCED_SHUTDOWN(lip->li_mountp));
+ 			xfs_buf_item_relse(bp);
+ 		}
+ 	} else
