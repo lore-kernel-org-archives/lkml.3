@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab3G3PXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:23:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55367 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab3G3PUi (ORCPT
+	id S1756743Ab3G3PXt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:23:49 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57909 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab3G3PXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:20:38 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 21/75] ALSA: asihpi: Fix unlocked snd_pcm_stop() call
-Date: Tue, 30 Jul 2013 08:16:50 -0700
-Message-Id: <1375197464-27962-22-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
-References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 30 Jul 2013 11:23:45 -0400
+Date: Fri, 26 Jul 2013 09:42:51 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Nathan Fontenot <nfont@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Nivedita Singhvi <niv@us.ibm.com>, Michael J Wolf <mjwolf@us.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: new memory config sysfs driver for large
+ memory systems
+Message-ID: <20130726144251.GB4379@variantweb.net>
+References: <1374786680-26197-1-git-send-email-sjenning@linux.vnet.ibm.com>
+ <20130725234007.GB18349@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725234007.GB18349@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073015-5490-0000-0000-000003E8C445
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Jul 25, 2013 at 04:40:07PM -0700, Greg Kroah-Hartman wrote:
+> On Thu, Jul 25, 2013 at 04:11:20PM -0500, Seth Jennings wrote:
+> > +#define MEMFS_CLASS_NAME	"memoryfs"
+> 
+> One question, a "*fs" name in the kernel usually implies it is a
+> separate filesystem, which this isn't at all, it's just a "normal"
+> class/subsystem in the kernel.  So how about "memory" instead?
 
-------------------
+"memory" is the name used by the current sysfs memory layout code in
+drivers/base/memory.c. So it can't be the same unless we are going to
+create a toggle a boot time to select between the models, which is
+something I am looking to add if this code/design is acceptable to
+people.
 
-From: Takashi Iwai <tiwai@suse.de>
+The design is that people with large memory systems would pass a boot
+parameter that selects this alternate layout, so that the majority
+of non-large-memory users and any userspace programs that depend on the
+old layout would be unaffected.
 
-commit 60478295d6876619f8f47f6d1a5c25eaade69ee3 upstream.
+In the meantime, the name "memfs" was chosen for the RFC so that people
+could compile and run the new model concurrently with the current model.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/asihpi/asihpi.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
-index 3536b07..005a1f1 100644
---- a/sound/pci/asihpi/asihpi.c
-+++ b/sound/pci/asihpi/asihpi.c
-@@ -769,7 +769,10 @@ static void snd_card_asihpi_timer_function(unsigned long data)
- 						s->number);
- 				ds->drained_count++;
- 				if (ds->drained_count > 20) {
-+					unsigned long flags;
-+					snd_pcm_stream_lock_irqsave(s, flags);
- 					snd_pcm_stop(s, SNDRV_PCM_STATE_XRUN);
-+					snd_pcm_stream_unlock_irqrestore(s, flags);
- 					continue;
- 				}
- 			} else {
--- 
-1.8.1.2
+Seth
 
