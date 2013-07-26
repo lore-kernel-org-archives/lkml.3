@@ -1,57 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760042Ab3GZU5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:57:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51176 "EHLO
+	id S1760093Ab3GZU6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:58:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933038Ab3GZUyB (ORCPT
+	with ESMTP id S1759973Ab3GZU6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:01 -0400
+	Fri, 26 Jul 2013 16:58:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sami Rahman <sami.rahman@mmbresearch.com>
-Subject: [ 54/59] USB: cp210x: add MMB and PI ZigBee USB Device Support
-Date: Fri, 26 Jul 2013 13:53:18 -0700
-Message-Id: <20130726205019.609085698@linuxfoundation.org>
+        Gabor Juhos <juhosg@openwrt.org>, Stanislaw Gruszka <stf_xl@wp.pl>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 03/45] rt2x00: read 5GHz TX power values from the correct offset
+Date: Fri, 26 Jul 2013 13:57:23 -0700
+Message-Id: <20130726205655.307252710@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
+In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
+References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sami Rahman <sami.rahman@mmbresearch.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 7681156982026ebf7eafd7301eb0374d7648d068 upstream.
+commit 0a6f3a8ebaf13407523c2c7d575b4ca2debd23ba upstream.
 
-Added support for MMB Networks and Planet Innovation Ingeni ZigBee USB
-devices using customized Silicon Labs' CP210x.c USB to UART bridge
-drivers with PIDs: 88A4, 88A5.
+The current code uses the same index value both
+for the channel information array and for the TX
+power table. The index starts from 14, however the
+index of the TX power table must start from zero.
 
-Signed-off-by: Sami Rahman <sami.rahman@mmbresearch.com>
-Tested-by: Sami Rahman <sami.rahman@mmbresearch.com>
+Fix it, in order to get the correct TX power value
+for a given channel.
+
+The changes in rt61pci.c and rt73usb.c are compile
+tested only.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Acked-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/rt2x00/rt2800lib.c |    4 ++--
+ drivers/net/wireless/rt2x00/rt61pci.c   |    3 ++-
+ drivers/net/wireless/rt2x00/rt73usb.c   |    3 ++-
+ 3 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -125,6 +125,8 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
-+	{ USB_DEVICE(0x10C4, 0x88A4) }, /* MMB Networks ZigBee USB Device */
-+	{ USB_DEVICE(0x10C4, 0x88A5) }, /* Planet Innovation Ingeni ZigBee USB Device */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA61) }, /* Silicon Labs factory default */
- 	{ USB_DEVICE(0x10C4, 0xEA70) }, /* Silicon Labs factory default */
+--- a/drivers/net/wireless/rt2x00/rt2800lib.c
++++ b/drivers/net/wireless/rt2x00/rt2800lib.c
+@@ -4075,8 +4075,8 @@ int rt2800_probe_hw_mode(struct rt2x00_d
+ 		default_power2 = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A2);
+ 
+ 		for (i = 14; i < spec->num_channels; i++) {
+-			info[i].default_power1 = default_power1[i];
+-			info[i].default_power2 = default_power2[i];
++			info[i].default_power1 = default_power1[i - 14];
++			info[i].default_power2 = default_power2[i - 14];
+ 		}
+ 	}
+ 
+--- a/drivers/net/wireless/rt2x00/rt61pci.c
++++ b/drivers/net/wireless/rt2x00/rt61pci.c
+@@ -2830,7 +2830,8 @@ static int rt61pci_probe_hw_mode(struct
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+ 		for (i = 14; i < spec->num_channels; i++) {
+ 			info[i].max_power = MAX_TXPOWER;
+-			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++			info[i].default_power1 =
++					TXPOWER_FROM_DEV(tx_power[i - 14]);
+ 		}
+ 	}
+ 
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2167,7 +2167,8 @@ static int rt73usb_probe_hw_mode(struct
+ 		tx_power = rt2x00_eeprom_addr(rt2x00dev, EEPROM_TXPOWER_A_START);
+ 		for (i = 14; i < spec->num_channels; i++) {
+ 			info[i].max_power = MAX_TXPOWER;
+-			info[i].default_power1 = TXPOWER_FROM_DEV(tx_power[i]);
++			info[i].default_power1 =
++					TXPOWER_FROM_DEV(tx_power[i - 14]);
+ 		}
+ 	}
+ 
 
 
