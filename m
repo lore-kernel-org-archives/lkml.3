@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759463Ab3GZSNO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 14:13:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751858Ab3GZSNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 14:13:13 -0400
-Message-ID: <51F2BC31.7000407@redhat.com>
-Date: Fri, 26 Jul 2013 14:13:05 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1759486Ab3GZSRD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 14:17:03 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:63280 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612Ab3GZSRA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 14:17:00 -0400
 MIME-Version: 1.0
-To: Jeremy Eder <jeder@redhat.com>
-CC: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        youquan.song@intel.com, paulmck@linux.vnet.ibm.com,
-        daniel.lezcano@linaro.org, arjan@linux.intel.com, len.brown@intel.com
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-References: <20130726173306.GB17985@jeder.rdu.redhat.com>
-In-Reply-To: <20130726173306.GB17985@jeder.rdu.redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+	<1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
+	<CADYTM3a5xzs+-VCTeKLGiRjo7JOqOJ5H4EWDACpTMovY5_ooRA@mail.gmail.com>
+	<51EEBE05.2040000@linutronix.de>
+	<CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
+	<20130726163101.GB29819@linutronix.de>
+	<CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
+Date: Fri, 26 Jul 2013 13:17:00 -0500
+Message-ID: <CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
+Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
+From: Bin Liu <binmlist@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 01:33 PM, Jeremy Eder wrote:
-> Hello,
+On Fri, Jul 26, 2013 at 12:53 PM, Bin Liu <binmlist@gmail.com> wrote:
+> Sebastian,
 >
-> We believe we've identified a particular commit to the cpuidle code that
-> seems to be impacting performance of variety of workloads.  The simplest way to
-> reproduce is using netperf TCP_RR test, so we're using that, on a pair of
-> Sandy Bridge based servers.  We also have data from a large database setup
-> where performance is also measurably/positively impacted, though that test
-> data isn't easily share-able.
+> On Fri, Jul 26, 2013 at 11:31 AM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+>> * Bin Liu | 2013-07-23 13:55:27 [-0500]:
+>>
+>>>Hi Sebastian,
+>> Hi Bin,
+>>
+>>>either by SRP or HNP, or something else. In TI 3.2 kernel, there is
+>>>workaround in otg_timer() to _toggle_ the SESSION bit to detect if ID
+>>>pin is grounded, which means a USB device is connected.
+>>
+>> I've been looking at
+>>   http://downloads.ti.com/sitara_linux/esd/AM335xSDK/latest/index_FDS.html
+>>
+>> and I can't find what you are talking about. My MUSB_DEVCTL doesn't
+>> change after I connect a device and the SESSION bit is not set. Also I
+>> remain in a_idle state. Do you have maybe a hint for me? :)
 >
-> Included below are test results from 3 test kernels:
+> In TI 3.2 kernel, the otg_timer() toggles the SESSION bit in
+> OTG_STATE_B_IDLE state. So whenever the ID pin is grounded by
+> connecting a device, the controller will try go into host mode.
+> But I have no idea why your board is in a_idle not b_idle. The toggle
+> does not handle a_idle.
 >
-> kernel       reverts
-> -----------------------------------------------------------
-> 1) vanilla   upstream (no reverts)
+> Do you use the AM335x GP EVM, not the smaller StarterKit EVM, right?
+> the USB0 port on SK EVM is device only.
 >
-> 2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
->
-> 3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
->                       e11538d1f03914eb92af5a1a378375c05ae8520c
->
-> In summary, netperf TCP_RR numbers improve by approximately 4% after
-> reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
-> 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency never
-> seems to get above 40%.  Taking that patch out gets C0 near 100% quite
-> often, and performance increases.
+> But anyway, I have not seen any use case which uses micro-AB
+> receptacle and requires such dynamic role switching. So I kind of
 
-Could you try running the tests with just the repeat mode
-stuff from commit 69a37bea excluded, but leaving the common
-infrastructure and commit e11538?
-
--- 
-All rights reversed
+I meant the real customer use cases, not the EVMs ;)
