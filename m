@@ -1,102 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758609Ab3GZOOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:14:39 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:50688 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755806Ab3GZOOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:14:34 -0400
+	id S1758009Ab3GZOQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:16:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60047 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755507Ab3GZOQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 10:16:45 -0400
+Date: Fri, 26 Jul 2013 16:16:42 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 5/6] mm: memcg: enable memcg OOM killer only for user
+ faults
+Message-ID: <20130726141642.GG17761@dhcp22.suse.cz>
+References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
+ <1374791138-15665-6-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <1374846070.14574.92.camel@i7.infradead.org>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
-	<20130725175702.GC22291@e106331-lin.cambridge.arm.com>
-	<51F168FC.9070906@wwwdotorg.org>
-	<20130725182920.GA24955@e106331-lin.cambridge.arm.com>
-	<20130725184834.GA8296@netboy>
-	<20130725213753.GC17616@obsidianresearch.com>
-	<20130726080115.GA5436@netboy>
-	<1374831744.2923.42.camel@shinybook.infradead.org>
-	<20130726130927.GC4219@netboy>
-	<20130726132709.GH29916@titan.lakedaemon.net>
-	<1374846070.14574.92.camel@i7.infradead.org>
-Date: Fri, 26 Jul 2013 10:14:32 -0400
-Message-ID: <CAKON4OzrkHzUzKkULWCgiEpAtJ5gLxUm78R5ctd7p6trqq_gCA@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374791138-15665-6-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 9:41 AM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Fri, 2013-07-26 at 09:27 -0400, Jason Cooper wrote:
->>
->> The other dynamic change that bears mentioning here is attributes which
->> have been configured by the bootloader.  For example, in mvebu, we have
->> the Schrodinger's Cat register.  It allows you to reconfigure the base
->> address of the registers from *within* that register range.  If the
->> bootloader does this, the DT needs to be updated to reflect the current
->> hardware configuration.  Otherwise, the kernel is stuck poking around at
->> memory addresses hoping to find something sane.
->>
->> But this falls into the same category as you mentioned, but outside of
->> chosen {};.
->
-> Yeah, /chosen was given as an example of stuff that's almost
-> *exclusively* "configuration" stuff.
->
-> But there's plenty outside there that can reasonably change.
->
-> It's OK to change the data, and of *course* the base address reported in
-> the DT should actually match reality *today*, if it changes on the fly.
->
-> It's not OK to change the *schema*  in which those data are expressed.
-> That's the ABI we're talking about.
+On Thu 25-07-13 18:25:37, Johannes Weiner wrote:
+> System calls and kernel faults (uaccess, gup) can handle an out of
+> memory situation gracefully and just return -ENOMEM.
+> 
+> Enable the memcg OOM killer only for user faults, where it's really
+> the only option available.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Yes, yes - that's why the schema should be written down and used as a
-validation input to dtc. Then dtc can spit out errors for non-standard
-items. There would be two versions - the standard one and a legacy one
-that includes the standard one plus the hacks that can't be undone.
+It looks OK to me, but I have few comments bellow. Nothing really huge
+but I do not like mem_cgroup_xchg_may_oom for !MEMCG.
 
-But more importantly it provides a framework for people creating new
-node definitions. Now they can't work in a vacuum and come up with
-random names and structure for everything.
+> ---
+>  include/linux/memcontrol.h | 23 +++++++++++++++++++++++
+>  include/linux/sched.h      |  3 +++
+>  mm/filemap.c               | 11 ++++++++++-
+>  mm/memcontrol.c            |  2 +-
+>  mm/memory.c                | 40 ++++++++++++++++++++++++++++++----------
+>  5 files changed, 67 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 7b4d9d7..9bb5eeb 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -125,6 +125,24 @@ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
+>  extern void mem_cgroup_replace_page_cache(struct page *oldpage,
+>  					struct page *newpage);
+>  
+> +/**
+> + * mem_cgroup_xchg_may_oom - toggle the memcg OOM killer for a task
+> + * @p: task
 
-Most of the problems express in the thread would go away if the schema
-was written down and discussed. The rule going forward would be no new
-nodes that aren't part of the standard schema.
+Is this ever safe to call on !current? If not then I wouldn't allow to
+give p as a parameter.
 
->
-> --
-> dwmw2
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->
+> + * @new: true to enable, false to disable
+> + *
+> + * Toggle whether a failed memcg charge should invoke the OOM killer
+> + * or just return -ENOMEM.  Returns the previous toggle state.
+> + */
+> +static inline bool mem_cgroup_xchg_may_oom(struct task_struct *p, bool new)
+> +{
+> +	bool old;
+> +
+> +	old = p->memcg_oom.may_oom;
+> +	p->memcg_oom.may_oom = new;
+> +
+> +	return old;
+> +}
+> +
+>  #ifdef CONFIG_MEMCG_SWAP
+>  extern int do_swap_account;
+>  #endif
+> @@ -348,6 +366,11 @@ static inline void mem_cgroup_end_update_page_stat(struct page *page,
+>  {
+>  }
+>  
+> +static inline bool mem_cgroup_xchg_may_oom(struct task_struct *p, bool new)
+> +{
+> +	return !new;
+> +}
 
+This looks a bit weird. MEMCG is not compiled in and yet we return that
+the previous may_oom could be true. This is calling for troubles if
+somebody tries to do any following decisions on the returned value.
+Why not simply return false unconditionally?
 
+[...]
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index a6981fe..2932810 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+[...]
+> @@ -1634,10 +1639,14 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+>  		 * We found the page, so try async readahead before
+>  		 * waiting for the lock.
+>  		 */
+> +		may_oom = mem_cgroup_xchg_may_oom(current, 0);
+
+s/0/false/
+
+below ditto
+
+>  		do_async_mmap_readahead(vma, ra, file, page, offset);
+> +		mem_cgroup_xchg_may_oom(current, may_oom);
+>  	} else if (!page) {
+>  		/* No page in the page cache at all */
+> +		may_oom = mem_cgroup_xchg_may_oom(current, 0);
+>  		do_sync_mmap_readahead(vma, ra, file, offset);
+> +		mem_cgroup_xchg_may_oom(current, may_oom);
+>  		count_vm_event(PGMAJFAULT);
+>  		mem_cgroup_count_vm_event(vma->vm_mm, PGMAJFAULT);
+>  		ret = VM_FAULT_MAJOR;
+[...]
+> diff --git a/mm/memory.c b/mm/memory.c
+> index f2ab2a8..5ea7b47 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+[...]
+> @@ -3851,6 +3843,34 @@ retry:
+>  	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+>  }
+>  
+> +int handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> +		    unsigned long address, unsigned int flags)
+> +{
+> +	int ret;
+> +
+> +	__set_current_state(TASK_RUNNING);
+> +
+> +	count_vm_event(PGFAULT);
+> +	mem_cgroup_count_vm_event(mm, PGFAULT);
+> +
+> +	/* do counter updates before entering really critical section. */
+> +	check_sync_rss_stat(current);
+> +
+> +	/*
+> +	 * Enable the memcg OOM handling for faults triggered in user
+> +	 * space.  Kernel faults are handled more gracefully.
+> +	 */
+> +	if (flags & FAULT_FLAG_USER)
+> +		WARN_ON(mem_cgroup_xchg_may_oom(current, true) == true);
+> +
+> +	ret = __handle_mm_fault(mm, vma, address, flags);
+> +
+> +	if (flags & FAULT_FLAG_USER)
+> +		WARN_ON(mem_cgroup_xchg_may_oom(current, false) == false);
+
+Ohh, I see why you used !new in mem_cgroup_xchg_may_oom for !MEMCG case
+above. This could be fixed easily if you add mem_cgroup_{enable,disable}_oom
+which would be empty for !MEMCG.
+
+> +
+> +	return ret;
+> +}
+> +
+>  #ifndef __PAGETABLE_PUD_FOLDED
+>  /*
+>   * Allocate page upper directory.
+> -- 
+> 1.8.3.2
+> 
 
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+Michal Hocko
+SUSE Labs
