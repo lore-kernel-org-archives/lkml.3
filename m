@@ -1,47 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758768Ab3GZQmw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:42:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:57918 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757134Ab3GZQmv (ORCPT
+	id S1758665Ab3GZQp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:45:26 -0400
+Received: from 18.mo5.mail-out.ovh.net ([178.33.45.10]:33897 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756961Ab3GZQpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:42:51 -0400
-Message-ID: <51F2A706.9080005@wwwdotorg.org>
-Date: Fri, 26 Jul 2013 10:42:46 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 26 Jul 2013 12:45:22 -0400
+Message-ID: <51F2A556.8020109@overkiz.com>
+Date: Fri, 26 Jul 2013 18:35:34 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Laxman Dewangan <ldewangan@nvidia.com>, akpm@linux-foundation.org,
-        grant.likely@linaro.org, rob.herring@calxeda.com, rob@landley.net,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        gg@slimlogic.co.uk, kishon@ti.com, Stephen Warren <swarren@nvidia.com>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [PATCH] drivers/rtc/rtc-palmas.c: support for backup battery
- charging
-References: <1374755343-32573-1-git-send-email-ldewangan@nvidia.com> <51F2985F.60202@wwwdotorg.org> <20130726163528.GS9858@sirena.org.uk>
-In-Reply-To: <20130726163528.GS9858@sirena.org.uk>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: boris brezillon <b.brezillon@overkiz.com>
+CC: Richard Genoud <richard.genoud@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 00/42] ARM: at91: move to common clk framework
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <51F28370.6050304@gmail.com> <51F2996B.6000406@overkiz.com>
+In-Reply-To: <51F2996B.6000406@overkiz.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 11909487740270835833
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -85
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -85
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrgeeiucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmdenogetfedtuddqtdduucdludehmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 10:35 AM, Mark Brown wrote:
-> On Fri, Jul 26, 2013 at 09:40:15AM -0600, Stephen Warren wrote:
-> 
->> Given there's only 1 battery, I think "back-" is redundant in
->> the property names. Since that shortens the names a bit, I'd
->> suggest spelling everything out in full, perhaps:
-> 
-> Isn't there an integrated charger on the PMIC?  If there is then
-> it's useful to identify which is being talked about (even if it
-> should be relatively obvious).
+On 26/07/2013 17:44, boris brezillon wrote:
+> On 26/07/2013 16:10, Richard Genoud wrote:
+>> On 17/07/2013 15:34, Boris BREZILLON wrote:
+>>> Hello,
+>>>
+>>> This patch series is a proposal to move at91 clock implementation
+>>> to common clk framework.
+>>>
+>>> Most of the clock provided by the PMC (Power Management Controller) are
+>>> implemented :
+>>> - main clock (main oscillator)
+>>> - pll clocks
+>>> - master clock
+>>> - programmable clocks
+>>> - utmi clock
+>>> - peripheral clocks
+>>> - system clocks
+>>>
+>>> This implementation is compatible with device tree: the goal is
+>>> to define the whole clock tree in the device tree (all currently
+>>> available dt SoCs and boards are patched to support dt clocks).
+>>> Please feel free to comment the dt bindinds.
+>>>
+>>> I removed the register_clocks function in SoC supporting dt boards only:
+>>> - at91sam9x5 SoCs
+>>> - at91sam9n12 SoC
+>>> - sama5d3 SoCs
+>>>
+>>> This patch series is based on linux-next and has been tested on
+>>> sama5d31ek
+>>> board using device tree. It compiles for other SoCs and both with and
+>>> without
+>>> dt support, but it has not been tested.
+>>>
+>>> BTW could other people test it on other boards (I only have a kizbox and
+>>> a sama5d31ek dev kit).
+>>>
+>>> Best Regards,
+>>> Boris
+>>>
+>>> Changes since v1:
+>>>   - fix bugs in pll, programmable and system clock implementations
+>>>     (wrong bit position).
+>>>   - add usb clock configuration support (ohci and udc drivers +
+>>>     clk_lookup for non dt boards)
+>>>   - rework of the system clock interfaces (no need to define a parent
+>>> clock,
+>>>     system clock is a gate with no rate info)
+>>>   - change system, peripheral and programmable clk dt bindings (1
+>>> master node
+>>>     and multiple child nodes each defining a system/peripheral or
+>>> prog clock)
+>>>   - fix bugs in sama5 dt definition
+>>>
+>> Hi Boris,
+>>
+>> First of all: Big thumbs up for this work !
+>>
+>> Then, I tested the serie on at91sam9g35ek (sam9x5 familly), and I see
+>> some problems:
+>> kernel is next-20130725 with the v4 serie of "ARM: at91: prepare
+>> transition to common clk framework"
+>> and v2 serie of "ARM: at91: move to common clk framework"
+>>
+>> [    0.000000] Booting Linux on physical CPU 0x0
+>> [    0.000000] Linux version 3.11.0-rc2-next-20130725+
+>> (rgenoud@lnx-rg) (gcc version 4.7.3 (Buildroot
+>> 2013.05-00157-g6d1e60b-dirty) ) #61 Fri Jul 26 15:30:13 CEST 2013
+>> [    0.000000] CPU: ARM926EJ-S [41069265] revision 5 (ARMv5TEJ),
+>> cr=00053177
+>> [    0.000000] CPU: VIVT data cache, VIVT instruction cache
+>> [    0.000000] Machine: Atmel AT91SAM (Device Tree), model: Atmel
+>> AT91SAM9G35-EK
+>> [    0.000000] bootconsole [earlycon0] enabled
+>> [    0.000000] Memory policy: ECC disabled, Data cache writeback
+>> [    0.000000] AT91: Detected soc type: at91sam9x5
+>> [    0.000000] AT91: Detected soc subtype: at91sam9g35
+>> [    0.000000] AT91: sram at 0x300000 of 0x8000 mapped at 0xfef70000
+>> [    0.000000] On node 0 totalpages: 32768
+>> [    0.000000] free_area_init_node: node 0, pgdat c039d208,
+>> node_mem_map c03b5000
+>> [    0.000000]   Normal zone: 256 pages used for memmap
+>> [    0.000000]   Normal zone: 0 pages reserved
+>> [    0.000000]   Normal zone: 32768 pages, LIFO batch:7
+>> [    0.000000] pcpu-alloc: s0 r0 d32768 u32768 alloc=1*32768
+>> [    0.000000] pcpu-alloc: [0] 0
+>> [    0.000000] Built 1 zonelists in Zone order, mobility grouping on.
+>> Total pages: 32512
+>> [    0.000000] Kernel command line: console=ttyS0,115200 loglevel=8
+>> ip=dhcp root=/dev/nfs nfsroot=10.128.0.9:/nfsroot,v3 rw earlyprintk
+>> [    0.000000] PID hash table entries: 512 (order: -1, 2048 bytes)
+>> [    0.000000] Dentry cache hash table entries: 16384 (order: 4, 65536
+>> bytes)
+>> [    0.000000] Inode-cache hash table entries: 8192 (order: 3, 32768
+>> bytes)
+>> [    0.000000] Memory: 126044K/131072K available (2804K kernel code,
+>> 126K rwdata, 592K rodata, 141K init, 93K bss, 5028K reserved)
+>> [    0.000000] Virtual kernel memory layout:
+>> [    0.000000]     vector  : 0xffff0000 - 0xffff1000   (   4 kB)
+>> [    0.000000]     fixmap  : 0xfff00000 - 0xfffe0000   ( 896 kB)
+>> [    0.000000]     vmalloc : 0xc8800000 - 0xff000000   ( 872 MB)
+>> [    0.000000]     lowmem  : 0xc0000000 - 0xc8000000   ( 128 MB)
+>> [    0.000000]       .text : 0xc0008000 - 0xc0359550   (3398 kB)
+>> [    0.000000]       .init : 0xc035a000 - 0xc037d61c   ( 142 kB)
+>> [    0.000000]       .data : 0xc037e000 - 0xc039d920   ( 127 kB)
+>> [    0.000000]        .bss : 0xc039d920 - 0xc03b4ff4   (  94 kB)
+>> [    0.000000] NR_IRQS:16 nr_irqs:16 16
+>> [    0.000000] AT91: PIT: mck rate = 0
+>> [    0.000000] ------------[ cut here ]------------
+>> [    0.000000] WARNING: CPU: 0 PID: 0 at
+>> arch/arm/mach-at91/at91sam926x_time.c:259
+>> at91sam926x_pit_init+0x114/0x234()
+>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Not tainted
+>> 3.11.0-rc2-next-20130725+ #61
+>> [    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from
+>> [<c000b0f0>] (show_stack+0x10/0x14)
+>> [    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c00144e0>]
+>> (warn_slowpath_common+0x5c/0x7c)
+>> [    0.000000] [<c00144e0>] (warn_slowpath_common+0x5c/0x7c) from
+>> [<c00145b8>] (warn_slowpath_null+0x18/0x1c)
+>> [    0.000000] [<c00145b8>] (warn_slowpath_null+0x18/0x1c) from
+>> [<c03607b0>] (at91sam926x_pit_init+0x114/0x234)
+>> [    0.000000] [<c03607b0>] (at91sam926x_pit_init+0x114/0x234) from
+>> [<c035ca4c>] (time_init+0x1c/0x24)
+>> [    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>]
+>> (start_kernel+0x19c/0x2f4)
+>> [    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from
+>> [<20008040>] (0x20008040)
+>> [    0.000000] ---[ end trace 1b75b31a2719ed1c ]---
+>> [    0.000000] Division by zero in kernel.
+>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Tainted: G        W
+>> 3.11.0-rc2-next-20130725+ #61
+>> [    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from
+>> [<c000b0f0>] (show_stack+0x10/0x14)
+>> [    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c013f0a0>]
+>> (Ldiv0_64+0x8/0x18)
+>> [    0.000000] [<c013f0a0>] (Ldiv0_64+0x8/0x18) from [<c003b864>]
+>> (__clocksource_updatefreq_scale+0x30/0x104)
+>> [    0.000000] [<c003b864>]
+>> (__clocksource_updatefreq_scale+0x30/0x104) from [<c003b944>]
+>> (__clocksource_register_scale+0xc/0x48)
+>> [    0.000000] [<c003b944>] (__clocksource_register_scale+0xc/0x48)
+>> from [<c0360810>] (at91sam926x_pit_init+0x174/0x234)
+>> [    0.000000] [<c0360810>] (at91sam926x_pit_init+0x174/0x234) from
+>> [<c035ca4c>] (time_init+0x1c/0x24)
+>> [    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>]
+>> (start_kernel+0x19c/0x2f4)
+>> [    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from
+>> [<20008040>] (0x20008040)
+>> [    0.000000] Division by zero in kernel.
+>> [    0.000000] CPU: 0 PID: 0 Comm: swapper Tainted: G        W
+>> 3.11.0-rc2-next-20130725+ #61
+>> [    0.000000] [<c000ca18>] (unwind_backtrace+0x0/0xe0) from
+>> [<c000b0f0>] (show_stack+0x10/0x14)
+>> [    0.000000] [<c000b0f0>] (show_stack+0x10/0x14) from [<c013f0a0>]
+>> (Ldiv0_64+0x8/0x18)
+>> [    0.000000] [<c013f0a0>] (Ldiv0_64+0x8/0x18) from [<c003b76c>]
+>> (clocks_calc_mult_shift+0x70/0xa4)
+>> [    0.000000] [<c003b76c>] (clocks_calc_mult_shift+0x70/0xa4) from
+>> [<c003b8e4>] (__clocksource_updatefreq_scale+0xb0/0x104)
+>> [    0.000000] [<c003b8e4>]
+>> (__clocksource_updatefreq_scale+0xb0/0x104) from [<c003b944>]
+>> (__clocksource_register_scale+0xc/0x48)
+>> [    0.000000] [<c003b944>] (__clocksource_register_scale+0xc/0x48)
+>> from [<c0360810>] (at91sam926x_pit_init+0x174/0x234)
+>> [    0.000000] [<c0360810>] (at91sam926x_pit_init+0x174/0x234) from
+>> [<c035ca4c>] (time_init+0x1c/0x24)
+>> [    0.000000] [<c035ca4c>] (time_init+0x1c/0x24) from [<c035a650>]
+>> (start_kernel+0x19c/0x2f4)
+>> [    0.000000] [<c035a650>] (start_kernel+0x19c/0x2f4) from
+>> [<20008040>] (0x20008040)
+>> [...]
+>>
+>> Best regards,
+>> Richard
+> Hi Richard,
+>
+> First, I'd like to thank you for your tests.
+>
+> Regarding your problem, it seems that mck rate is calculated as 0, which
+> is either a bug in recalc_rate callback
+> of master clock driver or a bug in master clock parent clk (no parent
+> found or bug in the current parent clk recalc_rate function).
+>
+> I checked the dts[i] files and I found a missing clock-frequency
+> property for main clock of some
+> at91sam9x5 boards (those including at91sam9x5cm.dtsi).
+>
+> You'll find a patch adding this property in attachments.
+> Tell me if this works for you. If not I'll make a patch adding pr_info
+> to trace the bug.
+>
+> Anyway, it should work without this property (main clock rate can be
+> computed using slow clock rate and MCFR register).
+> I will investigate this bug...
+I found 2 bugs:
+1) the main frequency ready test in recalc_rate function is wrong
+2) the common clk framework uses the first match for dt clk registration
+    and main clk has this compatible property:
+    compatible = "atmel,at91rm9200-clk-main", "fixed-clock";
+    As a result the main clk is always bound to the fixed-clock driver
+    which set the clock frequency to 0 if 'clock-frequency' property is
+    missing.
 
-Oh yes, that's probably true. This is of course the binding for the
-RTC sub-module in the PMIC though.
+These bugs will be fixed in next version.
+Tell me if you want need thesse patches for testing purpose.
+>
+> Best Regards,
+> Boris
+>
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
 
