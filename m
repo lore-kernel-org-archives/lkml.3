@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368Ab3GZVID (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:08:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51342 "EHLO
+	id S933301Ab3GZVIz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:08:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51334 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760101Ab3GZU6R (ORCPT
+	with ESMTP id S1760096Ab3GZU6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:17 -0400
+	Fri, 26 Jul 2013 16:58:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/45] bridge: fix switched interval for MLD Query types
-Date: Fri, 26 Jul 2013 13:57:33 -0700
-Message-Id: <20130726205656.378911441@linuxfoundation.org>
+        Bob Picco <bob.picco@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [ 11/45] sparc64 address-congruence property
+Date: Fri, 26 Jul 2013 13:57:31 -0700
+Message-Id: <20130726205656.147157524@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,36 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Lüssing <linus.luessing@web.de>
+From: bob picco <bpicco@meloft.net>
 
-[ Upstream commit 32de868cbc6bee010d2cee95b5071b25ecbec8c3 ]
+The Machine Description (MD) property "address-congruence-offset" is
+optional. According to the MD specification the value is assumed 0UL when
+not present. This caused early boot failure on T5.
 
-General Queries (the one with the Multicast Address field
-set to zero / '::') are supposed to have a Maximum Response Delay
-of [Query Response Interval], while for Multicast-Address-Specific
-Queries it is [Last Listener Query Interval] - not the other way
-round. (see RFC2710, section 7.3+7.8)
-
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Signed-off-by: Bob Picco <bob.picco@oracle.com>
+CC: sparclinux@vger.kernel.org
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/bridge/br_multicast.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ arch/sparc/mm/init_64.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -467,8 +467,9 @@ static struct sk_buff *br_ip6_multicast_
- 	skb_set_transport_header(skb, skb->len);
- 	mldq = (struct mld_msg *) icmp6_hdr(skb);
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -1071,7 +1071,14 @@ static int __init grab_mblocks(struct md
+ 		m->size = *val;
+ 		val = mdesc_get_property(md, node,
+ 					 "address-congruence-offset", NULL);
+-		m->offset = *val;
++
++		/* The address-congruence-offset property is optional.
++		 * Explicity zero it be identifty this.
++		 */
++		if (val)
++			m->offset = *val;
++		else
++			m->offset = 0UL;
  
--	interval = ipv6_addr_any(group) ? br->multicast_last_member_interval :
--					  br->multicast_query_response_interval;
-+	interval = ipv6_addr_any(group) ?
-+			br->multicast_query_response_interval :
-+			br->multicast_last_member_interval;
- 
- 	mldq->mld_type = ICMPV6_MGM_QUERY;
- 	mldq->mld_code = 0;
+ 		numadbg("MBLOCK[%d]: base[%llx] size[%llx] offset[%llx]\n",
+ 			count - 1, m->base, m->size, m->offset);
 
 
