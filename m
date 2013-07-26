@@ -1,19 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab3GZUxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:53:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50996 "EHLO
+	id S932851Ab3GZVYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:24:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51018 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932734Ab3GZUx0 (ORCPT
+	with ESMTP id S932810Ab3GZUxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:26 -0400
+	Fri, 26 Jul 2013 16:53:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Benjamin LaHaise <bcrl@kvack.org>
-Subject: [ 01/59] ext3: fix data=journal fast mount/umount hang
-Date: Fri, 26 Jul 2013 13:52:25 -0700
-Message-Id: <20130726205013.944745732@linuxfoundation.org>
+        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 12/59] perf: Clone child context from parent context pmu
+Date: Fri, 26 Jul 2013 13:52:36 -0700
+Message-Id: <20130726205015.128107817@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -26,49 +31,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Jiri Olsa <jolsa@redhat.com>
 
-commit e643692138cfa33528f054b071ba2583509bb217 upstream.
+commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
 
-In data=journal mode, if we unmount the file system before a
-transaction has a chance to complete, when the journal inode is being
-evicted, we can end up calling into log_wait_commit() for the
-last transaction, after the journalling machinery has been shut down.
-That triggers the WARN_ONCE in __log_start_commit().
+Currently when the child context for inherited events is
+created, it's based on the pmu object of the first event
+of the parent context.
 
-Arguably we should adjust ext3_should_journal_data() to return FALSE
-for the journal inode, but the only place it matters is
-ext3_evict_inode(), and so it's to save a bit of CPU time, and to make
-the patch much more obviously correct by inspection(tm), we'll fix it
-by explicitly not trying to waiting for a journal commit when we are
-evicting the journal inode, since it's guaranteed to never succeed in
-this case.
+This is wrong for the following scenario:
 
-This can be easily replicated via:
+  - HW context having HW and SW event
+  - HW event got removed (closed)
+  - SW event stays in HW context as the only event
+    and its pmu is used to clone the child context
 
-     mount -t ext3 -o data=journal /dev/vdb /vdb ; umount /vdb
+The issue starts when the cpu context object is touched
+based on the pmu context object (__get_cpu_context). In
+this case the HW context will work with SW cpu context
+ending up with following WARN below.
 
-This is a port of ext4 fix from Ted Ts'o.
+Fixing this by using parent context pmu object to clone
+from child context.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Benjamin LaHaise <bcrl@kvack.org>
+Addresses the following warning reported by Vince Weaver:
+
+[ 2716.472065] ------------[ cut here ]------------
+[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
+[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
+[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
+[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
+[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
+[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
+[ 2716.476035] Call Trace:
+[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
+[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
+[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
+[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
+[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
+[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
+[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
+[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
+[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
+[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
+[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
+[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
+[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
+[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
+[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
+[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
+[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
+
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext3/inode.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/ext3/inode.c
-+++ b/fs/ext3/inode.c
-@@ -218,7 +218,8 @@ void ext3_evict_inode (struct inode *ino
- 	 */
- 	if (inode->i_nlink && ext3_should_journal_data(inode) &&
- 	    EXT3_SB(inode->i_sb)->s_journal &&
--	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode))) {
-+	    (S_ISLNK(inode->i_mode) || S_ISREG(inode->i_mode)) &&
-+	    inode->i_ino != EXT3_JOURNAL_INO) {
- 		tid_t commit_tid = atomic_read(&ei->i_datasync_tid);
- 		journal_t *journal = EXT3_SB(inode->i_sb)->s_journal;
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6933,7 +6933,7 @@ inherit_task_group(struct perf_event *ev
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(event->pmu, child);
++		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
  
 
 
