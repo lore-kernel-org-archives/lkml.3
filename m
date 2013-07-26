@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3GZHuo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:50:44 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40508 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756248Ab3GZHum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:50:42 -0400
-Message-ID: <51F22A30.80507@ti.com>
-Date: Fri, 26 Jul 2013 10:50:08 +0300
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1757229Ab3GZHxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:53:36 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38845 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab3GZHxd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 03:53:33 -0400
+Subject: [Resend RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are
+ no arch-specific constraints
+To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
+        shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
+        fweisbec@gmail.com, paulmck@linux.vnet.ibm.com, michael@ellerman.id.au,
+        arnd@arndb.de, linux-pm@vger.kernel.org, rostedt@goodmis.org,
+        rjw@sisk.pl, john.stultz@linaro.org, tglx@linutronix.de,
+        chenhui.zhao@freescale.com, deepthi@linux.vnet.ibm.com,
+        geoff@infradead.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
+        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Date: Fri, 26 Jul 2013 10:49:32 +0530
+Message-ID: <20130726051858.17167.72800.stgit@preeti>
+In-Reply-To: <20130726050915.17167.16298.stgit@preeti>
+References: <20130726050915.17167.16298.stgit@preeti>
+User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
-To: <balbi@ti.com>, <p.zabel@pengutronix.de>
-CC: <benoit.cousson@linaro.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] usb: phy-nop: Use RESET Controller for managing the
- reset line
-References: <1374137590-17865-1-git-send-email-rogerq@ti.com> <1374137590-17865-2-git-send-email-rogerq@ti.com> <20130725172855.GJ25415@radagast>
-In-Reply-To: <20130725172855.GJ25415@radagast>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072605-0260-0000-0000-0000035F5B2D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 08:28 PM, Felipe Balbi wrote:
-> On Thu, Jul 18, 2013 at 11:53:05AM +0300, Roger Quadros wrote:
->> Till now we were modelling the RESET line as a voltage regulator and
->> using the regulator framework to manage it.
->>
->> [1] introduces a GPIO based reset controller driver. We use that
->> to manage the PHY reset line, at least for DT boots. For legacy boots,
->> will still need to use the regulator framework for reset lines.
->>
->> [1] - http://thread.gmane.org/gmane.linux.drivers.devicetree/41348
->>
->> Signed-off-by: Roger Quadros <rogerq@ti.com>
-> 
-> that's not in mainline yet, right ? Is it guaranteed that it will hit
-> v3.12 merge window ?
-> 
-Right. It isn't yet. I'm not sure about 3.12. Let's ask Philipp.
+In the current design of timer offload framework, the broadcast cpu should
+*not* go into tickless idle so as to avoid missed wakeups on CPUs in deep idle states.
 
-Philipp, is your GPIO Reset driver scheduled for 3.12?
+Since we prevent the CPUs entering deep idle states from programming the
+decrementer of the broadcast cpu for their respective next local events for
+reasons mentioned in PATCH[3/5], the broadcast CPU checks if there are any
+CPUs to be woken up during each of its timer interrupt, which is programmed
+to its local events.
 
-cheers,
--roger
+With tickless idle, the broadcast CPU might not have a timer interrupt
+pending till after many ticks, which can result in missed wakeups on CPUs
+in deep idle states. By disabling tickless idle, worst case, the tick_sched
+hrtimer will trigger a timer interrupt every period.
+
+However the current setup of tickless idle does not let us make the choice
+of tickless on individual cpus. NOHZ_MODE_INACTIVE which disables tickless idle,
+is a system wide setting. Hence resort to an arch specific call to check if a cpu
+can go into tickless idle.
+
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+
+ arch/powerpc/kernel/time.c |    5 +++++
+ kernel/time/tick-sched.c   |    7 +++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 7e858e1..916c32f 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -864,6 +864,11 @@ static void decrementer_timer_broadcast(const struct cpumask *mask)
+ 	arch_send_tick_broadcast(mask);
+ }
+ 
++int arch_can_stop_idle_tick(int cpu)
++{
++	return cpu != bc_cpu;
++}
++
+ static void register_decrementer_clockevent(int cpu)
+ {
+ 	struct clock_event_device *dec = &per_cpu(decrementers, cpu);
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 6960172..e9ffa84 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -700,8 +700,15 @@ static void tick_nohz_full_stop_tick(struct tick_sched *ts)
+ #endif
+ }
+ 
++int __weak arch_can_stop_idle_tick(int cpu)
++{
++	return 1;
++}
++
+ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ {
++	if (!arch_can_stop_idle_tick(cpu))
++		return false;
+ 	/*
+ 	 * If this cpu is offline and it is the one which updates
+ 	 * jiffies, then give up the assignment and let it be taken by
+
