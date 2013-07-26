@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758511Ab3GZKZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:25:00 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:64742 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756567Ab3GZKY5 (ORCPT
+	id S1758450Ab3GZK0R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:26:17 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:32905 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab3GZK0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:24:57 -0400
+	Fri, 26 Jul 2013 06:26:14 -0400
+Date: Fri, 26 Jul 2013 06:26:09 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 14/21] x86, acpi, numa: Reserve hotpluggable memory at
+ early time.
+Message-ID: <20130726102609.GB30786@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-15-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723205557.GS21100@mtj.dyndns.org>
+ <20130723213212.GA21100@mtj.dyndns.org>
+ <51F089C1.4010402@cn.fujitsu.com>
+ <20130725151719.GE26107@mtj.dyndns.org>
+ <51F1F0E0.7040800@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1374770011-22171-6-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-6-git-send-email-l.majewski@samsung.com>
-Date: Fri, 26 Jul 2013 15:54:56 +0530
-Message-ID: <CAKohpokL57mXSQooX=4LZKtjMxJoXAB4uuzj13fgr3Gs7Wcf0A@mail.gmail.com>
-Subject: Re: [PATCH v6 5/8] cpufreq:boost:Kconfig: Provide support for
- software managed BOOST
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F1F0E0.7040800@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> For safety reasons new flag - CONFIG_CPU_FREQ_BOOST_SW has been added.
-> Only after selecting "EXYNOS Frequency Overclocking - Software" Kconfig
+On Fri, Jul 26, 2013 at 11:45:36AM +0800, Tang Chen wrote:
+> I just don't want to any new variables to store the hotpluggable regions.
+> But without a new shared variable, it seems difficult to achieve the goal
+> you said below.
 
-You shouldn't mention Exynos here and must do exynos stuff at the end
-in a separate patch. This one must be generic.
+Why can't it be done with the .flags field that was added anyway?
 
-> option the software managed boost is enabled. It also selects thermal
-> subsystem to be compiled in. Thermal is necessary for disabling boost
-> and cooling down the device when overheating detected.
->
-> Boost _MUST_NOT_ work without thermal subsystem with properly defined
-> overheating temperatures.
->
-> This option doesn't affect x86's ACPI hardware managed boost support
-> (i.e. Intel, AMD). In this situation boost management is embedded at
-> hardware.
->
-> Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
->
-> ---
-> Changes for v6:
-> - CPU_FREQ_BOOST_SW [1] is now defined as "invisible" bool option.
-> - Platform dependent ARM_EXYNOS_CPU_FREQ_BOOST_SW config option has been
->   added. It depends on ARM_EXYNOS_CPUFREQ options and selects
->   EXYNOS_THERMAL with the main boost config [1].
->
-> Changes for v5:
-> - New patch
->
->  drivers/cpufreq/Kconfig     |    3 +++
->  drivers/cpufreq/Kconfig.arm |   16 ++++++++++++++++
->  2 files changed, 19 insertions(+)
->
-> diff --git a/drivers/cpufreq/Kconfig b/drivers/cpufreq/Kconfig
-> index 534fcb8..3f058a3 100644
-> --- a/drivers/cpufreq/Kconfig
-> +++ b/drivers/cpufreq/Kconfig
-> @@ -23,6 +23,9 @@ config CPU_FREQ_TABLE
->  config CPU_FREQ_GOV_COMMON
->         bool
->
-> +config CPU_FREQ_BOOST_SW
-> +       bool
+> So how about this.
+> 1. Introduce a new global list used to store hotpluggable regions.
+> 2. On acpi side, find and fulfill the list.
+> 3. On memblock side, make the default allocation function stay away from
+>    these regions.
 
-Invisible is fine but this must be disabled by default and must
-depend on thermal, rather than moving dependency on platform's
-config.
+I was thinking more along the line of
+
+1. Mark hotpluggable regions with a flag in memblock.
+2. On ACPI side, find and mark hotpluggable regions.
+3. Make memblock avoid giving out hotpluggable regions for normal
+   allocations.
+
+Thanks.
+
+-- 
+tejun
