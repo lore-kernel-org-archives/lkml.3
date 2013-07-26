@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760527Ab3GZVfD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:35:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
+	id S1759993Ab3GZVe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:34:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759939Ab3GZUsh (ORCPT
+	with ESMTP id S1759941Ab3GZUsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:37 -0400
+	Fri, 26 Jul 2013 16:48:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Pierre Emeriaud <petrus.lt@gmail.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Ding Tianhong <dingtianhong@huawei.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 28/79] ipv6: fix route selection if kernel is not compiled with CONFIG_IPV6_ROUTER_PREF
-Date: Fri, 26 Jul 2013 13:47:18 -0700
-Message-Id: <20130726204724.872558931@linuxfoundation.org>
+Subject: [ 30/79] ifb: fix oops when loading the ifb failed
+Date: Fri, 26 Jul 2013 13:47:20 -0700
+Message-Id: <20130726204725.084038536@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -29,189 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: dingtianhong <dingtianhong@huawei.com>
 
-[ Upstream commit afc154e978de1eb11c555bc8bcec1552f75ebc43 ]
+[ Upstream commit f2966cd5691058b8674a20766525bedeaea9cbcf ]
 
-This is a follow-up patch to 3630d40067a21d4dfbadc6002bb469ce26ac5d52
-("ipv6: rt6_check_neigh should successfully verify neigh if no NUD
-information are available").
+If __rtnl_link_register() return faild when loading the ifb, it will
+take the wrong path and get oops, so fix it just like dummy.
 
-Since the removal of rt->n in rt6_info we can end up with a dst ==
-NULL in rt6_check_neigh. In case the kernel is not compiled with
-CONFIG_IPV6_ROUTER_PREF we should also select a route with unkown
-NUD state but we must not avoid doing round robin selection on routes
-with the same target. So introduce and pass down a boolean ``do_rr'' to
-indicate when we should update rt->rr_ptr. As soon as no route is valid
-we do backtracking and do a lookup on a higher level in the fib trie.
-
-v2:
-a) Improved rt6_check_neigh logic (no need to create neighbour there)
-   and documented return values.
-
-v3:
-a) Introduce enum rt6_nud_state to get rid of the magic numbers
-   (thanks to David Miller).
-b) Update and shorten commit message a bit to actualy reflect
-   the source.
-
-Reported-by: Pierre Emeriaud <petrus.lt@gmail.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/route.c |   63 ++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 40 insertions(+), 23 deletions(-)
+ drivers/net/ifb.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -65,6 +65,12 @@
- #include <linux/sysctl.h>
- #endif
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -291,6 +291,8 @@ static int __init ifb_init_module(void)
  
-+enum rt6_nud_state {
-+	RT6_NUD_FAIL_HARD = -2,
-+	RT6_NUD_FAIL_SOFT = -1,
-+	RT6_NUD_SUCCEED = 1
-+};
-+
- static struct rt6_info *ip6_rt_copy(struct rt6_info *ort,
- 				    const struct in6_addr *dest);
- static struct dst_entry	*ip6_dst_check(struct dst_entry *dst, u32 cookie);
-@@ -527,28 +533,29 @@ static inline int rt6_check_dev(struct r
- 	return 0;
- }
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
++	if (err < 0)
++		goto out;
  
--static inline bool rt6_check_neigh(struct rt6_info *rt)
-+static inline enum rt6_nud_state rt6_check_neigh(struct rt6_info *rt)
- {
- 	struct neighbour *neigh;
--	bool ret = false;
-+	enum rt6_nud_state ret = RT6_NUD_FAIL_HARD;
- 
- 	if (rt->rt6i_flags & RTF_NONEXTHOP ||
- 	    !(rt->rt6i_flags & RTF_GATEWAY))
--		return true;
-+		return RT6_NUD_SUCCEED;
- 
- 	rcu_read_lock_bh();
- 	neigh = __ipv6_neigh_lookup_noref(rt->dst.dev, &rt->rt6i_gateway);
- 	if (neigh) {
- 		read_lock(&neigh->lock);
- 		if (neigh->nud_state & NUD_VALID)
--			ret = true;
-+			ret = RT6_NUD_SUCCEED;
- #ifdef CONFIG_IPV6_ROUTER_PREF
- 		else if (!(neigh->nud_state & NUD_FAILED))
--			ret = true;
-+			ret = RT6_NUD_SUCCEED;
- #endif
- 		read_unlock(&neigh->lock);
--	} else if (IS_ENABLED(CONFIG_IPV6_ROUTER_PREF)) {
--		ret = true;
-+	} else {
-+		ret = IS_ENABLED(CONFIG_IPV6_ROUTER_PREF) ?
-+		      RT6_NUD_SUCCEED : RT6_NUD_FAIL_SOFT;
+ 	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
+@@ -298,6 +300,8 @@ static int __init ifb_init_module(void)
  	}
- 	rcu_read_unlock_bh();
- 
-@@ -562,43 +569,52 @@ static int rt6_score_route(struct rt6_in
- 
- 	m = rt6_check_dev(rt, oif);
- 	if (!m && (strict & RT6_LOOKUP_F_IFACE))
--		return -1;
-+		return RT6_NUD_FAIL_HARD;
- #ifdef CONFIG_IPV6_ROUTER_PREF
- 	m |= IPV6_DECODE_PREF(IPV6_EXTRACT_PREF(rt->rt6i_flags)) << 2;
- #endif
--	if (!rt6_check_neigh(rt) && (strict & RT6_LOOKUP_F_REACHABLE))
--		return -1;
-+	if (strict & RT6_LOOKUP_F_REACHABLE) {
-+		int n = rt6_check_neigh(rt);
-+		if (n < 0)
-+			return n;
-+	}
- 	return m;
- }
- 
- static struct rt6_info *find_match(struct rt6_info *rt, int oif, int strict,
--				   int *mpri, struct rt6_info *match)
-+				   int *mpri, struct rt6_info *match,
-+				   bool *do_rr)
- {
- 	int m;
-+	bool match_do_rr = false;
- 
- 	if (rt6_check_expired(rt))
- 		goto out;
- 
- 	m = rt6_score_route(rt, oif, strict);
--	if (m < 0)
-+	if (m == RT6_NUD_FAIL_SOFT && !IS_ENABLED(CONFIG_IPV6_ROUTER_PREF)) {
-+		match_do_rr = true;
-+		m = 0; /* lowest valid score */
-+	} else if (m < 0) {
- 		goto out;
-+	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
 +
-+	if (strict & RT6_LOOKUP_F_REACHABLE)
-+		rt6_probe(rt);
++out:
+ 	rtnl_unlock();
  
- 	if (m > *mpri) {
--		if (strict & RT6_LOOKUP_F_REACHABLE)
--			rt6_probe(match);
-+		*do_rr = match_do_rr;
- 		*mpri = m;
- 		match = rt;
--	} else if (strict & RT6_LOOKUP_F_REACHABLE) {
--		rt6_probe(rt);
- 	}
--
- out:
- 	return match;
- }
- 
- static struct rt6_info *find_rr_leaf(struct fib6_node *fn,
- 				     struct rt6_info *rr_head,
--				     u32 metric, int oif, int strict)
-+				     u32 metric, int oif, int strict,
-+				     bool *do_rr)
- {
- 	struct rt6_info *rt, *match;
- 	int mpri = -1;
-@@ -606,10 +622,10 @@ static struct rt6_info *find_rr_leaf(str
- 	match = NULL;
- 	for (rt = rr_head; rt && rt->rt6i_metric == metric;
- 	     rt = rt->dst.rt6_next)
--		match = find_match(rt, oif, strict, &mpri, match);
-+		match = find_match(rt, oif, strict, &mpri, match, do_rr);
- 	for (rt = fn->leaf; rt && rt != rr_head && rt->rt6i_metric == metric;
- 	     rt = rt->dst.rt6_next)
--		match = find_match(rt, oif, strict, &mpri, match);
-+		match = find_match(rt, oif, strict, &mpri, match, do_rr);
- 
- 	return match;
- }
-@@ -618,15 +634,16 @@ static struct rt6_info *rt6_select(struc
- {
- 	struct rt6_info *match, *rt0;
- 	struct net *net;
-+	bool do_rr = false;
- 
- 	rt0 = fn->rr_ptr;
- 	if (!rt0)
- 		fn->rr_ptr = rt0 = fn->leaf;
- 
--	match = find_rr_leaf(fn, rt0, rt0->rt6i_metric, oif, strict);
-+	match = find_rr_leaf(fn, rt0, rt0->rt6i_metric, oif, strict,
-+			     &do_rr);
- 
--	if (!match &&
--	    (strict & RT6_LOOKUP_F_REACHABLE)) {
-+	if (do_rr) {
- 		struct rt6_info *next = rt0->dst.rt6_next;
- 
- 		/* no entries matched; do round-robin */
+ 	return err;
 
 
