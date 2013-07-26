@@ -1,94 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759944Ab3GZVu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:50:28 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53316 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759842Ab3GZVuX (ORCPT
+	id S1759973Ab3GZVut (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:50:49 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56759 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753547Ab3GZVu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:50:23 -0400
-Date: Fri, 26 Jul 2013 23:50:11 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Turner <pjt@google.com>
-Cc: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
- in 3.11-rc2 (has twice regressed)
-Message-ID: <20130726215011.GK27075@twins.programming.kicks-ass.net>
-References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
- <20130725112123.GT27075@twins.programming.kicks-ass.net>
- <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
- <20130725164051.GZ27075@twins.programming.kicks-ass.net>
- <20130725211521.GE18254@gmail.com>
- <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
- <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com>
- <20130726210317.GC20909@twins.programming.kicks-ass.net>
- <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
+	Fri, 26 Jul 2013 17:50:26 -0400
+Date: Fri, 26 Jul 2013 14:50:23 -0700
+From: David Brown <davidb@codeaurora.org>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: gregkh@linuxfoundation.org, grant.likely@linaro.org,
+        rob.herring@calxeda.com, rob@landley.net, jslaby@suse.cz,
+        devicetree-discuss@lists.ozlabs.org, linux-serial@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, mrana@codeaurora.org,
+        sambley@codeaurora.org
+Subject: Re: [PATCH v2] tty: serial: Add initial MSM UART High Speed Lite
+ driver
+Message-ID: <20130726215023.GA1470@codeaurora.org>
+References: <1374476749-12763-1-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1374476749-12763-1-git-send-email-iivanov@mm-sol.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 02:24:50PM -0700, Paul Turner wrote:
-> On Fri, Jul 26, 2013 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >
-> > OK, so I have the below; however on a second look, Paul, shouldn't that
-> > update_cfs_shares() call be in entity_tick(), right after calling
-> > update_cfs_rq_blocked_load(). Because placing it in
-> > update_cfs_rq_blocked_load() means its now called twice on the
-> > enqueue/dequeue paths through:
-> >
-> >   {en,de}queue_entity()
-> >     {en,de}queue_entity_load_avg()
-> >       update_cfs_rq_blocked_load()
-> >         update_cfs_shares()
-> 
-> Yes, I agree: placing it directly in entity_tick() would be better.
+On Mon, Jul 22, 2013 at 10:05:48AM +0300, Ivan T. Ivanov wrote:
+>From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>
+>This is a tty driver with console support for Qualcomm's UART
+>controllers found in the MSM8974 chipsets. Driver is completely
+>based on implementation found in codeaurora.org msm_serial_hs_lite
+>with Android dependences removed. Other changes include, moved to
+>device managed resources and few cleanups.
+>
+>Driver functionality was tested in LEGACY_HSUART and BLSP_HSUART mode.
 
-OK, how about the below then?
+Ivan, do we need this driver with the fixes Stephen Boyd posted that
+are supposed to fix the problems with the existing msm_serial.c
+driver?  If a single driver can correctly support both devices, that
+seems like a better solution to me.
 
-> [ In f269ae046 the calls to update_cfs_rq_blocked_load() were amortized
-> and the separate update in {en,de}queue_entity_load_avg() were
-> removed. ]
+David
 
-Right, I remember/saw that. Did you ever figure out why that regressed;
-as in should we look to bring some of that back?
-
----
-Subject: sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri Jul 26 23:48:42 CEST 2013
-
-We typically update a task_group's shares within the dequeue/enqueue
-path.  However, continuously running tasks sharing a CPU are not
-subject to these updates as they are only put/picked.  Unfortunately,
-when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
-periodic update that was supposed to account for this; resulting in a
-potential loss of fairness.
-
-To fix this, re-introduce the explicit update in
-update_cfs_rq_blocked_load() [called via entity_tick()].
-
-Cc: stable@kernel.org
-Reported-by: Max Hailperin <max@gustavus.edu>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
----
- kernel/sched/fair.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2032,6 +2032,7 @@ entity_tick(struct cfs_rq *cfs_rq, struc
- 	 */
- 	update_entity_load_avg(curr, 1);
- 	update_cfs_rq_blocked_load(cfs_rq, 1);
-+	update_cfs_shares(cfs_rq);
- 
- #ifdef CONFIG_SCHED_HRTICK
- 	/*
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
