@@ -1,52 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932515Ab3GZPW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:22:26 -0400
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:49701 "EHLO
+	id S932539Ab3GZPW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:22:28 -0400
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:40428 "EHLO
 	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932380Ab3GZPWU (ORCPT
+	with ESMTP id S932372Ab3GZPWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:22:20 -0400
+	Fri, 26 Jul 2013 11:22:19 -0400
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
         devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         swarren@wwwdotorg.org, ian.campbell@citrix.com,
         rob.herring@calxeda.com
 Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH 1/5] sata, highbank: fix ordering of SGPIO signals
-Date: Fri, 26 Jul 2013 10:11:54 -0500
-Message-Id: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+Subject: [PATCH 4/5] sata, highbank: set tx_atten override bits
+Date: Fri, 26 Jul 2013 10:11:57 -0500
+Message-Id: <1374851518-4802-4-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ACTIVITY and ERROR signals were reversed in the original commit.
-Fix that.
+Some board designs do not drive the SATA transmit lines within the
+specification. The ECME can provide override settings, on a per board
+basis, to bring the transmit lines within spec. Read those settings
+from the DTB and program them in.
 
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 ---
- drivers/ata/sata_highbank.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ .../devicetree/bindings/ata/sata_highbank.txt      |  2 +
+ drivers/ata/sata_highbank.c                        | 57 +++++++++++++++++-----
+ 2 files changed, 47 insertions(+), 12 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+index aa1b798..d692e9e 100644
+--- a/Documentation/devicetree/bindings/ata/sata_highbank.txt
++++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+@@ -20,6 +20,8 @@ Optional properties:
+ 			indicator lights using the indicated GPIOs
+ - calxeda,led-order : a u32 array that map port numbers to offsets within the
+ 			SGPIO bitstream.
++- calxeda,tx-atten  : a u8 array that contains TX attenuation override
++			codes, one per port.
+ 
+ Example:
+         sata@ffe08000 {
 diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index d047d92..e9a4f46 100644
+index 8b40025..4c8444f 100644
 --- a/drivers/ata/sata_highbank.c
 +++ b/drivers/ata/sata_highbank.c
-@@ -86,11 +86,11 @@ struct ecx_plat_data {
+@@ -46,14 +46,19 @@
+ #define CR_BUSY				0x0001
+ #define CR_START			0x0001
+ #define CR_WR_RDN			0x0002
++#define CPHY_TX_INPUT_STS		0x2001
+ #define CPHY_RX_INPUT_STS		0x2002
+-#define CPHY_SATA_OVERRIDE	 	0x4000
+-#define CPHY_OVERRIDE			0x2005
++#define CPHY_SATA_TX_OVERRIDE		0x8000
++#define CPHY_SATA_RX_OVERRIDE	 	0x4000
++#define CPHY_TX_OVERRIDE		0x2004
++#define CPHY_RX_OVERRIDE		0x2005
+ #define SPHY_LANE			0x100
+ #define SPHY_HALF_RATE			0x0001
+ #define CPHY_SATA_DPLL_MODE		0x0700
+ #define CPHY_SATA_DPLL_SHIFT		8
+ #define CPHY_SATA_DPLL_RESET		(1 << 11)
++#define CPHY_SATA_TX_ATTEN		0x1c00
++#define CPHY_SATA_TX_ATTEN_SHIFT	10
+ #define CPHY_PHY_COUNT			6
+ #define CPHY_LANE_COUNT			4
+ #define CPHY_PORT_COUNT			(CPHY_PHY_COUNT * CPHY_LANE_COUNT)
+@@ -66,6 +71,7 @@ struct phy_lane_info {
+ 	void __iomem *phy_base;
+ 	u8 lane_mapping;
+ 	u8 phy_devs;
++	u8 tx_atten;
+ };
+ static struct phy_lane_info port_data[CPHY_PORT_COUNT];
  
- #define SGPIO_SIGNALS			3
- #define ECX_ACTIVITY_BITS		0x300000
--#define ECX_ACTIVITY_SHIFT		2
-+#define ECX_ACTIVITY_SHIFT		0
- #define ECX_LOCATE_BITS			0x80000
- #define ECX_LOCATE_SHIFT		1
- #define ECX_FAULT_BITS			0x400000
--#define ECX_FAULT_SHIFT			0
-+#define ECX_FAULT_SHIFT			2
- static inline int sgpio_bit_shift(struct ecx_plat_data *pdata, u32 port,
- 				u32 shift)
+@@ -259,8 +265,27 @@ static void highbank_cphy_disable_overrides(u8 sata_port)
+ 	if (unlikely(port_data[sata_port].phy_base == NULL))
+ 		return;
+ 	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
+-	tmp &= ~CPHY_SATA_OVERRIDE;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	tmp &= ~CPHY_SATA_RX_OVERRIDE;
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
++}
++
++static void cphy_override_tx_attenuation(u8 sata_port, u32 val)
++{
++	u8 lane = port_data[sata_port].lane_mapping;
++	u32 tmp;
++
++	if (val & 0x8)
++		return;
++
++	tmp = combo_phy_read(sata_port, CPHY_TX_INPUT_STS + lane * SPHY_LANE);
++	tmp &= ~CPHY_SATA_TX_OVERRIDE;
++	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
++
++	tmp |= CPHY_SATA_TX_OVERRIDE;
++	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
++
++	tmp |= (val << CPHY_SATA_TX_ATTEN_SHIFT) & CPHY_SATA_TX_ATTEN;
++	combo_phy_write(sata_port, CPHY_TX_OVERRIDE + lane * SPHY_LANE, tmp);
+ }
+ 
+ static void cphy_override_rx_mode(u8 sata_port, u32 val)
+@@ -268,21 +293,21 @@ static void cphy_override_rx_mode(u8 sata_port, u32 val)
+ 	u8 lane = port_data[sata_port].lane_mapping;
+ 	u32 tmp;
+ 	tmp = combo_phy_read(sata_port, CPHY_RX_INPUT_STS + lane * SPHY_LANE);
+-	tmp &= ~CPHY_SATA_OVERRIDE;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	tmp &= ~CPHY_SATA_RX_OVERRIDE;
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
+ 
+-	tmp |= CPHY_SATA_OVERRIDE;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	tmp |= CPHY_SATA_RX_OVERRIDE;
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
+ 
+ 	tmp &= ~CPHY_SATA_DPLL_MODE;
+ 	tmp |= val << CPHY_SATA_DPLL_SHIFT;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
+ 
+ 	tmp |= CPHY_SATA_DPLL_RESET;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
+ 
+ 	tmp &= ~CPHY_SATA_DPLL_RESET;
+-	combo_phy_write(sata_port, CPHY_OVERRIDE + lane * SPHY_LANE, tmp);
++	combo_phy_write(sata_port, CPHY_RX_OVERRIDE + lane * SPHY_LANE, tmp);
+ 
+ 	msleep(15);
+ }
+@@ -299,16 +324,20 @@ static void highbank_cphy_override_lane(u8 sata_port)
+ 						lane * SPHY_LANE);
+ 	} while ((tmp & SPHY_HALF_RATE) && (k++ < 1000));
+ 	cphy_override_rx_mode(sata_port, 3);
++	cphy_override_tx_attenuation(sata_port, port_data[sata_port].tx_atten);
+ }
+ 
+ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
  {
+ 	struct device_node *sata_node = dev->of_node;
+-	int phy_count = 0, phy, port = 0;
++	int phy_count = 0, phy, port = 0, i;
+ 	void __iomem *cphy_base[CPHY_PHY_COUNT];
+ 	struct device_node *phy_nodes[CPHY_PHY_COUNT];
++	u32 tx_atten[CPHY_PORT_COUNT];
++
+ 	memset(port_data, 0, sizeof(struct phy_lane_info) * CPHY_PORT_COUNT);
+ 	memset(phy_nodes, 0, sizeof(struct device_node*) * CPHY_PHY_COUNT);
++	memset(tx_atten, 0xff, CPHY_PORT_COUNT);
+ 
+ 	do {
+ 		u32 tmp;
+@@ -336,6 +365,10 @@ static int highbank_initialize_phys(struct device *dev, void __iomem *addr)
+ 		of_node_put(phy_data.np);
+ 		port += 1;
+ 	} while (port < CPHY_PORT_COUNT);
++	of_property_read_u32_array(sata_node, "calxeda,tx-atten",
++				tx_atten, port);
++	for (i = 0; i < port; i++)
++		port_data[i].tx_atten = (u8) tx_atten[i];
+ 	return 0;
+ }
+ 
 -- 
 1.8.1.2
 
