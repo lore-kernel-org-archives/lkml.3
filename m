@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758516Ab3GZK05 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:26:57 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:44546 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754601Ab3GZK0y (ORCPT
+	id S1758499Ab3GZK1V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:27:21 -0400
+Received: from mail-vb0-f49.google.com ([209.85.212.49]:50867 "EHLO
+	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601Ab3GZK1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:26:54 -0400
+	Fri, 26 Jul 2013 06:27:19 -0400
+Date: Fri, 26 Jul 2013 06:27:14 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 14/21] x86, acpi, numa: Reserve hotpluggable memory at
+ early time.
+Message-ID: <20130726102714.GC30786@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-15-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723205557.GS21100@mtj.dyndns.org>
+ <20130723213212.GA21100@mtj.dyndns.org>
+ <51F089C1.4010402@cn.fujitsu.com>
+ <20130725151719.GE26107@mtj.dyndns.org>
+ <51F1F0E0.7040800@cn.fujitsu.com>
+ <20130726102609.GB30786@mtj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <1374770011-22171-7-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-7-git-send-email-l.majewski@samsung.com>
-Date: Fri, 26 Jul 2013 15:56:53 +0530
-Message-ID: <CAKohponC=S=3=mrTpWvPvejqSeqfndVOwb2GDkQ0jKxXXa0TOQ@mail.gmail.com>
-Subject: Re: [PATCH v6 6/8] cpufreq:exynos:Extend Exynos cpufreq driver to
- support boost framework
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726102609.GB30786@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+On Fri, Jul 26, 2013 at 06:26:09AM -0400, Tejun Heo wrote:
+> > So how about this.
+> > 1. Introduce a new global list used to store hotpluggable regions.
+> > 2. On acpi side, find and fulfill the list.
+> > 3. On memblock side, make the default allocation function stay away from
+> >    these regions.
+> 
+> I was thinking more along the line of
+> 
+> 1. Mark hotpluggable regions with a flag in memblock.
+> 2. On ACPI side, find and mark hotpluggable regions.
+> 3. Make memblock avoid giving out hotpluggable regions for normal
+>    allocations.
 
-> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-> index 9ae1871..175172d9 100644
-> --- a/drivers/cpufreq/exynos-cpufreq.c
-> +++ b/drivers/cpufreq/exynos-cpufreq.c
-> @@ -270,6 +270,9 @@ static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
->
->  static struct freq_attr *exynos_cpufreq_attr[] = {
->         &cpufreq_freq_attr_scaling_available_freqs,
-> +#ifdef CONFIG_CPU_FREQ_BOOST_SW
+But adding new regions array is more convenient / cleaner, that's fine
+too.  Those arrays are dynamically sized anyway.
 
-Use ARM_EXYNOS_CPU_FREQ_BOOST_SW instead.
+Thanks.
 
-> +       &cpufreq_freq_attr_scaling_boost_freqs,
-> +#endif
->         NULL,
->  };
->
-> @@ -332,6 +335,9 @@ static int __init exynos_cpufreq_probe(struct platform_device *pdev)
->
->         locking_frequency = exynos_getspeed(0);
->
-> +#ifdef CONFIG_CPU_FREQ_BOOST_SW
-> +       exynos_driver.boost_supported = true;
-> +#endif
-
-So, why here and not in the definition of exynos_driver?
-
->         register_pm_notifier(&exynos_cpufreq_nb);
->
->         if (cpufreq_register_driver(&exynos_driver)) {
-> --
-> 1.7.10.4
->
+-- 
+tejun
