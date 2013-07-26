@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab3GZIl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 04:41:57 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42536 "EHLO bear.ext.ti.com"
+	id S1757833Ab3GZIqA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 04:46:00 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44970 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab3GZIlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 04:41:53 -0400
-Message-ID: <51F2364B.6090605@ti.com>
-Date: Fri, 26 Jul 2013 11:41:47 +0300
+	id S1755329Ab3GZIp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 04:45:56 -0400
+Message-ID: <51F23735.5050806@ti.com>
+Date: Fri, 26 Jul 2013 11:45:41 +0300
 From: Tomi Valkeinen <tomi.valkeinen@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-CC: <plagnioj@jcrosoft.com>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/video: remove unused parameter in Kconfig
-References: <1373259806-23067-1-git-send-email-michael.opdenacker@free-electrons.com>
-In-Reply-To: <1373259806-23067-1-git-send-email-michael.opdenacker@free-electrons.com>
+To: Oskar Andero <oskar.andero@sonymobile.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Radovan Lekanovic <Radovan.Lekanovic@sonymobile.com>,
+        Shingo Nakao <shingo.x.nakao@sonymobile.com>,
+        Milo Kim <milo.kim@ti.com>, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [PATCH] backlight: lp855x: set zero brightness at FBBLANK
+References: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
+In-Reply-To: <1372767354-16499-1-git-send-email-oskar.andero@sonymobile.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: multipart/signed; micalg=pgp-sha1;
 	protocol="application/pgp-signature";
-	boundary="treXOS30gad8uCb8lSsdtPSqMDUbI0mpg"
+	boundary="rWSJk7OuUR725RuIldDGlcmIShsqo4kT9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---treXOS30gad8uCb8lSsdtPSqMDUbI0mpg
+--rWSJk7OuUR725RuIldDGlcmIShsqo4kT9
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On 08/07/13 08:03, Michael Opdenacker wrote:
-> This patch proposes to remove the FB_NUC900_DEBUG kernel configuration
-> parameter defined in drivers/video/Kconfig, but used nowhere
-> in the makefiles and source code.
+On 02/07/13 15:15, Oskar Andero wrote:
+> From: Shingo Nakao <shingo.x.nakao@sonymobile.com>
 >=20
-> Signed-off-by: Michael Opdenacker <michael.opdenacker@free-electrons.co=
-m>
+> When backlight turns on early from display, a white line can be
+> seen on the screen. Therefore make sure backlight is off when we
+> are under an fb blank event.
+>=20
+> Signed-off-by: Shingo Nakao <shingo.x.nakao@sonymobile.com>
+> Cc: Milo Kim <milo.kim@ti.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Oskar Andero <oskar.andero@sonymobile.com>
 > ---
->  drivers/video/Kconfig | 7 -------
->  1 file changed, 7 deletions(-)
+>  drivers/video/backlight/lp855x_bl.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >=20
-> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-> index 2e937bd..a9c0964 100644
-> --- a/drivers/video/Kconfig
-> +++ b/drivers/video/Kconfig
-> @@ -2098,13 +2098,6 @@ config GPM1040A0_320X240
->          bool "Giantplus Technology GPM1040A0 320x240 Color TFT LCD"
->          depends on FB_NUC900
+> diff --git a/drivers/video/backlight/lp855x_bl.c b/drivers/video/backli=
+ght/lp855x_bl.c
+> index a0e1e02..c0b41f1 100644
+> --- a/drivers/video/backlight/lp855x_bl.c
+> +++ b/drivers/video/backlight/lp855x_bl.c
+> @@ -246,7 +246,7 @@ static int lp855x_bl_update_status(struct backlight=
+_device *bl)
+>  {
+>  	struct lp855x *lp =3D bl_get_data(bl);
 > =20
-> -config FB_NUC900_DEBUG
-> -        bool "NUC900 lcd debug messages"
-> -        depends on FB_NUC900
-> -        help
-> -          Turn on debugging messages. Note that you can set/unset at r=
-un time
-> -          through sysfs
-> -
->  config FB_SM501
->  	tristate "Silicon Motion SM501 framebuffer support"
->  	depends on FB && MFD_SM501
+> -	if (bl->props.state & BL_CORE_SUSPENDED)
+> +	if (bl->props.state & (BL_CORE_SUSPENDED | BL_CORE_FBBLANK))
+>  		bl->props.brightness =3D 0;
+> =20
+>  	if (lp->mode =3D=3D PWM_BASED) {
 >=20
 
 Thanks, I've applied this into my 3.12/fbdev branch.
@@ -67,7 +70,7 @@ Thanks, I've applied this into my 3.12/fbdev branch.
 
 
 
---treXOS30gad8uCb8lSsdtPSqMDUbI0mpg
+--rWSJk7OuUR725RuIldDGlcmIShsqo4kT9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: OpenPGP digital signature
 Content-Disposition: attachment; filename="signature.asc"
@@ -76,19 +79,19 @@ Content-Disposition: attachment; filename="signature.asc"
 Version: GnuPG v1.4.12 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iQIcBAEBAgAGBQJR8jZLAAoJEPo9qoy8lh71rBoP/jB8Aed2jSL9QS+/VMH3RaW9
-J1ncszrcpXdinFRGPDcqgOZBGCMD87L1t0y1OhLDDhYnYbMdFSg91c8TvH5qY8DB
-v4vPrR+zsmX2M531hlUj+s2OQvWpS5KIcez8TFLyvOB4DvoTo2UksBLqQlvDU1XJ
-G5bDkUseJxTN5REiCloFEZDwdJF3v+Rb+VfI7qFEeUR8hgMJ4pfpiGF9NbueMdwZ
-5Nw9Zud2Td/ET5j4eBWHBqHNdXVP3wdF6OzsoVeJN3Ly7OSEK+VYoHDrmxa7uQaX
-EVeZmYnKniJ15/OZVi0gdJ1jQ6/xUm1PR/jCM+vAKSTqHor/A9NM00sDxdWiqNfh
-We59E9W0xdnFNWGA2PUyEklNRaNFYZRIo1jkCuyexaWGFGuwB6/2SOwsQWrVjw8r
-F8/dPUX5F27ra7ORTjUpCnU5Ht1Sy08QWf0PzGH/zxlvXl7EEo+xJih1nlGzeNMu
-MUU0bDip1EpgLJ758CNdyzD4oj9xJtvKV8FBAMN8W98vFjWUge3B5O40Jv2ovds5
-92/f3S8WvQ8YNeeIqB8fOoJ1BUfD+apMycuopu99pTKvRIhotSNW9ZDmkZpEM3Rd
-TvWkbNsVd0/iK6vMs3W7gmSc0iy33lIV5z/koO3kLo6RQSJynqiaAP1OosAZjWB6
-Hh5MXd1nOy+mJbyhGoL/
-=A8EW
+iQIcBAEBAgAGBQJR8jc1AAoJEPo9qoy8lh71aZkP/0uNDwBtecB2iPYoLXY650v+
+FJYJGy2yU+puPtu9A4CRpcjt5YSmG8SK1LKwBcliZ3mQkwb1YuPuz5q552gjsHKG
+RHhwdmhun0Lg8IbS49fqN/y93PmZRbdgzEi3vWer8h4qvW5JfBMBUZCw8FiXB+rD
+9eQYcD1kpzfkP/HPMOHAE/49PU9ptJdUQ3UYld86mQmCxl5Nj3HbiPAPTsPO3tO6
+Ryy4myoXg5tfTHU8Hqfl87zkXtnZ6ryO0vXifcvBO3iuLTPQH3ZMcob963xiIOtF
+Klkt+G5HOD9sKKM1phPCm0qCt424cQnT146rnF1/uhCGcZX5CvvLpB1hw6vr6jqp
+py0iKJ/86C+FXlvAAXQS7jdd2awT/coASoZGJX/KdK9kmZd5ykoSQz3rDVQjYVND
+sOiZqvBDgLoRj7cVpdoITlSCDDF5SoH2bW0bLXS18ISRBA1swQSqHWHSiXzqqg8j
+m/SI547+zJxNlXpNXRC1ROHxY5qTyXjTqnHllHTGRY6uesw2Nw02T9VusSdaoMvp
+i7BpBXczSu7M0AGlg2TTsOZG3V1Ley1c7cVfKMBDDWIJ3NnyqbFv6u7mC0sp/pwJ
+RGWskZhKR+SeqNOFiHicioOeXwXcjiZ1cjztUM3X88KfvDQZb2s6ng66l/nxlxGn
+jlYFdEgMTogYD/HptwF7
+=or9S
 -----END PGP SIGNATURE-----
 
---treXOS30gad8uCb8lSsdtPSqMDUbI0mpg--
+--rWSJk7OuUR725RuIldDGlcmIShsqo4kT9--
