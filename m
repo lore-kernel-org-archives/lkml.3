@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759185Ab3GZRi3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:38:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49016 "EHLO
+	id S1759368Ab3GZRjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:39:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751080Ab3GZRi2 (ORCPT
+	with ESMTP id S1751312Ab3GZRi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:38:28 -0400
-Date: Fri, 26 Jul 2013 10:38:27 -0700
+	Fri, 26 Jul 2013 13:38:59 -0400
+Date: Fri, 26 Jul 2013 10:38:57 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
@@ -23,36 +23,78 @@ Cc: Oleg Nesterov <oleg@redhat.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely on
+Subject: Re: [PATCH 1/1] debugfs: debugfs_remove_recursive() must not rely on
  list_empty(d_subdirs)
-Message-ID: <20130726173827.GA15013@kroah.com>
+Message-ID: <20130726173857.GB15013@kroah.com>
 References: <20130723205854.GA9036@redhat.com>
  <20130724184640.GA21322@redhat.com>
  <20130725192742.GA14060@redhat.com>
  <20130725200423.GA22274@redhat.com>
  <20130725234357.GA14958@kroah.com>
  <20130726151151.GA19472@redhat.com>
- <1374852613.6580.35.camel@gandalf.local.home>
+ <20130726151256.GC19472@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374852613.6580.35.camel@gandalf.local.home>
+In-Reply-To: <20130726151256.GC19472@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 11:30:13AM -0400, Steven Rostedt wrote:
-> On Fri, 2013-07-26 at 17:11 +0200, Oleg Nesterov wrote:
-> > 
-> > Steven, Greg. Assuming that nobody objects and the patch is fine.
-> > Perhaps this patch can be routed via rostedt/linux-trace tree?
+On Fri, Jul 26, 2013 at 05:12:56PM +0200, Oleg Nesterov wrote:
+> debugfs_remove_recursive() is wrong,
 > 
-> I'm fine with pushing it. But that requires Greg's Acked-by.
+> 1. it wrongly assumes that !list_empty(d_subdirs) means that this
+>    dir should be removed.
+> 
+>    This is not that bad by itself, but:
+> 
+> 2. if d_subdirs does not becomes empty after __debugfs_remove()
+>    it gives up and silently fails, it doesn't even try to remove
+>    other entries.
+> 
+>    However ->d_subdirs can be non-empty because it still has the
+>    already deleted !debugfs_positive() entries.
+> 
+> 3. simple_release_fs() is called even if __debugfs_remove() fails.
+> 
+> Suppose we have
+> 
+> 	dir1/
+> 		dir2/
+> 			file2
+> 		file1
+> 
+> and someone opens dir1/dir2/file2.
+> 
+> Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/di2 goes
+> away.
+> 
+> But debugfs_remove_recursive(dir1) silently fails and doesn't remove
+> this directory. Because it tries to delete (the already deleted)
+> dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
+> logic.
+> 
+> Test-case:
+> 
+> 	#!/bin/sh
+> 
+> 	cd /sys/kernel/debug/tracing
+> 	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
+> 	sleep 1000 < events/probe/sigprocmask/id &
+> 	echo -n >| kprobe_events
+> 
+> 	[ -d events/probe ] && echo "ERR!! failed to rm probe"
+> 
+> And after that it is not possible to create another probe entry.
+> 
+> With this patch debugfs_remove_recursive() skips !debugfs_positive()
+> files although this is not strictly needed. The most important change
+> is that it does not try to make ->d_subdirs empty, it simply scans
+> the whole list(s) recursively and removes as much as possible.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Ah, I see that there are tracing fixes that need this, that makes sense
-to go through the tracing tree, I'll go ack it...
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-thanks,
-
-greg k-h
