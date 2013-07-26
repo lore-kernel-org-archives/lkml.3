@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760465Ab3GZVQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:16:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51172 "EHLO
+	id S1760422Ab3GZVRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:17:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51139 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932957Ab3GZUxy (ORCPT
+	with ESMTP id S932944Ab3GZUxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:54 -0400
+	Fri, 26 Jul 2013 16:53:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
+        Eric Dumazet <edumazet@google.com>, Patrick McHardy <kaber@trash.net>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 34/59] macvtap: correctly linearize skb when zerocopy is used
-Date: Fri, 26 Jul 2013 13:52:58 -0700
-Message-Id: <20130726205017.468588015@linuxfoundation.org>
+Subject: [ 41/59] vlan: fix a race in egress prio management
+Date: Fri, 26 Jul 2013 13:53:05 -0700
+Message-Id: <20130726205018.213008349@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -28,56 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit 61d46bf979d5cd7c164709a80ad5676a35494aae ]
+[ Upstream commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 ]
 
-Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
-linearize parts of the skb to let the rest of iov to be fit in
-the frags, we need count copylen into linear when calling macvtap_alloc_skb()
-instead of partly counting it into data_len. Since this breaks
-zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
-be zero at beginning. This cause nr_frags to be increased wrongly without
-setting the correct frags.
+egress_priority_map[] hash table updates are protected by rtnl,
+and we never remove elements until device is dismantled.
 
-This bug were introduced from b92946e2919134ebe2a4083e4302236295ea2a73
-(macvtap: zerocopy: validate vectors before building skb).
+We have to make sure that before inserting an new element in hash table,
+all its fields are committed to memory or else another cpu could
+find corrupt values and crash.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Patrick McHardy <kaber@trash.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvtap.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ net/8021q/vlan_dev.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/macvtap.c
-+++ b/drivers/net/macvtap.c
-@@ -656,6 +656,7 @@ static ssize_t macvtap_get_user(struct m
- 	int vnet_hdr_len = 0;
- 	int copylen = 0;
- 	bool zerocopy = false;
-+	size_t linear;
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
+@@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_
+ {
+ 	struct vlan_priority_tci_mapping *mp;
  
- 	if (q->flags & IFF_VNET_HDR) {
- 		vnet_hdr_len = q->vnet_hdr_sz;
-@@ -710,11 +711,14 @@ static ssize_t macvtap_get_user(struct m
- 			copylen = vnet_hdr.hdr_len;
- 		if (!copylen)
- 			copylen = GOODCOPY_LEN;
--	} else
-+		linear = copylen;
-+	} else {
- 		copylen = len;
-+		linear = vnet_hdr.hdr_len;
-+	}
- 
- 	skb = macvtap_alloc_skb(&q->sk, NET_IP_ALIGN, copylen,
--				vnet_hdr.hdr_len, noblock, &err);
-+				linear, noblock, &err);
- 	if (!skb)
- 		goto err;
- 
++	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priority() */
++
+ 	mp = vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF)];
+ 	while (mp) {
+ 		if (mp->priority == skb->priority) {
+@@ -235,6 +237,11 @@ int vlan_dev_set_egress_priority(const s
+ 	np->next = mp;
+ 	np->priority = skb_prio;
+ 	np->vlan_qos = vlan_qos;
++	/* Before inserting this element in hash table, make sure all its fields
++	 * are committed to memory.
++	 * coupled with smp_rmb() in vlan_dev_get_egress_qos_mask()
++	 */
++	smp_wmb();
+ 	vlan->egress_priority_map[skb_prio & 0xF] = np;
+ 	if (vlan_qos)
+ 		vlan->nr_egress_mappings++;
 
 
