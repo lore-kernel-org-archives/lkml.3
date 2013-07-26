@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab3GZFRo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 01:17:44 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:39061 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab3GZFRj (ORCPT
+	id S1751486Ab3GZFSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 01:18:43 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:51790 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab3GZFSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 01:17:39 -0400
-Subject: [Resend RFC PATCH 0/5] cpuidle/ppc: Timer offload framework to
- support deep idle states
+	Fri, 26 Jul 2013 01:18:42 -0400
+Subject: [Resend RFC PATCH 1/5] powerpc: Free up the IPI message slot of ipi
+ call function (PPC_MSG_CALL_FUNC)
 To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
         shangw@linux.vnet.ibm.com, galak@kernel.crashing.org,
         fweisbec@gmail.com, paulmck@linux.vnet.ibm.com, michael@ellerman.id.au,
@@ -19,67 +19,129 @@ To: benh@kernel.crashing.org, paul.gortmaker@windriver.com, paulus@samba.org,
         srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
         svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
 From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Date: Fri, 26 Jul 2013 10:43:54 +0530
-Message-ID: <20130726050915.17167.16298.stgit@preeti>
+Date: Fri, 26 Jul 2013 10:45:12 +0530
+Message-ID: <20130726051453.17167.4477.stgit@preeti>
+In-Reply-To: <20130726050915.17167.16298.stgit@preeti>
+References: <20130726050915.17167.16298.stgit@preeti>
 User-Agent: StGit/0.16-38-g167d
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072605-2674-0000-0000-000009F736E7
+x-cbid: 13072605-1396-0000-0000-00000351A67F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PowerPC, when CPUs enter deep idle states, their local timers are
-switched off. The responsibility of waking them up at their next timer event,
-needs to be handed over to an external device. On PowerPC, we do not have an
-external device equivalent to HPET, which is currently done on architectures
-like x86. Instead we assign the local timer of one of the CPUs to do this
-job.
+From: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-This patchset is an attempt to make use of the existing timer broadcast
-framework in the kernel to meet the above requirement, except that the tick
-broadcast device is the local timer of the boot CPU.
+The IPI handlers for both PPC_MSG_CALL_FUNC and PPC_MSG_CALL_FUNC_SINGLE
+map to a common implementation - generic_smp_call_function_single_interrupt().
+So, we can consolidate them and save one of the IPI message slots, (which are
+precious, since only 4 of those slots are available).
 
-This patch series is ported ontop of 3.11-rc1 + the cpuidle driver backend
-for powernv posted by Deepthi Dharwar recently. The current design and
-implementation supports the ONESHOT tick mode. It does not yet support
-the PERIODIC tick mode. This patch is tested with NOHZ_FULL off.
+So, implement the functionality of PPC_MSG_CALL_FUNC using
+PPC_MSG_CALL_FUNC_SINGLE itself and release its IPI message slot, so that it
+can be used for something else in the future, if desired.
 
-Patch[1/5], Patch[2/5]: optimize the broadcast mechanism on ppc.
-Patch[3/5]: Introduces the core of the timer offload framework on powerpc.
-Patch[4/5]: The cpu doing the broadcast should not go into tickless idle.
-Patch[5/5]: Add a deep idle state to the cpuidle state table on powernv.
-
-Patch[5/5] is the patch that ultimately makes use of the timer offload
-framework that the patches Patch[1/5] to Patch[4/5] build.
-
-This patch series is being resent to clarify certain ambiguity in the patch
-descriptions from the previous post. Discussion around this:
-https://lkml.org/lkml/2013/7/25/754
-
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 ---
 
-Preeti U Murthy (3):
-      cpuidle/ppc: Add timer offload framework to support deep idle states
-      cpuidle/ppc: CPU goes tickless if there are no arch-specific constraints
-      cpuidle/ppc: Add longnap state to the idle states on powernv
+ arch/powerpc/include/asm/smp.h          |    2 +-
+ arch/powerpc/kernel/smp.c               |   12 +++++-------
+ arch/powerpc/platforms/cell/interrupt.c |    2 +-
+ arch/powerpc/platforms/ps3/smp.c        |    2 +-
+ 4 files changed, 8 insertions(+), 10 deletions(-)
 
-Srivatsa S. Bhat (2):
-      powerpc: Free up the IPI message slot of ipi call function (PPC_MSG_CALL_FUNC)
-      powerpc: Implement broadcast timer interrupt as an IPI message
-
-
- arch/powerpc/include/asm/smp.h                  |    3 +
- arch/powerpc/include/asm/time.h                 |    3 +
- arch/powerpc/kernel/smp.c                       |   23 ++++--
- arch/powerpc/kernel/time.c                      |   86 +++++++++++++++++++++++
- arch/powerpc/platforms/cell/interrupt.c         |    2 -
- arch/powerpc/platforms/powernv/Kconfig          |    1 
- arch/powerpc/platforms/powernv/processor_idle.c |   48 +++++++++++++
- arch/powerpc/platforms/ps3/smp.c                |    2 -
- kernel/time/tick-sched.c                        |    7 ++
- 9 files changed, 163 insertions(+), 12 deletions(-)
+diff --git a/arch/powerpc/include/asm/smp.h b/arch/powerpc/include/asm/smp.h
+index ffbaabe..51bf017 100644
+--- a/arch/powerpc/include/asm/smp.h
++++ b/arch/powerpc/include/asm/smp.h
+@@ -117,7 +117,7 @@ extern int cpu_to_core_id(int cpu);
+  *
+  * Make sure this matches openpic_request_IPIs in open_pic.c, or what shows up
+  * in /proc/interrupts will be wrong!!! --Troy */
+-#define PPC_MSG_CALL_FUNCTION   0
++#define PPC_MSG_UNUSED		0
+ #define PPC_MSG_RESCHEDULE      1
+ #define PPC_MSG_CALL_FUNC_SINGLE	2
+ #define PPC_MSG_DEBUGGER_BREAK  3
+diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+index 38b0ba6..bc41e9f 100644
+--- a/arch/powerpc/kernel/smp.c
++++ b/arch/powerpc/kernel/smp.c
+@@ -111,9 +111,9 @@ int smp_generic_kick_cpu(int nr)
+ }
+ #endif /* CONFIG_PPC64 */
+ 
+-static irqreturn_t call_function_action(int irq, void *data)
++static irqreturn_t unused_action(int irq, void *data)
+ {
+-	generic_smp_call_function_interrupt();
++	/* This slot is unused and hence available for use, if needed */
+ 	return IRQ_HANDLED;
+ }
+ 
+@@ -144,14 +144,14 @@ static irqreturn_t debug_ipi_action(int irq, void *data)
+ }
+ 
+ static irq_handler_t smp_ipi_action[] = {
+-	[PPC_MSG_CALL_FUNCTION] =  call_function_action,
++	[PPC_MSG_UNUSED] =  unused_action, /* Slot available for future use */
+ 	[PPC_MSG_RESCHEDULE] = reschedule_action,
+ 	[PPC_MSG_CALL_FUNC_SINGLE] = call_function_single_action,
+ 	[PPC_MSG_DEBUGGER_BREAK] = debug_ipi_action,
+ };
+ 
+ const char *smp_ipi_name[] = {
+-	[PPC_MSG_CALL_FUNCTION] =  "ipi call function",
++	[PPC_MSG_UNUSED] =  "ipi unused",
+ 	[PPC_MSG_RESCHEDULE] = "ipi reschedule",
+ 	[PPC_MSG_CALL_FUNC_SINGLE] = "ipi call function single",
+ 	[PPC_MSG_DEBUGGER_BREAK] = "ipi debugger",
+@@ -221,8 +221,6 @@ irqreturn_t smp_ipi_demux(void)
+ 		all = xchg(&info->messages, 0);
+ 
+ #ifdef __BIG_ENDIAN
+-		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNCTION)))
+-			generic_smp_call_function_interrupt();
+ 		if (all & (1 << (24 - 8 * PPC_MSG_RESCHEDULE)))
+ 			scheduler_ipi();
+ 		if (all & (1 << (24 - 8 * PPC_MSG_CALL_FUNC_SINGLE)))
+@@ -265,7 +263,7 @@ void arch_send_call_function_ipi_mask(const struct cpumask *mask)
+ 	unsigned int cpu;
+ 
+ 	for_each_cpu(cpu, mask)
+-		do_message_pass(cpu, PPC_MSG_CALL_FUNCTION);
++		do_message_pass(cpu, PPC_MSG_CALL_FUNC_SINGLE);
+ }
+ 
+ #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)
+diff --git a/arch/powerpc/platforms/cell/interrupt.c b/arch/powerpc/platforms/cell/interrupt.c
+index 2d42f3b..28166e4 100644
+--- a/arch/powerpc/platforms/cell/interrupt.c
++++ b/arch/powerpc/platforms/cell/interrupt.c
+@@ -213,7 +213,7 @@ static void iic_request_ipi(int msg)
+ 
+ void iic_request_IPIs(void)
+ {
+-	iic_request_ipi(PPC_MSG_CALL_FUNCTION);
++	iic_request_ipi(PPC_MSG_UNUSED);
+ 	iic_request_ipi(PPC_MSG_RESCHEDULE);
+ 	iic_request_ipi(PPC_MSG_CALL_FUNC_SINGLE);
+ 	iic_request_ipi(PPC_MSG_DEBUGGER_BREAK);
+diff --git a/arch/powerpc/platforms/ps3/smp.c b/arch/powerpc/platforms/ps3/smp.c
+index 4b35166..488f069 100644
+--- a/arch/powerpc/platforms/ps3/smp.c
++++ b/arch/powerpc/platforms/ps3/smp.c
+@@ -74,7 +74,7 @@ static int __init ps3_smp_probe(void)
+ 		* to index needs to be setup.
+ 		*/
+ 
+-		BUILD_BUG_ON(PPC_MSG_CALL_FUNCTION    != 0);
++		BUILD_BUG_ON(PPC_MSG_UNUSED	      != 0);
+ 		BUILD_BUG_ON(PPC_MSG_RESCHEDULE       != 1);
+ 		BUILD_BUG_ON(PPC_MSG_CALL_FUNC_SINGLE != 2);
+ 		BUILD_BUG_ON(PPC_MSG_DEBUGGER_BREAK   != 3);
 
