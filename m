@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759502Ab3GZS15 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 14:27:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:63918 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752282Ab3GZS14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 14:27:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,752,1367996400"; 
-   d="scan'208";a="371850091"
-Message-ID: <51F2BF8C.7010308@linux.intel.com>
-Date: Fri, 26 Jul 2013 11:27:24 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S932141Ab3GZS32 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 14:29:28 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:45792 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751405Ab3GZS3Z convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 14:29:25 -0400
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Jeremy Eder <jeder@redhat.com>, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, youquan.song@intel.com,
-        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
-        len.brown@intel.com
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-References: <20130726173306.GB17985@jeder.rdu.redhat.com> <51F2BC31.7000407@redhat.com>
-In-Reply-To: <51F2BC31.7000407@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51F2BE6F.3010008@linutronix.de>
+References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
+	<1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
+	<CADYTM3a5xzs+-VCTeKLGiRjo7JOqOJ5H4EWDACpTMovY5_ooRA@mail.gmail.com>
+	<51EEBE05.2040000@linutronix.de>
+	<CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
+	<20130726163101.GB29819@linutronix.de>
+	<CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
+	<CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
+	<51F2BE6F.3010008@linutronix.de>
+Date: Fri, 26 Jul 2013 13:29:25 -0500
+Message-ID: <CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
+Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
+From: Bin Liu <binmlist@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/26/2013 11:13 AM, Rik van Riel wrote:
+Sebastian,
 
+On Fri, Jul 26, 2013 at 1:22 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> On 07/26/2013 08:17 PM, Bin Liu wrote:
 >
-> Could you try running the tests with just the repeat mode
-> stuff from commit 69a37bea excluded, but leaving the common
-> infrastructure and commit e11538?
+> Hi Bin.
 >
+>>> In TI 3.2 kernel, the otg_timer() toggles the SESSION bit in
+>>> OTG_STATE_B_IDLE state. So whenever the ID pin is grounded by
+>>> connecting a device, the controller will try go into host mode.
+>>> But I have no idea why your board is in a_idle not b_idle. The toggle
+>>> does not handle a_idle.
+>>>
+>>> Do you use the AM335x GP EVM, not the smaller StarterKit EVM, right?
+>>> the USB0 port on SK EVM is device only.
+>>>
+>>> But anyway, I have not seen any use case which uses micro-AB
+>>> receptacle and requires such dynamic role switching. So I kind of
+>>
+>> I meant the real customer use cases, not the EVMs ;)
+>>
+> I am using the about the second port on am335x evm which is used as
+> host (not OTG mode (3) but HOST (1)). If I start the timer OTG after
+> disconnect I see that it gets back to A mode:
+>
+> [   97.570852] musb-hdrc musb-hdrc.1.auto: Poll devctl 19 (a_wait_bcon)
+I don't think you are testing with the 3.2 kernel you referred from
+the ti.com link you mentioned above.
+3.2 kernel should have no '.auto' at the end of the device name.
 
-personally I think we should go the other way around.
-revert the set entirely first, and now, and get our performance back
-to what it should be
+If it is 3.8 or later, it seems the driver does something wrong,
+SESSION bit should not be cleared after the device is unplugged.
 
-and then see what we can add back without causing the regressions.
-this may take longer, or be done in steps, and that's ok.
-
-the end point may well be the same... but we can then evaluate in the right
-direction.
+> [   99.570306] musb-hdrc musb-hdrc.1.auto: Poll devctl 98 (a_idle)
+> …
+> [  209.570259] musb-hdrc musb-hdrc.1.auto: Poll devctl 80 (a_idle)
+>
+> and now the session bit is missing and never gets back so I can not
+> plug any other device. I really have no idea what is missing here…
+>
+> Sebastian
