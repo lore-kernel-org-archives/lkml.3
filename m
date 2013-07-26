@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933535Ab3GZVeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:34:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50831 "EHLO
+	id S1759958Ab3GZVew (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50819 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759953Ab3GZUsl (ORCPT
+	with ESMTP id S1759942Ab3GZUsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:41 -0400
+	Fri, 26 Jul 2013 16:48:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kent Overstreet <kmo@daterainc.com>
-Subject: [ 52/79] bcache: Fix GC_SECTORS_USED() calculation
-Date: Fri, 26 Jul 2013 13:47:42 -0700
-Message-Id: <20130726204728.056200551@linuxfoundation.org>
+        Alexander Duyck <alexander.h.duyck@intel.com>,
+        Cong Wang <amwang@redhat.com>, Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 31/79] gre: Fix MTU sizing check for gretap tunnels
+Date: Fri, 26 Jul 2013 13:47:21 -0700
+Message-Id: <20130726204725.184611789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,38 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kent Overstreet <kmo@daterainc.com>
+From: Alexander Duyck <alexander.h.duyck@intel.com>
 
-commit 29ebf465b9050f241c4433a796a32e6c896a9dcd upstream.
+[ Upstream commit 8c91e162e058bb91b7766f26f4d5823a21941026 ]
 
-Part of the job of garbage collection is to add up however many sectors
-of live data it finds in each bucket, but that doesn't work very well if
-it doesn't reset GC_SECTORS_USED() when it starts. Whoops.
+This change fixes an MTU sizing issue seen with gretap tunnels when non-gso
+packets are sent from the interface.
 
-This wouldn't have broken anything horribly, but allocation tries to
-preferentially reclaim buckets that are mostly empty and that's not
-gonna work with an incorrect GC_SECTORS_USED() value.
+In my case I was able to reproduce the issue by simply sending a ping of
+1421 bytes with the gretap interface created on a device with a standard
+1500 mtu.
 
-Signed-off-by: Kent Overstreet <kmo@daterainc.com>
+This fix is based on the fact that the tunnel mtu is already adjusted by
+dev->hard_header_len so it would make sense that any packets being compared
+against that mtu should also be adjusted by hard_header_len and the tunnel
+header instead of just the tunnel header.
+
+Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+Reported-by: Cong Wang <amwang@redhat.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/md/bcache/btree.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/ip_tunnel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -1419,8 +1419,10 @@ static void btree_gc_start(struct cache_
- 	for_each_cache(ca, c, i)
- 		for_each_bucket(b, ca) {
- 			b->gc_gen = b->gen;
--			if (!atomic_read(&b->pin))
-+			if (!atomic_read(&b->pin)) {
- 				SET_GC_MARK(b, GC_MARK_RECLAIMABLE);
-+				SET_GC_SECTORS_USED(b, 0);
-+			}
- 		}
+--- a/net/ipv4/ip_tunnel.c
++++ b/net/ipv4/ip_tunnel.c
+@@ -490,7 +490,7 @@ static int tnl_update_pmtu(struct net_de
+ 			    struct rtable *rt, __be16 df)
+ {
+ 	struct ip_tunnel *tunnel = netdev_priv(dev);
+-	int pkt_size = skb->len - tunnel->hlen;
++	int pkt_size = skb->len - tunnel->hlen - dev->hard_header_len;
+ 	int mtu;
  
- 	for (d = c->devices;
+ 	if (df)
 
 
