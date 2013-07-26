@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759223Ab3GZRbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:31:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28738 "EHLO mx1.redhat.com"
+	id S1759310Ab3GZRbP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758267Ab3GZRbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:31:05 -0400
-Date: Fri, 26 Jul 2013 19:25:43 +0200
+	id S1758267Ab3GZRbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:31:12 -0400
+Date: Fri, 26 Jul 2013 19:25:51 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
@@ -21,9 +21,9 @@ Cc: Alexander Z Lam <azl@google.com>,
         Vaibhav Nagarnaik <vnagarnaik@google.com>,
         "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 4/6] tracing: Change f_start() to take event_mutex and
-	verify i_private != NULL
-Message-ID: <20130726172543.GA3622@redhat.com>
+Subject: [PATCH v2 6/6] tracing: Change remove_event_file_dir() to clear
+	"d_subdirs"->i_private
+Message-ID: <20130726172551.GA3632@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -33,82 +33,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trace_format_open() and trace_format_seq_ops are racy, nothing
-protects ftrace_event_call from trace_remove_event_call().
+Change remove_event_file_dir() to clear ->i_private for every
+file we are going to remove.
 
-Change f_start() to take event_mutex and verify i_private != NULL,
-change f_stop() to drop this lock.
+tracing_open_generic_file() and tracing_release_generic_file()
+can go away, ftrace_enable_fops and ftrace_event_filter_fops()
+use tracing_open_generic() but only to check tracing_disabled.
 
-This fixes nothing, but now we can change debugfs_remove("format")
-callers to nullify ->i_private and fix the the problem.
+This fixes all races with event_remove() or instance_delete().
+f_op->read/write/whatever can never use the freed file/call,
+all event/* files were changed to check and use ->i_private
+under event_mutex.
 
-Note: the usage of event_mutex is sub-optimal but simple, we can
-change this later.
+Note: this doesn't not fix other problems, event_remove() can
+destroy the active ftrace_event_call, we need more changes but
+those changes are completely orthogonal.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/trace/trace_events.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+ kernel/trace/trace_events.c |   41 +++++++++--------------------------------
+ 1 files changed, 9 insertions(+), 32 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index b5144c4..3de2aca 100644
+index 2a4f68a..1112fa0 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -839,7 +839,7 @@ enum {
+@@ -428,42 +428,20 @@ static void *event_file_data(struct file *filp)
  
- static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+ static void remove_event_file_dir(struct ftrace_event_file *file)
  {
--	struct ftrace_event_call *call = m->private;
-+	struct ftrace_event_call *call = event_file_data(m->private);
- 	struct list_head *common_head = &ftrace_common_fields;
- 	struct list_head *head = trace_get_fields(call);
- 	struct list_head *node = v;
-@@ -871,7 +871,7 @@ static void *f_next(struct seq_file *m, void *v, loff_t *pos)
- 
- static int f_show(struct seq_file *m, void *v)
- {
--	struct ftrace_event_call *call = m->private;
-+	struct ftrace_event_call *call = event_file_data(m->private);
- 	struct ftrace_event_field *field;
- 	const char *array_descriptor;
- 
-@@ -924,6 +924,11 @@ static void *f_start(struct seq_file *m, loff_t *pos)
- 	void *p = (void *)FORMAT_HEADER;
- 	loff_t l = 0;
- 
-+	/* ->stop() is called even if ->start() fails */
-+	mutex_lock(&event_mutex);
-+	if (!event_file_data(m->private))
-+		return ERR_PTR(-ENODEV);
++	struct dentry *dir = file->dir;
++	struct dentry *child;
 +
- 	while (l < *pos && p)
- 		p = f_next(m, p, &l);
- 
-@@ -932,6 +937,7 @@ static void *f_start(struct seq_file *m, loff_t *pos)
- 
- static void f_stop(struct seq_file *m, void *p)
- {
-+	mutex_unlock(&event_mutex);
++	/* ->i_mutex is not needed, nobody can create/remove a file */
++	list_for_each_entry(child, &dir->d_subdirs, d_u.d_child)
++		child->d_inode->i_private = NULL;
++
+ 	list_del(&file->list);
+-	debugfs_remove_recursive(file->dir);
++	debugfs_remove_recursive(dir);
+ 	remove_subsystem(file->system);
+ 	kmem_cache_free(file_cachep, file);
  }
  
- static const struct seq_operations trace_format_seq_ops = {
-@@ -943,7 +949,6 @@ static const struct seq_operations trace_format_seq_ops = {
+ /*
+- * Open and update trace_array ref count.
+- * Must have the current trace_array passed to it.
+- */
+-static int tracing_open_generic_file(struct inode *inode, struct file *filp)
+-{
+-	struct ftrace_event_file *file = inode->i_private;
+-	struct trace_array *tr = file->tr;
+-	int ret;
+-
+-	if (trace_array_get(tr) < 0)
+-		return -ENODEV;
+-
+-	ret = tracing_open_generic(inode, filp);
+-	if (ret < 0)
+-		trace_array_put(tr);
+-	return ret;
+-}
+-
+-static int tracing_release_generic_file(struct inode *inode, struct file *filp)
+-{
+-	struct ftrace_event_file *file = inode->i_private;
+-	struct trace_array *tr = file->tr;
+-
+-	trace_array_put(tr);
+-
+-	return 0;
+-}
+-
+-/*
+  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
+  */
+ static int
+@@ -1277,10 +1255,9 @@ static const struct file_operations ftrace_set_event_fops = {
+ };
  
- static int trace_format_open(struct inode *inode, struct file *file)
- {
--	struct ftrace_event_call *call = inode->i_private;
- 	struct seq_file *m;
- 	int ret;
+ static const struct file_operations ftrace_enable_fops = {
+-	.open = tracing_open_generic_file,
++	.open = tracing_open_generic,
+ 	.read = event_enable_read,
+ 	.write = event_enable_write,
+-	.release = tracing_release_generic_file,
+ 	.llseek = default_llseek,
+ };
  
-@@ -952,7 +957,7 @@ static int trace_format_open(struct inode *inode, struct file *file)
- 		return ret;
- 
- 	m = file->private_data;
--	m->private = call;
-+	m->private = file;
- 
- 	return 0;
- }
 -- 
 1.5.5.1
 
