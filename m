@@ -1,85 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758535Ab3GZK2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:28:51 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:61960 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758214Ab3GZK2u (ORCPT
+	id S1758462Ab3GZK3P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:29:15 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:54823 "EHLO
+	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755299Ab3GZK3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:28:50 -0400
+	Fri, 26 Jul 2013 06:29:12 -0400
+Date: Fri, 26 Jul 2013 06:28:02 -0400 (EDT)
+From: John Kacur <jkacur@redhat.com>
+To: James Bottomley <jbottomley@parallels.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Clark Williams <williams@redhat.com>, linux-rt-users@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Message-ID: <766237766.6462824.1374834482391.JavaMail.root@redhat.com>
+In-Reply-To: <1374796568.1952.43.camel@dabdike>
+References: <alpine.LFD.2.03.1307252312310.28787@tycho> <1374796568.1952.43.camel@dabdike>
+Subject: Re: hpsa - BUG: using smp_processor_id() in preemptible [00000000
+ 00000000] code: kworker/u:0/6
 MIME-Version: 1.0
-In-Reply-To: <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-Date: Fri, 26 Jul 2013 15:58:49 +0530
-Message-ID: <CAKohpokTqL8QPFrM9OQJvC78iM92XR+KOkFSZXpWzesa7Uc9sA@mail.gmail.com>
-Subject: Re: [PATCH v6 0/8] cpufreq:boost: CPU Boost mode support
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.3_GA_5664 (ZimbraWebClient - FF21 (Linux)/8.0.3_GA_5664)
+Thread-Topic: hpsa - BUG: using smp_processor_id() in preemptible [00000000
+ 00000000] code: kworker/u:0/6
+Thread-Index: AQHOiX6R9uBZuwzAn0qsFAGkrxWQgJl2h2sAE2YV50E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> This patch series introduces support for CPU overclocking technique
-> called Boost.
->
-> It is a follow up of a LAB governor proposal. Boost is a LAB component:
-> http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
->
-> Boost unifies hardware based solution (e.g. Intel Nehalem) with
-> software oriented one (like the one done at Exynos).
-> For this reason cpufreq/freq_table code has been reorganized to include
-> common code.
->
-> Important design decisions:
-> - Boost related code is compiled-in unconditionally to cpufreq core and
->   disabled by default. The cpufreq_driver is responsibile for setting
->   boost_supported flag and providing set_boost callback(if HW support
->   is needed). For software managed boost, special Kconfig flag -
->   CONFIG_CPU_FREQ_BOOST_SW has been defined. It will be selected only
->   when a target platform has thermal framework properly configured.
->
-> - struct cpufreq_driver has been extended with boost related fields:
->         -- boost_supported - when driver supports boosting
->         -- boost_enabled - boost state
->         -- set_boost - callback to function, which is necessary to
->            enable/disable boost
->
-> - Boost sysfs attribute (/sys/devices/system/cpu/cpufreq/boost) is visible
->   _only_ when cpufreq driver supports Boost.
->
-> - No special spin_lock for Boost was created. The one from cpufreq core
->   was reused.
->
-> - All available policies are now stored in a list.
->
-> - The Boost code doesn't rely on any policy. When boost state is changed,
->   then the policy list is iterated and proper adjustements are done.
->
-> - To improve safety level, the thermal framework is also extended to disable
->   software boosting, when thermal trip point is reached. Then it starts
->   monitoring target temperature to evaluate if boost can be enabled
->   again. This emulates behaviour similar to HW managed boost (like x86)
->
-> New patches for v6:
-> cpufreq:exynos4x12: Change L0 driver data to CPUFREQ_BOOST_FREQ
->
-> Tested at HW:
->        Exynos 4412 3.11-rc1 Linux
->        Intel Core i7-3770 3.11-rc1 Linux
 
-I am done with review of this patchset now and should say pretty much
-comfortable with it now..
+
+----- Original Message -----
+> [Adding missing cc to linux-scsi]
+> On Thu, 2013-07-25 at 23:33 +0200, John Kacur wrote:
+> > Hi
+> > 
+> > We're seeing this on a 3.6 kernel with the real-time patch applied, but it
+> > looks like it is relevant with the real-time patch in the latest kernel
+
+This should read, "it looks like it is relevant WITHOUT the real-time patch in the latest kernel".
+
+
+> > too.
+> > 
+> > [   49.688847] hpsa 0000:03:00.0: hpsa0: <0x323a> at IRQ 67 using DAC
+> > [   49.749928] scsi0 : hpsa
+> > [   49.784437] BUG: using smp_processor_id() in preemptible [00000000
+> > 00000000] code: kworker/u:0/6
+> > [   49.784465] caller is enqueue_cmd_and_start_io+0x5a/0x100 [hpsa]
+> > [   49.784468] Pid: 6, comm: kworker/u:0 Not tainted
+> > 3.6.11.5-rt37.52.el6rt.x86_64.debug #1
+> > [   49.784471] Call Trace:
+> > [   49.784512]  [<ffffffff812abe83>] debug_smp_processor_id+0x123/0x150
+> > [   49.784520]  [<ffffffffa009043a>] enqueue_cmd_and_start_io+0x5a/0x100
+> > [hpsa]
+> > [   49.784529]  [<ffffffffa00905cb>]
+> > hpsa_scsi_do_simple_cmd_core+0xeb/0x110 [hpsa]
+> > [   49.784537]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+> > [   49.784544]  [<ffffffff812b09c8>] ? swiotlb_dma_mapping_error+0x18/0x30
+> > [   49.784553]  [<ffffffffa0090701>]
+> > hpsa_scsi_do_simple_cmd_with_retry+0x91/0x280 [hpsa]
+> > [   49.784562]  [<ffffffffa0093558>]
+> > hpsa_scsi_do_report_luns.clone.2+0xd8/0x130 [hpsa]
+> > [   49.784571]  [<ffffffffa00935ea>]
+> > hpsa_gather_lun_info.clone.3+0x3a/0x1a0 [hpsa]
+> > [   49.784580]  [<ffffffffa00963df>] hpsa_update_scsi_devices+0x11f/0x4f0
+> > [hpsa]
+> > [   49.784592]  [<ffffffff81592019>] ? sub_preempt_count+0xa9/0xe0
+> > [   49.784601]  [<ffffffffa00968ad>] hpsa_scan_start+0xfd/0x150 [hpsa]
+> > [   49.784613]  [<ffffffff8158cba8>] ? rt_spin_lock_slowunlock+0x78/0x90
+> > [   49.784626]  [<ffffffff813b04d7>] do_scsi_scan_host+0x37/0xa0
+> > [   49.784632]  [<ffffffff813b05da>] do_scan_async+0x1a/0x30
+> > [   49.784643]  [<ffffffff8107c4ab>] async_run_entry_fn+0x9b/0x1d0
+> > [   49.784655]  [<ffffffff8106ae92>] process_one_work+0x1f2/0x620
+> > [   49.784661]  [<ffffffff8106ae20>] ? process_one_work+0x180/0x620
+> > [   49.784668]  [<ffffffff8106d4fe>] ? worker_thread+0x5e/0x3a0
+> > [   49.784674]  [<ffffffff8107c410>] ? async_schedule+0x20/0x20
+> > [   49.784681]  [<ffffffff8106d5d3>] worker_thread+0x133/0x3a0
+> > [   49.784688]  [<ffffffff8106d4a0>] ? manage_workers+0x190/0x190
+> > [   49.784696]  [<ffffffff81073236>] kthread+0xa6/0xb0
+> > [   49.784707]  [<ffffffff815970a4>] kernel_thread_helper+0x4/0x10
+> > [   49.784715]  [<ffffffff81082a7c>] ? finish_task_switch+0x8c/0x110
+> > [   49.784721]  [<ffffffff8158e44b>] ? _raw_spin_unlock_irq+0x3b/0x70
+> > [   49.784727]  [<ffffffff8158e85d>] ? retint_restore_args+0xe/0xe
+> > [   49.784734]  [<ffffffff81073190>] ? kthreadd+0x1e0/0x1e0
+> > [   49.784739]  [<ffffffff815970a0>] ? gs_change+0xb/0xb
+> > 
+> > -------
+> > 
+> > When I look at the code I see this call chain
+> > enqueue_cmd_and_start_io()->
+> > 	set_performant_mode()->
+> > 		smp_processor_id()
+> > Which if you have debugging enabled calls debug_processor_id() and
+> > triggers the warning.
+> > 
+> > I'm not very familiar with the hpsa code, so I'm not entirely sure what
+> > the purpose of this line is
+> > 
+> > c->Header.ReplyQueue = smp_processor_id() % h->nreply_queues;
+> > 
+> > Is the purpose to simply try to get a range of ReplyQueue numbers, but
+> > somewhat arbitrary? Or is it necessary that the current processor_id
+> > is used? If it is the former, and you're not accessing per cpu structures,
+> > or pinning a cpu, or anything like that then I would think it is safe to
+> > change this to a raw_smp_processor_id() to get rid of a false positive
+> > warning.
+> > 
+> > diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+> > index 7f4f790..4e19267 100644
+> > --- a/drivers/scsi/hpsa.c
+> > +++ b/drivers/scsi/hpsa.c
+> > @@ -583,7 +583,7 @@ static void set_performant_mode(struct ctlr_info *h,
+> > struct CommandList *c)
+> >  		c->busaddr |= 1 | (h->blockFetchTable[c->Header.SGList] << 1);
+> >  		if (likely(h->msix_vector))
+> >  			c->Header.ReplyQueue =
+> > -				smp_processor_id() % h->nreply_queues;
+> > +				raw_smp_processor_id() % h->nreply_queues;
+> >  	}
+> >  }
+> >  
+> > 
+> > Thanks
+> > 
+> > John Kacur
+> 
+> 
+> 
