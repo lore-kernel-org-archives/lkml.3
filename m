@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933752Ab3GZVeH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:34:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50738 "EHLO
+	id S933535Ab3GZVeF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:34:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50831 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759950Ab3GZUsk (ORCPT
+	with ESMTP id S1759953Ab3GZUsl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:40 -0400
+	Fri, 26 Jul 2013 16:48:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kent Overstreet <kmo@daterainc.com>
-Subject: [ 51/79] bcache: Fix a sysfs splat on shutdown
-Date: Fri, 26 Jul 2013 13:47:41 -0700
-Message-Id: <20130726204727.905469344@linuxfoundation.org>
+Subject: [ 52/79] bcache: Fix GC_SECTORS_USED() calculation
+Date: Fri, 26 Jul 2013 13:47:42 -0700
+Message-Id: <20130726204728.056200551@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,59 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kent Overstreet <kmo@daterainc.com>
 
-commit c9502ea4424b31728703d113fc6b30bfead14633 upstream.
+commit 29ebf465b9050f241c4433a796a32e6c896a9dcd upstream.
 
-If we stopped a bcache device when we were already detaching (or
-something like that), bcache_device_unlink() would try to remove a
-symlink from sysfs that was already gone because the bcache dev kobject
-had already been removed from sysfs.
+Part of the job of garbage collection is to add up however many sectors
+of live data it finds in each bucket, but that doesn't work very well if
+it doesn't reset GC_SECTORS_USED() when it starts. Whoops.
 
-So keep track of whether we've removed stuff from sysfs.
+This wouldn't have broken anything horribly, but allocation tries to
+preferentially reclaim buckets that are mostly empty and that's not
+gonna work with an incorrect GC_SECTORS_USED() value.
 
 Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/bcache/bcache.h |    1 +
- drivers/md/bcache/super.c  |   11 ++++++++++-
- 2 files changed, 11 insertions(+), 1 deletion(-)
+ drivers/md/bcache/btree.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/md/bcache/bcache.h
-+++ b/drivers/md/bcache/bcache.h
-@@ -437,6 +437,7 @@ struct bcache_device {
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -1419,8 +1419,10 @@ static void btree_gc_start(struct cache_
+ 	for_each_cache(ca, c, i)
+ 		for_each_bucket(b, ca) {
+ 			b->gc_gen = b->gen;
+-			if (!atomic_read(&b->pin))
++			if (!atomic_read(&b->pin)) {
+ 				SET_GC_MARK(b, GC_MARK_RECLAIMABLE);
++				SET_GC_SECTORS_USED(b, 0);
++			}
+ 		}
  
- 	/* If nonzero, we're detaching/unregistering from cache set */
- 	atomic_t		detaching;
-+	int			flush_done;
- 
- 	atomic_long_t		sectors_dirty;
- 	unsigned long		sectors_dirty_gc;
---- a/drivers/md/bcache/super.c
-+++ b/drivers/md/bcache/super.c
-@@ -704,7 +704,8 @@ static void bcache_device_detach(struct
- 		atomic_set(&d->detaching, 0);
- 	}
- 
--	bcache_device_unlink(d);
-+	if (!d->flush_done)
-+		bcache_device_unlink(d);
- 
- 	d->c->devices[d->id] = NULL;
- 	closure_put(&d->c->caching);
-@@ -1016,6 +1017,14 @@ static void cached_dev_flush(struct clos
- 	struct cached_dev *dc = container_of(cl, struct cached_dev, disk.cl);
- 	struct bcache_device *d = &dc->disk;
- 
-+	mutex_lock(&bch_register_lock);
-+	d->flush_done = 1;
-+
-+	if (d->c)
-+		bcache_device_unlink(d);
-+
-+	mutex_unlock(&bch_register_lock);
-+
- 	bch_cache_accounting_destroy(&dc->accounting);
- 	kobject_del(&d->kobj);
- 
+ 	for (d = c->devices;
 
 
