@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758160Ab3GZCG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:06:59 -0400
-Received: from us02smtp1.synopsys.com ([198.182.60.75]:47313 "EHLO
-	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757049Ab3GZCG6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:06:58 -0400
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] usb: dwc3: core: modify IO memory resource after
- deferred probe completes
-Thread-Topic: [PATCH] usb: dwc3: core: modify IO memory resource after
- deferred probe completes
-Thread-Index: AQHOiVPvkmnt8PfOUEep6UDMuSIK7Jl1y1AggACJGwD//92QsA==
-Date: Fri, 26 Jul 2013 02:06:55 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030458DE12C9@US01WEMBX2.internal.synopsys.com>
-References: <1374769590-14491-1-git-send-email-iivanov@mm-sol.com>
- <A2CA0424C0A6F04399FB9E1CD98E030458DE112E@US01WEMBX2.internal.synopsys.com>
- <20130725205224.GA12209@radagast>
-In-Reply-To: <20130725205224.GA12209@radagast>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.9.64.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758251Ab3GZCJj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:09:39 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:16412 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756932Ab3GZCJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 22:09:36 -0400
+X-IronPort-AV: E=Sophos;i="4.89,747,1367942400"; 
+   d="scan'208";a="8028919"
+Message-ID: <51F1DB45.90905@cn.fujitsu.com>
+Date: Fri, 26 Jul 2013 10:13:25 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: clear workers of a pool after the CPU is offline
+References: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com> <20130725153121.GF26107@mtj.dyndns.org>
+In-Reply-To: <20130725153121.GF26107@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/26 10:07:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/26 10:07:29,
+	Serialize complete at 2013/07/26 10:07:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Thursday, July 25, 2013 1:52 PM
+On 07/25/2013 11:31 PM, Tejun Heo wrote:
+> Hello, Lai.
 > 
-> On Thu, Jul 25, 2013 at 07:46:58PM +0000, Paul Zimmerman wrote:
-> > > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-> > > index 607bef8..50c833f 100644
-> > > --- a/drivers/usb/dwc3/core.c
-> > > +++ b/drivers/usb/dwc3/core.c
-> > > @@ -384,21 +384,6 @@ static int dwc3_probe(struct platform_device *pdev)
-> > >  		dev_err(dev, "missing memory resource\n");
-> > >  		return -ENODEV;
-> > >  	}
-> > > -	dwc->xhci_resources[0].start = res->start;
-> > > -	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
-> > > -					DWC3_XHCI_REGS_END;
-> > > -	dwc->xhci_resources[0].flags = res->flags;
-> > > -	dwc->xhci_resources[0].name = res->name;
-> > > -
-> > > -	res->start += DWC3_GLOBALS_REGS_START;
-> > > -
-> > > -	 /*
-> > > -	  * Request memory region but exclude xHCI regs,
-> > > -	  * since it will be requested by the xhci-plat driver.
-> > > -	  */
-> > > -	regs = devm_ioremap_resource(dev, res);
-> > > -	if (IS_ERR(regs))
-> > > -		return PTR_ERR(regs);
-> > >
-> > >  	if (node) {
-> > >  		dwc->maximum_speed = of_usb_get_maximum_speed(node);
-> > > @@ -452,6 +437,22 @@ static int dwc3_probe(struct platform_device *pdev)
-> > >  		return -EPROBE_DEFER;
-> > >  	}
-> > >
-> > > +	dwc->xhci_resources[0].start = res->start;
-> > > +	dwc->xhci_resources[0].end = dwc->xhci_resources[0].start +
-> > > +					DWC3_XHCI_REGS_END;
-> > > +	dwc->xhci_resources[0].flags = res->flags;
-> > > +	dwc->xhci_resources[0].name = res->name;
-> > > +
-> > > +	res->start += DWC3_GLOBALS_REGS_START;
-> >
-> > Ick. The driver is modifying the struct resource passed to it by the
+> On Thu, Jul 25, 2013 at 06:52:02PM +0800, Lai Jiangshan wrote:
+>> The unbound pools and their workers can be destroyed/cleared
+>> when their refcnt become zero. But the cpu pool can't be destroyed
+>> due to they are always referenced, their refcnt are always > 0.
+>>
+>> We don't want to destroy the cpu pools, but we want to destroy
+>> the workers of the pool when the pool is full idle after the cpu
+>> is offline. This is the default behavior in old days until
+>> we removed the trustee_thread().
+>>
+>> We need to find a new way to restore this behavior,
+>> We add offline_pool() and POOL_OFFLINE flag to do so.
 > 
-> heh...
+> Hmmm... if I'm not confused, now the cpu pools just behave like a
+> normal unbound pool when the cpu goes down,
+
+cpu pools are always referenced, they don't behave like unbound pool.
+
+> which means that the idle
+> cpu workers will exit once idle timeout is reached, right? 
+
+No, no code to force the cpu workers quit currently.
+you can just offline a cpu to see what happened to the workers.
+
+> I really
+> don't think it'd be worthwhile to add extra logic to accelerate the
+> process.
 > 
-> > platform code? That seems like a layering violation, and is fragile as
-> > hell. In addition to this bug, what would happen if the struct resource
-> > was declared 'const'?
+> Note that there actually are benefits to doing it asynchronously as
+> CPUs go up and down very frequently on mobile platforms and destroying
+> idle workers as soon as possible would just mean that we'd be doing a
+> lot of work which isn't necessary.  I mean, we even grew an explicit
+> mechanism to park kthreads to avoid repeatedly creating and destroying
+> per-cpu kthreads as cpus go up and down.  I don't see any point in
+> adding code to go the other direction.
 > 
-> nothing would happen if it was declared const since platform_add_device
-> makes a copy of what was declared, and that's always non-const.
-
-OK.
-
-> Also, this is not *modifying* what was passed, just skipping the xHCI
-> address space so we don't request_mem_region() an area we won't really
-> handle and prevent xhci-hcd.ko from probing.
-
-Hmm? platform_get_resource() returns a pointer to an entry in the
-platform_device's resource[] array. And "res->start +=" modifies the
-entry pointed at. If it didn't, the bug fixed by this patch wouldn't
-have happened.
-
-Are you sure this code will work OK if you build the driver as a module,
-modprobe it, rmmod it, and then modprobe it again? Seems like it won't,
-unless the dev->resource[] array gets reinitialized in between somehow.
-
-All this assumes I'm reading the code correctly, of course. If I'm not,
-then never mind :)
-
--- 
-Paul
+> Thanks.
+> 
 
