@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab3GZPWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:22:23 -0400
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:36538 "EHLO
+	id S932532Ab3GZPXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:23:07 -0400
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:45493 "EHLO
 	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932370Ab3GZPWS (ORCPT
+	with ESMTP id S932384Ab3GZPWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:22:18 -0400
-X-Greylist: delayed 540 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 11:22:18 EDT
+	Fri, 26 Jul 2013 11:22:21 -0400
 From: Mark Langsdorf <mark.langsdorf@calxeda.com>
 To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
         devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         swarren@wwwdotorg.org, ian.campbell@citrix.com,
         rob.herring@calxeda.com
 Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH 2/5] sata highbank: enable 64-bit DMA mask when using LPAE
-Date: Fri, 26 Jul 2013 10:11:55 -0500
-Message-Id: <1374851518-4802-2-git-send-email-mark.langsdorf@calxeda.com>
+Subject: [PATCH 3/5] devicetree: create a separate binding description for sata_highbank
+Date: Fri, 26 Jul 2013 10:11:56 -0500
+Message-Id: <1374851518-4802-3-git-send-email-mark.langsdorf@calxeda.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
 References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
@@ -24,28 +23,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <rob.herring@calxeda.com>
+The Calxeda sata_highbank driver has been adding its descriptions to the
+ahci driver. Separate them properly.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 ---
- drivers/ata/sata_highbank.c | 3 +++
- 1 file changed, 3 insertions(+)
+ .../devicetree/bindings/ata/ahci-platform.txt      | 14 ++--------
+ .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
+ 2 files changed, 34 insertions(+), 12 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
 
-diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
-index e9a4f46..8b40025 100644
---- a/drivers/ata/sata_highbank.c
-+++ b/drivers/ata/sata_highbank.c
-@@ -479,6 +479,9 @@ static int ahci_highbank_probe(struct platform_device *pdev)
- 	if (hpriv->cap & HOST_CAP_PMP)
- 		pi.flags |= ATA_FLAG_PMP;
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 3ec0c5c..14d7b22 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
+ Each SATA controller should have its own node.
  
-+	if (hpriv->cap & HOST_CAP_64)
-+		dma_set_coherent_mask(dev, DMA_BIT_MASK(64));
+ Required properties:
+-- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
++- compatible        : compatible list, contains "snps,spear-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
+ 
+ Optional properties:
+-- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
+-			SATA port to a combophy and a lane within that
+-			combophy
+-- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
+-			which indicates that the driver supports SGPIO
+-			indicator lights using the indicated GPIOs
+-- calxeda,led-order : a u32 array that map port numbers to offsets within the
+-			SGPIO bitstream.
+ - dma-coherent      : Present if dma operations are coherent
+ 
+ Example:
+         sata@ffe08000 {
+-		compatible = "calxeda,hb-ahci";
++		compatible = "snps,spear-ahci";
+                 reg = <0xffe08000 0x1000>;
+                 interrupts = <115>;
+-		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
+-					&combophy0 2 &combophy0 3>;
+ 
+         };
+diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+new file mode 100644
+index 0000000..aa1b798
+--- /dev/null
++++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+@@ -0,0 +1,32 @@
++* Calxeda AHCI SATA Controller
 +
- 	/* CAP.NP sometimes indicate the index of the last enabled
- 	 * port, at other times, that of the last possible port, so
- 	 * determining the maximum port number requires looking at
++SATA nodes are defined to describe on-chip Serial ATA controllers.
++The Calxeda SATA controller mostly conforms to the AHCI interface
++with some special extensions to add functionality.
++Each SATA controller should have its own node.
++
++Required properties:
++- compatible        : compatible list, contains "calxeda,hb-ahci"
++- interrupts        : <interrupt mapping for SATA IRQ>
++- reg               : <registers mapping>
++
++Optional properties:
++- dma-coherent      : Present if dma operations are coherent
++- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
++			SATA port to a combophy and a lane within that
++			combophy
++- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
++			which indicates that the driver supports SGPIO
++			indicator lights using the indicated GPIOs
++- calxeda,led-order : a u32 array that map port numbers to offsets within the
++			SGPIO bitstream.
++
++Example:
++        sata@ffe08000 {
++		compatible = "calxeda,hb-ahci";
++                reg = <0xffe08000 0x1000>;
++                interrupts = <115>;
++		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
++					&combophy0 2 &combophy0 3>;
++
++        };
 -- 
 1.8.1.2
 
