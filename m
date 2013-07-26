@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757218Ab3GZAbc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 20:31:32 -0400
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:54044 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560Ab3GZAbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 20:31:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
-References: <1374770269-3223-1-git-send-email-jbarnes@virtuousgeek.org>
-	<20130725200551.GA16719@gmail.com>
-	<5304d042-6f8f-4754-9d19-df62662d19f4@email.android.com>
-Date: Thu, 25 Jul 2013 17:31:29 -0700
-X-Google-Sender-Auth: cYj8cu2sjcxj5BO21sJ1_Wb8dq0
-Message-ID: <CA+55aFyDXkvc7mK2trfHA2Wj9vRu2FkCeZuZVfRvmbak1TqUmA@mail.gmail.com>
-Subject: Re: Ugly patches for stolen reservation
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1757306Ab3GZAgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 20:36:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38797 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756502Ab3GZAgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 20:36:04 -0400
+Date: Fri, 26 Jul 2013 10:35:49 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
+Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
+ SSD)
+Message-ID: <20130726103549.1e6b0b92@notabene.brown>
+In-Reply-To: <009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com>
+References: <000501ce85fc$d3a60a10$7af21e30$@lucidpixels.com>
+	<20130722090257.2faa0874@notabene.brown>
+	<009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/byXCCVTfDFfjBjDaqQ+vmLC"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 3:42 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> So the bootloader is just as likely to step on things... what happens when/if it does?
+--Sig_/byXCCVTfDFfjBjDaqQ+vmLC
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-This isn't a new problem. We've had this "firmware tables don't show
-all devices" issue before.
+On Thu, 25 Jul 2013 19:10:50 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
+wrote:
 
-The only odd thing about this one is how the quirk in question uses
-"e820_add_region()" instead of just adding things to the MMIO list.
-And I think that's actually likely a mistake.
+>=20
+>=20
+> -----Original Message-----
+> From: NeilBrown [mailto:neilb@suse.de]=20
+> Sent: Sunday, July 21, 2013 7:03 PM
+> To: Justin Piszcz
+> Cc: linux-kernel@vger.kernel.org; linux-raid@vger.kernel.org
+> Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
+> SSD)
+>=20
+> > Hi Justin,
+> >  this is a known bug.  Fix has been accepted into mainline for 3.11-rc2.
+> >  Hopefully it will get into 3.10.3 (too late for 3.10.2).
+>=20
+> > NeilBrown
+>=20
+>=20
+> Hi Neil,
+>=20
+> Did the fix by chance make it into 3.10.3?
 
-So Jesse, why don't you do what the other quirks do, and claim an
-actual MMIO resource? If you make it a real resource, you'll get to
-use fancy things like REAL NAMES, and actually document it. With
-human-readable strings.
+No, it looks like it missed again.  I gather there was a large inflow of
+patches for -stable in the 3.11-rc1 merge window and Greg has been processi=
+ng
+them in batches.  Hopefully in 3.10.4.
 
-See quirk_io_region() in drivers/pci/quirks.c for example. The same
-code except for IORESOURCE_MEM should do a lovely job..
+The relevant patch is commit 30bc9b53878a9921b02e3 in mainline.
 
-And even *if* it's already marked reserved in the e820 table, it just
-looks nice in /proc/iomem.
+NeilBrown
 
-Hmm?
 
-           Linus
+
+>=20
+> The same issue occurs with 3.10.3 for me as well:
+>=20
+> Every 1.0s: cat /proc/mdstat                            Thu Jul 25 19:09:=
+46
+> 2013
+>=20
+> Personalities : [raid1]
+> md1 : active raid1 sdc2[0] sdb2[1]
+>       233381376 blocks [2/2] [UU]
+>       [>....................]  resync =3D  0.0% (151488/233381376)
+> finish=3D32045.3m
+> in speed=3D121K/sec
+>=20
+> md0 : active raid1 sdc1[0] sdb1[1]
+>       1048512 blocks [2/2] [UU]
+>=20
+> unused devices: <none>
+>=20
+>=20
+>=20
+> Justin.
+
+
+--Sig_/byXCCVTfDFfjBjDaqQ+vmLC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUfHEZTnsnt1WYoG5AQI+KxAAtvfmsjEd5bUn2qiAywJxNiwG0gFpbj7i
+dT/RcsTYkMo+DikBVM8GLzTJbttxAXYoQhSPOKn4G3SaeevYqvRSecpOELlh6d+M
+bImNTDFVuTxHUQh8qhDmpzTd7/cw4WyD6l6tmkf08WrZ1gXOgAiaVpaNajjbTkhc
+QSkcJU5FAunIup3iwYUrHkPFj/5mSq+n5FHUV11B6Yn7+mxa7CqD+6phByDG/ksS
+VWAcKl3ahc9Q4hnT7odUGu7e69sHBShMYHRUX4imGDL8nH96PJGznOdo58a9mSdU
+7hM0LrVvv0nCVpUe8f+sMKhzFxtSm7tBZD7AHQOIz8ZwaVqfgUhOHhww7PeM1aGN
+IdHODvqaxuqq/xDkOlg22IMosU4+9lsvcs+aOew38KYepz+pwdS9bDVTngCQdn7I
+u7vrBQj30VycEGKZGquT8eQAUYcCoixPGYh8jL7yRX3dMa5OAzp6SIqXG7320Ws4
+XIYyGiUwo1OUuUMSKxQMf54lh6ygOF1Hw63rFM1H1MuoXXIx7evjYP8ffJwaTpvh
+ImxwyD2pVlAUEZW+vhw6ld/2JktR5EGJYCg3cH6PuD2gLEqX2qQENGKmAdinB8ww
+aFW/N749Tk24UMe0x4WHlqXNxcYKB4M7GaiHpTlppwxm8rgB80pbTvjjf81CPEQO
+6M5/mXJZ4kQ=
+=J/Qj
+-----END PGP SIGNATURE-----
+
+--Sig_/byXCCVTfDFfjBjDaqQ+vmLC--
