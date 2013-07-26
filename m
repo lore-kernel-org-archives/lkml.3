@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab3GZU67 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:58:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51453 "EHLO
+	id S1760276Ab3GZU6z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:58:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760067Ab3GZU6i (ORCPT
+	with ESMTP id S1760185Ab3GZU6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:58:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        xen-devel@lists.xen.org
-Subject: [ 43/45] hrtimers: Move SMP function call to thread context
-Date: Fri, 26 Jul 2013 13:58:03 -0700
-Message-Id: <20130726205659.675054245@linuxfoundation.org>
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [ 42/45] tracing: Fix irqs-off tag display in syscall tracing
+Date: Fri, 26 Jul 2013 13:58:02 -0700
+Message-Id: <20130726205659.569063085@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -31,95 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
 
-commit 5ec2481b7b47a4005bb446d176e5d0257400c77d upstream.
+commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream.
 
-smp_call_function_* must not be called from softirq context.
+All syscall tracing irqs-off tags are wrong, the syscall enter entry doesn't
+disable irqs.
 
-But clock_was_set() which calls on_each_cpu() is called from softirq
-context to implement a delayed clock_was_set() for the timer interrupt
-handler. Though that almost never gets invoked. A recent change in the
-resume code uses the softirq based delayed clock_was_set to support
-Xens resume mechanism.
+ [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
+ [root@jovi tracing]# cat trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 13/13   #P:2
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+       irqbalance-513   [000] d... 56115.496766: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
+       irqbalance-513   [000] d... 56115.497008: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
+         sendmail-771   [000] d... 56115.827982: sys_open(filename: b770e6d1, flags: 0, mode: 1b6)
 
-linux-next contains a new warning which warns if smp_call_function_*
-is called from softirq context which gets triggered by that Xen
-change.
+The reason is syscall tracing doesn't record irq_flags into buffer.
+The proper display is:
 
-Fix this by moving the delayed clock_was_set() call to a work context.
+ [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
+ [root@jovi tracing]# cat trace
+ # tracer: nop
+ #
+ # entries-in-buffer/entries-written: 14/14   #P:2
+ #
+ #                              _-----=> irqs-off
+ #                             / _----=> need-resched
+ #                            | / _---=> hardirq/softirq
+ #                            || / _--=> preempt-depth
+ #                            ||| /     delay
+ #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+ #              | |       |   ||||       |         |
+       irqbalance-514   [001] ....    46.213921: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
+       irqbalance-514   [001] ....    46.214160: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
+            <...>-920   [001] ....    47.307260: sys_open(filename: 4e82a0c5, flags: 80000, mode: 0)
 
-Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: H. Peter Anvin <hpa@zytor.com>,
-Cc: Konrad Wilk <konrad.wilk@oracle.com>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: xen-devel@lists.xen.org
-Cc: stable@vger.kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Link: http://lkml.kernel.org/r/1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com
+
+Cc: stable@vger.kernel.org # 2.6.35
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/hrtimer.c |   28 +++++++++++++---------------
- 1 file changed, 13 insertions(+), 15 deletions(-)
+ kernel/trace/trace_syscalls.c |   18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -707,17 +707,20 @@ static int hrtimer_switch_to_hres(void)
- 	return 1;
- }
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -304,6 +304,8 @@ void ftrace_syscall_enter(void *ignore,
+ 	struct ring_buffer *buffer;
+ 	int size;
+ 	int syscall_nr;
++	unsigned long irq_flags;
++	int pc;
  
-+static void clock_was_set_work(struct work_struct *work)
-+{
-+	clock_was_set();
-+}
+ 	syscall_nr = syscall_get_nr(current, regs);
+ 	if (syscall_nr < 0)
+@@ -317,8 +319,11 @@ void ftrace_syscall_enter(void *ignore,
+ 
+ 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
+ 
++	local_save_flags(irq_flags);
++	pc = preempt_count();
 +
-+static DECLARE_WORK(hrtimer_work, clock_was_set_work);
-+
- /*
-- * Called from timekeeping code to reprogramm the hrtimer interrupt
-- * device. If called from the timer interrupt context we defer it to
-- * softirq context.
-+ * Called from timekeeping and resume code to reprogramm the hrtimer
-+ * interrupt device on all cpus.
-  */
- void clock_was_set_delayed(void)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	cpu_base->clock_was_set = 1;
--	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
-+	schedule_work(&hrtimer_work);
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+-			sys_data->enter_event->event.type, size, 0, 0);
++			sys_data->enter_event->event.type, size, irq_flags, pc);
+ 	if (!event)
+ 		return;
+ 
+@@ -328,7 +333,8 @@ void ftrace_syscall_enter(void *ignore,
+ 
+ 	if (!filter_current_check_discard(buffer, sys_data->enter_event,
+ 					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
++		trace_current_buffer_unlock_commit(buffer, event,
++						   irq_flags, pc);
  }
  
- #else
-@@ -766,8 +769,10 @@ void hrtimers_resume(void)
- 	WARN_ONCE(!irqs_disabled(),
- 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
+ void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+@@ -338,6 +344,8 @@ void ftrace_syscall_exit(void *ignore, s
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer *buffer;
+ 	int syscall_nr;
++	unsigned long irq_flags;
++	int pc;
  
-+	/* Retrigger on the local CPU */
- 	retrigger_next_event(NULL);
--	timerfd_clock_was_set();
-+	/* And schedule a retrigger for all others */
-+	clock_was_set_delayed();
+ 	syscall_nr = syscall_get_nr(current, regs);
+ 	if (syscall_nr < 0)
+@@ -350,7 +358,8 @@ void ftrace_syscall_exit(void *ignore, s
+ 		return;
+ 
+ 	event = trace_current_buffer_lock_reserve(&buffer,
+-			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
++			sys_data->exit_event->event.type, sizeof(*entry),
++			irq_flags, pc);
+ 	if (!event)
+ 		return;
+ 
+@@ -360,7 +369,8 @@ void ftrace_syscall_exit(void *ignore, s
+ 
+ 	if (!filter_current_check_discard(buffer, sys_data->exit_event,
+ 					  entry, event))
+-		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
++		trace_current_buffer_unlock_commit(buffer, event,
++						   irq_flags, pc);
  }
  
- static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
-@@ -1416,13 +1421,6 @@ void hrtimer_peek_ahead_timers(void)
- 
- static void run_hrtimer_softirq(struct softirq_action *h)
- {
--	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--
--	if (cpu_base->clock_was_set) {
--		cpu_base->clock_was_set = 0;
--		clock_was_set();
--	}
--
- 	hrtimer_peek_ahead_timers();
- }
- 
+ int reg_event_syscall_enter(struct ftrace_event_call *call)
 
 
