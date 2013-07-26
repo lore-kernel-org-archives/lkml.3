@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab3GZUvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:51:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50971 "EHLO
+	id S932695Ab3GZUvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:51:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932517Ab3GZUtF (ORCPT
+	with ESMTP id S932488Ab3GZUtC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:49:05 -0400
+	Fri, 26 Jul 2013 16:49:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luiz Angelo Daros de Luca <luizluca@gmail.com>
-Subject: [ 68/79] usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
-Date: Fri, 26 Jul 2013 13:47:58 -0700
-Message-Id: <20130726204729.913005890@linuxfoundation.org>
+        Enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [ 65/79] usb: serial: option: Add ONYX 3G device support
+Date: Fri, 26 Jul 2013 13:47:55 -0700
+Message-Id: <20130726204729.592115983@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,31 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit 90625070c4253377025878c4e82feed8b35c7116 upstream.
+commit 63b5df963f52ccbab6fabedf05b7ac6b465789a4 upstream.
 
-This adds NetGear Managed Switch M4100 series, M5300 series, M7100 series
-USB ID (0846:0110) to the cp210x driver. Without this, the serial
-adapter is not recognized in Linux. Description was obtained from
-an Netgear Eng.
+This patch adds support for the ONYX 3G device (version 1) from ALFA
+NETWORK.
 
-Signed-off-by: Luiz Angelo Daros de Luca <luizluca@gmail.com>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
+ drivers/usb/serial/option.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -53,6 +53,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x0489, 0xE000) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0489, 0xE003) }, /* Pirelli Broadband S.p.A, DP-L10 SIP/GSM Mobile */
- 	{ USB_DEVICE(0x0745, 0x1000) }, /* CipherLab USB CCD Barcode Scanner 1000 */
-+	{ USB_DEVICE(0x0846, 0x1100) }, /* NetGear Managed Switch M4100 series, M5300 series, M7100 series */
- 	{ USB_DEVICE(0x08e6, 0x5501) }, /* Gemalto Prox-PU/CU contactless smartcard reader */
- 	{ USB_DEVICE(0x08FD, 0x000A) }, /* Digianswer A/S , ZigBee/802.15.4 MAC Device */
- 	{ USB_DEVICE(0x0BED, 0x1100) }, /* MEI (TM) Cashflow-SC Bill/Voucher Acceptor */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -778,6 +778,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC650) },
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
++	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
 
 
