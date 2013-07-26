@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab3GZWZF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:25:05 -0400
-Received: from april.london.02.net ([87.194.255.143]:60950 "EHLO
-	april.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751809Ab3GZWZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:25:03 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 18:25:02 EDT
-Message-ID: <51F2F5D4.50409@baker-net.org.uk>
-Date: Fri, 26 Jul 2013 23:19:00 +0100
-From: Adam Baker <linux@baker-net.org.uk>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1759818Ab3GZW0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:26:33 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:47279 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755960Ab3GZW0c convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 18:26:32 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dIc89bh936eI154dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e1dh906i1155h192ch)
+Date: Fri, 26 Jul 2013 15:26:28 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Mike Turquette <mturquette@linaro.org>
+CC: <monstr@monstr.eu>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Zynq clk fixes
+References: <51F26716.6030701@monstr.eu>
+ <20130726200703.7598.86150@quantum>
+ <a76b3a5d-dadc-43b3-87ee-3c65258c15d7@CO1EHSMHS029.ehs.local>
+ <20130726222501.7598.33060@quantum>
 MIME-Version: 1.0
-To: =?UTF-8?B?TGludXMgTMO8c3Npbmc=?= <linus.luessing@web.de>
-CC: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Cong Wang <amwang@redhat.com>
-Subject: Re: [PATCHv2] bridge: disable snooping if there is no querier
-References: <1374757046-12463-1-git-send-email-linus.luessing@web.de> <1374760580-12920-1-git-send-email-linus.luessing@web.de>
-In-Reply-To: <1374760580-12920-1-git-send-email-linus.luessing@web.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20130726222501.7598.33060@quantum>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <50ea1469-dac2-45e9-938a-60bb6c744d36@TX2EHSMHS041.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/07/13 14:56, Linus Lüssing wrote:
-> If there is no querier on a link then we won't get periodic reports and
-> therefore won't be able to learn about multicast listeners behind ports,
-> potentially leading to lost multicast packets, especially for multicast
-> listeners that joined before the creation of the bridge.
->
-> These lost multicast packets can appear since c5c23260594
-> ("bridge: Add multicast_querier toggle and disable queries by default")
-> in particular.
->
-> With this patch we are flooding multicast packets if our querier is
-> disabled and if we didn't detect any other querier.
->
-> A grace period of the Maximum Response Delay of the querier is added to
-> give multicast responses enough time to arrive and to be learned from
-> before disabling the flooding behaviour again.
->
-> Signed-off-by: Linus Lüssing<linus.luessing@web.de>
+On Fri, Jul 26, 2013 at 03:25:01PM -0700, Mike Turquette wrote:
+> Quoting Sören Brinkmann (2013-07-26 14:11:52)
+> > On Fri, Jul 26, 2013 at 01:07:03PM -0700, Mike Turquette wrote:
+> > > Quoting Michal Simek (2013-07-26 05:09:58)
+> > > > Hi Mike, [cc: Arnd and Olof]
+> > > > 
+> > > > Soren has found two bug fixes in zynq clk code.
+> > > > Can you please add these two patches to your tree?
+> > > > Will be great if you can add them to v3.11.
+> > > > 
+> > > > Arnd, Olof: I expect that all these clock changes should go through Mike.
+> > > > If I am wrong please let me know.
+> > > 
+> > > Looks right to me. Do these fix regressions in the current -rc cycle?
+> > 
+> > I doubt there are real regressions. But since it's still early in
+> > the release cycle and the driver was added in this merge window, I'd prefer
+> > having it hit a release kernel with these fixes included.
+> 
+> I've taken these into clk-fixes and added the following to the changelog
+> for each patch:
+> 
+> "This does not fix a specific regression but the clock driver was merged
+> for 3.11-rc1, so best to fix the known bugs before the release."
 
-If the lack of queries if there is no other querier is unacceptable to 
-the majority of users (and I believe it is) then surely the sensible 
-option is to have the multicast querier toggle enabled by default.
+Thanks.
 
-The toggle was added in the first place because the queries were 
-reported to be generating issues with certain other equipment. This may 
-have been because the queries by default have an invalid IP address 
-(although I have been unable to identify what equipment they caused 
-problems with so can't verify this).
+	Sören
 
-If the only reason to turn the querier off is because it interferes with 
-other equipment then the solution to it being off by default isn't to 
-generate queries in some instances even if it is off but rather to turn 
-it on by default and only turn it off if it causes problems. If 
-multicast_query_use_ifaddr was also enabled by default the the 
-likelihood of the querier causing problems elsewhere should be reduced.
 
-Regards
-
-Adam
