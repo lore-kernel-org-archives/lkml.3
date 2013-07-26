@@ -1,79 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab3GZCt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:49:56 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51692 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756421Ab3GZCty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:49:54 -0400
-Message-ID: <1374806984.2480.21.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [62/85] HID: apple: Add support for the 2013 Macbook Air
-From: Ben Hutchings <ben@decadent.org.uk>
-To: rydberg@euromail.se
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, Jiri Kosina <jkosina@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Date: Fri, 26 Jul 2013 03:49:44 +0100
-In-Reply-To: <20130725065048.GA3586@polaris.bitmath.org>
-References: <lsq.1374674564.753305150@decadent.org.uk>
-	 <lsq.1374674565.974236672@decadent.org.uk>
-	 <20130725065048.GA3586@polaris.bitmath.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-/nkI+9ARRYMKGNSwmPui"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1758271Ab3GZCuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:50:54 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55468 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757036Ab3GZCuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 22:50:51 -0400
+Message-ID: <51F1E39D.2030902@ti.com>
+Date: Thu, 25 Jul 2013 21:49:01 -0500
+From: Joel Fernandes <joelf@ti.com>
+Reply-To: <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Arend van Spriel <arend@broadcom.com>
+CC: Roger Quadros <rogerq@ti.com>, <tony@atomide.com>,
+        <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no ethernet
+References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com> <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com> <51E7E1B7.6090104@broadcom.com> <51E7E2AD.8020106@ti.com> <51F122D5.80205@broadcom.com>
+In-Reply-To: <51F122D5.80205@broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Arend,
 
---=-/nkI+9ARRYMKGNSwmPui
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On 07/25/2013 08:06 AM, Arend van Spriel wrote:
+> On 07/18/2013 02:42 PM, Roger Quadros wrote:
+>> On 07/18/2013 03:38 PM, Arend van Spriel wrote:
+>>> On 07/18/2013 01:30 PM, Roger Quadros wrote:
+>>>> On 07/18/2013 02:24 PM, Arend van Spriel wrote:
+>>>>> On 07/18/2013 01:18 PM, Roger Quadros wrote:
+>>>>>> Hi Arend,
+>>>>>>
+>>>>>> On 07/18/2013 11:41 AM, Arend van Spriel wrote:
+>>>>>>> Hi Tony,
+>>>>>>>
+>>>>>>>
+>>>>>>> We are using the panda board (es variant) for testing our SDIO
+>>>>>>> based chips. For this we have an adapter card connection to
+>>>>>>> expansion connector A. As this adapter is not publicly available
+>>>>>>> we had internally patched board-omap4panda.c. Also we follow the
+>>>>>>> -rc releases and use TFTP to boot the kernel image which requires
+>>>>>>> USB.
+>>>>>>>
+>>>>>>> Moving to 3.11-rc1 I found that the mentioned board file was
+>>>>>>> removed by your commit:
+>>>>>>>
+>>>>>>> commit b42b918194c4791510ac049e3d507169a7de8544
+>>>>>>> Author: Tony Lindgren <tony@atomide.com>
+>>>>>>> Date:   Thu May 30 12:53:05 2013 -0700
+>>>>>>>
+>>>>>>>        ARM: OMAP2+: Remove board-omap4panda.c
+>>>>>>>
+>>>>>>> As our patches on that file are internal I do not hold it against
+>>>>>>> you. This is no regression and we need to fix it.
+>>>>>>>
+>>>>>>> So my first step was to follow the recipe given in that commit.
+>>>>>>> Beside that I noticed a thread about USB issue on LKML so I also
+>>>>>>> applied the following commit:
+>>>>>>>
+>>>>>>> commit 352f573e59050c7a604c35c58b4bbfc51edebbee
+>>>>>>> Author: Roger Quadros <rogerq@ti.com>
+>>>>>>> Date:   Tue Jun 18 19:04:47 2013 +0300
+>>>>>>>
+>>>>>>>        ARM: OMAP2+: Provide alias to USB PHY clock
+>>>>>>>
+>>>>>>> The attached kernel log seems to suggest that the device tree is
+>>>>>>> picked up by the kernel, but the USB does not seem very active.
+>>>>>>> No ethernet connectivity. This does seem a regression to me. Is
+>>>>>>> there some other patch that I need to get it going again?
+>>>>>>>
+>>>>>>
+>>>>>> I tried with your config and 3.11-rc1 kernel with the above commit
+>>>>>> on top and ethernet seems to
+>>>>>> work for me. My boot log is attached.
+>>>>>>
+>>>>>> Are you sure that you are building the DTB for panda-es and the
+>>>>>> bootloader is picking up the right file and
+>>>>>> not an outdated one?
+>>>>>
+>>>>> I appended the DTB to the kernel image thus avoiding the need to
+>>>>> update u-boot (at least that is what I understood from Tony's commit).
+>>>>>
+>>>>
+>>>> I understand this can be a little tedious at first.
+>>>>
+>>>> This is my u-boot boot.txt
+>>>>
+>>>> fatload mmc 0:1 0x825f0000 omap4-panda-es.dtb
+>>>> fatload mmc 0:1 0x80300000 uImage
+>>>> set fdt_high 0xffffffff
+>>>> setenv bootargs console=ttyO2,115200n8 mem=1G@0x80000000
+>>>> root=/dev/mmcblk0p2 rootwait
+>>>> bootm 0x80300000 - 0x825f0000
+>>>>
+>>>> You need to generate boot.scr from the above boot.txt and place it
+>>>> in SD card boot partition.
+>>>>
+>>>> mkimage -A arm -T script -C none -n "Boot Image" -d boot.txt boot.scr
+>>>>
+>>>> And of course copy the omap4-panda-es.dtb to SD card boot partition.
+>>>>
+>>>> hope this helps.
+>>>
+>>> Thanks for sharing this.
+>>>
+>>>>>> Why is the version of SPL loader and u-boot different in your log?
+>>>>>> You need to use the MLO file generated by the u-boot build along
+>>>>>> with the uImage.
+>>>>>>
+>>>>>> Just to be sure we are on the same setup could you please try with
+>>>>>> latest u-boot release (2013-04). Thanks.
+>>>>>
+>>>>> I recall having difficulty with TFTP boot using a 2013 u-boot
+>>>>> release, but that hurdle is for later. I will try.
+>>>>>
+>>>>
+>>>> OK. We can figure this out as well.
+>>>
+>>> I tried with same SPL and u-boot version, but that did not work out.
+>>> So I moved to v2013.04 and the log looks better. I was especially
+>>> interested in this:
+>>>
+>>> [    2.807434] usb 1-1.1: new high-speed USB device number 3 using
+>>> ehci-omap
+>>> [    2.932495] usb 1-1.1: New USB device found, idVendor=0424,
+>>> idProduct=ec00
+>>> [    2.932495] usb 1-1.1: New USB device strings: Mfr=0, Product=0,
+>>> SerialNumbe0
+>>> [    2.958770] smsc95xx v1.0.4
+>>> Starting logging: OK
+>>> Initializing random number generator... [    3.045806] smsc95xx
+>>> 1-1.1:1.0 eth0
+>>
+>> Cool! :).
+>>
+>> FYI. I also tested tftpboot from u-boot and NFS root file system and
+>> it works fine.
+> 
+> Hi Roger,
+> 
+> Can I get back on this topic. When USB and ethernet was working for me
+> as stated above, I was not doing tftpboot. When I use tftpboot the
+> images are obtained from the tftp server, but after kernel has started
+> there is nothing in /sys/bus/usb/devices/.
 
-On Thu, 2013-07-25 at 08:50 +0200, rydberg@euromail.se wrote:
-> Hi Ben,
->=20
-> > 3.2.49-rc1 review patch.  If anyone has any objections, please let me k=
-now.
->=20
-> Because the bcm5974 patch is unsuitable for pre-3.7 kernels, this one
-> is unsuitable as well; it renders the trackpad unusable. Without this
-> patch, we at least have one-finger mouse emulation, so, please remove
-> from the queue.
+I quickly tried 3.11-rc2 + Roger's USB PHY clock patch on omap4-panda-es
+and enabled following USB options:
 
-That's a pity.  I'll drop them both, thanks.
+CONFIG_USB_MUSB_HDRC=y
+CONFIG_USB_PHY=y
+CONFIG_OMAP_USB2=y
+CONFIG_OMAP_CONTROL_USB=y
+CONFIG_USB_MUSB_OMAP2PLUS=y
+CONFIG_MFD_OMAP_USB_HOST=y
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_OHCI_HCD=y
+CONFIG_USB_EHCI_HCD_OMAP=y
 
-Ben.
+With this I see both USB ports, and ethernet:
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+bash-4.2# ifconfig eth0
+eth0      Link encap:Ethernet  HWaddr BE:08:A9:74:3E:A0
+          inet addr:192.168.3.4  Bcast:192.168.3.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:6 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:17 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000
+          RX bytes:842 (842.0 B)  TX bytes:4724 (4.6 KiB)
+bash-4.2# lsusb
 
---=-/nkI+9ARRYMKGNSwmPui
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp.
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 001: ID 1d6b:0001 Linux Foundation 1.1 root hub
+Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+bash-4.2# ls /sys/bus/usb/devices/
+1-0:1.0    1-1        1-1.1      1-1.1:1.0  1-1:1.0    2-0:1.0     usb1
+      usb2
 
-iQIVAwUAUfHjyOe/yOyVhhEJAQqwwBAAqGEfqcLnz9K1g2hjxzrAXddFhPVtS/Af
-Kb0vr4+Tmw4M4pf/QfueXcedRZuJ3YmudG6BGsB3tyUcwnXGlgIcBP4Q2gGDgn+A
-wX/S6Ll5m3AbQXYZpaWWdJdxG/E7qvoyrrhWSc64T8JMvUTCS+BRvmYK9KXkc1gK
-vvP6iWQGrJ13Wbp8ZXEHjzymlLfQF/Fo5PCqkOJ2LU0m70s+YwjrV4uvBC+ckKRX
-mqiG3FMesyT8YrbXsiB3QGuBsCt/cOfjKTfzuZMXO0VdYqy6Eo3I4dr1VhrEg2mZ
-b/9gOkH/vvOhAkIhm0WQaR/yYOp61QGe97/trXGbpAqZK2RFhSe19tlEaYWIvPFN
-xrtLLZCMj8OaNKNudsQSRi33NcAhgbsFX1b9ksu/mkffD5DqI+Fwjv29Ow+LkVVj
-DXLKNJLhBSsiP6EHgnLGG5DLmm/trFVSgyKXjd1ahXBw/e2Avj1vV0Z1uCYhIS4n
-z0GEOGzKRQ3Q+dYxA76sICC/TZZeLM/SO0NvyFYRbPQSph8qpdhc7e7xc8Fll2W2
-9PYCiToJ2HV5PvfHCcaSYELtAjTgJm92oDeRSq+xD3YYOp52RxsY+FocSsAQYA2D
-R9CIBkmdz9GLd35kP9mZEoWqssWnbGMXS6rYtVVPML1KFMiSiospMp7lt45b1qjF
-pu0PZLX30PY=
-=dbt9
------END PGP SIGNATURE-----
+> I tried a 'usb stop' before booting the kernel, but that does not help
+> either. As you stated to have tftpboot working, maybe you can help me.
 
---=-/nkI+9ARRYMKGNSwmPui--
+I am tftp'ing kernel over USB network. I think U-boot shouldn't have
+anything to do with Kernel USB though. If it does, then its a bug.
+
+Hope this helps, Thanks,
+
+-Joel
