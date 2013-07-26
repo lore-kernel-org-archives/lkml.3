@@ -1,194 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab3GZPSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:18:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757789Ab3GZPSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:18:21 -0400
-Date: Fri, 26 Jul 2013 17:12:56 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] debugfs: debugfs_remove_recursive() must not rely on
-	list_empty(d_subdirs)
-Message-ID: <20130726151256.GC19472@redhat.com>
-References: <20130723205854.GA9036@redhat.com> <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com> <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com> <20130726151151.GA19472@redhat.com>
+	id S932435Ab3GZPSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:18:37 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61355 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932365Ab3GZPSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:18:30 -0400
+From: Marc Fleischmann <mwf@daterainc.com>
+References: <51EF73EF.1040305@redhat.com>  <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>
+  <1374697264.7382.39.camel@dabdike>  <1374699289.7397.1309.camel@haakon3.risingtidesystems.com>
+  <51F06C17.50306@redhat.com> <1374715140.7397.1390.camel@haakon3.risingtidesystems.com>
+ <51F1ED9D.50300@redhat.com> <51F22425.6000801@debian.org>
+In-Reply-To: <51F22425.6000801@debian.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726151151.GA19472@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQD8un4RfWe1CCsVIMynM/o1TWqMKAHWwfSeAWCY3QQBdZKqWwHOAY5DAzOmuzMCQ1nqygF8kjEymq81pHA=
+Date: Fri, 26 Jul 2013 08:18:22 -0700
+Message-ID: <214513e90ef73562cf875225c3bd60ed@mail.gmail.com>
+Subject: RE: targetcli -fb now also Apache 2.0 licensed
+To: rrs@debian.org, target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Cc: Andy Grover <agrover@redhat.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        targetcli-fb-devel@lists.fedorahosted.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs_remove_recursive() is wrong,
+Ritesh,
 
-1. it wrongly assumes that !list_empty(d_subdirs) means that this
-   dir should be removed.
+We have put immense labor and love in creating LIO and targetcli. Please
+just take a look at the code, the wiki, the manual, target-devel - we have
+poured years of our lives into this project, and we look forward to
+implementing many more exciting ideas. Asking us to just abandon this is -
+simply absurd. Of course, we'll continue to maintain one coherent software
+stack with extensive documentation (we'd love contributions here, too!)
+and provide support for all of it through a well-known forum
+(target-devel).
 
-   This is not that bad by itself, but:
+If Andy prefers not helping us to pull his few changes upstream, we'll
+gladly just do it ourselves.
 
-2. if d_subdirs does not becomes empty after __debugfs_remove()
-   it gives up and silently fails, it doesn't even try to remove
-   other entries.
+Best regards,
 
-   However ->d_subdirs can be non-empty because it still has the
-   already deleted !debugfs_positive() entries.
+Marc Fleischmann
+DATERA | 650.384.6366 | @dateranews
 
-3. simple_release_fs() is called even if __debugfs_remove() fails.
+-----Original Message-----
+From: target-devel-owner@vger.kernel.org
+[mailto:target-devel-owner@vger.kernel.org] On Behalf Of Ritesh Raj Sarraf
+Sent: Friday, July 26, 2013 12:24 AM
+To: target-devel; linux-scsi
+Cc: Andy Grover; Nicholas A. Bellinger; James Bottomley;
+targetcli-fb-devel@lists.fedorahosted.org; linux-kernel
+Subject: Re: targetcli -fb now also Apache 2.0 licensed
 
-Suppose we have
+On Friday 26 July 2013 09:01 AM, Andy Grover wrote:
+>
+> It's one thing to claim a prerogative of "upstream", but for this to
+> make sense, there needs to be an actual community around the upstream.
+> And if there's going to be submissions for review, then there needs to
+> be someone in charge of the community with a high degree of skill in
+> the code base. Nick you have a great deal of technical expertise
+> around the C code in drivers/target, but Jerome was the one who wrote
+> rtslib, targetcli, and configshell. I believe you can assess the
+> technical aspects of how the user library interacts with the kernel
+> code, but the maintainer should also be extremely conversant in the
+> language the library is written in. In this case, Python. So it's not
+> clear to me if submitting the code would actually result in meaningful
+> code improvements.
+>
+> Also, there has been no effort to sustain a community around this
+> code. There is no bug tracking, no separate mailing list, no regular
+> releases. Debian is running ancient, broken code because nothing's
+> been tagged in over two years.
+>
+> I would love to have you maintain and improve this code, but if you
+> aren't then you can't just say "I'm the upstream bow to me!". We're
+> shipping this code in Fedora and it needs active maintenance. Now that
+> we're all on an even licensing footing, code can flow both ways, and
+> even into your commercial version.
 
-	dir1/
-		dir2/
-			file2
-		file1
+Yes. Apart from reaching out the developers directly, I am not aware of
+other communication channels. There is a git and wiki though.
 
-and someone opens dir1/dir2/file2.
+Nick, if you guys have the same license now, nothing should stop you to
+pull the changes from the targetcli-fb repo. You can start afresh now and
+comply with what the community guidelines are. Licensing is just one part
+of it.
 
-Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/di2 goes
-away.
+And regarding this whole licensing dispute in the open, the kernel
+maintainers should have resolved this long ago, when it was decided to
+have LIO as the in-kernel target for Linux.
+You might say that the target component complied by the kernel's licensing
+requirements. But for a subsystem inclusion, you don't look just at the
+code, but also the maintainer. Their support tools. And their long term
+plans. These rules have been applied, in the past, for other features in
+the kernel.
 
-But debugfs_remove_recursive(dir1) silently fails and doesn't remove
-this directory. Because it tries to delete (the already deleted)
-dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
-logic.
-
-Test-case:
-
-	#!/bin/sh
-
-	cd /sys/kernel/debug/tracing
-	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
-	sleep 1000 < events/probe/sigprocmask/id &
-	echo -n >| kprobe_events
-
-	[ -d events/probe ] && echo "ERR!! failed to rm probe"
-
-And after that it is not possible to create another probe entry.
-
-With this patch debugfs_remove_recursive() skips !debugfs_positive()
-files although this is not strictly needed. The most important change
-is that it does not try to make ->d_subdirs empty, it simply scans
-the whole list(s) recursively and removes as much as possible.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- fs/debugfs/inode.c |   69 ++++++++++++++++-----------------------------------
- 1 files changed, 22 insertions(+), 47 deletions(-)
-
-diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
-index 4888cb3..c7c83ff 100644
---- a/fs/debugfs/inode.c
-+++ b/fs/debugfs/inode.c
-@@ -533,8 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
-  */
- void debugfs_remove_recursive(struct dentry *dentry)
- {
--	struct dentry *child;
--	struct dentry *parent;
-+	struct dentry *child, *next, *parent;
- 
- 	if (IS_ERR_OR_NULL(dentry))
- 		return;
-@@ -544,61 +543,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
- 		return;
- 
- 	parent = dentry;
-+ down:
- 	mutex_lock(&parent->d_inode->i_mutex);
-+	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
-+		if (!debugfs_positive(child))
-+			continue;
- 
--	while (1) {
--		/*
--		 * When all dentries under "parent" has been removed,
--		 * walk up the tree until we reach our starting point.
--		 */
--		if (list_empty(&parent->d_subdirs)) {
--			mutex_unlock(&parent->d_inode->i_mutex);
--			if (parent == dentry)
--				break;
--			parent = parent->d_parent;
--			mutex_lock(&parent->d_inode->i_mutex);
--		}
--		child = list_entry(parent->d_subdirs.next, struct dentry,
--				d_u.d_child);
-- next_sibling:
--
--		/*
--		 * If "child" isn't empty, walk down the tree and
--		 * remove all its descendants first.
--		 */
-+		/* perhaps simple_empty(child) makes more sense */
- 		if (!list_empty(&child->d_subdirs)) {
- 			mutex_unlock(&parent->d_inode->i_mutex);
- 			parent = child;
--			mutex_lock(&parent->d_inode->i_mutex);
--			continue;
-+			goto down;
- 		}
--		__debugfs_remove(child, parent);
--		if (parent->d_subdirs.next == &child->d_u.d_child) {
--			/*
--			 * Try the next sibling.
--			 */
--			if (child->d_u.d_child.next != &parent->d_subdirs) {
--				child = list_entry(child->d_u.d_child.next,
--						   struct dentry,
--						   d_u.d_child);
--				goto next_sibling;
--			}
--
--			/*
--			 * Avoid infinite loop if we fail to remove
--			 * one dentry.
--			 */
--			mutex_unlock(&parent->d_inode->i_mutex);
--			break;
--		}
--		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
-+ up:
-+		if (!__debugfs_remove(child, parent))
-+			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	}
- 
--	parent = dentry->d_parent;
-+	mutex_unlock(&parent->d_inode->i_mutex);
-+	child = parent;
-+	parent = parent->d_parent;
- 	mutex_lock(&parent->d_inode->i_mutex);
--	__debugfs_remove(dentry, parent);
-+
-+	if (child != dentry) {
-+		next = list_entry(child->d_u.d_child.next, struct dentry,
-+					d_u.d_child);
-+		goto up;
-+	}
-+
-+	if (!__debugfs_remove(child, parent))
-+		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- 	mutex_unlock(&parent->d_inode->i_mutex);
--	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
- }
- EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
- 
--- 
-1.5.5.1
-
-
+--
+Ritesh Raj Sarraf | http://people.debian.org/~rrs Debian - The Universal
+Operating System
