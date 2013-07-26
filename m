@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933795Ab3GZVg5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:36:57 -0400
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:53454 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161015Ab3GZVgw (ORCPT
+	id S1760705Ab3GZVhT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:37:19 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:46632 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760010Ab3GZVhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:36:52 -0400
+	Fri, 26 Jul 2013 17:37:12 -0400
 MIME-Version: 1.0
-In-Reply-To: <51F2D9D2.8050405@zytor.com>
-References: <tip-eaa5a990191d204ba0f9d35dbe5505ec2cdd1460@git.kernel.org>
-	<51F2D9D2.8050405@zytor.com>
+In-Reply-To: <20130726211844.GB8508@moon>
+References: <20130726201807.GJ8661@moon> <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
+ <20130726211844.GB8508@moon>
+From: Andy Lutomirski <luto@amacapital.net>
 Date: Fri, 26 Jul 2013 14:36:51 -0700
-X-Google-Sender-Auth: kLKlnjwQbMIzFxIHhiiJBpNELG4
-Message-ID: <CA+55aFzVj4YnUMik_BYbSab7PeL=__fPO47FTUAdY2090Yyapg@mail.gmail.com>
-Subject: Re: [tip:x86/urgent] x86, fpu: correct the asm constraints for fxsave
- , unbreak mxcsr.daz
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-stable <stable@vger.kernel.org>, Peter Anvin <hpa@linux.intel.com>,
-        "H.J. Lu" <hjl.tools@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "tip-bot for H.J. Lu" <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <CALCETrW7Ukh8KfKzpNgRc1D_5OK1o7bmEmFbtQTYoSoFiOSeKw@mail.gmail.com>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 1:19 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+On Fri, Jul 26, 2013 at 2:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Fri, Jul 26, 2013 at 01:55:04PM -0700, Andy Lutomirski wrote:
+>> On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> > Andy reported that if file page get reclaimed we loose soft-dirty bit
+>> > if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
+>> > get encoded into pte entry. Thus when #pf happens on such non-present
+>> > pte we can restore it back.
+>> >
+>>
+>> Unless I'm misunderstanding this, it's saving the bit in the
+>> non-present PTE.  This sounds wrong -- what happens if the entire pmd
 >
-> The bug is obvious; the fix at the very least *should* be obvious; the
-> main source of risk would appear that it might trigger bugs in very old
-> versions of gcc.
+> It's the same as encoding pgoff in pte entry (pte is not present),
+> but together with pgoff we save soft-bit status, later on #pf we decode
+> pgoff and restore softbit back if it was there, pte itself can't disappear
+> since it holds pgoff information.
 
-I used to be worried about "+m", but we're using it a lot these days,
-and don't support the (really old) versions of gcc that used to have
-trouble with in-out constraints. So the fix looks obvious and safe, no
-worries from me.
+Isn't that only the case for nonlinear mappings?
 
-          Linus
+--Andy
