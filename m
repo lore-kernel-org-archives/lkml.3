@@ -1,53 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3GZJgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:36:48 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:52803 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752142Ab3GZJgq (ORCPT
+	id S1757244Ab3GZJiK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:38:10 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60301 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752142Ab3GZJiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:36:46 -0400
+	Fri, 26 Jul 2013 05:38:07 -0400
+Message-ID: <51F24379.6020708@linux-pingi.de>
+Date: Fri, 26 Jul 2013 11:38:01 +0200
+From: Karsten Keil <kkeil@linux-pingi.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130726103321.21238bbb@amdc308.digital.local>
-References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-1-git-send-email-l.majewski@samsung.com>
-	<1374770011-22171-3-git-send-email-l.majewski@samsung.com>
-	<CAKohpom9QHf+XBYQcajv4tni4_KA2x+Y3BAXWhZkdCFnZxp3XA@mail.gmail.com>
-	<20130726103321.21238bbb@amdc308.digital.local>
-Date: Fri, 26 Jul 2013 15:06:45 +0530
-Message-ID: <CAKohpokK8eNid3yNGTEax_-3CZNaJ4T6Osz8RrXk11hn+Mmxxg@mail.gmail.com>
-Subject: Re: [PATCH v6 2/8] cpufreq: Add boost frequency support in core
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>, durgadoss.r@intel.com,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, Karsten Keil <isdn@linux-pingi.de>
+Subject: Re: [PATCH 09/36] ISDN: convert class code to use dev_groups
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-10-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1374703539-9705-10-git-send-email-gregkh@linuxfoundation.org>
+X-Enigmail-Version: 1.5.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:OLWMdak4WRd90Ei2YnFOKXS8KcF7R/aZXgJRQ1OLZro
+ OyuOLHstni1frMkVtDEBiEq7NMLzWNGXjEHOC72Th0FwvDSrz1
+ o1hAmD2ECK6Ti2w2CzgwkZyJYfTAnaw7DDiezcPiHLQGf/kWk9
+ mQCe6aELsv1uZoz30FhcgpmCpNCvLSb6maIopN5mVj91Rfkzn1
+ YuPpKu9QBqzqv8TfgQDSOdjUXExKIcBqm9PVspl3JoVva3j2UH
+ Wn5eSVpmBMsJuWXMsYy8JfaIkhO5TlWx72WCHaVLrxHIsk7zC0
+ ZjdjeQ0Vm8ntOlwyM138EpybougfA2YEf2txbfjwrsbnFEAPhE
+ XkrrTKbKxqnijn8yXjPkMdXOobpVcQw3vrU4Cdd3e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 July 2013 14:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> The problem here is with the cpufreq_driver->set_boost() call.
->
-> I tried to avoid acquiring lock at one function and release it at
-> another (in this case cpufreq_boost_set_sw), especially since the
-> __cpufreq_governor() acquires its own lock - good place for deadlock.
->
-> Is it OK for you to grab lock at one function
-> (cpufreq_boost_trigger_state()) and then at other function
-> (cpufreq_boost_set_sw) release it before calling __cpufreq_governor()
-> and grab it again after its completion?
+Am 25.07.2013 00:05, schrieb Greg Kroah-Hartman:
+> The dev_attrs field of struct class is going away soon, dev_groups
+> should be used instead.  This converts the mISDN class code to use the
+> correct field.
+> 
+> Cc: Karsten Keil <isdn@linux-pingi.de>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Problem is not only that.. but we shouldn't call boost_set() of drivers
-like acpi-cpufreq with this lock..... Leave it as it is for now.. Let me see
-if I can think of any problems that can happen due to this.
+Acked-by: Karsten Keil <isdn@linux-pingi.de>
+
+> ---
+> 
+> Karsten, feel free to apply this to your tree, or ACK it and I can take it
+> through mine.
+> 
+>  drivers/isdn/mISDN/core.c | 64 ++++++++++++++++++++++++++---------------------
+>  1 file changed, 36 insertions(+), 28 deletions(-)
+> 
+> diff --git a/drivers/isdn/mISDN/core.c b/drivers/isdn/mISDN/core.c
+> index da30c5cb..faf50546 100644
+> --- a/drivers/isdn/mISDN/core.c
+> +++ b/drivers/isdn/mISDN/core.c
+> @@ -37,8 +37,8 @@ static void mISDN_dev_release(struct device *dev)
+>  	/* nothing to do: the device is part of its parent's data structure */
+>  }
+>  
+> -static ssize_t _show_id(struct device *dev,
+> -			struct device_attribute *attr, char *buf)
+> +static ssize_t id_show(struct device *dev,
+> +		       struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  
+> @@ -46,9 +46,10 @@ static ssize_t _show_id(struct device *dev,
+>  		return -ENODEV;
+>  	return sprintf(buf, "%d\n", mdev->id);
+>  }
+> +static DEVICE_ATTR_RO(id);
+>  
+> -static ssize_t _show_nrbchan(struct device *dev,
+> -			     struct device_attribute *attr, char *buf)
+> +static ssize_t nrbchan_show(struct device *dev,
+> +			    struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  
+> @@ -56,9 +57,10 @@ static ssize_t _show_nrbchan(struct device *dev,
+>  		return -ENODEV;
+>  	return sprintf(buf, "%d\n", mdev->nrbchan);
+>  }
+> +static DEVICE_ATTR_RO(nrbchan);
+>  
+> -static ssize_t _show_d_protocols(struct device *dev,
+> -				 struct device_attribute *attr, char *buf)
+> +static ssize_t d_protocols_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  
+> @@ -66,9 +68,10 @@ static ssize_t _show_d_protocols(struct device *dev,
+>  		return -ENODEV;
+>  	return sprintf(buf, "%d\n", mdev->Dprotocols);
+>  }
+> +static DEVICE_ATTR_RO(d_protocols);
+>  
+> -static ssize_t _show_b_protocols(struct device *dev,
+> -				 struct device_attribute *attr, char *buf)
+> +static ssize_t b_protocols_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  
+> @@ -76,9 +79,10 @@ static ssize_t _show_b_protocols(struct device *dev,
+>  		return -ENODEV;
+>  	return sprintf(buf, "%d\n", mdev->Bprotocols | get_all_Bprotocols());
+>  }
+> +static DEVICE_ATTR_RO(b_protocols);
+>  
+> -static ssize_t _show_protocol(struct device *dev,
+> -			      struct device_attribute *attr, char *buf)
+> +static ssize_t protocol_show(struct device *dev,
+> +			     struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  
+> @@ -86,17 +90,19 @@ static ssize_t _show_protocol(struct device *dev,
+>  		return -ENODEV;
+>  	return sprintf(buf, "%d\n", mdev->D.protocol);
+>  }
+> +static DEVICE_ATTR_RO(protocol);
+>  
+> -static ssize_t _show_name(struct device *dev,
+> -			  struct device_attribute *attr, char *buf)
+> +static ssize_t name_show(struct device *dev,
+> +			 struct device_attribute *attr, char *buf)
+>  {
+>  	strcpy(buf, dev_name(dev));
+>  	return strlen(buf);
+>  }
+> +static DEVICE_ATTR_RO(name);
+>  
+>  #if 0 /* hangs */
+> -static ssize_t _set_name(struct device *dev, struct device_attribute *attr,
+> -			 const char *buf, size_t count)
+> +static ssize_t name_set(struct device *dev, struct device_attribute *attr,
+> +			const char *buf, size_t count)
+>  {
+>  	int err = 0;
+>  	char *out = kmalloc(count + 1, GFP_KERNEL);
+> @@ -113,10 +119,11 @@ static ssize_t _set_name(struct device *dev, struct device_attribute *attr,
+>  
+>  	return (err < 0) ? err : count;
+>  }
+> +static DEVICE_ATTR_RW(name);
+>  #endif
+>  
+> -static ssize_t _show_channelmap(struct device *dev,
+> -				struct device_attribute *attr, char *buf)
+> +static ssize_t channelmap_show(struct device *dev,
+> +			       struct device_attribute *attr, char *buf)
+>  {
+>  	struct mISDNdevice *mdev = dev_to_mISDN(dev);
+>  	char *bp = buf;
+> @@ -127,18 +134,19 @@ static ssize_t _show_channelmap(struct device *dev,
+>  
+>  	return bp - buf;
+>  }
+> -
+> -static struct device_attribute mISDN_dev_attrs[] = {
+> -	__ATTR(id,          S_IRUGO,         _show_id,          NULL),
+> -	__ATTR(d_protocols, S_IRUGO,         _show_d_protocols, NULL),
+> -	__ATTR(b_protocols, S_IRUGO,         _show_b_protocols, NULL),
+> -	__ATTR(protocol,    S_IRUGO,         _show_protocol,    NULL),
+> -	__ATTR(channelmap,  S_IRUGO,         _show_channelmap,  NULL),
+> -	__ATTR(nrbchan,     S_IRUGO,         _show_nrbchan,     NULL),
+> -	__ATTR(name,        S_IRUGO,         _show_name,        NULL),
+> -/*	__ATTR(name,        S_IRUGO | S_IWUSR, _show_name,      _set_name), */
+> -	{}
+> +static DEVICE_ATTR_RO(channelmap);
+> +
+> +static struct attribute *mISDN_attrs[] = {
+> +	&dev_attr_id.attr,
+> +	&dev_attr_d_protocols.attr,
+> +	&dev_attr_b_protocols.attr,
+> +	&dev_attr_protocol.attr,
+> +	&dev_attr_channelmap.attr,
+> +	&dev_attr_nrbchan.attr,
+> +	&dev_attr_name.attr,
+> +	NULL,
+>  };
+> +ATTRIBUTE_GROUPS(mISDN);
+>  
+>  static int mISDN_uevent(struct device *dev, struct kobj_uevent_env *env)
+>  {
+> @@ -162,7 +170,7 @@ static struct class mISDN_class = {
+>  	.name = "mISDN",
+>  	.owner = THIS_MODULE,
+>  	.dev_uevent = mISDN_uevent,
+> -	.dev_attrs = mISDN_dev_attrs,
+> +	.dev_groups = mISDN_groups,
+>  	.dev_release = mISDN_dev_release,
+>  	.class_release = mISDN_class_release,
+>  };
+> 
+
