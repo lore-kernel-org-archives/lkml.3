@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760464Ab3GZXnn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:43:43 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:33051 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760599Ab3GZXnd (ORCPT
+	id S1760511Ab3GZXn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:43:26 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:53300 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760214Ab3GZXnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:43:33 -0400
+	Fri, 26 Jul 2013 19:43:15 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -16,9 +16,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>, Borislav Petkov <bp@alien8.de>,
         Li Zhong <zhong@linux.vnet.ibm.com>, Mike Galbraith <efault@gmx.de>,
         Kevin Hilman <khilman@linaro.org>
-Subject: [PATCH 21/21] nohz: Optimize full dynticks's sched hooks with static keys
-Date: Sat, 27 Jul 2013 01:42:44 +0200
-Message-Id: <1374882164-32519-22-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 11/21] context_tracking: User/kernel broundary cross trace events
+Date: Sat, 27 Jul 2013 01:42:34 +0200
+Message-Id: <1374882164-32519-12-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
 References: <1374882164-32519-1-git-send-email-fweisbec@gmail.com>
@@ -26,10 +26,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scheduler IPIs and task context switches are serious fast path.
-Let's try to hide as much as we can the impact of full
-dynticks APIs' off case that are called on these sites
-through the use of static keys.
+This can be useful to track all kernel/user round trips.
+And it's also helpful to debug the context tracking subsystem.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Steven Rostedt <rostedt@goodmis.org>
@@ -42,91 +40,105 @@ Cc: Li Zhong <zhong@linux.vnet.ibm.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Kevin Hilman <khilman@linaro.org>
 ---
- include/linux/tick.h     |   20 ++++++++++++++++----
- kernel/time/tick-sched.c |    8 ++++----
- 2 files changed, 20 insertions(+), 8 deletions(-)
+ include/trace/events/context_tracking.h |   58 +++++++++++++++++++++++++++++++
+ kernel/context_tracking.c               |    5 +++
+ 2 files changed, 63 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/context_tracking.h
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index c60b079..a7ef1d6 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -180,20 +180,32 @@ static inline bool tick_nohz_full_cpu(int cpu)
- }
- 
- extern void tick_nohz_init(void);
--extern void tick_nohz_full_check(void);
-+extern void __tick_nohz_full_check(void);
- extern void tick_nohz_full_kick(void);
- extern void tick_nohz_full_kick_all(void);
--extern void tick_nohz_task_switch(struct task_struct *tsk);
-+extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
- static inline void tick_nohz_init(void) { }
- static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
--static inline void tick_nohz_full_check(void) { }
-+static inline void __tick_nohz_full_check(void) { }
- static inline void tick_nohz_full_kick(void) { }
- static inline void tick_nohz_full_kick_all(void) { }
--static inline void tick_nohz_task_switch(struct task_struct *tsk) { }
-+static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
- #endif
- 
-+static inline void tick_nohz_full_check(void)
-+{
-+	if (tick_nohz_full_enabled())
-+		__tick_nohz_full_check();
-+}
+diff --git a/include/trace/events/context_tracking.h b/include/trace/events/context_tracking.h
+new file mode 100644
+index 0000000..ce8007c
+--- /dev/null
++++ b/include/trace/events/context_tracking.h
+@@ -0,0 +1,58 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM context_tracking
 +
-+static inline void tick_nohz_task_switch(struct task_struct *tsk)
-+{
-+	if (tick_nohz_full_enabled())
-+		__tick_nohz_task_switch(tsk);
-+}
++#if !defined(_TRACE_CONTEXT_TRACKING_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_CONTEXT_TRACKING_H
 +
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(context_tracking_user,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy),
++
++	TP_STRUCT__entry(
++		__field( int,	dummy	)
++	),
++
++	TP_fast_assign(
++		__entry->dummy		= dummy;
++	),
++
++	TP_printk("%s", "")
++);
++
++/**
++ * user_enter - called when the kernel resumes to userspace
++ * @dummy:	dummy arg to make trace event macro happy
++ *
++ * This event occurs when the kernel resumes to userspace  after
++ * an exception or a syscall.
++ */
++DEFINE_EVENT(context_tracking_user, user_enter,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy)
++);
++
++/**
++ * user_exit - called when userspace enters the kernel
++ * @dummy:	dummy arg to make trace event macro happy
++ *
++ * This event occurs when userspace enters the kernel through
++ * an exception or a syscall.
++ */
++DEFINE_EVENT(context_tracking_user, user_exit,
++
++	TP_PROTO(int dummy),
++
++	TP_ARGS(dummy)
++);
++
++
++#endif /*  _TRACE_CONTEXT_TRACKING_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
+diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+index ef21e4f..688efe4 100644
+--- a/kernel/context_tracking.c
++++ b/kernel/context_tracking.c
+@@ -20,6 +20,9 @@
+ #include <linux/hardirq.h>
+ #include <linux/export.h>
  
- # ifdef CONFIG_CPU_IDLE_GOV_MENU
- extern void menu_hrtimer_cancel(void);
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 6d6bd6e..73997be 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -197,7 +197,7 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now);
-  * Re-evaluate the need for the tick on the current CPU
-  * and restart it if necessary.
-  */
--void tick_nohz_full_check(void)
-+void __tick_nohz_full_check(void)
- {
- 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++#define CREATE_TRACE_POINTS
++#include <trace/events/context_tracking.h>
++
+ struct static_key context_tracking_enabled = STATIC_KEY_INIT_FALSE;
+ EXPORT_SYMBOL_GPL(context_tracking_enabled);
  
-@@ -211,7 +211,7 @@ void tick_nohz_full_check(void)
- 
- static void nohz_full_kick_work_func(struct irq_work *work)
- {
--	tick_nohz_full_check();
-+	__tick_nohz_full_check();
- }
- 
- static DEFINE_PER_CPU(struct irq_work, nohz_full_kick_work) = {
-@@ -230,7 +230,7 @@ void tick_nohz_full_kick(void)
- 
- static void nohz_full_kick_ipi(void *info)
- {
--	tick_nohz_full_check();
-+	__tick_nohz_full_check();
- }
- 
- /*
-@@ -253,7 +253,7 @@ void tick_nohz_full_kick_all(void)
-  * It might need the tick due to per task/process properties:
-  * perf events, posix cpu timers, ...
-  */
--void tick_nohz_task_switch(struct task_struct *tsk)
-+void __tick_nohz_task_switch(struct task_struct *tsk)
- {
- 	unsigned long flags;
- 
+@@ -64,6 +67,7 @@ void context_tracking_user_enter(void)
+ 	local_irq_save(flags);
+ 	if ( __this_cpu_read(context_tracking.state) != IN_USER) {
+ 		if (__this_cpu_read(context_tracking.active)) {
++			trace_user_enter(0);
+ 			/*
+ 			 * At this stage, only low level arch entry code remains and
+ 			 * then we'll run in userspace. We can assume there won't be
+@@ -159,6 +163,7 @@ void context_tracking_user_exit(void)
+ 			 */
+ 			rcu_user_exit();
+ 			vtime_user_exit(current);
++			trace_user_exit(0);
+ 		}
+ 		__this_cpu_write(context_tracking.state, IN_KERNEL);
+ 	}
 -- 
 1.7.5.4
 
