@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab3GZRJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:09:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40600 "EHLO comal.ext.ti.com"
+	id S1759452Ab3GZRKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:10:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40593 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759308Ab3GZRJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:09:11 -0400
+	id S1759277Ab3GZRJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:09:10 -0400
 From: Illia Smyrnov <illia.smyrnov@ti.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 2/3] Input: omap-keypad: errata i689: Correct debounce time
-Date: Fri, 26 Jul 2013 20:09:05 +0300
-Message-ID: <1374858546-25034-3-git-send-email-illia.smyrnov@ti.com>
+Subject: [PATCH v2 1/3] Input: omap-keypad: Enable wakeup capability for keypad.
+Date: Fri, 26 Jul 2013 20:09:04 +0300
+Message-ID: <1374858546-25034-2-git-send-email-illia.smyrnov@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1374858546-25034-1-git-send-email-illia.smyrnov@ti.com>
 References: <1374858546-25034-1-git-send-email-illia.smyrnov@ti.com>
@@ -22,68 +22,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Haslam <axelhaslam@ti.com>
+Enable/disable IRQ wake in suspend/resume handlers
+to make the keypad wakeup capable.
 
-Set debounce time value to 12ms to workaround the errata.
-
-ERRATA DESCRIPTION:
-When a key is released for a time shorter than the debounce time,
-in-between 2 key press (KP1 and KP2), the keyboard state machine will go to
-idle mode and will never detect the key release (after KP1,and also after KP2),
-and thus will never generate a new IRQ indicating the key release.
->From the operating system standpoint, only a key press as been detected,
-and the key will keep on being printed on the screen until another or
-the same key is pressed again.When the failing state has been reached,
-the KBD_STATEMACHINE register will show "idle state" and the KBD_FULLCODE
-register won't be empty, this is the signature of the bug.There is no impact
-on the power consumption of the system as the state machine goes to IDLE state.
-
-WORKAROUND:
-First thing is to program the debounce time correctly:
-If X (us) is the maximum time of bounces when a key is pressed or released,
-and Y (us) is the minimum time of a key release that is expected to be detected,
-then the debounce time should be set to a value inbetween X and Y.
-
-In case it is still possible to get shorter than debounce time key-release
-events, then the only solution is to implement a software workaround:
-
-Before printing a second character on the screen, the software must check if
-the keyboard has hit the failing condition (cf signature of the bug above)
-or if the key is still really pressed and then take the appropriate actions.
-
-Silicon revisions impacted: OMAP4430 ES 1.0,2.0,2.1,2.2,2.3
-                            OMAP4460 ES 1.0,1.1
-                            OMAP5430 ES 1.0
-
-Signed-off-by: Axel Haslam <axelhaslam@ti.com>
 Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
 ---
- Based on top of v3.11-rc2
-
- Depends on:
- Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
- https://patchwork.kernel.org/patch/2832913/
-
- drivers/input/keyboard/omap4-keypad.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/input/keyboard/omap4-keypad.c |   43 +++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
 
 diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
-index feab00f..e8bdc76 100644
+index 0244262..feab00f 100644
 --- a/drivers/input/keyboard/omap4-keypad.c
 +++ b/drivers/input/keyboard/omap4-keypad.c
-@@ -62,8 +62,10 @@
+@@ -74,6 +74,7 @@ struct omap4_keypad {
+ 	struct input_dev *input;
  
- /* OMAP4 values */
- #define OMAP4_VAL_IRQDISABLE		0x0
--#define OMAP4_VAL_DEBOUNCINGTIME	0x7
--#define OMAP4_VAL_PVT			0x7
+ 	void __iomem *base;
++	bool irq_wake_enabled;
+ 	unsigned int irq;
+ 
+ 	unsigned int rows;
+@@ -380,6 +381,7 @@ static int omap4_keypad_probe(struct platform_device *pdev)
+ 		goto err_free_input;
+ 	}
+ 
++	device_init_wakeup(&pdev->dev, true);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 
+ 	error = input_register_device(keypad_data->input);
+@@ -393,6 +395,7 @@ static int omap4_keypad_probe(struct platform_device *pdev)
+ 
+ err_pm_disable:
+ 	pm_runtime_disable(&pdev->dev);
++	device_init_wakeup(&pdev->dev, false);
+ 	free_irq(keypad_data->irq, keypad_data);
+ err_free_keymap:
+ 	kfree(keypad_data->keymap);
+@@ -418,6 +421,8 @@ static int omap4_keypad_remove(struct platform_device *pdev)
+ 
+ 	pm_runtime_disable(&pdev->dev);
+ 
++	device_init_wakeup(&pdev->dev, false);
 +
-+/* Errata i689: set debounce time value to 12ms */
-+#define OMAP4_VAL_DEBOUNCINGTIME	0x2
-+#define OMAP4_VAL_PVT			0x6
+ 	input_unregister_device(keypad_data->input);
  
- enum {
- 	KBD_REVISION_OMAP4 = 0,
+ 	iounmap(keypad_data->base);
+@@ -439,12 +444,50 @@ static const struct of_device_id omap_keypad_dt_match[] = {
+ MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+ #endif
+ 
++#ifdef CONFIG_PM_SLEEP
++static int omap4_keypad_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
++	int error;
++
++	if (device_may_wakeup(&pdev->dev)) {
++		error = enable_irq_wake(keypad_data->irq);
++		if (!error)
++			keypad_data->irq_wake_enabled = true;
++	}
++
++	return 0;
++}
++
++static int omap4_keypad_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
++
++	if (device_may_wakeup(&pdev->dev) && keypad_data->irq_wake_enabled) {
++		disable_irq_wake(keypad_data->irq);
++		keypad_data->irq_wake_enabled = false;
++	}
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(omap4_keypad_pm_ops, omap4_keypad_suspend,
++				omap4_keypad_resume);
++
++#define OMAP4_KEYPAD_PM_OPS (&omap4_keypad_pm_ops)
++#else
++#define OMAP4_KEYPAD_PM_OPS NULL
++#endif
++
+ static struct platform_driver omap4_keypad_driver = {
+ 	.probe		= omap4_keypad_probe,
+ 	.remove		= omap4_keypad_remove,
+ 	.driver		= {
+ 		.name	= "omap4-keypad",
+ 		.owner	= THIS_MODULE,
++		.pm	= OMAP4_KEYPAD_PM_OPS,
+ 		.of_match_table = of_match_ptr(omap_keypad_dt_match),
+ 	},
+ };
 -- 
 1.7.9.5
 
