@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760256Ab3GZVAf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:00:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51464 "EHLO
+	id S1760231Ab3GZVAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:00:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51467 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760193Ab3GZU6k (ORCPT
+	with ESMTP id S1760199Ab3GZU6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:58:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 45/45] ALSA: usb-audio: 6fire: return correct XRUN indication
-Date: Fri, 26 Jul 2013 13:58:05 -0700
-Message-Id: <20130726205659.923857879@linuxfoundation.org>
+        Enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [ 37/45] usb: serial: option: Add ONYX 3G device support
+Date: Fri, 26 Jul 2013 13:57:57 -0700
+Message-Id: <20130726205658.988292936@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -26,34 +26,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eldad Zack <eldad@fogrefinery.com>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
+commit 63b5df963f52ccbab6fabedf05b7ac6b465789a4 upstream.
 
-Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
-SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
-function of 6fire, as expected by snd_pcm_update_hw_ptr0().
+This patch adds support for the ONYX 3G device (version 1) from ALFA
+NETWORK.
 
-Caught by sparse.
-
-Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/6fire/pcm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/usb/6fire/pcm.c
-+++ b/sound/usb/6fire/pcm.c
-@@ -541,7 +541,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
- 	snd_pcm_uframes_t ret;
- 
- 	if (rt->panic || !sub)
--		return SNDRV_PCM_STATE_XRUN;
-+		return SNDRV_PCM_POS_XRUN;
- 
- 	spin_lock_irqsave(&sub->lock, flags);
- 	ret = sub->dma_off;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -793,6 +793,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
++	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
 
 
