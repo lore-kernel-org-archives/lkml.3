@@ -1,89 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319Ab3GZDBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:01:52 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:46666 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758292Ab3GZDBs (ORCPT
+	id S1758188Ab3GZDG1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:06:27 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:37709 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756859Ab3GZDGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:01:48 -0400
-Date: Fri, 26 Jul 2013 13:01:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20130726130129.b10066a83ebf9c59ec345ce9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i"
+	Thu, 25 Jul 2013 23:06:25 -0400
+Message-ID: <51F1E70C.1020408@linux.vnet.ibm.com>
+Date: Fri, 26 Jul 2013 08:33:40 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: rjw@sisk.pl, shangw@linux.vnet.ibm.com, arnd@arndb.de,
+        linux-pm@vger.kernel.org, geoff@infradead.org, rostedt@goodmis.org,
+        deepthi@linux.vnet.ibm.com, paul.gortmaker@windriver.com,
+        paulus@samba.org, srivatsa.bhat@linux.vnet.ibm.com,
+        schwidefsky@de.ibm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        paulmck@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, chenhui.zhao@freescale.com
+Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
+ arch-specific constraints
+References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com> <20130725090302.12500.42998.stgit@preeti.in.ibm.com> <20130725133044.GA7400@somewhere>
+In-Reply-To: <20130725133044.GA7400@somewhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072602-9574-0000-0000-000008E3FDC6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Frederic,
 
-Hi Dave,
+On 07/25/2013 07:00 PM, Frederic Weisbecker wrote:
+> On Thu, Jul 25, 2013 at 02:33:02PM +0530, Preeti U Murthy wrote:
+>> In the current design of timer offload framework, the broadcast cpu should
+>> *not* go into tickless idle so as to avoid missed wakeups on CPUs in deep idle states.
+>>
+>> Since we prevent the CPUs entering deep idle states from programming the lapic of the
+>> broadcast cpu for their respective next local events for reasons mentioned in
+>> PATCH[3/5], the broadcast CPU checks if there are any CPUs to be woken up during
+>> each of its timer interrupt programmed to its local events.
+>>
+>> With tickless idle, the broadcast CPU might not get a timer interrupt till after
+>> many ticks which can result in missed wakeups on CPUs in deep idle states. By
+>> disabling tickless idle, worst case, the tick_sched hrtimer will trigger a
+>> timer interrupt every period to check for broadcast.
+>>
+>> However the current setup of tickless idle does not let us make the choice
+>> of tickless on individual cpus. NOHZ_MODE_INACTIVE which disables tickless idle,
+>> is a system wide setting. Hence resort to an arch specific call to check if a cpu
+>> can go into tickless idle.
+> 
+> Hi Preeti,
+> 
+> I'm not exactly sure why you can't enter the broadcast CPU in dynticks idle mode.
+> I read in the previous patch that's because in dynticks idle mode the broadcast
+> CPU deactivates its lapic so it doesn't receive the IPI. But may be I misunderstood.
+> Anyway that's not good for powersaving.
+> 
+> Also when an arch wants to prevent a CPU from entering dynticks idle mode, it typically
+> use arch_needs_cpu(). May be that could fit for you as well?
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/i915_dma.c between commit 7dcd2677ea91 ("drm/i915:
-fix long-standing SNB regression in power consumption after resume v2")
-from Linus' tree and commit 59cdb63d529c ("drm/i915: kill
-dev_priv->rps.lock") from the drm tree.
+Yes this will suit our requirement perfectly. I will note down this
+change for the next version of this patchset. Thank you very much for
+pointing this out :)
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Regards
+Preeti U Murthy
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpu/drm/i915/i915_dma.c
-index 66c6380,6ce9033..0000000
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@@ -1495,15 -1490,6 +1490,14 @@@ int i915_driver_load(struct drm_device=20
-  	dev_priv->dev =3D dev;
-  	dev_priv->info =3D info;
- =20
- +	spin_lock_init(&dev_priv->irq_lock);
- +	spin_lock_init(&dev_priv->gpu_error.lock);
-- 	spin_lock_init(&dev_priv->rps.lock);
- +	spin_lock_init(&dev_priv->gt_lock);
- +	spin_lock_init(&dev_priv->backlight.lock);
- +	mutex_init(&dev_priv->dpio_lock);
- +	mutex_init(&dev_priv->rps.hw_lock);
- +	mutex_init(&dev_priv->modeset_restore_lock);
- +
-  	i915_dump_device_info(dev_priv);
- =20
-  	if (i915_get_bridge_dev(dev)) {
-
---Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR8eaNAAoJEECxmPOUX5FEd+oP/2XbDbAU0noGwE0i7cNvtl4k
-VcI7WyrxIAEq4meORoMXRFRW4K16H8xI1O3/hjvJEr+if6Iz98MifVhavl0VELLR
-nw9p66M+FKIhn26oxZDyjsP3SLgBr6GhCm2fC67eAKggLGBaicE00/Nyke2bS6gm
-V+7/rVMQHG1AKU/vV8PG692/G5mP9CdTwFBPT2Kwiob0FkEj8itn8Rnr3xHgIuL/
-NS4kW+eHsoSmK1NpTOkzybHklIPK251TDl8K2Q/R2tkg5jCv0aYzkRx81hnIym2J
-OxRLg/c53ZO56IBnAx9YX8bkvX2kwMfJDsWSkBpii0Er3Z+Cnyu0wX/glPHcgjsE
-Mfh3tYC5llbV5q6ptLdAnwkVBaMkidRNZmOCG/JmE6iwDMfGn9D+WzK4V/iq5knE
-GQCnRCPfmfE7E56F5ElZCscAFBWPDeP7pZyCcqikBOMGkHr32cctNP7tcGkZabhj
-xBOqvFDlJIvdMp6G3LgbDc2jy1ywBJnufV8Y9qaGqYt2GZB5Fed/Xu6+dZOD+nau
-gpLmcOlYS6Glv3Hf2aqa2pKOA1+Y2RF6MgKDlPG4MFt6CVifqYWI73YTO4nPGR/S
-G8Yr9aQ3DFcOhSFpHjf3fg+bYRIbkQi3HswUeIPHCCgydnFJFPfcGY4XexxhmL3F
-NvavV9AwgsbLepQ51GbP
-=rmy3
------END PGP SIGNATURE-----
-
---Signature=_Fri__26_Jul_2013_13_01_29_+1000_X3kn7WnTJdqgsV+i--
