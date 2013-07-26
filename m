@@ -1,149 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933193Ab3GZU4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:56:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51215 "EHLO
+	id S933214Ab3GZU4V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:56:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51267 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933051Ab3GZUyE (ORCPT
+	with ESMTP id S933187Ab3GZU4L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:04 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 57/59] tracing: Fix irqs-off tag display in syscall tracing
-Date: Fri, 26 Jul 2013 13:53:21 -0700
-Message-Id: <20130726205019.936564776@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 16:56:11 -0400
+Date: Fri, 26 Jul 2013 13:56:10 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Feng-Hsin Chiang <john453@faraday-tech.com>
+Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com, balbi@ti.com,
+        florian@openwrt.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yuanlmm@gmail.com,
+        ratbert.chuang@gmail.com, lichun_c@faraday-tech.com,
+        john2437kimo@gmail.com, Yuan-Hsin Chen <yhchen@faraday-tech.com>
+Subject: Re: [PATCH v3] usb: host: Faraday fotg210-hcd driver
+Message-ID: <20130726205610.GA15573@kroah.com>
+References: <1374832376-30567-1-git-send-email-john453@faraday-tech.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374832376-30567-1-git-send-email-john453@faraday-tech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 26, 2013 at 09:52:56AM +0000, Feng-Hsin Chiang wrote:
+> FOTG210 is an OTG controller which can be configured as an
+> USB2.0 host. FOTG210 host is an ehci-like controller with
+> some differences. First, register layout of FOTG210 is
+> incompatible with EHCI. Furthermore, FOTG210 is lack of
+> siTDs which means iTDs are used for both HS and FS ISO
+> transfer.
+> 
+> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
+> ---
+> v2: fix most of errors and warnings reported by checkpatch.pl
+> v3: change maintainer
 
-------------------
+You didn't refresh this against the latest tree, and as such, it fails
+to apply to the tree, which implies that you didn't test it against the
+latest kernel version either :(
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+Please do this and resend it after testing.
 
-commit 11034ae9c20f4057a6127fc965906417978e69b2 upstream.
+thanks,
 
-All syscall tracing irqs-off tags are wrong, the syscall enter entry doesn't
-disable irqs.
-
- [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
- [root@jovi tracing]# cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 13/13   #P:2
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-       irqbalance-513   [000] d... 56115.496766: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
-       irqbalance-513   [000] d... 56115.497008: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
-         sendmail-771   [000] d... 56115.827982: sys_open(filename: b770e6d1, flags: 0, mode: 1b6)
-
-The reason is syscall tracing doesn't record irq_flags into buffer.
-The proper display is:
-
- [root@jovi tracing]#echo "syscalls:sys_enter_open" > set_event
- [root@jovi tracing]# cat trace
- # tracer: nop
- #
- # entries-in-buffer/entries-written: 14/14   #P:2
- #
- #                              _-----=> irqs-off
- #                             / _----=> need-resched
- #                            | / _---=> hardirq/softirq
- #                            || / _--=> preempt-depth
- #                            ||| /     delay
- #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
- #              | |       |   ||||       |         |
-       irqbalance-514   [001] ....    46.213921: sys_open(filename: 804e1a6, flags: 0, mode: 1b6)
-       irqbalance-514   [001] ....    46.214160: sys_open(filename: 804e1bb, flags: 0, mode: 1b6)
-            <...>-920   [001] ....    47.307260: sys_open(filename: 4e82a0c5, flags: 80000, mode: 0)
-
-Link: http://lkml.kernel.org/r/1365564393-10972-3-git-send-email-jovi.zhangwei@huawei.com
-
-Cc: stable@vger.kernel.org # 2.6.35
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- kernel/trace/trace_syscalls.c |   18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
-
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -305,6 +305,8 @@ void ftrace_syscall_enter(void *ignore,
- 	struct ring_buffer *buffer;
- 	int size;
- 	int syscall_nr;
-+	unsigned long irq_flags;
-+	int pc;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
- 	if (syscall_nr < 0)
-@@ -318,8 +320,11 @@ void ftrace_syscall_enter(void *ignore,
- 
- 	size = sizeof(*entry) + sizeof(unsigned long) * sys_data->nb_args;
- 
-+	local_save_flags(irq_flags);
-+	pc = preempt_count();
-+
- 	event = trace_current_buffer_lock_reserve(&buffer,
--			sys_data->enter_event->event.type, size, 0, 0);
-+			sys_data->enter_event->event.type, size, irq_flags, pc);
- 	if (!event)
- 		return;
- 
-@@ -329,7 +334,8 @@ void ftrace_syscall_enter(void *ignore,
- 
- 	if (!filter_current_check_discard(buffer, sys_data->enter_event,
- 					  entry, event))
--		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-+		trace_current_buffer_unlock_commit(buffer, event,
-+						   irq_flags, pc);
- }
- 
- void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
-@@ -339,6 +345,8 @@ void ftrace_syscall_exit(void *ignore, s
- 	struct ring_buffer_event *event;
- 	struct ring_buffer *buffer;
- 	int syscall_nr;
-+	unsigned long irq_flags;
-+	int pc;
- 
- 	syscall_nr = syscall_get_nr(current, regs);
- 	if (syscall_nr < 0)
-@@ -351,7 +359,8 @@ void ftrace_syscall_exit(void *ignore, s
- 		return;
- 
- 	event = trace_current_buffer_lock_reserve(&buffer,
--			sys_data->exit_event->event.type, sizeof(*entry), 0, 0);
-+			sys_data->exit_event->event.type, sizeof(*entry),
-+			irq_flags, pc);
- 	if (!event)
- 		return;
- 
-@@ -361,7 +370,8 @@ void ftrace_syscall_exit(void *ignore, s
- 
- 	if (!filter_current_check_discard(buffer, sys_data->exit_event,
- 					  entry, event))
--		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
-+		trace_current_buffer_unlock_commit(buffer, event,
-+						   irq_flags, pc);
- }
- 
- int reg_event_syscall_enter(struct ftrace_event_call *call)
-
-
+greg k-h
