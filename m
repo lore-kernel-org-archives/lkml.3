@@ -1,116 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390Ab3GZJ44 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 05:56:56 -0400
-Received: from mail-qe0-f51.google.com ([209.85.128.51]:62502 "EHLO
-	mail-qe0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757952Ab3GZJ4x (ORCPT
+	id S1758353Ab3GZJ54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 05:57:56 -0400
+Received: from smtp-vbr1.xs4all.nl ([194.109.24.21]:1678 "EHLO
+	smtp-vbr1.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab3GZJ5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 05:56:53 -0400
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'NeilBrown'" <neilb@suse.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
-References: <000501ce85fc$d3a60a10$7af21e30$@lucidpixels.com> <20130722090257.2faa0874@notabene.brown> <009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com> <20130726103549.1e6b0b92@notabene.brown>
-In-Reply-To: <20130726103549.1e6b0b92@notabene.brown>
-Subject: RE: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x SSD)
-Date: Fri, 26 Jul 2013 05:56:51 -0400
-Message-ID: <001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
+	Fri, 26 Jul 2013 05:57:54 -0400
+Message-ID: <51F24809.2080401@xs4all.nl>
+Date: Fri, 26 Jul 2013 11:57:29 +0200
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+To: Prabhakar Lad <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>, devicetree-discuss@lists.ozlabs.org,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH RFC FINAL v5] media: OF: add "sync-on-green-active" property
+References: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
+In-Reply-To: <1374076022-10960-1-git-send-email-prabhakar.csengg@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQH8I1r+BgG/efe2pSqBd5Z4Tixg2AHT8x2TAb2IeWUC3a+m2Zjn7z7A
-Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Prabhakar,
 
+On 07/17/2013 05:47 PM, Prabhakar Lad wrote:
+> From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+> 
+> This patch adds 'sync-on-green-active' property as part
+> of endpoint property.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>   Changes for v5:
+>   1: Changed description for sync-on-green-active property in
+>      documentation file as suggested by Sylwester.
+>   
+>   Changes for v4:
+>   1: Fixed review comments pointed by Sylwester.
+> 
+>   Changes for v3:
+>   1: Fixed review comments pointed by Laurent and Sylwester.
+> 
+>   RFC v2 https://patchwork.kernel.org/patch/2578091/
+> 
+>   RFC V1 https://patchwork.kernel.org/patch/2572341/
+> 
+>  .../devicetree/bindings/media/video-interfaces.txt |    2 ++
+>  drivers/media/v4l2-core/v4l2-of.c                  |    4 ++++
+>  include/media/v4l2-mediabus.h                      |    2 ++
+>  3 files changed, 8 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/media/video-interfaces.txt b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> index e022d2d..ce719f8 100644
+> --- a/Documentation/devicetree/bindings/media/video-interfaces.txt
+> +++ b/Documentation/devicetree/bindings/media/video-interfaces.txt
+> @@ -88,6 +88,8 @@ Optional endpoint properties
+>  - field-even-active: field signal level during the even field data transmission.
+>  - pclk-sample: sample data on rising (1) or falling (0) edge of the pixel clock
+>    signal.
+> +- sync-on-green-active: active state of Sync-on-green (SoG) signal, 0/1 for
+> +  LOW/HIGH respectively.
+>  - data-lanes: an array of physical data lane indexes. Position of an entry
+>    determines the logical lane number, while the value of an entry indicates
+>    physical lane, e.g. for 2-lane MIPI CSI-2 bus we could have
+> diff --git a/drivers/media/v4l2-core/v4l2-of.c b/drivers/media/v4l2-core/v4l2-of.c
+> index aa59639..5c4c9f0 100644
+> --- a/drivers/media/v4l2-core/v4l2-of.c
+> +++ b/drivers/media/v4l2-core/v4l2-of.c
+> @@ -100,6 +100,10 @@ static void v4l2_of_parse_parallel_bus(const struct device_node *node,
+>  	if (!of_property_read_u32(node, "data-shift", &v))
+>  		bus->data_shift = v;
+>  
+> +	if (!of_property_read_u32(node, "sync-on-green-active", &v))
+> +		flags |= v ? V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH :
+> +			V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW;
+> +
+>  	bus->flags = flags;
+>  
+>  }
+> diff --git a/include/media/v4l2-mediabus.h b/include/media/v4l2-mediabus.h
+> index 83ae07e..d47eb81 100644
+> --- a/include/media/v4l2-mediabus.h
+> +++ b/include/media/v4l2-mediabus.h
+> @@ -40,6 +40,8 @@
+>  #define V4L2_MBUS_FIELD_EVEN_HIGH		(1 << 10)
+>  /* FIELD = 1/0 - Field1 (odd)/Field2 (even) */
+>  #define V4L2_MBUS_FIELD_EVEN_LOW		(1 << 11)
+> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_HIGH	(1 << 12)
+> +#define V4L2_MBUS_VIDEO_SOG_ACTIVE_LOW		(1 << 13)
 
------Original Message-----
-From: NeilBrown [mailto:neilb@suse.de] 
-Sent: Thursday, July 25, 2013 8:36 PM
-To: Justin Piszcz
-Cc: linux-kernel@vger.kernel.org; linux-raid@vger.kernel.org
-Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
-SSD)
+Can you add a short comment for these new flags? Similar to what you added in
+video-interfaces.txt?
 
-On Thu, 25 Jul 2013 19:10:50 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
-wrote:
+Thanks!
 
-> Did the fix by chance make it into 3.10.3?
+	Hans
 
-No, it looks like it missed again.  I gather there was a large inflow of
-patches for -stable in the 3.11-rc1 merge window and Greg has been
-processing
-them in batches.  Hopefully in 3.10.4.
-
-The relevant patch is commit 30bc9b53878a9921b02e3 in mainline.
-
-NeilBrown
-
---
-
-Method to get patch via git and patch kernel:
-
-$ git clone
-git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-$ git log |grep 30bc9b53878a9921b02e3
-commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
-$ git show 30bc9b53878a9921b02e3b5bc4283ac1c6de102a > /tmp/a
-# patch -p1 < /tmp/a
-patching file drivers/md/raid1.c
-Hunk #1 succeeded at 1848 (offset -1 lines).
-Hunk #2 succeeded at 1886 (offset -1 lines).
-Hunk #3 succeeded at 1915 (offset -1 lines).
-
-Reboot- tested, success, thanks..!
-
-One follow-up question:
-$ cat /sys/block/md1/md/mismatch_cnt
-314112
--> On a live RAID-1 (root filesystem) without swap, is it normal to have
-such a high mismatch_cnt even after a repair?
-
-First repair:
-Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
-314112 sectors.
-Second repair:
-Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
-313600 sectors.
-
-Should I be concerned?
-
-
-Testing the patch:
-
-Personalities : [raid1]
-md1 : active raid1 sdc2[0] sdb2[1]
-      233381376 blocks [2/2] [UU]
-      [>....................]  check =  0.3% (838976/233381376)
-finish=9.2min speed=419488K/sec
-
-md0 : active raid1 sdc1[0] sdb1[1]
-      1048512 blocks [2/2] [UU]
-
-Personalities : [raid1]
-md1 : active raid1 sdc2[0] sdb2[1]
-      233381376 blocks [2/2] [UU]
-      [===============>.....]  check = 77.5% (180889856/233381376)
-finish=2.5min speed=342654K/sec
-
-md0 : active raid1 sdc1[0] sdb1[1]
-      1048512 blocks [2/2] [UU]
-
-Personalities : [raid1]
-md1 : active raid1 sdc2[0] sdb2[1]
-      233381376 blocks [2/2] [UU]
-
-md0 : active raid1 sdc1[0] sdb1[1]
-      1048512 blocks [2/2] [UU]
-
-
-Justin.
-
-
+>  
+>  /* Serial flags */
+>  /* How many lanes the client can use */
+> 
