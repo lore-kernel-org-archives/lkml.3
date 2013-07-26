@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759975Ab3GZV4i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:56:38 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35019 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757248Ab3GZV4g (ORCPT
+	id S1759994Ab3GZWAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:00:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51849 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759684Ab3GZWAo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:56:36 -0400
-X-Sasl-enc: jl49FwavZSFgFS13AWaW96jCvZ/yQf6O1IU3yiHWJfVd 1374875795
-Date: Fri, 26 Jul 2013 14:56:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Eli Billauer <eli.billauer@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20130726215634.GA31820@kroah.com>
-References: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
- <20130726210335.GA2788@kroah.com>
- <51F2E8A4.2010405@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F2E8A4.2010405@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Jul 2013 18:00:44 -0400
+Date: Fri, 26 Jul 2013 15:00:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Marian Chereji <marian.chereji@freescale.com>
+Cc: <linux-kernel@vger.kernel.org>, <sebastian.grigore@freescale.com>,
+        Schmitt Richard <b43082@freescale.com>,
+        Fleming Andrew <AFLEMING@freescale.com>
+Subject: Re: [PATCH] lib: Add CRC64 ECMA module
+Message-Id: <20130726150043.67b248c9d5d93c00ed30ebc8@linux-foundation.org>
+In-Reply-To: <1373619386-29550-1-git-send-email-marian.chereji@freescale.com>
+References: <1373619386-29550-1-git-send-email-marian.chereji@freescale.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 27, 2013 at 12:22:44AM +0300, Eli Billauer wrote:
-> Hello Greg,
+On Fri, 12 Jul 2013 11:56:26 +0300 Marian Chereji <marian.chereji@freescale.com> wrote:
+
+> Added implementation of CRC64 ECMA checksum.
 > 
-> I was just about to submit a patch fixing this issue. Should arrive
-> in a few minutes. Sorry.
+> Signed-off-by: Marian Chereji <marian.chereji@freescale.com>
+> Reviewed-by: Varvara Andrei-B21317 <andrei.varvara@freescale.com>
+> Reviewed-by: Fleming Andrew-AFLEMING <AFLEMING@freescale.com>
+> ---
+>  include/linux/crc64_ecma.h |   56 +++++++
+>  lib/Kconfig                |    7 +
+>  lib/Makefile               |    1 +
+>  lib/crc64_ecma.c           |  341 ++++++++++++++++++++++++++++++++++++++++++++
 
-Got it, thanks.
+Presumably you have some code which will need this library feature?
 
-> Will this be the follow-on patch you mentioned for fixing the
-> "sparse errors" this driver produced? I'm wasn't sure what you meant
-> with that.
-
-No, I need you to do that.  Can you do a kernel build with:
-	make M=drivers/staging/xillybus C=1
-and fix up the errors that sparse reports and send a patch for that?
-
-thanks,
-
-greg k-h
+What code is that, and what is its status?
