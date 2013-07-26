@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760425Ab3GZVQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:16:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51176 "EHLO
+	id S1760442Ab3GZVQc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:16:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51182 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932961Ab3GZUxz (ORCPT
+	with ESMTP id S932874Ab3GZUxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:53:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        Martin Peschke <mpeschke@linux.vnet.ibm.com>,
         James Bottomley <JBottomley@Parallels.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [ 44/59] SCSI: Fix incorrect memset in bnx2fc_parse_fcp_rsp
-Date: Fri, 26 Jul 2013 13:53:08 -0700
-Message-Id: <20130726205018.536803557@linuxfoundation.org>
+        Zhouping Liu <zliu@redhat.com>
+Subject: [ 45/59] [SCSI] zfcp: block queue limits with data router
+Date: Fri, 26 Jul 2013 13:53:09 -0700
+Message-Id: <20130726205018.672065114@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -29,43 +29,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andi Kleen <andi@firstfloor.org>
+From: Steffen Maier <maier@linux.vnet.ibm.com>
 
-commit 16da05b1158d1bcb31656e636a8736a663b1cf1f upstream.
+commit 5fea4291deacd80188b996d2f555fc6a1940e5d4 upstream.
 
-gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
-the whole buffer. Use the correct buffer size and clear the whole sense
-buffer.
+Commit 86a9668a8d29ea711613e1cb37efa68e7c4db564
+"[SCSI] zfcp: support for hardware data router"
+reduced the initial block queue limits in the scsi_host_template to the
+absolute minimum and adjusted them later on. However, the adjustment was
+too late for the BSG devices of Scsi_Host and fc_host.
 
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
-function 'bnx2fc_parse_fcp_rsp':
-/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
-warning: argument to 'sizeof' in 'memset' call is the same expression as
-the destination; did you mean to provide an explicit length?
-[-Wsizeof-pointer-memaccess]
-   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-                                         ^
+Therefore, ioctl(..., SG_IO, ...) with request or response size > 4kB to a
+BSG device of an fc_host or a Scsi_Host fails with EINVAL. As a result,
+users of such ioctl such as HBA_SendCTPassThru() in libzfcphbaapi return
+with error HBA_STATUS_ERROR.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Initialize the block queue limits in zfcp_scsi_host_template to the
+greatest common denominator (GCD).
+
+While we cannot exploit the slightly enlarged maximum request size with
+data router, this should be neglectible. Doing so also avoids running into
+trouble after live guest relocation (LGR) / migration from a data router
+FCP device to an FCP device that does not support data router. In that
+case, zfcp would figure out the new limits on adapter recovery, but the
+fc_host and Scsi_Host (plus in fact all sdevs) still exist with the old and
+now too large queue limits.
+
+It should also OK, not to use half the size as in the DIX case, because
+fc_host and Scsi_Host do not transport FCP requests including SCSI commands
+using protection data.
+
+[Backported for 3.4-stable. commit a53c8fa since v3.6-rc1 unified
+copyright messages, e.g: revise such messages 'Copyright IBM Corporation'
+as 'Copyright IBM Corp', so updated the messages as a53c8fa did. - zliu]
+
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Reviewed-by: Martin Peschke <mpeschke@linux.vnet.ibm.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Zhouping Liu <zliu@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/scsi/bnx2fc/bnx2fc_io.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/scsi/bnx2fc/bnx2fc_io.c
-+++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
-@@ -1786,7 +1786,7 @@ static void bnx2fc_parse_fcp_rsp(struct
- 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
- 		}
+---
+ drivers/s390/scsi/zfcp_scsi.c |   10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+--- a/drivers/s390/scsi/zfcp_scsi.c
++++ b/drivers/s390/scsi/zfcp_scsi.c
+@@ -3,7 +3,7 @@
+  *
+  * Interface to Linux SCSI midlayer.
+  *
+- * Copyright IBM Corporation 2002, 2010
++ * Copyright IBM Corp. 2002, 2013
+  */
  
--		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
-+		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
- 		if (fcp_sns_len)
- 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
- 
+ #define KMSG_COMPONENT "zfcp"
+@@ -311,8 +311,12 @@ static struct scsi_host_template zfcp_sc
+ 	.proc_name		 = "zfcp",
+ 	.can_queue		 = 4096,
+ 	.this_id		 = -1,
+-	.sg_tablesize		 = 1, /* adjusted later */
+-	.max_sectors		 = 8, /* adjusted later */
++	.sg_tablesize		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
++				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2),
++				   /* GCD, adjusted later */
++	.max_sectors		 = (((QDIO_MAX_ELEMENTS_PER_BUFFER - 1)
++				     * ZFCP_QDIO_MAX_SBALS_PER_REQ) - 2) * 8,
++				   /* GCD, adjusted later */
+ 	.dma_boundary		 = ZFCP_QDIO_SBALE_LEN - 1,
+ 	.cmd_per_lun		 = 1,
+ 	.use_clustering		 = 1,
 
 
