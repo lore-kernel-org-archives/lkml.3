@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759321Ab3GZRgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:36:14 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:42550 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759179Ab3GZRgJ (ORCPT
+	id S1759185Ab3GZRi3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:38:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49016 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080Ab3GZRi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:36:09 -0400
-Message-ID: <51F2B384.9050706@wwwdotorg.org>
-Date: Fri, 26 Jul 2013 11:36:04 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Fri, 26 Jul 2013 13:38:28 -0400
+Date: Fri, 26 Jul 2013 10:38:27 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely on
+ list_empty(d_subdirs)
+Message-ID: <20130726173827.GA15013@kroah.com>
+References: <20130723205854.GA9036@redhat.com>
+ <20130724184640.GA21322@redhat.com>
+ <20130725192742.GA14060@redhat.com>
+ <20130725200423.GA22274@redhat.com>
+ <20130725234357.GA14958@kroah.com>
+ <20130726151151.GA19472@redhat.com>
+ <1374852613.6580.35.camel@gandalf.local.home>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: grant.likely@linaro.org, linus.walleij@linaro.org, rob.herring@calxeda.com,
-        rob@landley.net, sameo@linux.intel.com, lee.jones@linaro.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gg@slimlogic.co.uk, kishon@ti.com,
-        swarren@nvidia.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/2] pinctrl: pinconf_generic: add utility functions for
- add map/configs
-References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-2-git-send-email-ldewangan@nvidia.com>
-In-Reply-To: <1374833754-19659-2-git-send-email-ldewangan@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374852613.6580.35.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
-> Some of pincontrol driver needs the utility function to create map
-> list. The utility function needed for adding mux, configs etc.
+On Fri, Jul 26, 2013 at 11:30:13AM -0400, Steven Rostedt wrote:
+> On Fri, 2013-07-26 at 17:11 +0200, Oleg Nesterov wrote:
+> > 
+> > Steven, Greg. Assuming that nobody objects and the patch is fine.
+> > Perhaps this patch can be routed via rostedt/linux-trace tree?
+> 
+> I'm fine with pushing it. But that requires Greg's Acked-by.
 
-Which other drivers already contain this code? Are you planning on
-converting them over to use these new functions? The code looks
-familiar, so I assume it's just cut/paste from Tegra with some renames,
-so I didn't read it through in detail.
+Ah, I see that there are tracing fixes that need this, that makes sense
+to go through the tracing tree, I'll go ack it...
 
->  drivers/pinctrl/pinconf-generic.c       |  105 +++++++++++++++++++++++++++++++
->  include/linux/pinctrl/pinconf-generic.h |   52 +++++++++++++++
+thanks,
 
-I don't think those are the correct files for this code. Presumably
-there's no reason at all why a pinctrl driver that doesn't require
-CONFIG_GENERIC_PINCONF can't use these basic utility functions. Perhaps
-add a new pinctrl-utils file?
+greg k-h
