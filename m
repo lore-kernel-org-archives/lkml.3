@@ -1,49 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760296Ab3GZVDt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:03:49 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:35007 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760149Ab3GZVDn (ORCPT
+	id S933080Ab3GZVEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:04:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51360 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760087Ab3GZU6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:03:43 -0400
-X-Sasl-enc: gPhofVJC4X/5t1Ozu4u+6DoyqmCEPWEsRyzJwqLStnpO 1374872616
-Date: Fri, 26 Jul 2013 14:03:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eli Billauer <eli.billauer@gmail.com>
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20130726210335.GA2788@kroah.com>
-References: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Jul 2013 16:58:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        enrico Mioso <mrkiko.rs@gmail.com>
+Subject: [ 31/45] usb: serial: option: blacklist ONDA MT689DC QMI interface
+Date: Fri, 26 Jul 2013 13:57:51 -0700
+Message-Id: <20130726205658.352524964@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
+References: <20130726205654.896050165@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 04:02:54PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/staging/xillybus/xillybus_pcie.o:(.data+0x6d8): multiple definition of `xillyname'
-> drivers/staging/xillybus/xillybus_core.o:(.data+0x888): first defined here
-> 
-> Caused by commit 48bae0507410 ("staging: New driver: Xillybus generic
-> interface for FPGA").
-> 
-> I have disabled that driver.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-I think I need to just always make any new staging driver only build as
-a module, and not allowed to be built into the kernel.  That will save
-you time dealing with this, and me the extra time of marking them all as
-modules-only every time :)
+------------------
 
-Sorry about this, I'll go fix this up now...
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-greg k-h
+commit 3d1a69e726406ab662ab88fa30a3a05ed404334d upstream.
+
+Prevent the option driver from binding itself to the QMI/WWAN interface, making
+it unusable by the proper driver.
+
+Signed-off-by: enrico Mioso <mrkiko.rs@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/serial/option.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -832,7 +832,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0018, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0019, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t)&net_intf3_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0020, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0021, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+
+
