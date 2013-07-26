@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933162Ab3GZUzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:55:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51035 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933066Ab3GZUyF (ORCPT
+	id S933180Ab3GZUzc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:55:32 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:49838 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932519Ab3GZUz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:54:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Enrico Mioso <mrkiko.rs@gmail.com>
-Subject: [ 52/59] usb: serial: option: Add ONYX 3G device support
-Date: Fri, 26 Jul 2013 13:53:16 -0700
-Message-Id: <20130726205019.401092397@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 16:55:26 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130726201807.GJ8661@moon>
+References: <20130726201807.GJ8661@moon>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 26 Jul 2013 13:55:04 -0700
+Message-ID: <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> Andy reported that if file page get reclaimed we loose soft-dirty bit
+> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
+> get encoded into pte entry. Thus when #pf happens on such non-present
+> pte we can restore it back.
+>
 
-------------------
+Unless I'm misunderstanding this, it's saving the bit in the
+non-present PTE.  This sounds wrong -- what happens if the entire pmd
+(or whatever the next level is called) gets zapped?  (Also, what
+happens if you unmap a file and map a different file there?)
 
-From: Enrico Mioso <mrkiko.rs@gmail.com>
-
-commit 63b5df963f52ccbab6fabedf05b7ac6b465789a4 upstream.
-
-This patch adds support for the ONYX 3G device (version 1) from ALFA
-NETWORK.
-
-Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/serial/option.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -793,6 +793,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
-+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
- 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
- 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
-
-
+--Andy
