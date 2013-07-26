@@ -1,68 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872Ab3GZEnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 00:43:20 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:57769 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3GZEnS (ORCPT
+	id S1751696Ab3GZEsf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 00:48:35 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:33620 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3GZEsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 00:43:18 -0400
-Date: Fri, 26 Jul 2013 06:43:03 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Mark Rutland <mark.rutland@arm.com>, Olof Johansson <olof@lixom.net>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: DT bindings as ABI [was: Do we have people interested in device
- tree janitoring / cleanup?]
-Message-ID: <20130726044303.GA4100@netboy>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F168FC.9070906@wwwdotorg.org>
- <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <51F1743D.7050007@wwwdotorg.org>
+	Fri, 26 Jul 2013 00:48:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F1743D.7050007@wwwdotorg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
+References: <1374766502-14823-1-git-send-email-a.motakis@virtualopensystems.com>
+Date: Fri, 26 Jul 2013 10:18:31 +0530
+Message-ID: <CAK9yfHw1Q9tmARR9W9WGaW5hhzcSQ5CV13Ct=7LT8pj85tBMBA@mail.gmail.com>
+Subject: Re: [PATCHv2 1/2] iommu/exynos: add devices attached to the System
+ MMU to an IOMMU group
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Antonios Motakis <a.motakis@virtualopensystems.com>
+Cc: linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
+        linux-samsung-soc@vger.kernel.org, kvmarm@lists.cs.columbia.edu,
+        Cho KyongHo <pullip.cho@samsung.com>, Joerg Roedel <joro@8bytes.org>,
+        Varun Sethi <Varun.Sethi@freescale.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:53:49AM -0700, Stephen Warren wrote:
-> On 07/25/2013 11:48 AM, Richard Cochran wrote:
-> > On Thu, Jul 25, 2013 at 07:29:20PM +0100, Mark Rutland wrote:
-> >>
-> >> As long as we can make sufficiently clear that trying to use an unstable
-> >> binding is going to be *very* painful, and not necessarily supported.
+Hi Antonios,
 
-IOW, its okay to break DT setups with every release, as long as we
-tell people first.
+On 25 July 2013 21:04, Antonios Motakis
+<a.motakis@virtualopensystems.com> wrote:
+> IOMMU groups are expected by certain users of the IOMMU API,
+> e.g. VFIO. Since each device is behind its own System MMU, we
+> can allocate a new IOMMU group for each device.
+>
+> This patch depends on Cho KyongHo's patch series titled "[PATCH v7 00/12]
+> iommu/exynos: Fixes and Enhancements of System MMU driver with DT",
+> applied on a Linux 3.10.1 kernel.
 
-Well, at least you are being honest about it now.
+This kind of meta information should go after the "---" line below.
 
-> That's exactly why we're starting to think about which bindings should
-> be considered stable and immutable, and when that should happen. As Olof
-> pointed out, we haven't fully enforced that yet. Preferably bindings
-> will be marked stable very fast, but mistakes are always going to happen
-> in early development. ABIs are very hard.
+It has been tested on the Arndale board.
+>
+> Changes since in v2:
+> - Removed possibility for minor memory leak in case of
+>   misbehaving platform drivers
+>
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> ---
+>  drivers/iommu/exynos-iommu.c | 28 ++++++++++++++++++++++++++++
+>  1 file changed, 28 insertions(+)
+>
+> diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> index 51d43bb..c7dd4b5 100644
+> --- a/drivers/iommu/exynos-iommu.c
+> +++ b/drivers/iommu/exynos-iommu.c
+> @@ -1134,6 +1134,32 @@ static phys_addr_t exynos_iommu_iova_to_phys(struct iommu_domain *domain,
+>         return phys;
+>  }
+>
+> +static int exynos_iommu_add_device(struct device *dev)
+> +{
+> +       struct iommu_group *group;
+> +       int ret;
+> +
+> +       group = iommu_group_get(dev);
+> +
+> +       if (!group) {
+> +               group = iommu_group_alloc();
+> +               if (IS_ERR(group)) {
+> +                       dev_err(dev, "Failed to allocate IOMMU group\n");
+> +                       return PTR_ERR(group);
+> +               }
+> +       }
+> +
+> +       ret = iommu_group_add_device(group, dev);
+> +       iommu_group_put(group);
+> +
+> +       return ret;
+> +}
+> +
+> +static void exynos_iommu_remove_device(struct device *dev)
+> +{
+> +       iommu_group_remove_device(dev);
+> +}
+> +
+>  static struct iommu_ops exynos_iommu_ops = {
+>         .domain_init = &exynos_iommu_domain_init,
+>         .domain_destroy = &exynos_iommu_domain_destroy,
+> @@ -1142,6 +1168,8 @@ static struct iommu_ops exynos_iommu_ops = {
+>         .map = &exynos_iommu_map,
+>         .unmap = &exynos_iommu_unmap,
+>         .iova_to_phys = &exynos_iommu_iova_to_phys,
+> +       .add_device     = exynos_iommu_add_device,
+> +       .remove_device  = exynos_iommu_remove_device,
+>         .pgsize_bitmap = SECT_SIZE | LPAGE_SIZE | SPAGE_SIZE,
+>  };
+>
+> --
+> 1.8.1.2
+>
 
-They are even harder if you cannot decide what the ABI is in the first
-place.
 
-Thanks,
-Richard
+
+-- 
+With warm regards,
+Sachin
