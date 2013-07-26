@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760241Ab3GZVLR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:11:17 -0400
+	id S1760173Ab3GZVLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:11:13 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:51293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759956Ab3GZU6I (ORCPT
+	with ESMTP id S1759974Ab3GZU6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:08 -0400
+	Fri, 26 Jul 2013 16:58:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oskar Schirmer <oskar@scara.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Brown <broonie@linaro.org>
-Subject: [ 02/45] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
-Date: Fri, 26 Jul 2013 13:57:22 -0700
-Message-Id: <20130726205655.198418941@linuxfoundation.org>
+        Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 04/45] SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
+Date: Fri, 26 Jul 2013 13:57:24 -0700
+Message-Id: <20130726205655.416026242@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -28,32 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fabio Estevam <fabio.estevam@freescale.com>
+From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
 
-commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
+commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
 
-SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
-register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
+FCP device remains in status ERP_FAILED when device is switched online
+or adapter recovery is triggered  while link to SAN is down.
 
-Reported-by: Oskar Schirmer <oskar@scara.com>
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+When Exchange Configuration Data command returns the FSF status
+FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
+The only retries are done during the common error recovery procedure
+(i.e. max. 3 retries with 8sec sleep between) and remains in status
+ERP_FAILED with QDIO down.
+
+This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
+(zfcp: Fix adapter activation on link down).
+When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
+adapter recovery will be finished without any retries. QDIO will be
+up now and status changes such as LINK UP will be received now.
+
+Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/sgtl5000.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/soc/codecs/sgtl5000.h
-+++ b/sound/soc/codecs/sgtl5000.h
-@@ -347,7 +347,7 @@
- #define SGTL5000_PLL_INT_DIV_MASK		0xf800
- #define SGTL5000_PLL_INT_DIV_SHIFT		11
- #define SGTL5000_PLL_INT_DIV_WIDTH		5
--#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
-+#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
- #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
- #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -534,6 +534,10 @@ static void zfcp_fsf_exchange_config_dat
+ 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
+ 		adapter->hydra_version = 0;
  
++		/* avoids adapter shutdown to be able to recognize
++		 * events such as LINK UP */
++		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
++				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
+ 		break;
 
 
