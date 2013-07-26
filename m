@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab3GZVbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:31:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50831 "EHLO
+	id S933745Ab3GZVbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:31:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759984Ab3GZUss (ORCPT
+	with ESMTP id S1759965Ab3GZUsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:48 -0400
+	Fri, 26 Jul 2013 16:48:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Justin Clift <jclift@redhat.com>, Niels de Vos <ndevos@redhat.com>,
-        Miklos Szeredi <mszeredi@suse.cz>, Brian Foster <bfoster@redhat.com>
-Subject: [ 45/79] fuse: readdirplus: fix dentry leak
-Date: Fri, 26 Jul 2013 13:47:35 -0700
-Message-Id: <20130726204727.213036505@linuxfoundation.org>
+        Markos Chandras <markos.chandras@imgtec.com>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Subject: [ 58/79] lib/Kconfig.debug: Restrict FRAME_POINTER for MIPS
+Date: Fri, 26 Jul 2013 13:47:48 -0700
+Message-Id: <20130726204728.725267852@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,58 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Niels de Vos <ndevos@redhat.com>
+From: Markos Chandras <markos.chandras@imgtec.com>
 
-commit 53ce9a3364de0723b27d861de93bfc882f7db050 upstream.
+commit 25c87eae1725ed77a8b44d782a86abdc279b4ede upstream.
 
-In case d_lookup() returns a dentry with d_inode == NULL, the dentry is not
-returned with dput(). This results in triggering a BUG() in
-shrink_dcache_for_umount_subtree():
+FAULT_INJECTION_STACKTRACE_FILTER selects FRAME_POINTER but
+that symbol is not available for MIPS.
 
-  BUG: Dentry ...{i=0,n=...} still in use (1) [unmount of fuse fuse]
+Fixes the following problem on a randconfig:
+warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP &&
+ KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies
+(DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN ||
+MN10300 || METAG) || ARCH_WANT_FRAME_POINTERS)
 
-[SzM: need to d_drop() as well]
-
-Reported-by: Justin Clift <jclift@redhat.com>
-Signed-off-by: Niels de Vos <ndevos@redhat.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-Tested-by: Brian Foster <bfoster@redhat.com>
-Tested-by: Niels de Vos <ndevos@redhat.com>
+Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
+Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/5441/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fuse/dir.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ lib/Kconfig.debug |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/fuse/dir.c
-+++ b/fs/fuse/dir.c
-@@ -1229,9 +1229,15 @@ static int fuse_direntplus_link(struct f
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1272,7 +1272,7 @@ config FAULT_INJECTION_STACKTRACE_FILTER
+ 	depends on FAULT_INJECTION_DEBUG_FS && STACKTRACE_SUPPORT
+ 	depends on !X86_64
+ 	select STACKTRACE
+-	select FRAME_POINTER if !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
++	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
+ 	help
+ 	  Provide stacktrace filter for fault-injection capabilities
  
- 	name.hash = full_name_hash(name.name, name.len);
- 	dentry = d_lookup(parent, &name);
--	if (dentry && dentry->d_inode) {
-+	if (dentry) {
- 		inode = dentry->d_inode;
--		if (get_node_id(inode) == o->nodeid) {
-+		if (!inode) {
-+			d_drop(dentry);
-+		} else if (get_node_id(inode) != o->nodeid) {
-+			err = d_invalidate(dentry);
-+			if (err)
-+				goto out;
-+		} else {
- 			struct fuse_inode *fi;
- 			fi = get_fuse_inode(inode);
- 			spin_lock(&fc->lock);
-@@ -1244,9 +1250,6 @@ static int fuse_direntplus_link(struct f
- 			 */
- 			goto found;
- 		}
--		err = d_invalidate(dentry);
--		if (err)
--			goto out;
- 		dput(dentry);
- 		dentry = NULL;
- 	}
 
 
