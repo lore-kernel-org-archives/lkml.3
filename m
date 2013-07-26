@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933007Ab3GZVZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:25:27 -0400
-Received: from mail-qe0-f43.google.com ([209.85.128.43]:64473 "EHLO
-	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932780Ab3GZVZW (ORCPT
+	id S933341Ab3GZVZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:25:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932765Ab3GZUxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:25:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130726210317.GC20909@twins.programming.kicks-ass.net>
-References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
- <20130725112123.GT27075@twins.programming.kicks-ass.net> <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
- <20130725164051.GZ27075@twins.programming.kicks-ass.net> <20130725211521.GE18254@gmail.com>
- <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
- <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com> <20130726210317.GC20909@twins.programming.kicks-ass.net>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 26 Jul 2013 14:24:50 -0700
-Message-ID: <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
-Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
- in 3.11-rc2 (has twice regressed)
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 26 Jul 2013 16:53:31 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 09/59] SCSI: mpt2sas: fix firmware failure with wrong task attribute
+Date: Fri, 26 Jul 2013 13:52:33 -0700
+Message-Id: <20130726205014.806888679@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->
->
-> OK, so I have the below; however on a second look, Paul, shouldn't that
-> update_cfs_shares() call be in entity_tick(), right after calling
-> update_cfs_rq_blocked_load(). Because placing it in
-> update_cfs_rq_blocked_load() means its now called twice on the
-> enqueue/dequeue paths through:
->
->   {en,de}queue_entity()
->     {en,de}queue_entity_load_avg()
->       update_cfs_rq_blocked_load()
->         update_cfs_shares()
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, I agree: placing it directly in entity_tick() would be better.
+------------------
 
-[ In f269ae046 the calls to update_cfs_rq_blocked_load() were amortized
-and the separate update in {en,de}queue_entity_load_avg() were
-removed. ]
+From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+
+commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
+
+When SCSI command is received with task attribute not set, set it to SIMPLE.
+Previously it is set to untagged. This causes the firmware to fail the commands.
+
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3963,11 +3963,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
+ 			else
+ 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 		} else
+-/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
+-/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
+- */
+-			mpi_control |= (0x500);
+-
++			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	} else
+ 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	/* Make sure Device is not raid volume.
 
 
->
->
->
-> ---
-> Subject: sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
-> From: Max Hailperin <max@gustavus.edu>
->
-> We typically update a task_group's shares within the dequeue/enqueue
-> path.  However, continuously running tasks sharing a CPU are not
-> subject to these updates as they are only put/picked.  Unfortunately,
-> when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
-> periodic update that was supposed to account for this; resulting in a
-> potential loss of fairness.
->
-> To fix this, re-introduce the explicit update in
-> update_cfs_rq_blocked_load() [called via entity_tick()].
->
-> Cc: stable@kernel.org
-> Reviewed-by: Paul Turner <pjt@google.com>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-> ---
->  kernel/sched/fair.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1531,6 +1531,7 @@ static void update_cfs_rq_blocked_load(s
->         }
->
->         __update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
-> +       update_cfs_shares(cfs_rq);
->  }
->
->  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
