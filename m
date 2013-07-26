@@ -1,311 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759134Ab3GZO2D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:28:03 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:29403 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759112Ab3GZO16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:27:58 -0400
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Eric B Munson <emunson@mgebm.net>, Anton Blanchard <anton@samba.org>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <davidlohr.bueso@hp.com>
-Subject: [PATCH 2/2] hugepage: allow parallelization of the hugepage fault path
-Date: Fri, 26 Jul 2013 07:27:25 -0700
-Message-Id: <1374848845-1429-3-git-send-email-davidlohr.bueso@hp.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
-References: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
+	id S1759109Ab3GZOjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:39:20 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:41762 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757011Ab3GZOjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 10:39:18 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: Re: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI operation region handlers
+Date: Fri, 26 Jul 2013 16:49:23 +0200
+Message-ID: <3196577.UQScsUKI1B@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <2501577.sf07PMEtR1@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Gibson <david@gibson.dropbear.id.au>
+On Friday, July 26, 2013 01:54:00 AM Zheng, Lv wrote:
+> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> > Sent: Friday, July 26, 2013 5:29 AM
+> > 
+> > On Tuesday, July 23, 2013 04:09:43 PM Lv Zheng wrote:
+> > > This patch adds reference couting for ACPI operation region handlers to fix
+> > > races caused by the ACPICA address space callback invocations.
+> > >
+> > > ACPICA address space callback invocation is not suitable for Linux
+> > > CONFIG_MODULE=y execution environment.
+> > 
+> > Actually, can you please explain to me what *exactly* the problem is?
+> 
+> OK.  I'll add race explanations in the next revision.
+> 
+> The problem is there is no "lock" held inside ACPICA for invoking operation
+> region handlers.
+> Thus races happens between the acpi_remove/install_address_space_handler and
+> the handler/setup callbacks.
 
-At present, the page fault path for hugepages is serialized by a
-single mutex.  This is used to avoid spurious out-of-memory conditions
-when the hugepage pool is fully utilized (two processes or threads can
-race to instantiate the same mapping with the last hugepage from the
-pool, the race loser returning VM_FAULT_OOM).  This problem is
-specific to hugepages, because it is normal to want to use every
-single hugepage in the system - with normal pages we simply assume
-there will always be a few spare pages which can be used temporarily
-until the race is resolved.
+I see.  Now you're trying to introduce something that would prevent those
+races from happening, right?
 
-Unfortunately this serialization also means that clearing of hugepages
-cannot be parallelized across multiple CPUs, which can lead to very
-long process startup times when using large numbers of hugepages.
+> This is correct per ACPI specification.
+> As if there is interpreter locks held for invoking operation region handlers,
+> the timeout implemented inside the operation region handlers will make all
+> locking facilities (Acquire or Sleep,...) timed out.
+> Please refer to ACPI specification "5.5.2 Control Method Execution":
+> Interpretation of a Control Method is not preemptive, but it can block. When
+> a control method does block, OSPM can initiate or continue the execution of
+> a different control method. A control method can only assume that access to
+> global objects is exclusive for any period the control method does not block.
+> 
+> So it is pretty much likely that ACPI IO transfers are locked inside the
+> operation region callback implementations.
+> Using locking facility to protect the callback invocation will risk dead locks.
 
-This patch improves the situation by replacing the single mutex with a
-table of mutexes, selected based on a hash, which allows us to know
-which page in the file we're instantiating. For shared mappings, the
-hash key is selected based on the address space and file offset being faulted.
-Similarly, for private mappings, the mm and virtual address are used.
+No.  If you use a single global lock around all invocations of operation region
+handlers, it won't deadlock, but it will *serialize* things.  This means that
+there won't be two handlers executing in parallel.  That may or may not be bad
+depending on what those handlers actually do.
 
-From: Anton Blanchard <anton@samba.org>
-[https://lkml.org/lkml/2011/7/15/31]
-Forward ported and made a few changes:
+Your concern seems to be that if one address space handler is buggy and it
+blocks indefinitely, executing it under such a lock would affect the other
+address space handlers and in my opinion this is a valid concern.
 
-- Use the Jenkins hash to scatter the hash, better than using just the
-  low bits.
+So the idea seems to be to add wrappers around acpi_install_address_space_handler()
+and acpi_remove_address_space_handler (but I don't see where the latter is called
+after the change?), such that they will know when it is safe to unregister the
+handler.  That is simple enough.
 
-- Always round num_fault_mutexes to a power of two to avoid an
-  expensive modulus in the hash calculation.
+However, I'm not sure it is needed in the context of IPMI.  Your address space
+handler's context is NULL, so even it if is executed after
+acpi_remove_address_space_handler() has been called for it (or in parallel),
+it doesn't depend on anything passed by the caller, so I don't see why the
+issue can't be addressed by a proper synchronization between
+acpi_ipmi_exit() and acpi_ipmi_space_handler().
 
-I also tested this patch on a large POWER7 box using a simple parallel
-fault testcase:
+Clearly, acpi_ipmi_exit() should wait for all already running instances of
+acpi_ipmi_space_handler() to complete and all acpi_ipmi_space_handler()
+instances started after acpi_ipmi_exit() has been called must return
+immediately.
 
-http://ozlabs.org/~anton/junkcode/parallel_fault.c
+I would imagine an algorithm like this:
 
-Command line options:
+acpi_ipmi_exit()
+ 1. Take "address space handler lock".
+ 2. Set "unregistering address space handler" flag.
+ 3. Check if "count of currently running handlers" is 0.  If so,
+    call acpi_remove_address_space_handler(), drop the lock (possibly clear the
+    flag) and return.
+ 4. Otherwise drop the lock and go to sleep in "address space handler wait queue".
+ 5. When woken up, take "address space handler lock" and go to 3.
 
-parallel_fault <nr_threads> <size in kB> <skip in kB>
+acpi_ipmi_space_handler()
+ 1. Take "address space handler lock".
+ 2. Check "unregistering address space handler" flag.  If set, drop the lock
+    and return.
+ 3. Increment "count of currently running handlers".
+ 4. Drop the lock.
+ 5. Do your work.
+ 6. Take "address space handler lock".
+ 7. Decrement "count of currently running handlers" and if 0, signal the
+    tasks waiting on it to wake up.
+ 8. Drop the lock.
 
-First the time taken to fault 128GB of 16MB hugepages:
+Thanks,
+Rafael
 
-40.68 seconds
 
-Now the same test with 64 concurrent threads:
-39.34 seconds
-
-Hardly any speedup. Finally the 64 concurrent threads test with
-this patch applied:
-0.85 seconds
-
-We go from 40.68 seconds to 0.85 seconds, an improvement of 47.9x
-
-This was tested with the libhugetlbfs test suite, and the PASS/FAIL
-count was the same before and after this patch.
-
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-- Cleaned up and forward ported to Linus' latest.
-- Cache aligned mutexes.
-- Keep non SMP systems using a single mutex.
-
-It was found that this mutex can become quite contended
-during the early phases of large databases which make use of huge pages - for instance
-startup and initial runs. One clear example is a 1.5Gb Oracle database, where lockstat
-reports that this mutex can be one of the top 5 most contended locks in the kernel during
-the first few minutes:
-
-    	     hugetlb_instantiation_mutex:   10678     10678
-             ---------------------------
-             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
-             ---------------------------
-             hugetlb_instantiation_mutex    10678  [<ffffffff8115e14e>] hugetlb_fault+0x9e/0x340
-
-contentions:          10678
-acquisitions:         99476
-waittime-total: 76888911.01 us
-
-With this patch we see a much less contention and wait time:
-
-              &htlb_fault_mutex_table[i]:   383
-              --------------------------
-              &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
-              --------------------------
-              &htlb_fault_mutex_table[i]    383   [<ffffffff8115e27b>] hugetlb_fault+0x1eb/0x440
-
-contentions:        383
-acquisitions:    120546
-waittime-total: 1381.72 us
-
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Tested-by: Eric B Munson <emunson@mgebm.net>
-Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
----
- mm/hugetlb.c | 87 ++++++++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 73 insertions(+), 14 deletions(-)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 4c3f4f0..1426e44 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -21,6 +21,7 @@
- #include <linux/rmap.h>
- #include <linux/swap.h>
- #include <linux/swapops.h>
-+#include <linux/jhash.h>
- 
- #include <asm/page.h>
- #include <asm/pgtable.h>
-@@ -52,6 +53,13 @@ static unsigned long __initdata default_hstate_size;
-  */
- DEFINE_SPINLOCK(hugetlb_lock);
- 
-+/*
-+ * Serializes faults on the same logical page.  This is used to
-+ * prevent spurious OOMs when the hugepage pool is fully utilized.
-+ */
-+static int num_fault_mutexes;
-+static struct mutex *htlb_fault_mutex_table ____cacheline_aligned_in_smp;
-+
- static inline void unlock_or_release_subpool(struct hugepage_subpool *spool)
- {
- 	bool free = (spool->count == 0) && (spool->used_hpages == 0);
-@@ -1915,13 +1923,15 @@ static void __exit hugetlb_exit(void)
- 	for_each_hstate(h) {
- 		kobject_put(hstate_kobjs[hstate_index(h)]);
- 	}
--
-+	kfree(htlb_fault_mutex_table);
- 	kobject_put(hugepages_kobj);
- }
- module_exit(hugetlb_exit);
- 
- static int __init hugetlb_init(void)
- {
-+	int i;
-+
- 	/* Some platform decide whether they support huge pages at boot
- 	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
- 	 * there is no such support
-@@ -1946,6 +1956,19 @@ static int __init hugetlb_init(void)
- 	hugetlb_register_all_nodes();
- 	hugetlb_cgroup_file_init();
- 
-+#ifdef CONFIG_SMP
-+	num_fault_mutexes = roundup_pow_of_two(2 * num_possible_cpus());
-+#else
-+	num_fault_mutexes = 1;
-+#endif
-+	htlb_fault_mutex_table =
-+		kmalloc(sizeof(struct mutex) * num_fault_mutexes, GFP_KERNEL);
-+	if (!htlb_fault_mutex_table)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < num_fault_mutexes; i++)
-+		mutex_init(&htlb_fault_mutex_table[i]);
-+
- 	return 0;
- }
- module_init(hugetlb_init);
-@@ -2728,15 +2751,14 @@ static bool hugetlbfs_pagecache_present(struct hstate *h,
- }
- 
- static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
--			unsigned long address, pte_t *ptep, unsigned int flags)
-+			   struct address_space *mapping, pgoff_t idx,
-+			   unsigned long address, pte_t *ptep, unsigned int flags)
- {
- 	struct hstate *h = hstate_vma(vma);
- 	int ret = VM_FAULT_SIGBUS;
- 	int anon_rmap = 0;
--	pgoff_t idx;
- 	unsigned long size;
- 	struct page *page;
--	struct address_space *mapping;
- 	pte_t new_pte;
- 
- 	/*
-@@ -2750,9 +2772,6 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return ret;
- 	}
- 
--	mapping = vma->vm_file->f_mapping;
--	idx = vma_hugecache_offset(h, vma, address);
--
- 	/*
- 	 * Use page lock to guard against racing truncation
- 	 * before we get page_table_lock.
-@@ -2858,15 +2877,51 @@ backout_unlocked:
- 	goto out;
- }
- 
-+#ifdef CONFIG_SMP
-+static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
-+			    struct vm_area_struct *vma,
-+			    struct address_space *mapping,
-+			    pgoff_t idx, unsigned long address)
-+{
-+	unsigned long key[2];
-+	u32 hash;
-+
-+	if (vma->vm_flags & VM_SHARED) {
-+		key[0] = (unsigned long)mapping;
-+		key[1] = idx;
-+	} else {
-+		key[0] = (unsigned long)mm;
-+		key[1] = address >> huge_page_shift(h);
-+	}
-+
-+	hash = jhash2((u32 *)&key, sizeof(key)/sizeof(u32), 0);
-+
-+	return hash & (num_fault_mutexes - 1);
-+}
-+#else
-+/*
-+ * For uniprocesor systems we always use a single mutex, so just
-+ * return 0 and avoid the hashing overhead.
-+ */
-+static u32 fault_mutex_hash(struct hstate *h, struct mm_struct *mm,
-+			    struct vm_area_struct *vma,
-+			    struct address_space *mapping,
-+			    pgoff_t idx, unsigned long address)
-+{
-+	return 0;
-+}
-+#endif
-+
- int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, unsigned int flags)
- {
--	pte_t *ptep;
--	pte_t entry;
-+	pgoff_t idx;
- 	int ret;
-+	u32 hash;
-+	pte_t *ptep, entry;
- 	struct page *page = NULL;
-+	struct address_space *mapping;
- 	struct page *pagecache_page = NULL;
--	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
- 	struct hstate *h = hstate_vma(vma);
- 
- 	address &= huge_page_mask(h);
-@@ -2886,15 +2941,20 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (!ptep)
- 		return VM_FAULT_OOM;
- 
-+	mapping = vma->vm_file->f_mapping;
-+	idx = vma_hugecache_offset(h, vma, address);
-+
- 	/*
- 	 * Serialize hugepage allocation and instantiation, so that we don't
- 	 * get spurious allocation failures if two CPUs race to instantiate
- 	 * the same page in the page cache.
- 	 */
--	mutex_lock(&hugetlb_instantiation_mutex);
-+	hash = fault_mutex_hash(h, mm, vma, mapping, idx, address);
-+	mutex_lock(&htlb_fault_mutex_table[hash]);
-+
- 	entry = huge_ptep_get(ptep);
- 	if (huge_pte_none(entry)) {
--		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
-+		ret = hugetlb_no_page(mm, vma, mapping, idx, address, ptep, flags);
- 		goto out_mutex;
- 	}
- 
-@@ -2962,8 +3022,7 @@ out_page_table_lock:
- 	put_page(page);
- 
- out_mutex:
--	mutex_unlock(&hugetlb_instantiation_mutex);
--
-+	mutex_unlock(&htlb_fault_mutex_table[hash]);
- 	return ret;
- }
- 
 -- 
-1.7.11.7
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
