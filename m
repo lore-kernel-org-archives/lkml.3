@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab3GZDIW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:08:22 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:54186 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3GZDIR (ORCPT
+	id S1758041Ab3GZDLC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:11:02 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:40360 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919Ab3GZDLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:08:17 -0400
-Date: Thu, 25 Jul 2013 23:08:12 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-arch@vger.kernel.org
-Subject: Re: [PATCH] WIP: HACK: LPAE, BOOTMEM and NO_BOOTMEM
-Message-ID: <20130726030812.GB30195@mtj.dyndns.org>
-References: <20130629152959.GB31339@mtj.dyndns.org>
- <20130629172123.GA3353@n2100.arm.linux.org.uk>
- <20130629175743.GA382@mtj.dyndns.org>
- <CAE9FiQXHuP-n0eZ9wN73V4nSvE+XEExDsx1t50_=YaW+V=LGLg@mail.gmail.com>
- <20130629195549.GE3353@n2100.arm.linux.org.uk>
- <CAE9FiQUoVNvWmmTV2+ZkU_nMxFToTHw6QLwp_Z_EjwMzqdLwuA@mail.gmail.com>
- <51D18DBA.6090608@ti.com>
- <51F1A7AA.8080700@ti.com>
- <20130725223658.GJ26107@mtj.dyndns.org>
- <51F1B17F.30902@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F1B17F.30902@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 25 Jul 2013 23:11:00 -0400
+Date: Fri, 26 Jul 2013 13:10:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>, <intel-gfx@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: linux-next: manual merge of the drm-intel tree with the
+ drm-intel-fixes tree
+Message-Id: <20130726131057.e0afca6b0771f334111214dd@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Jul_2013_13_10_57_+1000_lahZHl1HmTTB4YG8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Fri__26_Jul_2013_13_10_57_+1000_lahZHl1HmTTB4YG8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jul 25, 2013 at 07:15:11PM -0400, Santosh Shilimkar wrote:
-> Sorry if I wasn't clear before, but I need help to at least have new
-> memblock API support since I am not familiar with memblock code. 
-> I could help in adaptation to the new API for ARM arch and
-> core kernel code.
-> 
-> Let me know your thoughts.
+Hi all,
 
-Unfortunately, I'm currently a bit too occupied to work on it myself.
-Any volunteers?
+Today's linux-next merge of the drm-intel tree got a conflict in
+drivers/gpu/drm/i915/i915_dma.c between commit 14c5cec5d0cd ("drm/i915:
+initialize gt_lock early with other spin locks") from the drm-intel-fixes
+tree and commit 907b28c56ea4 ("drm/i915: Colocate all GT access routines
+in the same file") from the drm-intel tree.
 
-Thanks.
+I fixed it up (using the drm-intel tree version) and can carry the fix as
+necessary (no action is required).
 
--- 
-tejun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Fri__26_Jul_2013_13_10_57_+1000_lahZHl1HmTTB4YG8
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR8ejBAAoJEECxmPOUX5FER9sP/3GOnPi0rOaP7yN09Tp2QlM2
+ch4VXEuJNN05rCLV2VX8m/sVxFFiM+RfK+dXMrCxJjSH9Wkb5XdSV5ZtRx4CYIqU
+VISCCIAEebbQEAl2Hj7aJ0JrLh4r/5Pr67CtAKyRe10bbfpYyEwqyQOeMwxJK/8J
+6hK+mejM8cso+muG2vV0GPq2EzuLrbTgHHJBNmoUND3mM+PlOTb+AeErGKGQV2t3
+b0eYKF2WpGHJnDjIpzg8CI6p7oKrhrCzl9EjclURRu3vnsEBnnGoOvL87cyyfw9P
+zQBUtkN89mOIgWHw/BXh4XPK7xPDzpfzVBMI+kLh4vz0H6WyDXo7yJMKtqr/UEAs
+bONyIBDju+JOkhYB2a1dMr7wq6d1qUo2ZgK6pQM0nkUfqyl/31vhflWHrpOQagT5
+7YodEbzaOY5wxWpEocqhDVejms4BvFoYqgw3VxmZI/Vminqtq74OVjNWE/7sLX9a
+LcvGjMJtuuYKAuTMeAgvdxtl344GT9MkpysCgbAaToSv/rbXePj9QoInGKwI8flr
+pK3jAwaAMjbWZGMttrdnuKvhDr9QVhhbn8oJ7GoxDr3J8asBj99kF4NDBOcFfi5a
+ozySdN7BqsZYPg5SXB5a/34Zgae4XDWobgz0RYoD5AMjeZs/SFO2j7byxWH5B3wi
+mbesQh7LoOeFw/p0w6HO
+=5jmo
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__26_Jul_2013_13_10_57_+1000_lahZHl1HmTTB4YG8--
