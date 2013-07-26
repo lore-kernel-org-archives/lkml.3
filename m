@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760722Ab3GZVih (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:38:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42348 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757666Ab3GZVic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:38:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rik van Riel <riel@redhat.com>, Jeremy Eder <jeder@redhat.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, linux-kernel@vger.kernel.org,
-        rafael.j.wysocki@intel.com, youquan.song@intel.com,
-        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
-        len.brown@intel.com, Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-Date: Fri, 26 Jul 2013 23:48:36 +0200
-Message-ID: <1661917.srTpO55z5q@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51F2C014.90102@redhat.com>
-References: <20130726173306.GB17985@jeder.rdu.redhat.com> <51F2BF8C.7010308@linux.intel.com> <51F2C014.90102@redhat.com>
+	id S1760740Ab3GZVi4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:38:56 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57025 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760010Ab3GZViu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 17:38:50 -0400
+Message-ID: <51F2EC66.2080200@wwwdotorg.org>
+Date: Fri, 26 Jul 2013 15:38:46 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Chew <AChew@nvidia.com>
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mfd: palmas: Add DVFS mux setting
+References: <1374871308-490-1-git-send-email-achew@nvidia.com> <51F2E74E.2060107@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 26, 2013 02:29:40 PM Rik van Riel wrote:
-> On 07/26/2013 02:27 PM, Arjan van de Ven wrote:
-> > On 7/26/2013 11:13 AM, Rik van Riel wrote:
-> >
-> >>
-> >> Could you try running the tests with just the repeat mode
-> >> stuff from commit 69a37bea excluded, but leaving the common
-> >> infrastructure and commit e11538?
-> >>
-> >
-> > personally I think we should go the other way around.
-> > revert the set entirely first, and now, and get our performance back
-> > to what it should be
-> >
-> > and then see what we can add back without causing the regressions.
-> > this may take longer, or be done in steps, and that's ok.
-> >
-> > the end point may well be the same... but we can then evaluate in the right
-> > direction.
+On 07/26/2013 03:28 PM, Andrew Chew wrote:
+>> On 07/26/2013 02:41 PM, Andrew Chew wrote:
+>>> There exists a PRIMARY_SECONDARY_PAD3 in the same register base as
+>>> PRIMARY_SECONDARY_PAD2, which controls the function of certain pins.
+>>> Add a property for this setting.
+>>
+>> How does this interact with the pinctrl driver that Laxman just sent for
+>> Palmas?
+>>
+>> https://lkml.org/lkml/2013/7/26/141
+>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
 > 
-> Works for me. I have no objection to reverting both patches,
-> if the people planning to fix the code prefer that :)
+> Thanks for pointing this out.  Given this:
+> 
+> +Optional properties:
+> +- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1 mode.
+> +- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2 mode.
+> 
+> I think his work already encompasses what my patch is supposed to do.
+> 
+> Abandoning this patch.
 
-OK, I'll queue up the reverts as fixes for 3.11-rc4.
+OK, that's simple!
 
-Thanks,
-Rafael
-
+Are the existing ti,mux-pad1/ti,mux-pad2 properties already in the
+binding redundant with Laxman's pinctrl driver?
