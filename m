@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3GZG4Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 02:56:25 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:44082 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753534Ab3GZG4U (ORCPT
+	id S1756939Ab3GZG4h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 02:56:37 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35591 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756605Ab3GZG43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 02:56:20 -0400
+	Fri, 26 Jul 2013 02:56:29 -0400
 From: Rui Wang <ruiv.wang@gmail.com>
 To: bhelgaas@google.com
 Cc: tony.luck@intel.com, chaohong.guo@intel.com, gong.chen@linux.intel.com,
         rafael.j.wysocki@intel.com, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org, Rui Wang <rui.y.wang@intel.com>
-Subject: [RFC 1/3] IO Hook: core functions and Register Override
-Date: Fri, 26 Jul 2013 14:51:13 +0800
-Message-Id: <1374821475-3196-2-git-send-email-rui.y.wang@intel.com>
+Subject: [RFC 3/3] IO Hook: sysfs interface to emulate h/w events
+Date: Fri, 26 Jul 2013 14:51:15 +0800
+Message-Id: <1374821475-3196-4-git-send-email-rui.y.wang@intel.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1374821475-3196-1-git-send-email-rui.y.wang@intel.com>
 References: <1374821475-3196-1-git-send-email-rui.y.wang@intel.com>
@@ -22,745 +22,884 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides a hook in the core h/w access functions in the kernel.
-It also introduces Register Override, which is a set of bits defined in RAM
-to override the real value of a h/w register. With the hook in place, access
-to h/w registers can be redirected to Register Overrides with user-defined
-values, so that h/w states can be emulated easily.
+iohook is a driver that exports sysfs interfaces used to talk to the IO Hook
+in the kernel in order to emulate h/w events. Here's how it works:
 
-A Register Override can be defined in whatever bit-width, identified by its
-address, bitmask, initial value and attributs like read-only, read-write,
-write-clear, etc., similar to how a hardware register behaves when accessed.
+The sysfs interfaces can be used to add/delete Register Overrides with user-
+defined values. The user can also specify which IRQ to be triggered via
+Inter-Processor Interrupt (IPI) while the h/w registers are being overridden.
+When the irq handler is triggered by the IPI it looks for the registers
+specific to some h/w events. As long as the Register Overrides are setup
+correctly, the irq  handler  will believe that the h/w is in a state
+corresponding to a predefined interrupt, thus process the event.
 
-Jump Label is used, so when the hook is disabled (by default), this adds
-only a NOP to the core functions, with zero performance penalty.
+This can be typically used to generate ACPI events, PCI interrupts, PCIe
+AER injection etc., and can thus be used to help test RAS features like
+the hotplug of CPU/MEM/IOH on machines that are not capable of generating
+the events.
 
-This is the first step towards the goal of emulating h/w events.
+See Documentation/PCI/iohook.txt for usage details.
 
 Signed-off-by: Rui Wang <rui.y.wang@intel.com>
 ---
- arch/x86/Kconfig                  |    7 +
- arch/x86/boot/compressed/Makefile |    1 +
- arch/x86/include/asm/io.h         |   58 +++++-
- arch/x86/vdso/Makefile            |    2 +
- drivers/pci/access.c              |  480 +++++++++++++++++++++++++++++++++++++
- include/linux/reg_ovrd.h          |   46 ++++
- 6 files changed, 592 insertions(+), 2 deletions(-)
- create mode 100644 include/linux/reg_ovrd.h
+ Documentation/PCI/iohook.txt |  290 ++++++++++++++++++++++++
+ drivers/misc/Kconfig         |    1 +
+ drivers/misc/Makefile        |    1 +
+ drivers/misc/iohook/Kconfig  |    5 +
+ drivers/misc/iohook/Makefile |    1 +
+ drivers/misc/iohook/iohook.c |  503 ++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 801 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/PCI/iohook.txt
+ create mode 100644 drivers/misc/iohook/Kconfig
+ create mode 100644 drivers/misc/iohook/Makefile
+ create mode 100644 drivers/misc/iohook/iohook.c
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index fe120da..b4fb8b1 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2329,6 +2329,13 @@ config X86_DMA_REMAP
- 	bool
- 	depends on STA2X11
- 
-+config IO_HOOK
-+	bool "hook hardware access functions"
-+	default y
-+	depends on PCI
-+	help
-+	  Select this to enable hooking hw access functions
-+
- source "net/Kconfig"
- 
- source "drivers/Kconfig"
-diff --git a/arch/x86/boot/compressed/Makefile b/arch/x86/boot/compressed/Makefile
-index 5ef205c..73b775c 100644
---- a/arch/x86/boot/compressed/Makefile
-+++ b/arch/x86/boot/compressed/Makefile
-@@ -9,6 +9,7 @@ targets := vmlinux vmlinux.bin vmlinux.bin.gz vmlinux.bin.bz2 vmlinux.bin.lzma v
- KBUILD_CFLAGS := -m$(BITS) -D__KERNEL__ $(LINUX_INCLUDE) -O2
- KBUILD_CFLAGS += -fno-strict-aliasing -fPIC
- KBUILD_CFLAGS += -DDISABLE_BRANCH_PROFILING
-+KBUILD_CFLAGS += -DNO_IO_HOOK
- cflags-$(CONFIG_X86_32) := -march=i386
- cflags-$(CONFIG_X86_64) := -mcmodel=small
- KBUILD_CFLAGS += $(cflags-y)
-diff --git a/arch/x86/include/asm/io.h b/arch/x86/include/asm/io.h
-index d8e8eef..f2c7065 100644
---- a/arch/x86/include/asm/io.h
-+++ b/arch/x86/include/asm/io.h
-@@ -40,14 +40,42 @@
- #include <linux/compiler.h>
- #include <asm/page.h>
- 
-+#if !defined(NO_IO_HOOK) && defined(CONFIG_IO_HOOK)
-+#include <linux/jump_label.h>
-+
-+extern int do_mem_read_ovrd(void *addr, int size, void *val);
-+extern int do_mem_write_ovrd(void *addr, int size, void *val);
-+extern struct static_key ovrdhw_enabled;
-+
-+#define mem_read_ovrd(type, addr) \
-+{ \
-+	type val;\
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !do_mem_read_ovrd((void *)addr, sizeof(type), &val))\
-+		return val;						\
-+}
-+
-+#define mem_write_ovrd(type, addr, val)	\
-+{ \
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !do_mem_write_ovrd((void *)addr, sizeof(type), &val))\
-+		return;							\
-+}
-+#else /* CONFIG_IO_HOOK */
-+#define mem_read_ovrd(type, addr)
-+#define mem_write_ovrd(type, addr, val)
-+#endif /* CONFIG_IO_HOOK */
-+
- #define build_mmio_read(name, size, type, reg, barrier) \
- static inline type name(const volatile void __iomem *addr) \
--{ type ret; asm volatile("mov" size " %1,%0":reg (ret) \
-+{ type ret; mem_read_ovrd(type, addr);	\
-+asm volatile("mov" size " %1,%0" : reg(ret) \
- :"m" (*(volatile type __force *)addr) barrier); return ret; }
- 
- #define build_mmio_write(name, size, type, reg, barrier) \
- static inline void name(type val, volatile void __iomem *addr) \
--{ asm volatile("mov" size " %0,%1": :reg (val), \
-+{ mem_write_ovrd(type, addr, val);	\
-+asm volatile("mov" size " %0,%1" : : reg(val), \
- "m" (*(volatile type __force *)addr) barrier); }
- 
- build_mmio_read(readb, "b", unsigned char, "=q", :"memory")
-@@ -265,9 +293,34 @@ static inline void slow_down_io(void)
- 
- #endif
- 
-+#if !defined(NO_IO_HOOK) && defined(CONFIG_IO_HOOK)
-+extern int do_io_write_ovrd(int port, int len, void *value);
-+extern int do_io_read_ovrd(int port, int len, void *value);
-+
-+#define io_write_ovrd(type, value, port)				\
-+{									\
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !do_io_write_ovrd(port, sizeof(type), &value))	\
-+		return;							\
-+}
-+
-+#define io_read_ovrd(type, port)					\
-+{									\
-+	type val;							\
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !do_io_read_ovrd(port, sizeof(type), &val))	\
-+		return val;						\
-+}
-+
-+#else
-+#define io_write_ovrd(type, value, port)
-+#define io_read_ovrd(type, port)
-+#endif
-+
- #define BUILDIO(bwl, bw, type)						\
- static inline void out##bwl(unsigned type value, int port)		\
- {									\
-+	io_write_ovrd(type, value, port);				\
- 	asm volatile("out" #bwl " %" #bw "0, %w1"			\
- 		     : : "a"(value), "Nd"(port));			\
- }									\
-@@ -275,6 +328,7 @@ static inline void out##bwl(unsigned type value, int port)		\
- static inline unsigned type in##bwl(int port)				\
- {									\
- 	unsigned type value;						\
-+	io_read_ovrd(type, port);					\
- 	asm volatile("in" #bwl " %w1, %" #bw "0"			\
- 		     : "=a"(value) : "Nd"(port));			\
- 	return value;							\
-diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
-index fd14be1..ea7b089c 100644
---- a/arch/x86/vdso/Makefile
-+++ b/arch/x86/vdso/Makefile
-@@ -2,6 +2,8 @@
- # Building vDSO images for x86.
- #
- 
-+KBUILD_CFLAGS += -DNO_IO_HOOK
-+
- VDSO64-$(CONFIG_X86_64)		:= y
- VDSOX32-$(CONFIG_X86_X32_ABI)	:= y
- VDSO32-$(CONFIG_X86_32)		:= y
-diff --git a/drivers/pci/access.c b/drivers/pci/access.c
-index 1cc2366..fe7b282 100644
---- a/drivers/pci/access.c
-+++ b/drivers/pci/access.c
-@@ -5,6 +5,8 @@
- #include <linux/slab.h>
- #include <linux/ioport.h>
- #include <linux/wait.h>
-+#include <linux/reg_ovrd.h>
-+#include <linux/jump_label.h>
- 
- #include "pci.h"
- 
-@@ -15,6 +17,480 @@
- 
- DEFINE_RAW_SPINLOCK(pci_lock);
- 
-+#ifdef CONFIG_IO_HOOK
-+DEFINE_RAW_SPINLOCK(io_hook_lock);
-+
-+LIST_HEAD(ovrd_io_reg_map);
-+LIST_HEAD(ovrd_mem_reg_map);
-+LIST_HEAD(ovrd_pci_conf_reg_map);
-+
-+struct static_key ovrdhw_enabled = STATIC_KEY_INIT_FALSE;
-+EXPORT_SYMBOL(ovrdhw_enabled);
-+
-+/* len should only be 1, 2, 4, 8 */
-+static int mem_read(u64 address, int len, void *data)
-+{
-+	int ret = 0;
-+
-+	switch (len) {
-+	case 1:
-+		*(u8 *)data = *(u8 *)address;
-+		break;
-+	case 2:
-+		*(u16 *)data = *(u16 *)address;
-+		break;
-+	case 4:
-+		*(u32 *)data = *(u32 *)address;
-+		break;
-+	case 8:
-+		*(u64 *)data = *(u64 *)address;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+
-+}
-+
-+static int mem_write(u64 address, int len, void *value)
-+{
-+	int ret = 0;
-+
-+	switch (len) {
-+	case 1:
-+		*(u8 *)address = *(u8 *)value;
-+		break;
-+	case 2:
-+		*(u16 *)address = *(u16 *)value;
-+		break;
-+	case 4:
-+		*(u32 *)address = *(u32 *)value;
-+		break;
-+	case 8:
-+		*(u64 *)address = *(u64 *)value;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+
-+}
-+
-+/* len should only be 1, 2, 4 */
-+static int io_read(u64 address, int len, void *data)
-+{
-+	int ret = 0;
-+	u16 port;
-+	u8 bvalue;
-+	u16 wvalue;
-+	u32 lvalue;
-+
-+
-+	port = (u16)address;
-+
-+	switch (len) {
-+	case 1:
-+		asm volatile ("inb %w1, %b0" : "=a"(bvalue) : "Nd"(port));
-+		*(u8 *)data = bvalue;
-+		break;
-+	case 2:
-+		asm volatile ("inw %w1, %w0" : "=a"(wvalue) : "Nd"(port));
-+		*(u16 *)data = wvalue;
-+		break;
-+	case 4:
-+		asm volatile ("inl %w1, %0" : "=a"(lvalue) : "Nd"(port));
-+		*(u32 *)data = lvalue;
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+
-+}
-+
-+static int io_write(u64 address, int len, void *data)
-+{
-+	int ret = 0;
-+	u8 bvalue;
-+	u16 wvalue, port;
-+	u32 lvalue;
-+
-+	port = (u16)address;
-+
-+	switch (len) {
-+	case 1:
-+		bvalue = *(u8 *)data;
-+		asm volatile ("outb %b0, %w1" : : "a"(bvalue), "Nd"(port));
-+		break;
-+	case 2:
-+		wvalue = *(u16 *)data;
-+		asm volatile ("outw %w0, %w1" : : "a"(wvalue), "Nd"(port));
-+		break;
-+	case 4:
-+		lvalue = *(u32 *)data;
-+		asm volatile ("outl %0, %w1" : : "a"(lvalue), "Nd"(port));
-+		break;
-+	default:
-+		ret = -EINVAL;
-+		break;
-+	}
-+
-+	return ret;
-+
-+}
-+
-+/* shift left if i>=0, otherwise shift right */
-+#define BYTE_SHIFT(value, i) \
-+	((i) >= 0 ? (value) << (i)*8 : (value) >> (-i)*8)
-+
-+int read_ovrd_common(int spaceid, u64 address, int len, void *value,
-+		struct pci_bus *bus)
-+{
-+	struct list_head *ovrd_list;
-+	struct reg_ovrd *ovrd_reg;
-+	unsigned long lock_flags = 0, flags = 0;
-+	u64 faddress, vaddr = 0;
-+	u64 data, bit_mask, attrib, val;
-+	unsigned int devfn = 0, pos = 0;
-+	int i, flength, res, ret;
-+
-+	ret = -EINVAL;
-+
-+	if (spaceid == OVRD_SPACE_MEM) {
-+		/* in the case of memory, 'address' is virtual */
-+		vaddr = address;
-+		address = virt_to_phys((void *)address);
-+		ovrd_list = &ovrd_mem_reg_map;
-+	} else if (spaceid == OVRD_SPACE_IO) {
-+		ovrd_list = &ovrd_io_reg_map;
-+	} else if (spaceid == OVRD_SPACE_PCICONF) {
-+		devfn = PCI_DECODE_DEVFN(address);
-+		pos = PCI_DECODE_POS(address);
-+		ovrd_list = &ovrd_pci_conf_reg_map;
-+	} else {
-+		return ret;
-+	}
-+
-+	raw_spin_lock_irqsave(&io_hook_lock, lock_flags);
-+	list_for_each_entry(ovrd_reg, ovrd_list, node) {
-+
-+		faddress = ovrd_reg->address;
-+		flength = ovrd_reg->length;
-+		val = ovrd_reg->val;
-+		bit_mask = ovrd_reg->bit_mask;
-+		attrib = ovrd_reg->attrib;
-+
-+		if (address >= faddress + flength ||
-+			address + len <= faddress) {
-+			/* no overlap, skip */
-+			continue;
-+		}
-+
-+		raw_spin_unlock_irqrestore(&io_hook_lock,
-+			lock_flags);
-+
-+		/* at least one byte falls into the overridden range */
-+		data = 0;
-+		ret = 0;
-+		if (!(address >= faddress && address+len <= faddress+flength &&
-+			bit_mask == (u64)((1<<flength*8) - 1))) {
-+			/* partially overridden. Read from HW for real bits */
-+
-+			if (spaceid == OVRD_SPACE_MEM) {
-+				res = mem_read(vaddr, len, &data);
-+			} else if (spaceid == OVRD_SPACE_IO) {
-+				res = io_read(address, len, &data);
-+			} else if (spaceid == OVRD_SPACE_PCICONF) {
-+				raw_spin_lock_irqsave(&pci_lock, flags);
-+				res = bus->ops->read(bus, devfn, pos, len,
-+							(u32 *)&data);
-+				raw_spin_unlock_irqrestore(&pci_lock, flags);
-+			} else
-+				goto out;
-+
-+			if (res) {
-+				/* failed to read from HW, clear the result */
-+				data = 0;
-+			}
-+		}
-+
-+		for (i = 0; i < len; i++) {
-+			if (address+i >= faddress &&
-+				address+i < faddress+flength) {
-+				int j, k;
-+
-+				j = address + i - faddress;
-+				k = faddress - address;
-+				if (flength <= 8) {
-+					/* <= 8 bytes, use bit_mask */
-+					u64 byte_mask;
-+
-+					byte_mask =
-+						bit_mask & BYTE_SHIFT(0xff, j);
-+					data &= ~BYTE_SHIFT(byte_mask, k);
-+					data |= BYTE_SHIFT(val & byte_mask, k);
-+					if (attrib == OVRD_RC)
-+						ovrd_reg->val &= ~byte_mask;
-+
-+				} else {
-+					/* If flength is > 8, this is
-+					 * used to override a consecutive
-+					 * range of readonly identical
-+					 * bytes.
-+					 */
-+					data |= (val & 0xff) << i*8;
-+				}
-+			}
-+		}
-+
-+		switch (len) {
-+		case 1:
-+			*(u8 *)value = (u8)data;
-+			break;
-+		case 2:
-+			*(u16 *)value = (u16)data;
-+			break;
-+		case 4:
-+			*(u32 *)value = (u32)data;
-+			break;
-+		case 8:
-+			*(u64 *)value = data;
-+			break;
-+		default:
-+			ret = -EINVAL;
-+			goto out;
-+		}
-+
-+		raw_spin_lock_irqsave(&io_hook_lock,
-+			lock_flags);
-+	}
-+
-+	raw_spin_unlock_irqrestore(&io_hook_lock, lock_flags);
-+out:
-+	return ret;
-+}
-+
-+int write_ovrd_common(int spaceid, u64 address, int len, void *data,
-+	struct pci_bus *bus)
-+{
-+	struct list_head *ovrd_list;
-+	struct reg_ovrd *ovrd_reg;
-+	unsigned long lock_flags = 0, flags = 0;
-+	u64 faddress;
-+	u64  bit_mask, val, attrib;
-+	unsigned int devfn = 0, pos = 0;
-+	int i, flength, res, ret;
-+	u64 value;
-+
-+	ret = -EINVAL;
-+
-+	if (spaceid == OVRD_SPACE_MEM) {
-+		ovrd_list = &ovrd_mem_reg_map;
-+	} else if (spaceid == OVRD_SPACE_IO) {
-+		ovrd_list = &ovrd_io_reg_map;
-+	} else if (spaceid == OVRD_SPACE_PCICONF) {
-+		devfn = PCI_DECODE_DEVFN(address);
-+		pos = PCI_DECODE_POS(address);
-+		ovrd_list = &ovrd_pci_conf_reg_map;
-+	} else {
-+		return ret;
-+	}
-+
-+	raw_spin_lock_irqsave(&io_hook_lock, lock_flags);
-+	list_for_each_entry(ovrd_reg, ovrd_list, node) {
-+
-+		faddress = ovrd_reg->address;
-+		flength = ovrd_reg->length;
-+		val = ovrd_reg->val;
-+		bit_mask = ovrd_reg->bit_mask;
-+		attrib = ovrd_reg->attrib;
-+		value = *(u64 *)data;
-+
-+		if (address >= faddress + flength ||
-+			address + len <= faddress) {
-+			/* no overlap, skip */
-+			continue;
-+		}
-+
-+		ret = 0;
-+
-+		if (!(address >= faddress && address+len <= faddress+flength &&
-+			bit_mask == (u64)((1<<flength*8) - 1))) {
-+			/* partially overridden. write to HW for real bits */
-+			if (spaceid == OVRD_SPACE_MEM) {
-+				res = mem_write(address, len, data);
-+			} else if (spaceid == OVRD_SPACE_IO) {
-+				res = io_write(address, len, data);
-+			} else if (spaceid == OVRD_SPACE_PCICONF) {
-+				raw_spin_unlock_irqrestore(&io_hook_lock,
-+					lock_flags);
-+				raw_spin_lock_irqsave(&pci_lock, flags);
-+				bus->ops->write(bus, devfn, pos, len,
-+							(u32)value);
-+				raw_spin_unlock_irqrestore(&pci_lock, flags);
-+				raw_spin_lock_irqsave(&io_hook_lock,
-+					lock_flags);
-+			} else
-+				break;
-+		}
-+
-+		for (i = 0; i < len; i++) {
-+			if (address+i >= faddress &&
-+				address+i < faddress+flength) {
-+				int j, k;
-+
-+				j = address + i - faddress;
-+				k = faddress - address;
-+				if (flength <= 8) {
-+					/* <= 8 bytes, use bit_mask */
-+					u64 byte_mask;
-+
-+					byte_mask =
-+						bit_mask & BYTE_SHIFT(0xff, j);
-+					if (attrib == OVRD_RW) {
-+						ovrd_reg->val &= ~byte_mask;
-+						ovrd_reg->val |=
-+							BYTE_SHIFT(value, k)
-+								& byte_mask;
-+					} else if (attrib == OVRD_WC) {
-+						ovrd_reg->val &=
-+							~(BYTE_SHIFT(value, k)
-+							& byte_mask);
-+					}
-+
-+				}
-+				/* if flength > 8, must be OVRD_RO */
-+			}
-+		}
-+
-+	}
-+
-+	raw_spin_unlock_irqrestore(&io_hook_lock, lock_flags);
-+
-+	return ret;
-+}
-+
-+int pci_bus_read_config_ovrd(struct pci_bus *bus, unsigned int devfn,
-+		int pos, int len, void *value)
-+{
-+	u64 address;
-+	int ret;
-+
-+	address = PCI_ENCODE_ADDR(pci_domain_nr(bus), bus->number, devfn, pos);
-+
-+	ret = read_ovrd_common(OVRD_SPACE_PCICONF, address, len,
-+			value, bus);
-+	if (!ret)
-+		pr_info("read from %x:%x+%x-%x, ret=%x, val=0x%x\n",
-+			bus->number, devfn, pos, len, ret, *(u32 *)value);
-+	return ret;
-+
-+}
-+
-+int pci_bus_write_config_ovrd(struct pci_bus *bus, unsigned int devfn,
-+		int pos, int len, u32 value)
-+{
-+	u64 address;
-+	int ret;
-+
-+	address = PCI_ENCODE_ADDR(pci_domain_nr(bus), bus->number, devfn, pos);
-+	ret = write_ovrd_common(OVRD_SPACE_PCICONF, address, len,
-+			&value, bus);
-+	if (!ret)
-+		pr_info("write to %x:%x+%x-%x, ret=0x%x, val=0x%x\n",
-+			bus->number, devfn, pos, len, ret, value);
-+	return ret;
-+
-+
-+}
-+
-+int do_mem_read_ovrd(void *addr, int size, void *val)
-+{
-+	int ret;
-+
-+	ret = read_ovrd_common(OVRD_SPACE_MEM, (u64)addr, size,
-+			val, NULL);
-+	if (!ret)
-+		pr_info("read from mem %p-%x, ret=0x%x, val=0x%llx\n",
-+			addr, size, ret, (*(u64 *)val) & ((1<<size*8)-1));
-+
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL(do_mem_read_ovrd);
-+
-+int do_mem_write_ovrd(void *addr, int size, void *val)
-+{
-+	int ret;
-+
-+	ret = write_ovrd_common(OVRD_SPACE_MEM, (u64)addr, size,
-+			val, NULL);
-+	if (!ret)
-+		pr_info("write to mem %p-%x, ret=0x%x, val=0x%llx\n",
-+			addr, size, ret, (*(u64 *)val) & ((1<<size*8)-1));
-+
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL(do_mem_write_ovrd);
-+
-+int do_io_write_ovrd(int port, int len, void *value)
-+{
-+	int ret;
-+
-+	ret = write_ovrd_common(OVRD_SPACE_IO, (u64)port, len,
-+			value, NULL);
-+	if (!ret)
-+		pr_info("write to port %x-%x, ret=0x%x, val=0x%x\n",
-+			port, len, ret, (*(u32 *)value) & ((1<<len*8)-1));
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL(do_io_write_ovrd);
-+
-+int do_io_read_ovrd(int port, int len, void *value)
-+{
-+	int ret;
-+
-+	ret = read_ovrd_common(OVRD_SPACE_IO, (u64)port, len,
-+			value, NULL);
-+	if (!ret)
-+		pr_info("read from port %x-%x, ret=0x%x, val=0x%x\n",
-+			port, len, ret, (*(u32 *)value) & ((1<<len*8)-1));
-+	return ret;
-+
-+}
-+EXPORT_SYMBOL(do_io_read_ovrd);
-+
-+#define pci_read_ovrd(bus, devfn, pos, len, value)			\
-+{ \
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !pci_bus_read_config_ovrd(bus, devfn, pos,	\
-+		len, value))						\
-+		return 0; \
-+}
-+
-+#define pci_write_ovrd(bus, devfn, pos, len, value)			\
-+{ \
-+	if (static_key_false(&ovrdhw_enabled)			\
-+		&& !pci_bus_write_config_ovrd(bus, devfn, pos,	\
-+		len, value))						\
-+		return 0; \
-+}
-+
-+#else
-+
-+#define pci_read_ovrd(bus, devfn, pos, len, value)
-+#define pci_write_ovrd(bus, devfn, pos, len, value)
-+
-+#endif	/* CONFIG_IO_HOOK */
-+
- /*
-  *  Wrappers for all PCI configuration access functions.  They just check
-  *  alignment, do locking and call the low-level functions pointed to
-@@ -33,6 +509,7 @@ int pci_bus_read_config_##size \
- 	unsigned long flags;						\
- 	u32 data = 0;							\
- 	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;	\
-+	pci_read_ovrd(bus, devfn, pos, len, value);			\
- 	raw_spin_lock_irqsave(&pci_lock, flags);			\
- 	res = bus->ops->read(bus, devfn, pos, len, &data);		\
- 	*value = (type)data;						\
-@@ -47,6 +524,7 @@ int pci_bus_write_config_##size \
- 	int res;							\
- 	unsigned long flags;						\
- 	if (PCI_##size##_BAD) return PCIBIOS_BAD_REGISTER_NUMBER;	\
-+	pci_write_ovrd(bus, devfn, pos, len, value)			\
- 	raw_spin_lock_irqsave(&pci_lock, flags);			\
- 	res = bus->ops->write(bus, devfn, pos, len, value);		\
- 	raw_spin_unlock_irqrestore(&pci_lock, flags);		\
-@@ -152,6 +630,7 @@ int pci_user_read_config_##size						\
- 	u32 data = -1;							\
- 	if (PCI_##size##_BAD)						\
- 		return -EINVAL;						\
-+	pci_read_ovrd(dev->bus, dev->devfn, pos, sizeof(type), (void *)val);\
- 	raw_spin_lock_irq(&pci_lock);				\
- 	if (unlikely(dev->block_cfg_access))				\
- 		pci_wait_cfg(dev);					\
-@@ -173,6 +652,7 @@ int pci_user_write_config_##size					\
- 	int ret = -EIO;							\
- 	if (PCI_##size##_BAD)						\
- 		return -EINVAL;						\
-+	pci_write_ovrd(dev->bus, dev->devfn, pos, sizeof(type), val);\
- 	raw_spin_lock_irq(&pci_lock);				\
- 	if (unlikely(dev->block_cfg_access))				\
- 		pci_wait_cfg(dev);					\
-diff --git a/include/linux/reg_ovrd.h b/include/linux/reg_ovrd.h
+diff --git a/Documentation/PCI/iohook.txt b/Documentation/PCI/iohook.txt
 new file mode 100644
-index 0000000..5f851fe
+index 0000000..bb0b04d
 --- /dev/null
-+++ b/include/linux/reg_ovrd.h
-@@ -0,0 +1,46 @@
-+#ifndef __REG_OVRD_H__
-+#define __REG_OVRD_H__
++++ b/Documentation/PCI/iohook.txt
+@@ -0,0 +1,290 @@
++Emulating h/w events via iohook
++=================================
 +
-+#include <linux/types.h>
-+#include <linux/spinlock_types.h>
++1. Introduction
++2. How to use it
++3. Use cases
 +
-+#define	OVRD_RW	0	/* readwrite */
-+#define	OVRD_RO	1	/* readonly */
-+#define	OVRD_RC	4	/* read clear */
-+#define	OVRD_WC	8	/* write clear */
++1. Introduction
++---------------------
++IO Hook is  a  mechanism to intercept  i/o register access  functions in the
++kernel. By overriding h/w register bits with user-defined bits in RAM called
++Register Override, it is possible to emulate h/w states without modifying
++the driver specific to that hardware.
 +
-+/*
-+ * address - Starting phys address of the h/w register
-+ * length - # of bytes to be overridden
-+ * val	-  When length <= 8, use (val & bit_mask) as the overridden value.
-+	   When length > 8, we're overriding a range of bytes to a single
-+	   readonly value. So attrib must be OVRD_RO, and (val & 0xff)
-+	   is the contiguous readonly value.
-+ * bit_mask - used when length <= 8 to indicate which bits are being overridden.
-+	      unused when length > 8
-+ * attrib -   when length <=8, is the common attribute of the overridden
-+	      bits matching bit_mask. When length > 8, must be OVRD_RO
-+ */
-+struct reg_ovrd {
-+	struct list_head node;
-+	u64 address;
-+	u64  val;
-+	u64  bit_mask;
-+	u32 length;
-+	u8  attrib;
++iohook is a driver that exports sysfs interfaces used to talk to the IO Hook
++in the kernel in order to emulate h/w events. Here's how it works:
++
++The sysfs interfaces can be used to add/delete Register Overrides with user-
++defined values. The user can also specify which IRQ  to  be  triggered  via
++Inter-Processor Interrupt (IPI)  while  the  h/w registers are being over-
++ridden. When  the irq  handler  is  triggered  by  the IPI it looks for the
++registers specific to some h/w events. As long as the Register Overrides are
++setup correctly, the irq  handler  will believe that the h/w is in a state
++corresponding to a predefined interrupt, thus process the event.
++
++A Register Override can be defined in whatever bit-width, identified by its
++address, bitmask, initial value and attributes like read-only, read-write,
++write-clear, etc., similar to how a hardware register behaves when accessed.
++
++A Register Override may not use every bit in a byte. Its bitmask identifies
++which bits are used (overridden). The unused bits are accessed on the h/w
++and combined with the overridden bits to form the final result. The reason
++to support this combination is that many h/w events are controlled by only
++a few bits. For example the ACPI GPEx_STS and GPEx_EN are encoded such that
++each bit represents a different General Purpose Event. The user is supposed
++to fully understand the side-effect, if any, of reading adjacent bits when
++he or she adds a Register Override not in the entirety of a byte, a word, a
++dword, or a qword.
++
++iohook can be typically used to generate ACPI events, PCI interrupts, PCIe
++AER injection etc., and can thus be used to help test RAS features like
++the hotplug of CPU/MEM/IOH on machines that are not capable of generating
++these events.
++
++2. How to use it
++-------------------
++
++2.1 Compile the kernel
++
++First compile the kernel with CONFIG_IO_HOOK and CONFIG_IO_HOOK_DRV.
++Depending on your configuration, if iohook is compiled as a module, then
++you'll need to load the driver first.
++
++2.2 Sysfs interface
++
++After the iohook driver is loaded a directory subtree is created under
++/sys/kernel/debug/iohook
++
++bash# modprobe iohook
++bash# cd /sys/kernel/debug/iohook
++bash# ls
++io  irq  mem  pciconf  trigger
++
++Each file is used to manage a type of resource.
++'io' is used to add/show Register Overrides in IO space.
++'mem' is used to add/show Register Overrides in memory space.
++'pciconf' is used to add/show Register Overrides in pci config space.
++'irq' is used to set the desired IRQ to be triggered via IPI.
++'trigger' is used to turn on/off the IO Hook.
++
++2.3 Add Register Overrides
++
++A Register Override can be specified on the command line with the following
++syntax (all numbers are in hex without space between each element)
++
++for a Register Override in IO or memory space, it's specified as:
++
++	address-length[value/mask]attribute
++
++for a Register Override in PCI config space, it's specified as:
++
++	domain|bus:dev.func+offset-length[value/mask]attribute
++
++where
++	address - the 64bit address of the h/w register to be overridden
++
++	length - the number of bytes affected. Affected here means that
++		 at least one bit in that byte is overridden. For 'length'
++		 less than 8, the overridden bits are determined by the
++		 corresponding bits set in 'mask'. Other bits are unaffected
++		 and accessed on the h/w. For 'length' >= 8 then 'mask' is
++		 ignored and the entire range of bytes are overridden to be
++		 a single value specified by the first byte of 'value'. This
++		 can be used, for example, to set the entire PCI Config
++		 space of a device to 0xff.
++
++	value -  the user-defined value to replace the content of the
++		 corresponding h/w register. for 'length' < 8, only the bits
++		 masked by 'mask' are used.
++
++	mask -   is the bit-mask specifying the bits to be overridden when
++		 'length' < 8.
++
++	attribute - used to specify the attribute of the overridden bits.
++		 It can be ro, rw, wc, rc to mean read-only, read-write,
++		 write-clear, and read-clear respectively.
++
++	domain - pci domain number
++	bus    - pci bus number
++	dev    - pci device number
++	func   - pci function number
++	offset - used to specify the offset of the affected bytes in the
++		 PCI config space.
++
++Multiple registers can be specified on one line with each separated by at
++least one space.  For example, to override two registers in IO space at port
++0x420 and port 0x428, with the former in write-clear mode and the latter in
++read-only mode:
++
++bash# cd /sys/kernel/debug/iohook
++bash# echo "420-1[04/04]wc 428-1[04/04]ro" > io
++The syntax is "address-length[value/mask]attribute".
++Since only one bit is overridden (mask is 0x04), the affected byte is 1.
++So 'length' is 1.
++
++As another example, to add two Register Overrides in the PCI config space of
++device 00:05.0 at offsets 0x130 and 0x134 respectively:
++
++bash# echo "0000|00:05.0+130-1[01/01]wc 0000|00:05.0+134-2[0500/ffff]ro">pciconf
++The syntax is "domain|bus:dev.func+offset-length[value/mask]attribute"
++The first register overrides only bit0 and the second register overrides the
++first 2 bytes (mask == 0xffff), with an initial value of 0x0500.
++
++Register Overrides are disabled when added. They can be enabled by using the
++'trigger' file. See below.
++
++2.4 Add IRQ and enable the Register Overrides
++
++To specify an IRQ to be triggered via IPI, just echo the IRQ number in decimal
++to the 'irq' file. For example:
++
++bash# cd /sys/kernel/debug/iohook
++bash# echo 9 > irq
++This specifies that IRQ9 be triggered after the Register Overrides are enabled.
++
++To enable the Register Overrides in the kernel:
++
++bash# echo 1 > trigger
++
++This immediately enables all the Register Overrides and if an IRQ number was
++specified, generate the IPI.
++
++To disable the Register Overrides in the kernel:
++
++bash echo 0 > trigger
++This immediately disables all Register Overrides. The kernel starts to see
++real h/w registers again. This does not delete the Register Overrides. They
++can be re-enabled again by echo 1 > trigger.
++
++3. Use cases
++-----------------
++
++3.1 Generate ACPI Events
++
++A typical use case is to generate ACPI events. Suppose we want to test IOH
++hotplug on a machine whose BIOS doesn't support it. We can override its DSDT
++and add a GPE to notify the OS the hot-add/removal of the IOH device. We can
++then use iohook to trigger the imaginary GPE and the OS will have to process
++the hotplug event. (For detailed instructions on how to override DSDT see
++Documentation/acpi/initrd_table_override.txt.) The following is an example:
++
++We first extract the DSDT
++bash # cat /sys/firmware/acpi/tables/DSDT > DSDT
++bash # iasl -d DSDT
++Now we have disassembled the DSDT into DSDT.dsl. We vi DSDT.dsl and notice
++that there's a IOH device named \_SB.IOH1. Since GPEs are named _Lxx with xx
++being the GPE numbers, we notice that there's no _L02 in DSDT.dsl, so we can
++use this spare GPE to notify the OS the hotplug of \_SB.IOH1. We add a new
++method in DSDT.dsl:
++
++    Method (_L02, 0, NotSerialized) // _Lxx: Level-Triggered GPE
++    {
++	Notify (\_SB.IOH1, 0x0)     // 0x0: hot-add event
++    }
++
++ACPI uses a single interrupt (SCI) to dispatch all GPEs. The SCI IRQ number
++can be found from:
++
++bash # grep acpi /proc/interrupts | awk '{ print $1; }'
++9:
++
++which means SCI is IRQ9. What we need to do is to generate IRQ9 via IPI and
++let the SCI interrupt handler call _L02. Each _Lxx has a status bit in
++GPEx_STS to reflect if it is asserted and a controlling bit in GPEx_EN to
++reflect if it is enabled. The SCI interrupt handler reads GPEx_STS and
++GPEx_EN to decide whether to call a _Lxx. a _Lxx is called if it is both
++enabled and asserted. We can use Register Overrides to override the bits
++controlling _L02 in GPEx_STS and GPEx_EN so that the SCI handler will believe
++that _L02 is asserted and enabled, and will call the ACPI method that we
++added.
++
++_L02's controlling bits are in GPE0_STS and GPE0_EN, whose addresses can be
++found from FACP as follows.
++
++bash # cat /sys/firmware/acpi/tables/FACP > FACP
++bash # iasl -d FACP
++[root@TXT acpi]# grep GPE FACP.dsl
++[050h 080  4]           GPE0 Block Address : 00000420
++[054h 084  4]           GPE1 Block Address : 00000000
++[05Ch 092  1]            GPE0 Block Length : 10
++
++So according to FACP, GPE0 block is at port 0x420; GPE0 block length is 0x10.
++GPE0_STS/GPE0_EN each occupies half the block length, with GPE0_STS at 0x420
++and GPE0_EN at 0x428. _L02 is controlled by bit2 of each of them. We need to
++override bit2 of both IO port 0x420 and IO port 0x428.
++
++Before adding the Register Override we need to replace the DSDT provided by
++BIOS with our modified DSDT.dsl, by following initrd_table_override.txt.
++Once the new DSDT is injected into initrd we reboot the system and add the
++Register Override as follows.
++
++bash # cd /sys/kernel/debug/iohook/
++bash # echo "420-1[4/4]wc 428-1[4/4]ro" > io
++bash # echo 9 > irq
++bash # echo 1 > trigger
++
++The last command immediately triggers the _L02 method that we provided and
++Linux sees a hot-add ACPI event for the IOH device.
++
++
++3.2 Generate PCIe Native Hotplug
++
++The pciehp driver allocates an irq to handle each native PCIe hotplug slot.
++The driver prints the status of each hotplug slot when debugging is enabled
++so we can see which irq it's using.
++
++bash # modprobe pciehp pciehp_debug=1
++
++dmesg shows:
++
++pciehp 0000:00:1c.0:pcie04: Hotplug Controller:
++pciehp 0000:00:1c.0:pcie04:   Seg/Bus/Dev/Func/IRQ : 0000:00:1c.0 IRQ 70
++
++So we pick this hotplug slot at 00:1c.0 which uses IRQ70. Its PCIe Slot
++Status Register is at offset 0x5a of its pci config space. We can easily
++inject a Hot-Add (Presence Detect) event into the system by adding a
++Register Override to override the register at offset 0x5a in the PCI config
++space of 00:1c.0
++
++bash # cd /sys/kernel/debug/iohook/
++bash # echo "00|00:1c.0+5a-1[48/ff]wc" > pciconf
++bash # echo 70 > irq
++bash # echo 1 > trigger
++
++dmesg shows:
++
++pciehp 0000:00:1c.0:pcie04: Card present on Slot(1)
++pciehp 0000:00:1c.0:pcie04: Device 0000:0f:00.0 already exists at 0000:0f:00,
++cannot hot-add
++pciehp 0000:00:1c.0:pcie04: Cannot add device at 0000:0f:00
++
++We can then inject an Attention Button Pressed event:
++
++bash # echo "00|00:1c.0+5a-1[41/ff]wc" > pciconf
++bash # echo 70 > irq
++bash # echo 1 > trigger
++
++dmesg shows:
++
++pciehp 0000:00:1c.0:pcie04: Button pressed on Slot(1)
++pciehp 0000:00:1c.0:pcie04: PCI slot #1 - powering off due to button press
++
++3.3 PCIe AER error injection
++
++The aerdrv driver allocates a few irqs to handle AER. Each of them handles a
++PCIe root port device. In an example aerdrv uses irq66 to handle AER on root
++port 00:05.0. As seen in lspci, the AER capability is at offset 0x100 of its
++pci config space. So the Root Error Status Register is at offset 0x130, and
++the Error Source Identification Register is at offset 0x134. We can inject a
++Correctable Error with a source id to identify its child at 05:00.0.
++
++bash # modprobe iohook
++bash # cd /sys/kernel/debug/iohook/
++bash # echo "00|00:05.0+130-1[01/01]wc 00|00:05.0+134-2[0500/ffff]ro" > pciconf
++bash # echo 66 > irq
++bash # echo 1 > trigger
++
++dmesg shows:
++pcieport 0000:00:05.0: AER: Corrected error received: id=0500
++
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index c002d86..035d3b1 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -535,5 +535,6 @@ source "drivers/misc/lis3lv02d/Kconfig"
+ source "drivers/misc/carma/Kconfig"
+ source "drivers/misc/altera-stapl/Kconfig"
+ source "drivers/misc/mei/Kconfig"
++source "drivers/misc/iohook/Kconfig"
+ source "drivers/misc/vmw_vmci/Kconfig"
+ endmenu
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index c235d5b..b37cba8 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -50,6 +50,7 @@ obj-y				+= carma/
+ obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
+ obj-$(CONFIG_ALTERA_STAPL)	+=altera-stapl/
+ obj-$(CONFIG_INTEL_MEI)		+= mei/
++obj-$(CONFIG_IO_HOOK_DRV)	+= iohook/
+ obj-$(CONFIG_VMWARE_VMCI)	+= vmw_vmci/
+ obj-$(CONFIG_LATTICE_ECP3_CONFIG)	+= lattice-ecp3-config.o
+ obj-$(CONFIG_SRAM)		+= sram.o
+diff --git a/drivers/misc/iohook/Kconfig b/drivers/misc/iohook/Kconfig
+new file mode 100644
+index 0000000..47d6383
+--- /dev/null
++++ b/drivers/misc/iohook/Kconfig
+@@ -0,0 +1,5 @@
++config IO_HOOK_DRV
++	tristate "Emulating HW events and states"
++	depends on X86 && PCI && IO_HOOK
++	help
++	  Emulating HW events and states
+diff --git a/drivers/misc/iohook/Makefile b/drivers/misc/iohook/Makefile
+new file mode 100644
+index 0000000..2e75e1d
+--- /dev/null
++++ b/drivers/misc/iohook/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_IO_HOOK_DRV) += iohook.o
+diff --git a/drivers/misc/iohook/iohook.c b/drivers/misc/iohook/iohook.c
+new file mode 100644
+index 0000000..d131f17
+--- /dev/null
++++ b/drivers/misc/iohook/iohook.c
+@@ -0,0 +1,503 @@
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/uaccess.h>
++#include <linux/debugfs.h>
++#include <linux/cpu.h>
++#include <linux/interrupt.h>
++#include <linux/kernel_stat.h>
++#include <linux/of.h>
++#include <linux/seq_file.h>
++#include <linux/smp.h>
++#include <linux/ftrace.h>
++#include <linux/delay.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++
++#include <asm/apic.h>
++#include <asm/io_apic.h>
++#include <asm/irq.h>
++#include <asm/idle.h>
++#include <asm/mce.h>
++#include <asm/hw_irq.h>
++#include <linux/reg_ovrd.h>
++#include <linux/pci.h>
++
++MODULE_LICENSE("GPL");
++
++static struct dentry *hook_irq_dentry;
++static struct dentry *hook_reg_dentry;
++
++static void trigger_irq_by_ipi(unsigned long irqnum)
++{
++	struct irq_desc *desc;
++	struct irq_data *data;
++	struct irq_chip *chip;
++
++	desc = irq_to_desc(irqnum);
++	data = irq_desc_get_irq_data(desc);
++	chip = irq_data_get_irq_chip(data);
++
++	raw_spin_lock(&desc->lock);
++
++	if (chip->irq_retrigger)
++		chip->irq_retrigger(data);
++	else
++		pr_err("platform doesn't support irq_retrigger?\n");
++
++	raw_spin_unlock(&desc->lock);
++
++}
++
++/* currently there can be one hook_ irq */
++int	g_irq_num;
++
++ssize_t hook_trigger_read(struct file *file, char __user *ubuf, size_t cnt,
++		loff_t *ppos)
++{
++	char buf[64];		/* big enough to hold a number */
++	int r;
++
++	r = sprintf(buf, "%u\n", hook_get_status() ? 1 : 0);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
++
++}
++
++static ssize_t hook_trigger_write(struct file *file,
++	const char __user *user_buf, size_t count, loff_t *ppos)
++{
++	char *trigger = NULL;
++	unsigned long on, ret = -EINVAL;
++
++	trigger = kmalloc(count+1, GFP_ATOMIC);
++	if (!trigger) {
++		pr_err("hook_trigger: Memory allocation failed\n");
++		return count;
++	}
++	trigger[count] = '\0';
++	if (copy_from_user(trigger, user_buf, count))
++		goto end;
++	ret = kstrtoul(trigger, 10, &on);
++	if (ret)
++		goto end;
++
++	if (on == 1) {
++		hook_start_ovrd();
++		if (g_irq_num)
++			trigger_irq_by_ipi(g_irq_num);
++	} else if (on == 0) {
++		hook_stop_ovrd();
++	}
++end:
++	kfree(trigger);
++	return count;
++}
++
++ssize_t hook_irq_read(struct file *file, char __user *ubuf, size_t cnt,
++		loff_t *ppos)
++{
++	char buf[64];		/* big enough to hold a number */
++	int r;
++
++	r = sprintf(buf, "%u\n", g_irq_num);
++	return simple_read_from_buffer(ubuf, cnt, ppos, buf, r);
++}
++
++static ssize_t hook_irq_write(struct file *file, const char __user *user_buf,
++			size_t count, loff_t *ppos)
++{
++	char *irq = NULL;
++	unsigned long irqnum, ret;
++
++	irq = kmalloc(count+1, GFP_ATOMIC);
++	if (!irq) {
++		pr_err("hook_irq_write: Memory allocation failed\n");
++		return count;
++	}
++	irq[count] = '\0';
++	if (copy_from_user(irq, user_buf, count))
++		goto end;
++	ret = kstrtoul(irq, 10, &irqnum);
++	if (ret) {
++		pr_err("bogus irq number? %s\n", irq);
++		goto end;
++	}
++	if (irqnum > NR_IRQS) {
++		pr_err("irq num too big: %lu\n", irqnum);
++		goto end;
++	}
++
++	g_irq_num = irqnum;
++end:
++	kfree(irq);
++	return count;
++}
++
++unsigned long pci_resource_type(struct resource *res)
++{
++	return res->flags & (IORESOURCE_IO  | IORESOURCE_MEM |
++			     IORESOURCE_IRQ | IORESOURCE_DMA |
++			     IORESOURCE_BUS);
++}
++
++struct hook_iter {
++	int spaceid; /* io/mem/pciconf */
 +};
 +
-+/* address space id */
-+#define	OVRD_SPACE_IO		0
-+#define	OVRD_SPACE_MEM		1
-+#define	OVRD_SPACE_PCICONF	2
++static void
++hook_seq_stop(struct seq_file *s, void *it)
++{
++}
 +
-+#define	PCI_ENCODE_ADDR(domain, bus, devfn, pos)	\
-+		(((u64)(domain))<<32|(bus)<<20|(devfn)<<12|(pos))
-+#define PCI_DECODE_POS(x)	((u16)((x) & ((1 << 12) - 1)))
-+#define PCI_DECODE_DEVFN(x)	((u8)(((x) >> 12) & 0xff))
-+#define PCI_DECODE_BUSN(x)	((u8)(((x) >> 20) & 0xff))
-+#define PCI_DECODE_DOMAIN(x)	((u32)((x) >> 32))
++static void *
++hook_seq_next(struct seq_file *s, void *it, loff_t *offset)
++{
++	struct hook_iter *iter = s->private;
++	int idx;
++	struct reg_ovrd *regmap;
 +
++	idx = *offset;
++	regmap = hook_query_ovrd(iter->spaceid, idx);
++	if (regmap)
++		(*offset)++;
 +
-+#endif			/* __REG_OVRD_H__ */
++	return regmap;
++}
++
++static void *
++hook_seq_start(struct seq_file *s, loff_t *offset)
++{
++	return hook_seq_next(s, NULL, offset);
++}
++
++char *hook_attrib(int attrib)
++{
++	switch (attrib) {
++	case OVRD_RO:
++		return "ro";
++	case OVRD_RW:
++		return "rw";
++	case OVRD_WC:
++		return "wc";
++	case OVRD_RC:
++		return "rc";
++	}
++
++	return "(null)";
++
++}
++
++static int
++hook_seq_show(struct seq_file *s, void *it)
++{
++	struct hook_iter *iter = s->private;
++	struct reg_ovrd *regmap;
++
++	regmap = (struct reg_ovrd *)it;
++	switch (iter->spaceid) {
++	case OVRD_SPACE_IO:
++	case OVRD_SPACE_MEM:
++		seq_printf(s,
++		"addr: 0x%llx lenght: 0x%x value: 0x%llx mask: 0x%llx attrib: %s\n",
++			regmap->address, regmap->length, regmap->val,
++			regmap->bit_mask, hook_attrib(regmap->attrib));
++		break;
++	case OVRD_SPACE_PCICONF:
++		seq_printf(s,
++			"pciconf: 0x%04x|%02x:%02x.%02x offset: 0x%x lenght: 0x%x value: 0x%llx mask: 0x%llx attrib: %s\n",
++			PCI_DECODE_DOMAIN(regmap->address),
++			PCI_DECODE_BUSN(regmap->address),
++			PCI_SLOT(PCI_DECODE_DEVFN(regmap->address)),
++			PCI_FUNC(PCI_DECODE_DEVFN(regmap->address)),
++			PCI_DECODE_POS(regmap->address), regmap->length,
++			regmap->val,
++			regmap->bit_mask, hook_attrib(regmap->attrib));
++		break;
++	default:
++		seq_puts(s, "error: unknown spaceid\n");
++		break;
++	}
++	return 0;
++}
++
++static const struct seq_operations hook_seq_ops = {
++	.start = hook_seq_start,
++	.stop  = hook_seq_stop,
++	.next  = hook_seq_next,
++	.show  = hook_seq_show,
++};
++
++static int
++hook_io_open(struct inode *inode, struct file *file)
++{
++	struct hook_iter *iter;
++
++	iter = __seq_open_private(file, &hook_seq_ops,
++				sizeof(struct hook_iter));
++	if (iter)
++		iter->spaceid = OVRD_SPACE_IO;
++
++	return iter ? 0 : -ENOMEM;
++}
++
++static int
++hook_mem_open(struct inode *inode, struct file *file)
++{
++	struct hook_iter *iter;
++
++	iter = __seq_open_private(file, &hook_seq_ops,
++				sizeof(struct hook_iter));
++	if (iter)
++		iter->spaceid = OVRD_SPACE_MEM;
++
++	return iter ? 0 : -ENOMEM;
++}
++
++static int
++hook_pciconf_open(struct inode *inode, struct file *file)
++{
++	struct hook_iter *iter;
++
++	iter = __seq_open_private(file, &hook_seq_ops,
++				sizeof(struct hook_iter));
++	if (iter)
++		iter->spaceid = OVRD_SPACE_PCICONF;
++
++	return iter ? 0 : -ENOMEM;
++}
++
++/*
++ * IO & MEM entries are formatted as follows (all values are in hex):
++ *
++ * address-length[value/mask]attrib
++ *
++ * For example: 420-1[20/20]rw
++ * It means io port 0x420, 1 byte, value 0x20, mask 0x20, read/write
++ * PCI config entries are formatted as (all values are in hex):
++ *
++ * domain|bus:dev.func+offset-length[value/mask]attrib
++ *
++ * For example: 0000|00:1e.0+10-4[fe930000/ffffffff]rw
++ * It means pci domain 0, bus 0, dev 1e, func 0, offset 10, 4 bytes
++ * with a overridden value of 0xfe930000, mask 0xffffffff, read/write
++ */
++static int
++hook_parse_entry(char *entry, int spaceid)
++{
++	char *field;
++	u64 address, length, value, mask;
++	unsigned long domain, bus, dev, func;
++	int attrib, ret;
++	u16 cval;
++
++	if (spaceid != OVRD_SPACE_PCICONF)
++		goto mem_io;
++
++	field = strsep(&entry, "|");
++	ret = kstrtoul(field, 16, &domain);
++	if (ret || !entry)
++		return -1;
++
++	field = strsep(&entry, ":");
++	ret = kstrtoul(field, 16, &bus);
++	if (ret || !entry)
++		return -1;
++
++	field = strsep(&entry, ".");
++	ret = kstrtoul(field, 16, &dev);
++	if (ret || !entry)
++		return -1;
++
++	field = strsep(&entry, "+");
++	ret = kstrtoul(field, 16, &func);
++	if (ret || !entry)
++		return -1;
++
++mem_io:
++	field = strsep(&entry, "-");
++	ret = kstrtoull(field, 16, &address);
++	if (ret || !entry)
++		return -1;
++
++	pr_info("parse_hook_entry() address=0x%llx\n", address);
++
++	field = strsep(&entry, "[");
++	ret = kstrtoull(field, 16, &length);
++	if (ret || !entry)
++		return -1;
++
++	pr_info("parse_hook_entry() length=0x%llx\n", length);
++
++	field = strsep(&entry, "/");
++	ret = kstrtoull(field, 16, &value);
++	if (ret || !entry)
++		return -1;
++	pr_info("parse_hook_entry() value=0x%llx\n", value);
++
++	field = strsep(&entry, "]");
++	ret = kstrtoull(field, 16, &mask);
++	if (ret || !entry)
++		return -1;
++	pr_info("parse_hook_entry() mask=0x%llx\n", mask);
++
++	cval = (*(u16 *)entry);
++	pr_info("parse_hook_entry() attrib:%s, cval=0x%x\n",
++		entry, cval);
++	if (cval == *(u16 *)"ro")
++		attrib = OVRD_RO;
++	else if (cval == *(u16 *)"rw")
++		attrib = OVRD_RW;
++	else if (cval == *(u16 *)"rc")
++		attrib = OVRD_RC;
++	else if (cval == *(u16 *)"wc")
++		attrib = OVRD_WC;
++	else
++		return -1;
++
++	if (spaceid == OVRD_SPACE_PCICONF) {
++		address = PCI_ENCODE_ADDR(domain, bus, PCI_DEVFN(dev, func),
++			address);
++	}
++
++	hook_add_ovrd(spaceid, address, value, mask, length, attrib);
++
++	return 0;
++}
++
++static ssize_t
++hook_write(struct file *file, const char __user *user_buf,
++		 size_t user_len, loff_t *offset, int spaceid)
++{
++	char *buf, *pstr, *entry;
++	ssize_t rc;
++
++	if (*offset)
++		return -EINVAL;
++
++	buf = vzalloc(user_len + 1);
++	if (buf == NULL)
++		return -ENOMEM;
++
++	if (strncpy_from_user(buf, user_buf, user_len) < 0) {
++		rc = -EFAULT;
++		goto out_free;
++	}
++
++	/* first delete all overridden registers */
++	hook_cleanup_ovrd(spaceid);
++
++	buf[user_len] = '\0';
++	pstr = buf;
++	while (pstr && *pstr) {
++		pstr = skip_spaces(pstr);
++		entry = strsep(&pstr, " \t\x0D\x0A");
++		pr_info("hook_write input: %s\n", entry);
++		if (hook_parse_entry(entry, spaceid)) {
++			rc = -EINVAL;
++			goto out_free;
++		}
++	}
++
++	rc = user_len;
++
++out_free:
++	vfree(buf);
++	return rc;
++}
++
++static ssize_t
++hook_io_write(struct file *file, const char __user *user_buf,
++		 size_t user_len, loff_t *offset)
++{
++
++	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_IO);
++}
++
++static ssize_t
++hook_mem_write(struct file *file, const char __user *user_buf,
++		 size_t user_len, loff_t *offset)
++{
++
++	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_MEM);
++}
++
++static ssize_t
++hook_pciconf_write(struct file *file, const char __user *user_buf,
++		 size_t user_len, loff_t *offset)
++{
++
++	return hook_write(file, user_buf, user_len, offset, OVRD_SPACE_PCICONF);
++}
++
++static const struct file_operations hook_io_fops = {
++	.open = hook_io_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release_private,
++	.write = hook_io_write,
++};
++
++static const struct file_operations hook_mem_fops = {
++	.open = hook_mem_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release_private,
++	.write = hook_mem_write,
++};
++
++static const struct file_operations hook_pciconf_fops = {
++	.open = hook_pciconf_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release_private,
++	.write = hook_pciconf_write,
++};
++
++static const struct file_operations hook_irq_fops = {
++	.read = hook_irq_read,
++	.write = hook_irq_write,
++};
++
++static const struct file_operations hook_trigger_fops = {
++	.read = hook_trigger_read,
++	.write = hook_trigger_write,
++};
++
++static int __init hook_irq_init(void)
++{
++	struct dentry *root;
++
++	root = debugfs_create_dir("iohook", NULL);
++	if (root == NULL)
++		return -ENODEV;
++
++	hook_irq_dentry = debugfs_create_file("irq", S_IWUSR,
++				root, NULL, &hook_irq_fops);
++	if (hook_irq_dentry == NULL)
++		return -ENODEV;
++
++	hook_reg_dentry = debugfs_create_file("io", S_IWUSR,
++				root, NULL, &hook_io_fops);
++	if (hook_reg_dentry == NULL)
++		return -ENODEV;
++
++	hook_reg_dentry = debugfs_create_file("mem", S_IWUSR,
++				root, NULL, &hook_mem_fops);
++	if (hook_reg_dentry == NULL)
++		return -ENODEV;
++
++	hook_reg_dentry = debugfs_create_file("pciconf", S_IWUSR,
++				root, NULL, &hook_pciconf_fops);
++	if (hook_reg_dentry == NULL)
++		return -ENODEV;
++
++	hook_reg_dentry = debugfs_create_file("trigger", S_IWUSR,
++				root, NULL, &hook_trigger_fops);
++	if (hook_reg_dentry == NULL)
++		return -ENODEV;
++
++	return 0;
++}
++
++device_initcall(hook_irq_init);
++
 -- 
 1.7.5.4
 
