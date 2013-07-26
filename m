@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161028Ab3GZVg3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:36:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50810 "EHLO
+	id S1760664Ab3GZVgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:36:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50831 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759920Ab3GZUsa (ORCPT
+	with ESMTP id S1759934Ab3GZUse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:30 -0400
+	Fri, 26 Jul 2013 16:48:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarveshwar Bandi <sarveshwar.bandi@emulex.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 36/79] be2net: Fix to avoid hardware workaround when not needed
-Date: Fri, 26 Jul 2013 13:47:26 -0700
-Message-Id: <20130726204725.697657654@linuxfoundation.org>
+Subject: [ 23/79] tuntap: correctly linearize skb when zerocopy is used
+Date: Fri, 26 Jul 2013 13:47:13 -0700
+Message-Id: <20130726204724.377912151@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,49 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 52fe29e4bb614367c108b717c6d7fe5953eb7af3 ]
+[ Upstream commit 3dd5c3308e8b671e8e8882ba972f51cefbe9fd0d ]
 
-Hardware workaround requesting hardware to skip vlan insertion is necessary
-only when umc or qnq is enabled. Enabling this workaround in other scenarios
-could cause controller to stall.
+Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
+linearize parts of the skb to let the rest of iov to be fit in
+the frags, we need count copylen into linear when calling tun_alloc_skb()
+instead of partly counting it into data_len. Since this breaks
+zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
+be zero at beginning. This cause nr_frags to be increased wrongly without
+setting the correct frags.
 
-Signed-off-by: Sarveshwar Bandi <sarveshwar.bandi@emulex.com>
+This bug were introduced from 0690899b4d4501b3505be069b9a687e68ccbe15b
+(tun: experimental zero copy tx support)
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/emulex/benet/be_main.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/net/tun.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/emulex/benet/be_main.c
-+++ b/drivers/net/ethernet/emulex/benet/be_main.c
-@@ -782,16 +782,22 @@ static struct sk_buff *be_insert_vlan_in
- 
- 	if (vlan_tx_tag_present(skb))
- 		vlan_tag = be_get_tx_vlan_tag(adapter, skb);
--	else if (qnq_async_evt_rcvd(adapter) && adapter->pvid)
--		vlan_tag = adapter->pvid;
-+
-+	if (qnq_async_evt_rcvd(adapter) && adapter->pvid) {
-+		if (!vlan_tag)
-+			vlan_tag = adapter->pvid;
-+		/* f/w workaround to set skip_hw_vlan = 1, informs the F/W to
-+		 * skip VLAN insertion
-+		 */
-+		if (skip_hw_vlan)
-+			*skip_hw_vlan = true;
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1044,7 +1044,7 @@ static ssize_t tun_get_user(struct tun_s
+ {
+ 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
+ 	struct sk_buff *skb;
+-	size_t len = total_len, align = NET_SKB_PAD;
++	size_t len = total_len, align = NET_SKB_PAD, linear;
+ 	struct virtio_net_hdr gso = { 0 };
+ 	int offset = 0;
+ 	int copylen;
+@@ -1108,10 +1108,13 @@ static ssize_t tun_get_user(struct tun_s
+ 			copylen = gso.hdr_len;
+ 		if (!copylen)
+ 			copylen = GOODCOPY_LEN;
+-	} else
++		linear = copylen;
++	} else {
+ 		copylen = len;
++		linear = gso.hdr_len;
 +	}
  
- 	if (vlan_tag) {
- 		skb = __vlan_put_tag(skb, htons(ETH_P_8021Q), vlan_tag);
- 		if (unlikely(!skb))
- 			return skb;
- 		skb->vlan_tci = 0;
--		if (skip_hw_vlan)
--			*skip_hw_vlan = true;
- 	}
- 
- 	/* Insert the outer VLAN, if any */
+-	skb = tun_alloc_skb(tfile, align, copylen, gso.hdr_len, noblock);
++	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
+ 	if (IS_ERR(skb)) {
+ 		if (PTR_ERR(skb) != -EAGAIN)
+ 			tun->dev->stats.rx_dropped++;
 
 
