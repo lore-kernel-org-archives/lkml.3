@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933232Ab3GZVFL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:05:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51404 "EHLO
+	id S933208Ab3GZVFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:05:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51396 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760038Ab3GZU62 (ORCPT
+	with ESMTP id S1760136Ab3GZU61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:28 -0400
+	Fri, 26 Jul 2013 16:58:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bert De Jonghe <Bert.DeJonghe@amplidata.com>, Jan Kara <jack@suse.cz>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [ 28/45] writeback: Fix periodic writeback after fs mount
-Date: Fri, 26 Jul 2013 13:57:48 -0700
-Message-Id: <20130726205658.015733739@linuxfoundation.org>
+        Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 26/45] ifb: fix oops when loading the ifb failed
+Date: Fri, 26 Jul 2013 13:57:46 -0700
+Message-Id: <20130726205657.762498216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -27,56 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: dingtianhong <dingtianhong@huawei.com>
 
-commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
+[ Upstream commit f2966cd5691058b8674a20766525bedeaea9cbcf ]
 
-Code in blkdev.c moves a device inode to default_backing_dev_info when
-the last reference to the device is put and moves the device inode back
-to its bdi when the first reference is acquired. This includes moving to
-wb.b_dirty list if the device inode is dirty. The code however doesn't
-setup timer to wake corresponding flusher thread and while wb.b_dirty
-list is non-empty __mark_inode_dirty() will not set it up either. Thus
-periodic writeback is effectively disabled until a sync(2) call which can
-lead to unexpected data loss in case of crash or power failure.
+If __rtnl_link_register() return faild when loading the ifb, it will
+take the wrong path and get oops, so fix it just like dummy.
 
-Fix the problem by setting up a timer for periodic writeback in case we
-add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
-
-Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
 ---
- fs/block_dev.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/net/ifb.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -55,13 +55,21 @@ EXPORT_SYMBOL(I_BDEV);
- static void bdev_inode_switch_bdi(struct inode *inode,
- 			struct backing_dev_info *dst)
- {
-+	bool wakeup_bdi = false;
-+
- 	spin_lock(&inode_wb_list_lock);
- 	spin_lock(&inode->i_lock);
- 	inode->i_data.backing_dev_info = dst;
--	if (inode->i_state & I_DIRTY)
-+	if (inode->i_state & I_DIRTY) {
-+		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
-+			wakeup_bdi = true;
- 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
-+	}
- 	spin_unlock(&inode->i_lock);
- 	spin_unlock(&inode_wb_list_lock);
-+
-+	if (wakeup_bdi)
-+		bdi_wakeup_thread_delayed(dst);
- }
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -251,6 +251,8 @@ static int __init ifb_init_module(void)
  
- sector_t blkdev_max_block(struct block_device *bdev)
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
++	if (err < 0)
++		goto out;
+ 
+ 	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
+@@ -258,6 +260,8 @@ static int __init ifb_init_module(void)
+ 	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
++
++out:
+ 	rtnl_unlock();
+ 
+ 	return err;
 
 
