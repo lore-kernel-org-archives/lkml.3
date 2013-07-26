@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759509Ab3GZQFz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:05:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35826 "EHLO mx2.suse.de"
+	id S1759481Ab3GZQFr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:05:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35847 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759180Ab3GZQEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:04:30 -0400
+	id S1759319Ab3GZQEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 12:04:31 -0400
 From: Michal Hocko <mhocko@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
@@ -17,9 +17,9 @@ Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
         Glauber Costa <glommer@gmail.com>
-Subject: [PATCH v5.1 3/8] vmscan, memcg: Do softlimit reclaim also for targeted reclaim
-Date: Fri, 26 Jul 2013 18:04:13 +0200
-Message-Id: <1374854658-26990-4-git-send-email-mhocko@suse.cz>
+Subject: [PATCH v5.1 6/8] memcg, vmscan: Do not attempt soft limit reclaim if it would not scan anything
+Date: Fri, 26 Jul 2013 18:04:16 +0200
+Message-Id: <1374854658-26990-7-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
 References: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
@@ -27,133 +27,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Soft reclaim has been done only for the global reclaim (both background
-and direct). Since "memcg: integrate soft reclaim tighter with zone
-shrinking code" there is no reason for this limitation anymore as the
-soft limit reclaim doesn't use any special code paths and it is a
-part of the zone shrinking code which is used by both global and
-targeted reclaims.
+mem_cgroup_should_soft_reclaim controls whether soft reclaim pass is
+done and it always says yes currently. Memcg iterators are clever to
+skip nodes that are not soft reclaimable quite efficiently but
+mem_cgroup_should_soft_reclaim can be more clever and do not start the
+soft reclaim pass at all if it knows that nothing would be scanned
+anyway.
 
->From semantic point of view it is even natural to consider soft limit
-before touching all groups in the hierarchy tree which is touching the
-hard limit because soft limit tells us where to push back when there is
-a  memory pressure. It is not important whether the pressure comes from
-the limit or imbalanced zones.
-
-This patch simply enables soft reclaim unconditionally in
-mem_cgroup_should_soft_reclaim so it is enabled for both global and
-targeted reclaim paths. mem_cgroup_soft_reclaim_eligible needs to learn
-about the root of the reclaim to know where to stop checking soft limit
-state of parents up the hierarchy.
-Say we have
-A (over soft limit)
- \
-  B (below s.l., hit the hard limit)
- / \
-C   D (below s.l.)
-
-B is the source of the outside memory pressure now for D but we
-shouldn't soft reclaim it because it is behaving well under B subtree
-and we can still reclaim from C (pressumably it is over the limit).
-mem_cgroup_soft_reclaim_eligible should therefore stop climbing up the
-hierarchy at B (root of the memory pressure).
+In order to do that, simply reuse mem_cgroup_soft_reclaim_eligible for
+the target group of the reclaim and allow the pass only if the whole
+subtree wouldn't be skipped.
 
 Changes since v1
-- add sc->target_mem_cgroup handling into mem_cgroup_soft_reclaim_eligible
+- do not export mem_cgroup_root and teach mem_cgroup_soft_reclaim_eligible
+  to handle NULL memcg as mem_cgroup_root
 
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Reviewed-by: Glauber Costa <glommer@openvz.org>
-Reviewed-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/memcontrol.h |  6 ++++--
- mm/memcontrol.c            | 14 +++++++++-----
- mm/vmscan.c                |  4 ++--
- 3 files changed, 15 insertions(+), 9 deletions(-)
+ mm/memcontrol.c | 6 +++++-
+ mm/vmscan.c     | 4 +++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index d495b9e..065ecef 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -180,7 +180,8 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
- 	mem_cgroup_update_page_stat(page, idx, -1);
- }
- 
--bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg);
-+bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
-+		struct mem_cgroup *root);
- 
- void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
- static inline void mem_cgroup_count_vm_event(struct mm_struct *mm,
-@@ -357,7 +358,8 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
- }
- 
- static inline
--bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg)
-+bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
-+		struct mem_cgroup *root)
- {
- 	return false;
- }
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2104343..441b81a 100644
+index c1be265..8629ca6 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -1792,11 +1792,13 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
- #endif
- 
- /*
-- * A group is eligible for the soft limit reclaim if it is
-- * 	a) is over its soft limit
-+ * A group is eligible for the soft limit reclaim under the given root
-+ * hierarchy if
-+ * 	a) it is over its soft limit
-  * 	b) any parent up the hierarchy is over its soft limit
-  */
--bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg)
-+bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
-+		struct mem_cgroup *root)
+@@ -1909,7 +1909,11 @@ enum mem_cgroup_filter_t
+ mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root)
  {
- 	struct mem_cgroup *parent = memcg;
+-	struct mem_cgroup *parent = memcg;
++	struct mem_cgroup *parent;
++
++	if (!memcg)
++		memcg = root_mem_cgroup;
++	parent = memcg;
  
-@@ -1804,12 +1806,14 @@ bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg)
- 		return true;
- 
- 	/*
--	 * If any parent up the hierarchy is over its soft limit then we
--	 * have to obey and reclaim from this group as well.
-+	 * If any parent up to the root in the hierarchy is over its soft limit
-+	 * then we have to obey and reclaim from this group as well.
- 	 */
- 	while((parent = parent_mem_cgroup(parent))) {
- 		if (res_counter_soft_limit_excess(&parent->res))
- 			return true;
-+		if (parent == root)
-+			break;
- 	}
- 
- 	return false;
+ 	if (res_counter_soft_limit_excess(&memcg->res))
+ 		return VISIT;
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 14ecbdb..bb591fa 100644
+index e03494a..b45ff5b 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -142,7 +142,7 @@ static bool global_reclaim(struct scan_control *sc)
+@@ -142,7 +142,9 @@ static bool global_reclaim(struct scan_control *sc)
  
  static bool mem_cgroup_should_soft_reclaim(struct scan_control *sc)
  {
--	return !mem_cgroup_disabled() && global_reclaim(sc);
-+	return !mem_cgroup_disabled();
+-	return !mem_cgroup_disabled();
++	struct mem_cgroup *root = sc->target_mem_cgroup;
++	return !mem_cgroup_disabled() &&
++		mem_cgroup_soft_reclaim_eligible(root, root) != SKIP_TREE;
  }
  #else
  static bool global_reclaim(struct scan_control *sc)
-@@ -2176,7 +2176,7 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
- 			struct lruvec *lruvec;
- 
- 			if (soft_reclaim &&
--			    !mem_cgroup_soft_reclaim_eligible(memcg)) {
-+			    !mem_cgroup_soft_reclaim_eligible(memcg, root)) {
- 				memcg = mem_cgroup_iter(root, memcg, &reclaim);
- 				continue;
- 			}
 -- 
 1.8.3.2
 
