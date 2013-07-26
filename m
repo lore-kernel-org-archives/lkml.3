@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933458Ab3GZVPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:15:09 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:42317 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932979Ab3GZVPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:15:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, intel-gfx@lists.freedesktop.org
-Subject: [GIT PULL] ACPI and power management fixes for v3.11-rc3
-Date: Fri, 26 Jul 2013 23:25:06 +0200
-Message-ID: <3457206.NODt6ENkDb@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+	id S1760385Ab3GZVOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:14:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51146 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932976Ab3GZUx4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 16:53:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
+Subject: [ 47/59] usb: option: add TP-LINK MA260
+Date: Fri, 26 Jul 2013 13:53:11 -0700
+Message-Id: <20130726205018.867990842@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Please pull from the git repository at
+------------------
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rafael/linux-pm.git pm+acpi-3.11-rc3
+From: Bjørn Mork <bjorn@mork.no>
 
-to receive ACPI and power management fixes for v3.11-rc3 with
-top-most commit 8e5c2b776ae4c35f54547c017e0a943429f5748a
+commit 94190301ffa059c2d127b3a67ec5d161d5c62681 upstream.
 
-  Revert "ACPI / video / i915: No ACPI backlight if firmware expects Windows 8"
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-on top of commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-  Linux 3.11-rc2
-
-These are just two fixes, a revert of the would-be backlight fix that didn't
-work and an intel_pstate fix for two problems related to maximum P-state
-selection.
-
-Specifics:
-
-- Revert of the ACPI video commit that I hoped would help fix
-  backlight problems related to Windows 8 compatibility on some
-  systems.  Unfortunately, it turned out to cause problems to happen
-  too.
-
-- Fix for two problems in intel_pstate, a possible failure to respond
-  to a load change on a quiet system and a possible failure to select
-  the highest available P-state on some systems.  From Dirk Brandewie.
-
-Thanks!
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -1355,6 +1355,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
++	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
++	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
 
 
----------------
-
-Dirk Brandewie (1):
-      cpufreq / intel_pstate: Change to scale off of max P-state
-
-Rafael J. Wysocki (1):
-      Revert "ACPI / video / i915: No ACPI backlight if firmware expects Windows 8"
-
----------------
-
- drivers/acpi/internal.h         |    2 --
- drivers/acpi/video.c            |   67 ++++++-----------------------------------------
- drivers/acpi/video_detect.c     |   15 +----------
- drivers/cpufreq/intel_pstate.c  |   12 ++++-----
- drivers/gpu/drm/i915/i915_dma.c |    2 +-
- include/acpi/video.h            |   11 +-------
- include/linux/acpi.h            |    1 -
- 7 files changed, 17 insertions(+), 93 deletions(-)
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
