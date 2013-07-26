@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab3GZRF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:05:28 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:42978 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758651Ab3GZRFX (ORCPT
+	id S1758985Ab3GZRIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:08:24 -0400
+Received: from e24smtp02.br.ibm.com ([32.104.18.86]:51727 "EHLO
+	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757119Ab3GZRIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:05:23 -0400
-Date: Fri, 26 Jul 2013 10:05:21 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Bjorn Andersson <bjorn@kryo.se>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        David Brown <davidb@codeaurora.org>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH 3/4] msm_serial: Make baud_code detection more dynamic
-Message-ID: <20130726170521.GA11922@codeaurora.org>
-References: <1374691051-28544-1-git-send-email-sboyd@codeaurora.org>
- <1374691051-28544-4-git-send-email-sboyd@codeaurora.org>
- <CAJAp7Og1jwyAn0sGbb_1Bk5_fvBWa1AuDNsRV1b17S0Tijk9kg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJAp7Og1jwyAn0sGbb_1Bk5_fvBWa1AuDNsRV1b17S0Tijk9kg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 26 Jul 2013 13:08:18 -0400
+From: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+To: benh@kernel.crashing.org
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+        Marcelo Cerri <mhcerri@linux.vnet.ibm.com>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>,
+        Joel Schopp <jschopp@linux.vnet.ibm.com>,
+        Joy Latten <jmlatten@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] drivers/crypto/nx: fix physical addresses added to sg lists
+Date: Fri, 26 Jul 2013 14:08:07 -0300
+Message-Id: <1374858488-24658-2-git-send-email-mhcerri@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1374858488-24658-1-git-send-email-mhcerri@linux.vnet.ibm.com>
+References: <1374858488-24658-1-git-send-email-mhcerri@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072617-2194-0000-0000-00000615B7BE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25, Bjorn Andersson wrote:
-> On Wed, Jul 24, 2013 at 10:37 AM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> > [snip]
-> > +       unsigned int i, divisor;
-> > +       const struct msm_baud_map *entry;
-> > +       static const struct msm_baud_map table[] = {
-> > +               { 1536, 0x00,  1 },
-> > +               {  768, 0x11,  1 },
-> > +               {  384, 0x22,  1 },
-> > +               {  192, 0x33,  1 },
-> > +               {   96, 0x44,  1 },
-> > +               {   48, 0x55,  1 },
-> > +               {   32, 0x66,  1 },
-> > +               {   24, 0x77,  1 },
-> > +               {   16, 0x88,  1 },
-> > +               {   12, 0x99,  6 },
-> > +               {    8, 0xaa,  6 },
-> > +               {    6, 0xbb,  6 },
-> > +               {    4, 0xcc,  6 },
-> > +               {    3, 0xdd,  8 },
-> > +               {    2, 0xee, 16 },
-> > +               {    1, 0xff, 31 },
-> > +       };
-> > +
-> > +       divisor = uart_get_divisor(port, baud);
-> > +
-> > +       for (i = 0, entry = table; i < ARRAY_SIZE(table); i++, entry++)
-> > +               if (entry->divisor <= divisor)
-> > +                       break;
-> > +
-> > +       return entry; /* Default to smallest divider */
-> 
-> Shouldn't matter, but you're not defaulting to the smallest divider.
-> Your are defaulting to an undefined value, as `entry` will be off the
-> array once i == ARRAY_SIZE().
-> 
+The co-processor receives data to be hashed through scatter/gather lists
+pointing to physical addresses. When a vmalloc'ed data is given, the
+driver must calculate the physical address to each page of the data.
 
-Yes because the if condition will always be true. Perhaps that's
-too confusing? We could add a subtraction by 1 to make it more
-obvious.
+However the current version of it just calculates the physical address
+once and keeps incrementing it even when a page boundary is crossed.
+This patch fixes this behaviour.
 
- for (i = 0; entry = table; i < ARRAY_SIZE(table) - 1; i++, entry++)
- 	if (entry->divisor <= divisor)
-		break;
+Signed-off-by: Fionnuala Gunter <fin@linux.vnet.ibm.com>
+Signed-off-by: Joel Schopp <jschopp@linux.vnet.ibm.com>
+Signed-off-by: Joy Latten <jmlatten@linux.vnet.ibm.com>
+Signed-off-by: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
+---
+ drivers/crypto/nx/nx.c | 22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
- return entry; /* Default to smallest divider*/
-
+diff --git a/drivers/crypto/nx/nx.c b/drivers/crypto/nx/nx.c
+index bbdab6e..ad07dc6 100644
+--- a/drivers/crypto/nx/nx.c
++++ b/drivers/crypto/nx/nx.c
+@@ -114,13 +114,29 @@ struct nx_sg *nx_build_sg_list(struct nx_sg *sg_head,
+ 	 * have been described (or @sgmax elements have been written), the
+ 	 * loop ends. min_t is used to ensure @end_addr falls on the same page
+ 	 * as sg_addr, if not, we need to create another nx_sg element for the
+-	 * data on the next page */
++	 * data on the next page.
++	 *
++	 * Also when using vmalloc'ed data, every time that a system page
++	 * boundary is crossed the physical address needs to be re-calculated.
++	 */
+ 	for (sg = sg_head; sg_len < len; sg++) {
++		u64 next_page;
++
+ 		sg->addr = sg_addr;
+-		sg_addr = min_t(u64, NX_PAGE_NUM(sg_addr + NX_PAGE_SIZE), end_addr);
+-		sg->len = sg_addr - sg->addr;
++		sg_addr = min_t(u64, NX_PAGE_NUM(sg_addr + NX_PAGE_SIZE),
++				end_addr);
++
++		next_page = (sg->addr & PAGE_MASK) + PAGE_SIZE;
++		sg->len = min_t(u64, sg_addr, next_page) - sg->addr;
+ 		sg_len += sg->len;
+ 
++		if (sg_addr >= next_page &&
++				is_vmalloc_addr(start_addr + sg_len)) {
++			sg_addr = page_to_phys(vmalloc_to_page(
++						start_addr + sg_len));
++			end_addr = sg_addr + len - sg_len;
++		}
++
+ 		if ((sg - sg_head) == sgmax) {
+ 			pr_err("nx: scatter/gather list overflow, pid: %d\n",
+ 			       current->pid);
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.7.12
+
