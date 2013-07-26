@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab3GZWLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:11:36 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:60903 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757778Ab3GZWLd (ORCPT
+	id S1760149Ab3GZWMf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:12:35 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:1377 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755891Ab3GZWMc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:11:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F1C412.1010602@wwwdotorg.org>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
-	<CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
-	<20130725193135.GT23879@titan.lakedaemon.net>
-	<CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
-	<51F1C412.1010602@wwwdotorg.org>
-Date: Fri, 26 Jul 2013 17:11:32 -0500
-Message-ID: <CAL_JsqLweU0Mt_8zsBu=-3Mx4Tc3Gn088j3xN27Hnq57etCofw@mail.gmail.com>
-Subject: Re: DT bindings as ABI [was: Do we have people interested in device
- tree janitoring / cleanup?]
-From: Rob Herring <robherring2@gmail.com>
+	Fri, 26 Jul 2013 18:12:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Fri, 26 Jul 2013 15:12:32 -0700
+From: Andrew Chew <AChew@nvidia.com>
 To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Olof Johansson <olof@lixom.net>,
+CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
+        "j-keerthy@ti.com" <j-keerthy@ti.com>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Rhyland Klein <rklein@nvidia.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Jul 2013 15:12:31 -0700
+Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
+Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
+Thread-Index: Ac6KS/X0FiU29TJ+S1qMwrvFDOyarAAAC49w
+Message-ID: <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com>
+References: <1374871308-490-1-git-send-email-achew@nvidia.com>
+ <51F2E74E.2060107@wwwdotorg.org>
+ <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
+ <51F2EC66.2080200@wwwdotorg.org>
+ <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com>
+ <51F2F22B.500@wwwdotorg.org>
+In-Reply-To: <51F2F22B.500@wwwdotorg.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 7:34 PM, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 07/25/2013 01:16 PM, Rob Herring wrote:
->> On Thu, Jul 25, 2013 at 2:31 PM, Jason Cooper <jason@lakedaemon.net> wrote:
->>> On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
->>>> On Thu, Jul 25, 2013 at 11:09 AM, Olof Johansson <olof@lixom.net> wrote:
->>>
->>>>> One problem that needs to be solved is obviously how a binding
->>>>> graduates from tentative to locked. This work isn't going to be very
->>>>> interesting to most people, I suspect. Think standards committee type
->>>>> work.
->>>>
->>>> I think a time based stabilization period would be better than a
->>>> separate directory to apply bindings too. Or time plus periodic review
->>>> perhaps.
->>>
->>> The only problem with a time-based versus separate directory is how do
->>> users who've downloaded the tree determine which bindings are stable?
->>> If they pull a tarball, or receive an SDK, there is most likely no git
->>> history attached.
->>
->> Well, if time based includes moving the binding out of the kernel,
->> then that is what defines it as stable or not. I guess that is a form
->> of a separate directory. I don't think we want to be moving bindings
->> twice: tentative -> stable and kernel -> DT repo.
->>
->> The policy could be as simple as an binding without change in at least
->> N kernel releases is moved out and stable.
->
-> That might not be quite the right criteria. Just because something
-> didn't change doesn't mean it's "correct" and that any problems in the
-> binding have been addressed. As one example, on Tegra, we have a few
-> bindings that haven't changed in a while, yet rely on custom properties
-> for describing which DMA channel to use, rather than using the
-> fairly-recently-introduced standard DMA DT properties (this particular
-> example is being rectified now, but I'm sure there are plenty of similar
-> examples)
+> >>>> How does this interact with the pinctrl driver that Laxman just
+> >>>> sent for Palmas?
+> >>>>
+> >>>> https://lkml.org/lkml/2013/7/26/141
+> >>>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
+> >>>
+> >>> Thanks for pointing this out.  Given this:
+> >>>
+> >>> +Optional properties:
+> >>> +- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1
+> mode.
+> >>> +- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2
+> mode.
+> >>>
+> >>> I think his work already encompasses what my patch is supposed to do.
+> >>>
+> >>> Abandoning this patch.
+> >>
+> >> OK, that's simple!
+> >>
+> >> Are the existing ti,mux-pad1/ti,mux-pad2 properties already in the
+> >> binding redundant with Laxman's pinctrl driver?
+> >
+> > In linux-next (where I based my work), yes, those two properties
+> > already exist, and as far as I understand it, are redundant with Laxman's
+> pinctrl driver.
+> > I expect those properties will go away with Laxman's pinctrl driver.
+> 
+> Except those properties have been there for many kernel revisions and are
+> an ABI and hence can't be removed, although I noticed that they got
+> renamed recently, and of course we aren't technically being strict about this
+> quite yet...
+> 
+> Re: the complete pinctrl driver: is anything outside the Palmas going to need
+> to reprogram the Palmas pinctrl HW at run-time? Are the functions that can
+> be routed to the pins just static configuration for PMIC features, or might
+> other generic (non-Palmas) drivers use those pins for something? If not,
+> perhaps it's be simpler to just add your ti,mux-pad3 property and be done.
 
-In this case, I would suggest that both bindings are stable and the
-conversion from one to the other is a platform decision. You could
-make the kernel support both if you wanted. Or you know the platform
-is not stable and are okay with having to keep dtb and kernel in sync.
-
-I think this highlights the need to separate stable bindings and
-stable dts files.
-
-Rob
+I can imagine other projects wanting to do runtime muxing on those pins.
+These pins can serve as GPIOs, or can be programmed for special functions.
+For my particular scenario, I just need to statically set that particular mux
+register (the power-on default value is not suitable for what we want to
+do, namely to use the GPIO_6 pin as an actual GPIO pin).  If the existing
+ti,mux-pad1 and ti,mux-pad2 properties are to stay, in the spirit of not changing
+the existing ABI, then sure, we can make a case for adding the missing one
+(ti,mux-pad3) for completeness.  In this case, if the palmas PMIC's pin
+configuration can be statically set at start of day, one won't even need to
+instantiate the palmas pinctrl driver at all, and with the addition of ti,mux-pad3,
+the pin configuration control will actually be complete. 
