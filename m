@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933686Ab3GZVgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:36:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50772 "EHLO
+	id S1759906Ab3GZVgG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:36:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759937Ab3GZUsg (ORCPT
+	with ESMTP id S1759936Ab3GZUsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:36 -0400
+	Fri, 26 Jul 2013 16:48:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 26/79] 9p: fix off by one causing access violations and memory corruption
-Date: Fri, 26 Jul 2013 13:47:16 -0700
-Message-Id: <20130726204724.666852322@linuxfoundation.org>
+Subject: [ 25/79] ipv6: in case of link failure remove route directly instead of letting it expire
+Date: Fri, 26 Jul 2013 13:47:15 -0700
+Message-Id: <20130726204724.570834984@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,76 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sasha Levin <sasha.levin@oracle.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 110ecd69a9feea82a152bbf9b12aba57e6396883 ]
+[ Upstream commit 1eb4f758286884e7566627164bca4c4a16952a83 ]
 
-p9_release_pages() would attempt to dereference one value past the end of
-pages[]. This would cause the following crashes:
+We could end up expiring a route which is part of an ecmp route set. Doing
+so would invalidate the rt->rt6i_nsiblings calculations and could provoke
+the following panic:
 
-[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
-[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
-[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[ 6293.180060] Modules linked in:
-[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
-[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
-[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
-[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
-[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
-[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
-[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
-[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
-[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
-[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
-[ 6293.256784] Stack:
-[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
-[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
-[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
-[ 6293.256784] Call Trace:
-[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
-[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
-[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
-[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
-[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
-[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
-[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
-[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
-[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
-[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
-[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
-[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
-[ 6293.256784]  RSP <ffff880787ddfc28>
-[ 6293.256784] CR2: ffff8807c96f3000
-[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
+[   80.144667] ------------[ cut here ]------------
+[   80.145172] kernel BUG at net/ipv6/ip6_fib.c:733!
+[   80.145172] invalid opcode: 0000 [#1] SMP
+[   80.145172] Modules linked in: 8021q nf_conntrack_netbios_ns nf_conntrack_broadcast ipt_MASQUERADE ip6table_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 iptable_nat nf_nat_ipv4 nf_nat iptable_mangle nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables
++snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm snd_page_alloc snd_timer virtio_balloon snd soundcore i2c_piix4 i2c_core virtio_net virtio_blk
+[   80.145172] CPU: 1 PID: 786 Comm: ping6 Not tainted 3.10.0+ #118
+[   80.145172] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2011
+[   80.145172] task: ffff880117fa0000 ti: ffff880118770000 task.ti: ffff880118770000
+[   80.145172] RIP: 0010:[<ffffffff815f3b5d>]  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
+[   80.145172] RSP: 0018:ffff880118771798  EFLAGS: 00010202
+[   80.145172] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff88011350e480
+[   80.145172] RDX: ffff88011350e238 RSI: 0000000000000004 RDI: ffff88011350f738
+[   80.145172] RBP: ffff880118771848 R08: ffff880117903280 R09: 0000000000000001
+[   80.145172] R10: 0000000000000000 R11: 0000000000000000 R12: ffff88011350f680
+[   80.145172] R13: ffff880117903280 R14: ffff880118771890 R15: ffff88011350ef90
+[   80.145172] FS:  00007f02b5127740(0000) GS:ffff88011fd00000(0000) knlGS:0000000000000000
+[   80.145172] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[   80.145172] CR2: 00007f981322a000 CR3: 00000001181b1000 CR4: 00000000000006e0
+[   80.145172] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   80.145172] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   80.145172] Stack:
+[   80.145172]  0000000000000001 ffff880100000000 ffff880100000000 ffff880117903280
+[   80.145172]  0000000000000000 ffff880119a4cf00 0000000000000400 00000000000007fa
+[   80.145172]  0000000000000000 0000000000000000 0000000000000000 ffff88011350f680
+[   80.145172] Call Trace:
+[   80.145172]  [<ffffffff815eeceb>] ? rt6_bind_peer+0x4b/0x90
+[   80.145172]  [<ffffffff815ed985>] __ip6_ins_rt+0x45/0x70
+[   80.145172]  [<ffffffff815eee35>] ip6_ins_rt+0x35/0x40
+[   80.145172]  [<ffffffff815ef1e4>] ip6_pol_route.isra.44+0x3a4/0x4b0
+[   80.145172]  [<ffffffff815ef34a>] ip6_pol_route_output+0x2a/0x30
+[   80.145172]  [<ffffffff81616077>] fib6_rule_action+0xd7/0x210
+[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
+[   80.145172]  [<ffffffff81553026>] fib_rules_lookup+0xc6/0x140
+[   80.145172]  [<ffffffff81616374>] fib6_rule_lookup+0x44/0x80
+[   80.145172]  [<ffffffff815ef320>] ? ip6_pol_route_input+0x30/0x30
+[   80.145172]  [<ffffffff815edea3>] ip6_route_output+0x73/0xb0
+[   80.145172]  [<ffffffff815dfdf3>] ip6_dst_lookup_tail+0x2c3/0x2e0
+[   80.145172]  [<ffffffff813007b1>] ? list_del+0x11/0x40
+[   80.145172]  [<ffffffff81082a4c>] ? remove_wait_queue+0x3c/0x50
+[   80.145172]  [<ffffffff815dfe4d>] ip6_dst_lookup_flow+0x3d/0xa0
+[   80.145172]  [<ffffffff815fda77>] rawv6_sendmsg+0x267/0xc20
+[   80.145172]  [<ffffffff815a8a83>] inet_sendmsg+0x63/0xb0
+[   80.145172]  [<ffffffff8128eb93>] ? selinux_socket_sendmsg+0x23/0x30
+[   80.145172]  [<ffffffff815218d6>] sock_sendmsg+0xa6/0xd0
+[   80.145172]  [<ffffffff81524a68>] SYSC_sendto+0x128/0x180
+[   80.145172]  [<ffffffff8109825c>] ? update_curr+0xec/0x170
+[   80.145172]  [<ffffffff81041d09>] ? kvm_clock_get_cycles+0x9/0x10
+[   80.145172]  [<ffffffff810afd1e>] ? __getnstimeofday+0x3e/0xd0
+[   80.145172]  [<ffffffff8152509e>] SyS_sendto+0xe/0x10
+[   80.145172]  [<ffffffff8164efd9>] system_call_fastpath+0x16/0x1b
+[   80.145172] Code: fe ff ff 41 f6 45 2a 06 0f 85 ca fe ff ff 49 8b 7e 08 4c 89 ee e8 94 ef ff ff e9 b9 fe ff ff 48 8b 82 28 05 00 00 e9 01 ff ff ff <0f> 0b 49 8b 54 24 30 0d 00 00 40 00 89 83 14 01 00 00 48 89 53
+[   80.145172] RIP  [<ffffffff815f3b5d>] fib6_add+0x75d/0x830
+[   80.145172]  RSP <ffff880118771798>
+[   80.387413] ---[ end trace 02f20b7a8b81ed95 ]---
+[   80.390154] Kernel panic - not syncing: Fatal exception in interrupt
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/9p/trans_common.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ net/ipv6/route.c |    9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/9p/trans_common.c
-+++ b/net/9p/trans_common.c
-@@ -24,11 +24,11 @@
-  */
- void p9_release_pages(struct page **pages, int nr_pages)
- {
--	int i = 0;
--	while (pages[i] && nr_pages--) {
--		put_page(pages[i]);
--		i++;
--	}
-+	int i;
-+
-+	for (i = 0; i < nr_pages; i++)
-+		if (pages[i])
-+			put_page(pages[i]);
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1076,10 +1076,13 @@ static void ip6_link_failure(struct sk_b
+ 
+ 	rt = (struct rt6_info *) skb_dst(skb);
+ 	if (rt) {
+-		if (rt->rt6i_flags & RTF_CACHE)
+-			rt6_update_expires(rt, 0);
+-		else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT))
++		if (rt->rt6i_flags & RTF_CACHE) {
++			dst_hold(&rt->dst);
++			if (ip6_del_rt(rt))
++				dst_free(&rt->dst);
++		} else if (rt->rt6i_node && (rt->rt6i_flags & RTF_DEFAULT)) {
+ 			rt->rt6i_node->fn_sernum = -1;
++		}
+ 	}
  }
- EXPORT_SYMBOL(p9_release_pages);
  
 
 
