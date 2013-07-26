@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210Ab3GZOwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:52:40 -0400
-Received: from longford.logfs.org ([213.229.74.203]:59921 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758998Ab3GZOwi (ORCPT
+	id S1759224Ab3GZOxf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 10:53:35 -0400
+Received: from mail1.centrum-group.com ([194.12.254.133]:48421 "EHLO
+	mail1.centrum-group.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759169Ab3GZOxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:52:38 -0400
-Date: Fri, 26 Jul 2013 09:20:34 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Vyacheslav Dubeyko <slava@dubeyko.com>
-Cc: Dhaval Giani <dgiani@mozilla.com>, Taras Glek <tglek@mozilla.com>,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, vdjeric@mozilla.com,
-        glandium@mozilla.com, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130726132034.GB21977@logfs.org>
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
- <51F1556A.20909@mozilla.com>
- <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
- <51F17005.7030309@mozilla.com>
- <1374825683.3671.35.camel@slavad-ubuntu>
+	Fri, 26 Jul 2013 10:53:33 -0400
+X-Antivirus-centrum-group.com-Mail-From: drug@centrum-group.com via mail1
+X-Antivirus-centrum-group.com: 1.25-st-qms (Clear:RC:0(127.0.0.1):SA:0(?/?):. Processed in 214.86407 secs Process 14976)
+Message-ID: <52126.95.17.177.234.1374827967.squirrel@mail1.centrum-group.com>
+Date: Fri, 26 Jul 2013 11:39:27 +0300 (EEST)
+Subject: YOUR EMAIL HAS WON (Microsoft Iberica)
+From: "MICROSOFT IBERICA SL" <drug@centrum-group.com>
+Reply-To: microsoftiberica@kimo.com
+User-Agent: SquirrelMail/1.4.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Content-Type: text/plain;charset=WINDOWS-1251
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374825683.3671.35.camel@slavad-ubuntu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 July 2013 12:01:23 +0400, Vyacheslav Dubeyko wrote:
-> 
-> We are discussing not about good or bad idea. We need to elaborate a
-> right solution. I think that suggested idea is not clear. Do you want to
-> support compression in ext4? Or do you want to add some new compression
-> feature (likewise file-oriented compression)? If we are talking about
-> compression in ext4 then it needs to use e2compr patch set. Otherwise,
-> if we are talking about file compression then it is not question of
-> concrete filesystem. And we need to make implementation on VFS level. It
-> is only architectural point of view.
+Confirm Detail
 
-I don't think the e2compr patches are strictly necessary.  They are a
-good option, but not the only one.
+Congratulation To The Owner Of This Email Address.
 
-One trick to simplify the problem is to make Dhaval's compressed files
-strictly read-only.  It will require some dance to load the compressed
-content, flip the switch, then uncompress data on the fly and disallow
-writes.  Not the most pleasing of interfaces, but yet another option.
+We are delighted to inform you of our Post Code Microsoft
+Iberica award held in Spain. This awards is fully based on an
+electronic selection, Winners were picked by computerized system, drawn
+from over 43,000,00 companies and individuals e-mail addresses worldwide.
 
-> Why do you try to implement likewise concept on kernel level? It looks
-> like you try to move some user-space concept in kernel-space.
+This award is officially announced in Madrid/Spain. Your email ID has hereby
+been approved alump sum pay out of (ˆ300,000.00) Three Hundred Thousand
+Euros in cash credit file Ref/Eu/Email509/Eu06
 
-The kernel controls the page cache.  Once the page cache is filled
-with uncompressed file content, you can do mmap, regular file io, etc.
-Putting uncompression code into the kernel makes sense to me.  Whether
-a solution different from e2compr makes sense is yet to be seen.
+Note: No ticket was sold in this prize award, winners were randomly
+selected from electronic online world wide. Simply contact Our Foreign
+Financial Office by email with the contact address below.
 
-Whatever you do, it will require support from the on-disk format and
-the userspace ABI.  Setting the compression bit on a file has the
-clear advantage that it is an established interface and also supported
-by other filesystems.  Introducing yet another interface requires a
-fairly strong case to be made.  But who knows, maybe Dhaval can pull
-it off.
+David Belujo
+Email Contact: microsoftiberica@kimo.com
 
-JÃ¶rn
+Sincerely,
+Mrs Anna Maria
+Microsoft Iberica SL
 
---
-Measuring programming progress by lines of code is like measuring aircraft
-building progress by weight.
--- Bill Gates
+
+
+
+
+
+
+
+
+
+
+
