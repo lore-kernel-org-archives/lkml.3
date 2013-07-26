@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759337Ab3GZRJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:09:12 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:36126 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759115Ab3GZRJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:09:09 -0400
+	id S1759384Ab3GZRJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:09:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:45311 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759115Ab3GZRJN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:09:13 -0400
 From: Illia Smyrnov <illia.smyrnov@ti.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>
-Subject: [PATCH v2 0/3] Input: omap-keypad: Wakeup capability and w/a for i689 errata.
-Date: Fri, 26 Jul 2013 20:09:03 +0300
-Message-ID: <1374858546-25034-1-git-send-email-illia.smyrnov@ti.com>
+Subject: [PATCH v2 3/3] Input: omap-keypad: Set irq to level instead of edge
+Date: Fri, 26 Jul 2013 20:09:06 +0300
+Message-ID: <1374858546-25034-4-git-send-email-illia.smyrnov@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1374858546-25034-1-git-send-email-illia.smyrnov@ti.com>
+References: <1374858546-25034-1-git-send-email-illia.smyrnov@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds wake up capability for the keypad and
-workaround for i689 errata.
+From: Axel Haslam <axelhaslam@ti.com>
 
-Based on top of v3.11-rc2
+Set mpu irq to level instead of edge, since if mpu is in low power
+an edge detection may be lost if the event is a wkup event.
 
-Depends on:
+Signed-off-by: Axel Haslam <axelhaslam@ti.com>
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+---
+ Based on top of v3.11-rc2
 
-Input: omap-keypad: Convert to threaded IRQ
-https://patchwork.kernel.org/patch/2832920/
+ Depends on:
+ Input: omap-keypad: Convert to threaded IRQ
+ https://patchwork.kernel.org/patch/2832920/
 
-Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
-https://patchwork.kernel.org/patch/2832913/
+ drivers/input/keyboard/omap4-keypad.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-Axel Haslam (2):
-  Input: omap-keypad: errata i689: Correct debounce time
-  Input: omap-keypad: Set irq to level instead of edge
-
-Illia Smyrnov (1):
-  Input: omap-keypad: Enable wakeup capability for keypad.
-
- drivers/input/keyboard/omap4-keypad.c |   55 +++++++++++++++++++++++++++++++--
- 1 file changed, 52 insertions(+), 3 deletions(-)
-
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index e8bdc76..7adb53e 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -374,9 +374,13 @@ static int omap4_keypad_probe(struct platform_device *pdev)
+ 		goto err_free_keymap;
+ 	}
+ 
++	/*
++	 * Set irq level detection for mpu. Edge event are missed in gic
++	 * if the mpu is in low power and keypad event is a wakeup
++	 */
+ 	error = request_threaded_irq(keypad_data->irq, omap4_keypad_irq_handler,
+ 				     omap4_keypad_irq_thread_fn,
+-				     IRQF_TRIGGER_RISING,
++				     IRQF_TRIGGER_HIGH,
+ 				     "omap4-keypad", keypad_data);
+ 	if (error) {
+ 		dev_err(&pdev->dev, "failed to register interrupt\n");
 -- 
 1.7.9.5
 
