@@ -1,82 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3GZDbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:31:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47549 "EHLO mx1.redhat.com"
+	id S1757647Ab3GZDca (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:32:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39274 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756537Ab3GZDbt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:31:49 -0400
-Message-ID: <51F1ED9D.50300@redhat.com>
-Date: Thu, 25 Jul 2013 20:31:41 -0700
-From: Andy Grover <agrover@redhat.com>
-Organization: Red Hat
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130621 Thunderbird/17.0.7
+	id S1757452Ab3GZDcK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 23:32:10 -0400
+Message-ID: <51F1ED8F.40703@zytor.com>
+Date: Thu, 25 Jul 2013 20:31:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Ritesh Raj Sarraf <rrs@debian.org>,
-        targetcli-fb-devel@lists.fedorahosted.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: targetcli -fb now also Apache 2.0 licensed
-References: <51EF73EF.1040305@redhat.com>  <1374696565.7397.1292.camel@haakon3.risingtidesystems.com>  <1374697264.7382.39.camel@dabdike>  <1374699289.7397.1309.camel@haakon3.risingtidesystems.com>  <51F06C17.50306@redhat.com> <1374715140.7397.1390.camel@haakon3.risingtidesystems.com>
-In-Reply-To: <1374715140.7397.1390.camel@haakon3.risingtidesystems.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: mingo@kernel.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        torvalds@linux-foundation.org
+Subject: Re: Ugly patches for stolen reservation
+References: <rddfy5e894xuv6d47gu7hbuh.1374804892449@email.android.com>
+In-Reply-To: <rddfy5e894xuv6d47gu7hbuh.1374804892449@email.android.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/24/2013 06:19 PM, Nicholas A. Bellinger wrote:
-> Because -fb has had close to zero peer review, and you've not solicited
-> much input (none from us) before making significant changes to
-> rtslib/targetcli over the past 1 1/2 years.
->
-> For your own private tree this wouldn't matter.  However, for a single
-> upstream tree moving forward, it seems irresponsible to just ask us to
-> sign off on every decision that you've made in -fb with little external
-> review or input.
->
-> So, to help us get back to a community development model, please cut a
-> -fb branch against upstream rtslib/configshell/targetcli, and start
-> sending the series out for public review.
+On 07/25/2013 07:14 PM, Jesse Barnes wrote:
+> To clarify: it'll either be marked reserved or not listed at all in e820, which is why I did this early, before any other e820 stuff like the "RAM buffer" are allocated, and before we could use the iomem resource (or maybe we could even early per Linus? I'll check). 
+> 
+> Jesse
 
-Hi Nick,
+If it is marked reserved or not listed at all it is much less of an
+issue.  Reserved is in fact the correct thing; not listed at all really
+isn't very problematic in most cases.
 
-It's one thing to claim a prerogative of "upstream", but for this to 
-make sense, there needs to be an actual community around the upstream. 
-And if there's going to be submissions for review, then there needs to 
-be someone in charge of the community with a high degree of skill in the 
-code base. Nick you have a great deal of technical expertise around the 
-C code in drivers/target, but Jerome was the one who wrote rtslib, 
-targetcli, and configshell. I believe you can assess the technical 
-aspects of how the user library interacts with the kernel code, but the 
-maintainer should also be extremely conversant in the language the 
-library is written in. In this case, Python. So it's not clear to me if 
-submitting the code would actually result in meaningful code improvements.
+	-hpa
 
-Also, there has been no effort to sustain a community around this code. 
-There is no bug tracking, no separate mailing list, no regular releases. 
-Debian is running ancient, broken code because nothing's been tagged in 
-over two years.
-
-I would love to have you maintain and improve this code, but if you 
-aren't then you can't just say "I'm the upstream bow to me!". We're 
-shipping this code in Fedora and it needs active maintenance. Now that 
-we're all on an even licensing footing, code can flow both ways, and 
-even into your commercial version.
-
-So, if you get a Pythonista to maintain upstream, and actually work to 
-build a community around it, then I will play ball. But I must ask you, 
-do you *really* want to maintain this? Forever? In a private thread a 
-while back, RTS CEO Marc said your company's value-add was in different 
-areas now. It might actually be easier for you to hire a Python person 
-to reconcile targetcli-fb with your commercial needs, and then just 
-track it. The objection I have with what you're asking me is that it 
-feels like you're trying to get me to do that reconciliation work for 
-you for free as a condition of being "upstream", and I'm not willing to 
-do work that benefits only your company and not the community at large.
-
-Regards -- Andy
 
