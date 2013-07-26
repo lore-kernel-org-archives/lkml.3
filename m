@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab3GZRx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 13:53:28 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:54192 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab3GZRx0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 13:53:26 -0400
+	id S1759308Ab3GZR5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 13:57:14 -0400
+Received: from www.sr71.net ([198.145.64.142]:45222 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab3GZR5K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 13:57:10 -0400
+Message-ID: <51F2B876.8050104@sr71.net>
+Date: Fri, 26 Jul 2013 10:57:10 -0700
+From: Dave Hansen <dave@sr71.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <20130726163101.GB29819@linutronix.de>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-	<1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
-	<CADYTM3a5xzs+-VCTeKLGiRjo7JOqOJ5H4EWDACpTMovY5_ooRA@mail.gmail.com>
-	<51EEBE05.2040000@linutronix.de>
-	<CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
-	<20130726163101.GB29819@linutronix.de>
-Date: Fri, 26 Jul 2013 12:53:25 -0500
-Message-ID: <CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
-Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Aaron Lu <aaron.lu@intel.com>
+CC: Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Shane Huang <shane.huang@amd.com>
+Subject: Re: SATA hotplug not detecting new disks
+References: <51F1B179.4070309@sr71.net> <51F1D63A.2010403@intel.com>
+In-Reply-To: <51F1D63A.2010403@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+On 07/25/2013 06:51 PM, Aaron Lu wrote:
+> On 07/26/2013 07:15 AM, Dave Hansen wrote:
+>> I've got a relatively new system that doesn't seem to be able to hotplug
+>> SATA disks.  I see the same behavior on 3.10, 3.11-rc2, and Ubuntu's
+>> 3.8.0-25-generic.  The disks are detected right away on reboots, but
+>> even after poking the /sys/class/scsi_host/host*/scan files, new disks
+>> are never detected.  I've disabled link power management.
+>>
+>> Am I doing something stupid here?  I thought this "just worked" on my
+>> previous hardware.
+> 
+> My vague memory reminds me that not all SATA ports are hot pluggable -
+> you can check the port's "External SATA port" bit and "Hot Plug Capable"
+> bit of the PxCMD register like this:
+> 
+> $ grep ahci /proc/iomem 
+>     e1a40000-e1a407ff : ahci
+> # dd if=/dev/mem of=ahcidump bs=4096 count=1 skip=0xe1a40
+> You will need to change 0xe1a40 to decimal format.
+> 
+> Then the PxCMD is at offset 0x118 for port 0, check bit 21 for E-SATA or
+> bit 18 for hot pluggable bits. If any of them set to 1, this port
+> should be hot pluggable; otherwise, it doesn't have this capability.
 
-On Fri, Jul 26, 2013 at 11:31 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> * Bin Liu | 2013-07-23 13:55:27 [-0500]:
->
->>Hi Sebastian,
-> Hi Bin,
->
->>either by SRP or HNP, or something else. In TI 3.2 kernel, there is
->>workaround in otg_timer() to _toggle_ the SESSION bit to detect if ID
->>pin is grounded, which means a USB device is connected.
->
-> I've been looking at
->   http://downloads.ti.com/sitara_linux/esd/AM335xSDK/latest/index_FDS.html
->
-> and I can't find what you are talking about. My MUSB_DEVCTL doesn't
-> change after I connect a device and the SESSION bit is not set. Also I
-> remain in a_idle state. Do you have maybe a hint for me? :)
+That whole I/O area looks to be 0'd to me, at least for the port if I
+boot with it unplugged.  I even tried toggling the PORT_CMD_ALPE bit
+with powertop since it is in the same port.  Nothing seems to happen for
+port0 (the one unplugged at boot), although I _can_ see the writes show
+up for the other ports.
 
-In TI 3.2 kernel, the otg_timer() toggles the SESSION bit in
-OTG_STATE_B_IDLE state. So whenever the ID pin is grounded by
-connecting a device, the controller will try go into host mode.
-But I have no idea why your board is in a_idle not b_idle. The toggle
-does not handle a_idle.
+I also tried booting with a disk plugged in to a port, then put that
+disk to sleep and unplugged it.  I replugged a _different_ disk in its
+place, and it was detected just fine.
 
-Do you use the AM335x GP EVM, not the smaller StarterKit EVM, right?
-the USB0 port on SK EVM is device only.
-
-But anyway, I have not seen any use case which uses micro-AB
-receptacle and requires such dynamic role switching. So I kind of
-think it is unnecessary to implement this feature.
-
-And it is not easy to implement it in a right way, because AM335x does
-not have an interrupt for ID pin grounding, so we can only try to set
-SESSION bit in otg_timer(), but that causes 2sec VBUS pulsing on the
-wire, which violates the specs.
-
->
->>Regards,
->>-Bin.
->
-> Sebastian
+Is it possible that the 'ata_dummy_port_ops' are getting left in place
+at boot accidentally, that we're mistaking an unplugged port for a
+disabled one?
