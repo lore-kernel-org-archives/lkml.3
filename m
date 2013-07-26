@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933799Ab3GZVkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:40:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
+	id S933730Ab3GZVls (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:41:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759872Ab3GZUs2 (ORCPT
+	with ESMTP id S932372Ab3GZUsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:28 -0400
+	Fri, 26 Jul 2013 16:48:25 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>, Jay Cliburn <jcliburn@gmail.com>,
-        Chris Snook <chris.snook@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 33/79] atl1e: fix dma mapping warnings
-Date: Fri, 26 Jul 2013 13:47:23 -0700
-Message-Id: <20130726204725.410113830@linuxfoundation.org>
+Subject: [ 18/79] virtio: support unlocked queue poll
+Date: Fri, 26 Jul 2013 13:47:08 -0700
+Message-Id: <20130726204723.835876415@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,150 +27,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-[ Upstream commit 352900b583b2852152a1e05ea0e8b579292e731e ]
+[ Upstream commit cc229884d3f77ec3b1240e467e0236c3e0647c0c ]
 
-Recently had this backtrace reported:
-WARNING: at lib/dma-debug.c:937 check_unmap+0x47d/0x930()
-Hardware name: System Product Name
-ATL1E 0000:02:00.0: DMA-API: device driver failed to check map error[device
-address=0x00000000cbfd1000] [size=90 bytes] [mapped as single]
-Modules linked in: xt_conntrack nf_conntrack ebtable_filter ebtables
-ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek iTCO_wdt
-iTCO_vendor_support snd_hda_intel acpi_cpufreq mperf coretemp btrfs zlib_deflate
-snd_hda_codec snd_hwdep microcode raid6_pq libcrc32c snd_seq usblp serio_raw xor
-snd_seq_device joydev snd_pcm snd_page_alloc snd_timer snd lpc_ich i2c_i801
-soundcore mfd_core atl1e asus_atk0110 ata_generic pata_acpi radeon i2c_algo_bit
-drm_kms_helper ttm drm i2c_core pata_marvell uinput
-Pid: 314, comm: systemd-journal Not tainted 3.9.0-0.rc6.git2.3.fc19.x86_64 #1
-Call Trace:
- <IRQ>  [<ffffffff81069106>] warn_slowpath_common+0x66/0x80
- [<ffffffff8106916c>] warn_slowpath_fmt+0x4c/0x50
- [<ffffffff8138151d>] check_unmap+0x47d/0x930
- [<ffffffff810ad048>] ? sched_clock_cpu+0xa8/0x100
- [<ffffffff81381a2f>] debug_dma_unmap_page+0x5f/0x70
- [<ffffffff8137ce30>] ? unmap_single+0x20/0x30
- [<ffffffffa01569a1>] atl1e_intr+0x3a1/0x5b0 [atl1e]
- [<ffffffff810d53fd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff81119636>] handle_irq_event_percpu+0x56/0x390
- [<ffffffff811199ad>] handle_irq_event+0x3d/0x60
- [<ffffffff8111cb6a>] handle_fasteoi_irq+0x5a/0x100
- [<ffffffff8101c36f>] handle_irq+0xbf/0x150
- [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
- [<ffffffff81073b10>] ? irq_enter+0x50/0xa0
- [<ffffffff8172738d>] do_IRQ+0x4d/0xc0
- [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
- [<ffffffff8171c6b2>] common_interrupt+0x72/0x72
- <EOI>  [<ffffffff810db5b2>] ? lock_release+0xc2/0x310
- [<ffffffff8109ea04>] lg_local_unlock_cpu+0x24/0x50
- [<ffffffff811dcb2f>] file_sb_list_del+0x3f/0x50
- [<ffffffff811dcb6d>] fput+0x2d/0xc0
- [<ffffffff811d8ea1>] filp_close+0x61/0x90
- [<ffffffff811fae4d>] __close_fd+0x8d/0x150
- [<ffffffff811d8ef0>] sys_close+0x20/0x50
- [<ffffffff81725699>] system_call_fastpath+0x16/0x1b
+This adds a way to check ring empty state after enable_cb outside any
+locks. Will be used by virtio_net.
 
-The usual straighforward failure to check for dma_mapping_error after a map
-operation is completed.
+Note: there's room for more optimization: caller is likely to have a
+memory barrier already, which means we might be able to get rid of a
+barrier here.  Deferring this optimization until we do some
+benchmarking.
 
-This patch should fix it, the reporter wandered off after filing this bz:
-https://bugzilla.redhat.com/show_bug.cgi?id=954170
-
-and I don't have hardware to test, but the fix is pretty straightforward, so I
-figured I'd post it for review.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Jay Cliburn <jcliburn@gmail.com>
-CC: Chris Snook <chris.snook@gmail.com>
-CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   28 +++++++++++++++++++++---
- 1 file changed, 25 insertions(+), 3 deletions(-)
+ drivers/virtio/virtio_ring.c |   56 +++++++++++++++++++++++++++++++++----------
+ include/linux/virtio.h       |    4 +++
+ 2 files changed, 48 insertions(+), 12 deletions(-)
 
---- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-+++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
-@@ -1665,8 +1665,8 @@ check_sum:
- 	return 0;
- }
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -607,19 +607,21 @@ void virtqueue_disable_cb(struct virtque
+ EXPORT_SYMBOL_GPL(virtqueue_disable_cb);
  
--static void atl1e_tx_map(struct atl1e_adapter *adapter,
--		      struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
-+static int atl1e_tx_map(struct atl1e_adapter *adapter,
-+			struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
+ /**
+- * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * virtqueue_enable_cb_prepare - restart callbacks after disable_cb
+  * @vq: the struct virtqueue we're talking about.
+  *
+- * This re-enables callbacks; it returns "false" if there are pending
+- * buffers in the queue, to detect a possible race between the driver
+- * checking for more work, and enabling callbacks.
++ * This re-enables callbacks; it returns current queue state
++ * in an opaque unsigned value. This value should be later tested by
++ * virtqueue_poll, to detect a possible race between the driver checking for
++ * more work, and enabling callbacks.
+  *
+  * Caller must ensure we don't call this with other virtqueue
+  * operations at the same time (except where noted).
+  */
+-bool virtqueue_enable_cb(struct virtqueue *_vq)
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *_vq)
  {
- 	struct atl1e_tpd_desc *use_tpd = NULL;
- 	struct atl1e_tx_buffer *tx_buffer = NULL;
-@@ -1677,6 +1677,7 @@ static void atl1e_tx_map(struct atl1e_ad
- 	u16 nr_frags;
- 	u16 f;
- 	int segment;
-+	int ring_start = adapter->tx_ring.next_to_use;
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
++	u16 last_used_idx;
  
- 	nr_frags = skb_shinfo(skb)->nr_frags;
- 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
-@@ -1689,6 +1690,9 @@ static void atl1e_tx_map(struct atl1e_ad
- 		tx_buffer->length = map_len;
- 		tx_buffer->dma = pci_map_single(adapter->pdev,
- 					skb->data, hdr_len, PCI_DMA_TODEVICE);
-+		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma))
-+			return -ENOSPC;
+ 	START_USE(vq);
+ 
+@@ -629,15 +631,45 @@ bool virtqueue_enable_cb(struct virtqueu
+ 	 * either clear the flags bit or point the event index at the next
+ 	 * entry. Always do both to keep code simple. */
+ 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
+-	vring_used_event(&vq->vring) = vq->last_used_idx;
++	vring_used_event(&vq->vring) = last_used_idx = vq->last_used_idx;
++	END_USE(vq);
++	return last_used_idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_enable_cb_prepare);
 +
- 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
- 		mapped_len += map_len;
- 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
-@@ -1715,6 +1719,13 @@ static void atl1e_tx_map(struct atl1e_ad
- 		tx_buffer->dma =
- 			pci_map_single(adapter->pdev, skb->data + mapped_len,
- 					map_len, PCI_DMA_TODEVICE);
++/**
++ * virtqueue_poll - query pending used buffers
++ * @vq: the struct virtqueue we're talking about.
++ * @last_used_idx: virtqueue state (from call to virtqueue_enable_cb_prepare).
++ *
++ * Returns "true" if there are pending used buffers in the queue.
++ *
++ * This does not need to be serialized.
++ */
++bool virtqueue_poll(struct virtqueue *_vq, unsigned last_used_idx)
++{
++	struct vring_virtqueue *vq = to_vvq(_vq);
 +
-+		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+			/* Reset the tx rings next pointer */
-+			adapter->tx_ring.next_to_use = ring_start;
-+			return -ENOSPC;
-+		}
-+
- 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
- 		mapped_len  += map_len;
- 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
-@@ -1750,6 +1761,13 @@ static void atl1e_tx_map(struct atl1e_ad
- 							  (i * MAX_TX_BUF_LEN),
- 							  tx_buffer->length,
- 							  DMA_TO_DEVICE);
-+
-+			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
-+				/* Reset the ring next to use pointer */
-+				adapter->tx_ring.next_to_use = ring_start;
-+				return -ENOSPC;
-+			}
-+
- 			ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_PAGE);
- 			use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
- 			use_tpd->word2 = (use_tpd->word2 & (~TPD_BUFLEN_MASK)) |
-@@ -1767,6 +1785,7 @@ static void atl1e_tx_map(struct atl1e_ad
- 	/* The last buffer info contain the skb address,
- 	   so it will be free after unmap */
- 	tx_buffer->skb = skb;
-+	return 0;
+ 	virtio_mb(vq->weak_barriers);
+-	if (unlikely(more_used(vq))) {
+-		END_USE(vq);
+-		return false;
+-	}
++	return (u16)last_used_idx != vq->vring.used->idx;
++}
++EXPORT_SYMBOL_GPL(virtqueue_poll);
+ 
+-	END_USE(vq);
+-	return true;
++/**
++ * virtqueue_enable_cb - restart callbacks after disable_cb.
++ * @vq: the struct virtqueue we're talking about.
++ *
++ * This re-enables callbacks; it returns "false" if there are pending
++ * buffers in the queue, to detect a possible race between the driver
++ * checking for more work, and enabling callbacks.
++ *
++ * Caller must ensure we don't call this with other virtqueue
++ * operations at the same time (except where noted).
++ */
++bool virtqueue_enable_cb(struct virtqueue *_vq)
++{
++	unsigned last_used_idx = virtqueue_enable_cb_prepare(_vq);
++	return !virtqueue_poll(_vq, last_used_idx);
  }
+ EXPORT_SYMBOL_GPL(virtqueue_enable_cb);
  
- static void atl1e_tx_queue(struct atl1e_adapter *adapter, u16 count,
-@@ -1834,10 +1853,13 @@ static netdev_tx_t atl1e_xmit_frame(stru
- 		return NETDEV_TX_OK;
- 	}
+--- a/include/linux/virtio.h
++++ b/include/linux/virtio.h
+@@ -70,6 +70,10 @@ void virtqueue_disable_cb(struct virtque
  
--	atl1e_tx_map(adapter, skb, tpd);
-+	if (atl1e_tx_map(adapter, skb, tpd))
-+		goto out;
+ bool virtqueue_enable_cb(struct virtqueue *vq);
+ 
++unsigned virtqueue_enable_cb_prepare(struct virtqueue *vq);
 +
- 	atl1e_tx_queue(adapter, tpd_req, tpd);
++bool virtqueue_poll(struct virtqueue *vq, unsigned);
++
+ bool virtqueue_enable_cb_delayed(struct virtqueue *vq);
  
- 	netdev->trans_start = jiffies; /* NETIF_F_LLTX driver :( */
-+out:
- 	spin_unlock_irqrestore(&adapter->tx_lock, flags);
- 	return NETDEV_TX_OK;
- }
+ void *virtqueue_detach_unused_buf(struct virtqueue *vq);
 
 
