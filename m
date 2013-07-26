@@ -1,91 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759379Ab3GZQYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:24:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34538 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757043Ab3GZQYU (ORCPT
+	id S1759318Ab3GZQ0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:26:16 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50353 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757043Ab3GZQ0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:24:20 -0400
-Date: Fri, 26 Jul 2013 17:23:55 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Vincent Palatin <vpalatin@chromium.org>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olofj@chromium.org>, devicetree@vger.kernel.org
-Message-ID: <20130726162355.GR9858@sirena.org.uk>
-References: <1374781320-10793-1-git-send-email-vpalatin@chromium.org>
- <20130725200343.GV9858@sirena.org.uk>
- <CAP_ceTyH3Yfw5ruSWfaDz_e=vrgkS6FT8PV1XgcCAwxLroHm1g@mail.gmail.com>
+	Fri, 26 Jul 2013 12:26:13 -0400
+Date: Fri, 26 Jul 2013 17:26:06 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>
+Subject: Re: [PATCH 5/5] sata, highbank: send extra clock cycles in SGPIO
+ patterns
+Message-ID: <20130726162606.GE3528@e106331-lin.cambridge.arm.com>
+References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+ <1374851518-4802-5-git-send-email-mark.langsdorf@calxeda.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5gLVUf0OArUb3P4b"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAP_ceTyH3Yfw5ruSWfaDz_e=vrgkS6FT8PV1XgcCAwxLroHm1g@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] regulator: read low power states configuration from
- device tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+In-Reply-To: <1374851518-4802-5-git-send-email-mark.langsdorf@calxeda.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 26, 2013 at 04:11:58PM +0100, Mark Langsdorf wrote:
+> Some SGPIO PICs don't follow the standard very well and expect a
+> certain number of clock cycles or port frames in each SGPIO pattern.
+> Add two optional parameters in the DTB that can provide the number of
+> extra clock cycles to be sent before and after each SGPIO pattern.
+> Read those parameters from the DTB and send the extra clock cycles.
 
---5gLVUf0OArUb3P4b
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Is this likely to be very variable, or something we can device based on
+a compatible string?
 
-On Fri, Jul 26, 2013 at 09:06:56AM -0700, Vincent Palatin wrote:
+> 
+> Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+> ---
+>  Documentation/devicetree/bindings/ata/sata_highbank.txt |  4 ++++
+>  drivers/ata/sata_highbank.c                             | 16 +++++++++++++---
+>  2 files changed, 17 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> index d692e9e..a05eb92 100644
+> --- a/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> +++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+> @@ -22,6 +22,10 @@ Optional properties:
+>  			SGPIO bitstream.
+>  - calxeda,tx-atten  : a u8 array that contains TX attenuation override
+>  			codes, one per port.
+> +- calxeda,pre-clocks : a u32 that indicates the number of additional clock
+> +			cycles to transmit before sending an SGPIO pattern
+> +- calxeda,post-clocks: a u32 that indicates the number of additional clock
+> +			cycles to transmit after sending an SGPIO pattern
+>  
+>  Example:
+>          sata@ffe08000 {
+> diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+> index 4c8444f..0ca27fe 100644
+> --- a/drivers/ata/sata_highbank.c
+> +++ b/drivers/ata/sata_highbank.c
+> @@ -82,9 +82,11 @@ static DEFINE_SPINLOCK(sgpio_lock);
+>  #define SGPIO_PINS			3
+>  #define SGPIO_PORTS			8
+>  
+> -/* can be cast as an ahci_host_priv for compatibility with most functions */
+>  struct ecx_plat_data {
+>  	u32		n_ports;
+> +	/* number of extra clocks that the SGPIO PIC controller expects */
+> +	u32		pre_clocks;
+> +	u32		post_clocks;
+>  	unsigned	sgpio_gpio[SGPIO_PINS];
+>  	u32		sgpio_pattern;
+>  	u32		port_to_sgpio[SGPIO_PORTS];
+> @@ -144,7 +146,7 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+>  	struct ecx_plat_data *pdata = (struct ecx_plat_data *) hpriv->plat_data;
+>  	struct ahci_port_priv *pp = ap->private_data;
+>  	unsigned long flags;
+> -	int pmp, i;
+> +	int pmp, i, patt_len;
+>  	struct ahci_em_priv *emp;
+>  	u32 sgpio_out;
+>  
+> @@ -161,6 +163,9 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+>  	spin_lock_irqsave(&sgpio_lock, flags);
+>  	ecx_parse_sgpio(pdata, ap->port_no, state);
+>  	sgpio_out = pdata->sgpio_pattern;
+> +	for (i = 0; i < pdata->pre_clocks; i++)
+> +		ecx_led_cycle_clock(pdata);
+> +
+>  	gpio_set_value(pdata->sgpio_gpio[SLOAD], 1);
+>  	ecx_led_cycle_clock(pdata);
+>  	gpio_set_value(pdata->sgpio_gpio[SLOAD], 0);
+> @@ -168,11 +173,14 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+>  	 * bit-bang out the SGPIO pattern, by consuming a bit and then
+>  	 * clocking it out.
+>  	 */
+> -	for (i = 0; i < (SGPIO_SIGNALS * pdata->n_ports); i++) {
+> +	patt_len = SGPIO_SIGNALS * pdata->n_ports;
+> +	for (i = 0; i < patt_len; i++) {
+>  		gpio_set_value(pdata->sgpio_gpio[SDATA], sgpio_out & 1);
+>  		sgpio_out >>= 1;
+>  		ecx_led_cycle_clock(pdata);
+>  	}
+> +	for (i = 0; i < pdata->post_clocks; i++)
+> +		ecx_led_cycle_clock(pdata);
+>  
+>  	/* save off new led state for port/slot */
+>  	emp->led_state = state;
+> @@ -207,6 +215,8 @@ static void highbank_set_em_messages(struct device *dev,
+>  	of_property_read_u32_array(np, "calxeda,led-order",
+>  						pdata->port_to_sgpio,
+>  						pdata->n_ports);
+> +	of_property_read_u32(np, "calxeda,pre-clocks", &pdata->pre_clocks);
+> +	of_property_read_u32(np, "calxeda,post-clocks", &pdata->post_clocks);
 
-> > The reason this isn't in device tree at the minute is that suspend to
-> > disk and suspend to RAM are somewhat Linux specific concepts and the
-> > whole thing gets more and more dynamic as time moves forwards with the
-> > suspend state for practical systems depending on the instantaneous
-> > device state prior to entering suspend and the bits that are fixed often
-> > involving sequencing elements and so on which get fixed in hardware
-> > and/or bootloader.  Do you have practical systems where this is needed?
+Are the pdata values initialised anywhere if those dt properties aren't
+present? It's not clear from the patch context.
 
-> Yes, on a Chromebook machine, an internal USB device power rail is
-> connected to one of the FET of a TPS65090,
-> the device is leaking power in suspend-to-RAM, it would be nice to cut
-> the FET during suspend.
-
-So this isn't powered off through a combination of the normal suspend
-process and strap/bootloader configuration of the PMIC?
-
-> you mean declaring an optional (string) property  such as :
->  regulator-suspend-mem-state
->  which can take the value "enabled" or "disabled"
-
-I'd probably go with an optional boolean property but yes.  Suspend to
-disk is relatively clear but I'm rather nervous about suspend to RAM
-here.
-
---5gLVUf0OArUb3P4b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8qKYAAoJELSic+t+oim9eMAQAI+IqoBD9C39ve2OF0Wt9Iw2
-1GEHRrYTgZ6f7FcMg/3pPBNm3qnxGgOTxIy3pxT0CtOuo16MhdbaVTEzGrbb0FRG
-JObFLl8zQbEqHyQdRq1+KzjUFzZV2j6TUE938ICjZCiuZhINQEXqyJaVhBChubqz
-CIbXFeRcgX6zfBo/E6n6n3GGY8JUHBaO5VKw2aLrbgrRTR25w/sEOIf+VhbU/SoH
-5SgEtbxmZhi5tzoNJJ4n+mYWLUVAgDtBuLSWY8dz7r+zI9/mPrZwviW69jSXfqcA
-2j4JIeas9sxQTLAmI3770M50zzCVPcrJFKG9No5eJUG5fFpWPNUu+YF7Cql72HE7
-XRFd7EvWC0cznmm5wvoCCEx/VRMdVKtgeRXOwyvBjcrUmuGYWeCN0TwhLxiVyB3K
-42CLGOKu3FAv2J0kr4td50K4FigipH8YanBt+OpeNtQtMh5UbBykoUlIJ0hWT/w3
-ysIJxIu7o9wArCmneVx3mvNhZ7e+c0gXN4GdlxjvOC6NHUMdseF3ZDIH7UxKBnLH
-Cmjz7/+d5I8k3Hpy1ZpOyPTSr46rqk7iJU/SBUzu2rvUKtAMXkAivMHiEY02kyL+
-R0Y+xo/L07UihSHntaufzSOpzV7LxoC3t+PSfq0H5cUUo5bmfyDyJi7gO2v3/t6Z
-Ao4LV47TZ3ANMKZj7Rrt
-=Kl75
------END PGP SIGNATURE-----
-
---5gLVUf0OArUb3P4b--
+Thanks,
+Mark.
