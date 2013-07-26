@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933745Ab3GZVbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:31:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
+	id S933675Ab3GZVax (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:30:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759965Ab3GZUsp (ORCPT
+	with ESMTP id S1759921Ab3GZUsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:45 -0400
+	Fri, 26 Jul 2013 16:48:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markos Chandras <markos.chandras@imgtec.com>,
-        "Steven J. Hill" <Steven.Hill@imgtec.com>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
-Subject: [ 58/79] lib/Kconfig.debug: Restrict FRAME_POINTER for MIPS
-Date: Fri, 26 Jul 2013 13:47:48 -0700
-Message-Id: <20130726204728.725267852@linuxfoundation.org>
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: [ 47/79] fuse: readdirplus: sanity checks
+Date: Fri, 26 Jul 2013 13:47:37 -0700
+Message-Id: <20130726204727.416142495@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,40 +26,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markos Chandras <markos.chandras@imgtec.com>
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-commit 25c87eae1725ed77a8b44d782a86abdc279b4ede upstream.
+commit a28ef45cbb1e7fadd5159deb17b02de15c6e4aaf upstream.
 
-FAULT_INJECTION_STACKTRACE_FILTER selects FRAME_POINTER but
-that symbol is not available for MIPS.
+Add sanity checks before adding or updating an entry with data received
+from readdirplus.
 
-Fixes the following problem on a randconfig:
-warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP &&
- KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies
-(DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN ||
-MN10300 || METAG) || ARCH_WANT_FRAME_POINTERS)
-
-Signed-off-by: Markos Chandras <markos.chandras@imgtec.com>
-Acked-by: Steven J. Hill <Steven.Hill@imgtec.com>
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/5441/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/Kconfig.debug |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fuse/dir.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1272,7 +1272,7 @@ config FAULT_INJECTION_STACKTRACE_FILTER
- 	depends on FAULT_INJECTION_DEBUG_FS && STACKTRACE_SUPPORT
- 	depends on !X86_64
- 	select STACKTRACE
--	select FRAME_POINTER if !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
-+	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE && !ARM_UNWIND
- 	help
- 	  Provide stacktrace filter for fault-injection capabilities
+--- a/fs/fuse/dir.c
++++ b/fs/fuse/dir.c
+@@ -1225,6 +1225,12 @@ static int fuse_direntplus_link(struct f
+ 		if (name.name[1] == '.' && name.len == 2)
+ 			return 0;
+ 	}
++
++	if (invalid_nodeid(o->nodeid))
++		return -EIO;
++	if (!fuse_valid_type(o->attr.mode))
++		return -EIO;
++
+ 	fc = get_fuse_conn(dir);
  
+ 	name.hash = full_name_hash(name.name, name.len);
+@@ -1233,10 +1239,14 @@ static int fuse_direntplus_link(struct f
+ 		inode = dentry->d_inode;
+ 		if (!inode) {
+ 			d_drop(dentry);
+-		} else if (get_node_id(inode) != o->nodeid) {
++		} else if (get_node_id(inode) != o->nodeid ||
++			   ((o->attr.mode ^ inode->i_mode) & S_IFMT)) {
+ 			err = d_invalidate(dentry);
+ 			if (err)
+ 				goto out;
++		} else if (is_bad_inode(inode)) {
++			err = -EIO;
++			goto out;
+ 		} else {
+ 			struct fuse_inode *fi;
+ 			fi = get_fuse_inode(inode);
 
 
