@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab3GZPaS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:30:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31582 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756754Ab3GZPaP (ORCPT
+	id S1759304Ab3GZPdR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:33:17 -0400
+Received: from oproxy9.bluehost.com ([69.89.24.6]:33750 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757340Ab3GZPdL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:30:15 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=B2_YVvq7Gd4A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=TPSRDgTb3zUA:10 a=ayC55rCoAAAA:8 a=ZEPIlNPGrfve2sOAn-wA:9 a=QEXdDO2ut3YA:10 a=FYVfx_qowVMA:10 a=p7O_glFagaYA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1374852613.6580.35.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely
- on list_empty(d_subdirs)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 26 Jul 2013 11:30:13 -0400
-In-Reply-To: <20130726151151.GA19472@redhat.com>
-References: <20130723205854.GA9036@redhat.com>
-	 <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com>
-	 <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com>
-	 <20130726151151.GA19472@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	Fri, 26 Jul 2013 11:33:11 -0400
+Date: Fri, 26 Jul 2013 08:33:14 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: mingo@kernel.org, intel-gfx@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        torvalds@linux-foundation.org
+Subject: Re: Ugly patches for stolen reservation
+Message-ID: <20130726083314.4e2e333f@jbarnes-desktop>
+In-Reply-To: <51F1ED8F.40703@zytor.com>
+References: <rddfy5e894xuv6d47gu7hbuh.1374804892449@email.android.com>
+	<51F1ED8F.40703@zytor.com>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-26 at 17:11 +0200, Oleg Nesterov wrote:
+On Thu, 25 Jul 2013 20:31:27 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 07/25/2013 07:14 PM, Jesse Barnes wrote:
+> > To clarify: it'll either be marked reserved or not listed at all in e820, which is why I did this early, before any other e820 stuff like the "RAM buffer" are allocated, and before we could use the iomem resource (or maybe we could even early per Linus? I'll check). 
+> > 
+> > Jesse
 > 
-> Steven, Greg. Assuming that nobody objects and the patch is fine.
-> Perhaps this patch can be routed via rostedt/linux-trace tree?
+> If it is marked reserved or not listed at all it is much less of an
+> issue.  Reserved is in fact the correct thing; not listed at all really
+> isn't very problematic in most cases.
 
-I'm fine with pushing it. But that requires Greg's Acked-by.
+Yeah the problems seem to fall into two categories:
+  1) mmio space is allocated in this range:
+     https://bugs.freedesktop.org/show_bug.cgi?id=66726
+  2) range gets partially allocated to the "RAM buffer"
+     https://bugs.freedesktop.org/show_bug.cgi?id=66844
 
--- Steve
+Case (1) is the one that worries me.  I'm guessing it'll mainly be a
+problem on machines where MMIO space is limited or somehow structured
+such that PCI resources end up there when we allocate them.  Depending
+on what gets put there and the decode priority, behavior may be poor.
 
+Case (2) isn't harmful, but ends up causing our driver to skip stolen
+memory initialization, because of the conflict.
 
+Anyway I'll look at Linus's suggestion of reserving in the iomem
+resource really early and roll in Chris's stuff if that doesn't work
+out.
+
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
