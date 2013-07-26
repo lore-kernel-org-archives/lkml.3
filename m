@@ -1,79 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758448Ab3GZKPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:15:50 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4295 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756558Ab3GZKPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:15:49 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51F24C47.8060802@broadcom.com>
-Date: Fri, 26 Jul 2013 12:15:35 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1758370Ab3GZKWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:22:45 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:35058 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab3GZKWo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 06:22:44 -0400
+Date: Fri, 26 Jul 2013 06:22:40 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: clear workers of a pool after the CPU is
+ offline
+Message-ID: <20130726102240.GA30786@mtj.dyndns.org>
+References: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com>
+ <20130725153121.GF26107@mtj.dyndns.org>
+ <51F1DB45.90905@cn.fujitsu.com>
+ <20130726030711.GA30195@mtj.dyndns.org>
+ <51F1F138.2060902@cn.fujitsu.com>
 MIME-Version: 1.0
-To: "Joel Fernandes" <joelf@ti.com>
-cc: "Roger Quadros" <rogerq@ti.com>, tony@atomide.com,
-        linux-omap@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Regression 3.11-rc1: omap4panda: no usb and consequently no
- ethernet
-References: <51E7AA24.6080600@broadcom.com> <51E7CEF3.5000408@ti.com>
- <51E7D080.6070401@broadcom.com> <51E7D1D2.1060006@ti.com>
- <51E7E1B7.6090104@broadcom.com> <51E7E2AD.8020106@ti.com>
- <51F122D5.80205@broadcom.com> <51F1E39D.2030902@ti.com>
- <51F1E65B.4020005@ti.com> <51F24BD6.9010405@broadcom.com>
-In-Reply-To: <51F24BD6.9010405@broadcom.com>
-X-WSS-ID: 7DEC94ED31W56117046-01-01
-Content-Type: text/plain;
- charset=utf-8;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F1F138.2060902@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 12:13 PM, Arend van Spriel wrote:
-> On 07/26/2013 05:00 AM, Joel Fernandes wrote:
->> On 07/25/2013 09:49 PM, Joel Fernandes wrote:
->>
->> [..]
->>
->>>> Can I get back on this topic. When USB and ethernet was working for me
->>>> as stated above, I was not doing tftpboot. When I use tftpboot the
->>>> images are obtained from the tftp server, but after kernel has started
->>>> there is nothing in /sys/bus/usb/devices/.
->>>
->>> I quickly tried 3.11-rc2 + Roger's USB PHY clock patch on omap4-panda-es
->>> and enabled following USB options:
->>>
->>> CONFIG_USB_MUSB_HDRC=y
->>> CONFIG_USB_PHY=y
->>> CONFIG_OMAP_USB2=y
->>> CONFIG_OMAP_CONTROL_USB=y
->>> CONFIG_USB_MUSB_OMAP2PLUS=y
->>> CONFIG_MFD_OMAP_USB_HOST=y
->>> CONFIG_USB_EHCI_HCD=y
+On Fri, Jul 26, 2013 at 11:47:04AM +0800, Lai Jiangshan wrote:
+> any worker can't kill itself.
+> managers always tries to leave 2 workers.
+> 
+> so the workers of the offline cpu pool can't be totally destroyed.
 
-Aaargh. Missing this one. Will retry.
+But we *do* want to keep them around as CPUs taken offline are likely
+to come online at some point and destroying all of them saves only
+~16k of memory while adding more work while CPUs are on/offlined which
+can be very frequent on mobile devices.  The change was *intentional*.
 
->>> CONFIG_USB_OHCI_HCD=y
->>> CONFIG_USB_EHCI_HCD_OMAP=y
->>
->> Sorry I missed saying I also set had to set CONFIG_NOP_USB_XCEIV=y
->
-> Here are the results of the dutch jury ;-)
->
-> [    2.537109] HS USB OTG: no transceiver configured
-> [    2.542541] musb-hdrc musb-hdrc.0.auto: musb_init_controller failed
-> with status -517
-> [    2.542541] platform musb-hdrc.0.auto: Driver musb-hdrc requests
-> probe deferral
->
-> I am surely missing something here. Either in device tree or .config.
->
-> Regards,
-> Arend
+Thanks.
 
-
+-- 
+tejun
