@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab3GZVZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:25:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51038 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932791Ab3GZUxc (ORCPT
+	id S933007Ab3GZVZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:25:27 -0400
+Received: from mail-qe0-f43.google.com ([209.85.128.43]:64473 "EHLO
+	mail-qe0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932780Ab3GZVZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [ 11/59] iommu/amd: Only unmap large pages from the first pte
-Date: Fri, 26 Jul 2013 13:52:35 -0700
-Message-Id: <20130726205015.027030735@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
-In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
-References: <20130726205013.795696531@linuxfoundation.org>
-User-Agent: quilt/0.60-5.1.1
+	Fri, 26 Jul 2013 17:25:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130726210317.GC20909@twins.programming.kicks-ass.net>
+References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
+ <20130725112123.GT27075@twins.programming.kicks-ass.net> <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
+ <20130725164051.GZ27075@twins.programming.kicks-ass.net> <20130725211521.GE18254@gmail.com>
+ <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
+ <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com> <20130726210317.GC20909@twins.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 26 Jul 2013 14:24:50 -0700
+Message-ID: <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
+Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
+ in 3.11-rc2 (has twice regressed)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Jul 26, 2013 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>
+> OK, so I have the below; however on a second look, Paul, shouldn't that
+> update_cfs_shares() call be in entity_tick(), right after calling
+> update_cfs_rq_blocked_load(). Because placing it in
+> update_cfs_rq_blocked_load() means its now called twice on the
+> enqueue/dequeue paths through:
+>
+>   {en,de}queue_entity()
+>     {en,de}queue_entity_load_avg()
+>       update_cfs_rq_blocked_load()
+>         update_cfs_shares()
 
-------------------
+Yes, I agree: placing it directly in entity_tick() would be better.
 
-From: Alex Williamson <alex.williamson@redhat.com>
-
-commit 60d0ca3cfd199b6612bbbbf4999a3470dad38bb1 upstream.
-
-If we use a large mapping, the expectation is that only unmaps from
-the first pte in the superpage are supported.  Unmaps from offsets
-into the superpage should fail (ie. return zero sized unmap).  In the
-current code, unmapping from an offset clears the size of the full
-mapping starting from an offset.  For instance, if we map a 16k
-physically contiguous range at IOVA 0x0 with a large page, then
-attempt to unmap 4k at offset 12k, 4 ptes are cleared (12k - 28k) and
-the unmap returns 16k unmapped.  This potentially incorrectly clears
-valid mappings and confuses drivers like VFIO that use the unmap size
-to release pinned pages.
-
-Fix by refusing to unmap from offsets into the page.
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Joerg Roedel <joro@8bytes.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/iommu/amd_iommu.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -1309,6 +1309,10 @@ static unsigned long iommu_unmap_page(st
- 
- 			/* Large PTE found which maps this address */
- 			unmap_size = PTE_PAGE_SIZE(*pte);
-+
-+			/* Only unmap from the first pte in the page */
-+			if ((unmap_size - 1) & bus_addr)
-+				break;
- 			count      = PAGE_SIZE_PTE_COUNT(unmap_size);
- 			for (i = 0; i < count; i++)
- 				pte[i] = 0ULL;
-@@ -1318,7 +1322,7 @@ static unsigned long iommu_unmap_page(st
- 		unmapped += unmap_size;
- 	}
- 
--	BUG_ON(!is_power_of_2(unmapped));
-+	BUG_ON(unmapped && !is_power_of_2(unmapped));
- 
- 	return unmapped;
- }
+[ In f269ae046 the calls to update_cfs_rq_blocked_load() were amortized
+and the separate update in {en,de}queue_entity_load_avg() were
+removed. ]
 
 
+>
+>
+>
+> ---
+> Subject: sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
+> From: Max Hailperin <max@gustavus.edu>
+>
+> We typically update a task_group's shares within the dequeue/enqueue
+> path.  However, continuously running tasks sharing a CPU are not
+> subject to these updates as they are only put/picked.  Unfortunately,
+> when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
+> periodic update that was supposed to account for this; resulting in a
+> potential loss of fairness.
+>
+> To fix this, re-introduce the explicit update in
+> update_cfs_rq_blocked_load() [called via entity_tick()].
+>
+> Cc: stable@kernel.org
+> Reviewed-by: Paul Turner <pjt@google.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+>  kernel/sched/fair.c |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1531,6 +1531,7 @@ static void update_cfs_rq_blocked_load(s
+>         }
+>
+>         __update_cfs_rq_tg_load_contrib(cfs_rq, force_update);
+> +       update_cfs_shares(cfs_rq);
+>  }
+>
+>  static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
