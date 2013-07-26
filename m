@@ -1,105 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758830Ab3GZN1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:27:48 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:28603 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753Ab3GZN1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:27:46 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18gd7KV8t4OGy81cte4uSL7PWyHZWAiDio=
-Date: Fri, 26 Jul 2013 09:27:09 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+	id S1758881Ab3GZN2Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:28:25 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:41637 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756753Ab3GZN2X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 09:28:23 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Zheng, Lv" <lv.zheng@intel.com>
+Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130726132709.GH29916@titan.lakedaemon.net>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F168FC.9070906@wwwdotorg.org>
- <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <20130725213753.GC17616@obsidianresearch.com>
- <20130726080115.GA5436@netboy>
- <1374831744.2923.42.camel@shinybook.infradead.org>
- <20130726130927.GC4219@netboy>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: Re: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device members
+Date: Fri, 26 Jul 2013 15:38:27 +0200
+Message-ID: <1877208.aj3aZU16C0@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802435B14@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com> <1882662.xsnVH6Carz@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802435B14@SHSMSX101.ccr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726130927.GC4219@netboy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
-> On Fri, Jul 26, 2013 at 10:42:24AM +0100, David Woodhouse wrote:
-> > On Fri, 2013-07-26 at 10:01 +0200, Richard Cochran wrote:
-> > > On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
-> > > > 
-> > > > We use DT has a kernel configuration input. Our environment is
-> > > > designed to guarantee 100% that the kernel and DT match exactly. DT
-> > > > very deliberately isn't an ABI boundary in our systems.
-> > > 
-> > > Think about what you just said.
-> > > 
-> > > The DT describes the *hardware* not the kernel. Why should you ever
-> > > need to update your DT at all?
+On Friday, July 26, 2013 01:25:12 AM Zheng, Lv wrote:
+> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> > Sent: Friday, July 26, 2013 6:26 AM
 > > 
-> > Well, the nodes which describe hardware devices, according to the
-> > bindings which form an ABI contract between DT and drivers, should not
-> > normally change. Although they *can* change, if for example you change
-> > the MAC address and that's stored there. Or you change the PHY you want
-> > it to use. Or something like that. The *ABI* doesn't change, but the
-> > data you express *using* that ABI can change. That's kind of the point.
+> > On Tuesday, July 23, 2013 04:10:06 PM Lv Zheng wrote:
+> > > This is a trivial patch:
+> > > 1. Deletes a member of the acpi_ipmi_device - smi_data which is not
+> > >    actually used.
+> > > 2. Updates a member of the acpi_ipmi_device - pnp_dev which is only used
+> > >    by dev_warn() invocations, so changes it to struct device.
+> > >
+> > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > > Reviewed-by: Huang Ying <ying.huang@intel.com>
+> > > ---
+> > >  drivers/acpi/acpi_ipmi.c |   30 ++++++++++++++----------------
+> > >  1 file changed, 14 insertions(+), 16 deletions(-)
+> > >
+> > > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
+> > > 0ee1ea6..7f93ffd 100644
+> > > --- a/drivers/acpi/acpi_ipmi.c
+> > > +++ b/drivers/acpi/acpi_ipmi.c
+> > > @@ -63,11 +63,10 @@ struct acpi_ipmi_device {
+> > >  	struct list_head tx_msg_list;
+> > >  	spinlock_t	tx_msg_lock;
+> > >  	acpi_handle handle;
+> > > -	struct pnp_dev *pnp_dev;
+> > > +	struct device *dev;
+> > >  	ipmi_user_t	user_interface;
+> > >  	int ipmi_ifnum; /* IPMI interface number */
+> > >  	long curr_msgid;
+> > > -	struct ipmi_smi_info smi_data;
+> > >  	atomic_t refcnt;
+> > >  };
+> > >
+> > > @@ -132,7 +131,7 @@ static struct ipmi_driver_data driver_data = {  };
+> > >
+> > >  static struct acpi_ipmi_device *
+> > > -ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle
+> > > handle)
+> > > +ipmi_dev_alloc(int iface, struct device *pdev, acpi_handle handle)
+> > 
+> > Why is the second arg called pdev?
 > 
-> Unless I totally misunderstood, the thread is talking about letting
-> established bindings change with each new kernel version.  I am
-> opposed to that.
+> OK, I will change it to dev.
+
+OK, thanks.
+
+> > 
+> > >  {
+> > >  	struct acpi_ipmi_device *ipmi_device;
+> > >  	int err;
+> > > @@ -148,14 +147,13 @@ ipmi_dev_alloc(int iface, struct ipmi_smi_info
+> > *smi_data, acpi_handle handle)
+> > >  	spin_lock_init(&ipmi_device->tx_msg_lock);
+> > >
+> > >  	ipmi_device->handle = handle;
+> > > -	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
+> > > -	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct
+> > ipmi_smi_info));
+> > > +	ipmi_device->dev = get_device(pdev);
+> > >  	ipmi_device->ipmi_ifnum = iface;
+> > >
+> > >  	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
+> > >  			       ipmi_device, &user);
+> > >  	if (err) {
+> > > -		put_device(smi_data->dev);
+> > > +		put_device(pdev);
+> > >  		kfree(ipmi_device);
+> > >  		return NULL;
+> > >  	}
+> > > @@ -175,7 +173,7 @@ acpi_ipmi_dev_get(struct acpi_ipmi_device
+> > > *ipmi_device)  static void ipmi_dev_release(struct acpi_ipmi_device
+> > > *ipmi_device)  {
+> > >  	ipmi_destroy_user(ipmi_device->user_interface);
+> > > -	put_device(ipmi_device->smi_data.dev);
+> > > +	put_device(ipmi_device->dev);
+> > >  	kfree(ipmi_device);
+> > >  }
+> > >
+> > > @@ -263,7 +261,7 @@ static int acpi_format_ipmi_request(struct
+> > acpi_ipmi_msg *tx_msg,
+> > >  	buffer = (struct acpi_ipmi_buffer *)value;
+> > >  	/* copy the tx message data */
+> > >  	if (buffer->length > ACPI_IPMI_MAX_MSG_LENGTH) {
+> > > -		dev_WARN_ONCE(&tx_msg->device->pnp_dev->dev, true,
+> > > +		dev_WARN_ONCE(tx_msg->device->dev, true,
+> > >  			      "Unexpected request (msg len %d).\n",
+> > >  			      buffer->length);
+> > >  		return -EINVAL;
+> > > @@ -382,11 +380,11 @@ static void ipmi_msg_handler(struct
+> > ipmi_recv_msg *msg, void *user_msg_data)
+> > >  	struct acpi_ipmi_device *ipmi_device = user_msg_data;
+> > >  	int msg_found = 0;
+> > >  	struct acpi_ipmi_msg *tx_msg;
+> > > -	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
+> > > +	struct device *dev = ipmi_device->dev;
+> > >  	unsigned long flags;
+> > >
+> > >  	if (msg->user != ipmi_device->user_interface) {
+> > > -		dev_warn(&pnp_dev->dev,
+> > > +		dev_warn(dev,
+> > >  			 "Unexpected response is returned. returned user %p, expected
+> > user %p\n",
+> > >  			 msg->user, ipmi_device->user_interface);
+> > >  		goto out_msg;
+> > > @@ -404,7 +402,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg
+> > *msg, void *user_msg_data)
+> > >  	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
+> > >
+> > >  	if (!msg_found) {
+> > > -		dev_warn(&pnp_dev->dev,
+> > > +		dev_warn(dev,
+> > >  			 "Unexpected response (msg id %ld) is returned.\n",
+> > >  			 msg->msgid);
+> > >  		goto out_msg;
+> > > @@ -412,7 +410,7 @@ static void ipmi_msg_handler(struct ipmi_recv_msg
+> > > *msg, void *user_msg_data)
+> > >
+> > >  	/* copy the response data to Rx_data buffer */
+> > >  	if (msg->msg.data_len > ACPI_IPMI_MAX_MSG_LENGTH) {
+> > > -		dev_WARN_ONCE(&pnp_dev->dev, true,
+> > > +		dev_WARN_ONCE(dev, true,
+> > >  			      "Unexpected response (msg len %d).\n",
+> > >  			      msg->msg.data_len);
+> > >  		goto out_comp;
+> > > @@ -431,7 +429,7 @@ out_msg:
+> > >  static void ipmi_register_bmc(int iface, struct device *dev)  {
+> > >  	struct acpi_ipmi_device *ipmi_device, *temp;
+> > > -	struct pnp_dev *pnp_dev;
+> > > +	struct device *pdev;
+> > 
+> > And here?
 > 
-> Of course, a user may want to change the values of his MAC addresses,
-> if he needs to. But he should never have to change *how* he specifies
-> those addresses.
+> The dev is the parameter of the ipmi_register_bmc(), it is not possible to name the "struct ipmi_smi_info " as dev here for this quick fix.
 
-The other dynamic change that bears mentioning here is attributes which
-have been configured by the bootloader.  For example, in mvebu, we have
-the Schrodinger's Cat register.  It allows you to reconfigure the base
-address of the registers from *within* that register range.  If the
-bootloader does this, the DT needs to be updated to reflect the current
-hardware configuration.  Otherwise, the kernel is stuck poking around at
-memory addresses hoping to find something sane.
+Right.  What about smi_dev?  Or just use smi_data.dev directly?  It's just two
+places and shouldn't cause any line wraps to happen.
 
-But this falls into the same category as you mentioned, but outside of
-chosen {};.
+Rafael
 
-> So, as long as everyone can agree to the principle that a working DT
-> should remain working after a kernel upgrade, then I'll shut up. In
-> actual fact, this is not the case today, nor was it ever so in the
-> past, AFAICT, but it never hurts to set goals.
 
-Some instability is necessary as we figure out what 'stable' is.
-Otherwise, things would've been so rigid, we'd've never made any
-progress.  I'd say we now a sufficient body of code and experience to
-start enforcing the goal.
-
-thx,
-
-Jason.
+> > >  	int err;
+> > >  	struct ipmi_smi_info smi_data;
+> > >  	acpi_handle handle;
+> > > @@ -445,11 +443,11 @@ static void ipmi_register_bmc(int iface, struct
+> > device *dev)
+> > >  	handle = smi_data.addr_info.acpi_info.acpi_handle;
+> > >  	if (!handle)
+> > >  		goto err_ref;
+> > > -	pnp_dev = to_pnp_dev(smi_data.dev);
+> > > +	pdev = smi_data.dev;
+> > >
+> > > -	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
+> > > +	ipmi_device = ipmi_dev_alloc(iface, pdev, handle);
+> > >  	if (!ipmi_device) {
+> > > -		dev_warn(&pnp_dev->dev, "Can't create IPMI user interface\n");
+> > > +		dev_warn(pdev, "Can't create IPMI user interface\n");
+> > >  		goto err_ref;
+> > >  	}
+> > >
+> > >
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
