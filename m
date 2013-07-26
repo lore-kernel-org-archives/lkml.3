@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881Ab3GZVks (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:40:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50788 "EHLO
+	id S933799Ab3GZVkh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:40:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab3GZUs0 (ORCPT
+	with ESMTP id S1759872Ab3GZUs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:26 -0400
+	Fri, 26 Jul 2013 16:48:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Asias He <asias@redhat.com>, Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Subject: [ 20/79] vhost-net: fix use-after-free in vhost_net_flush
-Date: Fri, 26 Jul 2013 13:47:10 -0700
-Message-Id: <20130726204724.050905059@linuxfoundation.org>
+        Neil Horman <nhorman@tuxdriver.com>, Jay Cliburn <jcliburn@gmail.com>,
+        Chris Snook <chris.snook@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 33/79] atl1e: fix dma mapping warnings
+Date: Fri, 26 Jul 2013 13:47:23 -0700
+Message-Id: <20130726204725.410113830@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -27,59 +28,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Michael S. Tsirkin" <mst@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit c38e39c378f46f00ce922dd40a91043a9925c28d ]
+[ Upstream commit 352900b583b2852152a1e05ea0e8b579292e731e ]
 
-vhost_net_ubuf_put_and_wait has a confusing name:
-it will actually also free it's argument.
-Thus since commit 1280c27f8e29acf4af2da914e80ec27c3dbd5c01
-    "vhost-net: flush outstanding DMAs on memory change"
-vhost_net_flush tries to use the argument after passing it
-to vhost_net_ubuf_put_and_wait, this results
-in use after free.
-To fix, don't free the argument in vhost_net_ubuf_put_and_wait,
-add an new API for callers that want to free ubufs.
+Recently had this backtrace reported:
+WARNING: at lib/dma-debug.c:937 check_unmap+0x47d/0x930()
+Hardware name: System Product Name
+ATL1E 0000:02:00.0: DMA-API: device driver failed to check map error[device
+address=0x00000000cbfd1000] [size=90 bytes] [mapped as single]
+Modules linked in: xt_conntrack nf_conntrack ebtable_filter ebtables
+ip6table_filter ip6_tables snd_hda_codec_hdmi snd_hda_codec_realtek iTCO_wdt
+iTCO_vendor_support snd_hda_intel acpi_cpufreq mperf coretemp btrfs zlib_deflate
+snd_hda_codec snd_hwdep microcode raid6_pq libcrc32c snd_seq usblp serio_raw xor
+snd_seq_device joydev snd_pcm snd_page_alloc snd_timer snd lpc_ich i2c_i801
+soundcore mfd_core atl1e asus_atk0110 ata_generic pata_acpi radeon i2c_algo_bit
+drm_kms_helper ttm drm i2c_core pata_marvell uinput
+Pid: 314, comm: systemd-journal Not tainted 3.9.0-0.rc6.git2.3.fc19.x86_64 #1
+Call Trace:
+ <IRQ>  [<ffffffff81069106>] warn_slowpath_common+0x66/0x80
+ [<ffffffff8106916c>] warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff8138151d>] check_unmap+0x47d/0x930
+ [<ffffffff810ad048>] ? sched_clock_cpu+0xa8/0x100
+ [<ffffffff81381a2f>] debug_dma_unmap_page+0x5f/0x70
+ [<ffffffff8137ce30>] ? unmap_single+0x20/0x30
+ [<ffffffffa01569a1>] atl1e_intr+0x3a1/0x5b0 [atl1e]
+ [<ffffffff810d53fd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff81119636>] handle_irq_event_percpu+0x56/0x390
+ [<ffffffff811199ad>] handle_irq_event+0x3d/0x60
+ [<ffffffff8111cb6a>] handle_fasteoi_irq+0x5a/0x100
+ [<ffffffff8101c36f>] handle_irq+0xbf/0x150
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff81073b10>] ? irq_enter+0x50/0xa0
+ [<ffffffff8172738d>] do_IRQ+0x4d/0xc0
+ [<ffffffff811dcb2f>] ? file_sb_list_del+0x3f/0x50
+ [<ffffffff8171c6b2>] common_interrupt+0x72/0x72
+ <EOI>  [<ffffffff810db5b2>] ? lock_release+0xc2/0x310
+ [<ffffffff8109ea04>] lg_local_unlock_cpu+0x24/0x50
+ [<ffffffff811dcb2f>] file_sb_list_del+0x3f/0x50
+ [<ffffffff811dcb6d>] fput+0x2d/0xc0
+ [<ffffffff811d8ea1>] filp_close+0x61/0x90
+ [<ffffffff811fae4d>] __close_fd+0x8d/0x150
+ [<ffffffff811d8ef0>] sys_close+0x20/0x50
+ [<ffffffff81725699>] system_call_fastpath+0x16/0x1b
 
-Acked-by: Asias He <asias@redhat.com>
-Acked-by: Jason Wang <jasowang@redhat.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+The usual straighforward failure to check for dma_mapping_error after a map
+operation is completed.
+
+This patch should fix it, the reporter wandered off after filing this bz:
+https://bugzilla.redhat.com/show_bug.cgi?id=954170
+
+and I don't have hardware to test, but the fix is pretty straightforward, so I
+figured I'd post it for review.
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Jay Cliburn <jcliburn@gmail.com>
+CC: Chris Snook <chris.snook@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/vhost/net.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   28 +++++++++++++++++++++---
+ 1 file changed, 25 insertions(+), 3 deletions(-)
 
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -150,6 +150,11 @@ static void vhost_net_ubuf_put_and_wait(
- {
- 	kref_put(&ubufs->kref, vhost_net_zerocopy_done_signal);
- 	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-+}
-+
-+static void vhost_net_ubuf_put_wait_and_free(struct vhost_net_ubuf_ref *ubufs)
-+{
-+	vhost_net_ubuf_put_and_wait(ubufs);
- 	kfree(ubufs);
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1665,8 +1665,8 @@ check_sum:
+ 	return 0;
  }
  
-@@ -948,7 +953,7 @@ static long vhost_net_set_backend(struct
- 	mutex_unlock(&vq->mutex);
+-static void atl1e_tx_map(struct atl1e_adapter *adapter,
+-		      struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
++static int atl1e_tx_map(struct atl1e_adapter *adapter,
++			struct sk_buff *skb, struct atl1e_tpd_desc *tpd)
+ {
+ 	struct atl1e_tpd_desc *use_tpd = NULL;
+ 	struct atl1e_tx_buffer *tx_buffer = NULL;
+@@ -1677,6 +1677,7 @@ static void atl1e_tx_map(struct atl1e_ad
+ 	u16 nr_frags;
+ 	u16 f;
+ 	int segment;
++	int ring_start = adapter->tx_ring.next_to_use;
  
- 	if (oldubufs) {
--		vhost_net_ubuf_put_and_wait(oldubufs);
-+		vhost_net_ubuf_put_wait_and_free(oldubufs);
- 		mutex_lock(&vq->mutex);
- 		vhost_zerocopy_signal_used(n, vq);
- 		mutex_unlock(&vq->mutex);
-@@ -966,7 +971,7 @@ err_used:
- 	rcu_assign_pointer(vq->private_data, oldsock);
- 	vhost_net_enable_vq(n, vq);
- 	if (ubufs)
--		vhost_net_ubuf_put_and_wait(ubufs);
-+		vhost_net_ubuf_put_wait_and_free(ubufs);
- err_ubufs:
- 	fput(sock->file);
- err_vq:
+ 	nr_frags = skb_shinfo(skb)->nr_frags;
+ 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
+@@ -1689,6 +1690,9 @@ static void atl1e_tx_map(struct atl1e_ad
+ 		tx_buffer->length = map_len;
+ 		tx_buffer->dma = pci_map_single(adapter->pdev,
+ 					skb->data, hdr_len, PCI_DMA_TODEVICE);
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma))
++			return -ENOSPC;
++
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1715,6 +1719,13 @@ static void atl1e_tx_map(struct atl1e_ad
+ 		tx_buffer->dma =
+ 			pci_map_single(adapter->pdev, skb->data + mapped_len,
+ 					map_len, PCI_DMA_TODEVICE);
++
++		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++			/* Reset the tx rings next pointer */
++			adapter->tx_ring.next_to_use = ring_start;
++			return -ENOSPC;
++		}
++
+ 		ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_SINGLE);
+ 		mapped_len  += map_len;
+ 		use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+@@ -1750,6 +1761,13 @@ static void atl1e_tx_map(struct atl1e_ad
+ 							  (i * MAX_TX_BUF_LEN),
+ 							  tx_buffer->length,
+ 							  DMA_TO_DEVICE);
++
++			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++				/* Reset the ring next to use pointer */
++				adapter->tx_ring.next_to_use = ring_start;
++				return -ENOSPC;
++			}
++
+ 			ATL1E_SET_PCIMAP_TYPE(tx_buffer, ATL1E_TX_PCIMAP_PAGE);
+ 			use_tpd->buffer_addr = cpu_to_le64(tx_buffer->dma);
+ 			use_tpd->word2 = (use_tpd->word2 & (~TPD_BUFLEN_MASK)) |
+@@ -1767,6 +1785,7 @@ static void atl1e_tx_map(struct atl1e_ad
+ 	/* The last buffer info contain the skb address,
+ 	   so it will be free after unmap */
+ 	tx_buffer->skb = skb;
++	return 0;
+ }
+ 
+ static void atl1e_tx_queue(struct atl1e_adapter *adapter, u16 count,
+@@ -1834,10 +1853,13 @@ static netdev_tx_t atl1e_xmit_frame(stru
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+-	atl1e_tx_map(adapter, skb, tpd);
++	if (atl1e_tx_map(adapter, skb, tpd))
++		goto out;
++
+ 	atl1e_tx_queue(adapter, tpd_req, tpd);
+ 
+ 	netdev->trans_start = jiffies; /* NETIF_F_LLTX driver :( */
++out:
+ 	spin_unlock_irqrestore(&adapter->tx_lock, flags);
+ 	return NETDEV_TX_OK;
+ }
 
 
