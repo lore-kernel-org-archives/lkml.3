@@ -1,216 +1,452 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab3GZAlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 20:41:00 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:53142 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756531Ab3GZAk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 20:40:57 -0400
-Date: Thu, 25 Jul 2013 17:41:00 -0700
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: SoC fixes for 3.11-rc
-Message-ID: <20130726004100.GA5131@quad.lixom.net>
+	id S932112Ab3GZAry (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 20:47:54 -0400
+Received: from mga14.intel.com ([143.182.124.37]:57813 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756215Ab3GZArt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 20:47:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,746,1367996400"; 
+   d="scan'208";a="337049598"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "openipmi-developer@lists.sourceforge.net" 
+	<openipmi-developer@lists.sourceforge.net>
+Subject: RE: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
+ operation region handlers
+Thread-Topic: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
+ operation region handlers
+Thread-Index: AQHOh3wWhtcRfGeNDUSAzJ7WvM5MAZl1VZ+AgADGrgA=
+Date: Fri, 26 Jul 2013 00:47:44 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435AB5@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1370652213.git.lv.zheng@intel.com>
+ <cover.1374566394.git.lv.zheng@intel.com>
+ <d9d5acba01eb80580e7696c50db4263ded86a86c.1374566394.git.lv.zheng@intel.com>
+ <1597566.Nfc7r37F3q@vostro.rjw.lan>
+In-Reply-To: <1597566.Nfc7r37F3q@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6Q0mJXC008254
 
-Hi Linus,
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
 
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Friday, July 26, 2013 4:27 AM
+> 
+> On Tuesday, July 23, 2013 04:09:43 PM Lv Zheng wrote:
+> > This patch adds reference couting for ACPI operation region handlers
+> > to fix races caused by the ACPICA address space callback invocations.
+> >
+> > ACPICA address space callback invocation is not suitable for Linux
+> > CONFIG_MODULE=y execution environment.  This patch tries to protect
+> > the address space callbacks by invoking them under a module safe
+> environment.
+> > The IPMI address space handler is also upgraded in this patch.
+> > The acpi_unregister_region() is designed to meet the following
+> > requirements:
+> > 1. It acts as a barrier for operation region callbacks - no callback will
+> >    happen after acpi_unregister_region().
+> > 2. acpi_unregister_region() is safe to be called in moudle->exit()
+> >    functions.
+> > Using reference counting rather than module referencing allows such
+> > benefits to be achieved even when acpi_unregister_region() is called
+> > in the environments other than module->exit().
+> > The header file of include/acpi/acpi_bus.h should contain the
+> > declarations that have references to some ACPICA defined types.
+> >
+> > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+> > Reviewed-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  drivers/acpi/acpi_ipmi.c |   16 ++--
+> >  drivers/acpi/osl.c       |  224
+> ++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/acpi/acpi_bus.h  |    5 ++
+> >  3 files changed, 235 insertions(+), 10 deletions(-)
+> >
+> > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
+> > 5f8f495..2a09156 100644
+> > --- a/drivers/acpi/acpi_ipmi.c
+> > +++ b/drivers/acpi/acpi_ipmi.c
+> > @@ -539,20 +539,18 @@ out_ref:
+> >  static int __init acpi_ipmi_init(void)  {
+> >  	int result = 0;
+> > -	acpi_status status;
+> >
+> >  	if (acpi_disabled)
+> >  		return result;
+> >
+> >  	mutex_init(&driver_data.ipmi_lock);
+> >
+> > -	status = acpi_install_address_space_handler(ACPI_ROOT_OBJECT,
+> > -						    ACPI_ADR_SPACE_IPMI,
+> > -						    &acpi_ipmi_space_handler,
+> > -						    NULL, NULL);
+> > -	if (ACPI_FAILURE(status)) {
+> > +	result = acpi_register_region(ACPI_ADR_SPACE_IPMI,
+> > +				      &acpi_ipmi_space_handler,
+> > +				      NULL, NULL);
+> > +	if (result) {
+> >  		pr_warn("Can't register IPMI opregion space handle\n");
+> > -		return -EINVAL;
+> > +		return result;
+> >  	}
+> >
+> >  	result = ipmi_smi_watcher_register(&driver_data.bmc_events);
+> > @@ -596,9 +594,7 @@ static void __exit acpi_ipmi_exit(void)
+> >  	}
+> >  	mutex_unlock(&driver_data.ipmi_lock);
+> >
+> > -	acpi_remove_address_space_handler(ACPI_ROOT_OBJECT,
+> > -					  ACPI_ADR_SPACE_IPMI,
+> > -					  &acpi_ipmi_space_handler);
+> > +	acpi_unregister_region(ACPI_ADR_SPACE_IPMI);
+> >  }
+> >
+> >  module_init(acpi_ipmi_init);
+> > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index
+> > 6ab2c35..8398e51 100644
+> > --- a/drivers/acpi/osl.c
+> > +++ b/drivers/acpi/osl.c
+> > @@ -86,6 +86,42 @@ static struct workqueue_struct *kacpid_wq;  static
+> > struct workqueue_struct *kacpi_notify_wq;  static struct
+> > workqueue_struct *kacpi_hotplug_wq;
+> >
+> > +struct acpi_region {
+> > +	unsigned long flags;
+> > +#define ACPI_REGION_DEFAULT		0x01
+> > +#define ACPI_REGION_INSTALLED		0x02
+> > +#define ACPI_REGION_REGISTERED		0x04
+> > +#define ACPI_REGION_UNREGISTERING	0x08
+> > +#define ACPI_REGION_INSTALLING		0x10
+> 
+> What about (1UL << 1), (1UL << 2) etc.?
+> 
+> Also please remove the #defines out of the struct definition.
 
-are available in the git repository at:
+OK.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/fixes-for-linus
+> 
+> > +	/*
+> > +	 * NOTE: Upgrading All Region Handlers
+> > +	 * This flag is only used during the period where not all of the
+> > +	 * region handers are upgraded to the new interfaces.
+> > +	 */
+> > +#define ACPI_REGION_MANAGED		0x80
+> > +	acpi_adr_space_handler handler;
+> > +	acpi_adr_space_setup setup;
+> > +	void *context;
+> > +	/* Invoking references */
+> > +	atomic_t refcnt;
+> 
+> Actually, why don't you use krefs?
 
-for you to fetch changes up to 515c0967205f2e6d0ca1602ce0de65f9aec1d215:
+If you take a look at other piece of my codes, you'll find there are two reasons:
 
-  mfd: max8925: fix dt code for backlight (2013-07-25 16:57:00 -0700)
+1. I'm using while (atomic_read() > 1) to implement the objects' flushing and there is no kref API to do so.
+  I just think it is not suitable for me to introduce such an API into kref.h and start another argument around kref designs in this bug fix patch. :-)
+  I'll start a discussion about kref design using another thread.
+2. I'm using ipmi_dev|msg_release() as a pair of ipmi_dev|msg_alloc(), it's kind of atomic_t coding style.
+  If atomic_t is changed to struct kref, I will need to implement two API, __ipmi_dev_release() to take a struct kref as parameter and call ipmi_dev_release inside it.
+  By not using kref, I needn't write codes to implement such API.
 
-----------------------------------------------------------------
-ARM: SoC fixes for 3.11-rc
+> 
+> > +};
+> > +
+> > +static struct acpi_region acpi_regions[ACPI_NUM_PREDEFINED_REGIONS]
+> = {
+> > +	[ACPI_ADR_SPACE_SYSTEM_MEMORY] = {
+> > +		.flags = ACPI_REGION_DEFAULT,
+> > +	},
+> > +	[ACPI_ADR_SPACE_SYSTEM_IO] = {
+> > +		.flags = ACPI_REGION_DEFAULT,
+> > +	},
+> > +	[ACPI_ADR_SPACE_PCI_CONFIG] = {
+> > +		.flags = ACPI_REGION_DEFAULT,
+> > +	},
+> > +	[ACPI_ADR_SPACE_IPMI] = {
+> > +		.flags = ACPI_REGION_MANAGED,
+> > +	},
+> > +};
+> > +static DEFINE_MUTEX(acpi_mutex_region);
+> > +
+> >  /*
+> >   * This list of permanent mappings is for memory that may be accessed
+> from
+> >   * interrupt context, where we can't do the ioremap().
+> > @@ -1799,3 +1835,191 @@ void alloc_acpi_hp_work(acpi_handle handle,
+> u32 type, void *context,
+> >  		kfree(hp_work);
+> >  }
+> >  EXPORT_SYMBOL_GPL(alloc_acpi_hp_work);
+> > +
+> > +static bool acpi_region_managed(struct acpi_region *rgn) {
+> > +	/*
+> > +	 * NOTE: Default and Managed
+> > +	 * We only need to avoid region management on the regions managed
+> > +	 * by ACPICA (ACPI_REGION_DEFAULT).  Currently, we need additional
+> > +	 * check as many operation region handlers are not upgraded, so
+> > +	 * only those known to be safe are managed (ACPI_REGION_MANAGED).
+> > +	 */
+> > +	return !(rgn->flags & ACPI_REGION_DEFAULT) &&
+> > +	       (rgn->flags & ACPI_REGION_MANAGED); }
+> > +
+> > +static bool acpi_region_callable(struct acpi_region *rgn) {
+> > +	return (rgn->flags & ACPI_REGION_REGISTERED) &&
+> > +	       !(rgn->flags & ACPI_REGION_UNREGISTERING); }
+> > +
+> > +static acpi_status
+> > +acpi_region_default_handler(u32 function,
+> > +			    acpi_physical_address address,
+> > +			    u32 bit_width, u64 *value,
+> > +			    void *handler_context, void *region_context) {
+> > +	acpi_adr_space_handler handler;
+> > +	struct acpi_region *rgn = (struct acpi_region *)handler_context;
+> > +	void *context;
+> > +	acpi_status status = AE_NOT_EXIST;
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	if (!acpi_region_callable(rgn) || !rgn->handler) {
+> > +		mutex_unlock(&acpi_mutex_region);
+> > +		return status;
+> > +	}
+> > +
+> > +	atomic_inc(&rgn->refcnt);
+> > +	handler = rgn->handler;
+> > +	context = rgn->context;
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +
+> > +	status = handler(function, address, bit_width, value, context,
+> > +			 region_context);
+> 
+> Why don't we call the handler under the mutex?
+> 
+> What exactly prevents context from becoming NULL before the call above?
 
-This is a largeish batch of fixes, mostly because I missed -rc2 due to
-travel/vacation. So in number these are a bit more than ideal unless
-you amortize them over two -rcs.
+It's a kind of programming style related concern.
+IMO, using locks around callback function is a buggy programming style that could lead to dead locks.
+Let me explain this using an example.
 
-Quick breakdown:
- - Defconfig updates
-   - Making multi_v7_defconfig useful on more hardware to encourage
-     single-image usage
-   - Davinci and nomadik updates due to new code merged this merge window
- - Fixes for UART on Samsung platforms, both PM and clock-related
- - A handful of warning fixes from defconfig builds, including for
-   max8925 backlight and pxamci (both with appropriate acks)
- - Exynos5440 fixes for LPAE configuration, PM
- - ...plus a bunch of other smaller changes all over the place
+Object A exports a register/unregister API for other objects.
+Object B calls A's register/unregister API to register/unregister B's callback.
+It's likely that object B will hold lock_of_B around unregister/register when object B is destroyed/created, the lock_of_B is likely also used inside the callback.
+So when object A holds the lock_of_A around the callback invocation, it leads to dead lock since:
+1. the locking order for the register/unregister side will be: lock(lock_of_B), lock(lock_of_A)
+2. the locking order for the callback side will be: lock(lock_of_A), lock(lock_of_B)
+They are in the reversed order!
 
-I expect to switch to regressions-or-severe-bugs-only fixes from here
-on out.
+IMO, Linux may need to introduce __callback, __api as decelerators for the functions, and use sparse to enforce this rule, sparse knows if a callback is invoked under some locks.
 
-----------------------------------------------------------------
-Alexander Shiyan (1):
-      ARM: i.MX27: Typo fix
+In the case of ACPICA space_handlers, as you may know, when an ACPI operation region handler is invoked, there will be no lock held inside ACPICA (interpreter lock must be freed before executing operation region handlers).
+So the likelihood of the dead lock is pretty much high here!
 
-Amit Daniel Kachhap (1):
-      ARM: SAMSUNG: Add SAMSUNG_PM config option to select pm
+> 
+> > +	atomic_dec(&rgn->refcnt);
+> > +
+> > +	return status;
+> > +}
+> > +
+> > +static acpi_status
+> > +acpi_region_default_setup(acpi_handle handle, u32 function,
+> > +			  void *handler_context, void **region_context) {
+> > +	acpi_adr_space_setup setup;
+> > +	struct acpi_region *rgn = (struct acpi_region *)handler_context;
+> > +	void *context;
+> > +	acpi_status status = AE_OK;
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	if (!acpi_region_callable(rgn) || !rgn->setup) {
+> > +		mutex_unlock(&acpi_mutex_region);
+> > +		return status;
+> > +	}
+> > +
+> > +	atomic_inc(&rgn->refcnt);
+> > +	setup = rgn->setup;
+> > +	context = rgn->context;
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +
+> > +	status = setup(handle, function, context, region_context);
+> 
+> Can setup drop rgn->refcnt ?
 
-Arnd Bergmann (1):
-      ARM: pxa: propagate errors from regulator_enable() to pxamci
+The reason is same as the handler, as a setup is also a callback.
 
-Fabio Estevam (2):
-      ARM: dts: imx51-babbage: Pass a real clock to the codec
-      ARM: multi_v7_defconfig: Select USB chipidea driver
+> 
+> > +	atomic_dec(&rgn->refcnt);
+> > +
+> > +	return status;
+> > +}
+> > +
+> > +static int __acpi_install_region(struct acpi_region *rgn,
+> > +				 acpi_adr_space_type space_id)
+> > +{
+> > +	int res = 0;
+> > +	acpi_status status;
+> > +	int installing = 0;
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	if (rgn->flags & ACPI_REGION_INSTALLED)
+> > +		goto out_lock;
+> > +	if (rgn->flags & ACPI_REGION_INSTALLING) {
+> > +		res = -EBUSY;
+> > +		goto out_lock;
+> > +	}
+> > +
+> > +	installing = 1;
+> > +	rgn->flags |= ACPI_REGION_INSTALLING;
+> > +	status = acpi_install_address_space_handler(ACPI_ROOT_OBJECT,
+> space_id,
+> > +						    acpi_region_default_handler,
+> > +						    acpi_region_default_setup,
+> > +						    rgn);
+> > +	rgn->flags &= ~ACPI_REGION_INSTALLING;
+> > +	if (ACPI_FAILURE(status))
+> > +		res = -EINVAL;
+> > +	else
+> > +		rgn->flags |= ACPI_REGION_INSTALLED;
+> > +
+> > +out_lock:
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +	if (installing) {
+> > +		if (res)
+> > +			pr_err("Failed to install region %d\n", space_id);
+> > +		else
+> > +			pr_info("Region %d installed\n", space_id);
+> > +	}
+> > +	return res;
+> > +}
+> > +
+> > +int acpi_register_region(acpi_adr_space_type space_id,
+> > +			 acpi_adr_space_handler handler,
+> > +			 acpi_adr_space_setup setup, void *context) {
+> > +	int res;
+> > +	struct acpi_region *rgn;
+> > +
+> > +	if (space_id >= ACPI_NUM_PREDEFINED_REGIONS)
+> > +		return -EINVAL;
+> > +
+> > +	rgn = &acpi_regions[space_id];
+> > +	if (!acpi_region_managed(rgn))
+> > +		return -EINVAL;
+> > +
+> > +	res = __acpi_install_region(rgn, space_id);
+> > +	if (res)
+> > +		return res;
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	if (rgn->flags & ACPI_REGION_REGISTERED) {
+> > +		mutex_unlock(&acpi_mutex_region);
+> > +		return -EBUSY;
+> > +	}
+> > +
+> > +	rgn->handler = handler;
+> > +	rgn->setup = setup;
+> > +	rgn->context = context;
+> > +	rgn->flags |= ACPI_REGION_REGISTERED;
+> > +	atomic_set(&rgn->refcnt, 1);
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +
+> > +	pr_info("Region %d registered\n", space_id);
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL_GPL(acpi_register_region);
+> > +
+> > +void acpi_unregister_region(acpi_adr_space_type space_id) {
+> > +	struct acpi_region *rgn;
+> > +
+> > +	if (space_id >= ACPI_NUM_PREDEFINED_REGIONS)
+> > +		return;
+> > +
+> > +	rgn = &acpi_regions[space_id];
+> > +	if (!acpi_region_managed(rgn))
+> > +		return;
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	if (!(rgn->flags & ACPI_REGION_REGISTERED)) {
+> > +		mutex_unlock(&acpi_mutex_region);
+> > +		return;
+> > +	}
+> > +	if (rgn->flags & ACPI_REGION_UNREGISTERING) {
+> > +		mutex_unlock(&acpi_mutex_region);
+> > +		return;
+> 
+> What about
+> 
+> 	if ((rgn->flags & ACPI_REGION_UNREGISTERING)
+> 	    || !(rgn->flags & ACPI_REGION_REGISTERED)) {
+> 		mutex_unlock(&acpi_mutex_region);
+> 		return;
+> 	}
+> 
 
-Guennadi Liakhovetski (1):
-      dmaengine: shdma: fix a build failure on platforms with no DMA support
+OK.
 
-Kukjin Kim (1):
-      ARM: EXYNOS: skip pm support on exynos5440
+> > +	}
+> > +
+> > +	rgn->flags |= ACPI_REGION_UNREGISTERING;
+> > +	rgn->handler = NULL;
+> > +	rgn->setup = NULL;
+> > +	rgn->context = NULL;
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +
+> > +	while (atomic_read(&rgn->refcnt) > 1)
+> > +		schedule_timeout_uninterruptible(usecs_to_jiffies(5));
+> 
+> Wouldn't it be better to use a wait queue here?
 
-Laurent Pinchart (1):
-      ARM i.MX53: mba53: Fix PWM backlight DT node
+Yes, I'll try.
 
-Linus Walleij (2):
-      ARM: nomadik: update defconfig base
-      ARM: nomadik: configure for NO_HZ and HRTIMERS
+> 
+> > +	atomic_dec(&rgn->refcnt);
+> > +
+> > +	mutex_lock(&acpi_mutex_region);
+> > +	rgn->flags &= ~(ACPI_REGION_REGISTERED |
+> ACPI_REGION_UNREGISTERING);
+> > +	mutex_unlock(&acpi_mutex_region);
+> > +
+> > +	pr_info("Region %d unregistered\n", space_id); }
+> > +EXPORT_SYMBOL_GPL(acpi_unregister_region);
+> > diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h index
+> > a2c2fbb..15fad0d 100644
+> > --- a/include/acpi/acpi_bus.h
+> > +++ b/include/acpi/acpi_bus.h
+> > @@ -542,4 +542,9 @@ static inline int unregister_acpi_bus_type(void
+> > *bus) { return 0; }
+> >
+> >  #endif				/* CONFIG_ACPI */
+> >
+> > +int acpi_register_region(acpi_adr_space_type space_id,
+> > +			 acpi_adr_space_handler handler,
+> > +			 acpi_adr_space_setup setup, void *context); void
+> > +acpi_unregister_region(acpi_adr_space_type space_id);
+> > +
+> >  #endif /*__ACPI_BUS_H__*/
+> 
+> Thanks,
+> Rafael
 
-Liu Ying (1):
-      ARM: i.MX6Q: correct emi_sel clock muxing
+Thanks
+-Lv
 
-Markus Pargmann (1):
-      ARM: imx27: Fix documentation for SPLL clock
-
-Mike Frysinger (1):
-      ARM: footbridge: fix overlapping PCI mappings
-
-Olof Johansson (7):
-      Merge tag 'davinci-fixes-for-v3.11-rc2' of git://git.kernel.org/.../nsekhar/linux-davinci into fixes
-      Merge tag 'omap-for-v3.11/fixes-against-rc1' of git://git.kernel.org/.../tmlind/linux-omap into fixes
-      Merge tag 'imx-fixes-3.11' of git://git.linaro.org/people/shawnguo/linux-2.6 into fixes
-      Merge tag 'nomadik-defconfig-for-arm-soc' of git://git.kernel.org/.../linusw/linux-nomadik into fixes
-      ARM: omap5: Only select errata 798181 if SMP
-      Merge tag 'samsung-fixes-1' of git://git.kernel.org/.../kgene/linux-samsung into fixes
-      mfd: max8925: fix dt code for backlight
-
-Philipp Zabel (2):
-      ARM i.MX53: Fix UART pad configuration
-      ARM i.MX6Q: Fix IOMUXC GPR1 defines for ENET_CLK_SEL and IPU1/2_MUX
-
-Rob Herring (1):
-      ARM: highbank: Only touch common coherency control register fields
-
-Roger Quadros (1):
-      ARM: OMAP2+: Provide alias to USB PHY clock
-
-Sachin Kamat (1):
-      ARM: EXYNOS: Update CONFIG_ARCH_NR_GPIO for Exynos
-
-Sekhar Nori (2):
-      ARM: davinci: make file local variables static
-      ARM: davinci: defconfig: enable EDMA driver
-
-Shawn Guo (2):
-      ARM: mxs: saif0 is the clock provider to sgtl5000
-      ARM: imx: fix vf610 enet module clock selection
-
-Srinivas Kandagatla (2):
-      ARM: dts: STi: Fix pinconf setup for STiH416 serial2
-      ARM: STi: Set correct ARM ERRATAs.
-
-Subash Patel (1):
-      ARM: EXYNOS: change the PHYSMEM_BITS and SECTION_SIZE
-
-Sylwester Nawrocki (1):
-      ARM: S3C24XX: Add missing clkdev entries for s3c2440 UART
-
-Thomas Abraham (1):
-      ARM: EXYNOS: Enable 64-bit DMA for EXYNOS5440 if LPAE is enabled
-
-Tony Lindgren (3):
-      ARM: multi_v7: Enabled omap4430 sdp nfsroot
-      ARM: dts: Add missing vmmc2 regulator for twl
-      Merge branch 'omap-for-v3.11/dt-fixes' into omap-for-v3.11/fixes
-
-Ulf Hansson (1):
-      ARM: nomadik: Update MMC defconfigs
-
-Vincent Stehlé (2):
-      ARM: keystone: fix compilation warning
-      ARM: zynq: fix compilation warning
-
-Wei Yongjun (1):
-      ARM: edma: remove duplicated include from edma.c
-
-Yadwinder Singh Brar (2):
-      ARM: SAMSUNG: Save/restore only selected uart's registers
-      ARM: EXYNOS: Fix low level debug support
-
- .../devicetree/bindings/clock/imx27-clock.txt      |   1 +
- arch/arm/Kconfig                                   |   3 +-
- arch/arm/boot/dts/imx28-apx4devkit.dts             |   2 +-
- arch/arm/boot/dts/imx28-evk.dts                    |   2 +-
- arch/arm/boot/dts/imx28-m28evk.dts                 |   2 +-
- arch/arm/boot/dts/imx28.dtsi                       |   1 +
- arch/arm/boot/dts/imx51-babbage.dts                |  13 +-
- arch/arm/boot/dts/imx53-mba53.dts                  |   2 +-
- arch/arm/boot/dts/imx53.dtsi                       |  32 ++--
- arch/arm/boot/dts/stih416-pinctrl.dtsi             |  10 +-
- arch/arm/boot/dts/stih416.dtsi                     |   2 +-
- arch/arm/boot/dts/twl4030.dtsi                     |   6 +
- arch/arm/boot/dts/vf610.dtsi                       |   8 +-
- arch/arm/common/edma.c                             |   1 -
- arch/arm/configs/da8xx_omapl_defconfig             |   2 +
- arch/arm/configs/davinci_all_defconfig             |   2 +
- arch/arm/configs/multi_v7_defconfig                |   6 +-
- arch/arm/configs/nhk8815_defconfig                 |   7 +-
- arch/arm/mach-davinci/board-dm365-evm.c            |   2 +-
- arch/arm/mach-davinci/dm355.c                      |   2 +-
- arch/arm/mach-davinci/dm365.c                      |   2 +-
- arch/arm/mach-exynos/Kconfig                       |   1 +
- arch/arm/mach-exynos/Makefile                      |   2 +-
- arch/arm/mach-exynos/common.c                      |  26 ----
- arch/arm/mach-exynos/common.h                      |   1 -
- arch/arm/mach-exynos/cpuidle.c                     |   1 +
- arch/arm/mach-exynos/include/mach/memory.h         |   5 +
- arch/arm/mach-exynos/pm.c                          |   6 +
- arch/arm/mach-footbridge/dc21285.c                 |   2 -
- arch/arm/mach-highbank/highbank.c                  |   7 +-
- arch/arm/mach-imx/clk-imx6q.c                      |   5 +-
- arch/arm/mach-imx/clk-vf610.c                      |   2 +
- arch/arm/mach-imx/mx27.h                           |   2 +-
- arch/arm/mach-keystone/keystone.c                  |   2 +-
- arch/arm/mach-omap2/Kconfig                        |   2 +-
- arch/arm/mach-omap2/board-generic.c                |  23 ++-
- arch/arm/mach-pxa/em-x270.c                        |  17 ++-
- arch/arm/mach-pxa/mainstone.c                      |   3 +-
- arch/arm/mach-pxa/pcm990-baseboard.c               |   3 +-
- arch/arm/mach-pxa/poodle.c                         |   4 +-
- arch/arm/mach-pxa/spitz.c                          |   4 +-
- arch/arm/mach-pxa/stargate2.c                      |   3 +-
- arch/arm/mach-s3c24xx/clock-s3c2410.c              | 161 +++++++++++++--------
- arch/arm/mach-s3c24xx/clock-s3c2440.c              |   3 +
- arch/arm/mach-sti/Kconfig                          |   3 +-
- arch/arm/mach-zynq/common.c                        |   2 +-
- arch/arm/plat-samsung/Kconfig                      |   7 +
- arch/arm/plat-samsung/Makefile                     |   2 +-
- arch/arm/plat-samsung/include/plat/clock.h         |   5 +
- arch/arm/plat-samsung/include/plat/pm.h            |   8 +-
- arch/arm/plat-samsung/pm.c                         |  14 +-
- drivers/mmc/host/pxamci.c                          |   2 +-
- drivers/video/backlight/max8925_bl.c               |  41 +++---
- include/dt-bindings/clock/vf610-clock.h            |   4 +-
- include/linux/mfd/syscon/imx6q-iomuxc-gpr.h        |  16 +-
- include/linux/platform_data/mmc-pxamci.h           |   2 +-
- include/linux/shdma-base.h                         |   4 +
- 57 files changed, 307 insertions(+), 196 deletions(-)
+> 
+> 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
