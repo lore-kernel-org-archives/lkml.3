@@ -1,96 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab3GZK7G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:59:06 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:37738 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757148Ab3GZK7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:59:02 -0400
-Date: Fri, 26 Jul 2013 11:58:31 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Jean-Francois Moine <moinejf@free.fr>, Liam Girdwood <lgirdwood@gmail.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Rob Herring <rob.herring@calxeda.com>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Message-ID: <20130726105831.GA9858@sirena.org.uk>
-References: <20130725111428.419ee278@armhf>
- <20130725191604.GQ9858@sirena.org.uk>
- <20130725225816.GG24642@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nGKiHl1eSywcUu0Z"
-Content-Disposition: inline
-In-Reply-To: <20130725225816.GG24642@n2100.arm.linux.org.uk>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3/4] ASoc: kirkwood: merge kirkwood-i2c and kirkwood-dma
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	id S1758544Ab3GZLBZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 07:01:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52790 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756819Ab3GZLBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 07:01:24 -0400
+Subject: Re: [PATCH 5/7] rapidio: add modular build option for the
+ subsystem core
+From: Jean Delvare <jdelvare@suse.de>
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>,
+        Andre van Herk <andre.van.herk@Prodrive.nl>,
+        Micha Nelissen <micha.nelissen@Prodrive.nl>,
+        Stef van Os <stef.van.os@Prodrive.nl>
+In-Reply-To: <1372447136-5751-6-git-send-email-alexandre.bounine@idt.com>
+References: <1372447136-5751-1-git-send-email-alexandre.bounine@idt.com>
+	 <1372447136-5751-6-git-send-email-alexandre.bounine@idt.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Suse Linux
+Date: Fri, 26 Jul 2013 13:00:54 +0200
+Message-ID: <1374836454.4361.2.camel@chaos.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Alexandre,
 
---nGKiHl1eSywcUu0Z
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Le Friday 28 June 2013 à 15:18 -0400, Alexandre Bounine a écrit :
+> Add a configuration option to build RapidIO subsystem core code as a loadable
+> kernel module. Currently this option is available only for x86-based platforms,
+> with the additional patch for PowerPC planned to be provided later.
+> 
+> This patch replaces kernel command line parameter "riohdid=" with its
+> module-specific analog "rapidio.hdid=".  
+> 
+> Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+> Cc: Matt Porter <mporter@kernel.crashing.org>
+> Cc: Li Yang <leoli@freescale.com>
+> Cc: Kumar Gala <galak@kernel.crashing.org>
+> Cc: Andre van Herk <andre.van.herk@Prodrive.nl>
+> Cc: Micha Nelissen <micha.nelissen@Prodrive.nl>
+> Cc: Stef van Os <stef.van.os@Prodrive.nl>
+> Cc: Jean Delvare <jdelvare@suse.de>
+> ---
+>  arch/x86/Kconfig         |    4 ++--
+>  drivers/rapidio/Makefile |    4 +++-
+>  drivers/rapidio/rio.c    |   27 ++++++++++++++-------------
+>  3 files changed, 19 insertions(+), 16 deletions(-)
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index fe120da..583ac42 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -2246,11 +2246,11 @@ source "drivers/pcmcia/Kconfig"
+>  source "drivers/pci/hotplug/Kconfig"
+>  
+>  config RAPIDIO
+> -	bool "RapidIO support"
+> +	tristate "RapidIO support"
 
-On Thu, Jul 25, 2013 at 11:58:16PM +0100, Russell King - ARM Linux wrote:
-> On Thu, Jul 25, 2013 at 08:16:04PM +0100, Mark Brown wrote:
+Is there a reason why this was only done for x86 and not for mips and
+powerpc?
 
-> > This seems mostly fine, though it may be best to keep kirkwood-dma as a
-> > separate module for the benefit of the S/PDIF support when it gets added
-> > - I had a look at the implementation Russell has and it looks like it
-> > can be added as a separate interface.
+>  	depends on PCI
+>  	default n
+>  	help
+> -	  If you say Y here, the kernel will include drivers and
+> +	  If enabled this option will include drivers and the core
+>  	  infrastructure code to support RapidIO interconnect devices.
+>  
 
-> You wouldn't want I2S and SPDIF to be separate modules though - they're
-> the same hardware but different output stream formatters attached to the
-> DMA FIFO output.  Don't forget the requirements concerning the simultaneous
-> use of I2S and SPDIF - these "output formatters" must both be enabled and
-> disabled in unison when concurrent use is required - both bits must be
-> set or cleared together with a single register write.
+-- 
+Jean Delvare
+Suse L3
 
-OK, I knew they both needed to know about each other and to share some
-stuff but I figured it was reasonable to compile out the S/PDIF support
-if only using I2S or similar - so long as they're coupled at runtime it
-should be fine.
-
-> > Should the name be done as dev_name() for the interface (I don't know if
-> > there is ever more than one)?
-
-> Getting away from "kirkwood-i2s" would be sensible, because it may not be
-> just "i2s" in this hardware block.  The documentation calls this an "audio
-> controller" but I guess "kirkwood-pcm" would be a reasonable compromise,
-> even though it has a separate AC'97 block which could also be construed
-> as being "pcm".
-
-I was thinking just pick a name at runtime based on what was doing the
-instantiation which would avoid hard coding anything in the DMA driver.
-
---nGKiHl1eSywcUu0Z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8lZUAAoJELSic+t+oim9EkAP/iXAJ6qaN8lVBm4Jvq0uZqO6
-dn8feNjZc472gdpbFDctl4dGu1TIqPzyOYBLhQof7yui71Z0QURMtIWXeYovDUfh
-Z5nG+/N5YSZfm0W5HDbM1sDNk3Y8fIeF8jTUpZ+JVboplBMBk36O9L/KRb/zARYu
-CVc+MWVd8s3g9XPM+EodQ8YbsC6Gdm9pm+ixpllPJ3zK3Ed83gonJ5unByWLHMwX
-qkSmw+3/ceEtv+1kYLVSOeh4TDkYTH4MB0Hs5VxvA0JMIv12ztcEarR3A8zrW6MS
-8tsg1XvJc/uQkeKYQCa3o8vkHMIyb9WRSCETylIzxfrq3X79HdbPxSvHGeGnl4Tf
-/Xs160V0dT1QrQX56QGsOipQNULJPks5QlVuk4jeqsmtS7oxIbeUXvmn9WbOo+r8
-h4jcqUtWBW0zrr+vlJ6d3IGumDaDpN+v2OFiXhDXuKCBvYe6AnjQjkiT2LKrk/Eq
-b6OPGUflsYpBOLNshEWjhD8uvDZ5RB4IUu4q91lsgAE4E2UC8LRt7+kmW9cFnipF
-66tShXKvSWVoIBAQ0Hagkp9kFpCJScco4LFekhg2/x73I7zD2AyE6jSc6tusvBq7
-BrLZeSe/fMY3PhFvy1g8GDaGnm/FBOpzGbjyhrihE33nSyREZiWRqnkDri1w0T/y
-wk8uFpFxhW6wiggxPxVy
-=jYt7
------END PGP SIGNATURE-----
-
---nGKiHl1eSywcUu0Z--
