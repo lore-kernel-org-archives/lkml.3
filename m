@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759267Ab3GZO7F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 10:59:05 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:36609 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759162Ab3GZO67 (ORCPT
+	id S1759226Ab3GZPJk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:09:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:18476 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806Ab3GZPJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 10:58:59 -0400
-Message-ID: <51F28EAD.2080705@intel.com>
-Date: Fri, 26 Jul 2013 15:58:53 +0100
-From: Matt Fleming <matt.fleming@intel.com>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Roy Franz <roy.franz@linaro.org>
-CC: hpa@zytor.com, tglx@linutronix.de, mingo@redhat.com, x86@kernel.org,
-        linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] correct call to free_pages to specify memory size in
- pages, not bytes.
-References: <1374713324-23670-1-git-send-email-roy.franz@linaro.org> <1374713324-23670-2-git-send-email-roy.franz@linaro.org>
-In-Reply-To: <1374713324-23670-2-git-send-email-roy.franz@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 26 Jul 2013 11:09:39 -0400
+X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=ZPgwZBm_-BwA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=F6OzYz1FwowA:10 a=gBPKbcQ7CweGQIOt8FcA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1374851376.6580.34.camel@gandalf.local.home>
+Subject: Re: [PATCH 2/2][RESEND] tracing: Shrink the size of struct
+ ftrace_event_field
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 26 Jul 2013 11:09:36 -0400
+In-Reply-To: <51F08D4B.3010201@huawei.com>
+References: <51F08D1B.1080300@huawei.com> <51F08D4B.3010201@huawei.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/07/13 01:48, Roy Franz wrote:
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
-> ---
->  arch/x86/boot/compressed/eboot.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-> index d606463..b7388a4 100644
-> --- a/arch/x86/boot/compressed/eboot.c
-> +++ b/arch/x86/boot/compressed/eboot.c
-> @@ -225,7 +225,7 @@ static void low_free(unsigned long size, unsigned long addr)
->  	unsigned long nr_pages;
+On Thu, 2013-07-25 at 10:28 +0800, Li Zefan wrote:
 >  
->  	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
-> -	efi_call_phys2(sys_table->boottime->free_pages, addr, size);
-> +	efi_call_phys2(sys_table->boottime->free_pages, addr, nr_pages);
->  }
->  
->  static void find_bits(unsigned long mask, u8 *pos, u8 *size)
+>  struct event_filter {
+> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+> index 53582e9..67aee85 100644
+> --- a/kernel/trace/trace_events.c
+> +++ b/kernel/trace/trace_events.c
+> @@ -111,6 +111,11 @@ static int __trace_define_field(struct list_head *head, const char *type,
+>  	field->size = size;
+>  	field->is_signed = is_signed;
 
-Thanks Roy. I pulled this into my urgent queue, as it's obviously a bug
-and I don't fancy our chances if we ask the firmware to free more memory
-than it initially allocated.
+I think we should just change is_signed to bool. At least the parameter.
+Or we can make the assignment: field->is_signed = !!is_signed; and nuke
+the check below.
+
+>  
+> +	WARN_ON(offset >= (1 << 12));
+> +	WARN_ON(size >= (1 << 12));
+> +	WARN_ON(is_signed >= (1 << 1));
+> +	WARN_ON(field->filter_type >= (1 << 4));
+
+Note, the test for field->filter_type is wrong.
+
+We should make a helper macro:
+
+#define VERIFY_SIZE(type) WARN_ON(type > field->type)
+
+and then have:
+
+	VERIFY_SIZE(offset);
+	VERIFY_SIZE(size);
+	VERIFY_SIZE(filter_type);
+
+-- Steve
+
+> +
+>  	list_add(&field->link, head);
+>  
+>  	return 0;
+> -- 1.8.0.2
+
+
