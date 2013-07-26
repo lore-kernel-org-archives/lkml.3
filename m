@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760278Ab3GZVEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:04:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51392 "EHLO
+	id S933111Ab3GZVEl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:04:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760147Ab3GZU6a (ORCPT
+	with ESMTP id S1756993Ab3GZU63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:30 -0400
+	Fri, 26 Jul 2013 16:58:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>
-Subject: [ 32/45] usb: option: add TP-LINK MA260
-Date: Fri, 26 Jul 2013 13:57:52 -0700
-Message-Id: <20130726205658.458223710@linuxfoundation.org>
+        Andi Kleen <ak@linux.intel.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        James Bottomley <JBottomley@Parallels.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 30/45] SCSI: Fix incorrect memset in bnx2fc_parse_fcp_rsp
+Date: Fri, 26 Jul 2013 13:57:50 -0700
+Message-Id: <20130726205658.235055081@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -29,27 +29,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Andi Kleen <andi@firstfloor.org>
 
-commit 94190301ffa059c2d127b3a67ec5d161d5c62681 upstream.
+commit 16da05b1158d1bcb31656e636a8736a663b1cf1f upstream.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+gcc 4.8 warns because the memset only clears sizeof(char *) bytes, not
+the whole buffer. Use the correct buffer size and clear the whole sense
+buffer.
+
+/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c: In
+function 'bnx2fc_parse_fcp_rsp':
+/backup/lsrc/git/linux-lto-2.6/drivers/scsi/bnx2fc/bnx2fc_io.c:1810:41:
+warning: argument to 'sizeof' in 'memset' call is the same expression as
+the destination; did you mean to provide an explicit length?
+[-Wsizeof-pointer-memaccess]
+   memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
+                                         ^
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Acked-by: Bhanu Prakash Gollapudi <bprakash@broadcom.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/bnx2fc/bnx2fc_io.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -1355,6 +1355,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
-+	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
-+	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x02, 0x01) },	/* D-Link DWM-156 (variant) */
- 	{ USB_DEVICE_AND_INTERFACE_INFO(0x2001, 0x7d01, 0xff, 0x00, 0x00) },	/* D-Link DWM-156 (variant) */
+--- a/drivers/scsi/bnx2fc/bnx2fc_io.c
++++ b/drivers/scsi/bnx2fc/bnx2fc_io.c
+@@ -1618,7 +1618,7 @@ static void bnx2fc_parse_fcp_rsp(struct
+ 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
+ 		}
+ 
+-		memset(sc_cmd->sense_buffer, 0, sizeof(sc_cmd->sense_buffer));
++		memset(sc_cmd->sense_buffer, 0, SCSI_SENSE_BUFFERSIZE);
+ 		if (fcp_sns_len)
+ 			memcpy(sc_cmd->sense_buffer, rq_data, fcp_sns_len);
+ 
 
 
