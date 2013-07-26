@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238Ab3GZFZa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 01:25:30 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:51005
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751116Ab3GZFZ1 (ORCPT
+	id S1751792Ab3GZFbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 01:31:09 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:39769 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab3GZFbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 01:25:27 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 26 Jul 2013 13:25:21 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Zhu Richard-R65037 <r65037@freescale.com>
-CC: "tj@kernel.org" <tj@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: linux-next: Tree for Jul 25 (ahci_imx.c)
-Message-ID: <20130726052519.GB29268@S2101-09.ap.freescale.net>
-References: <20130725151253.8b9b53b3a3cf6cacd501dc54@canb.auug.org.au>
- <51F16F17.4030002@infradead.org>
- <0E83723C55F66F43A6041464FE31119D3487F2@039-SN2MPN1-011.039d.mgd.msft.net>
- <20130726040349.GA29268@S2101-09.ap.freescale.net>
- <0E83723C55F66F43A6041464FE31119D34886A@039-SN2MPN1-011.039d.mgd.msft.net>
+	Fri, 26 Jul 2013 01:31:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <0E83723C55F66F43A6041464FE31119D34886A@039-SN2MPN1-011.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20130717090310.GI7080@book.gsilab.sittig.org>
+References: <1373451678-20065-1-git-send-email-a13xp0p0v88@gmail.com>
+	<20130710134624.GC2615@book.gsilab.sittig.org>
+	<CAF0T0X5MDGkBDrVBpKr2OTW4rqxg+nizFs9AdwbL0kAfoR3xcw@mail.gmail.com>
+	<20130717090310.GI7080@book.gsilab.sittig.org>
+Date: Fri, 26 Jul 2013 09:31:03 +0400
+Message-ID: <CAF0T0X52yk6xs673mNML1coFH1VJ_Y3Y6apBgZbohxMKwLpnzg@mail.gmail.com>
+Subject: Re: [V2 2/2] powerpc/512x: add LocalPlus Bus FIFO device driver
+From: Alexander Popov <a13xp0p0v88@gmail.com>
+To: Alexander Popov <a13xp0p0v88@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Anatolij Gustschin <agust@denx.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <rob.herring@calxeda.com>, Chris Ball <cjb@laptop.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Timur Tabi <timur@tabi.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 04:58:14AM +0000, Zhu Richard-R65037 wrote:
-> Hi Shawn:
-> yes, it is.
-> 
-> BTW, Should I re-send the AHCI_IMX patch-set or send out one stand-alone patch to fix this issue?
-> 
+Thanks, Gerhard.
 
-I think an incremental fixing patch is good.
+I'll improve the code and return with the third version.
 
-Shawn
-
+Best regards,
+Alexander.
