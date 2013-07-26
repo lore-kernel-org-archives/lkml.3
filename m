@@ -1,149 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957Ab3GZWpj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:45:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52327 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757120Ab3GZWpf (ORCPT
+	id S932429Ab3GZWps (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:45:48 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:51573 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757690Ab3GZWpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:45:35 -0400
-Date: Fri, 26 Jul 2013 15:45:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/3] mm: improve page aging fairness between zones/nodes
-Message-Id: <20130726154533.aebd39c603ffe8de3b2c76fb@linux-foundation.org>
-In-Reply-To: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 26 Jul 2013 18:45:44 -0400
+From: "Felipe F. Tonello" <eu@felipetonello.com>
+To: alsa-devel@alsa-project.org
+Cc: "Felipe F. Tonello" <eu@felipetonello.com>, linux-kernel@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>,
+        David Henningsson <david.henningsson@canonical.com>,
+        Wang Xingchao <xingchao.wang@linux.intel.com>,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: [PATCH v2 0/3] ALSA: Implement core jack support for kcontrol
+Date: Fri, 26 Jul 2013 15:45:10 -0700
+Message-Id: <1374878713-11922-1-git-send-email-eu@felipetonello.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
+References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Jul 2013 16:55:22 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+From: "Felipe F. Tonello" <eu@felipetonello.com>
 
-> The way the page allocator interacts with kswapd creates aging
-> imbalances, where the amount of time a userspace page gets in memory
-> under reclaim pressure is dependent on which zone, which node the
-> allocator took the page frame from.
-> 
-> #1 fixes missed kswapd wakeups on NUMA systems, which lead to some
->    nodes falling behind for a full reclaim cycle relative to the other
->    nodes in the system
-> 
-> #3 fixes an interaction where kswapd and a continuous stream of page
->    allocations keep the preferred zone of a task between the high and
->    low watermark (allocations succeed + kswapd does not go to sleep)
->    indefinitely, completely underutilizing the lower zones and
->    thrashing on the preferred zone
-> 
-> These patches are the aging fairness part of the thrash-detection
-> based file LRU balancing.  Andrea recommended to submit them
-> separately as they are bugfixes in their own right.
-> 
-> The following test ran a foreground workload (memcachetest) with
-> background IO of various sizes on a 4 node 8G system (similar results
-> were observed with single-node 4G systems):
-> 
-> parallelio
->                                                BAS                    FAIRALLO
->                                               BASE                   FAIRALLOC
-> Ops memcachetest-0M              5170.00 (  0.00%)           5283.00 (  2.19%)
-> Ops memcachetest-791M            4740.00 (  0.00%)           5293.00 ( 11.67%)
-> Ops memcachetest-2639M           2551.00 (  0.00%)           4950.00 ( 94.04%)
-> Ops memcachetest-4487M           2606.00 (  0.00%)           3922.00 ( 50.50%)
-> Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
-> Ops io-duration-791M               55.00 (  0.00%)             18.00 ( 67.27%)
-> Ops io-duration-2639M             235.00 (  0.00%)            103.00 ( 56.17%)
-> Ops io-duration-4487M             278.00 (  0.00%)            173.00 ( 37.77%)
-> Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
-> Ops swaptotal-791M             245184.00 (  0.00%)              0.00 (  0.00%)
-> Ops swaptotal-2639M            468069.00 (  0.00%)         108778.00 ( 76.76%)
-> Ops swaptotal-4487M            452529.00 (  0.00%)          76623.00 ( 83.07%)
-> Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
-> Ops swapin-791M                108297.00 (  0.00%)              0.00 (  0.00%)
-> Ops swapin-2639M               169537.00 (  0.00%)          50031.00 ( 70.49%)
-> Ops swapin-4487M               167435.00 (  0.00%)          34178.00 ( 79.59%)
-> Ops minorfaults-0M            1518666.00 (  0.00%)        1503993.00 (  0.97%)
-> Ops minorfaults-791M          1676963.00 (  0.00%)        1520115.00 (  9.35%)
-> Ops minorfaults-2639M         1606035.00 (  0.00%)        1799717.00 (-12.06%)
-> Ops minorfaults-4487M         1612118.00 (  0.00%)        1583825.00 (  1.76%)
-> Ops majorfaults-0M                  6.00 (  0.00%)              0.00 (  0.00%)
-> Ops majorfaults-791M            13836.00 (  0.00%)             10.00 ( 99.93%)
-> Ops majorfaults-2639M           22307.00 (  0.00%)           6490.00 ( 70.91%)
-> Ops majorfaults-4487M           21631.00 (  0.00%)           4380.00 ( 79.75%)
+Sending series again.
 
-A reminder whether positive numbers are good or bad would be useful ;)
+Difference is that previous Patch 4 was squashed with Patch 2. Also fixed
+comment on Patche 3.
 
->                  BAS    FAIRALLO
->                 BASE   FAIRALLOC
-> User          287.78      460.97
-> System       2151.67     3142.51
-> Elapsed      9737.00     8879.34
+Felipe F. Tonello (3):
+  ALSA: Added jack detection kcontrol support
+  ALSA: pci: HDA/oxygen: Updating jack implementation according new ALSA
+    Jacks
+  ALSA: SoC: Updating jack implementation according new ALSA Jacks
 
-Confused.  Why would the amount of user time increase so much?
+ include/sound/jack.h               |  6 ++++--
+ include/sound/soc.h                |  2 +-
+ sound/core/Kconfig                 |  1 +
+ sound/core/ctljack.c               |  3 ++-
+ sound/core/jack.c                  | 29 +++++++++++++++++++++++++++--
+ sound/pci/hda/Kconfig              |  8 --------
+ sound/pci/hda/hda_codec.h          |  2 --
+ sound/pci/hda/hda_jack.c           | 38 +++++++++++++++++---------------------
+ sound/pci/hda/hda_jack.h           |  4 +---
+ sound/pci/oxygen/xonar_wm87x6.c    |  2 +-
+ sound/soc/fsl/wm1133-ev1.c         |  4 ++--
+ sound/soc/mid-x86/mfld_machine.c   |  6 +++---
+ sound/soc/omap/ams-delta.c         |  2 +-
+ sound/soc/omap/omap-abe-twl6040.c  |  4 ++--
+ sound/soc/omap/omap-twl4030.c      |  4 ++--
+ sound/soc/omap/rx51.c              |  6 +++---
+ sound/soc/pxa/hx4700.c             |  4 ++--
+ sound/soc/pxa/palm27x.c            |  4 ++--
+ sound/soc/pxa/ttc-dkb.c            |  8 ++++----
+ sound/soc/pxa/z2.c                 |  4 ++--
+ sound/soc/samsung/goni_wm8994.c    |  4 ++--
+ sound/soc/samsung/h1940_uda1380.c  |  4 ++--
+ sound/soc/samsung/littlemill.c     | 10 +++++-----
+ sound/soc/samsung/lowland.c        |  6 +++---
+ sound/soc/samsung/rx1950_uda1380.c |  4 ++--
+ sound/soc/samsung/smartq_wm8987.c  |  4 ++--
+ sound/soc/samsung/speyside.c       |  6 +++---
+ sound/soc/samsung/tobermory.c      |  4 ++--
+ sound/soc/soc-jack.c               |  4 ++--
+ sound/soc/tegra/tegra_alc5632.c    |  4 ++--
+ sound/soc/tegra/tegra_rt5640.c     |  2 +-
+ sound/soc/tegra/tegra_wm8903.c     |  8 ++++----
+ 32 files changed, 107 insertions(+), 94 deletions(-)
 
-And that's a tremendous increase in system time.  Am I interpreting
-this correctly?
- 
->                                    BAS    FAIRALLO
->                                   BASE   FAIRALLOC
-> Minor Faults                  53721925    57188551
-> Major Faults                    392195       15157
-> Swap Ins                       2994854      112770
-> Swap Outs                      4907092      134982
-> Direct pages scanned                 0       41824
-> Kswapd pages scanned          32975063     8128269
-> Kswapd pages reclaimed         6323069     7093495
-> Direct pages reclaimed               0       41824
-> Kswapd efficiency                  19%         87%
-> Kswapd velocity               3386.573     915.414
-> Direct efficiency                 100%        100%
-> Direct velocity                  0.000       4.710
-> Percentage direct scans             0%          0%
-> Zone normal velocity          2011.338     550.661
-> Zone dma32 velocity           1365.623     369.221
-> Zone dma velocity                9.612       0.242
-> Page writes by reclaim    18732404.000  614807.000
-> Page writes file              13825312      479825
-> Page writes anon               4907092      134982
-> Page reclaim immediate           85490        5647
-> Sector Reads                  12080532      483244
-> Sector Writes                 88740508    65438876
-> Page rescued immediate               0           0
-> Slabs scanned                    82560       12160
-> Direct inode steals                  0           0
-> Kswapd inode steals              24401       40013
-> Kswapd skipped wait                  0           0
-> THP fault alloc                      6           8
-> THP collapse alloc                5481        5812
-> THP splits                          75          22
-> THP fault fallback                   0           0
-> THP collapse fail                    0           0
-> Compaction stalls                    0          54
-> Compaction success                   0          45
-> Compaction failures                  0           9
-> Page migrate success            881492       82278
-> Page migrate failure                 0           0
-> Compaction pages isolated            0       60334
-> Compaction migrate scanned           0       53505
-> Compaction free scanned              0     1537605
-> Compaction cost                    914          86
-> NUMA PTE updates              46738231    41988419
-> NUMA hint faults              31175564    24213387
-> NUMA hint local faults        10427393     6411593
-> NUMA pages migrated             881492       55344
-> AutoNUMA cost                   156221      121361
-
-Some nice numbers there.
-
-> The overall runtime was reduced, throughput for both the foreground
-> workload as well as the background IO improved, major faults, swapping
-> and reclaim activity shrunk significantly, reclaim efficiency more
-> than quadrupled.
+-- 
+1.8.1.4
 
