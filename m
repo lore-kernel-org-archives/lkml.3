@@ -1,106 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624Ab3GZIQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 04:16:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:34591 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751781Ab3GZIQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 04:16:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,749,1367996400"; 
-   d="scan'208";a="273625725"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
- operation region handlers
-Thread-Topic: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
- operation region handlers
-Thread-Index: AQHOh3wWhtcRfGeNDUSAzJ7WvM5MAZl1Zu+AgADNjlCAAGyHIA==
-Date: Fri, 26 Jul 2013 08:15:56 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802435E11@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <cover.1374566394.git.lv.zheng@intel.com>
- <d9d5acba01eb80580e7696c50db4263ded86a86c.1374566394.git.lv.zheng@intel.com>
- <2501577.sf07PMEtR1@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1757357Ab3GZIZe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 04:25:34 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:58846 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753006Ab3GZIZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 04:25:28 -0400
 MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20130726072646.GH13295@cantiga.alporthouse.com>
+References: <CA+icZUVLXxA5LPxzTjyhP5gryNUH3OY+vutoXQj6ydtCU0msbA@mail.gmail.com>
+	<20130725190006.GD11514@cantiga.alporthouse.com>
+	<CA+icZUW6oLE6cdnCkekz+43SrUn=vThqdfSKzz=XP-vmvB7Amw@mail.gmail.com>
+	<20130725192248.GA13295@cantiga.alporthouse.com>
+	<CA+icZUVE3s=6vXTLsCSmdLe_HMTOj+VD317kDeH3tF7svVW8kQ@mail.gmail.com>
+	<CA+icZUU__nxcuX4RF9EBGm0nMBFaxfWpH00b2=ZsZZaxo9iscw@mail.gmail.com>
+	<20130725215259.GB13295@cantiga.alporthouse.com>
+	<CA+icZUXZKndg7==Y6v2Z45WZDp+tDC5FzaOC=KWTf4m=rjUKnA@mail.gmail.com>
+	<20130725232556.GF13295@cantiga.alporthouse.com>
+	<CA+icZUUBhW=KnAt0yn3CgEAzUhOfE=1ADUbCshFqrdZ5urEgbw@mail.gmail.com>
+	<20130726072646.GH13295@cantiga.alporthouse.com>
+Date: Fri, 26 Jul 2013 10:25:26 +0200
+Message-ID: <CA+icZUXuj1O3oUvr_43BZDD_ikWyY9GxfOdzb3GLWJ1X1hvxyQ@mail.gmail.com>
+Subject: Re: [Intel-gfx] linux-next: Tree for Jul 25 [ call-trace: drm |
+ drm-intel related? ]
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-next <linux-next@vger.kernel.org>,
+        "s.dilek" <s.dilek@jpberlin.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6Q8GXk9009791
 
-> From: linux-acpi-owner@vger.kernel.org
-> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Zheng, Lv
-> Sent: Friday, July 26, 2013 9:54 AM
-> To: Rafael J. Wysocki
-> Cc: Wysocki, Rafael J; Brown, Len; linux-kernel@vger.kernel.org;
-> linux-acpi@vger.kernel.org
-> Subject: RE: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
-> operation region handlers
-> 
-> > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > Sent: Friday, July 26, 2013 5:29 AM
-> >
-> > On Tuesday, July 23, 2013 04:09:43 PM Lv Zheng wrote:
-> > > This patch adds reference couting for ACPI operation region handlers
-> > > to fix races caused by the ACPICA address space callback invocations.
-> > >
-> > > ACPICA address space callback invocation is not suitable for Linux
-> > > CONFIG_MODULE=y execution environment.
-> >
-> > Actually, can you please explain to me what *exactly* the problem is?
-> 
-> OK.  I'll add race explanations in the next revision.
-> 
-> The problem is there is no "lock" held inside ACPICA for invoking operation
-> region handlers.
-> Thus races happens between the acpi_remove/install_address_space_handler
-> and the handler/setup callbacks.
+On Fri, Jul 26, 2013 at 9:26 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Fri, Jul 26, 2013 at 09:15:14AM +0200, Sedat Dilek wrote:
+>> For example: I could start my X with even doing ugly hacks like this...
+>>
+>> [ intel-ddx (git) ]
+>> ...
+>> Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+>> ...
+>> #if 0
+>>       if (drm_intel_gem_bo_map_gtt(bo))
+>>               return FALSE;
+>> #endif
+>> ...
+>>
+>> ...with any other kernel.
+>
+> Yes. Acquiring the map there is just a bit of paranoia to ensure we
+> having the mapping into the scanout already in place in case of
+> emergencies (and so don't fail along failure paths due to resource
+> conflicts).
+>
+> Hmm, though we only started checking for map failures in 2.20.10 - which
+> would explain why going back to the older ddx masks the issue. And yes,
+> this means we do require a kernel bisect - or some passing inspiron.
 
-This seems not a good explanation of the intent of this patch.
-I think the intent is here in the patch description:
+First confirmation...
+OK, next-20130726 shows the same symptoms!
 
-1. It acts as a barrier for operation region callbacks - no callback will
-   happen after acpi_unregister_region().
-2. acpi_unregister_region() is safe to be called in moudle->exit()
-   functions.
+I tried diverse intel-ddx release and went back to v2.21.9... and
+searched for a version like v2.20.0 which has no checking for map
+failures...
 
-Hmm, maybe I need to re-order the patch description for this patch.
+[ intel-ddx (v2.20.0) ]
+...
+Bool intel_uxa_create_screen_resources(ScreenPtr screen)
+{
+        ScrnInfoPtr scrn = xf86ScreenToScrn(screen);
+        intel_screen_private *intel = intel_get_screen_private(scrn);
+        dri_bo *bo = intel->front_buffer;
 
-Thanks for commenting.
+        if (!uxa_resources_init(screen))
+                return FALSE;
 
-Best regards
--Lv
+        drm_intel_gem_bo_map_gtt(bo);
 
-> 
-> This is correct per ACPI specification.
-> As if there is interpreter locks held for invoking operation region handlers, the
-> timeout implemented inside the operation region handlers will make all locking
-> facilities (Acquire or Sleep,...) timed out.
-> Please refer to ACPI specification "5.5.2 Control Method Execution":
-> Interpretation of a Control Method is not preemptive, but it can block. When a
-> control method does block, OSPM can initiate or continue the execution of a
-> different control method. A control method can only assume that access to
-> global objects is exclusive for any period the control method does not block.
-> 
-> So it is pretty much likely that ACPI IO transfers are locked inside the operation
-> region callback implementations.
-> Using locking facility to protect the callback invocation will risk dead locks.
-> 
-> Thanks
-> -Lv
-> 
-> > Rafael
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+        if (intel->use_shadow) {
+                intel_shadow_create(intel);
+        } else {
+                PixmapPtr pixmap = screen->GetScreenPixmap(screen);
+                intel_set_pixmap_bo(pixmap, bo);
+                intel_get_pixmap_private(pixmap)->pinned = 1;
+                screen->ModifyPixmapHeader(pixmap,
+                                           scrn->virtualX,
+                                           scrn->virtualY,
+                                           -1, -1,
+                                           intel->front_pitch,
+                                           NULL);
+                scrn->displayWidth = intel->front_pitch / intel->cpp;
+        }
+...
+... but does not start as well, so it seems to be a kernel-issue as
+assumed (2nd confirmation).
+
+X.log attached.
+
+- Sedat -
+
+> -Chris
+>
+> --
+> Chris Wilson, Intel Open Source Technology Centre
