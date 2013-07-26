@@ -1,53 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3GZG2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 02:28:12 -0400
-Received: from smtp1-g21.free.fr ([212.27.42.1]:41150 "EHLO smtp1-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751265Ab3GZG2K convert rfc822-to-8bit (ORCPT
+	id S1753396Ab3GZGgR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 02:36:17 -0400
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:64988 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab3GZGgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 02:28:10 -0400
-Date: Fri, 26 Jul 2013 08:28:18 +0200
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Rob Herring <rob.herring@calxeda.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/4] ASoc: kirkwood: simplify probe error
-Message-ID: <20130726082818.480d2a02@armhf>
-In-Reply-To: <20130725191059.GO9858@sirena.org.uk>
-References: <20130725111357.7c976963@armhf>
-	<20130725191059.GO9858@sirena.org.uk>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Jul 2013 02:36:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20130726025009.GE21982@dastard>
+References: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
+	<20130726025009.GE21982@dastard>
+Date: Fri, 26 Jul 2013 14:36:15 +0800
+Message-ID: <CAEH94Lh-UCCEs7hQi_t5v+X+ER1DH9dCtjr6e9GVNX5KJ-f1hQ@mail.gmail.com>
+Subject: Re: [PATCH] xfs: introduce object readahead to log recovery
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfstests <xfs@oss.sgi.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Jul 2013 20:10:59 +0100
-Mark Brown <broonie@kernel.org> wrote:
+Dave,
 
-> On Thu, Jul 25, 2013 at 11:13:57AM +0200, Jean-Francois Moine wrote:
-> > The function kirkwood_i2s_dev_remove() may be used when probe fails.
-> 
-> This seems fine but doesn't apply against current code but otherwise
-> seems fine.
+All comments are good to me, and will be applied to next version, thanks a lot.
 
-My base is 3.11-rc2.
+On Fri, Jul 26, 2013 at 10:50 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Thu, Jul 25, 2013 at 04:23:39PM +0800, zwu.kernel@gmail.com wrote:
+>> From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+>>
+>>   It can take a long time to run log recovery operation because it is
+>> single threaded and is bound by read latency. We can find that it took
+>> most of the time to wait for the read IO to occur, so if one object
+>> readahead is introduced to log recovery, it will obviously reduce the
+>> log recovery time.
+>>
+>>   In dirty log case as below:
+>>     data device: 0xfd10
+>>     log device: 0xfd10 daddr: 20480032 length: 20480
+>>
+>>     log tail: 7941 head: 11077 state: <DIRTY>
+>
+> That's only a small log (10MB). As I've said on irc, readahead won't
+Yeah, it is one 10MB log, but how do you calculate it based on the above info?
 
-> > +	if (!IS_ERR(priv->extclk)) {
-> > +		clk_disable_unprepare(priv->extclk);
-> > +		clk_put(priv->extclk);
-> > +	}
-> 
-> Could use devm_clk_get() for extclk.
+> show any real difference on this and you need to be testing with
+> large logs.
+>
+>>
+>> This dirty ratio is about 15%. I am trying to do tests in larger scale
+>> and dirtier filesystem environment.
+>>
+>> Log recovery time stat:
+>>
+>>             w/o this patch        w/ this patch
+>>   real         0m1.051s             0m0.965s
+>>   sys          0m0.033s             0m0.035s
+>>
+>>   iowait       0m1.018s             0m0.930s
+>
+> Well, it's not made much of a difference there. That's probably
+> within the noise of repeated log recovery runs.
+>
+> My simple test is:
+>
+> $ cat recovery_time.sh
+> #!/bin/bash
+>
+> cd /home/dave/src/compilebench-0.6/
+>
+> mkfs.xfs -f /dev/vdc;
+> mount /dev/vdc /mnt/scratch
+> chmod 777 /mnt/scratch;
+> ./compilebench --no-sync -D /mnt/scratch &
+> sleep 55
+> /home/dave/src/xfstests-dev/src/godown /mnt/scratch
+> umount /mnt/scratch
+> xfs_logprint -t /dev/vdc |head -20
+> time mount /dev/vdc /mnt/scratch
+> umount /mnt/scratch
+> $
+>
+> And the recovery time from this is between 15-17s:
+>
+> ....
+>     log device: 0xfd20 daddr: 107374182032 length: 4173824
+>                                                    ^^^^^^^ almost 2GB
+>         log tail: 19288 head: 264809 state: <DIRTY>
+> ....
+> real    0m17.913s
+> user    0m0.000s
+> sys     0m2.381s
+>
+> And runs at 3-4000 read IOPs for most of that time. It's largely IO
+> bound, even on SSDs.
+>
+> With your patch:
+>
+> log tail: 35871 head: 308393 state: <DIRTY>
+> real    0m12.715s
+> user    0m0.000s
+> sys     0m2.247s
+>
+> And it peaked at ~5000 read IOPS.
+How do you know its READ IOPS is ~5000?
 
-I will do it.
+>
+> It's definitely an improvement, but there's a lot of dead time still
+> spent waiting for IO that we should be able to remove. Let's have a
+> look at the code...
+>
+>
+>> +STATIC void
+>> +xlog_recover_inode_ra_pass2(
+>> +     struct xlog                     *log,
+>> +     struct xlog_recover_item        *item)
+>> +{
+>> +     xfs_inode_log_format_t  *in_f;
+>> +     xfs_mount_t             *mp = log->l_mp;
+>> +     int                     error;
+>> +     int                     need_free = 0;
+>> +
+>> +     if (item->ri_buf[0].i_len == sizeof(xfs_inode_log_format_t)) {
+>> +             in_f = item->ri_buf[0].i_addr;
+>> +     } else {
+>> +             in_f = kmem_alloc(sizeof(xfs_inode_log_format_t), KM_SLEEP);
+>> +             need_free = 1;
+>> +             error = xfs_inode_item_format_convert(&item->ri_buf[0], in_f);
+>> +             if (error)
+>> +                     goto error;
+>> +     }
+>
+> I'd just put the conversion buffer on stack and avoid the need to
+> alloc/free memory here. There's plenty of stack space available
+> during recovery here, so let's use it to keep the overhead of
+> readahead down.
+OK, will use the buffer on stack.
+>
+>> +STATIC void
+>> +xlog_recover_dquot_ra_pass2(
+>> +     struct xlog                     *log,
+>> +     struct xlog_recover_item        *item)
+>> +{
+>> +     xfs_mount_t             *mp = log->l_mp;
+>> +     xfs_buf_t               *bp;
+>> +     struct xfs_disk_dquot   *recddq;
+>> +     int                     error;
+>> +     xfs_dq_logformat_t      *dq_f;
+>> +     uint                    type;
+>> +
+>> +
+>> +     if (mp->m_qflags == 0)
+>> +             return;
+>> +
+>> +     recddq = item->ri_buf[1].i_addr;
+>> +     if (recddq == NULL)
+>> +             return;
+>> +     if (item->ri_buf[1].i_len < sizeof(xfs_disk_dquot_t))
+>> +             return;
+>> +
+>> +     type = recddq->d_flags & (XFS_DQ_USER | XFS_DQ_PROJ | XFS_DQ_GROUP);
+>> +     ASSERT(type);
+>> +     if (log->l_quotaoffs_flag & type)
+>> +             return;
+>> +
+>> +     dq_f = item->ri_buf[0].i_addr;
+>> +     ASSERT(dq_f);
+>> +     error = xfs_qm_dqcheck(mp, recddq, dq_f->qlf_id, 0, XFS_QMOPT_DOWARN,
+>> +                        "xlog_recover_dquot_ra_pass2 (log copy)");
+>> +     if (error)
+>> +             return;
+>> +     ASSERT(dq_f->qlf_len == 1);
+>> +
+>> +     error = xfs_trans_read_buf(mp, NULL, mp->m_ddev_targp, dq_f->qlf_blkno,
+>> +                                XFS_FSB_TO_BB(mp, dq_f->qlf_len), 0, &bp,
+>> +                                NULL);
+>> +     if (!error)
+>> +             xfs_buf_relse(bp);
+>> +}
+>
+> That's not doing readahead - that's an integrity check followed by a
+> blocking read.  Shouldn't it just be calling xfs_buf_readahead() on
+> dq_f->qlf_blkno/dq_f->qlf_len, after checking whether it had been
+> cancelled?
+ah, i miss tha it is one blocking read. will fix it
+>
+>>  STATIC int
+>>  xlog_recover_commit_pass1(
+>>       struct xlog                     *log,
+>> @@ -3140,10 +3255,14 @@ xlog_recover_commit_pass2(
+>>       struct xlog                     *log,
+>>       struct xlog_recover             *trans,
+>>       struct list_head                *buffer_list,
+>> -     struct xlog_recover_item        *item)
+>> +     struct xlog_recover_item        *item,
+>> +     struct xlog_recover_item        *next_item)
+>>  {
+>>       trace_xfs_log_recover_item_recover(log, trans, item, XLOG_RECOVER_PASS2);
+>>
+>> +     if (next_item)
+>> +             xlog_recover_ra_pass2(log, next_item);
+>> +
+>
+> Ah, that explains the limited improvement - it's only doing
+> readahead of a single item at a time. IOWs, we are completing
+> recovery of the current object before IO completion of the next
+> object has occurred. This generally means the read-ahead queue is
+Yes.
+> not deep enough...
+>
+>>       switch (ITEM_TYPE(item)) {
+>>       case XFS_LI_BUF:
+>>               return xlog_recover_buffer_pass2(log, buffer_list, item);
+>> @@ -3181,7 +3300,7 @@ xlog_recover_commit_trans(
+>>       int                     pass)
+>>  {
+>>       int                     error = 0, error2;
+>> -     xlog_recover_item_t     *item;
+>> +     xlog_recover_item_t     *item, *next_item, *temp_item;
+>>       LIST_HEAD               (buffer_list);
+>>
+>>       hlist_del(&trans->r_list);
+>> @@ -3190,14 +3309,18 @@ xlog_recover_commit_trans(
+>>       if (error)
+>>               return error;
+>>
+>> -     list_for_each_entry(item, &trans->r_itemq, ri_list) {
+>> +     list_for_each_entry_safe(item, temp_item, &trans->r_itemq, ri_list) {
+>>               switch (pass) {
+>>               case XLOG_RECOVER_PASS1:
+>>                       error = xlog_recover_commit_pass1(log, trans, item);
+>>                       break;
+>>               case XLOG_RECOVER_PASS2:
+>> +                     if (&temp_item->ri_list != &trans->r_itemq)
+>> +                             next_item = temp_item;
+>> +                     else
+>> +                             next_item = NULL;
+>>                       error = xlog_recover_commit_pass2(log, trans,
+>> -                                                       &buffer_list, item);
+>> +                                       &buffer_list, item, next_item);
+>
+> Ok, so you've based the readahead on the transaction item list
+> having a next pointer. What I think you should do is turn this into
+> a readahead queue by moving objects to a new list. i.e.
+>
+>         list_for_each_entry_safe(item, next, &trans->r_itemq, ri_list) {
+>
+>                 case XLOG_RECOVER_PASS2:
+>                         if (ra_qdepth++ >= MAX_QDEPTH) {
+>                                 recover_items(log, trans, &buffer_list, &ra_item_list);
+>                                 ra_qdepth = 0;
+>                         } else {
+>                                 xlog_recover_item_readahead(log, item);
+>                                 list_move_tail(&item->ri_list, &ra_item_list);
+>                         }
+>                         break;
+>                 ...
+>                 }
+>         }
+>         if (!list_empty(&ra_item_list))
+>                 recover_items(log, trans, &buffer_list, &ra_item_list);
+>
+> I'd suggest that a queue depth somewhere between 10 and 100 will
+> be necessary to keep enough IO in flight to keep the pipeline full
+> and prevent recovery from having to wait on IO...
+Good suggestion, will apply it to next version, thanks.
+
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
+
 
 -- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+Regards,
+
+Zhi Yong Wu
