@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760085Ab3GZVK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:10:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51293 "EHLO
+	id S1760138Ab3GZVKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:10:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51305 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760080Ab3GZU6M (ORCPT
+	with ESMTP id S1760060Ab3GZU6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:12 -0400
+	Fri, 26 Jul 2013 16:58:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Subject: [ 07/45] perf: Clone child context from parent context pmu
-Date: Fri, 26 Jul 2013 13:57:27 -0700
-Message-Id: <20130726205655.700119605@linuxfoundation.org>
+        Sreekanth Reddy <Sreekanth.Reddy@lsi.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 05/45] SCSI: mpt2sas: fix firmware failure with wrong task attribute
+Date: Fri, 26 Jul 2013 13:57:25 -0700
+Message-Id: <20130726205655.507293792@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -31,85 +27,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
 
-commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
+commit 48ba2efc382f94fae16ca8ca011e5961a81ad1ea upstream.
 
-Currently when the child context for inherited events is
-created, it's based on the pmu object of the first event
-of the parent context.
+When SCSI command is received with task attribute not set, set it to SIMPLE.
+Previously it is set to untagged. This causes the firmware to fail the commands.
 
-This is wrong for the following scenario:
-
-  - HW context having HW and SW event
-  - HW event got removed (closed)
-  - SW event stays in HW context as the only event
-    and its pmu is used to clone the child context
-
-The issue starts when the cpu context object is touched
-based on the pmu context object (__get_cpu_context). In
-this case the HW context will work with SW cpu context
-ending up with following WARN below.
-
-Fixing this by using parent context pmu object to clone
-from child context.
-
-Addresses the following warning reported by Vince Weaver:
-
-[ 2716.472065] ------------[ cut here ]------------
-[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
-[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
-[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
-[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
-[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
-[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
-[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
-[ 2716.476035] Call Trace:
-[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
-[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
-[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
-[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
-[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
-[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
-[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
-[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
-[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
-[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
-[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
-[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
-[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
-[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
-[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
-[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
-[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
-
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/events/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7064,7 +7064,7 @@ inherit_task_group(struct perf_event *ev
- 		 * child.
- 		 */
- 
--		child_ctx = alloc_perf_context(event->pmu, child);
-+		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
- 		if (!child_ctx)
- 			return -ENOMEM;
- 
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3740,11 +3740,7 @@ _scsih_qcmd_lck(struct scsi_cmnd *scmd,
+ 			else
+ 				mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 		} else
+-/* MPI Revision I (UNIT = 0xA) - removed MPI2_SCSIIO_CONTROL_UNTAGGED */
+-/*			mpi_control |= MPI2_SCSIIO_CONTROL_UNTAGGED;
+- */
+-			mpi_control |= (0x500);
+-
++			mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	} else
+ 		mpi_control |= MPI2_SCSIIO_CONTROL_SIMPLEQ;
+ 	/* Make sure Device is not raid volume.
 
 
