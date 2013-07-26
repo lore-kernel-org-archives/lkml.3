@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758251Ab3GZCJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 22:09:39 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:16412 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756932Ab3GZCJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 22:09:36 -0400
-X-IronPort-AV: E=Sophos;i="4.89,747,1367942400"; 
-   d="scan'208";a="8028919"
-Message-ID: <51F1DB45.90905@cn.fujitsu.com>
-Date: Fri, 26 Jul 2013 10:13:25 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1758279Ab3GZCJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 22:09:58 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53665 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756954Ab3GZCJz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 22:09:55 -0400
+Date: Thu, 25 Jul 2013 20:09:28 -0600
+From: Jens Axboe <axboe@kernel.dk>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+Message-ID: <20130726020928.GL29296@kernel.dk>
+References: <20130719003034.GG28005@kernel.dk>
+ <1374195825.7397.997.camel@haakon3.risingtidesystems.com>
+ <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
+ <1374248000.2266.20.camel@dabdike>
+ <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+ <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+ <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+ <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+ <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
+ <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: clear workers of a pool after the CPU is offline
-References: <1374749531-16423-1-git-send-email-laijs@cn.fujitsu.com> <20130725153121.GF26107@mtj.dyndns.org>
-In-Reply-To: <20130725153121.GF26107@mtj.dyndns.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/26 10:07:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/26 10:07:29,
-	Serialize complete at 2013/07/26 10:07:29
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/25/2013 11:31 PM, Tejun Heo wrote:
-> Hello, Lai.
+On Thu, Jul 25 2013, Nicholas A. Bellinger wrote:
+> On Thu, 2013-07-25 at 12:16 +0200, Alexander Gordeev wrote:
+> > On Mon, Jul 22, 2013 at 02:10:36PM -0700, Nicholas A. Bellinger wrote:
+> > > Np.  FYI, you'll want to use the latest commit e7827b351 HEAD from
+> > > target-pending/scsi-mq, which now has functioning scsi-generic support.
+> > 
+> > Survives a boot, a kernel build and the build's result :)
 > 
-> On Thu, Jul 25, 2013 at 06:52:02PM +0800, Lai Jiangshan wrote:
->> The unbound pools and their workers can be destroyed/cleared
->> when their refcnt become zero. But the cpu pool can't be destroyed
->> due to they are always referenced, their refcnt are always > 0.
->>
->> We don't want to destroy the cpu pools, but we want to destroy
->> the workers of the pool when the pool is full idle after the cpu
->> is offline. This is the default behavior in old days until
->> we removed the trustee_thread().
->>
->> We need to find a new way to restore this behavior,
->> We add offline_pool() and POOL_OFFLINE flag to do so.
+> Great.  Thanks for the feedback Alexander!
 > 
-> Hmmm... if I'm not confused, now the cpu pools just behave like a
-> normal unbound pool when the cpu goes down,
+> So the next step on my end is to enable -mq for ahci, and verify initial
+> correctness using QEMU/KVM hardware emulation.
+> 
+> Btw, I've been looking at enabling the SHT->cmd_size for struct
+> ata_queued_cmd descriptor pre-allocation, but AFAICT these descriptors
+> are already all pre-allocated by libata and obtained via ata_qc_new() ->
+> __ata_qc_from_tag() during ata_scsi_queuecmd().
 
-cpu pools are always referenced, they don't behave like unbound pool.
+Might still not be a bad idea to do it:
 
-> which means that the idle
-> cpu workers will exit once idle timeout is reached, right? 
+- Cleans up a driver, getting rid of the need to alloc, maintain, and
+  free those structures.
 
-No, no code to force the cpu workers quit currently.
-you can just offline a cpu to see what happened to the workers.
+- Should be some cache locality benefits to having it all sequential.
 
-> I really
-> don't think it'd be worthwhile to add extra logic to accelerate the
-> process.
-> 
-> Note that there actually are benefits to doing it asynchronously as
-> CPUs go up and down very frequently on mobile platforms and destroying
-> idle workers as soon as possible would just mean that we'd be doing a
-> lot of work which isn't necessary.  I mean, we even grew an explicit
-> mechanism to park kthreads to avoid repeatedly creating and destroying
-> per-cpu kthreads as cpus go up and down.  I don't see any point in
-> adding code to go the other direction.
-> 
-> Thanks.
-> 
+> So that said, with the struct request + struct scsi_cmnd pre-allocations
+> already provided by blk-mq -> scsi-mq code, all memory allocations
+> should have already been eliminated from I/O fast path.
+
+Nice!
+
+-- 
+Jens Axboe
 
