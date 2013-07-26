@@ -1,51 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3GZU4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:56:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51267 "EHLO
+	id S933149Ab3GZU4J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:56:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51182 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933187Ab3GZU4L (ORCPT
+	with ESMTP id S933056Ab3GZUyE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:56:11 -0400
-Date: Fri, 26 Jul 2013 13:56:10 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Feng-Hsin Chiang <john453@faraday-tech.com>
-Cc: stern@rowland.harvard.edu, sarah.a.sharp@linux.intel.com, balbi@ti.com,
-        florian@openwrt.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, yuanlmm@gmail.com,
-        ratbert.chuang@gmail.com, lichun_c@faraday-tech.com,
-        john2437kimo@gmail.com, Yuan-Hsin Chen <yhchen@faraday-tech.com>
-Subject: Re: [PATCH v3] usb: host: Faraday fotg210-hcd driver
-Message-ID: <20130726205610.GA15573@kroah.com>
-References: <1374832376-30567-1-git-send-email-john453@faraday-tech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374832376-30567-1-git-send-email-john453@faraday-tech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Jul 2013 16:54:04 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, Ingo Molnar <mingo@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        xen-devel@lists.xen.org
+Subject: [ 58/59] hrtimers: Move SMP function call to thread context
+Date: Fri, 26 Jul 2013 13:53:22 -0700
+Message-Id: <20130726205020.059979760@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
+References: <20130726205013.795696531@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 09:52:56AM +0000, Feng-Hsin Chiang wrote:
-> FOTG210 is an OTG controller which can be configured as an
-> USB2.0 host. FOTG210 host is an ehci-like controller with
-> some differences. First, register layout of FOTG210 is
-> incompatible with EHCI. Furthermore, FOTG210 is lack of
-> siTDs which means iTDs are used for both HS and FS ISO
-> transfer.
-> 
-> Signed-off-by: Yuan-Hsin Chen <yhchen@faraday-tech.com>
-> ---
-> v2: fix most of errors and warnings reported by checkpatch.pl
-> v3: change maintainer
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-You didn't refresh this against the latest tree, and as such, it fails
-to apply to the tree, which implies that you didn't test it against the
-latest kernel version either :(
+------------------
 
-Please do this and resend it after testing.
+From: Thomas Gleixner <tglx@linutronix.de>
 
-thanks,
+commit 5ec2481b7b47a4005bb446d176e5d0257400c77d upstream.
 
-greg k-h
+smp_call_function_* must not be called from softirq context.
+
+But clock_was_set() which calls on_each_cpu() is called from softirq
+context to implement a delayed clock_was_set() for the timer interrupt
+handler. Though that almost never gets invoked. A recent change in the
+resume code uses the softirq based delayed clock_was_set to support
+Xens resume mechanism.
+
+linux-next contains a new warning which warns if smp_call_function_*
+is called from softirq context which gets triggered by that Xen
+change.
+
+Fix this by moving the delayed clock_was_set() call to a work context.
+
+Reported-and-tested-by: Artem Savkov <artem.savkov@gmail.com>
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>,
+Cc: Konrad Wilk <konrad.wilk@oracle.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: xen-devel@lists.xen.org
+Cc: stable@vger.kernel.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/hrtimer.c |   28 +++++++++++++---------------
+ 1 file changed, 13 insertions(+), 15 deletions(-)
+
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -707,17 +707,20 @@ static int hrtimer_switch_to_hres(void)
+ 	return 1;
+ }
+ 
++static void clock_was_set_work(struct work_struct *work)
++{
++	clock_was_set();
++}
++
++static DECLARE_WORK(hrtimer_work, clock_was_set_work);
++
+ /*
+- * Called from timekeeping code to reprogramm the hrtimer interrupt
+- * device. If called from the timer interrupt context we defer it to
+- * softirq context.
++ * Called from timekeeping and resume code to reprogramm the hrtimer
++ * interrupt device on all cpus.
+  */
+ void clock_was_set_delayed(void)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-
+-	cpu_base->clock_was_set = 1;
+-	__raise_softirq_irqoff(HRTIMER_SOFTIRQ);
++	schedule_work(&hrtimer_work);
+ }
+ 
+ #else
+@@ -766,8 +769,10 @@ void hrtimers_resume(void)
+ 	WARN_ONCE(!irqs_disabled(),
+ 		  KERN_INFO "hrtimers_resume() called with IRQs enabled!");
+ 
++	/* Retrigger on the local CPU */
+ 	retrigger_next_event(NULL);
+-	timerfd_clock_was_set();
++	/* And schedule a retrigger for all others */
++	clock_was_set_delayed();
+ }
+ 
+ static inline void timer_stats_hrtimer_set_start_info(struct hrtimer *timer)
+@@ -1416,13 +1421,6 @@ void hrtimer_peek_ahead_timers(void)
+ 
+ static void run_hrtimer_softirq(struct softirq_action *h)
+ {
+-	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+-
+-	if (cpu_base->clock_was_set) {
+-		cpu_base->clock_was_set = 0;
+-		clock_was_set();
+-	}
+-
+ 	hrtimer_peek_ahead_timers();
+ }
+ 
+
+
