@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab3GZPXH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:23:07 -0400
-Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:45493 "EHLO
-	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932384Ab3GZPWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:22:21 -0400
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
-To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
-        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        swarren@wwwdotorg.org, ian.campbell@citrix.com,
-        rob.herring@calxeda.com
-Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Subject: [PATCH 3/5] devicetree: create a separate binding description for sata_highbank
-Date: Fri, 26 Jul 2013 10:11:56 -0500
-Message-Id: <1374851518-4802-3-git-send-email-mark.langsdorf@calxeda.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+	id S1759174Ab3GZPZx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:25:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46330 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756425Ab3GZPZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:25:50 -0400
+Date: Fri, 26 Jul 2013 17:20:10 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, David Ahern <dsahern@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/3] Teach perf_trace_##call() to check
+	hlist_empty(perf_events)
+Message-ID: <20130726152010.GA20520@redhat.com>
+References: <20130718183018.GA4043@redhat.com> <20130719074339.GA22597@gmail.com> <1374265641.3356.31.camel@gandalf.local.home> <20130720154040.GA1169@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130720154040.GA1169@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Calxeda sata_highbank driver has been adding its descriptions to the
-ahci driver. Separate them properly.
+On 07/20, Oleg Nesterov wrote:
+>
+> On 07/19, Steven Rostedt wrote:
+> >
+> > On Fri, 2013-07-19 at 09:43 +0200, Ingo Molnar wrote:
+> > >
+> > > Peter, Steve, any objections?
+> > >
+> >
+> > Yep, agreed.
+> >
+> >
+> > The whole series...
+> >
+> > Reviewed-and-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>
+> Thanks!
+>
+> But, to avoid the confusion, please do not forget that this series
+> textually depends on cd92bf61 "Move the PERF_MAX_TRACE_SIZE check
+> into perf_trace_buf_prepare()" in your tree. So this should be
+> routed via rostedt/linux-trace as well.
 
-Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
----
- .../devicetree/bindings/ata/ahci-platform.txt      | 14 ++--------
- .../devicetree/bindings/ata/sata_highbank.txt      | 32 ++++++++++++++++++++++
- 2 files changed, 34 insertions(+), 12 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/ata/sata_highbank.txt
+Update. cd92bf61 is already in Linus's tree.
 
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 3ec0c5c..14d7b22 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -4,27 +4,17 @@ SATA nodes are defined to describe on-chip Serial ATA controllers.
- Each SATA controller should have its own node.
- 
- Required properties:
--- compatible        : compatible list, contains "calxeda,hb-ahci" or "snps,spear-ahci"
-+- compatible        : compatible list, contains "snps,spear-ahci"
- - interrupts        : <interrupt mapping for SATA IRQ>
- - reg               : <registers mapping>
- 
- Optional properties:
--- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
--			SATA port to a combophy and a lane within that
--			combophy
--- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
--			which indicates that the driver supports SGPIO
--			indicator lights using the indicated GPIOs
--- calxeda,led-order : a u32 array that map port numbers to offsets within the
--			SGPIO bitstream.
- - dma-coherent      : Present if dma operations are coherent
- 
- Example:
-         sata@ffe08000 {
--		compatible = "calxeda,hb-ahci";
-+		compatible = "snps,spear-ahci";
-                 reg = <0xffe08000 0x1000>;
-                 interrupts = <115>;
--		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
--					&combophy0 2 &combophy0 3>;
- 
-         };
-diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-new file mode 100644
-index 0000000..aa1b798
---- /dev/null
-+++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
-@@ -0,0 +1,32 @@
-+* Calxeda AHCI SATA Controller
-+
-+SATA nodes are defined to describe on-chip Serial ATA controllers.
-+The Calxeda SATA controller mostly conforms to the AHCI interface
-+with some special extensions to add functionality.
-+Each SATA controller should have its own node.
-+
-+Required properties:
-+- compatible        : compatible list, contains "calxeda,hb-ahci"
-+- interrupts        : <interrupt mapping for SATA IRQ>
-+- reg               : <registers mapping>
-+
-+Optional properties:
-+- dma-coherent      : Present if dma operations are coherent
-+- calxeda,port-phys: phandle-combophy and lane assignment, which maps each
-+			SATA port to a combophy and a lane within that
-+			combophy
-+- calxeda,sgpio-gpio: phandle-gpio bank, bit offset, and default on or off,
-+			which indicates that the driver supports SGPIO
-+			indicator lights using the indicated GPIOs
-+- calxeda,led-order : a u32 array that map port numbers to offsets within the
-+			SGPIO bitstream.
-+
-+Example:
-+        sata@ffe08000 {
-+		compatible = "calxeda,hb-ahci";
-+                reg = <0xffe08000 0x1000>;
-+                interrupts = <115>;
-+		calxeda,port-phys = <&combophy5 0 &combophy0 0 &combophy0 1
-+					&combophy0 2 &combophy0 3>;
-+
-+        };
--- 
-1.8.1.2
+So, Ingo, if you were going to take these patches - please ;)
+
+It seems that everybody agree with this hack. Please tell me
+if I should resend this series once again or make a small branch
+for git-pull.
+
+Oleg.
 
