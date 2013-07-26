@@ -1,160 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab3GZMpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:45:50 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60284 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758193Ab3GZMoi (ORCPT
+	id S1758755Ab3GZMq1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:46:27 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:47606 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932198Ab3GZMqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:44:38 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>, <kyungmin.park@samsung.com>, <balbi@ti.com>,
-        <kishon@ti.com>, <jg1.han@samsung.com>, <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <stern@rowland.harvard.edu>,
-        <broonie@kernel.org>, <tomasz.figa@gmail.com>, <arnd@arndb.de>
-CC: <grant.likely@linaro.org>, <tony@atomide.com>, <swarren@nvidia.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>
-Subject: [PATCH v10 6/8] usb: musb: omap2430: use the new generic PHY framework
-Date: Fri, 26 Jul 2013 18:13:00 +0530
-Message-ID: <1374842582-13242-7-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1374842582-13242-1-git-send-email-kishon@ti.com>
-References: <1374842582-13242-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 26 Jul 2013 08:46:20 -0400
+X-AuditID: cbfee61a-b7f196d000007dfa-d1-51f26f9a927f
+Date: Fri, 26 Jul 2013 14:46:12 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
+Subject: Re: [PATCH v6 1/8] cpufreq: Store cpufreq policies in a list
+Message-id: <20130726144612.5939419c@amdc308.digital.local>
+In-reply-to: <CAKohpokqHsHZP0AkPBbmGP=ekLPQrnLCc5j6BsfM6KY01uzG1w@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-2-git-send-email-l.majewski@samsung.com>
+ <CAKohpoktwZUvs2ap7wk1tudVsiKjbhFkoM5=+AaFZP=+73fEyg@mail.gmail.com>
+ <20130726125827.72f9ef18@amdc308.digital.local>
+ <CAKohpokqHsHZP0AkPBbmGP=ekLPQrnLCc5j6BsfM6KY01uzG1w@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xgO7s/E+BBs0TWCw2zljPavG06Qe7
+	xbzPshZ9P68wW6zZ/5PJovPsE2aL3gVX2SzePOK2uLxrDpvF594jjBb9C3uZLJ487GOz2PjV
+	w4HXY/Gel0wed67tYfNYN+0ts0ffllWMHo8WtzB6HL+xncnj8ya5APYoLpuU1JzMstQifbsE
+	royvL/8xFSzlq2jds5y5gbGXu4uRk0NCwETi5ZbPTBC2mMSFe+vZuhi5OIQEFjFK9O78xArh
+	tDNJzHuxmQ2kikVAVWLRtQ4WEJtNQE/i892nQN0cHCICWhIvb6aC1DML/GWW6HvUAFYvLOAq
+	sbZrLZjNK2AtMWHtYkYQm1MgWGLNrAPMEAv+M0ns3LYK7Ax+AUmJ9n8/mCFOspM492kDO0Sz
+	oMSPyffAFjMDLdu8rYkVwpaX2LzmLfMERsFZSMpmISmbhaRsASPzKkbR1ILkguKk9FxDveLE
+	3OLSvHS95PzcTYzgWHomtYNxZYPFIUYBDkYlHl4Fp4+BQqyJZcWVuYcYJTiYlUR4r3t/ChTi
+	TUmsrEotyo8vKs1JLT7EKM3BoiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXAaCW3xUfcstnt
+	k6+/qr6EX227kdCyJZv9K3uVPgo5fz/Sp3/L9iuH5p5dd4qWWa4Oqzo1x3vnSlndBqlqmwMn
+	t+1v2pkx6U+iy1zOX7L2027mxrNqPz8ZJD712Ies707a7z2YDk34eGG+8/u3TfF9khvW55+Z
+	VXVHxDT55hXhRzyM6rq60V5LlFiKMxINtZiLihMBxiUFlqECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the generic PHY framework API to get the PHY. The usb_phy_set_resume
-and usb_phy_set_suspend is replaced with power_on and
-power_off to align with the new PHY framework.
+On Fri, 26 Jul 2013 16:32:34 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 26 July 2013 16:28, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > On Fri, 26 Jul 2013 15:44:29 +0530 Viresh Kumar
+> > viresh.kumar@linaro.org wrote,
+> >> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com>
+> >> wrote:
+> 
+> >> Looks good but would have been better if you could have moved
+> >> existing code to use this infrastructure..
+> >>
+> >> For example, this code in __cpufreq_add_dev()
+> >>
+> >> #ifdef CONFIG_HOTPLUG_CPU
+> >>       /* Check if this cpu was hot-unplugged earlier and has
+> >> siblings */ read_lock_irqsave(&cpufreq_driver_lock, flags);
+> >>       for_each_online_cpu(sibling) {
+> >>
+> >>          ---
+> >>
+> >>       }
+> >>       read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> >> #endif
+> >
+> > Do you mean to write something like:
+> >
+> > #ifdef CONFIG_CPU_FREQ_BOOST_SW
+> >         write_lock_irqsave(&cpufreq_driver_lock, flags);
+> >         list_add(&policy->policy_list, &cpufreq_policy_list);
+> >         write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> > #endif
+> >
+> > Or Am I missing something?
+> 
+> I can't imaging how you though I am saying this :)
+>
 
-musb->xceiv can't be removed as of now because musb core uses xceiv.state and
-xceiv.otg. Once there is a separate state machine to handle otg, these can be
-moved out of xceiv and then we can start using the generic PHY framework.
+:-)
+ 
+> The code I mentioned actually requires to iterate through the
+> list of available policies but was iterating over all online cpus..
+> 
+> And so your new infrastructure or this list can be used instead
+> of looping for all cpus.
 
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-Reviewed-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/musb/Kconfig     |    1 +
- drivers/usb/musb/musb_core.h |    2 ++
- drivers/usb/musb/omap2430.c  |   26 ++++++++++++++++++++------
- 3 files changed, 23 insertions(+), 6 deletions(-)
+So instead of reading policies from per_cpu variables for all online
+cpus, you think of using the list explicitly.
 
-diff --git a/drivers/usb/musb/Kconfig b/drivers/usb/musb/Kconfig
-index 797e3fd..25e2e57 100644
---- a/drivers/usb/musb/Kconfig
-+++ b/drivers/usb/musb/Kconfig
-@@ -76,6 +76,7 @@ config USB_MUSB_TUSB6010
- config USB_MUSB_OMAP2PLUS
- 	tristate "OMAP2430 and onwards"
- 	depends on ARCH_OMAP2PLUS
-+	select GENERIC_PHY
- 
- config USB_MUSB_AM35X
- 	tristate "AM35x"
-diff --git a/drivers/usb/musb/musb_core.h b/drivers/usb/musb/musb_core.h
-index 7d341c3..6e567bd 100644
---- a/drivers/usb/musb/musb_core.h
-+++ b/drivers/usb/musb/musb_core.h
-@@ -46,6 +46,7 @@
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
- #include <linux/usb/musb.h>
-+#include <linux/phy/phy.h>
- 
- struct musb;
- struct musb_hw_ep;
-@@ -346,6 +347,7 @@ struct musb {
- 	u16			int_tx;
- 
- 	struct usb_phy		*xceiv;
-+	struct phy		*phy;
- 
- 	int nIrq;
- 	unsigned		irq_wake:1;
-diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-index 6708a3b..f7b33f4 100644
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -348,11 +348,21 @@ static int omap2430_musb_init(struct musb *musb)
- 	 * up through ULPI.  TWL4030-family PMICs include one,
- 	 * which needs a driver, drivers aren't always needed.
- 	 */
--	if (dev->parent->of_node)
-+	if (dev->parent->of_node) {
-+		musb->phy = devm_phy_get(dev->parent, "usb2-phy");
-+
-+		/* We can't totally remove musb->xceiv as of now because
-+		 * musb core uses xceiv.state and xceiv.otg. Once we have
-+		 * a separate state machine to handle otg, these can be moved
-+		 * out of xceiv and then we can start using the generic PHY
-+		 * framework
-+		 */
- 		musb->xceiv = devm_usb_get_phy_by_phandle(dev->parent,
- 		    "usb-phy", 0);
--	else
-+	} else {
- 		musb->xceiv = devm_usb_get_phy_dev(dev, 0);
-+		musb->phy = devm_phy_get(dev, "usb");
-+	}
- 
- 	if (IS_ERR(musb->xceiv)) {
- 		status = PTR_ERR(musb->xceiv);
-@@ -364,6 +374,10 @@ static int omap2430_musb_init(struct musb *musb)
- 		return -EPROBE_DEFER;
- 	}
- 
-+	if (IS_ERR(musb->phy)) {
-+		pr_err("HS USB OTG: no PHY configured\n");
-+		return PTR_ERR(musb->phy);
-+	}
- 	musb->isr = omap2430_musb_interrupt;
- 
- 	status = pm_runtime_get_sync(dev);
-@@ -397,7 +411,7 @@ static int omap2430_musb_init(struct musb *musb)
- 	if (glue->status != OMAP_MUSB_UNKNOWN)
- 		omap_musb_set_mailbox(glue);
- 
--	usb_phy_init(musb->xceiv);
-+	phy_init(musb->phy);
- 
- 	pm_runtime_put_noidle(musb->controller);
- 	return 0;
-@@ -460,6 +474,7 @@ static int omap2430_musb_exit(struct musb *musb)
- 	del_timer_sync(&musb_idle_timer);
- 
- 	omap2430_low_level_exit(musb);
-+	phy_exit(musb->phy);
- 
- 	return 0;
- }
-@@ -633,7 +648,7 @@ static int omap2430_runtime_suspend(struct device *dev)
- 				OTG_INTERFSEL);
- 
- 		omap2430_low_level_exit(musb);
--		usb_phy_set_suspend(musb->xceiv, 1);
-+		phy_power_off(musb->phy);
- 	}
- 
- 	return 0;
-@@ -648,8 +663,7 @@ static int omap2430_runtime_resume(struct device *dev)
- 		omap2430_low_level_init(musb);
- 		musb_writel(musb->mregs, OTG_INTERFSEL,
- 				musb->context.otg_interfsel);
--
--		usb_phy_set_suspend(musb->xceiv, 0);
-+		phy_power_on(musb->phy);
- 	}
- 
- 	return 0;
+Good idea, but can we first finish the boost patches? Such change can
+be applied on top of boost patch series as well.
+
 -- 
-1.7.10.4
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
