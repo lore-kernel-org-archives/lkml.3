@@ -1,85 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536Ab3GZKzu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 06:55:50 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44081 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756819Ab3GZKzr (ORCPT
+	id S1758555Ab3GZK6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 06:58:39 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23494 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148Ab3GZK6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 06:55:47 -0400
-Date: Fri, 26 Jul 2013 11:55:19 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Message-ID: <20130726105519.GZ9858@sirena.org.uk>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rF/K8g1/cqPmwA9E"
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+	Fri, 26 Jul 2013 06:58:37 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-ee-51f2565a740c
+Date: Fri, 26 Jul 2013 12:58:27 +0200
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, durgadoss.r@intel.com
+Subject: Re: [PATCH v6 1/8] cpufreq: Store cpufreq policies in a list
+Message-id: <20130726125827.72f9ef18@amdc308.digital.local>
+In-reply-to: <CAKohpoktwZUvs2ap7wk1tudVsiKjbhFkoM5=+AaFZP=+73fEyg@mail.gmail.com>
+References: <1370502472-7249-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-1-git-send-email-l.majewski@samsung.com>
+ <1374770011-22171-2-git-send-email-l.majewski@samsung.com>
+ <CAKohpoktwZUvs2ap7wk1tudVsiKjbhFkoM5=+AaFZP=+73fEyg@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupmkeLIzCtJLcpLzFFi42I5/e+xoG5U2KdAg7YZmhYbZ6xntXja9IPd
+	Yt5nWYu+n1eYLdbs/8lk0Xn2CbNF74KrbBZvHnFbXN41h83ic+8RRov+hb1MFk8e9rFZbPzq
+	4cDrsXjPSyaPO9f2sHmsm/aW2aNvyypGj0eLWxg9jt/YzuTxeZNcAHsUl01Kak5mWWqRvl0C
+	V8aKv8/ZCt5wVuw84tvA2MvRxcjJISFgItF2YwMrhC0mceHeerYuRi4OIYHpjBKfZq5nh3Da
+	mSSmPPoIVMXBwSKgKvFuZzVIA5uAnsTnu0+ZQMIiAloSL2+mgpQzC/xlluh71MAGUiMs4Cqx
+	tmstmM0rYC0xb1sfWD2nQLDEhWVFEOPbmCS6nm9jBqnhF5CUaP/3gxniIDuJc582sEP0Ckr8
+	mHyPBcRmBtq1eVsTK4QtL7F5zVvmCYyCs5CUzUJSNgtJ2QJG5lWMoqkFyQXFSem5RnrFibnF
+	pXnpesn5uZsYwVH0THoH46oGi0OMAhyMSjy8Ck4fA4VYE8uKK3MPMUpwMCuJ8F73/hQoxJuS
+	WFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgTFUM8eFJ7lwy2Lx
+	Gu4Jwj3O6zQL9VZYtp8/L6G4Ip9F2HhR5+3W5WsMfDs/fc3UkNkR4n9i269I9oesXxbJGSsv
+	un61/8DuySU9PhJ60fY7t099ETjv5PpLi61PPtd3Dqx4lPA+83RtzaY5LFuafq+//mv16vRb
+	qxoWT9hRp33ZV/a53N8FZVlKLMUZiYZazEXFiQDe4G3fngIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 26 Jul 2013 15:44:29 +0530 Viresh Kumar viresh.kumar@linaro.org
+wrote,
+> On 25 July 2013 22:03, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > Policies available in a cpufreq framework are now linked together.
+> > They are accessible via cpufreq_policy_list defined at cpufreq core.
+> >
+> > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+> 
+> Looks good but would have been better if you could have moved
+> existing code to use this infrastructure..
+> 
+> For example, this code in __cpufreq_add_dev()
+> 
+> #ifdef CONFIG_HOTPLUG_CPU
+> 	/* Check if this cpu was hot-unplugged earlier and has
+> siblings */ read_lock_irqsave(&cpufreq_driver_lock, flags);
+> 	for_each_online_cpu(sibling) {
+> 
+>          ---
+> 
+> 	}
+> 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+> #endif
 
---rF/K8g1/cqPmwA9E
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Do you mean to write something like:
 
-On Thu, Jul 25, 2013 at 02:11:31PM -0500, Rob Herring wrote:
+#ifdef CONFIG_CPU_FREQ_BOOST_SW
+	write_lock_irqsave(&cpufreq_driver_lock, flags);
+	list_add(&policy->policy_list, &cpufreq_policy_list);
+	write_unlock_irqrestore(&cpufreq_driver_lock, flags);
+#endif
 
-> I would argue that little has gone in (if reviewed) with the
-> expectation that the binding will change. Many of the common bindings
-> have had many rounds of review and they have not changed. My position
-> any time I see an incompatible change has been that it require anyone
-> affected to be okay with the change. This has pretty much been limited
-> to specific platforms from what I've seen.
+Or Am I missing something?
+-- 
+Best regards,
 
-The big exception I've seen has been the OMAP hwmod stuff.  Plus of
-course the case where things get moved into the DT bindings from the
-board file as things are built up, but this should be becoming a non
-issue as people move onto DT only boards (though I am worried about
-people on systems where the SoC is described in DT).
+Lukasz Majewski
 
---rF/K8g1/cqPmwA9E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR8lWUAAoJELSic+t+oim9UH0P/R7oRtO4An4tjF6iqo7gHp0Z
-Bx5V5GeP6PRC2ZLz266cgjB3/1hSZZFgGjPvBsox4tSQGdPTlEmAbdgqbKYFeNch
-48DTTZhHfSu4UL0x4jx4Fqiv7RUAN2bOPDkdmGnc6XBZZ5u3QtAzhfVbEZHTl0g/
-B4xjRtK63hC5yRzQzsisLNt+KOHeDzyBqxQQBqK3MXk+yg+L4onKgLkAv014Ej2y
-zmAEwvxG3fMYPHSdbrAAnOhdqXxZVy9gff4Abt3ApEMsS1hyyufDJnJvnMwlmz8m
-XJpxI9Jq9LbahatrUS2668lfpvkjtkOXDJwisJPgwalNMr4yC7T8suDQ9qys22ao
-t/GfsnxwM5veptXbVDpKvja8K1SWy+4P8xAWNH1h/gdYTpIqc2Kx3TGvr8P50oXA
-b/kGPU4cQsNCE5Bgh8q+y1Ndi+gnPxlqh7RM9lGYjRvuOKgvXhMQWdQmY0CqRUvd
-tducQkbISXmW6HnhkHFkMSz5QNxhyaVCyqL/jwkdRcy8c+GkdwUxleyJ1CQjJ7Aa
-+iYMus+6gEmT0dDFLDFefqZe3NZRXRoQuqKJnc6www2aoNXulkWIlmh7DUbLKRul
-8LqnaB6NB3+5Naq/mMeXHJckxRdv5IRtpgI18N+iqMyO7606mB2SagUalP8UCgOH
-IhjO9LrpLtEg5FsKFWTy
-=VU8c
------END PGP SIGNATURE-----
-
---rF/K8g1/cqPmwA9E--
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
