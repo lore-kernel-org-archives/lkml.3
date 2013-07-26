@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759744Ab3GZVuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:50:14 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:19726 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082Ab3GZVuK convert rfc822-to-8bit (ORCPT
+	id S1759944Ab3GZVu2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:50:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:53316 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759842Ab3GZVuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:50:10 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 26 Jul 2013 14:50:09 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Jul 2013 14:50:09 -0700
-Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Index: Ac6KSIXnk5PcdWTMRhSUGym0izAYeQAAOmsA
-Message-ID: <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com>
-References: <1374871308-490-1-git-send-email-achew@nvidia.com>
- <51F2E74E.2060107@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
- <51F2EC66.2080200@wwwdotorg.org>
-In-Reply-To: <51F2EC66.2080200@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 26 Jul 2013 17:50:23 -0400
+Date: Fri, 26 Jul 2013 23:50:11 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
+ in 3.11-rc2 (has twice regressed)
+Message-ID: <20130726215011.GK27075@twins.programming.kicks-ass.net>
+References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
+ <20130725112123.GT27075@twins.programming.kicks-ass.net>
+ <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
+ <20130725164051.GZ27075@twins.programming.kicks-ass.net>
+ <20130725211521.GE18254@gmail.com>
+ <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
+ <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com>
+ <20130726210317.GC20909@twins.programming.kicks-ass.net>
+ <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> How does this interact with the pinctrl driver that Laxman just sent
-> >> for Palmas?
-> >>
-> >> https://lkml.org/lkml/2013/7/26/141
-> >> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
+On Fri, Jul 26, 2013 at 02:24:50PM -0700, Paul Turner wrote:
+> On Fri, Jul 26, 2013 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 > >
-> > Thanks for pointing this out.  Given this:
 > >
-> > +Optional properties:
-> > +- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1 mode.
-> > +- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2 mode.
+> > OK, so I have the below; however on a second look, Paul, shouldn't that
+> > update_cfs_shares() call be in entity_tick(), right after calling
+> > update_cfs_rq_blocked_load(). Because placing it in
+> > update_cfs_rq_blocked_load() means its now called twice on the
+> > enqueue/dequeue paths through:
 > >
-> > I think his work already encompasses what my patch is supposed to do.
-> >
-> > Abandoning this patch.
+> >   {en,de}queue_entity()
+> >     {en,de}queue_entity_load_avg()
+> >       update_cfs_rq_blocked_load()
+> >         update_cfs_shares()
 > 
-> OK, that's simple!
-> 
-> Are the existing ti,mux-pad1/ti,mux-pad2 properties already in the binding
-> redundant with Laxman's pinctrl driver?
+> Yes, I agree: placing it directly in entity_tick() would be better.
 
-In linux-next (where I based my work), yes, those two properties already exist,
-and as far as I understand it, are redundant with Laxman's pinctrl driver.
-I expect those properties will go away with Laxman's pinctrl driver.
+OK, how about the below then?
+
+> [ In f269ae046 the calls to update_cfs_rq_blocked_load() were amortized
+> and the separate update in {en,de}queue_entity_load_avg() were
+> removed. ]
+
+Right, I remember/saw that. Did you ever figure out why that regressed;
+as in should we look to bring some of that back?
+
+---
+Subject: sched: Ensure update_cfs_shares() is called for parents of continuously-running tasks
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Fri Jul 26 23:48:42 CEST 2013
+
+We typically update a task_group's shares within the dequeue/enqueue
+path.  However, continuously running tasks sharing a CPU are not
+subject to these updates as they are only put/picked.  Unfortunately,
+when we reverted f269ae046 (in 17bc14b7), we lost the augmenting
+periodic update that was supposed to account for this; resulting in a
+potential loss of fairness.
+
+To fix this, re-introduce the explicit update in
+update_cfs_rq_blocked_load() [called via entity_tick()].
+
+Cc: stable@kernel.org
+Reported-by: Max Hailperin <max@gustavus.edu>
+Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+---
+ kernel/sched/fair.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -2032,6 +2032,7 @@ entity_tick(struct cfs_rq *cfs_rq, struc
+ 	 */
+ 	update_entity_load_avg(curr, 1);
+ 	update_cfs_rq_blocked_load(cfs_rq, 1);
++	update_cfs_shares(cfs_rq);
+ 
+ #ifdef CONFIG_SCHED_HRTICK
+ 	/*
