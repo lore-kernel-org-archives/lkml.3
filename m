@@ -1,28 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab3GZVM7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:12:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51128 "EHLO
+	id S1760316Ab3GZVN0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:13:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51023 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933010Ab3GZUx7 (ORCPT
+	with ESMTP id S932998Ab3GZUx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:59 -0400
+	Fri, 26 Jul 2013 16:53:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        Adam Radford <aradford@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 43/59] SCSI: megaraid_sas: fix memory leak if SGL has zero length entries
-Date: Fri, 26 Jul 2013 13:53:07 -0700
-Message-Id: <20130726205018.435258248@linuxfoundation.org>
+        Daniil Bolsun <dan.bolsun@gmail.com>
+Subject: [ 50/59] USB: option: append Petatel NP10T device to GSM modems list
+Date: Fri, 26 Jul 2013 13:53:14 -0700
+Message-Id: <20130726205019.177174001@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,44 +26,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Daniil Bolsun <dan.bolsun@gmail.com>
 
-commit 7a6a731bd00ca90d0e250867c3b9c05b5ff0fa49 upstream.
+commit c38e83b6cc2adf80e3f091fd92cfbeacc9748347 upstream.
 
-commit 98cb7e44 ([SCSI] megaraid_sas: Sanity check user
-supplied length before passing it to dma_alloc_coherent())
-introduced a memory leak.  Memory allocated for entries
-following zero length SGL entries will not be freed.
+This patch was tested on 3.10.1 kernel.
 
-Reference: http://bugs.debian.org/688198
+Same models of Petatel NP10T modems have different device IDs.
+Unfortunately they have no additional revision information on a board
+which may treat them as different devices. Currently I've seen only
+two NP10T devices with various IDs. Possibly Petatel NP10T list will
+be appended upon devices with new IDs will appear.
 
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Adam Radford <aradford@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/megaraid/megaraid_sas_base.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/option.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas_base.c
-+++ b/drivers/scsi/megaraid/megaraid_sas_base.c
-@@ -4817,10 +4817,12 @@ megasas_mgmt_fw_ioctl(struct megasas_ins
- 				    sense, sense_handle);
- 	}
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -445,7 +445,8 @@ static void option_instat_callback(struc
  
--	for (i = 0; i < ioc->sge_count && kbuff_arr[i]; i++) {
--		dma_free_coherent(&instance->pdev->dev,
--				    kern_sge32[i].length,
--				    kbuff_arr[i], kern_sge32[i].phys_addr);
-+	for (i = 0; i < ioc->sge_count; i++) {
-+		if (kbuff_arr[i])
-+			dma_free_coherent(&instance->pdev->dev,
-+					  kern_sge32[i].length,
-+					  kbuff_arr[i],
-+					  kern_sge32[i].phys_addr);
- 	}
+ /* Hyundai Petatel Inc. products */
+ #define PETATEL_VENDOR_ID			0x1ff4
+-#define PETATEL_PRODUCT_NP10T			0x600e
++#define PETATEL_PRODUCT_NP10T_600A		0x600a
++#define PETATEL_PRODUCT_NP10T_600E		0x600e
  
- 	megasas_return_cmd(instance, cmd);
+ /* TP-LINK Incorporated products */
+ #define TPLINK_VENDOR_ID			0x2357
+@@ -1347,7 +1348,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+-	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
 
 
