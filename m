@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932745Ab3GZUvy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:51:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50953 "EHLO
+	id S932748Ab3GZUwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:52:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932469Ab3GZUtC (ORCPT
+	with ESMTP id S1760022Ab3GZUs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:49:02 -0400
+	Fri, 26 Jul 2013 16:48:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniil Bolsun <dan.bolsun@gmail.com>
-Subject: [ 63/79] USB: option: append Petatel NP10T device to GSM modems list
-Date: Fri, 26 Jul 2013 13:47:53 -0700
-Message-Id: <20130726204729.358689352@linuxfoundation.org>
+        Eldad Zack <eldad@fogrefinery.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 78/79] ALSA: usb-audio: 6fire: return correct XRUN indication
+Date: Fri, 26 Jul 2013 13:48:08 -0700
+Message-Id: <20130726204731.020326603@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -26,46 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniil Bolsun <dan.bolsun@gmail.com>
+From: Eldad Zack <eldad@fogrefinery.com>
 
-commit c38e83b6cc2adf80e3f091fd92cfbeacc9748347 upstream.
+commit be2f93a4c4981b3646b6f98f477154411b8516cb upstream.
 
-This patch was tested on 3.10.1 kernel.
+Return SNDRV_PCM_POS_XRUN (snd_pcm_uframes_t) instead of
+SNDRV_PCM_STATE_XRUN (snd_pcm_state_t) from the pointer
+function of 6fire, as expected by snd_pcm_update_hw_ptr0().
 
-Same models of Petatel NP10T modems have different device IDs.
-Unfortunately they have no additional revision information on a board
-which may treat them as different devices. Currently I've seen only
-two NP10T devices with various IDs. Possibly Petatel NP10T list will
-be appended upon devices with new IDs will appear.
+Caught by sparse.
 
-Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
+Signed-off-by: Eldad Zack <eldad@fogrefinery.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/option.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ sound/usb/6fire/pcm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -439,7 +439,8 @@ static void option_instat_callback(struc
+--- a/sound/usb/6fire/pcm.c
++++ b/sound/usb/6fire/pcm.c
+@@ -543,7 +543,7 @@ static snd_pcm_uframes_t usb6fire_pcm_po
+ 	snd_pcm_uframes_t ret;
  
- /* Hyundai Petatel Inc. products */
- #define PETATEL_VENDOR_ID			0x1ff4
--#define PETATEL_PRODUCT_NP10T			0x600e
-+#define PETATEL_PRODUCT_NP10T_600A		0x600a
-+#define PETATEL_PRODUCT_NP10T_600E		0x600e
+ 	if (rt->panic || !sub)
+-		return SNDRV_PCM_STATE_XRUN;
++		return SNDRV_PCM_POS_XRUN;
  
- /* TP-LINK Incorporated products */
- #define TPLINK_VENDOR_ID			0x2357
-@@ -1325,7 +1326,8 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
- 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
--	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
-+	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
-+	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
- 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
- 	{ USB_DEVICE(TPLINK_VENDOR_ID, 0x9000),					/* TP-Link MA260 */
+ 	spin_lock_irqsave(&sub->lock, flags);
+ 	ret = sub->dma_off;
 
 
