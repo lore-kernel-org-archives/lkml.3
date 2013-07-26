@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760659Ab3GZVXl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:23:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
+	id S1760677Ab3GZVXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:23:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932604Ab3GZUxf (ORCPT
+	with ESMTP id S932815Ab3GZUxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:35 -0400
+	Fri, 26 Jul 2013 16:53:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Olivier DANET <odanet@caramail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 15/59] sparc32: vm_area_struct access for old Sun SPARCs.
-Date: Fri, 26 Jul 2013 13:52:39 -0700
-Message-Id: <20130726205015.440894498@linuxfoundation.org>
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [ 14/59] perf: Fix perf_lock_task_context() vs RCU
+Date: Fri, 26 Jul 2013 13:52:38 -0700
+Message-Id: <20130726205015.332593400@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -27,188 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier DANET <odanet@caramail.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-Commit e4c6bfd2d79d063017ab19a18915f0bc759f32d9 ("mm: rearrange
-vm_area_struct for fewer cache misses") changed the layout of the
-vm_area_struct structure, it broke several SPARC32 assembly routines
-which used numerical constants for accessing the vm_mm field.
+commit 058ebd0eba3aff16b144eabf4510ed9510e1416e upstream.
 
-This patch defines the VMA_VM_MM constant to replace the immediate values.
+Jiri managed to trigger this warning:
 
-Signed-off-by: Olivier DANET <odanet@caramail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+ [] ======================================================
+ [] [ INFO: possible circular locking dependency detected ]
+ [] 3.10.0+ #228 Tainted: G        W
+ [] -------------------------------------------------------
+ [] p/6613 is trying to acquire lock:
+ []  (rcu_node_0){..-...}, at: [<ffffffff810ca797>] rcu_read_unlock_special+0xa7/0x250
+ []
+ [] but task is already holding lock:
+ []  (&ctx->lock){-.-...}, at: [<ffffffff810f2879>] perf_lock_task_context+0xd9/0x2c0
+ []
+ [] which lock already depends on the new lock.
+ []
+ [] the existing dependency chain (in reverse order) is:
+ []
+ [] -> #4 (&ctx->lock){-.-...}:
+ [] -> #3 (&rq->lock){-.-.-.}:
+ [] -> #2 (&p->pi_lock){-.-.-.}:
+ [] -> #1 (&rnp->nocb_gp_wq[1]){......}:
+ [] -> #0 (rcu_node_0){..-...}:
+
+Paul was quick to explain that due to preemptible RCU we cannot call
+rcu_read_unlock() while holding scheduler (or nested) locks when part
+of the read side critical section was preemptible.
+
+Therefore solve it by making the entire RCU read side non-preemptible.
+
+Also pull out the retry from under the non-preempt to play nice with RT.
+
+Reported-by: Jiri Olsa <jolsa@redhat.com>
+Helped-out-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/asm-offsets.c |    2 ++
- arch/sparc/mm/hypersparc.S      |    8 ++++----
- arch/sparc/mm/swift.S           |    8 ++++----
- arch/sparc/mm/tsunami.S         |    6 +++---
- arch/sparc/mm/viking.S          |   10 +++++-----
- 5 files changed, 18 insertions(+), 16 deletions(-)
 
---- a/arch/sparc/kernel/asm-offsets.c
-+++ b/arch/sparc/kernel/asm-offsets.c
-@@ -34,6 +34,8 @@ int foo(void)
- 	DEFINE(AOFF_task_thread, offsetof(struct task_struct, thread));
- 	BLANK();
- 	DEFINE(AOFF_mm_context, offsetof(struct mm_struct, context));
-+	BLANK();
-+	DEFINE(VMA_VM_MM,    offsetof(struct vm_area_struct, vm_mm));
+---
+ kernel/events/core.c |   15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -719,8 +719,18 @@ perf_lock_task_context(struct task_struc
+ {
+ 	struct perf_event_context *ctx;
  
- 	/* DEFINE(NUM_USER_SEGMENTS, TASK_SIZE>>28); */
- 	return 0;
---- a/arch/sparc/mm/hypersparc.S
-+++ b/arch/sparc/mm/hypersparc.S
-@@ -74,7 +74,7 @@ hypersparc_flush_cache_mm_out:
+-	rcu_read_lock();
+ retry:
++	/*
++	 * One of the few rules of preemptible RCU is that one cannot do
++	 * rcu_read_unlock() while holding a scheduler (or nested) lock when
++	 * part of the read side critical section was preemptible -- see
++	 * rcu_read_unlock_special().
++	 *
++	 * Since ctx->lock nests under rq->lock we must ensure the entire read
++	 * side critical section is non-preemptible.
++	 */
++	preempt_disable();
++	rcu_read_lock();
+ 	ctx = rcu_dereference(task->perf_event_ctxp[ctxn]);
+ 	if (ctx) {
+ 		/*
+@@ -736,6 +746,8 @@ retry:
+ 		raw_spin_lock_irqsave(&ctx->lock, *flags);
+ 		if (ctx != rcu_dereference(task->perf_event_ctxp[ctxn])) {
+ 			raw_spin_unlock_irqrestore(&ctx->lock, *flags);
++			rcu_read_unlock();
++			preempt_enable();
+ 			goto retry;
+ 		}
  
- 	/* The things we do for performance... */
- hypersparc_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #ifndef CONFIG_SMP
- 	ld	[%o0 + AOFF_mm_context], %g1
- 	cmp	%g1, -1
-@@ -163,7 +163,7 @@ hypersparc_flush_cache_range_out:
- 	 */
- 	/* Verified, my ass... */
- hypersparc_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %g2
- #ifndef CONFIG_SMP
- 	cmp	%g2, -1
-@@ -284,7 +284,7 @@ hypersparc_flush_tlb_mm_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
+@@ -745,6 +757,7 @@ retry:
+ 		}
+ 	}
+ 	rcu_read_unlock();
++	preempt_enable();
+ 	return ctx;
+ }
  
- hypersparc_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -307,7 +307,7 @@ hypersparc_flush_tlb_range_out:
- 	 sta	%g5, [%g1] ASI_M_MMUREGS
- 
- hypersparc_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/swift.S
-+++ b/arch/sparc/mm/swift.S
-@@ -105,7 +105,7 @@ swift_flush_cache_mm_out:
- 
- 	.globl	swift_flush_cache_range
- swift_flush_cache_range:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	sub	%o2, %o1, %o2
- 	sethi	%hi(4096), %o3
- 	cmp	%o2, %o3
-@@ -116,7 +116,7 @@ swift_flush_cache_range:
- 
- 	.globl	swift_flush_cache_page
- swift_flush_cache_page:
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 70:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -219,7 +219,7 @@ swift_flush_sig_insns:
- 	.globl	swift_flush_tlb_range
- 	.globl	swift_flush_tlb_all
- swift_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- swift_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -233,7 +233,7 @@ swift_flush_tlb_all_out:
- 
- 	.globl	swift_flush_tlb_page
- swift_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/tsunami.S
-+++ b/arch/sparc/mm/tsunami.S
-@@ -24,7 +24,7 @@
- 	/* Sliiick... */
- tsunami_flush_cache_page:
- tsunami_flush_cache_range:
--	ld	[%o0 + 0x0], %o0	/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_cache_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -46,7 +46,7 @@ tsunami_flush_sig_insns:
- 
- 	/* More slick stuff... */
- tsunami_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- tsunami_flush_tlb_mm:
- 	ld	[%o0 + AOFF_mm_context], %g2
- 	cmp	%g2, -1
-@@ -65,7 +65,7 @@ tsunami_flush_tlb_out:
- 
- 	/* This one can be done in a fine grained manner... */
- tsunami_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	andn	%o1, (PAGE_SIZE - 1), %o1
---- a/arch/sparc/mm/viking.S
-+++ b/arch/sparc/mm/viking.S
-@@ -109,7 +109,7 @@ viking_mxcc_flush_page:
- viking_flush_cache_page:
- viking_flush_cache_range:
- #ifndef CONFIG_SMP
--	ld	[%o0 + 0x0], %o0		/* XXX vma->vm_mm, GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- #endif
- viking_flush_cache_mm:
- #ifndef CONFIG_SMP
-@@ -149,7 +149,7 @@ viking_flush_tlb_mm:
- #endif
- 
- viking_flush_tlb_range:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -174,7 +174,7 @@ viking_flush_tlb_range:
- #endif
- 
- viking_flush_tlb_page:
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	mov	SRMMU_CTX_REG, %g1
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
-@@ -240,7 +240,7 @@ sun4dsmp_flush_tlb_range:
- 	tst	%g5
- 	bne	3f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	sethi	%hi(~((1 << SRMMU_PGDIR_SHIFT) - 1)), %o4
-@@ -266,7 +266,7 @@ sun4dsmp_flush_tlb_page:
- 	tst	%g5
- 	bne	2f
- 	 mov	SRMMU_CTX_REG, %g1
--	ld	[%o0 + 0x00], %o0	/* XXX vma->vm_mm GROSS XXX */
-+	ld	[%o0 + VMA_VM_MM], %o0
- 	ld	[%o0 + AOFF_mm_context], %o3
- 	lda	[%g1] ASI_M_MMUREGS, %g5
- 	and	%o1, PAGE_MASK, %o1
 
 
