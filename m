@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab3GZXNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 19:13:43 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:52818 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab3GZXNm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 19:13:42 -0400
+	id S1760193Ab3GZXO4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 19:14:56 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51104 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759964Ab3GZXOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 19:14:53 -0400
+Date: Fri, 26 Jul 2013 19:14:44 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/3] mm: improve page aging fairness between zones/nodes
+Message-ID: <20130726231444.GT715@cmpxchg.org>
+References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
+ <20130726154533.aebd39c603ffe8de3b2c76fb@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20130726224813.GB9858@sirena.org.uk>
-References: <1374863133-6745-1-git-send-email-eu@felipetonello.com>
-	<1374863133-6745-2-git-send-email-eu@felipetonello.com>
-	<20130726185458.GX9858@sirena.org.uk>
-	<CAGrhNMy7qZ8CbAjFX5Gv8OqYkit+Eqzr2zZTYXeQ-cNO22+pTQ@mail.gmail.com>
-	<20130726224813.GB9858@sirena.org.uk>
-Date: Fri, 26 Jul 2013 16:13:40 -0700
-Message-ID: <CAGrhNMwGdMwhd5L2gGxQ=N=8nFk4L5txYmhEtLBVcFj-Etphnw@mail.gmail.com>
-Subject: Re: [PATCH 1/4] ALSA: Added jack detection kcontrol support
-From: Felipe Tonello <eu@felipetonello.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>,
-        David Henningsson <david.henningsson@canonical.com>,
-        Wang Xingchao <xingchao.wang@linux.intel.com>,
-        Jaroslav Kysela <perex@perex.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726154533.aebd39c603ffe8de3b2c76fb@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark,
+On Fri, Jul 26, 2013 at 03:45:33PM -0700, Andrew Morton wrote:
+> On Fri, 19 Jul 2013 16:55:22 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > The way the page allocator interacts with kswapd creates aging
+> > imbalances, where the amount of time a userspace page gets in memory
+> > under reclaim pressure is dependent on which zone, which node the
+> > allocator took the page frame from.
+> > 
+> > #1 fixes missed kswapd wakeups on NUMA systems, which lead to some
+> >    nodes falling behind for a full reclaim cycle relative to the other
+> >    nodes in the system
+> > 
+> > #3 fixes an interaction where kswapd and a continuous stream of page
+> >    allocations keep the preferred zone of a task between the high and
+> >    low watermark (allocations succeed + kswapd does not go to sleep)
+> >    indefinitely, completely underutilizing the lower zones and
+> >    thrashing on the preferred zone
+> > 
+> > These patches are the aging fairness part of the thrash-detection
+> > based file LRU balancing.  Andrea recommended to submit them
+> > separately as they are bugfixes in their own right.
+> > 
+> > The following test ran a foreground workload (memcachetest) with
+> > background IO of various sizes on a 4 node 8G system (similar results
+> > were observed with single-node 4G systems):
+> > 
+> > parallelio
+> >                                                BAS                    FAIRALLO
+> >                                               BASE                   FAIRALLOC
+> > Ops memcachetest-0M              5170.00 (  0.00%)           5283.00 (  2.19%)
+> > Ops memcachetest-791M            4740.00 (  0.00%)           5293.00 ( 11.67%)
+> > Ops memcachetest-2639M           2551.00 (  0.00%)           4950.00 ( 94.04%)
+> > Ops memcachetest-4487M           2606.00 (  0.00%)           3922.00 ( 50.50%)
+> > Ops io-duration-0M                  0.00 (  0.00%)              0.00 (  0.00%)
+> > Ops io-duration-791M               55.00 (  0.00%)             18.00 ( 67.27%)
+> > Ops io-duration-2639M             235.00 (  0.00%)            103.00 ( 56.17%)
+> > Ops io-duration-4487M             278.00 (  0.00%)            173.00 ( 37.77%)
+> > Ops swaptotal-0M                    0.00 (  0.00%)              0.00 (  0.00%)
+> > Ops swaptotal-791M             245184.00 (  0.00%)              0.00 (  0.00%)
+> > Ops swaptotal-2639M            468069.00 (  0.00%)         108778.00 ( 76.76%)
+> > Ops swaptotal-4487M            452529.00 (  0.00%)          76623.00 ( 83.07%)
+> > Ops swapin-0M                       0.00 (  0.00%)              0.00 (  0.00%)
+> > Ops swapin-791M                108297.00 (  0.00%)              0.00 (  0.00%)
+> > Ops swapin-2639M               169537.00 (  0.00%)          50031.00 ( 70.49%)
+> > Ops swapin-4487M               167435.00 (  0.00%)          34178.00 ( 79.59%)
+> > Ops minorfaults-0M            1518666.00 (  0.00%)        1503993.00 (  0.97%)
+> > Ops minorfaults-791M          1676963.00 (  0.00%)        1520115.00 (  9.35%)
+> > Ops minorfaults-2639M         1606035.00 (  0.00%)        1799717.00 (-12.06%)
+> > Ops minorfaults-4487M         1612118.00 (  0.00%)        1583825.00 (  1.76%)
+> > Ops majorfaults-0M                  6.00 (  0.00%)              0.00 (  0.00%)
+> > Ops majorfaults-791M            13836.00 (  0.00%)             10.00 ( 99.93%)
+> > Ops majorfaults-2639M           22307.00 (  0.00%)           6490.00 ( 70.91%)
+> > Ops majorfaults-4487M           21631.00 (  0.00%)           4380.00 ( 79.75%)
+> 
+> A reminder whether positive numbers are good or bad would be useful ;)
 
-On Fri, Jul 26, 2013 at 3:48 PM, Mark Brown <broonie@kernel.org> wrote:
-> On Fri, Jul 26, 2013 at 12:10:27PM -0700, Felipe Tonello wrote:
->> On Fri, Jul 26, 2013 at 11:54 AM, Mark Brown <broonie@kernel.org> wrote:
->
->> > This isn't ideal for multi-function jacks like headsets - it will report
->> > a single boolean value for the jack regardless of what's plugged in
->> > meaning userpace can't do things like figure out if a headset or
->> > headphone is present.  It's probably OK for any realistic input button
->> > since you're not going to get an input button without other things being
->> > present.
->
->> The KControl for Jack is boolean anyway. You can check it with "amixer
->> contents". user-space can figure out based on the control name. At
->> least PulseAudio does that way.
->
-> No, it can't do that for headset jacks - these will be created with a
-> single jack reporting multiple states, there's a state for headphone and
-> a state for microphone.  The system can generally distinguish between
-> having a headset or just plain headphones inserted and act accordingly
-> (for example, recording from the built in microphone on a phone when
-> used with normal headpones).
->
->> > What I'd expect to happen here is that for multi function jacks we
->> > create a control per function if the controls are valid.
+It depends on the datapoint, but a positive percentage number is an
+improvement, a negative one a regression.
 
-Ok, so the idea is just to change the control to type integer instead
-of boolean, right?
-Because as you say, the user will be able to check the type of jack
-based on the status value, right?
+> >                  BAS    FAIRALLO
+> >                 BASE   FAIRALLOC
+> > User          287.78      460.97
+> > System       2151.67     3142.51
+> > Elapsed      9737.00     8879.34
+> 
+> Confused.  Why would the amount of user time increase so much?
+> 
+> And that's a tremendous increase in system time.  Am I interpreting
+> this correctly?
 
->
->> Do you mean based on snd_jack_types?
->
-> Yes.  If there's only one function supported the current code is fine
-> but for multiple functions it's going to discard useful information.
-
-So, what do you suggest to do that? I'm not sure if I understand what
-you are saying.
-When you mean function, do you mean the SND_JACK_BTN_n or the the jack
-types, such as SND_JACK_HEADPHONE, and so on?
-
-If a codec creates a jack type SND_JACK_HEADSET (= SND_JACK_HEADPHONE
-| SND_JACK_MICROPHONE). It should be created two controls, name +
-"Headphone Jack" and name + "Microphone Jack"? If so, what about the
-status to report? How to know which control to report?
-
-Felipe Tonello
+It is because each memcachetest is running for a fixed duration (only
+the background IO is fixed in size).  The time memcachetest previously
+spent waiting on major faults is now spent doing actual work (more
+user time, more syscalls).  The number of operations memcachetest
+could actually perform increased.
