@@ -1,60 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759396Ab3GZQ26 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:28:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48405 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757810Ab3GZQ25 (ORCPT
+	id S1759425Ab3GZQ3I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:29:08 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43215 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757810Ab3GZQ3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:28:57 -0400
-Date: Fri, 26 Jul 2013 09:28:56 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] debugfs: debugfs_remove_recursive() must not rely on
- list_empty(d_subdirs)
-Message-ID: <20130726162856.GA12531@kroah.com>
-References: <20130723205854.GA9036@redhat.com>
- <20130724184640.GA21322@redhat.com>
- <20130725192742.GA14060@redhat.com>
- <20130725200423.GA22274@redhat.com>
- <20130725234357.GA14958@kroah.com>
- <20130726151151.GA19472@redhat.com>
- <1374852613.6580.35.camel@gandalf.local.home>
+	Fri, 26 Jul 2013 12:29:02 -0400
+Message-ID: <51F2A3AA.4060801@ti.com>
+Date: Fri, 26 Jul 2013 12:28:26 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374852613.6580.35.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, <linux-scsi@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>, <linux-mmc@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH 0/5] mm: ARM nobootmem and few dma_mask fixes
+References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <20130726151021.GU24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130726151021.GU24642@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 11:30:13AM -0400, Steven Rostedt wrote:
-> On Fri, 2013-07-26 at 17:11 +0200, Oleg Nesterov wrote:
-> > 
-> > Steven, Greg. Assuming that nobody objects and the patch is fine.
-> > Perhaps this patch can be routed via rostedt/linux-trace tree?
+On Friday 26 July 2013 11:10 AM, Russell King - ARM Linux wrote:
+> On Fri, Jul 12, 2013 at 05:48:09PM -0400, Santosh Shilimkar wrote:
+>> The series is an attempt to move ARM port to NO_BOOTMEM. As discussed
+>> on list NO_BOOTMEM move needed updates to max*pfn meaning to be maximum
+>> PFNs but that breaks the dma_mask for few block layer drivers since
+>> ARM start of physical memory is not PFN0 unlike most of the architectures.
+>> Some more read on it is here:
+>> 	http://lwn.net/Articles/543408/
+>> 	http://lwn.net/Articles/543424/
+>>
+>> To address this issue, we introduce generic dma_max_pfn() helper which
+>> can be overridden from the architectures.
+>> 	
+>> Another intention behind move to nobootmem is also to convert ARM to
+>> switch to memblock and getting rid of bootmem allocator dependency which
+>> don't work for LPAE machines which has physical memory starting beyond
+>> 4 GB boundary. It needs changes to core kernel and also a new memblock
+>> API. More on this can be found here:
+>> 	https://lkml.org/lkml/2013/6/29/77
+>>
+>> I have been trying to cook up these patches with kind help from Russell
+>> and we know series don't solve all the dma_mask bad assumptions. But at
+>> least I am hoping that it can get the ball rolling.	
+>>
+>> Comments/testing help is welcome !!
 > 
-> I'm fine with pushing it. But that requires Greg's Acked-by.
+> As this is related to some of the cleanup of dma_mask which I've been
+> doing, I think it may make sense to roll this into one tree.  Any
+> objection to that?
+> 
+> Can we get any acks on this stuff from Jens and Jejb etc - especially
+> for the bits which touch block/ and for the scsi bits as these are
+> touching other subsystems.  (oddly, linux-scsi wasn't on the original
+> mail for this series summary.)
+> 
+Sorry I missed the scsi lists on the summary patch.
 
-I can take it through my driver-core tree, which normally handles
-debugfs patches, so it's no problem for me to take it.
+While browsing the code I found another spot in mmc layer which
+needs fixing. The patch is at the end of the email with Chris
+and linux-mmc cc'ed here.
 
-Let me beat on it a bit first...
+Regards,
+Santosh
 
-thanks,
+>From 06a27a784a1fd86bf22adf1b247ac82a7c21d46b Mon Sep 17 00:00:00 2001
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Date: Fri, 19 Jul 2013 21:36:46 -0400
+Subject: [PATCH] mmc: Use dma_max_pfn(dev) helper for bounce_limit
+ calculations
 
-greg k-h
+DMA bounce limit is the maximum direct DMA'able memory beyond which
+bounce buffers has to be used to perform dma operations. MMC queue layer
+relies on dma_mask but its calculation is based on max_*pfn which
+don't have uniform meaning across architectures. So make use of
+dma_max_pfn() which is expected to return the DMAable maximum pfn
+value across architectures.
+
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Chris Ball <cjb@laptop.org>
+
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/mmc/card/queue.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+index fa9632e..357bbc5 100644
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -15,6 +15,7 @@
+ #include <linux/freezer.h>
+ #include <linux/kthread.h>
+ #include <linux/scatterlist.h>
++#include <linux/dma-mapping.h>
+ 
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+@@ -196,7 +197,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+ 	struct mmc_queue_req *mqrq_prev = &mq->mqrq[1];
+ 
+ 	if (mmc_dev(host)->dma_mask && *mmc_dev(host)->dma_mask)
+-		limit = *mmc_dev(host)->dma_mask;
++		limit = dma_max_pfn(mmc_dev(host)) << PAGE_SHIFT;
+ 
+ 	mq->card = card;
+ 	mq->queue = blk_init_queue(mmc_request_fn, lock);
+-- 
+1.7.9.5
+
