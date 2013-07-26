@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933319Ab3GZVGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:06:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51338 "EHLO
+	id S933291Ab3GZVGs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:06:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760117Ab3GZU6Y (ORCPT
+	with ESMTP id S1760118Ab3GZU6Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:58:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Dave Jones <davej@redhat.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 22/45] ipv6: call udp_push_pending_frames when uncorking a socket with AF_INET pending data
-Date: Fri, 26 Jul 2013 13:57:42 -0700
-Message-Id: <20130726205657.317085906@linuxfoundation.org>
+Subject: [ 23/45] sunvnet: vnet_port_remove must call unregister_netdev
+Date: Fri, 26 Jul 2013 13:57:43 -0700
+Message-Id: <20130726205657.415690898@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
 References: <20130726205654.896050165@linuxfoundation.org>
@@ -29,122 +27,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-[ Upstream commit 8822b64a0fa64a5dd1dfcf837c5b0be83f8c05d1 ]
+[ Upstream commit aabb9875d02559ab9b928cd6f259a5cc4c21a589 ]
 
-We accidentally call down to ip6_push_pending_frames when uncorking
-pending AF_INET data on a ipv6 socket. This results in the following
-splat (from Dave Jones):
+The missing call to unregister_netdev() leaves the interface active
+after the driver is unloaded by rmmod.
 
-skbuff: skb_under_panic: text:ffffffff816765f6 len:48 put:40 head:ffff88013deb6df0 data:ffff88013deb6dec tail:0x2c end:0xc0 dev:<NULL>
-------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:126!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: dccp_ipv4 dccp 8021q garp bridge stp dlci mpoa snd_seq_dummy sctp fuse hidp tun bnep nfnetlink scsi_transport_iscsi rfcomm can_raw can_bcm af_802154 appletalk caif_socket can caif ipt_ULOG x25 rose af_key pppoe pppox ipx phonet irda llc2 ppp_generic slhc p8023 psnap p8022 llc crc_ccitt atm bluetooth
-+netrom ax25 nfc rfkill rds af_rxrpc coretemp hwmon kvm_intel kvm crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel microcode pcspkr snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-CPU: 2 PID: 8095 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #37
-task: ffff8801f52c2520 ti: ffff8801e6430000 task.ti: ffff8801e6430000
-RIP: 0010:[<ffffffff816e759c>]  [<ffffffff816e759c>] skb_panic+0x63/0x65
-RSP: 0018:ffff8801e6431de8  EFLAGS: 00010282
-RAX: 0000000000000086 RBX: ffff8802353d3cc0 RCX: 0000000000000006
-RDX: 0000000000003b90 RSI: ffff8801f52c2ca0 RDI: ffff8801f52c2520
-RBP: ffff8801e6431e08 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022ea0c800
-R13: ffff88022ea0cdf8 R14: ffff8802353ecb40 R15: ffffffff81cc7800
-FS:  00007f5720a10740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000005862000 CR3: 000000022843c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffff88013deb6dec 000000000000002c 00000000000000c0 ffffffff81a3f6e4
- ffff8801e6431e18 ffffffff8159a9aa ffff8801e6431e90 ffffffff816765f6
- ffffffff810b756b 0000000700000002 ffff8801e6431e40 0000fea9292aa8c0
-Call Trace:
- [<ffffffff8159a9aa>] skb_push+0x3a/0x40
- [<ffffffff816765f6>] ip6_push_pending_frames+0x1f6/0x4d0
- [<ffffffff810b756b>] ? mark_held_locks+0xbb/0x140
- [<ffffffff81694919>] udp_v6_push_pending_frames+0x2b9/0x3d0
- [<ffffffff81694660>] ? udplite_getfrag+0x20/0x20
- [<ffffffff8162092a>] udp_lib_setsockopt+0x1aa/0x1f0
- [<ffffffff811cc5e7>] ? fget_light+0x387/0x4f0
- [<ffffffff816958a4>] udpv6_setsockopt+0x34/0x40
- [<ffffffff815949f4>] sock_common_setsockopt+0x14/0x20
- [<ffffffff81593c31>] SyS_setsockopt+0x71/0xd0
- [<ffffffff816f5d54>] tracesys+0xdd/0xe2
-Code: 00 00 48 89 44 24 10 8b 87 d8 00 00 00 48 89 44 24 08 48 8b 87 e8 00 00 00 48 c7 c7 c0 04 aa 81 48 89 04 24 31 c0 e8 e1 7e ff ff <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55
-RIP  [<ffffffff816e759c>] skb_panic+0x63/0x65
- RSP <ffff8801e6431de8>
-
-This patch adds a check if the pending data is of address family AF_INET
-and directly calls udp_push_ending_frames from udp_v6_push_pending_frames
-if that is the case.
-
-This bug was found by Dave Jones with trinity.
-
-(Also move the initialization of fl6 below the AF_INET check, even if
-not strictly necessary.)
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/udp.h |    1 +
- net/ipv4/udp.c    |    3 ++-
- net/ipv6/udp.c    |    7 ++++++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ drivers/net/sunvnet.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/include/net/udp.h
-+++ b/include/net/udp.h
-@@ -180,6 +180,7 @@ extern int udp_get_port(struct sock *sk,
- extern void udp_err(struct sk_buff *, u32);
- extern int udp_sendmsg(struct kiocb *iocb, struct sock *sk,
- 			    struct msghdr *msg, size_t len);
-+extern int udp_push_pending_frames(struct sock *sk);
- extern void udp_flush_pending_frames(struct sock *sk);
- extern int udp_rcv(struct sk_buff *skb);
- extern int udp_ioctl(struct sock *sk, int cmd, unsigned long arg);
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -765,7 +765,7 @@ send:
- /*
-  * Push out all pending data as one UDP datagram. Socket is locked.
-  */
--static int udp_push_pending_frames(struct sock *sk)
-+int udp_push_pending_frames(struct sock *sk)
- {
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -784,6 +784,7 @@ out:
- 	up->pending = 0;
- 	return err;
+--- a/drivers/net/sunvnet.c
++++ b/drivers/net/sunvnet.c
+@@ -1248,6 +1248,8 @@ static int vnet_port_remove(struct vio_d
+ 		dev_set_drvdata(&vdev->dev, NULL);
+ 
+ 		kfree(port);
++
++		unregister_netdev(vp->dev);
+ 	}
+ 	return 0;
  }
-+EXPORT_SYMBOL(udp_push_pending_frames);
- 
- int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t len)
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -892,11 +892,16 @@ static int udp_v6_push_pending_frames(st
- 	struct udphdr *uh;
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
--	struct flowi6 *fl6 = &inet->cork.fl.u.ip6;
-+	struct flowi6 *fl6;
- 	int err = 0;
- 	int is_udplite = IS_UDPLITE(sk);
- 	__wsum csum = 0;
- 
-+	if (up->pending == AF_INET)
-+		return udp_push_pending_frames(sk);
-+
-+	fl6 = &inet->cork.fl.u.ip6;
-+
- 	/* Grab the skbuff where UDP header space exists. */
- 	if ((skb = skb_peek(&sk->sk_write_queue)) == NULL)
- 		goto out;
 
 
