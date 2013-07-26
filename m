@@ -1,235 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab3GZU6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:58:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51281 "EHLO
+	id S1760085Ab3GZVK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:10:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51293 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757109Ab3GZU6H (ORCPT
+	with ESMTP id S1760080Ab3GZU6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:58:07 -0400
+	Fri, 26 Jul 2013 16:58:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: [ 00/45] 3.0.88-stable review
-Date: Fri, 26 Jul 2013 13:57:20 -0700
-Message-Id: <20130726205654.896050165@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Vince Weaver <vincent.weaver@maine.edu>, Jiri Olsa <jolsa@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: [ 07/45] perf: Clone child context from parent context pmu
+Date: Fri, 26 Jul 2013 13:57:27 -0700
+Message-Id: <20130726205655.700119605@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726205654.896050165@linuxfoundation.org>
+References: <20130726205654.896050165@linuxfoundation.org>
 User-Agent: quilt/0.60-5.1.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.0.88 release.
-There are 45 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Jul 28 20:54:53 UTC 2013.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.88-rc1.gz
-and the diffstat can be found below.
+From: Jiri Olsa <jolsa@redhat.com>
 
-thanks,
+commit 734df5ab549ca44f40de0f07af1c8803856dfb18 upstream.
 
-greg k-h
+Currently when the child context for inherited events is
+created, it's based on the pmu object of the first event
+of the parent context.
 
--------------
-Pseudo-Shortlog of commits:
+This is wrong for the following scenario:
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.0.88-rc1
+  - HW context having HW and SW event
+  - HW event got removed (closed)
+  - SW event stays in HW context as the only event
+    and its pmu is used to clone the child context
 
-Eldad Zack <eldad@fogrefinery.com>
-    ALSA: usb-audio: 6fire: return correct XRUN indication
+The issue starts when the cpu context object is touched
+based on the pmu context object (__get_cpu_context). In
+this case the HW context will work with SW cpu context
+ending up with following WARN below.
 
-Steffen Maier <maier@linux.vnet.ibm.com>
-    zfcp: status read buffers on first adapter open with link down
+Fixing this by using parent context pmu object to clone
+from child context.
 
-Thomas Gleixner <tglx@linutronix.de>
-    hrtimers: Move SMP function call to thread context
+Addresses the following warning reported by Vince Weaver:
 
-zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-    tracing: Fix irqs-off tag display in syscall tracing
+[ 2716.472065] ------------[ cut here ]------------
+[ 2716.476035] WARNING: at kernel/events/core.c:2122 task_ctx_sched_out+0x3c/0x)
+[ 2716.476035] Modules linked in: nfsd auth_rpcgss oid_registry nfs_acl nfs locn
+[ 2716.476035] CPU: 0 PID: 3164 Comm: perf_fuzzer Not tainted 3.10.0-rc4 #2
+[ 2716.476035] Hardware name: AOpen   DE7000/nMCP7ALPx-DE R1.06 Oct.19.2012, BI2
+[ 2716.476035]  0000000000000000 ffffffff8102e215 0000000000000000 ffff88011fc18
+[ 2716.476035]  ffff8801175557f0 0000000000000000 ffff880119fda88c ffffffff810ad
+[ 2716.476035]  ffff880119fda880 ffffffff810af02a 0000000000000009 ffff880117550
+[ 2716.476035] Call Trace:
+[ 2716.476035]  [<ffffffff8102e215>] ? warn_slowpath_common+0x5b/0x70
+[ 2716.476035]  [<ffffffff810ab2bd>] ? task_ctx_sched_out+0x3c/0x5f
+[ 2716.476035]  [<ffffffff810af02a>] ? perf_event_exit_task+0xbf/0x194
+[ 2716.476035]  [<ffffffff81032a37>] ? do_exit+0x3e7/0x90c
+[ 2716.476035]  [<ffffffff810cd5ab>] ? __do_fault+0x359/0x394
+[ 2716.476035]  [<ffffffff81032fe6>] ? do_group_exit+0x66/0x98
+[ 2716.476035]  [<ffffffff8103dbcd>] ? get_signal_to_deliver+0x479/0x4ad
+[ 2716.476035]  [<ffffffff810ac05c>] ? __perf_event_task_sched_out+0x230/0x2d1
+[ 2716.476035]  [<ffffffff8100205d>] ? do_signal+0x3c/0x432
+[ 2716.476035]  [<ffffffff810abbf9>] ? ctx_sched_in+0x43/0x141
+[ 2716.476035]  [<ffffffff810ac2ca>] ? perf_event_context_sched_in+0x7a/0x90
+[ 2716.476035]  [<ffffffff810ac311>] ? __perf_event_task_sched_in+0x31/0x118
+[ 2716.476035]  [<ffffffff81050dd9>] ? mmdrop+0xd/0x1c
+[ 2716.476035]  [<ffffffff81051a39>] ? finish_task_switch+0x7d/0xa6
+[ 2716.476035]  [<ffffffff81002473>] ? do_notify_resume+0x20/0x5d
+[ 2716.476035]  [<ffffffff813654f5>] ? retint_signal+0x3d/0x78
+[ 2716.476035] ---[ end trace 827178d8a5966c3d ]---
 
-David Jeffery <djeffery@redhat.com>
-    lockd: protect nlm_blocked access in nlmsvc_retry_blocked
+Reported-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1373384651-6109-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Barry Grussling <barry@grussling.com>
-    usb: cp210x support SEL C662 Vendor/Device
+---
+ kernel/events/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Sami Rahman <sami.rahman@mmbresearch.com>
-    USB: cp210x: add MMB and PI ZigBee USB Device Support
-
-Luiz Angelo Daros de Luca <luizluca@gmail.com>
-    usb: serial: cp210x: Add USB ID for Netgear Switches embedded serial adapter
-
-Enrico Mioso <mrkiko.rs@gmail.com>
-    usb: serial: option: Add ONYX 3G device support
-
-Alexandr \\\"Sky\\\" Ivanov <alexandr.sky@gmail.com>
-    USB: option: add D-Link DWM-152/C1 and DWM-156/C1
-
-Daniil Bolsun <dan.bolsun@gmail.com>
-    USB: option: append Petatel NP10T device to GSM modems list
-
-Enrico Mioso <mrkiko.rs@gmail.com>
-    usb: serial: option.c: remove ONDA MT825UP product ID fromdriver
-
-Dan Williams <dcbw@redhat.com>
-    usb: serial: option: add Olivetti Olicard 200
-
-Bjørn Mork <bjorn@mork.no>
-    usb: option: add TP-LINK MA260
-
-Enrico Mioso <mrkiko.rs@gmail.com>
-    usb: serial: option: blacklist ONDA MT689DC QMI interface
-
-Andi Kleen <andi@firstfloor.org>
-    SCSI: Fix incorrect memset in bnx2fc_parse_fcp_rsp
-
-Bjørn Mork <bjorn@mork.no>
-    SCSI: megaraid_sas: fix memory leak if SGL has zero length entries
-
-Jan Kara <jack@suse.cz>
-    writeback: Fix periodic writeback after fs mount
-
-Eric Dumazet <edumazet@google.com>
-    vlan: fix a race in egress prio management
-
-dingtianhong <dingtianhong@huawei.com>
-    ifb: fix oops when loading the ifb failed
-
-dingtianhong <dingtianhong@huawei.com>
-    dummy: fix oops when loading the dummy failed
-
-dingtianhong <dingtianhong@huawei.com>
-    ifb: fix rcu_sched self-detected stalls
-
-Dave Kleikamp <dave.kleikamp@oracle.com>
-    sunvnet: vnet_port_remove must call unregister_netdev
-
-Hannes Frederic Sowa <hannes@stressinduktion.org>
-    ipv6: call udp_push_pending_frames when uncorking a socket with AF_INET pending data
-
-Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-    l2tp: add missing .owner to struct pppox_proto
-
-Amerigo Wang <amwang@redhat.com>
-    ipv6,mcast: always hold idev->lock before mca_lock
-
-Changli Gao <xiaosuo@gmail.com>
-    net: Swap ver and type in pppoe_hdr
-
-Dave Jones <davej@redhat.com>
-    x25: Fix broken locking in ioctl error paths.
-
-Eric Dumazet <eric.dumazet@gmail.com>
-    neighbour: fix a race in neigh_destroy()
-
-Mathias Krause <minipli@googlemail.com>
-    af_key: fix info leaks in notify messages
-
-Eric Dumazet <edumazet@google.com>
-    ipv6: ip6_sk_dst_check() must not assume ipv6 dst
-
-Gao feng <gaofeng@cn.fujitsu.com>
-    ipv6: don't call addrconf_dst_alloc again when enable lo
-
-Linus Lüssing <linus.luessing@web.de>
-    bridge: fix switched interval for MLD Query types
-
-Dave Kleikamp <dave.kleikamp@oracle.com>
-    sparc: tsb must be flushed before tlb
-
-bob picco <bpicco@meloft.net>
-    sparc64 address-congruence property
-
-Olivier DANET <odanet@caramail.com>
-    sparc32: vm_area_struct access for old Sun SPARCs.
-
-Peter Zijlstra <peterz@infradead.org>
-    perf: Fix perf_lock_task_context() vs RCU
-
-Jiri Olsa <jolsa@redhat.com>
-    perf: Remove WARN_ON_ONCE() check in __perf_event_enable() for valid scenario
-
-Jiri Olsa <jolsa@redhat.com>
-    perf: Clone child context from parent context pmu
-
-Steven Rostedt (Red Hat) <rostedt@goodmis.org>
-    tracing: Use current_uid() for critical time tracing
-
-Sreekanth Reddy <Sreekanth.Reddy@lsi.com>
-    SCSI: mpt2sas: fix firmware failure with wrong task attribute
-
-Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
-    SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
-
-Gabor Juhos <juhosg@openwrt.org>
-    rt2x00: read 5GHz TX power values from the correct offset
-
-Fabio Estevam <fabio.estevam@freescale.com>
-    ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
-
-Thomas Gleixner <tglx@linutronix.de>
-    tick: Prevent uncontrolled switch to oneshot mode
-
-
--------------
-
-Diffstat:
-
- Makefile                                  |  4 ++--
- arch/sparc/kernel/asm-offsets.c           |  2 ++
- arch/sparc/mm/hypersparc.S                |  8 ++++----
- arch/sparc/mm/init_64.c                   |  9 ++++++++-
- arch/sparc/mm/swift.S                     |  8 ++++----
- arch/sparc/mm/tlb.c                       |  2 +-
- arch/sparc/mm/tsunami.S                   |  6 +++---
- arch/sparc/mm/viking.S                    | 10 +++++-----
- drivers/net/dummy.c                       |  4 ++++
- drivers/net/ifb.c                         |  8 +++++++-
- drivers/net/sunvnet.c                     |  2 ++
- drivers/net/wireless/rt2x00/rt2800lib.c   |  4 ++--
- drivers/net/wireless/rt2x00/rt61pci.c     |  3 ++-
- drivers/net/wireless/rt2x00/rt73usb.c     |  3 ++-
- drivers/s390/scsi/zfcp_aux.c              |  5 ++++-
- drivers/s390/scsi/zfcp_fsf.c              | 25 +++++++++++++++++++------
- drivers/scsi/bnx2fc/bnx2fc_io.c           |  2 +-
- drivers/scsi/megaraid/megaraid_sas_base.c | 10 ++++++----
- drivers/scsi/mpt2sas/mpt2sas_scsih.c      |  6 +-----
- drivers/usb/serial/cp210x.c               |  4 ++++
- drivers/usb/serial/option.c               | 23 +++++++++++++----------
- fs/block_dev.c                            | 10 +++++++++-
- fs/lockd/svclock.c                        |  4 ++++
- include/linux/if_pppox.h                  |  4 ++--
- include/net/addrconf.h                    |  3 +++
- include/net/udp.h                         |  1 +
- kernel/events/core.c                      | 28 +++++++++++++++++++++++++---
- kernel/hrtimer.c                          | 28 +++++++++++++---------------
- kernel/time/tick-broadcast.c              | 10 +++++++++-
- kernel/trace/trace.c                      | 10 +++++++++-
- kernel/trace/trace_syscalls.c             | 18 ++++++++++++++----
- net/8021q/vlan_dev.c                      |  7 +++++++
- net/bridge/br_multicast.c                 |  5 +++--
- net/core/neighbour.c                      | 12 +++++++-----
- net/ipv4/udp.c                            |  3 ++-
- net/ipv6/addrconf.c                       | 31 +++++++++++++++++++++----------
- net/ipv6/ip6_output.c                     |  8 +++++++-
- net/ipv6/mcast.c                          | 18 ++++++++++--------
- net/ipv6/udp.c                            |  7 ++++++-
- net/key/af_key.c                          |  2 ++
- net/l2tp/l2tp_ppp.c                       |  3 ++-
- net/x25/af_x25.c                          | 15 ++++++++-------
- sound/soc/codecs/sgtl5000.h               |  2 +-
- sound/usb/6fire/pcm.c                     |  2 +-
- 44 files changed, 262 insertions(+), 117 deletions(-)
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7064,7 +7064,7 @@ inherit_task_group(struct perf_event *ev
+ 		 * child.
+ 		 */
+ 
+-		child_ctx = alloc_perf_context(event->pmu, child);
++		child_ctx = alloc_perf_context(parent_ctx->pmu, child);
+ 		if (!child_ctx)
+ 			return -ENOMEM;
+ 
 
 
