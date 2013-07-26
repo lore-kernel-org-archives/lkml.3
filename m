@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780Ab3GZVj7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:39:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50733 "EHLO
+	id S933814Ab3GZVkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:40:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50729 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759918Ab3GZUs3 (ORCPT
+	with ESMTP id S1759911Ab3GZUs3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:48:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Tom Herbert <therbert@google.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jay Cliburn <jcliburn@gmail.com>, Chris Snook <chris.snook@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/79] ipv4: set transport header earlier
-Date: Fri, 26 Jul 2013 13:47:25 -0700
-Message-Id: <20130726204725.603593263@linuxfoundation.org>
+Subject: [ 34/79] atl1e: unmap partially mapped skb on dma error and free skb
+Date: Fri, 26 Jul 2013 13:47:24 -0700
+Message-Id: <20130726204725.503259427@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -29,59 +29,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 21d1196a35f5686c4323e42a62fdb4b23b0ab4a3 ]
+[ Upstream commit 584ec4355355ffac43571b02a314d43eb2f7fcbf ]
 
-commit 45f00f99d6e ("ipv4: tcp: clean up tcp_v4_early_demux()") added a
-performance regression for non GRO traffic, basically disabling
-IP early demux.
+Ben Hutchings pointed out that my recent update to atl1e
+in commit 352900b583b2852152a1e05ea0e8b579292e731e
+("atl1e: fix dma mapping warnings") was missing a bit of code.
 
-IPv6 stack resets transport header in ip6_rcv() before calling
-IP early demux in ip6_rcv_finish(), while IPv4 does this only in
-ip_local_deliver_finish(), _after_ IP early demux.
+Specifically it reset the hardware tx ring to its origional state when
+we hit a dma error, but didn't unmap any exiting mappings from the
+operation.  This patch fixes that up.  It also remembers to free the
+skb in the event that an error occurs, so we don't leak.  Untested, as
+I don't have hardware.  I think its pretty straightforward, but please
+review closely.
 
-GRO traffic happened to enable IP early demux because transport header
-is also set in inet_gro_receive()
-
-Instead of reverting the faulty commit, we can make IPv4/IPv6 behave the
-same : transport_header should be set in ip_rcv() instead of
-ip_local_deliver_finish()
-
-ip_local_deliver_finish() can also use skb_network_header_len() which is
-faster than ip_hdrlen()
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Tom Herbert <therbert@google.com>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Ben Hutchings <bhutchings@solarflare.com>
+CC: Jay Cliburn <jcliburn@gmail.com>
+CC: Chris Snook <chris.snook@gmail.com>
+CC: "David S. Miller" <davem@davemloft.net>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/ip_input.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/atheros/atl1e/atl1e_main.c |   24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
---- a/net/ipv4/ip_input.c
-+++ b/net/ipv4/ip_input.c
-@@ -190,10 +190,7 @@ static int ip_local_deliver_finish(struc
- {
- 	struct net *net = dev_net(skb->dev);
+--- a/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
++++ b/drivers/net/ethernet/atheros/atl1e/atl1e_main.c
+@@ -1678,6 +1678,7 @@ static int atl1e_tx_map(struct atl1e_ada
+ 	u16 f;
+ 	int segment;
+ 	int ring_start = adapter->tx_ring.next_to_use;
++	int ring_end;
  
--	__skb_pull(skb, ip_hdrlen(skb));
--
--	/* Point into the IP datagram, just past the header. */
--	skb_reset_transport_header(skb);
-+	__skb_pull(skb, skb_network_header_len(skb));
+ 	nr_frags = skb_shinfo(skb)->nr_frags;
+ 	segment = (tpd->word3 >> TPD_SEGMENT_EN_SHIFT) & TPD_SEGMENT_EN_MASK;
+@@ -1721,6 +1722,15 @@ static int atl1e_tx_map(struct atl1e_ada
+ 					map_len, PCI_DMA_TODEVICE);
  
- 	rcu_read_lock();
- 	{
-@@ -437,6 +434,8 @@ int ip_rcv(struct sk_buff *skb, struct n
- 		goto drop;
+ 		if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++			/* We need to unwind the mappings we've done */
++			ring_end = adapter->tx_ring.next_to_use;
++			adapter->tx_ring.next_to_use = ring_start;
++			while (adapter->tx_ring.next_to_use != ring_end) {
++				tpd = atl1e_get_tpd(adapter);
++				tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
++				pci_unmap_single(adapter->pdev, tx_buffer->dma,
++						 tx_buffer->length, PCI_DMA_TODEVICE);
++			}
+ 			/* Reset the tx rings next pointer */
+ 			adapter->tx_ring.next_to_use = ring_start;
+ 			return -ENOSPC;
+@@ -1763,6 +1773,16 @@ static int atl1e_tx_map(struct atl1e_ada
+ 							  DMA_TO_DEVICE);
+ 
+ 			if (dma_mapping_error(&adapter->pdev->dev, tx_buffer->dma)) {
++				/* We need to unwind the mappings we've done */
++				ring_end = adapter->tx_ring.next_to_use;
++				adapter->tx_ring.next_to_use = ring_start;
++				while (adapter->tx_ring.next_to_use != ring_end) {
++					tpd = atl1e_get_tpd(adapter);
++					tx_buffer = atl1e_get_tx_buffer(adapter, tpd);
++					dma_unmap_page(&adapter->pdev->dev, tx_buffer->dma,
++						       tx_buffer->length, DMA_TO_DEVICE);
++				}
++
+ 				/* Reset the ring next to use pointer */
+ 				adapter->tx_ring.next_to_use = ring_start;
+ 				return -ENOSPC;
+@@ -1853,8 +1873,10 @@ static netdev_tx_t atl1e_xmit_frame(stru
+ 		return NETDEV_TX_OK;
  	}
  
-+	skb->transport_header = skb->network_header + iph->ihl*4;
-+
- 	/* Remove any debris in the socket control block */
- 	memset(IPCB(skb), 0, sizeof(struct inet_skb_parm));
+-	if (atl1e_tx_map(adapter, skb, tpd))
++	if (atl1e_tx_map(adapter, skb, tpd)) {
++		dev_kfree_skb_any(skb);
+ 		goto out;
++	}
+ 
+ 	atl1e_tx_queue(adapter, tpd_req, tpd);
  
 
 
