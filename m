@@ -1,60 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab3GZD5W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 25 Jul 2013 23:57:22 -0400
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:52025 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753924Ab3GZD5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 25 Jul 2013 23:57:21 -0400
-Date: Thu, 25 Jul 2013 23:58:09 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Andi Kleen <andi@firstfloor.org>
-cc: Andi Kleen <ak@linux.intel.com>, acme@infradead.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, torvalds@linux-foundation.org,
-        trinity@vger.kernel.org
-Subject: Re: [PATCH 1/2] tools, perf: Add a precise event qualifier v2
-In-Reply-To: <20130724190537.GW6123@two.firstfloor.org>
-Message-ID: <alpine.DEB.2.02.1307252351010.26524@pianoman.cluster.toy>
-References: <1374501138-13496-1-git-send-email-andi@firstfloor.org> <alpine.DEB.2.02.1307230137160.18617@pianoman.cluster.toy> <20130723060108.GA18396@tassilo.jf.intel.com> <alpine.DEB.2.02.1307231717580.27628@pianoman.cluster.toy> <20130723225150.GT6123@two.firstfloor.org>
- <alpine.DEB.2.02.1307241433380.8230@pianoman.cluster.toy> <20130724190537.GW6123@two.firstfloor.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1758261Ab3GZD5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 25 Jul 2013 23:57:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:9613 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756730Ab3GZD5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 25 Jul 2013 23:57:41 -0400
+X-IronPort-AV: E=Sophos;i="4.89,748,1367942400"; 
+   d="scan'208";a="8029960"
+Message-ID: <51F1F453.8060602@cn.fujitsu.com>
+Date: Fri, 26 Jul 2013 12:00:19 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020206.51F1F3A0.008B,ss=1,re=0.000,fgs=0
+To: Tejun Heo <tj@kernel.org>
+CC: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 18/21] x86, numa: Synchronize nid info in memblock.reserve
+ with numa_meminfo.
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com> <1374220774-29974-19-git-send-email-tangchen@cn.fujitsu.com> <20130723212548.GZ21100@mtj.dyndns.org> <51F0A4F9.2060802@cn.fujitsu.com> <20130725150554.GC26107@mtj.dyndns.org>
+In-Reply-To: <20130725150554.GC26107@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/26 11:55:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/26 11:55:33,
+	Serialize complete at 2013/07/26 11:55:33
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Jul 2013, Andi Kleen wrote:
+On 07/25/2013 11:05 PM, Tejun Heo wrote:
+> Hello, Tang.
+>
+> On Thu, Jul 25, 2013 at 12:09:29PM +0800, Tang Chen wrote:
+>> And as in [patch 14/21], when reserving hotpluggable memory, we use
+>> pxm. So my
+>
+> Which is kinda nasty.
 
-> Sorry I meant flags as an alias of "the 64bits currently occupied by the
-> bitfield". Perhaps the name choice was not very good.
-> 
-> "flags_bitfield" ?
-> 
-> So the tool would only need to know that, not every bit.
-> 
-> In theory it could be also generalized as a byte offset to perf_event,
-> but that may be overengineered.
+Yes, will remove it.
 
-I somehow doubt this would be acceptable.  If it were, we could have had a 
-somewhat better interface by just having the event fields be a list of 
-values without involving format/* at all, something like
+>
+>> idea was to do a nid sync in numa_init(). After this, memblock will
+>> set nid when
+>> it allocates memory.
+>
+> Sure, that's the only place we can set the numa node IDs but my point
+> is that you don't need to add another interface.  Jet let
+> memblock_set_node() handle both memblock.memory and .reserved ranges.
+> That way, you can make memblock simpler to use and less error-prone.
 
-   config=0x58034;config1=0x20;precise_ip=0x4
+Yes, I missed the isolation phase in memblock_set_node().
+So followed.
 
-For whatever reason things have to be human readable, and I don't think
-just having an opaque 64-bit "flags" value will be accepted.  
+>
+>> If we want to let memblock_set_node() and alloc functions set nid on
+>> the reserved
+>> regions, we should setup nid<->  pxm mapping when we parst SRAT for
+>> the first time.
+>
+> I don't follow why it has to be different.  Why do you need to do
+> anything differently?  What am I missing here?
 
-I'm likely wrong though, I have a very low accuracy rate for predicting 
-future perf_event design decisions.
+No, it was me who missed the isolation phase in memblock_set_node().
 
-This is all complicated by the intertwined nature of the perf_event ABI 
-and the perf tool, and the way that there's at least three or four 
-different ways to specify the same event from the perf tool command line.
-
-Vince
+Thanks.
