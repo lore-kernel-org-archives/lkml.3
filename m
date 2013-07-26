@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758652Ab3GZMOz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:14:55 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48817 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757003Ab3GZMOw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:14:52 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+QRJBPZMHUJn/skevHcxrI+8Jb6XjXwYw=
-Date: Fri, 26 Jul 2013 08:14:38 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130726121438.GF29916@titan.lakedaemon.net>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <CAL_JsqJQWOLC9f1igEpsgJB2X8mFDpqLDaFFRjGGVHctjWZLgQ@mail.gmail.com>
- <20130725193135.GT23879@titan.lakedaemon.net>
- <CAL_Jsq+vWbTb8wNEDCR2c_M6sBnKW6e5HGk48QzmXSujQUdddA@mail.gmail.com>
- <20130725203228.GX23879@titan.lakedaemon.net>
- <20130725215315.GV7729@decadent.org.uk>
+	id S932068Ab3GZMPS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:15:18 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54569
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757321Ab3GZMPO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 08:15:14 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VPS1(zzbb2dI98dI9371Ic89bh1432I4015Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzzz2fh95h668h839h93fhd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h1d0ch1d2eh1d3fh1dfeh1dffh19b6n1155h192ch)
+Date: Fri, 26 Jul 2013 14:15:06 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130725215315.GV7729@decadent.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Michal Simek <michal.simek@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] arm: zynq: SLCR clean up
+References: <1374081015-31431-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1374081015-31431-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="UTF-8"
+X-RCIS-Action: ALLOW
+Message-ID: <529db7d7-70f5-4dae-8482-cc982c3319cb@VA3EHSMHS026.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 10:53:15PM +0100, Ben Hutchings wrote:
-> On Thu, Jul 25, 2013 at 04:32:28PM -0400, Jason Cooper wrote:
-> [...]
-> > One of the things I've been trying to square up in my head is how to
-> > retain the history of the binding when moving to the new tree.  My
-> > current idea was to clone the kernel tree, add one patch deleting
-> > everything but the bindings and dts files, and one more patch moving
-> > things where we want them (arch/{powerpc,arm}/boot/dts -> dts).
-> > 
-> > Then, as needed, we could merge a kernel version tag and delete
-> > everything we don't need (code) in the merge commit.
-> > 
-> > The downside of this is it would be messy, the upside is that we could
-> > closely track the kernel tree (until the bindings and dts are moved
-> > out), and retain the history of the bindings and dts files.
-> [...]
+On 07/17/2013 07:10 PM, Soren Brinkmann wrote:
+> These are just a few patches cleaning up the driver - well at least I
+> find it cleaner this way.
+> 3/3 though adds correct read-modify-write for some register accesses.
+> The current implementation doesn't seem to do any harm, but this looks
+> better, IMHO.
 > 
-> It's *extremely* messy, but 'git filter-branch' might help to make a
-> clean tracking branch preserving history of just DT files.  David
-> Woodhouse did something like that for the linux-firmware repo
-> initially.
+> 	Sören
+> 
+> Soren Brinkmann (3):
+>   arm: zynq: slcr: Remove redundant header #includes
+>   arm: zynq: slcr: Clean up #defines
+>   arm: zynq: slcr: Use read-modify-write for register writes
+> 
+>  arch/arm/mach-zynq/slcr.c | 45 +++++++++++++++++----------------------------
+>  1 file changed, 17 insertions(+), 28 deletions(-)
 
-ok, but once that is setup, asking patch submitters to keep binding doc
-and dts file changes in separate patches from code changes would allow
-us to put those patches in a separate branch, mergable into both trees.
+Applied to zynq/cleanup branch.
 
-thx,
+Thanks,
+Michal
 
-Jason.
+
