@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759981Ab3GZUsr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 16:48:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50823 "EHLO
+	id S932457Ab3GZUs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 16:48:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759926Ab3GZUsc (ORCPT
+	with ESMTP id S1759886Ab3GZUsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:32 -0400
+	Fri, 26 Jul 2013 16:48:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 39/79] tuntap: do not zerocopy if iov needs more pages than MAX_SKB_FRAGS
-Date: Fri, 26 Jul 2013 13:47:29 -0700
-Message-Id: <20130726204726.024472887@linuxfoundation.org>
+        dingtianhong <dingtianhong@huawei.com>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Chen Weilong <chenweilong@huawei.com>, Cong Wang <amwang@redhat.com>
+Subject: [ 09/79] ipv6,mcast: always hold idev->lock before mca_lock
+Date: Fri, 26 Jul 2013 13:46:59 -0700
+Message-Id: <20130726204722.939742697@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,124 +30,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Amerigo Wang <amwang@redhat.com>
 
-[ Upstream commit 885291761dba2bfe04df4c0f7bb75e4c920ab82e ]
+[ Upstream commit 8965779d2c0e6ab246c82a405236b1fb2adae6b2, with
+  some bits from commit b7b1bfce0bb68bd8f6e62a28295922785cc63781
+  ("ipv6: split duplicate address detection and router solicitation timer")
+  to get the __ipv6_get_lladdr() used by this patch. ]
 
-We try to linearize part of the skb when the number of iov is greater than
-MAX_SKB_FRAGS. This is not enough since each single vector may occupy more than
-one pages, so zerocopy_sg_fromiovec() may still fail and may break the guest
-network.
+dingtianhong reported the following deadlock detected by lockdep:
 
-Solve this problem by calculate the pages needed for iov before trying to do
-zerocopy and switch to use copy instead of zerocopy if it needs more than
-MAX_SKB_FRAGS.
+ ======================================================
+ [ INFO: possible circular locking dependency detected ]
+ 3.4.24.05-0.1-default #1 Not tainted
+ -------------------------------------------------------
+ ksoftirqd/0/3 is trying to acquire lock:
+  (&ndev->lock){+.+...}, at: [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
 
-This is done through introducing a new helper to count the pages for iov, and
-call uarg->callback() manually when switching from zerocopy to copy to notify
-vhost.
+ but task is already holding lock:
+  (&mc->mca_lock){+.+...}, at: [<ffffffff8149d130>] mld_send_report+0x40/0x150
 
-We can do further optimization on top.
+ which lock already depends on the new lock.
 
-The bug were introduced from commit 0690899b4d4501b3505be069b9a687e68ccbe15b
-(tun: experimental zero copy tx support)
+ the existing dependency chain (in reverse order) is:
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
+ -> #1 (&mc->mca_lock){+.+...}:
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f691a>] rt_spin_lock+0x4a/0x60
+        [<ffffffff8149e4bb>] igmp6_group_added+0x3b/0x120
+        [<ffffffff8149e5d8>] ipv6_mc_up+0x38/0x60
+        [<ffffffff81480a4d>] ipv6_find_idev+0x3d/0x80
+        [<ffffffff81483175>] addrconf_notify+0x3d5/0x4b0
+        [<ffffffff814fae3f>] notifier_call_chain+0x3f/0x80
+        [<ffffffff81073471>] raw_notifier_call_chain+0x11/0x20
+        [<ffffffff813d8722>] call_netdevice_notifiers+0x32/0x60
+        [<ffffffff813d92d4>] __dev_notify_flags+0x34/0x80
+        [<ffffffff813d9360>] dev_change_flags+0x40/0x70
+        [<ffffffff813ea627>] do_setlink+0x237/0x8a0
+        [<ffffffff813ebb6c>] rtnl_newlink+0x3ec/0x600
+        [<ffffffff813eb4d0>] rtnetlink_rcv_msg+0x160/0x310
+        [<ffffffff814040b9>] netlink_rcv_skb+0x89/0xb0
+        [<ffffffff813eb357>] rtnetlink_rcv+0x27/0x40
+        [<ffffffff81403e20>] netlink_unicast+0x140/0x180
+        [<ffffffff81404a9e>] netlink_sendmsg+0x33e/0x380
+        [<ffffffff813c4252>] sock_sendmsg+0x112/0x130
+        [<ffffffff813c537e>] __sys_sendmsg+0x44e/0x460
+        [<ffffffff813c5544>] sys_sendmsg+0x44/0x70
+        [<ffffffff814feab9>] system_call_fastpath+0x16/0x1b
+
+ -> #0 (&ndev->lock){+.+...}:
+        [<ffffffff810a798e>] check_prev_add+0x3de/0x440
+        [<ffffffff810a8027>] validate_chain+0x637/0x730
+        [<ffffffff810a8417>] __lock_acquire+0x2f7/0x500
+        [<ffffffff810a8734>] lock_acquire+0x114/0x150
+        [<ffffffff814f6c82>] rt_read_lock+0x42/0x60
+        [<ffffffff8147f804>] ipv6_get_lladdr+0x74/0x120
+        [<ffffffff8149b036>] mld_newpack+0xb6/0x160
+        [<ffffffff8149b18b>] add_grhead+0xab/0xc0
+        [<ffffffff8149d03b>] add_grec+0x3ab/0x460
+        [<ffffffff8149d14a>] mld_send_report+0x5a/0x150
+        [<ffffffff8149f99e>] igmp6_timer_handler+0x4e/0xb0
+        [<ffffffff8105705a>] call_timer_fn+0xca/0x1d0
+        [<ffffffff81057b9f>] run_timer_softirq+0x1df/0x2e0
+        [<ffffffff8104e8c7>] handle_pending_softirqs+0xf7/0x1f0
+        [<ffffffff8104ea3b>] __do_softirq_common+0x7b/0xf0
+        [<ffffffff8104f07f>] __thread_do_softirq+0x1af/0x210
+        [<ffffffff8104f1c1>] run_ksoftirqd+0xe1/0x1f0
+        [<ffffffff8106c7de>] kthread+0xae/0xc0
+        [<ffffffff814fff74>] kernel_thread_helper+0x4/0x10
+
+actually we can just hold idev->lock before taking pmc->mca_lock,
+and avoid taking idev->lock again when iterating idev->addr_list,
+since the upper callers of mld_newpack() already take
+read_lock_bh(&idev->lock).
+
+Reported-by: dingtianhong <dingtianhong@huawei.com>
+Cc: dingtianhong <dingtianhong@huawei.com>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Tested-by: Ding Tianhong <dingtianhong@huawei.com>
+Tested-by: Chen Weilong <chenweilong@huawei.com>
+Signed-off-by: Cong Wang <amwang@redhat.com>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/tun.c |   62 +++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 38 insertions(+), 24 deletions(-)
+ include/net/addrconf.h |    3 +++
+ net/ipv6/addrconf.c    |   28 ++++++++++++++++++----------
+ net/ipv6/mcast.c       |   18 ++++++++++--------
+ 3 files changed, 31 insertions(+), 18 deletions(-)
 
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1037,6 +1037,29 @@ static int zerocopy_sg_from_iovec(struct
- 	return 0;
+--- a/include/net/addrconf.h
++++ b/include/net/addrconf.h
+@@ -86,6 +86,9 @@ extern int			ipv6_dev_get_saddr(struct n
+ 					       const struct in6_addr *daddr,
+ 					       unsigned int srcprefs,
+ 					       struct in6_addr *saddr);
++extern int			__ipv6_get_lladdr(struct inet6_dev *idev,
++						  struct in6_addr *addr,
++						  unsigned char banned_flags);
+ extern int			ipv6_get_lladdr(struct net_device *dev,
+ 						struct in6_addr *addr,
+ 						unsigned char banned_flags);
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1448,6 +1448,23 @@ try_nextdev:
  }
+ EXPORT_SYMBOL(ipv6_dev_get_saddr);
  
-+static unsigned long iov_pages(const struct iovec *iv, int offset,
-+			       unsigned long nr_segs)
++int __ipv6_get_lladdr(struct inet6_dev *idev, struct in6_addr *addr,
++		      unsigned char banned_flags)
 +{
-+	unsigned long seg, base;
-+	int pages = 0, len, size;
++	struct inet6_ifaddr *ifp;
++	int err = -EADDRNOTAVAIL;
 +
-+	while (nr_segs && (offset >= iv->iov_len)) {
-+		offset -= iv->iov_len;
-+		++iv;
-+		--nr_segs;
-+	}
-+
-+	for (seg = 0; seg < nr_segs; seg++) {
-+		base = (unsigned long)iv[seg].iov_base + offset;
-+		len = iv[seg].iov_len - offset;
-+		size = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
-+		pages += size;
-+		offset = 0;
-+	}
-+
-+	return pages;
-+}
-+
- /* Get packet from user space buffer */
- static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
- 			    void *msg_control, const struct iovec *iv,
-@@ -1084,32 +1107,18 @@ static ssize_t tun_get_user(struct tun_s
- 			return -EINVAL;
- 	}
- 
--	if (msg_control)
--		zerocopy = true;
--
--	if (zerocopy) {
--		/* Userspace may produce vectors with count greater than
--		 * MAX_SKB_FRAGS, so we need to linearize parts of the skb
--		 * to let the rest of data to be fit in the frags.
--		 */
--		if (count > MAX_SKB_FRAGS) {
--			copylen = iov_length(iv, count - MAX_SKB_FRAGS);
--			if (copylen < offset)
--				copylen = 0;
--			else
--				copylen -= offset;
--		} else
--				copylen = 0;
--		/* There are 256 bytes to be copied in skb, so there is enough
--		 * room for skb expand head in case it is used.
-+	if (msg_control) {
-+		/* There are 256 bytes to be copied in skb, so there is
-+		 * enough room for skb expand head in case it is used.
- 		 * The rest of the buffer is mapped from userspace.
- 		 */
--		if (copylen < gso.hdr_len)
--			copylen = gso.hdr_len;
--		if (!copylen)
--			copylen = GOODCOPY_LEN;
-+		copylen = gso.hdr_len ? gso.hdr_len : GOODCOPY_LEN;
- 		linear = copylen;
--	} else {
-+		if (iov_pages(iv, offset + copylen, count) <= MAX_SKB_FRAGS)
-+			zerocopy = true;
-+	}
-+
-+	if (!zerocopy) {
- 		copylen = len;
- 		linear = gso.hdr_len;
- 	}
-@@ -1123,8 +1132,13 @@ static ssize_t tun_get_user(struct tun_s
- 
- 	if (zerocopy)
- 		err = zerocopy_sg_from_iovec(skb, iv, offset, count);
--	else
-+	else {
- 		err = skb_copy_datagram_from_iovec(skb, 0, iv, offset, len);
-+		if (!err && msg_control) {
-+			struct ubuf_info *uarg = msg_control;
-+			uarg->callback(uarg, false);
++	list_for_each_entry(ifp, &idev->addr_list, if_list) {
++		if (ifp->scope == IFA_LINK &&
++		    !(ifp->flags & banned_flags)) {
++			*addr = ifp->addr;
++			err = 0;
++			break;
 +		}
 +	}
++	return err;
++}
++
+ int ipv6_get_lladdr(struct net_device *dev, struct in6_addr *addr,
+ 		    unsigned char banned_flags)
+ {
+@@ -1457,17 +1474,8 @@ int ipv6_get_lladdr(struct net_device *d
+ 	rcu_read_lock();
+ 	idev = __in6_dev_get(dev);
+ 	if (idev) {
+-		struct inet6_ifaddr *ifp;
+-
+ 		read_lock_bh(&idev->lock);
+-		list_for_each_entry(ifp, &idev->addr_list, if_list) {
+-			if (ifp->scope == IFA_LINK &&
+-			    !(ifp->flags & banned_flags)) {
+-				*addr = ifp->addr;
+-				err = 0;
+-				break;
+-			}
+-		}
++		err = __ipv6_get_lladdr(idev, addr, banned_flags);
+ 		read_unlock_bh(&idev->lock);
+ 	}
+ 	rcu_read_unlock();
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1343,8 +1343,9 @@ static void ip6_mc_hdr(struct sock *sk,
+ 	hdr->daddr = *daddr;
+ }
  
- 	if (err) {
- 		tun->dev->stats.rx_dropped++;
+-static struct sk_buff *mld_newpack(struct net_device *dev, int size)
++static struct sk_buff *mld_newpack(struct inet6_dev *idev, int size)
+ {
++	struct net_device *dev = idev->dev;
+ 	struct net *net = dev_net(dev);
+ 	struct sock *sk = net->ipv6.igmp_sk;
+ 	struct sk_buff *skb;
+@@ -1369,7 +1370,7 @@ static struct sk_buff *mld_newpack(struc
+ 
+ 	skb_reserve(skb, hlen);
+ 
+-	if (ipv6_get_lladdr(dev, &addr_buf, IFA_F_TENTATIVE)) {
++	if (__ipv6_get_lladdr(idev, &addr_buf, IFA_F_TENTATIVE)) {
+ 		/* <draft-ietf-magma-mld-source-05.txt>:
+ 		 * use unspecified address as the source address
+ 		 * when a valid link-local address is not available.
+@@ -1465,7 +1466,7 @@ static struct sk_buff *add_grhead(struct
+ 	struct mld2_grec *pgr;
+ 
+ 	if (!skb)
+-		skb = mld_newpack(dev, dev->mtu);
++		skb = mld_newpack(pmc->idev, dev->mtu);
+ 	if (!skb)
+ 		return NULL;
+ 	pgr = (struct mld2_grec *)skb_put(skb, sizeof(struct mld2_grec));
+@@ -1485,7 +1486,8 @@ static struct sk_buff *add_grhead(struct
+ static struct sk_buff *add_grec(struct sk_buff *skb, struct ifmcaddr6 *pmc,
+ 	int type, int gdeleted, int sdeleted)
+ {
+-	struct net_device *dev = pmc->idev->dev;
++	struct inet6_dev *idev = pmc->idev;
++	struct net_device *dev = idev->dev;
+ 	struct mld2_report *pmr;
+ 	struct mld2_grec *pgr = NULL;
+ 	struct ip6_sf_list *psf, *psf_next, *psf_prev, **psf_list;
+@@ -1514,7 +1516,7 @@ static struct sk_buff *add_grec(struct s
+ 		    AVAILABLE(skb) < grec_size(pmc, type, gdeleted, sdeleted)) {
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 		}
+ 	}
+ 	first = 1;
+@@ -1541,7 +1543,7 @@ static struct sk_buff *add_grec(struct s
+ 				pgr->grec_nsrcs = htons(scount);
+ 			if (skb)
+ 				mld_sendpack(skb);
+-			skb = mld_newpack(dev, dev->mtu);
++			skb = mld_newpack(idev, dev->mtu);
+ 			first = 1;
+ 			scount = 0;
+ 		}
+@@ -1596,8 +1598,8 @@ static void mld_send_report(struct inet6
+ 	struct sk_buff *skb = NULL;
+ 	int type;
+ 
++	read_lock_bh(&idev->lock);
+ 	if (!pmc) {
+-		read_lock_bh(&idev->lock);
+ 		for (pmc=idev->mc_list; pmc; pmc=pmc->next) {
+ 			if (pmc->mca_flags & MAF_NOREPORT)
+ 				continue;
+@@ -1609,7 +1611,6 @@ static void mld_send_report(struct inet6
+ 			skb = add_grec(skb, pmc, type, 0, 0);
+ 			spin_unlock_bh(&pmc->mca_lock);
+ 		}
+-		read_unlock_bh(&idev->lock);
+ 	} else {
+ 		spin_lock_bh(&pmc->mca_lock);
+ 		if (pmc->mca_sfcount[MCAST_EXCLUDE])
+@@ -1619,6 +1620,7 @@ static void mld_send_report(struct inet6
+ 		skb = add_grec(skb, pmc, type, 0, 0);
+ 		spin_unlock_bh(&pmc->mca_lock);
+ 	}
++	read_unlock_bh(&idev->lock);
+ 	if (skb)
+ 		mld_sendpack(skb);
+ }
 
 
