@@ -1,43 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759282Ab3GZP0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:26:10 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:35407 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759207Ab3GZP0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:26:08 -0400
-Message-ID: <51F2950D.3070103@ispras.ru>
-Date: Fri, 26 Jul 2013 19:26:05 +0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] usb: gadget: mv_u3d_core: fix violation of locking discipline
- in mv_u3d_ep_disable()
-References: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru> <20130725173017.GK25415@radagast>
-In-Reply-To: <20130725173017.GK25415@radagast>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932452Ab3GZP1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:27:23 -0400
+Received: from smtp121.dfw.emailsrvr.com ([67.192.241.121]:50458 "EHLO
+	smtp121.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756754Ab3GZP1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:27:19 -0400
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org, tj@kernel.org,
+        devicetree@vger.kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        swarren@wwwdotorg.org, ian.campbell@citrix.com,
+        rob.herring@calxeda.com
+Cc: Mark Langsdorf <mark.langsdorf@calxeda.com>
+Subject: [PATCH 5/5] sata, highbank: send extra clock cycles in SGPIO patterns
+Date: Fri, 26 Jul 2013 10:11:58 -0500
+Message-Id: <1374851518-4802-5-git-send-email-mark.langsdorf@calxeda.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
+References: <1374851518-4802-1-git-send-email-mark.langsdorf@calxeda.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+Some SGPIO PICs don't follow the standard very well and expect a
+certain number of clock cycles or port frames in each SGPIO pattern.
+Add two optional parameters in the DTB that can provide the number of
+extra clock cycles to be sent before and after each SGPIO pattern.
+Read those parameters from the DTB and send the extra clock cycles.
 
-On 07/25/2013 09:30 PM, Felipe Balbi wrote:
-> On Wed, Jul 24, 2013 at 12:20:17AM +0400, Alexey Khoroshilov wrote:
->> mv_u3d_nuke() expects to be calles with ep->u3d->lock held,
->> because mv_u3d_done() does. But mv_u3d_ep_disable() calls it
->> without lock that can lead to unpleasant consequences.
->>
->> Found by Linux Driver Verification project (linuxtesting.org).
->>
->> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> which commit introduced the bug ? Which kernels are affected by this bug ?
-The bug is present from the very beginning: commit 3d4eb9d of 15 June 2012.
-So it is in the mainline since v3.5.
+Signed-off-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+---
+ Documentation/devicetree/bindings/ata/sata_highbank.txt |  4 ++++
+ drivers/ata/sata_highbank.c                             | 16 +++++++++++++---
+ 2 files changed, 17 insertions(+), 3 deletions(-)
 
---
-Alexey
+diff --git a/Documentation/devicetree/bindings/ata/sata_highbank.txt b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+index d692e9e..a05eb92 100644
+--- a/Documentation/devicetree/bindings/ata/sata_highbank.txt
++++ b/Documentation/devicetree/bindings/ata/sata_highbank.txt
+@@ -22,6 +22,10 @@ Optional properties:
+ 			SGPIO bitstream.
+ - calxeda,tx-atten  : a u8 array that contains TX attenuation override
+ 			codes, one per port.
++- calxeda,pre-clocks : a u32 that indicates the number of additional clock
++			cycles to transmit before sending an SGPIO pattern
++- calxeda,post-clocks: a u32 that indicates the number of additional clock
++			cycles to transmit after sending an SGPIO pattern
+ 
+ Example:
+         sata@ffe08000 {
+diff --git a/drivers/ata/sata_highbank.c b/drivers/ata/sata_highbank.c
+index 4c8444f..0ca27fe 100644
+--- a/drivers/ata/sata_highbank.c
++++ b/drivers/ata/sata_highbank.c
+@@ -82,9 +82,11 @@ static DEFINE_SPINLOCK(sgpio_lock);
+ #define SGPIO_PINS			3
+ #define SGPIO_PORTS			8
+ 
+-/* can be cast as an ahci_host_priv for compatibility with most functions */
+ struct ecx_plat_data {
+ 	u32		n_ports;
++	/* number of extra clocks that the SGPIO PIC controller expects */
++	u32		pre_clocks;
++	u32		post_clocks;
+ 	unsigned	sgpio_gpio[SGPIO_PINS];
+ 	u32		sgpio_pattern;
+ 	u32		port_to_sgpio[SGPIO_PORTS];
+@@ -144,7 +146,7 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+ 	struct ecx_plat_data *pdata = (struct ecx_plat_data *) hpriv->plat_data;
+ 	struct ahci_port_priv *pp = ap->private_data;
+ 	unsigned long flags;
+-	int pmp, i;
++	int pmp, i, patt_len;
+ 	struct ahci_em_priv *emp;
+ 	u32 sgpio_out;
+ 
+@@ -161,6 +163,9 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+ 	spin_lock_irqsave(&sgpio_lock, flags);
+ 	ecx_parse_sgpio(pdata, ap->port_no, state);
+ 	sgpio_out = pdata->sgpio_pattern;
++	for (i = 0; i < pdata->pre_clocks; i++)
++		ecx_led_cycle_clock(pdata);
++
+ 	gpio_set_value(pdata->sgpio_gpio[SLOAD], 1);
+ 	ecx_led_cycle_clock(pdata);
+ 	gpio_set_value(pdata->sgpio_gpio[SLOAD], 0);
+@@ -168,11 +173,14 @@ static ssize_t ecx_transmit_led_message(struct ata_port *ap, u32 state,
+ 	 * bit-bang out the SGPIO pattern, by consuming a bit and then
+ 	 * clocking it out.
+ 	 */
+-	for (i = 0; i < (SGPIO_SIGNALS * pdata->n_ports); i++) {
++	patt_len = SGPIO_SIGNALS * pdata->n_ports;
++	for (i = 0; i < patt_len; i++) {
+ 		gpio_set_value(pdata->sgpio_gpio[SDATA], sgpio_out & 1);
+ 		sgpio_out >>= 1;
+ 		ecx_led_cycle_clock(pdata);
+ 	}
++	for (i = 0; i < pdata->post_clocks; i++)
++		ecx_led_cycle_clock(pdata);
+ 
+ 	/* save off new led state for port/slot */
+ 	emp->led_state = state;
+@@ -207,6 +215,8 @@ static void highbank_set_em_messages(struct device *dev,
+ 	of_property_read_u32_array(np, "calxeda,led-order",
+ 						pdata->port_to_sgpio,
+ 						pdata->n_ports);
++	of_property_read_u32(np, "calxeda,pre-clocks", &pdata->pre_clocks);
++	of_property_read_u32(np, "calxeda,post-clocks", &pdata->post_clocks);
+ 
+ 	/* store em_loc */
+ 	hpriv->em_loc = 0;
+-- 
+1.8.1.2
+
