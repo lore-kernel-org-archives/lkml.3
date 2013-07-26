@@ -1,123 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460Ab3GZQFW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 12:05:22 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:47654 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758033Ab3GZQFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 12:05:18 -0400
-Message-ID: <51F29E3A.6060202@wwwdotorg.org>
-Date: Fri, 26 Jul 2013 10:05:14 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Christian Ruppert <christian.ruppert@abilis.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Patrice CHOTARD <patrice.chotard@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Sascha Leuenberger <sascha.leuenberger@abilis.com>,
-        Pierrick Hascoet <pierrick.hascoet@abilis.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/4] pinmux: Add TB10x pinmux driver
-References: <20130626115051.GC7095@ab42.lan> <51CB279A.1090404@wwwdotorg.org> <20130705094859.GA27196@ab42.lan> <51D71337.6030409@wwwdotorg.org> <20130708130222.GA6402@ab42.lan> <51DDB5B8.5060909@wwwdotorg.org> <20130716084755.GB10914@ab42.lan> <51E56EF3.5040506@wwwdotorg.org> <20130718160700.GA14482@ab42.lan> <51E847EA.9060302@wwwdotorg.org> <20130726094228.GA3232@ab42.lan>
-In-Reply-To: <20130726094228.GA3232@ab42.lan>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759496Ab3GZQFt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 12:05:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35838 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759197Ab3GZQEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 12:04:30 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ying Han <yinghan@google.com>, Hugh Dickins <hughd@google.com>,
+        Michel Lespinasse <walken@google.com>,
+        Greg Thelen <gthelen@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, Balbir Singh <bsingharora@gmail.com>,
+        Glauber Costa <glommer@gmail.com>
+Subject: [PATCH v5.1 4/8] memcg: enhance memcg iterator to support predicates
+Date: Fri, 26 Jul 2013 18:04:14 +0200
+Message-Id: <1374854658-26990-5-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
+References: <1374854658-26990-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 03:42 AM, Christian Ruppert wrote:
-> On Thu, Jul 18, 2013 at 01:54:18PM -0600, Stephen Warren wrote:
->> On 07/18/2013 10:07 AM, Christian Ruppert wrote:
->> ...
->>> Well, perhaps my definition of "inside"/"outside" pins was not quite
->>> clear: The pin groups define the set of (kernel internal) pin numbers of
->>> "outside" pins which are used by pin controller to map a given
->>> interface. Inside pins are not numbered and the inside interfaces are
->>> only used to determine which outside pins are part of the same group
->>> (namely those for which the pin controller hardware provides a mux
->>> connection to the same inside interface):
->>>
->>>                        4
->>>                 4  /|--/-- SPI
->>>    PINS[0..3] --/--||  4
->>>                    \|--/-- GPIO[0..3]
->>>
->>>                    4
->>>    PINS[4..7] -----/------ GPIO[4..7]
->>>
->>>                        2
->>>                 2  /|--/-- I2C
->>>    PINS[8..9] --/--||  2
->>>                    \|--/-- GPIO[8..9]
->>>
->>> Pins 0..3 are in the SPI group because on the "inside" they can be muxed
->>> to the SPI interface.
->>> Pins 8..9 are in the I2C group because on the "inside" they can be muxed
->>> to the I2C interface.
->>> Pins 0..9 are in the GPIO group because on the "inside" they can be
->>> muxed to the GPIO controller.
->>>
->>> All pin numbers are relative to the "outside", however, or conflict
->>> management would not be possible. I hope this is more understandable
->>> than my previous explanations.
->>> Both muxes are controlled by the same register. In our overly simplistic
->>> example this is not strictly necessary but in reality you might have pin
->>> conflicts between the different interfaces.
->>
->> Same register, or same field/bits in that register?
->>
->> If it's the same field/bits, I would expect to see the following pin groups:
->>
->> 1) PINS[0..3], PINS[8..9]
->> 2) PINS[4..7]
->>
->> ... since those are the things that are independently muxable.
->> Otherwise, I'd expect to see the following groups:
->>
->> 1) PINS[0..3]
->> 2) PINS[4..7]
->> 3) PINS[8..9]
->>
->>> After the discussion we had so far I'm not so sure if extending the
->>> pinctrl system with this kind of features is a very good idea.
->>
->> That makes things simple:-)
->>
->> One thing I still don't understand; in a previous mail, you'd mentioned
->> 3 DT properties for configuring the pinmux; one represented the pin
->> group, one represented the mux function that was selected for that pin
->> group, and there was a third ("config"?) property. I still don't
->> understand that third property. I only see pins/pingroups and mux
->> functions in the diagram I quoted above.
-> 
-> In my proposal, pin groups represent interfaces instead of ports: All
-> three pin groups are configured through the same bit field in the same
-> register but they represent _logically_ independent functionalities.
+The caller of the iterator might know that some nodes or even subtrees
+should be skipped but there is no way to tell iterators about that so
+the only choice left is to let iterators to visit each node and do the
+selection outside of the iterating code. This, however, doesn't scale
+well with hierarchies with many groups where only few groups are
+interesting.
 
-Oh, that's a pretty "coupled" HW design!
+This patch adds mem_cgroup_iter_cond variant of the iterator with a
+callback which gets called for every visited node. There are three
+possible ways how the callback can influence the walk. Either the node
+is visited, it is skipped but the tree walk continues down the tree or
+the whole subtree of the current group is skipped.
 
-I would suggest having a single pin group for all 10 pins (since that's
-what HW really has). I imagine with that HW design, there's very little
-potential for any kind of dynamic pin-muxing, since it would affect
-multiple unrelated HW modules (I2C, SPI), and hence the co-ordination
-required for dynamic muxing would make it impractical. As such I would
-also specify the pinctrl configuration as a "hog" in the pin controller,
-since each configuration bit affects multiple other devices, so it
-doesn't make logical sense to try to specify the pinctrl configuration
-anywhere other than the pin controller.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ include/linux/memcontrol.h | 48 +++++++++++++++++++++++++----
+ mm/memcontrol.c            | 77 ++++++++++++++++++++++++++++++++++++----------
+ mm/vmscan.c                | 16 +++-------
+ 3 files changed, 108 insertions(+), 33 deletions(-)
 
-> The three DT properties are:
-> 
-> 1. interface (which pins are we actually interested in when requesting
->    this)
-> 2. port (which bit field/register is used to configure this)
-> 3. configuration of that port (which mux function(s) in that bit
->    field/register are possible to make the interface available)
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 065ecef..1276be3 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -41,6 +41,23 @@ struct mem_cgroup_reclaim_cookie {
+ 	unsigned int generation;
+ };
+ 
++enum mem_cgroup_filter_t {
++	VISIT,		/* visit current node */
++	SKIP,		/* skip the current node and continue traversal */
++	SKIP_TREE,	/* skip the whole subtree and continue traversal */
++};
++
++/*
++ * mem_cgroup_filter_t predicate might instruct mem_cgroup_iter_cond how to
++ * iterate through the hierarchy tree. Each tree element is checked by the
++ * predicate before it is returned by the iterator. If a filter returns
++ * SKIP or SKIP_TREE then the iterator code continues traversal (with the
++ * next node down the hierarchy or the next node that doesn't belong under the
++ * memcg's subtree).
++ */
++typedef enum mem_cgroup_filter_t
++(*mem_cgroup_iter_filter)(struct mem_cgroup *memcg, struct mem_cgroup *root);
++
+ #ifdef CONFIG_MEMCG
+ /*
+  * All "charge" functions with gfp_mask should use GFP_KERNEL or
+@@ -108,9 +125,18 @@ mem_cgroup_prepare_migration(struct page *page, struct page *newpage,
+ extern void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+ 	struct page *oldpage, struct page *newpage, bool migration_ok);
+ 
+-struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *,
+-				   struct mem_cgroup *,
+-				   struct mem_cgroup_reclaim_cookie *);
++struct mem_cgroup *mem_cgroup_iter_cond(struct mem_cgroup *root,
++				   struct mem_cgroup *prev,
++				   struct mem_cgroup_reclaim_cookie *reclaim,
++				   mem_cgroup_iter_filter cond);
++
++static inline struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
++				   struct mem_cgroup *prev,
++				   struct mem_cgroup_reclaim_cookie *reclaim)
++{
++	return mem_cgroup_iter_cond(root, prev, reclaim, NULL);
++}
++
+ void mem_cgroup_iter_break(struct mem_cgroup *, struct mem_cgroup *);
+ 
+ /*
+@@ -180,7 +206,8 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+ 	mem_cgroup_update_page_stat(page, idx, -1);
+ }
+ 
+-bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
++enum mem_cgroup_filter_t
++mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root);
+ 
+ void __mem_cgroup_count_vm_event(struct mm_struct *mm, enum vm_event_item idx);
+@@ -295,6 +322,14 @@ static inline void mem_cgroup_end_migration(struct mem_cgroup *memcg,
+ 		struct page *oldpage, struct page *newpage, bool migration_ok)
+ {
+ }
++static inline struct mem_cgroup *
++mem_cgroup_iter_cond(struct mem_cgroup *root,
++		struct mem_cgroup *prev,
++		struct mem_cgroup_reclaim_cookie *reclaim,
++		mem_cgroup_iter_filter cond)
++{
++	return NULL;
++}
+ 
+ static inline struct mem_cgroup *
+ mem_cgroup_iter(struct mem_cgroup *root,
+@@ -358,10 +393,11 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+ }
+ 
+ static inline
+-bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
++enum mem_cgroup_filter_t
++mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root)
+ {
+-	return false;
++	return VISIT;
+ }
+ 
+ static inline void mem_cgroup_split_huge_fixup(struct page *head)
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 441b81a..a6cd0d5 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -882,6 +882,15 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+ 	return memcg;
+ }
+ 
++static enum mem_cgroup_filter_t
++mem_cgroup_filter(struct mem_cgroup *memcg, struct mem_cgroup *root,
++		mem_cgroup_iter_filter cond)
++{
++	if (!cond)
++		return VISIT;
++	return cond(memcg, root);
++}
++
+ /*
+  * Returns a next (in a pre-order walk) alive memcg (with elevated css
+  * ref. count) or NULL if the whole root's subtree has been visited.
+@@ -889,7 +898,7 @@ struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+  * helper function to be used by mem_cgroup_iter
+  */
+ static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
+-		struct mem_cgroup *last_visited)
++		struct mem_cgroup *last_visited, mem_cgroup_iter_filter cond)
+ {
+ 	struct cgroup *prev_cgroup, *next_cgroup;
+ 
+@@ -897,10 +906,18 @@ static struct mem_cgroup *__mem_cgroup_iter_next(struct mem_cgroup *root,
+ 	 * Root is not visited by cgroup iterators so it needs an
+ 	 * explicit visit.
+ 	 */
+-	if (!last_visited)
+-		return root;
++	if (!last_visited) {
++		switch(mem_cgroup_filter(root, root, cond)) {
++		case VISIT:
++			return root;
++		case SKIP:
++			break;
++		case SKIP_TREE:
++			return NULL;
++		}
++	}
+ 
+-	prev_cgroup = (last_visited == root) ? NULL
++	prev_cgroup = (last_visited == root || !last_visited) ? NULL
+ 		: last_visited->css.cgroup;
+ skip_node:
+ 	next_cgroup = cgroup_next_descendant_pre(
+@@ -916,11 +933,30 @@ skip_node:
+ 	if (next_cgroup) {
+ 		struct mem_cgroup *mem = mem_cgroup_from_cont(
+ 				next_cgroup);
+-		if (css_tryget(&mem->css))
+-			return mem;
+-		else {
++
++		switch (mem_cgroup_filter(mem, root, cond)) {
++		case SKIP:
+ 			prev_cgroup = next_cgroup;
+ 			goto skip_node;
++		case SKIP_TREE:
++			/*
++			 * cgroup_rightmost_descendant is not an optimal way to
++			 * skip through a subtree (especially for imbalanced
++			 * trees leaning to right) but that's what we have right
++			 * now. More effective solution would be traversing
++			 * right-up for first non-NULL without calling
++			 * cgroup_next_descendant_pre afterwards.
++			 */
++			prev_cgroup = cgroup_rightmost_descendant(next_cgroup);
++			goto skip_node;
++		case VISIT:
++			if (css_tryget(&mem->css))
++				return mem;
++			else {
++				prev_cgroup = next_cgroup;
++				goto skip_node;
++			}
++			break;
+ 		}
+ 	}
+ 
+@@ -984,6 +1020,7 @@ static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
+  * @root: hierarchy root
+  * @prev: previously returned memcg, NULL on first invocation
+  * @reclaim: cookie for shared reclaim walks, NULL for full walks
++ * @cond: filter for visited nodes, NULL for no filter
+  *
+  * Returns references to children of the hierarchy below @root, or
+  * @root itself, or %NULL after a full round-trip.
+@@ -996,9 +1033,10 @@ static void mem_cgroup_iter_update(struct mem_cgroup_reclaim_iter *iter,
+  * divide up the memcgs in the hierarchy among all concurrent
+  * reclaimers operating on the same zone and priority.
+  */
+-struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
++struct mem_cgroup *mem_cgroup_iter_cond(struct mem_cgroup *root,
+ 				   struct mem_cgroup *prev,
+-				   struct mem_cgroup_reclaim_cookie *reclaim)
++				   struct mem_cgroup_reclaim_cookie *reclaim,
++				   mem_cgroup_iter_filter cond)
+ {
+ 	struct mem_cgroup *memcg = NULL;
+ 	struct mem_cgroup *last_visited = NULL;
+@@ -1015,7 +1053,9 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 	if (!root->use_hierarchy && root != root_mem_cgroup) {
+ 		if (prev)
+ 			goto out_css_put;
+-		return root;
++		if (mem_cgroup_filter(root, root, cond) == VISIT)
++			return root;
++		return NULL;
+ 	}
+ 
+ 	rcu_read_lock();
+@@ -1038,7 +1078,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 			last_visited = mem_cgroup_iter_load(iter, root, &seq);
+ 		}
+ 
+-		memcg = __mem_cgroup_iter_next(root, last_visited);
++		memcg = __mem_cgroup_iter_next(root, last_visited, cond);
+ 
+ 		if (reclaim) {
+ 			mem_cgroup_iter_update(iter, last_visited, memcg, seq);
+@@ -1049,7 +1089,11 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
+ 				reclaim->generation = iter->generation;
+ 		}
+ 
+-		if (prev && !memcg)
++		/*
++		 * We have finished the whole tree walk or no group has been
++		 * visited because filter told us to skip the root node.
++		 */
++		if (!memcg && (prev || (cond && !last_visited)))
+ 			goto out_unlock;
+ 	}
+ out_unlock:
+@@ -1797,13 +1841,14 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+  * 	a) it is over its soft limit
+  * 	b) any parent up the hierarchy is over its soft limit
+  */
+-bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
++enum mem_cgroup_filter_t
++mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 		struct mem_cgroup *root)
+ {
+ 	struct mem_cgroup *parent = memcg;
+ 
+ 	if (res_counter_soft_limit_excess(&memcg->res))
+-		return true;
++		return VISIT;
+ 
+ 	/*
+ 	 * If any parent up to the root in the hierarchy is over its soft limit
+@@ -1811,12 +1856,12 @@ bool mem_cgroup_soft_reclaim_eligible(struct mem_cgroup *memcg,
+ 	 */
+ 	while((parent = parent_mem_cgroup(parent))) {
+ 		if (res_counter_soft_limit_excess(&parent->res))
+-			return true;
++			return VISIT;
+ 		if (parent == root)
+ 			break;
+ 	}
+ 
+-	return false;
++	return SKIP;
+ }
+ 
+ /*
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index bb591fa..e03494a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2166,21 +2166,16 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
+ 			.zone = zone,
+ 			.priority = sc->priority,
+ 		};
+-		struct mem_cgroup *memcg;
++		struct mem_cgroup *memcg = NULL;
++		mem_cgroup_iter_filter filter = (soft_reclaim) ?
++			mem_cgroup_soft_reclaim_eligible : NULL;
+ 
+ 		nr_reclaimed = sc->nr_reclaimed;
+ 		nr_scanned = sc->nr_scanned;
+ 
+-		memcg = mem_cgroup_iter(root, NULL, &reclaim);
+-		do {
++		while ((memcg = mem_cgroup_iter_cond(root, memcg, &reclaim, filter))) {
+ 			struct lruvec *lruvec;
+ 
+-			if (soft_reclaim &&
+-			    !mem_cgroup_soft_reclaim_eligible(memcg, root)) {
+-				memcg = mem_cgroup_iter(root, memcg, &reclaim);
+-				continue;
+-			}
+-
+ 			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+ 
+ 			shrink_lruvec(lruvec, sc);
+@@ -2200,8 +2195,7 @@ __shrink_zone(struct zone *zone, struct scan_control *sc, bool soft_reclaim)
+ 				mem_cgroup_iter_break(root, memcg);
+ 				break;
+ 			}
+-			memcg = mem_cgroup_iter(root, memcg, &reclaim);
+-		} while (memcg);
++		}
+ 
+ 		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+ 			   sc->nr_scanned - nr_scanned,
+-- 
+1.8.3.2
 
