@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab3GZV1B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:27:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51015 "EHLO
+	id S932911Ab3GZV1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:27:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51002 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932624Ab3GZUx2 (ORCPT
+	with ESMTP id S932662Ab3GZUx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:53:28 -0400
+	Fri, 26 Jul 2013 16:53:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [ 05/59] tick: Prevent uncontrolled switch to oneshot mode
-Date: Fri, 26 Jul 2013 13:52:29 -0700
-Message-Id: <20130726205014.373241828@linuxfoundation.org>
+        Seth Heasley <seth.heasley@intel.com>, Tejun Heo <tj@kernel.org>
+Subject: [ 03/59] ata_piix: IDE-mode SATA patch for Intel Coleto Creek DeviceIDs
+Date: Fri, 26 Jul 2013 13:52:27 -0700
+Message-Id: <20130726205014.150603438@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -29,84 +26,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Seth Heasley <seth.heasley@intel.com>
 
-commit 1f73a9806bdd07a5106409bbcab3884078bd34fe upstream.
+commit c7e8695bfa0611b39493a9dfe8bab9f63f9809bd upstream.
 
-When the system switches from periodic to oneshot mode, the broadcast
-logic causes a possibility that a CPU which has not yet switched to
-oneshot mode puts its own clock event device into oneshot mode without
-updating the state and the timer handler.
+This patch adds the IDE-mode SATA DeviceIDs for the Intel Coleto Creek PCH.
 
-CPU0				CPU1
-				per cpu tickdev is in periodic mode
-				and switched to broadcast
-
-Switch to oneshot mode
- tick_broadcast_switch_to_oneshot()
-  cpumask_copy(tick_oneshot_broacast_mask,
-	       tick_broadcast_mask);
-
-  broadcast device mode = oneshot
-
-				Timer interrupt
-
-				irq_enter()
-				 tick_check_oneshot_broadcast()
-				  dev->set_mode(ONESHOT);
-
-				tick_handle_periodic()
-				 if (dev->mode == ONESHOT)
-				   dev->next_event += period;
-				   FAIL.
-
-We fail, because dev->next_event contains KTIME_MAX, if the device was
-in periodic mode before the uncontrolled switch to oneshot happened.
-
-We must copy the broadcast bits over to the oneshot mask, because
-otherwise a CPU which relies on the broadcast would not been woken up
-anymore after the broadcast device switched to oneshot mode.
-
-So we need to verify in tick_check_oneshot_broadcast() whether the CPU
-has already switched to oneshot mode. If not, leave the device
-untouched and let the CPU switch controlled into oneshot mode.
-
-This is a long standing bug, which was never noticed, because the main
-user of the broadcast x86 cannot run into that scenario, AFAICT. The
-nonarchitected timer mess of ARM creates a gazillion of differently
-broken abominations which trigger the shortcomings of that broadcast
-code, which better had never been necessary in the first place.
-
-Reported-and-tested-by: Stehle Vincent-B46079 <B46079@freescale.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-Cc: Mark Rutland <mark.rutland@arm.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1307012153060.4013@ionos.tec.linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/time/tick-broadcast.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/ata/ata_piix.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -400,7 +400,15 @@ void tick_check_oneshot_broadcast(int cp
- 	if (cpumask_test_cpu(cpu, to_cpumask(tick_broadcast_oneshot_mask))) {
- 		struct tick_device *td = &per_cpu(tick_cpu_device, cpu);
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -352,6 +352,8 @@ static const struct pci_device_id piix_p
+ 	/* SATA Controller IDE (BayTrail) */
+ 	{ 0x8086, 0x0F20, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
+ 	{ 0x8086, 0x0F21, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata_byt },
++	/* SATA Controller IDE (Coleto Creek) */
++	{ 0x8086, 0x23a6, PCI_ANY_ID, PCI_ANY_ID, 0, 0, ich8_2port_sata },
  
--		clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_ONESHOT);
-+		/*
-+		 * We might be in the middle of switching over from
-+		 * periodic to oneshot. If the CPU has not yet
-+		 * switched over, leave the device alone.
-+		 */
-+		if (td->mode == TICKDEV_MODE_ONESHOT) {
-+			clockevents_set_mode(td->evtdev,
-+					     CLOCK_EVT_MODE_ONESHOT);
-+		}
- 	}
- }
- 
+ 	{ }	/* terminate list */
+ };
 
 
