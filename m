@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933447Ab3GZV03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:26:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51023 "EHLO
+	id S932763Ab3GZV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:26:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51029 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737Ab3GZUxa (ORCPT
+	with ESMTP id S932758Ab3GZUxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 26 Jul 2013 16:53:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 07/59] ath9k: Do not assign noise for NULL caldata
-Date: Fri, 26 Jul 2013 13:52:31 -0700
-Message-Id: <20130726205014.587411687@linuxfoundation.org>
+        Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>,
+        Steffen Maier <maier@linux.vnet.ibm.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 08/59] SCSI: zfcp: fix adapter (re)open recovery while link to SAN is down
+Date: Fri, 26 Jul 2013 13:52:32 -0700
+Message-Id: <20130726205014.696828830@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726205013.795696531@linuxfoundation.org>
 References: <20130726205013.795696531@linuxfoundation.org>
@@ -27,33 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
 
-commit d3bcb7b24bbf09fde8405770e676fe0c11c79662 upstream.
+commit f76ccaac4f82c463a037aa4a1e4ccb85c7011814 upstream.
 
-ah->noise is maintained globally and not per-channel. This
-is updated in the reset() routine after the NF history has been
-filled for the *current channel*, just before switching to
-the new channel. There is no need to do it inside getnf(), since
-ah->noise must contain a value for the new channel.
+FCP device remains in status ERP_FAILED when device is switched online
+or adapter recovery is triggered  while link to SAN is down.
 
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+When Exchange Configuration Data command returns the FSF status
+FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE it aborts the exchange process.
+The only retries are done during the common error recovery procedure
+(i.e. max. 3 retries with 8sec sleep between) and remains in status
+ERP_FAILED with QDIO down.
+
+This commit reverts the commit 0df138476c8306478d6e726f044868b4bccf411c
+(zfcp: Fix adapter activation on link down).
+When FSF status FSF_EXCHANGE_CONFIG_DATA_INCOMPLETE is received the
+adapter recovery will be finished without any retries. QDIO will be
+up now and status changes such as LINK UP will be received now.
+
+Signed-off-by: Daniel Hansel <daniel.hansel@linux.vnet.ibm.com>
+Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/calib.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/s390/scsi/zfcp_fsf.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -389,7 +389,6 @@ bool ath9k_hw_getnf(struct ath_hw *ah, s
+--- a/drivers/s390/scsi/zfcp_fsf.c
++++ b/drivers/s390/scsi/zfcp_fsf.c
+@@ -563,6 +563,10 @@ static void zfcp_fsf_exchange_config_dat
+ 		fc_host_port_type(shost) = FC_PORTTYPE_UNKNOWN;
+ 		adapter->hydra_version = 0;
  
- 	if (!caldata) {
- 		chan->noisefloor = nf;
--		ah->noise = ath9k_hw_getchan_noise(ah, chan);
- 		return false;
- 	}
- 
++		/* avoids adapter shutdown to be able to recognize
++		 * events such as LINK UP */
++		atomic_set_mask(ZFCP_STATUS_ADAPTER_XCONFIG_OK,
++				&adapter->status);
+ 		zfcp_fsf_link_down_info_eval(req,
+ 			&qtcb->header.fsf_status_qual.link_down_info);
+ 		break;
 
 
