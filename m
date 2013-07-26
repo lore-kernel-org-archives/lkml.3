@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030204Ab3GZVmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:42:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50767 "EHLO
+	id S933631Ab3GZVmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:42:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50772 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab3GZUsW (ORCPT
+	with ESMTP id S932334Ab3GZUsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:22 -0400
+	Fri, 26 Jul 2013 16:48:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Dave Jones <davej@redhat.com>,
-        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        Joe Jin <joe.jin@oracle.com>, Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 13/79] ipv6: call udp_push_pending_frames when uncorking a socket with AF_INET pending data
-Date: Fri, 26 Jul 2013 13:47:03 -0700
-Message-Id: <20130726204723.335277498@linuxfoundation.org>
+Subject: [ 04/79] neighbour: fix a race in neigh_destroy()
+Date: Fri, 26 Jul 2013 13:46:54 -0700
+Message-Id: <20130726204722.376058298@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -29,122 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 8822b64a0fa64a5dd1dfcf837c5b0be83f8c05d1 ]
+[ Upstream commit c9ab4d85de222f3390c67aedc9c18a50e767531e ]
 
-We accidentally call down to ip6_push_pending_frames when uncorking
-pending AF_INET data on a ipv6 socket. This results in the following
-splat (from Dave Jones):
+There is a race in neighbour code, because neigh_destroy() uses
+skb_queue_purge(&neigh->arp_queue) without holding neighbour lock,
+while other parts of the code assume neighbour rwlock is what
+protects arp_queue
 
-skbuff: skb_under_panic: text:ffffffff816765f6 len:48 put:40 head:ffff88013deb6df0 data:ffff88013deb6dec tail:0x2c end:0xc0 dev:<NULL>
-------------[ cut here ]------------
-kernel BUG at net/core/skbuff.c:126!
-invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-Modules linked in: dccp_ipv4 dccp 8021q garp bridge stp dlci mpoa snd_seq_dummy sctp fuse hidp tun bnep nfnetlink scsi_transport_iscsi rfcomm can_raw can_bcm af_802154 appletalk caif_socket can caif ipt_ULOG x25 rose af_key pppoe pppox ipx phonet irda llc2 ppp_generic slhc p8023 psnap p8022 llc crc_ccitt atm bluetooth
-+netrom ax25 nfc rfkill rds af_rxrpc coretemp hwmon kvm_intel kvm crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel microcode pcspkr snd_hda_codec_hdmi snd_hda_intel snd_hda_codec snd_hwdep usb_debug snd_seq snd_seq_device snd_pcm e1000e snd_page_alloc snd_timer ptp snd pps_core soundcore xfs libcrc32c
-CPU: 2 PID: 8095 Comm: trinity-child2 Not tainted 3.10.0-rc7+ #37
-task: ffff8801f52c2520 ti: ffff8801e6430000 task.ti: ffff8801e6430000
-RIP: 0010:[<ffffffff816e759c>]  [<ffffffff816e759c>] skb_panic+0x63/0x65
-RSP: 0018:ffff8801e6431de8  EFLAGS: 00010282
-RAX: 0000000000000086 RBX: ffff8802353d3cc0 RCX: 0000000000000006
-RDX: 0000000000003b90 RSI: ffff8801f52c2ca0 RDI: ffff8801f52c2520
-RBP: ffff8801e6431e08 R08: 0000000000000000 R09: 0000000000000000
-R10: 0000000000000001 R11: 0000000000000001 R12: ffff88022ea0c800
-R13: ffff88022ea0cdf8 R14: ffff8802353ecb40 R15: ffffffff81cc7800
-FS:  00007f5720a10740(0000) GS:ffff880244c00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000005862000 CR3: 000000022843c000 CR4: 00000000001407e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
-Stack:
- ffff88013deb6dec 000000000000002c 00000000000000c0 ffffffff81a3f6e4
- ffff8801e6431e18 ffffffff8159a9aa ffff8801e6431e90 ffffffff816765f6
- ffffffff810b756b 0000000700000002 ffff8801e6431e40 0000fea9292aa8c0
-Call Trace:
- [<ffffffff8159a9aa>] skb_push+0x3a/0x40
- [<ffffffff816765f6>] ip6_push_pending_frames+0x1f6/0x4d0
- [<ffffffff810b756b>] ? mark_held_locks+0xbb/0x140
- [<ffffffff81694919>] udp_v6_push_pending_frames+0x2b9/0x3d0
- [<ffffffff81694660>] ? udplite_getfrag+0x20/0x20
- [<ffffffff8162092a>] udp_lib_setsockopt+0x1aa/0x1f0
- [<ffffffff811cc5e7>] ? fget_light+0x387/0x4f0
- [<ffffffff816958a4>] udpv6_setsockopt+0x34/0x40
- [<ffffffff815949f4>] sock_common_setsockopt+0x14/0x20
- [<ffffffff81593c31>] SyS_setsockopt+0x71/0xd0
- [<ffffffff816f5d54>] tracesys+0xdd/0xe2
-Code: 00 00 48 89 44 24 10 8b 87 d8 00 00 00 48 89 44 24 08 48 8b 87 e8 00 00 00 48 c7 c7 c0 04 aa 81 48 89 04 24 31 c0 e8 e1 7e ff ff <0f> 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55 48 89 e5 0f 0b 55
-RIP  [<ffffffff816e759c>] skb_panic+0x63/0x65
- RSP <ffff8801e6431de8>
+Convert all skb_queue_purge() calls to the __skb_queue_purge() variant
 
-This patch adds a check if the pending data is of address family AF_INET
-and directly calls udp_push_ending_frames from udp_v6_push_pending_frames
-if that is the case.
+Use __skb_queue_head_init() instead of skb_queue_head_init()
+to make clear we do not use arp_queue.lock
 
-This bug was found by Dave Jones with trinity.
+And hold neigh->lock in neigh_destroy() to close the race.
 
-(Also move the initialization of fl6 below the AF_INET check, even if
-not strictly necessary.)
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Cc: Dave Jones <davej@redhat.com>
-Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Reported-by: Joe Jin <joe.jin@oracle.com>
+Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/net/udp.h |    1 +
- net/ipv4/udp.c    |    3 ++-
- net/ipv6/udp.c    |    7 ++++++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
+ net/core/neighbour.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/include/net/udp.h
-+++ b/include/net/udp.h
-@@ -181,6 +181,7 @@ extern int udp_get_port(struct sock *sk,
- extern void udp_err(struct sk_buff *, u32);
- extern int udp_sendmsg(struct kiocb *iocb, struct sock *sk,
- 			    struct msghdr *msg, size_t len);
-+extern int udp_push_pending_frames(struct sock *sk);
- extern void udp_flush_pending_frames(struct sock *sk);
- extern int udp_rcv(struct sk_buff *skb);
- extern int udp_ioctl(struct sock *sk, int cmd, unsigned long arg);
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -799,7 +799,7 @@ send:
- /*
-  * Push out all pending data as one UDP datagram. Socket is locked.
-  */
--static int udp_push_pending_frames(struct sock *sk)
-+int udp_push_pending_frames(struct sock *sk)
- {
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
-@@ -818,6 +818,7 @@ out:
- 	up->pending = 0;
- 	return err;
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -231,7 +231,7 @@ static void neigh_flush_dev(struct neigh
+ 				   we must kill timers etc. and move
+ 				   it to safe state.
+ 				 */
+-				skb_queue_purge(&n->arp_queue);
++				__skb_queue_purge(&n->arp_queue);
+ 				n->arp_queue_len_bytes = 0;
+ 				n->output = neigh_blackhole;
+ 				if (n->nud_state & NUD_VALID)
+@@ -286,7 +286,7 @@ static struct neighbour *neigh_alloc(str
+ 	if (!n)
+ 		goto out_entries;
+ 
+-	skb_queue_head_init(&n->arp_queue);
++	__skb_queue_head_init(&n->arp_queue);
+ 	rwlock_init(&n->lock);
+ 	seqlock_init(&n->ha_lock);
+ 	n->updated	  = n->used = now;
+@@ -708,7 +708,9 @@ void neigh_destroy(struct neighbour *nei
+ 	if (neigh_del_timer(neigh))
+ 		pr_warn("Impossible event\n");
+ 
+-	skb_queue_purge(&neigh->arp_queue);
++	write_lock_bh(&neigh->lock);
++	__skb_queue_purge(&neigh->arp_queue);
++	write_unlock_bh(&neigh->lock);
+ 	neigh->arp_queue_len_bytes = 0;
+ 
+ 	if (dev->netdev_ops->ndo_neigh_destroy)
+@@ -858,7 +860,7 @@ static void neigh_invalidate(struct neig
+ 		neigh->ops->error_report(neigh, skb);
+ 		write_lock(&neigh->lock);
+ 	}
+-	skb_queue_purge(&neigh->arp_queue);
++	__skb_queue_purge(&neigh->arp_queue);
+ 	neigh->arp_queue_len_bytes = 0;
  }
-+EXPORT_SYMBOL(udp_push_pending_frames);
  
- int udp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t len)
---- a/net/ipv6/udp.c
-+++ b/net/ipv6/udp.c
-@@ -955,11 +955,16 @@ static int udp_v6_push_pending_frames(st
- 	struct udphdr *uh;
- 	struct udp_sock  *up = udp_sk(sk);
- 	struct inet_sock *inet = inet_sk(sk);
--	struct flowi6 *fl6 = &inet->cork.fl.u.ip6;
-+	struct flowi6 *fl6;
- 	int err = 0;
- 	int is_udplite = IS_UDPLITE(sk);
- 	__wsum csum = 0;
+@@ -1210,7 +1212,7 @@ int neigh_update(struct neighbour *neigh
  
-+	if (up->pending == AF_INET)
-+		return udp_push_pending_frames(sk);
-+
-+	fl6 = &inet->cork.fl.u.ip6;
-+
- 	/* Grab the skbuff where UDP header space exists. */
- 	if ((skb = skb_peek(&sk->sk_write_queue)) == NULL)
- 		goto out;
+ 			write_lock_bh(&neigh->lock);
+ 		}
+-		skb_queue_purge(&neigh->arp_queue);
++		__skb_queue_purge(&neigh->arp_queue);
+ 		neigh->arp_queue_len_bytes = 0;
+ 	}
+ out:
 
 
