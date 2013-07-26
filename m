@@ -1,190 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759287Ab3GZPSN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 11:18:13 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49944 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759080Ab3GZPSI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 11:18:08 -0400
-From: "ethan.kernel" <ethan.kernel@gmail.com>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Subject: [PATCH] hrtimer: Fix a performance regression by disable reprogramming in remove_hrtimer
-Date: Fri, 26 Jul 2013 23:18:00 +0800
-Message-Id: <5A3BB669-19D7-4B30-B0FE-658E24368D6E@gmail.com>
-Cc: johlstei@codeaurora.org, LKML <linux-kernel@vger.kernel.org>,
-        yinghai@kernel.org, Jin Feng <joe.jin@oracle.com>,
-        ethan.zhao@oracle.com
-To: tglx@linutronix.de, mingo@kernel.org
-Mime-Version: 1.0 (Mac OS X Mail 6.3 \(1503\))
-X-Mailer: Apple Mail (2.1503)
+	id S932297Ab3GZPSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 11:18:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1157 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757789Ab3GZPSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 11:18:21 -0400
+Date: Fri, 26 Jul 2013 17:12:56 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] debugfs: debugfs_remove_recursive() must not rely on
+	list_empty(d_subdirs)
+Message-ID: <20130726151256.GC19472@redhat.com>
+References: <20130723205854.GA9036@redhat.com> <20130724184640.GA21322@redhat.com> <20130725192742.GA14060@redhat.com> <20130725200423.GA22274@redhat.com> <20130725234357.GA14958@kroah.com> <20130726151151.GA19472@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726151151.GA19472@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 968320b hrtimer: Fix extra wakeups from __remove_hrtimer() introduced a significant scheduler 
-performance regression, following is the test:
+debugfs_remove_recursive() is wrong,
 
-a. Test environment:
-SUN FIRE X4170 M2 SERVER
-CPU model name: Intel(R) Xeon(R) CPU X5675  @ 3.07GHz
-2 socket X 6 core X 2 thread
+1. it wrongly assumes that !list_empty(d_subdirs) means that this
+   dir should be removed.
 
-b. To eliminate the disturbing of variable frequency technology of Intel CPU. We disabled the C-States, P-States
-T-States etc SpeedStep, Turboboost, power management in BIOS configuration.
+   This is not that bad by itself, but:
 
-c. Test case:
-1.test tool (Any better tools ?)
+2. if d_subdirs does not becomes empty after __debugfs_remove()
+   it gives up and silently fails, it doesn't even try to remove
+   other entries.
 
- #include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <signal.h>
-#include <sys/wait.h>
-#include <linux/unistd.h>
+   However ->d_subdirs can be non-empty because it still has the
+   already deleted !debugfs_positive() entries.
 
-#define LOOPS 1000000
+3. simple_release_fs() is called even if __debugfs_remove() fails.
 
-int main (void)
-{
-	unsigned long long t0, t1;
-	int pipe_1[2], pipe_2[2];
-	int m = 0, i;
+Suppose we have
 
-	pipe(pipe_1);
-	pipe(pipe_2);
+	dir1/
+		dir2/
+			file2
+		file1
 
-	if (!fork()) {
-		for (i = 0; i < LOOPS; i++) {
-			read(pipe_1[0], &m, sizeof(int));
-			write(pipe_2[1], &m, sizeof(int));
-		}
-	} else {
-		for (i = 0; i < LOOPS; i++) {
-			write(pipe_1[1], &m, sizeof(int));
-			read(pipe_2[0], &m, sizeof(int));
-		}
-	}
+and someone opens dir1/dir2/file2.
 
-	return 0;
-}
-from  http://people.redhat.com/mingo/cfs-scheduler/tools/pipe-test-1m.c
+Now, debugfs_remove_recursive(dir1/dir2) succeeds, and dir1/di2 goes
+away.
 
-2.after boot the test kernel a few minutes, execute
- $time ./pipe-test-1m
-  collect data output by time like:
-  real    0m9.326s
-  user    0m0.352s
-  sys     0m5.640s
-3.after the test case finished a few seconds, redo the same one.
+But debugfs_remove_recursive(dir1) silently fails and doesn't remove
+this directory. Because it tries to delete (the already deleted)
+dir1/dir2/file2 again and then fails due to "Avoid infinite loop"
+logic.
 
-d. Test result data
-Test kernel without patch 968320b hrtimer: Fix extra wakeups from __remove_hrtimer() /
-Or applied this patch to disable reprogramming in remove_hrtimer()
----------------------------------------------------------------------------------------------------------
-|      |    1     |     2    |   3      |    4     |    5     | 6    |    7     |    8     |   AVG        |
----------------------------------------------------------------------------------------------------------
-| real | 0m5.328s | 0m5.372s | 0m5.307s | 0m5.307s | 0m5.330s | 0m5.315s | 0m5.318s | 0m5.317s | 5.32425s |
----------------------------------------------------------------------------------------------------------
-| user | 0m0.106s | 0m0.098s | 0m0.108s | 0m0.120s | 0m0.113s | 0m0.121s | 0m0.125s | 0m0.103s | 0.11175s |
----------------------------------------------------------------------------------------------------------
-| sys  | 0m2.287s | 0m2.334s | 0m2.269s | 0m2.269s | 0m2.298s | 0m2.274s | 0m2.263s | 0m2.292s | 2.28575s |
----------------------------------------------------------------------------------------------------------
+Test-case:
 
-With patch 968320b hrtimer: Fix extra wakeups from __remove_hrtimer()
-Redo the test more than 10 times, select 8 of them, collect the data into following tables.
----------------------------------------------------------------------------------------------------------
-|      |    1     |     2    |   3      |    4     |    5     | 6    |    7     |    8     |   AVG       |
----------------------------------------------------------------------------------------------------------
-| real | 0m7.132s | 0m6.741s | 0m6.996s | 0m9.269s | 0m6.742s | 0m6.977s | 0m6.802s | 0m6.957s | 7.202s   |
----------------------------------------------------------------------------------------------------------
-| user | 0m0.033s | 0m0.031s | 0m0.048s | 0m0.436s | 0m0.022s | 0m0.005s | 0m0.014s | 0m0.014s | 0.075375s|
----------------------------------------------------------------------------------------------------------
-| sys  | 0m3.119s | 0m2.940s | 0m3.185s | 0m4.023s | 0m3.053s | 0m3.152s | 0m3.054s | 0m3.124s | 3.20625s |
----------------------------------------------------------------------------------------------------------
+	#!/bin/sh
 
-e. Conclusion
-We found the performance has 1.87775S(average value) down introduced by commit
-968320b hrtimer: Fix extra wakeups from __remove_hrtimer().
-That is more than -35% !
- 
-Disable reprogramming in remove_hrtimer() to fix this performance regression:
-function remove_hrtimer() with reprogramming the clock device is called in following two cases:
+	cd /sys/kernel/debug/tracing
+	echo 'p:probe/sigprocmask sigprocmask' >> kprobe_events
+	sleep 1000 < events/probe/sigprocmask/id &
+	echo -n >| kprobe_events
 
-1.	In function hrtimer_try_to_cancel()
-    Whatever you reprogram the clock device or not, the timer function wouldn¡¯t be called anymore. So set reprogram 
-	to 0 doesn¡¯t change the result of hrtimer_try_to_cancel()
+	[ -d events/probe ] && echo "ERR!! failed to rm probe"
 
-           hrtimer_try_to_cancel() 
-           --- > remove_hrtimer() 
-               ---- > __remove_hrtimer(timer, base, state, reprogram);
+And after that it is not possible to create another probe entry.
 
-2.	In function  __hrtimer_start_range_ns(), 
-    After remove_hrtimer() was called, the rest of code in this function will check the new timer added into queue is 
-	the leftmost or not, if needed, will reprogram the clock device.
+With this patch debugfs_remove_recursive() skips !debugfs_positive()
+files although this is not strictly needed. The most important change
+is that it does not try to make ->d_subdirs empty, it simply scans
+the whole list(s) recursively and removes as much as possible.
 
-     __hrtimer_start_range_ns()
-    {
-      ¡­ ¡­
-      ret = remove_hrtimer(timer, base);      
-      ¡­ ¡­
-      leftmost = enqueue_hrtimer(timer, new_base);
-      if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
-		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-      ¡­ ¡­
-    }
-
-Will we lose the chance to reprogram the clock device after remove_hrtimer() ?
-I think No, Because we didn¡¯t reprogram the clock device in remove_hrtimer(), if the timer removed is just the next one 
-will expire, we still could get reprogrammed in hrtimer_interrupt().     
-So reprogramming in remove_hrtimer() is not necessary-----If I am wrong, just point out.
-          
-Why 
-   commit 968320b hrtimer: Fix extra wakeups from __remove_hrtimer() 
-Introduced performance regression?
-The reprogramming is expensive ?  not cheap so far.
-We lost one chance to wakeup? 
-Yes, commit 968320b actually will delay the next expiry time to the timer next to the one removed. and it looks rational.
-If the extra wakeup is not harmful, We really need it to keep the performance and get the chance to wakeup in time.
-
-Reported-by: lijun.huang@oracle.com <lijun.huang@oracle.com>
-Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/hrtimer.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+ fs/debugfs/inode.c |   69 ++++++++++++++++-----------------------------------
+ 1 files changed, 22 insertions(+), 47 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index fd4b13b..742dc6b 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -934,26 +934,16 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 4888cb3..c7c83ff 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -533,8 +533,7 @@ EXPORT_SYMBOL_GPL(debugfs_remove);
+  */
+ void debugfs_remove_recursive(struct dentry *dentry)
  {
- 	if (hrtimer_is_queued(timer)) {
- 		unsigned long state;
--		int reprogram;
+-	struct dentry *child;
+-	struct dentry *parent;
++	struct dentry *child, *next, *parent;
  
+ 	if (IS_ERR_OR_NULL(dentry))
+ 		return;
+@@ -544,61 +543,37 @@ void debugfs_remove_recursive(struct dentry *dentry)
+ 		return;
+ 
+ 	parent = dentry;
++ down:
+ 	mutex_lock(&parent->d_inode->i_mutex);
++	list_for_each_entry_safe(child, next, &parent->d_subdirs, d_u.d_child) {
++		if (!debugfs_positive(child))
++			continue;
+ 
+-	while (1) {
 -		/*
--		 * Remove the timer and force reprogramming when high
--		 * resolution mode is active and the timer is on the current
--		 * CPU. If we remove a timer on another CPU, reprogramming is
--		 * skipped. The interrupt event on this CPU is fired and
--		 * reprogramming happens in the interrupt handler. This is a
--		 * rare case and less expensive than a smp call.
+-		 * When all dentries under "parent" has been removed,
+-		 * walk up the tree until we reach our starting point.
 -		 */
- 		debug_deactivate(timer);
- 		timer_stats_hrtimer_clear_start_info(timer);
--		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
- 		/*
- 		 * We must preserve the CALLBACK state flag here,
- 		 * otherwise we could move the timer base in
- 		 * switch_hrtimer_base.
- 		 */
- 		state = timer->state & HRTIMER_STATE_CALLBACK;
--		__remove_hrtimer(timer, base, state, reprogram);
-+		__remove_hrtimer(timer, base, state, 0);
- 		return 1;
+-		if (list_empty(&parent->d_subdirs)) {
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			if (parent == dentry)
+-				break;
+-			parent = parent->d_parent;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-		}
+-		child = list_entry(parent->d_subdirs.next, struct dentry,
+-				d_u.d_child);
+- next_sibling:
+-
+-		/*
+-		 * If "child" isn't empty, walk down the tree and
+-		 * remove all its descendants first.
+-		 */
++		/* perhaps simple_empty(child) makes more sense */
+ 		if (!list_empty(&child->d_subdirs)) {
+ 			mutex_unlock(&parent->d_inode->i_mutex);
+ 			parent = child;
+-			mutex_lock(&parent->d_inode->i_mutex);
+-			continue;
++			goto down;
+ 		}
+-		__debugfs_remove(child, parent);
+-		if (parent->d_subdirs.next == &child->d_u.d_child) {
+-			/*
+-			 * Try the next sibling.
+-			 */
+-			if (child->d_u.d_child.next != &parent->d_subdirs) {
+-				child = list_entry(child->d_u.d_child.next,
+-						   struct dentry,
+-						   d_u.d_child);
+-				goto next_sibling;
+-			}
+-
+-			/*
+-			 * Avoid infinite loop if we fail to remove
+-			 * one dentry.
+-			 */
+-			mutex_unlock(&parent->d_inode->i_mutex);
+-			break;
+-		}
+-		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
++ up:
++		if (!__debugfs_remove(child, parent))
++			simple_release_fs(&debugfs_mount, &debugfs_mount_count);
  	}
- 	return 0;
+ 
+-	parent = dentry->d_parent;
++	mutex_unlock(&parent->d_inode->i_mutex);
++	child = parent;
++	parent = parent->d_parent;
+ 	mutex_lock(&parent->d_inode->i_mutex);
+-	__debugfs_remove(dentry, parent);
++
++	if (child != dentry) {
++		next = list_entry(child->d_u.d_child.next, struct dentry,
++					d_u.d_child);
++		goto up;
++	}
++
++	if (!__debugfs_remove(child, parent))
++		simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ 	mutex_unlock(&parent->d_inode->i_mutex);
+-	simple_release_fs(&debugfs_mount, &debugfs_mount_count);
+ }
+ EXPORT_SYMBOL_GPL(debugfs_remove_recursive);
+ 
 -- 
-1.7.1
+1.5.5.1
+
+
