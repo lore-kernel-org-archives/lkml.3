@@ -1,69 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520Ab3GZV3F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:29:05 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:13625 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933477Ab3GZV25 convert rfc822-to-8bit (ORCPT
+	id S933112Ab3GZV2y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:28:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50823 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759999Ab3GZUs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:28:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 26 Jul 2013 14:27:42 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 26 Jul 2013 14:28:55 -0700
-Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Index: Ac6KRaCn59mkT2YQSWGMicjyfMcRjgAAUo5Q
-Message-ID: <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
-References: <1374871308-490-1-git-send-email-achew@nvidia.com>
- <51F2E74E.2060107@wwwdotorg.org>
-In-Reply-To: <51F2E74E.2060107@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 26 Jul 2013 16:48:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Soeren Moch <smoch@web.de>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 74/79] media: dmxdev: remove dvb_ringbuffer_flush() on writer side
+Date: Fri, 26 Jul 2013 13:48:04 -0700
+Message-Id: <20130726204730.580677076@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
+In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
+References: <20130726204721.849052763@linuxfoundation.org>
+User-Agent: quilt/0.60-5.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 07/26/2013 02:41 PM, Andrew Chew wrote:
-> > There exists a PRIMARY_SECONDARY_PAD3 in the same register base as
-> > PRIMARY_SECONDARY_PAD2, which controls the function of certain pins.
-> > Add a property for this setting.
-> 
-> How does this interact with the pinctrl driver that Laxman just sent for
-> Palmas?
-> 
-> https://lkml.org/lkml/2013/7/26/141
-> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Thanks for pointing this out.  Given this:
+------------------
 
-+Optional properties:
-+- ti,palams-enable-dvfs1: Enable DVFS1. Configure pins for DVFS1 mode.
-+- ti,palams-enable-dvfs2: Enable DVFS2. Configure pins for DVFS2 mode.
+From: Soeren Moch <smoch@web.de>
 
-I think his work already encompasses what my patch is supposed to do.
+commit 414abbd2cd4c2618895f02ed3a76ec6647281436 upstream.
 
-Abandoning this patch.
+In dvb_ringbuffer lock-less synchronizationof reader and writer threads is done
+with separateread and write pointers. Sincedvb_ringbuffer_flush() modifies the
+read pointer, this function must not be called from the writer thread.
+This patch removes the dvb_ringbuffer_flush() calls in the dmxdev ringbuffer
+write functions, this fixes Oopses "Unable to handle kernel paging request"
+I could observe for the call chaindvb_demux_read ->dvb_dmxdev_buffer_read ->
+dvb_ringbuffer_read_user -> __copy_to_user (the reader side of the ringbuffer).
+The flush calls at the write side are not necessary anyway since ringbuffer_flush
+is also called in dvb_dmxdev_buffer_read() when an error condition is set in the
+ringbuffer.
+This patch should also be applied to stable kernels.
+
+Signed-off-by: Soeren Moch <smoch@web.de>
+Reviewed-by: Sakari Ailus <sakari.ailus@iki.fi>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/media/dvb-core/dmxdev.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+--- a/drivers/media/dvb-core/dmxdev.c
++++ b/drivers/media/dvb-core/dmxdev.c
+@@ -377,10 +377,8 @@ static int dvb_dmxdev_section_callback(c
+ 		ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer2,
+ 					      buffer2_len);
+ 	}
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(&dmxdevfilter->buffer);
++	if (ret < 0)
+ 		dmxdevfilter->buffer.error = ret;
+-	}
+ 	if (dmxdevfilter->params.sec.flags & DMX_ONESHOT)
+ 		dmxdevfilter->state = DMXDEV_STATE_DONE;
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+@@ -416,10 +414,8 @@ static int dvb_dmxdev_ts_callback(const
+ 	ret = dvb_dmxdev_buffer_write(buffer, buffer1, buffer1_len);
+ 	if (ret == buffer1_len)
+ 		ret = dvb_dmxdev_buffer_write(buffer, buffer2, buffer2_len);
+-	if (ret < 0) {
+-		dvb_ringbuffer_flush(buffer);
++	if (ret < 0)
+ 		buffer->error = ret;
+-	}
+ 	spin_unlock(&dmxdevfilter->dev->lock);
+ 	wake_up(&buffer->queue);
+ 	return 0;
+
+
