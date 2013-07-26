@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760715Ab3GZVhx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:37:53 -0400
-Received: from mxout1.netvision.net.il ([194.90.9.20]:44087 "EHLO
-	mxout1.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760036Ab3GZVhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 17:37:48 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 26 Jul 2013 17:37:48 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <51F2E8A4.2010405@gmail.com>
-Date: Sat, 27 Jul 2013 00:22:44 +0300
-From: Eli Billauer <eli.billauer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
- Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the staging tree
-References: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
- <20130726210335.GA2788@kroah.com>
-In-reply-to: <20130726210335.GA2788@kroah.com>
+	id S1760729Ab3GZViC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:38:02 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:51089 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760036Ab3GZVh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 17:37:58 -0400
+Date: Fri, 26 Jul 2013 17:37:50 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, dave.hansen@intel.com,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bp@suse.de, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-ID: <20130726213750.GE17975@cmpxchg.org>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Greg,
+On Fri, Jul 26, 2013 at 02:44:29PM +0200, Michal Hocko wrote:
+> I would like to resurrect Dave's patch.  It was originally posted here
+> https://lkml.org/lkml/2010/9/16/250 and I have resurrected it here
+> https://lkml.org/lkml/2012/10/12/175 for the first time. There didn't
+> seem to be any strong opposition but the patch has been dropped later
+> from the mm tree.
+> 
+> To summarize concerns:
+> Kosaki was worried about possible excessive logging when somebody drops
+> caches too often (but then he claimed he didn't have a strong opinion on
+> that) and later acked the patch (https://lkml.org/lkml/2012/10/12/350).
+> I would even dare to say opposite. If somebody drops caches too often
+> then I would really like to know that from the log when supporting a
+> system because it almost for sure means that there is something fishy
+> going on. It is also worth mentioning that only root can write drop
+> caches so this is not an flooding attack vector.
 
-I was just about to submit a patch fixing this issue. Should arrive in a 
-few minutes. Sorry.
+Agreed.
 
-Will this be the follow-on patch you mentioned for fixing the "sparse 
-errors" this driver produced? I'm wasn't sure what you meant with that.
+> Andrew was worried (http://lkml.indiana.edu/hypermail/linux/kernel/1210.3/00605.html)
+> about people hating us because they are using this as a solution to
+> their issues. I concur that most of those are just hacks that found
+> their way into scripts looong time agon and stayed there. We should
+> rather not feed these cargo cults and rather fix the real bugs. History
+> has been showing us that users are usually getting rid of old hacks when
+> something starts screeming at them. So let's screem.
 
-Oddly enough, I failed to repeat the compilation issue with allmodconfig 
-on x86_64, but it did appear on allyesconfig. The problem is obvious, 
-and it's strange my own test compilations went through even so.
+Agreed.  The whole point of this is to be a pain in the ass in order
+to establish a feedback loop.
 
-Regards,
-    Eli
+> Boris then noted (http://lkml.indiana.edu/hypermail/linux/kernel/1210.3/00659.html)
+> that he is using drop_caches to make s2ram faster but as others noted
+> this just adds the overhead to the resume path so it might work only for
+> certain use cases. Having a low priority message under such conditions
+> shouldn't such a big deal.
 
-On 27/07/13 00:03, Greg KH wrote:
-> On Fri, Jul 26, 2013 at 04:02:54PM +1000, Stephen Rothwell wrote:
->    
->> Hi Greg,
->>
->> After merging the staging tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> drivers/staging/xillybus/xillybus_pcie.o:(.data+0x6d8): multiple definition of `xillyname'
->> drivers/staging/xillybus/xillybus_core.o:(.data+0x888): first defined here
->>
->> Caused by commit 48bae0507410 ("staging: New driver: Xillybus generic
->> interface for FPGA").
->>
->> I have disabled that driver.
->>      
-> I think I need to just always make any new staging driver only build as
-> a module, and not allowed to be built into the kernel.  That will save
-> you time dealing with this, and me the extra time of marking them all as
-> modules-only every time :)
->
-> Sorry about this, I'll go fix this up now...
->
-> greg k-h
->
->    
+A oneliner like this should drown in the overall noise of the
+suspend-resume path.
 
+> I am bringing the patch up again because this has proved being really
+> helpful when chasing strange performance issues which (surprise
+> surprise) turn out to be related to artificially dropped caches done
+> because the admin thinks this would help... So mostly those who support
+> machines which are not in their hands would benefit from such a change.
+> 
+> I have just refreshed the original patch on top of the current mm tree
+> and lowered priority to KERN_INFO to make the message less hysterical.
+> 
+> : From: Dave Hansen <dave@linux.vnet.ibm.com>
+> : Date: Fri, 12 Oct 2012 14:30:54 +0200
+> :
+> : There is plenty of anecdotal evidence and a load of blog posts
+> : suggesting that using "drop_caches" periodically keeps your system
+> : running in "tip top shape".  Perhaps adding some kernel
+> : documentation will increase the amount of accurate data on its use.
+> :
+> : If we are not shrinking caches effectively, then we have real bugs.
+> : Using drop_caches will simply mask the bugs and make them harder
+> : to find, but certainly does not fix them, nor is it an appropriate
+> : "workaround" to limit the size of the caches.
+> :
+> : It's a great debugging tool, and is really handy for doing things
+> : like repeatable benchmark runs.  So, add a bit more documentation
+> : about it, and add a little KERN_NOTICE.  It should help developers
+> : who are chasing down reclaim-related bugs.
+> 
+> [mhocko@suse.cz: refreshed to current -mm tree]
+> [akpm@linux-foundation.org: checkpatch fixes]
+> Signed-off-by: Dave Hansen <dave@linux.vnet.ibm.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
