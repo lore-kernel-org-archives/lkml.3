@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab3GZNYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 09:24:09 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:3464 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757557Ab3GZNYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 09:24:07 -0400
-Message-ID: <51F27868.1010104@xs4all.nl>
-Date: Fri, 26 Jul 2013 15:23:52 +0200
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130630 Icedove/17.0.7
+	id S1758886Ab3GZNYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 09:24:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31482 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758868Ab3GZNYL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 09:24:11 -0400
+Date: Fri, 26 Jul 2013 09:23:35 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jingbai Ma <jingbai.ma@hp.com>
+Cc: "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kumagai-atsushi@mxc.nes.nec.co.jp" 
+	<kumagai-atsushi@mxc.nes.nec.co.jp>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, cpw@sgi.com,
+        "Mitchell, Lisa (MCLinux in Fort Collins)" <lisa.mitchell@hp.com>,
+        "Croxon, Nigel" <nigel.croxon@hp.com>,
+        "Wang, Jin (Steven)" <jin.wang@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: makedumpfile 1.5.4 + kernel 3.11-rc2+ 4TB tests
+Message-ID: <20130726132335.GA27529@redhat.com>
+References: <51F260AF.7010409@hp.com>
 MIME-Version: 1.0
-To: Alban Browaeys <alban.browaeys@gmail.com>
-CC: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alban Browaeys <prahal@yahoo.com>
-Subject: Re: [PATCH 1/4] [media] em28xx: fix assignment of the eeprom data.
-References: <1374015476-26197-1-git-send-email-prahal@yahoo.com>
-In-Reply-To: <1374015476-26197-1-git-send-email-prahal@yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F260AF.7010409@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ouch. I'll take this for 3.11 and CC linux-stable for 3.10.
-
-I'm amazed that this hasn't been discovered earlier.
-
-Thanks!
-
-	Hans
-
-On 07/17/2013 12:57 AM, Alban Browaeys wrote:
-> Set the config structure pointer to the eeprom data pointer (data,
-> here eedata dereferenced) not the pointer to the pointer to
-> the eeprom data (eedata itself).
+On Fri, Jul 26, 2013 at 07:42:39PM +0800, Jingbai Ma wrote:
+> Hi,
 > 
-> Signed-off-by: Alban Browaeys <prahal@yahoo.com>
-> ---
->  drivers/media/usb/em28xx/em28xx-i2c.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> I have run some tests with makedumpfile 1.5.4 and upstream kernel
+> 3.11-rc2+ on a machine with 4TB memory, here is testing results:
 > 
-> diff --git a/drivers/media/usb/em28xx/em28xx-i2c.c b/drivers/media/usb/em28xx/em28xx-i2c.c
-> index 4851cc2..c4ff973 100644
-> --- a/drivers/media/usb/em28xx/em28xx-i2c.c
-> +++ b/drivers/media/usb/em28xx/em28xx-i2c.c
-> @@ -726,7 +726,7 @@ static int em28xx_i2c_eeprom(struct em28xx *dev, unsigned bus,
->  
->  	*eedata = data;
->  	*eedata_len = len;
-> -	dev_config = (void *)eedata;
-> +	dev_config = (void *)*eedata;
->  
->  	switch (le16_to_cpu(dev_config->chip_conf) >> 4 & 0x3) {
->  	case 0:
+> Test environment:
+> Machine: HP ProLiant DL980 G7 with 4TB RAM.
+> CPU: Intel(R) Xeon(R) CPU E7- 2860  @ 2.27GHz (8 sockets, 10 cores)
+> (Only 1 CPU was enabled the 2nd kernel)
+> Kernel: 3.11.0-rc2+ (at patch b3a3a9c441e2c8f6b6760de9331023a7906a4ac6)
+> crashkernel=384MB
+> vmcore size: 4.0TB
+> Dump file size: 15GB
+> All measured time from debug message of makedumpfile.
+> As a comparison, I also have tested makedumpfile 1.5.3.
 > 
+> (all time in seconds)
+>                      Excluding pages   Copy data   Total
+> makedumpfile 1.5.3          468         1182       1650
+> makedumpfile 1.5.4           93          518        611
+> 
+> 
+> So it seems there is a great performance improvement by the mmap mechanism.
+
+[CC Andrew].
+
+Thanks Jingbai for testing results. Good to see that vmcore mmap() patches
+are helping.
+
+Thanks
+Vivek
