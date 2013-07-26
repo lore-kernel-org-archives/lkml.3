@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab3GZHi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 03:38:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:47407 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab3GZHip (ORCPT
+	id S1757502Ab3GZHjL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 03:39:11 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:51456 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756515Ab3GZHi6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 03:38:45 -0400
-Message-ID: <51F22781.1080906@ti.com>
-Date: Fri, 26 Jul 2013 10:38:41 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH 29/36] video: output: convert class code to use dev_groups
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org> <1374703539-9705-30-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1374703539-9705-30-git-send-email-gregkh@linuxfoundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="clS6sc07IItX65tHUGRGVpNOovXeJl8qT"
+	Fri, 26 Jul 2013 03:38:58 -0400
+Date: Fri, 26 Jul 2013 17:38:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Quigley <merlin@countercultured.net>
+Cc: Eric Paris <eparis@redhat.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Quigley <dpquigl@davequigley.com>,
+        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>,
+        Miguel Rodel Felipe <Rodel_FM@dsi.a-star.edu.sg>,
+        Phua Eu Gene <PHUA_Eu_Gene@dsi.a-star.edu.sg>,
+        Khin Mi Mi Aung <Mi_Mi_AUNG@dsi.a-star.edu.sg>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: linux-next: manual merge of the selinux tree with Linus' tree
+Message-Id: <20130726173849.4dabf5c94991228efa0bf03b@canb.auug.org.au>
+In-Reply-To: <06EC4DE7-7DC5-4C80-BA1D-2A96527CA7BF@countercultured.net>
+References: <20130726134823.e4c0a1b7bad087c12b3ce782@canb.auug.org.au>
+	<06EC4DE7-7DC5-4C80-BA1D-2A96527CA7BF@countercultured.net>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---clS6sc07IItX65tHUGRGVpNOovXeJl8qT
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi David,
 
-On 25/07/13 01:05, Greg Kroah-Hartman wrote:
-> The dev_attrs field of struct class is going away soon, dev_groups
-> should be used instead.  This converts the video output class code to
-> use the correct field.
+On Thu, 25 Jul 2013 21:22:48 -0700 David Quigley <merlin@countercultured.ne=
+t> wrote:
+>
+> I guess my signed off got stripped somewhere. Originally I maintained tho=
+se commits but Steve Dickson from red hat picked them up and they then made=
+ it into trond's tree and then into Linus'.
 >=20
-> Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-> Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> ---
->=20
-> Jean-Christophe and Tomi, feel free to take this through your tree, or
-> ACK it and I can take it through mine.
->=20
->  drivers/video/output.c | 20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
+> I unfortunately don't have my davequigley.com identities on my iPhone
+> but you can add a sign off by dpquigl@davequigley.com for the commit.
 
-I can take this.
+Noone can, it is set in stone in Linus' tree, now.  My comment was just a
+heads up that something went wrong in the process.
 
- Tomi
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-
-
---clS6sc07IItX65tHUGRGVpNOovXeJl8qT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+--Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR8ieBAAoJEPo9qoy8lh71ucQP/AmiLb5SHHc+oI/0ByQIQPSf
-Z5r+xnnQ8NAgRMi1VO/Bfuu3CsnCPa+ljUlv5mX9JDKtjip5n0s9aYEa/wU/gmbl
-w6XyHObS7t5WBv75OeIwLH546Q6V8ja2DArr3Qi5+4Jn2EQxORIJTdc1T2j/Go7Q
-rgbkg+tsBCXsiekT+NhYar7gMxDZpwxbpnYwj+bgoTHUjYDFwkbGC4NCMaFwPTxN
-bNqh9UPwrxNCAxawfR2+A1xQJXBU2Zc96qFAOF46QB2G3d/k5UgnOP3fsI4ggOZR
-P5gmTRDfLSdPOM+HsJ2QGqezmpczR6d7mR12tBdsukxbTzI9FSrsP18ARKrqVhDS
-xF6JRlC1C8pEveeqZosQlnlzG5mYJ7rAVnTURn5WJGkxVuSIjwMjd/8GrsKXU9Dq
-pAq0oZD6k24zrJgucfqX32jdl9+nf5Oit2tvvv95HlRdek9mGkXTNQn4EKvtlT7C
-Prv9Cwoo5ypf513I9un5uH4hORu/8gNGTvWL9VxgqfFsBTCg8v5gOh2Mcq+0EO+C
-E2eScpjik/vKALa45K1Y+xaYBKPDlVQ3oDwk7tytgPW8D6JUYqkpMcfhM4Dz4qDV
-A1DrtO/WnFcwwHD30fQMKqCmLFHdAxMQt/87zquw7MqAvRsLZbbsB89zxJv9P+Q/
-ksYRwfHWvcTH+SUlDk0Q
-=QHf3
+iQIcBAEBCAAGBQJR8ieNAAoJEECxmPOUX5FECQYQAI5ZyyA8ba1B7Aolxk2y6JMP
+Dy5FAe27Jgj/TK8sThUsxNyDzWQtmecLqQdD8AfJX4pmlK5eGP5s5K8g5bhlx2Q3
+9Fxs55PgbKRI/vrabzzLVp93371gGRXgU4mxG24kSzg+JraFOg9Yh47mCAbXrsGg
+Ao4do5at6TE2SfxAFhaCc7mC2cU4wCrPukykBlSF2J62t7XV1t80SyszPtAG6PFQ
+CnBDFOd0v7ePxJJT7exrD4h8FaNq9M9oPDpy5IprEkdCaZBf1/h3anU/oiXjb/0f
+rU08OKqOh+eHa8CnI+F12Jh2TNPkwTSSDSzVn1KmbrzPRsDcCcpu0Wbme0PH1mWe
+Cta1GG5cE+CrXTqJSSFA8sdnk9gmF3mzOnYMeSXzwaPzySSty0UFWXHF49B1V3lL
+kSKGZdPE2e/cJZW8fdxlj5nTJREZPsjNqpnRda/imUpS5JzUp81CP95HWyL7YpjA
+HKBrX3IxVKpuX2Icfy66vc+NEXeVncBdYL3Tb6UJChJIxFdVrRa3Fgk2FtDUKsBV
+QTQOloFrBdbQb8zxUqkuYTMWkr5Uso640pL6YA4gktHh39SiAcTNi8Xn8kmfUqcs
+bAZIKFBWHu3RKJbTW7TPbYqtiNooqBoLSntgX7Qf3oopLiuT7AuZjhiOXFLj8dAI
+EbrEPfDBklBj7eXMb03x
+=a8qC
 -----END PGP SIGNATURE-----
 
---clS6sc07IItX65tHUGRGVpNOovXeJl8qT--
+--Signature=_Fri__26_Jul_2013_17_38_49_+1000_nM1yr97zIma+S1Tr--
