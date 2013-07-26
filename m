@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933552Ab3GZVai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 17:30:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50917 "EHLO
+	id S933477Ab3GZVao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 17:30:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50727 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759923Ab3GZUsx (ORCPT
+	with ESMTP id S1759988Ab3GZUsw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 16:48:53 -0400
+	Fri, 26 Jul 2013 16:48:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Steinar H. Gunderson" <sesse@google.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 41/79] vlan: mask vlan prio bits
-Date: Fri, 26 Jul 2013 13:47:31 -0700
-Message-Id: <20130726204726.713089396@linuxfoundation.org>
+        Kent Overstreet <kmo@daterainc.com>
+Subject: [ 50/79] bcache: Shutdown fix
+Date: Fri, 26 Jul 2013 13:47:40 -0700
+Message-Id: <20130726204727.788803229@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.3.rc0.20.gb99dd2e
 In-Reply-To: <20130726204721.849052763@linuxfoundation.org>
 References: <20130726204721.849052763@linuxfoundation.org>
@@ -28,93 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Kent Overstreet <kmo@daterainc.com>
 
-[ Upstream commit d4b812dea4a236f729526facf97df1a9d18e191c ]
+commit 5caa52afc5abd1396e4af720469abb5843a71eb8 upstream.
 
-In commit 48cc32d38a52d0b68f91a171a8d00531edc6a46e
-("vlan: don't deliver frames for unknown vlans to protocols")
-Florian made sure we set pkt_type to PACKET_OTHERHOST
-if the vlan id is set and we could find a vlan device for this
-particular id.
+Stopping a cache set is supposed to make it stop attached backing
+devices, but somewhere along the way that code got lost. Fixing this
+mainly has the effect of fixing our reboot notifier.
 
-But we also have a problem if prio bits are set.
-
-Steinar reported an issue on a router receiving IPv6 frames with a
-vlan tag of 4000 (id 0, prio 2), and tunneled into a sit device,
-because skb->vlan_tci is set.
-
-Forwarded frame is completely corrupted : We can see (8100:4000)
-being inserted in the middle of IPv6 source address :
-
-16:48:00.780413 IP6 2001:16d8:8100:4000:ee1c:0:9d9:bc87 >
-9f94:4d95:2001:67c:29f4::: ICMP6, unknown icmp6 type (0), length 64
-       0x0000:  0000 0029 8000 c7c3 7103 0001 a0ae e651
-       0x0010:  0000 0000 ccce 0b00 0000 0000 1011 1213
-       0x0020:  1415 1617 1819 1a1b 1c1d 1e1f 2021 2223
-       0x0030:  2425 2627 2829 2a2b 2c2d 2e2f 3031 3233
-
-It seems we are not really ready to properly cope with this right now.
-
-We can probably do better in future kernels :
-vlan_get_ingress_priority() should be a netdev property instead of
-a per vlan_dev one.
-
-For stable kernels, lets clear vlan_tci to fix the bugs.
-
-Reported-by: Steinar H. Gunderson <sesse@google.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kent Overstreet <kmo@daterainc.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/linux/if_vlan.h |    3 +--
- net/8021q/vlan_core.c   |    2 +-
- net/core/dev.c          |   11 +++++++++--
- 3 files changed, 11 insertions(+), 5 deletions(-)
 
---- a/include/linux/if_vlan.h
-+++ b/include/linux/if_vlan.h
-@@ -79,9 +79,8 @@ static inline int is_vlan_dev(struct net
- }
- 
- #define vlan_tx_tag_present(__skb)	((__skb)->vlan_tci & VLAN_TAG_PRESENT)
--#define vlan_tx_nonzero_tag_present(__skb) \
--	(vlan_tx_tag_present(__skb) && ((__skb)->vlan_tci & VLAN_VID_MASK))
- #define vlan_tx_tag_get(__skb)		((__skb)->vlan_tci & ~VLAN_TAG_PRESENT)
-+#define vlan_tx_tag_get_id(__skb)	((__skb)->vlan_tci & VLAN_VID_MASK)
- 
- #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
- 
---- a/net/8021q/vlan_core.c
-+++ b/net/8021q/vlan_core.c
-@@ -9,7 +9,7 @@ bool vlan_do_receive(struct sk_buff **sk
+---
+ drivers/md/bcache/super.c |   18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+--- a/drivers/md/bcache/super.c
++++ b/drivers/md/bcache/super.c
+@@ -1305,18 +1305,22 @@ static void cache_set_flush(struct closu
+ static void __cache_set_unregister(struct closure *cl)
  {
- 	struct sk_buff *skb = *skbp;
- 	__be16 vlan_proto = skb->vlan_proto;
--	u16 vlan_id = skb->vlan_tci & VLAN_VID_MASK;
-+	u16 vlan_id = vlan_tx_tag_get_id(skb);
- 	struct net_device *vlan_dev;
- 	struct vlan_pcpu_stats *rx_stats;
+ 	struct cache_set *c = container_of(cl, struct cache_set, caching);
+-	struct cached_dev *dc, *t;
++	struct cached_dev *dc;
+ 	size_t i;
  
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -3513,8 +3513,15 @@ ncls:
- 		}
- 	}
+ 	mutex_lock(&bch_register_lock);
  
--	if (vlan_tx_nonzero_tag_present(skb))
--		skb->pkt_type = PACKET_OTHERHOST;
-+	if (unlikely(vlan_tx_tag_present(skb))) {
-+		if (vlan_tx_tag_get_id(skb))
-+			skb->pkt_type = PACKET_OTHERHOST;
-+		/* Note: we might in the future use prio bits
-+		 * and set skb->priority like in vlan_do_receive()
-+		 * For the time being, just ignore Priority Code Point
-+		 */
-+		skb->vlan_tci = 0;
-+	}
+-	if (test_bit(CACHE_SET_UNREGISTERING, &c->flags))
+-		list_for_each_entry_safe(dc, t, &c->cached_devs, list)
+-			bch_cached_dev_detach(dc);
+-
+ 	for (i = 0; i < c->nr_uuids; i++)
+-		if (c->devices[i] && UUID_FLASH_ONLY(&c->uuids[i]))
+-			bcache_device_stop(c->devices[i]);
++		if (c->devices[i]) {
++			if (!UUID_FLASH_ONLY(&c->uuids[i]) &&
++			    test_bit(CACHE_SET_UNREGISTERING, &c->flags)) {
++				dc = container_of(c->devices[i],
++						  struct cached_dev, disk);
++				bch_cached_dev_detach(dc);
++			} else {
++				bcache_device_stop(c->devices[i]);
++			}
++		}
  
- 	/* deliver only exact match when indicated */
- 	null_or_dev = deliver_exact ? skb->dev : NULL;
+ 	mutex_unlock(&bch_register_lock);
+ 
 
 
