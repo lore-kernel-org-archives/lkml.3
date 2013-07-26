@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759980Ab3GZWxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 18:53:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52367 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756666Ab3GZWxU (ORCPT
+	id S1759927Ab3GZWz2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 18:55:28 -0400
+Received: from mxout1.netvision.net.il ([194.90.9.20]:48099 "EHLO
+	mxout1.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab3GZWz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 18:53:20 -0400
-Date: Fri, 26 Jul 2013 15:53:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
+	Fri, 26 Jul 2013 18:55:26 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII; format=flowed
+Message-id: <51F2FE34.8010601@gmail.com>
+Date: Sat, 27 Jul 2013 01:54:44 +0300
+From: Eli Billauer <eli.billauer@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
+ Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: vmscan: fix numa reclaim balance problem in
- kswapd
-Message-Id: <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
-In-Reply-To: <1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
-	<1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: linux-next: build failure after merge of the staging tree
+References: <20130726160254.83bbe994219d6ee732c64b7d@canb.auug.org.au>
+ <20130726210335.GA2788@kroah.com> <51F2E8A4.2010405@gmail.com>
+ <20130726215634.GA31820@kroah.com>
+In-reply-to: <20130726215634.GA31820@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Jul 2013 16:55:23 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 27/07/13 00:56, Greg KH wrote:
+> No, I need you to do that.  Can you do a kernel build with:
+> 	make M=drivers/staging/xillybus C=1
+> and fix up the errors that sparse reports and send a patch for that?
+>
+>    
+I'm not sure it's related to me. I get the same errors whether I compile 
+my own modules or something in e.g. drivers/tty/ . This is what I get 
+after make allmodconfig on the current staging git repo:
 
-> When the page allocator fails to get a page from all zones in its
-> given zonelist, it wakes up the per-node kswapds for all zones that
-> are at their low watermark.
-> 
-> However, with a system under load and the free page counters being
-> per-cpu approximations, the observed counter value in a zone can
-> fluctuate enough that the allocation fails but the kswapd wakeup is
-> also skipped while the zone is still really close to the low
-> watermark.
-> 
-> When one node misses a wakeup like this, it won't be aged before all
-> the other node's zones are down to their low watermarks again.  And
-> skipping a full aging cycle is an obvious fairness problem.
-> 
-> Kswapd runs until the high watermarks are restored, so it should also
-> be woken when the high watermarks are not met.  This ages nodes more
-> equally and creates a safety margin for the page counter fluctuation.
+$ make M=drivers/staging/xillybus C=1
+/home/eli/xillybus/submission/staging/arch/x86/Makefile:107: 
+CONFIG_X86_X32 enabled but no binutils support
+   CHECK   drivers/staging/xillybus/xillybus_core.c
+/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
+error: Expected ( after asm
+/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
+error: got goto
+   CC [M]  drivers/staging/xillybus/xillybus_core.o
+   CHECK   drivers/staging/xillybus/xillybus_pcie.c
+/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
+error: Expected ( after asm
+/home/eli/xillybus/submission/staging/arch/x86/include/asm/jump_label.h:16:13: 
+error: got goto
+   CC [M]  drivers/staging/xillybus/xillybus_pcie.o
 
-Well yes, but what guarantee is there that the per-cpu counter error
-problem is reliably fixed?  AFAICT this patch "fixes" it because the
-gap between the low and high watermarks happens to be larger than the
-per-cpu counter fluctuation, yes?  If so, there are surely all sorts of
-situations where it will break again.
+I'll spare you the output from modules in drivers/tty. But it's exactly 
+the same messages on each of these modules.
 
-To fix this reliably, we should be looking at constraining counter
-batch sizes or performing a counter summation to get the more accurate
-estimate?
+Am I doing something wrong?
+
+Regards,
+    Eli
+
+P.S. Regarding the missing Reported-By header, I learned something new 
+today. Thanks. :)
 
