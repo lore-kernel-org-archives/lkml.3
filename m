@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab3GZMg1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 08:36:27 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:56714 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757916Ab3GZMgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 08:36:24 -0400
+	id S1758760Ab3GZMhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 08:37:15 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:59671 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757916Ab3GZMhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 08:37:13 -0400
+From: James Hogan <james.hogan@imgtec.com>
+To: <linux-kernel@vger.kernel.org>
+CC: James Hogan <james.hogan@imgtec.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH] usb: xhci: add missing dma-mapping.h includes
+Date: Fri, 26 Jul 2013 13:34:43 +0100
+Message-ID: <1374842083-5935-1-git-send-email-james.hogan@imgtec.com>
+X-Mailer: git-send-email 1.8.1.2
 MIME-Version: 1.0
-In-Reply-To: <51F23D0F.7090909@oracle.com>
-References: <51F23D0F.7090909@oracle.com>
-Date: Fri, 26 Jul 2013 05:36:23 -0700
-X-Google-Sender-Auth: YDOlETY-RxB6qOTVOCEyvSEPKiI
-Message-ID: <CAE9FiQVvOe9pOmLLKRUWzSmHLWvv6S32LUYARCG3MoLMJpATXQ@mail.gmail.com>
-Subject: Re: [PATCH] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
-From: Yinghai Lu <yinghai@kernel.org>
-To: ethan zhao <ethan.zhao@oracle.com>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        ethan.kernel@gmail.com,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01192__2013_07_26_13_37_12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 2:10 AM, ethan zhao <ethan.zhao@oracle.com> wrote:
-> Cleanup the -EINVAL return value handling and add warning message for
-> invalid
-> start,end,addr parameters.
->
-> Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
-> ---
->  arch/x86/pci/mmconfig-shared.c |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-> index 082e881..37f6c7f 100644
-> --- a/arch/x86/pci/mmconfig-shared.c
-> +++ b/arch/x86/pci/mmconfig-shared.c
-> @@ -700,8 +700,13 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8
-> start, u8 end,
->      if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
->          return -ENODEV;
->
-> -    if (start > end)
-> +    if (start > end || !addr) {
-> +        dev_warn(dev, FW_WARN
-> +                                 "Invalid address to add MMCONFIG"
-> +                                 "start %02x end %02x addr %pR\n",
-> +                                  start, end, addr);
->          return -EINVAL;
-> +    }
->
->      mutex_lock(&pci_mmcfg_lock);
->      cfg = pci_mmconfig_lookup(seg, start);
-> @@ -716,11 +721,6 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8
-> start, u8 end,
->          return -EEXIST;
->      }
->
-> -    if (!addr) {
-> -        mutex_unlock(&pci_mmcfg_lock);
-> -        return -EINVAL;
-> -    }
-> -
->      rc = -EBUSY;
->      cfg = pci_mmconfig_alloc(seg, start, end, addr);
->      if (cfg == NULL) {
+A randconfig build hit the following build errors because xhci.c and
+xhci-mem.c use dma mapping functions but don't include
+<linux/dma-mapping.h>. Add the missing includes to fix the build errors.
+
+drivers/usb/host/xhci.c In function 'xhci_gen_setup':
+drivers/usb/host/xhci.c +4872 : error: implicit declaration of function 'dma_set_mask'
+drivers/usb/host/xhci.c +4872 : error: implicit declaration of function 'DMA_BIT_MASK'
+
+drivers/usb/host/xhci-mem.c In function 'xhci_free_stream_ctx':
+drivers/usb/host/xhci-mem.c +435 : error: implicit declaration of function 'dma_free_coherent'
+drivers/usb/host/xhci-mem.c In function 'xhci_alloc_stream_ctx':
+drivers/usb/host/xhci-mem.c +463 : error: implicit declaration of function 'dma_alloc_coherent'
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-usb@vger.kernel.org
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+---
+ drivers/usb/host/xhci-mem.c | 1 +
+ drivers/usb/host/xhci.c     | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index fbf75e5..3e27d92 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -24,6 +24,7 @@
+ #include <linux/pci.h>
+ #include <linux/slab.h>
+ #include <linux/dmapool.h>
++#include <linux/dma-mapping.h>
+ 
+ #include "xhci.h"
+ 
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index d8f640b..247020c 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -27,6 +27,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/slab.h>
+ #include <linux/dmi.h>
++#include <linux/dma-mapping.h>
+ 
+ #include "xhci.h"
+ 
+-- 
+1.8.1.2
 
 
-Acked-by: Yinghai Lu <yinghai@kerne.org>
