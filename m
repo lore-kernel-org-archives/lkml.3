@@ -1,97 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab3G0Pyl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 11:54:41 -0400
-Received: from mout.web.de ([212.227.15.14]:50370 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab3G0Pyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 11:54:39 -0400
-Date: Sat, 27 Jul 2013 17:54:30 +0200
-From: Linus =?utf-8?Q?L=C3=BCssing?= <linus.luessing@web.de>
-To: Adam Baker <linux@baker-net.org.uk>
-Cc: bridge@lists.linux-foundation.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        Cong Wang <amwang@redhat.com>
-Subject: Re: [PATCHv2] bridge: disable snooping if there is no querier
-Message-ID: <20130727155429.GE11914@Linus-Debian>
-References: <1374757046-12463-1-git-send-email-linus.luessing@web.de>
- <1374760580-12920-1-git-send-email-linus.luessing@web.de>
- <51F2F5D4.50409@baker-net.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51F2F5D4.50409@baker-net.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:6aia9Ntxb7r938IO0j5yqnk6uXpLwanKFiZxdqCdLitlrQac0MI
- exkXavAEoQzhARgmgCSWqpy+TDLHK/1qdpDbGHPdBKBR7vWKExDq4ZcUJTzLCrV6RhCWlLt
- HSHq20uj2QGm4Y0+YLizlUnJEVuEL+a40IF2iUjUsEvz4hAdfXdTeqhAj4BDMXgrTn492Ic
- WPdBELjHjWOaHp1NWTFFw==
+	id S1752337Ab3G0P6i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 11:58:38 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:59749 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752204Ab3G0P6g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 11:58:36 -0400
+Message-ID: <1374940708.13555.37.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 06/79] net: Swap ver and type in pppoe_hdr
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Sat, 27 Jul 2013 16:58:28 +0100
+In-Reply-To: <20130726204722.608161811@linuxfoundation.org>
+References: <20130726204721.849052763@linuxfoundation.org>
+	 <20130726204722.608161811@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-6o7UiWOOR4Ub/of3wTnk"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 11:19:00PM +0100, Adam Baker wrote:
-> On 25/07/13 14:56, Linus Lüssing wrote:
-> >If there is no querier on a link then we won't get periodic reports and
-> >therefore won't be able to learn about multicast listeners behind ports,
-> >potentially leading to lost multicast packets, especially for multicast
-> >listeners that joined before the creation of the bridge.
-> >
-> >These lost multicast packets can appear since c5c23260594
-> >("bridge: Add multicast_querier toggle and disable queries by default")
-> >in particular.
-> >
-> >With this patch we are flooding multicast packets if our querier is
-> >disabled and if we didn't detect any other querier.
-> >
-> >A grace period of the Maximum Response Delay of the querier is added to
-> >give multicast responses enough time to arrive and to be learned from
-> >before disabling the flooding behaviour again.
-> >
-> >Signed-off-by: Linus Lüssing<linus.luessing@web.de>
-> 
-> If the lack of queries if there is no other querier is unacceptable
-> to the majority of users (and I believe it is) then surely the
-> sensible option is to have the multicast querier toggle enabled by
-> default.
-> 
-> The toggle was added in the first place because the queries were
-> reported to be generating issues with certain other equipment. This
-> may have been because the queries by default have an invalid IP
-> address (although I have been unable to identify what equipment they
-> caused problems with so can't verify this).
-> 
-> If the only reason to turn the querier off is because it interferes
-> with other equipment then the solution to it being off by default
-> isn't to generate queries in some instances even if it is off but
-> rather to turn it on by default and only turn it off if it causes
-> problems. If multicast_query_use_ifaddr was also enabled by default
-> the the likelihood of the querier causing problems elsewhere should
-> be reduced.
-> 
-> Regards
-> 
-> Adam
 
-One more, general disadvantage I could see is, that in a network
-with multiple bridges basically a random one would become the querier
-and the according network segment would get hit by all the
-according multicast traffic. If the available bandwidth of links
-on your network varies, then you however usually want to have the
-querier in a "good" position of your network. Which might be a
-little harder to control if the querier is on by default.
+--=-6o7UiWOOR4Ub/of3wTnk
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Also this specific, current querier implementation has two more
-disadvantages: 
-* It's doing MLDv1/IGMPv2 queries, so it downgrades our whole
-  network to MLDv1/IGMPv2, no MLDv2/IGMPv3 and source specific
-  multicast could be used.
-* The querier selection is not RFC compliant (we should refrain
-  from sending queries if our address is higher, not if we hear
-  any query)
+On Fri, 2013-07-26 at 13:46 -0700, Greg Kroah-Hartman wrote:
+> 3.10-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Changli Gao <xiaosuo@gmail.com>
+>=20
+> [ Upstream commit b1a5a34bd0b8767ea689e68f8ea513e9710b671e ]
+>=20
+> Ver and type in pppoe_hdr should be swapped as defined by RFC2516
+> section-4.
+>=20
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Cheers, Linus
+I'm not so sure this is suitable for stable.  It doesn't seem to be
+helpful to either userland or kernel code.
+
+In the kernel, we were checking that ver =3D=3D 1 and type =3D=3D 1 thus th=
+is
+wasn't hurting us.
+
+If userland does anything more with these fields then it's probably
+already working around the swapped fields.  It can work with both old
+and new headers by doing:
+
+#if LINUX_VERSION_CODE >=3D KERNEL_VERSION(3,11,0)
+	/* use pppoe_hdr fields normally */
+#else
+	/* definitions were wrong before, work around it */
+#endif
+
+If this is backported to stable, there is no usable version test.
+Userland will have to bypass the bitfields entirely:
+
+	type =3D *(uint8_t *)hdr & 0xf;
+	ver =3D *(uint8_t *)hdr >> 4;
+
+Ben.
+
+> ---
+>  include/uapi/linux/if_pppox.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>=20
+> --- a/include/uapi/linux/if_pppox.h
+> +++ b/include/uapi/linux/if_pppox.h
+> @@ -135,11 +135,11 @@ struct pppoe_tag {
+> =20
+>  struct pppoe_hdr {
+>  #if defined(__LITTLE_ENDIAN_BITFIELD)
+> -	__u8 ver : 4;
+>  	__u8 type : 4;
+> +	__u8 ver : 4;
+>  #elif defined(__BIG_ENDIAN_BITFIELD)
+> -	__u8 type : 4;
+>  	__u8 ver : 4;
+> +	__u8 type : 4;
+>  #else
+>  #error	"Please fix <asm/byteorder.h>"
+>  #endif
+
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-6o7UiWOOR4Ub/of3wTnk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUfPuJee/yOyVhhEJAQrDyQ//ZYz7auRwqUNl52GPl9ToyPLyPyQStNi6
+yCTgCMPQtCRaqUezm/ysjZ1LJd5lIP62UqrtJZF9+GAWiDTZX59jSuCZFn2WIakW
+6cJCQZ3tvVPnxHVhQEFWBd5mlhsQPVzG8FN7cMBlADhdKC60r7nCRmPSMzp25bB+
+cMtKJyRBOVaQZbruxO1ZOf69XbnYt6LZRLWaMCSsoRqStnNI133EbEvGx+j3jfES
+nWpTyyn8dZ2HKNmVEoh8uS4Yj49iy1du7YZWyThj+9BwdNsFyA2B1sHkasfPN7vS
+aTqBR4r+Uw7XbAGi/cVUB1r972zQvJjXlorjQ4P2IHvcO3L9p8foS92fzFNmfkqz
+7rjXo4eD+lbo7zCJ7JfO+1kfHxB8t1T2lJPIew70bKkXbcbvOI/BqNe639cozTU0
+baX+IhQu7fFXdkz3UC4LJ/HoZ0oiYq0X5nb9DuooIJzNxiCsmhlz/rQd1IXBtsrz
+3e33ZhAPrw0YqzbqX8NMwmHwqOkjPmBwckLvG0y/4sNZ7NyoDv7ZRgnQ9qEzQr3W
+fzSCvlh5vIt6bzcJppIL7PZf9NLC5qedyZi21agdd/fm6RRMGmDqRQ/TvjmWGqQo
+VyaJoAUAdnzkPRWtmbrCJrfQeyZdMyRJWoPduMd3us89hKpEshwi0MrEVmhIgXN0
+iWHNGo/UOWI=
+=T8Tc
+-----END PGP SIGNATURE-----
+
+--=-6o7UiWOOR4Ub/of3wTnk--
