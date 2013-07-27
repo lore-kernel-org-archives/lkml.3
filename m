@@ -1,141 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab3G0P2g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 11:28:36 -0400
-Received: from ozlabs.org ([203.10.76.45]:60688 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab3G0P2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 11:28:34 -0400
-Date: Sun, 28 Jul 2013 01:28:46 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+	id S1752172Ab3G0Pdd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 11:33:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:47942 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab3G0Pdc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 11:33:32 -0400
+X-IronPort-AV: E=Sophos;i="4.89,757,1367971200"; 
+   d="scan'208";a="37790581"
+From: Ben Guthro <Ben.Guthro@citrix.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Ben Guthro <Ben.Guthro@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130727152845.GB29970@voom.fritz.box>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F168FC.9070906@wwwdotorg.org>
- <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <20130725213753.GC17616@obsidianresearch.com>
- <20130726080115.GA5436@netboy>
- <1374831744.2923.42.camel@shinybook.infradead.org>
- <20130726130927.GC4219@netboy>
- <20130726131423.GL24642@n2100.arm.linux.org.uk>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>
+Subject: Re: [PATCH v4 0/5] Xen/ACPI: support sleep state entering on
+ hardware reduced systems
+Thread-Topic: [PATCH v4 0/5] Xen/ACPI: support sleep state entering on
+ hardware reduced systems
+Thread-Index: AQHOc0dQyh5+xchj8UCPGVjB0/UMk5l5AB8A///Wnc4=
+Date: Sat, 27 Jul 2013 15:33:31 +0000
+Message-ID: <2A50FCBD-CD54-4C8D-A780-1CA7ACBC4E0B@citrix.com>
+References: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com>,<2455068.P7gO5JL6M7@vostro.rjw.lan>
+In-Reply-To: <2455068.P7gO5JL6M7@vostro.rjw.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KFztAG8eRSV9hGtP"
-Content-Disposition: inline
-In-Reply-To: <20130726131423.GL24642@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---KFztAG8eRSV9hGtP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, Jul 26, 2013 at 02:14:23PM +0100, Russell King - ARM Linux wrote:
-> On Fri, Jul 26, 2013 at 03:09:29PM +0200, Richard Cochran wrote:
-> > On Fri, Jul 26, 2013 at 10:42:24AM +0100, David Woodhouse wrote:
-> > > On Fri, 2013-07-26 at 10:01 +0200, Richard Cochran wrote:
-> > > > On Thu, Jul 25, 2013 at 03:37:53PM -0600, Jason Gunthorpe wrote:
-> > > > >=20
-> > > > > We use DT has a kernel configuration input. Our environment is
-> > > > > designed to guarantee 100% that the kernel and DT match exactly. =
-DT
-> > > > > very deliberately isn't an ABI boundary in our systems.
-> > > >=20
-> > > > Think about what you just said.
-> > > >=20
-> > > > The DT describes the *hardware* not the kernel. Why should you ever
-> > > > need to update your DT at all?
-> > >=20
-> > > Well, the nodes which describe hardware devices, according to the
-> > > bindings which form an ABI contract between DT and drivers, should not
-> > > normally change. Although they *can* change, if for example you change
-> > > the MAC address and that's stored there. Or you change the PHY you wa=
-nt
-> > > it to use. Or something like that. The *ABI* doesn't change, but the
-> > > data you express *using* that ABI can change. That's kind of the poin=
-t.
-> >=20
-> > Unless I totally misunderstood, the thread is talking about letting
-> > established bindings change with each new kernel version.  I am
-> > opposed to that.
-> >=20
-> > Of course, a user may want to change the values of his MAC addresses,
-> > if he needs to. But he should never have to change *how* he specifies
-> > those addresses.
-> >=20
-> > So, as long as everyone can agree to the principle that a working DT
-> > should remain working after a kernel upgrade, then I'll shut up. In
-> > actual fact, this is not the case today, nor was it ever so in the
-> > past, AFAICT, but it never hurts to set goals.
->=20
-> We agree.
->=20
-> That's precisely why I'm saying that once a binding appears in a -final
-> released kernel, it is _stable_ by that very fact.  If there were any
-> doubts about it, it should never have been accepted into the kernel tree
-> in the first place.
->=20
-> It's no different from how we treat syscalls.  Once we accept a syscall
-> and it's published in a -final kernel, it can't then be altered - it can
-> be supplemented by a new syscall with a different interface, but the old
-> one remains and keeps its semantics for a great many years.
->=20
-> There's no reason for DT to be any different in this regard.
+On Jul 27, 2013, at 9:51 AM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-I agree, and the fact that we have a bunch of bad bindings in the wild
-is a mess which is difficult but necessary to clean up.
+> On Thursday, June 27, 2013 11:01:58 AM Ben Guthro wrote:
+>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+>> reduced hardware sleep support, and the two changes didn't get
+>> synchronized: The new code doesn't call the hook function (if so
+>> requested). Fix this, requiring a boolean parameter to be added to the
+>> hook function to distinguish "extended" from "legacy" sleep.
+>> 
+>> This requires adjusting TXT, but the adjustments only go as far as
+>> failing the extended mode call (since, looking at the TXT interface,
+>> there doesn't even appear to be precautions to deal with that
+>> alternative interface).
+>> 
+>> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+>> v5 (reduced HW) sleep interface") on the master branch of
+>> git://xenbits.xen.org/xen.git.
+>> 
+>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+>> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+>> Cc: Gang Wei <gang.wei@intel.com>
+>> Cc: Shane Wang <shane.wang@intel.com>
+>> Cc: Bob Moore <robert.moore@intel.com>
+>> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+>> Cc: linux-acpi@vger.kernel.org
+>> Cc: tboot-devel@lists.sourceforge.net 
+>> 
+>> v2: Extend description to include reference to hypervisor side change
+>> v3: Split into multiple patches, separating subsystems
+>>    Remove bool parameters, in favor of u8
+>> v4: Remove linux/acpi.h dependencies
+>>    Further patch split to break out acpica from OSL
+>>    More bool vs u8 fixes
+>> 
+>> Ben Guthro (5):
+>>  acpi: Remove need to include linux/acpi.h in common acpica code
+>>  acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+>>  acpi: Adjust linux acpi OS functions to new extended parameter
+>>  x86/tboot: Fail extended mode reduced hardware sleep
+>>  xen/acpi: notify xen when reduced hardware sleep is available
+> 
+> The ongoing discussion means to me that the ACPICA maintainers don't want
+> acpi_os_prepare_sleep() and quite frankly I understand them, because ACPICA
+> is about implementing the spec and not about things beyond it.
+> 
+> This means that patch [1/5] goes away.
+> 
+> That said, at the same time we need to address the problem at hand, which
+> is to make Xen work with the reduced HW sleep.
+> 
+> For that, I don't honestly think that modifying acpi_os_prepare_sleep() the
+> way the patchset is doing it is appropriate and the change of the meaning of
+> the arguments is simply disgusting.
+> 
+> To me, it would be much cleaner to add acpi_os_prepare_extended_sleep()
+> specifically to be called by acpi_hw_extended_sleep() and make tboot and Xen
+> use that.
+> 
+> This way or another, we'll need to live with one more divergence between the
+> upstream ACPICA and the Linux ACPICA code because of that, but that'd be just
+> a few added lines in acpi_hw_extended_sleep(), so I suppose it wouldn't be
+> such a big deal.
+> 
 
-Something that helps, is that just as it's possible to support old,
-badly-thought out syscalls with a compat shim over newer
-implementations, we can in many cases localize handling of bad device
-tree bindings to early boot code, so that old bad ideas don't have to
-infect every part of every driver.
+Ok, thank you for the review, and being open to addressing the problem at hand, without a full architecture rework (not to say that that discussion is not also needed)
 
-It would probably be a good idea to implement a DT quirks mechanism,
-to be run immediately after unflattening.  That way a driver can just
-register a fixup function to patch the DT up to a newer standard,
-instead of scattering if (old-style-representation) throughout the
-code.
+I will try to make some time next week to rework the patch set to address these concerns, and submit a new series. 
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Thanks
+Ben
 
---KFztAG8eRSV9hGtP
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
 
-iEYEARECAAYFAlHz5y0ACgkQaILKxv3ab8YA6ACdEAosj48LwZuiQci2/8LE9hQw
-BK4AoJNzIGsoleedvIWkfmvsJmAeFvCx
-=6r85
------END PGP SIGNATURE-----
-
---KFztAG8eRSV9hGtP--
+> Thanks,
+> Rafael
+> 
+> 
+> -- 
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
