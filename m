@@ -1,234 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132Ab3G0PXF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 11:23:05 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:51085 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752051Ab3G0PXC (ORCPT
+	id S1752140Ab3G0PXz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 11:23:55 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38601 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab3G0PXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 11:23:02 -0400
-Message-ID: <1374938578.1973.14.camel@dabdike>
-Subject: [GIT PULL] SCSI fixes for 3.11-rc2
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 27 Jul 2013 08:22:58 -0700
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.8.3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Jul 2013 11:23:54 -0400
+From: Gabriel de Perthuis <g2p.code@gmail.com>
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Cc: Gabriel de Perthuis <g2p.code@gmail.com>
+Subject: [PATCH] um: Accept /dev/fd/* uml block devices
+Date: Sat, 27 Jul 2013 17:23:27 +0200
+Message-Id: <1374938607-25747-1-git-send-email-g2p.code@gmail.com>
+X-Mailer: git-send-email 1.8.3.3.758.g90e98ff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is five bug fixes, two of which fix long standing problems causing
-crashes (sd and mvsas).  The remaining three are hung (isci race) or
-lost (qla2xxx, isci) devices.
+Useful for
+* limiting privileges
+* opening block devices O_EXCL
 
-The patch is available here:
+Use dup to work around the fact /proc/self/fd
+can't be opened after dropping privileges.
+This proc behaviour doesn't match TLPI and might be a bug.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi.git scsi-fixes
+Qemu has a slightly more complex fdset approach
+that provides fds with different access permissions.
 
-The short changelog is:
-
-Ewan D. Milne (1):
-      sd: fix crash when UA received on DIF enabled device
-
-James Bottomley (2):
-      isci: fix breakage caused by >16byte CDB patch
-      mvsas: Fix kernel panic on tile due to unaligned data access
-
-Jeff Skirvin (1):
-      isci: Fix a race condition in the SSP task management path
-
-Saurav Kashyap (1):
-      qla2xxx: Properly set the tagging for commands.
-
-The diffstat:
-
- drivers/scsi/isci/request.c     |  2 +-
- drivers/scsi/isci/task.c        |  9 ++++++---
- drivers/scsi/mvsas/mv_sas.c     | 11 ++++++++---
- drivers/scsi/mvsas/mv_sas.h     |  1 +
- drivers/scsi/qla2xxx/qla_iocb.c | 11 +++++++++--
- drivers/scsi/sd.c               | 22 +++++++---------------
- 6 files changed, 32 insertions(+), 24 deletions(-)
-
-And the complete diff is attached below.
-
-James
-
+Signed-off-by: Gabriel de Perthuis <g2p.code@gmail.com>
 ---
+ arch/um/os-Linux/file.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/scsi/isci/request.c b/drivers/scsi/isci/request.c
-index 7b08215..99d2930 100644
---- a/drivers/scsi/isci/request.c
-+++ b/drivers/scsi/isci/request.c
-@@ -185,7 +185,7 @@ static void sci_io_request_build_ssp_command_iu(struct isci_request *ireq)
- 	cmd_iu->_r_c = 0;
- 
- 	sci_swab32_cpy(&cmd_iu->cdb, task->ssp_task.cmd->cmnd,
--		       task->ssp_task.cmd->cmd_len / sizeof(u32));
-+		       (task->ssp_task.cmd->cmd_len+3) / sizeof(u32));
+diff --git a/arch/um/os-Linux/file.c b/arch/um/os-Linux/file.c
+index c17bd6f..cee65ba 100644
+--- a/arch/um/os-Linux/file.c
++++ b/arch/um/os-Linux/file.c
+@@ -169,11 +169,11 @@ int os_file_mode(const char *file, struct openflags *mode_out)
+ 	return err;
  }
  
- static void sci_task_request_build_ssp_task_iu(struct isci_request *ireq)
-diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
-index 9bb020a..0d30ca8 100644
---- a/drivers/scsi/isci/task.c
-+++ b/drivers/scsi/isci/task.c
-@@ -491,6 +491,7 @@ int isci_task_abort_task(struct sas_task *task)
- 	struct isci_tmf           tmf;
- 	int                       ret = TMF_RESP_FUNC_FAILED;
- 	unsigned long             flags;
-+	int                       target_done_already = 0;
- 
- 	/* Get the isci_request reference from the task.  Note that
- 	 * this check does not depend on the pending request list
-@@ -505,9 +506,11 @@ int isci_task_abort_task(struct sas_task *task)
- 	/* If task is already done, the request isn't valid */
- 	if (!(task->task_state_flags & SAS_TASK_STATE_DONE) &&
- 	    (task->task_state_flags & SAS_TASK_AT_INITIATOR) &&
--	    old_request)
-+	    old_request) {
- 		idev = isci_get_device(task->dev->lldd_dev);
--
-+		target_done_already = test_bit(IREQ_COMPLETE_IN_TARGET,
-+					       &old_request->flags);
-+	}
- 	spin_unlock(&task->task_state_lock);
- 	spin_unlock_irqrestore(&ihost->scic_lock, flags);
- 
-@@ -561,7 +564,7 @@ int isci_task_abort_task(struct sas_task *task)
- 
- 	if (task->task_proto == SAS_PROTOCOL_SMP ||
- 	    sas_protocol_ata(task->task_proto) ||
--	    test_bit(IREQ_COMPLETE_IN_TARGET, &old_request->flags) ||
-+	    target_done_already ||
- 	    test_bit(IDEV_GONE, &idev->flags)) {
- 
- 		spin_unlock_irqrestore(&ihost->scic_lock, flags);
-diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
-index f14665a..6b1b4e9 100644
---- a/drivers/scsi/mvsas/mv_sas.c
-+++ b/drivers/scsi/mvsas/mv_sas.c
-@@ -1857,11 +1857,16 @@ int mvs_slot_complete(struct mvs_info *mvi, u32 rx_desc, u32 flags)
- 		goto out;
- 	}
- 
--	/* error info record present */
--	if (unlikely((rx_desc & RXQ_ERR) && (*(u64 *) slot->response))) {
-+	/*
-+	 * error info record present; slot->response is 32 bit aligned but may
-+	 * not be 64 bit aligned, so check for zero in two 32 bit reads
-+	 */
-+	if (unlikely((rx_desc & RXQ_ERR)
-+		     && (*((u32 *)slot->response)
-+			 || *(((u32 *)slot->response) + 1)))) {
- 		mv_dprintk("port %d slot %d rx_desc %X has error info"
- 			"%016llX.\n", slot->port->sas_port.id, slot_idx,
--			 rx_desc, (u64)(*(u64 *)slot->response));
-+			 rx_desc, get_unaligned_le64(slot->response));
- 		tstat->stat = mvs_slot_err(mvi, task, slot_idx);
- 		tstat->resp = SAS_TASK_COMPLETE;
- 		goto out;
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index 60e2fb7..d6b19dc 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -39,6 +39,7 @@
- #include <linux/irq.h>
- #include <linux/slab.h>
- #include <linux/vmalloc.h>
-+#include <asm/unaligned.h>
- #include <scsi/libsas.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_tcq.h>
-diff --git a/drivers/scsi/qla2xxx/qla_iocb.c b/drivers/scsi/qla2xxx/qla_iocb.c
-index 42ef481..ef0a548 100644
---- a/drivers/scsi/qla2xxx/qla_iocb.c
-+++ b/drivers/scsi/qla2xxx/qla_iocb.c
-@@ -419,6 +419,8 @@ qla2x00_start_scsi(srb_t *sp)
- 			    __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 			break;
- 		}
-+	} else {
-+		cmd_pkt->control_flags = __constant_cpu_to_le16(CF_SIMPLE_TAG);
- 	}
- 
- 	/* Load SCSI command packet. */
-@@ -1307,11 +1309,11 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
- 		    fcp_cmnd->task_attribute = TSK_ORDERED;
- 		    break;
- 		default:
--		    fcp_cmnd->task_attribute = 0;
-+		    fcp_cmnd->task_attribute = TSK_SIMPLE;
- 		    break;
- 		}
- 	} else {
--		fcp_cmnd->task_attribute = 0;
-+		fcp_cmnd->task_attribute = TSK_SIMPLE;
- 	}
- 
- 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
-@@ -1525,7 +1527,12 @@ qla24xx_start_scsi(srb_t *sp)
- 		case ORDERED_QUEUE_TAG:
- 			cmd_pkt->task = TSK_ORDERED;
- 			break;
-+		default:
-+		    cmd_pkt->task = TSK_SIMPLE;
-+		    break;
- 		}
-+	} else {
-+		cmd_pkt->task = TSK_SIMPLE;
- 	}
- 
- 	/* Load SCSI command packet. */
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 80f39b8..86fcf2c 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -838,10 +838,17 @@ static int scsi_setup_flush_cmnd(struct scsi_device *sdp, struct request *rq)
- 
- static void sd_unprep_fn(struct request_queue *q, struct request *rq)
+ int os_open_file(const char *file, struct openflags flags, int mode)
  {
-+	struct scsi_cmnd *SCpnt = rq->special;
-+
- 	if (rq->cmd_flags & REQ_DISCARD) {
- 		free_page((unsigned long)rq->buffer);
- 		rq->buffer = NULL;
- 	}
-+	if (SCpnt->cmnd != rq->cmd) {
-+		mempool_free(SCpnt->cmnd, sd_cdb_pool);
-+		SCpnt->cmnd = NULL;
-+		SCpnt->cmd_len = 0;
-+	}
- }
+-	int fd, err, f = 0;
++	int fd, fd0, err, f = 0;
  
- /**
-@@ -1720,21 +1727,6 @@ static int sd_done(struct scsi_cmnd *SCpnt)
- 	if (rq_data_dir(SCpnt->request) == READ && scsi_prot_sg_count(SCpnt))
- 		sd_dif_complete(SCpnt, good_bytes);
+ 	if (flags.r && flags.w)
+ 		f = O_RDWR;
+ 	else if (flags.r)
+ 		f = O_RDONLY;
+@@ -190,11 +190,15 @@ int os_open_file(const char *file, struct openflags flags, int mode)
+ 	if (flags.e)
+ 		f |= O_EXCL;
+ 	if (flags.a)
+ 		f |= O_APPEND;
  
--	if (scsi_host_dif_capable(sdkp->device->host, sdkp->protection_type)
--	    == SD_DIF_TYPE2_PROTECTION && SCpnt->cmnd != SCpnt->request->cmd) {
--
--		/* We have to print a failed command here as the
--		 * extended CDB gets freed before scsi_io_completion()
--		 * is called.
--		 */
--		if (result)
--			scsi_print_command(SCpnt);
--
--		mempool_free(SCpnt->cmnd, sd_cdb_pool);
--		SCpnt->cmnd = NULL;
--		SCpnt->cmd_len = 0;
--	}
--
- 	return good_bytes;
- }
+-	fd = open64(file, f, mode);
++	if (!strncmp(file, "/dev/fd/", 8)
++	    && sscanf(file, "/dev/fd/%d", &fd0) == 1)
++		fd = dup(fd0);
++	else
++		fd = open64(file, f, mode);
+ 	if (fd < 0)
+ 		return -errno;
  
-
+ 	if (flags.cl && fcntl(fd, F_SETFD, 1)) {
+ 		err = -errno;
+@@ -280,11 +284,11 @@ int os_file_size(const char *file, unsigned long long *size_out)
+ 
+ 	if (S_ISBLK(buf.ust_mode)) {
+ 		int fd;
+ 		long blocks;
+ 
+-		fd = open(file, O_RDONLY, 0);
++		fd = os_open_file(file, of_read(OPENFLAGS()), 0);
+ 		if (fd < 0) {
+ 			err = -errno;
+ 			printk(UM_KERN_ERR "Couldn't open \"%s\", "
+ 			       "errno = %d\n", file, errno);
+ 			return err;
+-- 
+1.8.3.3.758.g90e98ff
 
