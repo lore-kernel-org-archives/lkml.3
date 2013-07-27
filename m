@@ -1,197 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab3G0NHE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 09:07:04 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:63672 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab3G0NHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 09:07:01 -0400
+	id S1751828Ab3G0NON (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 09:14:13 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43323 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab3G0NOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 09:14:12 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] ACPI: Move acpi_bus_get_device() from bus.c to scan.c
+Date: Sat, 27 Jul 2013 15:24:19 +0200
+Message-ID: <3314440.iryh4ZRtRb@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
-References: <1373895429-8846-1-git-send-email-benjamin.tissoires@redhat.com>
-	<1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
-Date: Sat, 27 Jul 2013 15:07:00 +0200
-Message-ID: <CANq1E4RfTLtDz1RYixg4qdkNxrU22rSaZxFss4++A-0hYM0bEQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] input/uinput: add UI_GET_SYSPATH ioctl to retrieve
- the sysfs path
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Subject: ACPI: Move acpi_bus_get_device() from bus.c to scan.c
 
-On Mon, Jul 15, 2013 at 3:37 PM, Benjamin Tissoires
-<benjamin.tissoires@redhat.com> wrote:
-> Evemu [1] uses uinput to replay devices traces it has recorded. However,
-> the way evemu uses uinput is slightly different from how uinput is
-> supposed to be used.
-> Evemu creates the device node through uinput, bu inject events through
-> the input device node directly (and skipping the uinput node).
->
-> Currently, evemu relies on an heuristic to guess which input node was
-> created. The problem is that is heuristic is subjected to races between
-> different uinput devices or even with physical devices. Having a way
-> to retrieve the sysfs path allows us to find the event node without
-> having to rely on this heuristic.
+Move acpi_bus_get_device() from bus.c to scan.c which allows
+acpi_bus_data_handler() to become static and clean up the latter.
 
-It would actually be enough to return the "input_no" from
-input_register_device() (which is currently local but we could save it
-in "dev"). Or only the device-name. I don't know why you want the full
-syspath. It's just overhead in the kernel that we could easily let
-user-space do. And the path /sys/class/input/<devname> can be put
-together by user-space.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/bus.c      |   21 ---------------------
+ drivers/acpi/scan.c     |   30 ++++++++++++++++++++++--------
+ include/acpi/acpi_bus.h |    1 -
+ 3 files changed, 22 insertions(+), 30 deletions(-)
 
-Anyway, Dmitry has to decide on that. Apart from some style-issues I
-mentioned below:
-  Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Index: linux-pm/drivers/acpi/bus.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/bus.c
++++ linux-pm/drivers/acpi/bus.c
+@@ -89,27 +89,6 @@ static struct dmi_system_id dsdt_dmi_tab
+                                 Device Management
+    -------------------------------------------------------------------------- */
+ 
+-int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
+-{
+-	acpi_status status;
+-
+-	if (!device)
+-		return -EINVAL;
+-
+-	/* TBD: Support fixed-feature devices */
+-
+-	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)device);
+-	if (ACPI_FAILURE(status) || !*device) {
+-		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No context for object [%p]\n",
+-				  handle));
+-		return -ENODEV;
+-	}
+-
+-	return 0;
+-}
+-
+-EXPORT_SYMBOL(acpi_bus_get_device);
+-
+ acpi_status acpi_bus_get_status_handle(acpi_handle handle,
+ 				       unsigned long long *sta)
+ {
+Index: linux-pm/drivers/acpi/scan.c
+===================================================================
+--- linux-pm.orig/drivers/acpi/scan.c
++++ linux-pm/drivers/acpi/scan.c
+@@ -970,6 +970,28 @@ struct bus_type acpi_bus_type = {
+ 	.uevent		= acpi_device_uevent,
+ };
+ 
++static void acpi_bus_data_handler(acpi_handle handle, void *context)
++{
++	/* Intentionally empty. */
++}
++
++int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device)
++{
++	acpi_status status;
++
++	if (!device)
++		return -EINVAL;
++
++	status = acpi_get_data(handle, acpi_bus_data_handler, (void **)device);
++	if (ACPI_FAILURE(status) || !*device) {
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "No context for object [%p]\n",
++				  handle));
++		return -ENODEV;
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(acpi_bus_get_device);
++
+ int acpi_device_add(struct acpi_device *device,
+ 		    void (*release)(struct device *))
+ {
+@@ -1181,14 +1203,6 @@ acpi_bus_get_ejd(acpi_handle handle, acp
+ }
+ EXPORT_SYMBOL_GPL(acpi_bus_get_ejd);
+ 
+-void acpi_bus_data_handler(acpi_handle handle, void *context)
+-{
+-
+-	/* TBD */
+-
+-	return;
+-}
+-
+ static int acpi_bus_extract_wakeup_device_power_package(acpi_handle handle,
+ 					struct acpi_device_wakeup *wakeup)
+ {
+Index: linux-pm/include/acpi/acpi_bus.h
+===================================================================
+--- linux-pm.orig/include/acpi/acpi_bus.h
++++ linux-pm/include/acpi/acpi_bus.h
+@@ -371,7 +371,6 @@ extern int unregister_acpi_notifier(stru
+  */
+ 
+ int acpi_bus_get_device(acpi_handle handle, struct acpi_device **device);
+-void acpi_bus_data_handler(acpi_handle handle, void *context);
+ acpi_status acpi_bus_get_status_handle(acpi_handle handle,
+ 				       unsigned long long *sta);
+ int acpi_bus_get_status(struct acpi_device *device);
 
-Cheers
-David
-
-> [1] http://www.freedesktop.org/wiki/Evemu/
->
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> ---
->  drivers/input/misc/uinput.c | 37 ++++++++++++++++++++++++++++++++++++-
->  include/linux/uinput.h      |  1 +
->  include/uapi/linux/uinput.h |  3 +++
->  3 files changed, 40 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
-> index 7d518b4..49a9f7d 100644
-> --- a/drivers/input/misc/uinput.c
-> +++ b/drivers/input/misc/uinput.c
-> @@ -22,6 +22,7 @@
->   * Changes/Revisions:
->   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
->   *             - update uinput_user_dev struct to allow abs resolution
-> + *             - add UI_GET_SYSPATH ioctl
-
-What tree is that patch against? I cannot see an "0.4" entry in:
-http://git.kernel.org/cgit/linux/kernel/git/dtor/input.git/tree/drivers/input/misc/uinput.c?h=next
-
->   *     0.3     09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
->   *             - updated ff support for the changes in kernel interface
->   *             - added MODULE_VERSION
-> @@ -667,6 +668,21 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
->         __ret;                                          \
->  })
->
-> +static int uinput_str_to_user(const char *str, unsigned int maxlen,
-> +                             void __user *p)
-
-As Peter mentioned, I'd move "maxlen" to the end.
-
-> +{
-> +       int len;
-> +
-> +       if (!str)
-> +               return -ENOENT;
-> +
-> +       len = strlen(str) + 1;
-> +       if (len > maxlen)
-> +               len = maxlen;
-> +
-> +       return copy_to_user(p, str, len) ? -EFAULT : len;
-
-I'd prefer a "strlcpy()" so we guarantee a terminating 0 for
-user-space, but I guess that'd be rather complex to do here. I
-couldn't find any strlcpy_to_user()...
-
-> +}
-> +
->  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->                                  unsigned long arg, void __user *p)
->  {
-> @@ -676,6 +692,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->         struct uinput_ff_erase  ff_erase;
->         struct uinput_request   *req;
->         char                    *phys;
-> +       const char              *path;
-> +       unsigned int            size;
->
->         retval = mutex_lock_interruptible(&udev->mutex);
->         if (retval)
-> @@ -828,7 +846,24 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
->                         break;
->
->                 default:
-> -                       retval = -EINVAL;
-> +                       retval = -EAGAIN;
-> +       }
-> +
-> +       if (retval == -EAGAIN) {
-> +               size = _IOC_SIZE(cmd);
-> +
-> +               /* Now check variable-length commands */
-> +               switch (cmd & ~IOCSIZE_MASK) {
-> +                       case UI_GET_SYSPATH(0):
-> +                               path = kobject_get_path(&udev->dev->dev.kobj,
-> +                                                       GFP_KERNEL);
-
-I know, device registration is protected by udev->mutex but I'd still prefer:
-  if (udev->state != UIST_CREATED)
-    return -ENOENT;
-
-But that's probably a matter of taste.
-
-> +                               retval = uinput_str_to_user(path, size, p);
-> +                               kfree(path);
-> +                               break;
-> +
-> +                       default:
-> +                               retval = -EINVAL;
-> +               }
->         }
->
->   out:
-> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
-> index 6291a22..64fab81 100644
-> --- a/include/linux/uinput.h
-> +++ b/include/linux/uinput.h
-> @@ -22,6 +22,7 @@
->   * Changes/Revisions:
->   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
->   *             - update uinput_user_dev struct to allow abs resolution
-> + *             - add UI_GET_SYSPATH ioctl
->   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->   *             - update ff support for the changes in kernel interface
->   *             - add UINPUT_VERSION
-> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
-> index f6a393b..d826409 100644
-> --- a/include/uapi/linux/uinput.h
-> +++ b/include/uapi/linux/uinput.h
-> @@ -22,6 +22,7 @@
->   * Changes/Revisions:
->   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
->   *             - update uinput_user_dev struct to allow abs resolution
-> + *             - add UI_GET_SYSPATH ioctl
->   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
->   *             - update ff support for the changes in kernel interface
->   *             - add UINPUT_VERSION
-> @@ -75,6 +76,8 @@ struct uinput_ff_erase {
->  #define UI_BEGIN_FF_ERASE      _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
->  #define UI_END_FF_ERASE                _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
->
-> +#define UI_GET_SYSPATH(len)    _IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
-> +
->  /*
->   * To write a force-feedback-capable driver, the upload_effect
->   * and erase_effect callbacks in input_dev must be implemented.
-> --
-> 1.8.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
