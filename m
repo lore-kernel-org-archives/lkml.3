@@ -1,115 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab3G0N6M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 09:58:12 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43389 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751792Ab3G0N6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 09:58:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ben Guthro <benjamin.guthro@citrix.com>,
-        Richard L Maliszewski <richard.l.maliszewski@intel.com>
-Cc: Bob Moore <robert.moore@intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
-        Shane Wang <shane.wang@intel.com>, Gang Wei <gang.wei@intel.com>
-Subject: Re: [Xen-devel] [PATCH v6 0/5] Xen/ACPI: support sleep state entering on hardware reduced systems
-Date: Sat, 27 Jul 2013 16:08:16 +0200
-Message-ID: <2587213.aUKYcW3xhW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAOvdn6Wv1mXD-RDCZ750YQFEFf7GR0QxVARACEg0jNrUEEkBYA@mail.gmail.com>
-References: <1372679333-8473-1-git-send-email-benjamin.guthro@citrix.com> <51DAB9B8.7060303@citrix.com> <CAOvdn6Wv1mXD-RDCZ750YQFEFf7GR0QxVARACEg0jNrUEEkBYA@mail.gmail.com>
+	id S1751945Ab3G0OGu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 10:06:50 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:43377 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab3G0OGs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 10:06:48 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Cho KyongHo <pullip.cho@samsung.com>
+Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
+        "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
+        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Subject: Re: [PATCH v8 07/12] iommu/exynos: support for device tree
+Date: Sat, 27 Jul 2013 16:06:40 +0200
+Message-ID: <1743111.Ek7FldnHal@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <003d01ce89f3$44ec2cf0$cec486d0$@samsung.com>
+References: <003d01ce89f3$44ec2cf0$cec486d0$@samsung.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 22, 2013 08:44:08 AM Ben Guthro wrote:
-> On Mon, Jul 8, 2013 at 9:08 AM, Ben Guthro <Benjamin.Guthro@citrix.com> wrote:
-> >
-> >
-> > On 07/08/2013 09:10 AM, Rafael J. Wysocki wrote:
-> >> On Sunday, July 07, 2013 08:13:15 PM Ben Guthro wrote:
-> >>> On Mon, Jul 1, 2013 at 7:48 AM, Ben Guthro <benjamin.guthro@citrix.com> wrote:
-> >>>> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
-> >>>> reduced hardware sleep support, and the two changes didn't get
-> >>>> synchronized: The new code doesn't call the hook function (if so
-> >>>> requested). Fix this, requiring a boolean parameter to be added to the
-> >>>> hook function to distinguish "extended" from "legacy" sleep.
-> >>>>
-> >>>> This requires adjusting TXT, but the adjustments only go as far as
-> >>>> failing the extended mode call (since, looking at the TXT interface,
-> >>>> there doesn't even appear to be precautions to deal with that
-> >>>> alternative interface).
-> >>>>
-> >>>> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
-> >>>> v5 (reduced HW) sleep interface") on the master branch of
-> >>>> git://xenbits.xen.org/xen.git.
-> >>>>
-> >>>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> >>>> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
-> >>>> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
-> >>>> Cc: Gang Wei <gang.wei@intel.com>
-> >>>> Cc: Shane Wang <shane.wang@intel.com>
-> >>>> Cc: Bob Moore <robert.moore@intel.com>
-> >>>> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> >>>> Cc: linux-acpi@vger.kernel.org
-> >>>> Cc: tboot-devel@lists.sourceforge.net
-> >>>>
-> >>>> v2: Extend description to include reference to hypervisor side change
-> >>>> v3: Split into multiple patches, separating subsystems
-> >>>>     Remove bool parameters, in favor of u8
-> >>>> v4: Remove linux/acpi.h dependencies
-> >>>>     Further patch split to break out acpica from OSL
-> >>>>     More bool vs u8 fixes
-> >>>> v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
-> >>>>     so intermediate builds of partial patch series will not fail.
-> >>>> v6: Rebased to linux-pm linux-next branch
-> >>>>     Added warning in tboot early return code
-> >>>>     Added Reviewed-by lines
-> >>>>
-> >>>> Ben Guthro (5):
-> >>>>   acpi: Remove need to include linux/acpi.h in common acpica code
-> >>>>   acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
-> >>>>   acpi/xen/tboot: Adjust linux acpi OS functions to new extended
-> >>>>     parameter
-> >>>>   x86/tboot: Fail extended mode reduced hardware sleep
-> >>>>   xen/acpi: notify xen when reduced hardware sleep is available
-> >>>
-> >>> Rafael, Bob -
-> >>>
-> >>> Is this version of the series something that you may consider taking?
-> >>> If not - is there something specific you would like to see addressed?
-> >>
-> >> Well, I'm afraid you need to give us some more time to process that,
-> >> sorry.
-> >
-> > My apologies - I know it is a busy time during the merge window. I did
-> > not mean to seem impatient.
-> >
-> > With the volume of things on the mailing list, I merely wanted to try to
-> > avoid the series getting buried. If a week is too frequent to re-bump a
-> > series, do you have a set of recommendations of how to best interact
-> > with your workflow?
-> 
-> Rafael (et al.)
-> 
-> I never heard back on this point of how you prefer your workflow to
-> proceed - that is, if I haven't heard anything in a couple weeks -
-> should I try to re-bump the thread?
-> 
-> Since this was sent around the time of the merge window, I realize
-> there were other things to occupy people's time.
-> Now that rc2 is out - I'm hoping that the dust has settled a bit, such
-> that there may be a cycle, or two to review this series.
+Hi,
 
-I've just replied to a [0/5] from a previous series, here:
+On Friday 26 of July 2013 20:28:36 Cho KyongHo wrote:
+> This commit adds device tree support for System MMU.
+> This also include the following changes and enhancements:
+> 
+> * use managed device helper functions.
+> Simplyfies System MMU device driver.
+> 
+> * use only a single clock descriptor.
+> System MMU device descriptor is seperate if it is imposible to make
+> a single clock descriptor to make a device descriptor for a group of
+> System MMUs.
+> 
+> * removed dbgname member from sysmmu_drvdata structure.
+> debugging kernel message for a System MMU is distinguisheable with the
+> name of device descroptors.
+> 
+> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> ---
+>  drivers/iommu/Kconfig        |    5 +-
+>  drivers/iommu/exynos-iommu.c |  182
+> ++++++++++++++++-------------------------- 2 files changed, 70
+> insertions(+), 117 deletions(-)
 
-http://marc.info/?l=linux-acpi&m=137493312722239&w=2
+Whenever you introduce or modify (extend) a device tree binding please 
+don't forget about reflecting that in documentation 
+(Documentation/devicetree/bindings) and CCing devicetree mailing list 
+(devicetree@vger.kernel.org). Both of these steps are necessary to get any 
+device tree stuff merged.
 
-Thanks,
-Rafael
+Best regards,
+Tomasz
 
