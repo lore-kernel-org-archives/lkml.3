@@ -1,54 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab3G0Fea (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 01:34:30 -0400
-Received: from purkki.adurom.net ([80.68.90.206]:46108 "EHLO purkki.adurom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752445Ab3G0Fe3 convert rfc822-to-8bit (ORCPT
+	id S1753277Ab3G0GVP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 02:21:15 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:3883 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752725Ab3G0GVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 01:34:29 -0400
-From: Kalle Valo <kvalo@adurom.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        =?utf-8?Q?J=C3=B6r?= =?utf-8?Q?g?= Otte <jrg.otte@gmail.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com>
-	<CA+55aFyrMRDD8qe9DYXixaSLJXEURMYYku1azABA72m71_X+cA@mail.gmail.com>
-	<9012759.Alzqtdvh5b@vostro.rjw.lan>
-	<2218913.HKGjJcYT1G@vostro.rjw.lan>
-Date: Sat, 27 Jul 2013 08:34:13 +0300
-In-Reply-To: <2218913.HKGjJcYT1G@vostro.rjw.lan> (Rafael J. Wysocki's message
-	of "Thu, 25 Jul 2013 15:00:26 +0200")
-Message-ID: <871u6ky3ai.fsf@purkki.adurom.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Sat, 27 Jul 2013 02:21:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqkGACRm81F5LPxH/2dsb2JhbABbgwY1uHqFMoEUF3SCJAEBBAE6HCMQCAMYCSUPBSUDIROICgUNuG0EFo0Ygk8HhAUDl16RTYMmKg
+Date: Sat, 27 Jul 2013 16:21:01 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, hch@lst.de,
+        jack@suse.cz, curtw@google.com, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH RFC fs] v2 Make sync() satisfy many requests with one
+ invocation
+Message-ID: <20130727062101.GG21982@dastard>
+References: <20130726232852.GA15147@linux.vnet.ibm.com>
+ <20130727025703.GF21982@dastard>
+ <20130727040524.GC26694@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130727040524.GC26694@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Fri, Jul 26, 2013 at 09:05:24PM -0700, Paul E. McKenney wrote:
+> On Sat, Jul 27, 2013 at 12:57:03PM +1000, Dave Chinner wrote:
+> > On Fri, Jul 26, 2013 at 04:28:52PM -0700, Paul E. McKenney wrote:
+> > > Dave Jones reported RCU stalls, overly long hrtimer interrupts, and
+> > > amazingly long NMI handlers from a trinity-induced workload involving
+> > > lots of concurrent sync() calls (https://lkml.org/lkml/2013/7/23/369).
+> > > There are any number of things that one might do to make sync() behave
+> > > better under high levels of contention, but it is also the case that
+> > > multiple concurrent sync() system calls can be satisfied by a single
+> > > sys_sync() invocation.
+> > > 
+> > > Given that this situation is reminiscent of rcu_barrier(), this commit
+> > > applies the rcu_barrier() approach to sys_sync().  This approach uses
+> > > a global mutex and a sequence counter.  The mutex is held across the
+> > > sync() operation, which eliminates contention between concurrent sync()
+> > > operations.
+> > >
+> > > The counter is incremented at the beginning and end of
+> > > each sync() operation, so that it is odd while a sync() operation is in
+> > > progress and even otherwise, just like sequence locks.
+> > > 
+> > > The code that used to be in sys_sync() is now in do_sync(), and sys_sync()
+> > > now handles the concurrency.  The sys_sync() function first takes a
+> > > snapshot of the counter, then acquires the mutex, and then takes another
+> > > snapshot of the counter.  If the values of the two snapshots indicate that
+> > > a full do_sync() executed during the mutex acquisition, the sys_sync()
+> > > function releases the mutex and returns ("Our work is done!").  Otherwise,
+> > > sys_sync() increments the counter, invokes do_sync(), and increments
+> > > the counter again.
+> > > 
+> > > This approach allows a single call to do_sync() to satisfy an arbitrarily
+> > > large number of sync() system calls, which should eliminate issues due
+> > > to large numbers of concurrent invocations of the sync() system call.
+> > 
+> > This is not addressing the problem that is causing issues during
+> > sync. Indeed, it only puts a bandaid over the currently observed
+> > trigger.
+> > 
+> > Indeed, i suspect that this will significantly slow down concurrent
+> > sync operations, as it serialised sync across all superblocks rather
+> > than serialising per-superblock like is currently done. Indeed, that
+> > per-superblock serialisation is where all the lock contention
+> > problems are. And it's not sync alone that causes the contention
+> > problems - it has to be combined with other concurrent workloads
+> > that add or remove inodes from the inode cache at tha same time.
+> 
+> Seems like something along the lines of wakeup_flusher_threads()
+> currently at the start of sys_sync() would address this.
 
-> James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
-> fixes the backlight for you.
+That's the first thing sync() currently does, but it doesn't solve
+the problem because that only triggers WB_SYNC_NONE writeback. ie.
+it's not data integrity writeback, so if there's any contention it
+will skip pages and inodes. So we still need sync to dispatch IO.
 
-I did three suspend-resume cycles and didn't notice anything wrong so
-this patch fixes the issue for me. I'll continue testing and will report
-if I spot any problems.
+Further, it requires scheduling of the work before anything will be
+done, and so if you are CPU loaded then there's a good chance that
+the flusher thread doesn't get to a CPU until sync actually queues
+the sync work to it and then waits for completion on it...
 
-Tested-by: Kalle Valo <kvalo@adurom.com>
+> > I have patches to address that by removing the source
+> > of the lock contention completely, and not just for the sys_sync
+> > trigger. Those patches make the problems with concurrent
+> > sys_sync operation go away completely for me, not to mention improve
+> > performance for 8+ thread metadata workloads on XFS significantly.
+> > 
+> > IOWs, I don't see that concurrent sys_sync operation is a problem at
+> > all, and it is actively desirable for systems that have multiple
+> > busy filesystems as it allows concurrent dispatch of IO across those
+> > multiple filesystems. Serialising all sys_sync work might stop the
+> > contention problems, but it will also slow down concurrent sync
+> > operations on busy systems as it only allows one thread to dispatch
+> > and wait for IO at a time.
+> > 
+> > So, let's not slap a bandaid over a symptom - let's address the
+> > cause of the lock contention properly....
+> 
+> Hmmm...
+> 
+> Could you please send your patches over to Dave Jones right now?  I am
+> getting quite tired of getting RCU CPU stall warning complaints from
+> him that turn out to be due to highly contended sync() system calls.
+
+Then ignore them until the code is ready - it'll be 3.12 before the
+fixes are merged, anyway, because the lock contention fix requires
+infrastructure that is currently in mmotm that is queued for 3.12
+(i.e. the per-node list infrastructure) to fix a whole bunch of
+other, more critical VFS lock contention problems. Seeing as a new
+mmotm went out last week, I should have the patches ready for review
+early next week.
+
+FWIW, we (as in XFS filesystem testers) regularly run tests that
+have hundreds of concurrent sys_sync() calls running at the same
+time. e.g. xfstests::xfs/297 runs a 1000 fsstress processes while
+freezing and unfreezing the filesystem, and that usually shows
+hundreds of threads running sys_sync concurrently after a short
+amount of runtime. So it's pretty clear that what Dave is seeing
+is not necessarily representative of what happens when there ar lots
+of sys_sync() calls run concurrently.
+
+BTW, concurrent syncfs() calls are going to have exactly the same
+problem as concurrent sync() calls, as is any other operation that
+results in a walk of the per-superblock inodes list.
+
+Cheers,
+
+Dave.
 
 -- 
-Kalle Valo
+Dave Chinner
+david@fromorbit.com
