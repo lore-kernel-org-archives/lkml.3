@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab3G1D3a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 23:29:30 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:45094 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab3G1D33 convert rfc822-to-8bit (ORCPT
+	id S1753169Ab3G1D6s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 23:58:48 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47407 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab3G1D6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 23:29:29 -0400
-References: <1374953558-4704-1-git-send-email-ethan.kernel@gmail.com> <7F52345F-242F-4A9D-8CD2-5805936ABAEE@gmail.com>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <7F52345F-242F-4A9D-8CD2-5805936ABAEE@gmail.com>
-Content-Type: text/plain;
-	charset=GB2312
-Content-Transfer-Encoding: 8BIT
-Message-Id: <77E02B89-C51A-4CCA-81ED-851F87A44EF5@gmail.com>
-Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "joe.jin@oracle.com" <joe.jin@oracle.com>,
-        "ethan.zhao" <ethan.zhao@oracle.com>
-X-Mailer: iPad Mail (10B329)
-From: ethan <ethan.kernel@gmail.com>
-Subject: Re: [PATCH V2] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
-Date: Sun, 28 Jul 2013 11:29:19 +0800
-To: Mark D Rustad <mrustad@gmail.com>
+	Sat, 27 Jul 2013 23:58:46 -0400
+From: "ethan.zhao" <ethan.kernel@gmail.com>
+To: mrustad@gmail.com, bhelgaas@google.com, yinghai@kernel.org,
+        jbarnes@virtuousgeek.org
+Cc: linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
+        linux-pci@vger.kernel.org, joe.jin@oracle.com,
+        "ethan.zhao" <ethan.kernel@gmail.com>
+Subject: [PATCH v3] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
+Date: Sat, 27 Jul 2013 16:39:41 -0400
+Message-Id: <1374957581-5542-1-git-send-email-ethan.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks£¬got it ,you are right.
+V2: Corrected code style and tested for Linux v 3.11-rc2
+V3: Fix the no space betwween words typo and keep the string in one line.
 
+Signed-off-by: ethan.zhao <ethan.kernel@gmail.com>
+---
+ arch/x86/pci/mmconfig-shared.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-ÔÚ 2013-7-28£¬11:09£¬Mark D Rustad <mrustad@gmail.com> Ð´µÀ£º
+diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+index 082e881..619b74b 100644
+--- a/arch/x86/pci/mmconfig-shared.c
++++ b/arch/x86/pci/mmconfig-shared.c
+@@ -700,8 +700,12 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+ 	if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
+ 		return -ENODEV;
+ 
+-	if (start > end)
++	 if (start > end || !addr) {
++		 dev_warn(dev, FW_INFO
++			"Invalid address to add MMCONFIG start %02x end %02x addr %pR\n",
++			start, end, addr);
+ 		return -EINVAL;
++	}
+ 
+ 	mutex_lock(&pci_mmcfg_lock);
+ 	cfg = pci_mmconfig_lookup(seg, start);
+@@ -716,11 +720,6 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+ 		return -EEXIST;
+ 	}
+ 
+-	if (!addr) {
+-		mutex_unlock(&pci_mmcfg_lock);
+-		return -EINVAL;
+-	}
+-
+ 	rc = -EBUSY;
+ 	cfg = pci_mmconfig_alloc(seg, start, end, addr);
+ 	if (cfg == NULL) {
+-- 
+1.7.1
 
-> Another nit below:
-> 
-> On Jul 27, 2013, at 12:32 PM, ethan.kernel@gmail.com wrote:
-> 
->> Cleanup the -EINVAL return value handling and add warning message for invalid
->> start,end,addr parameters.
->> 
->> V2: Corrected code style and tested for Linux v 3.11-rc2
->> 
->> Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
->> ---
->> arch/x86/pci/mmconfig-shared.c |   12 ++++++------
->> 1 files changed, 6 insertions(+), 6 deletions(-)
->> 
->> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
->> index 082e881..37f6c7f 100644
->> --- a/arch/x86/pci/mmconfig-shared.c
->> +++ b/arch/x86/pci/mmconfig-shared.c
->> @@ -700,8 +700,13 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
->>    if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
->>        return -ENODEV;
->> 
->> -    if (start > end)
->> +    if (start > end || !addr) {
->> +        dev_warn(dev, FW_INFO
->> +            "Invalid address to add MMCONFIG"
->> +            "start %02x end %02x addr %pR\n",
-> 
-> As it is here, there will be no space between MMCONFIG and the word start. Better still, put the entire string on one line to aid those searching for the message. There is a general exception to the 80-column rule for user-visible messages such as this.
-> 
-> <snip>
-> 
-> -- 
-> Mark Rustad, MRustad@gmail.com
-> 
