@@ -1,60 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758550Ab3G0DTN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 23:19:13 -0400
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:35470 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758214Ab3G0DTJ (ORCPT
+	id S1758527Ab3G0Dim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 23:38:42 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:41815 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757543Ab3G0Dik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 23:19:09 -0400
-Date: Fri, 26 Jul 2013 23:20:00 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Adrian Hunter <adrian.hunter@intel.com>, mingo@kernel.org, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] perf: Update perf_event_type documentation
-In-Reply-To: <20130726085730.GD27075@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.02.1307262316590.6448@pianoman.cluster.toy>
-References: <20130716150907.GL23818@dyad.programming.kicks-ass.net> <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org> <alpine.DEB.2.02.1307241348250.7828@pianoman.cluster.toy> <51F0C41C.8080005@intel.com> <alpine.DEB.2.02.1307252313460.26062@pianoman.cluster.toy>
- <20130726085730.GD27075@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 26 Jul 2013 23:38:40 -0400
+Message-ID: <51F33F41.9040902@huawei.com>
+Date: Sat, 27 Jul 2013 11:32:17 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020201.51F33C2B.0057,ss=1,re=0.000,fgs=0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 2/2] tracing: Shrink the size of struct ftrace_event_field
+References: <51F08D1B.1080300@huawei.com> <51F08D4B.3010201@huawei.com> <1374851376.6580.34.camel@gandalf.local.home>
+In-Reply-To: <1374851376.6580.34.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 26 Jul 2013, Peter Zijlstra wrote:
+Use bit fields, and the size of struct ftrace_event_field can be
+shrunk from 48 bytes to 40 bytes on 64bit kernel.
 
-> On Thu, Jul 25, 2013 at 11:20:24PM -0400, Vince Weaver wrote:
-> > 
-> > a thing that personally bothers me are these imaginary struct definitions 
-> > added as part of the documentation that aren't actually available in the 
-> > public perf_event.h
-> > 
-> > I can see why it's done, but it can be confusing picking out in later 
-> > definitions which struct fields are real and which ones are conceptual.
-> 
-> Would it help if we changed the syntax to not look as much as real C
-> would?
+slab_name active_obj nr_obj size obj_per_slab
+---------------------------------------------
+ftrace_event_field   1105   1105     48   85  (before)
+ftrace_event_field   1224   1224     40  102  (after)
 
-I've been thinking and I can't really think of a clearer way to present 
-the layout.   So I guess it's fine the way it is.  Hopefully not many 
-people are stuck having to implement code based on header file comments 
-anyway.
+This saves a few Kbytes: (1224 * 40) - (1105 * 48) = 4080
 
-> > It might be clearer
-> > if you stuck the perf_event_attr::sample_id_all qualifier each
-> > place you add the sample_id field.
-> 
-> Ah, I actually considered that but then got lazy and used the 0 sized
-> struct idea :/
+v2:
+- use !!is_signed, and nuke the check on this field.
+- use a different way to detect overflow.
+(both suggested by Steven)
 
-It might just be me.  For whatever reason the C parser in my head doesn't 
-handle GNU extensions like 0-sized structs.
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/trace/trace.h        |  8 ++++----
+ kernel/trace/trace_events.c | 14 ++++++++++----
+ 2 files changed, 14 insertions(+), 8 deletions(-)
 
-Vince
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..3e8c97f 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -904,10 +904,10 @@ struct ftrace_event_field {
+ 	struct list_head	link;
+ 	const char		*name;
+ 	const char		*type;
+-	int			filter_type;
+-	int			offset;
+-	int			size;
+-	int			is_signed;
++	unsigned int		filter_type:4;
++	unsigned int		offset:12;
++	unsigned int		size:12;
++	unsigned int		is_signed:1;
+ };
+ 
+ struct event_filter {
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 7d85429..d72694d 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -106,6 +106,9 @@ trace_find_event_field(struct ftrace_event_call *call, char *name)
+ 	return __find_event_field(head, name);
+ }
+ 
++/* detect bit-field overflow */
++#define VERIFY_SIZE(type) WARN_ON(type > field->type)
++
+ static int __trace_define_field(struct list_head *head, const char *type,
+ 				const char *name, int offset, int size,
+ 				int is_signed, int filter_type)
+@@ -120,13 +123,16 @@ static int __trace_define_field(struct list_head *head, const char *type,
+ 	field->type = type;
+ 
+ 	if (filter_type == FILTER_OTHER)
+-		field->filter_type = filter_assign_type(type);
+-	else
+-		field->filter_type = filter_type;
++		filter_type = filter_assign_type(type);
+ 
++	field->filter_type = filter_type;
+ 	field->offset = offset;
+ 	field->size = size;
+-	field->is_signed = is_signed;
++	field->is_signed = !!is_signed;
++
++	VERIFY_SIZE(filter_type);
++	VERIFY_SIZE(offset);
++	VERIFY_SIZE(size);
+ 
+ 	list_add(&field->link, head);
+ 
+-- 
+1.8.0.2
+
+
