@@ -1,131 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab3G0R6r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:58:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60108 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752590Ab3G0R6g (ORCPT
+	id S1752678Ab3G0SIL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 14:08:11 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:52691 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab3G0SIJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:58:36 -0400
-Message-ID: <1374947906.13555.51.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 42/79] vlan: fix a race in egress prio management
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 27 Jul 2013 18:58:26 +0100
-In-Reply-To: <1374946729.3669.5.camel@edumazet-glaptop>
-References: <20130726204721.849052763@linuxfoundation.org>
-	 <20130726204726.846842461@linuxfoundation.org>
-	 <1374944157.13555.43.camel@deadeye.wl.decadent.org.uk>
-	 <1374946729.3669.5.camel@edumazet-glaptop>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-8agL0+ieA6eftw/ApZZI"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sat, 27 Jul 2013 14:08:09 -0400
+Date: Sat, 27 Jul 2013 20:07:54 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130727180752.GB4813@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726045433.GB4100@netboy>
+ <20130726171524.GB28895@obsidianresearch.com>
+ <20130727085259.GA6207@netboy>
+ <20130727113602.GD9858@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130727113602.GD9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 27, 2013 at 12:36:02PM +0100, Mark Brown wrote:
+> On Sat, Jul 27, 2013 at 10:53:01AM +0200, Richard Cochran wrote:
+> > On Fri, Jul 26, 2013 at 11:15:24AM -0600, Jason Gunthorpe wrote:
+> 
+> > > Why do you think our experiences are so different?
+> 
+> > Here are a few recent examples:
+> 
+> OK, let's go through these...
 
---=-8agL0+ieA6eftw/ApZZI
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Yes, lets, and remember the question was, why do I say that dealing
+with DT is such a PITA.
+ 
+> > * What happens when one wants to boot vanilla kernel on the beaglebone?
+> 
+> >   http://www.spinics.net/lists/arm-kernel/msg198431.html
+> 
+> This actually sounds pretty good - glancing over the thread it seems you
+> were trying to boot a shiny new board that people were in the process of
+> trying to upstream support for and were just a bit too early.  Device
+> tree doesn't seem to have made a difference either way here.
 
-On Sat, 2013-07-27 at 10:38 -0700, Eric Dumazet wrote:
-> On Sat, 2013-07-27 at 17:55 +0100, Ben Hutchings wrote:
-> > On Fri, 2013-07-26 at 13:47 -0700, Greg Kroah-Hartman wrote:
-> > > 3.10-stable review patch.  If anyone has any objections, please let m=
-e know.
-> > >=20
-> > > ------------------
-> > >=20
-> > > From: Eric Dumazet <edumazet@google.com>
-> > >=20
-> > > [ Upstream commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 ]
-> > >=20
-> > > egress_priority_map[] hash table updates are protected by rtnl,
-> > > and we never remove elements until device is dismantled.
-> > >=20
-> > > We have to make sure that before inserting an new element in hash tab=
-le,
-> > > all its fields are committed to memory or else another cpu could
-> > > find corrupt values and crash.
-> > >=20
-> > > Signed-off-by: Eric Dumazet <edumazet@google.com>
-> > > Cc: Patrick McHardy <kaber@trash.net>
-> > > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > ---
-> > >  net/8021q/vlan_dev.c |    7 +++++++
-> > >  1 file changed, 7 insertions(+)
-> > >=20
-> > > --- a/net/8021q/vlan_dev.c
-> > > +++ b/net/8021q/vlan_dev.c
-> > > @@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_
-> > >  {
-> > >  	struct vlan_priority_tci_mapping *mp;
-> > > =20
-> > > +	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priorit=
-y() */
-> > > +
-> > >  	mp =3D vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF=
-)];
-> >=20
-> > This barrier is the wrong type in the wrong place; there should be a
-> > smp_read_barrier_depends() *after* reading the pointer from
-> > egress_priority_map, and after reading each next pointer.
-> >=20
->=20
-> Not sure its a problem anyway, as we insert new items at the beginning
-> of the chain, and we never delete any item. What you describe would make
-> sense if we were deleting an item.
->
-> Once a reader gets a pointer, the whole chain is stable.
+Did you miss the part about CONFIG_ARM_APPENDED_DTB?
 
-For every sane architecture, data-dependency is an automatic read
-barrier.  But Alpha is weird: it can prefetch mp->foo using a speculated
-value for mp before it sees mp.  If the speculation was correct it won't
-get the correct value of mp->foo.  Hence smp_read_barrier_depends(). =20
+> > * Wanting already merged code to work is too much to ask.
+> 
+> >   http://www.spinics.net/lists/linux-omap/msg79731.html
+> 
+> Paul's reply here seems fairly clear - someone had merged a driver which
+> had been developed in an out of tree or pre-DT environment without DT
+> support so they just hadn't added DT support.  Sadly doing that is new
+> feature development and so not appropriate for the stabalisation phase
+> of development.
 
-> The important part of the patch was the smp_wmb(), to make sure np->next
-> was committed before "vlan->egress_priority_map[skb_prio & 0xF] =3D np;"
+This is me asking for maintainers to take patches to fix a driver in
+version v3.7 where the driver merged in v3.4. 
 
-Sure.  But the smp_rmb() you added doesn't synchronise with it (a
-barrier is always between operations, but where is the 'before'
-operation here?).
+The patches contain the missing DT part, and the maintainer rejects
+them, saying, no new features!
 
-Ben.
+Q: What the heck kind of process is that?
+A: DT process.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+Seriously, why is it too hard for y'all to insist on merging drivers
+only when they are really, truly ready (and don't forget the DT part,
+please).
 
---=-8agL0+ieA6eftw/ApZZI
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> > * When people try in good faith to conduct methodical boot tests,
+> >   DT is working against them.
+> 
+> >   http://www.spinics.net/lists/linux-omap/msg79960.html
+> 
+> Again I don't see anything particularly related to DT here but instead
+> do with using a SoC and board that are in the early phases of mainline
+> integration.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+It is ring around the rosie, DT, boot loader, and kernel.
 
-iQIVAwUAUfQKQ+e/yOyVhhEJAQqoCBAAzu9EpiW11dDK9ET57tK67s1fn+nLdPEC
-+Gms6ocrH/MnmfrCJ+l//m3DSAxAmBRjbNahsIcYhfjlFhAU8i680zXWqIoTlDpX
-Lj4QXNX3Uj+MV+n3Ca8GmNy219hnIJtLyeuJsMPCd0y5EPZYrInKriqiPHLS6C+0
-3tnZEEw4unXq9zhxDksIkBZTvFh17sz4uNGNx2zBs34Wbs5NbGl1ddKxys3thCpz
-ww0ZuzWa/RNJyldkKeduzgGdKhzl50PTVaz7Nt0axdTmlf/OL8Krkof0tKer+BEg
-TVCzarQceNr/k6PDhFEOmaE2vPK+teg26Hv4wS/pQdzMXsk7rAWhZoMZW9WyXETX
-oDj4Ju0edqlTu0qaeFJc6VWYgqBbPR0dmt5ypkmLvrl2wW7fRJP1avHmvJ2Jix7k
-Hb3iO7DM2CPIjj5vewKMjJBelOYnSPwyTGbT3IRP3WOCc/ttNu3KYckn9b8Kqxid
-/oRAgfcrqJb6LU7AWe36Iw6yVYq5+cLLHDSpZ0RTWUDRzrzVeui4Pvexvag3fBvO
-G+EnZ6aoCIeaTu4EQwuVpTBIshrI+W57/LiakleL5aKhNE5JU33ncE6KqROHXaXs
-C51ZGaYaPw6HVi5TQPiaznk07b3LjOP3wc4TgB7wbXeuNG+ZXTGLC0q443u4Gmc6
-D5PO1VXQHFI=
-=JNBk
------END PGP SIGNATURE-----
+Understandably, Paul doesn't want to upgrade his boot loader. He says
+he is "not interested" in testing the boot loader, just the kernel.
+And, if you follow the sage of Paul's test reports, you will find him
+being told to update his boot loader and not to forget the delete old
+dtb files.
 
---=-8agL0+ieA6eftw/ApZZI--
+So, like I said, it is a pity PITA.
+
+Thanks,
+Richard
+
+
