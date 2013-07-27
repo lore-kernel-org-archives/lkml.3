@@ -1,131 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3G0LAx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 07:00:53 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1729 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276Ab3G0LAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 07:00:50 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51F3A82E.2000907@broadcom.com>
-Date: Sat, 27 Jul 2013 12:59:58 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Tomasz Figa" <tomasz.figa@gmail.com>
-cc: "Richard Cochran" <richardcochran@gmail.com>,
-        "Olof Johansson" <olof@lixom.net>, "Mark Brown" <broonie@kernel.org>,
-        "Mark Rutland" <mark.rutland@arm.com>,
+	id S1751521Ab3G0LLQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 07:11:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38927 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751394Ab3G0LLG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 07:11:06 -0400
+Date: Sat, 27 Jul 2013 12:09:20 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "ksummit-2013-discuss@lists.linuxfoundation.org" 
 	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "Pawel Moll" <Pawel.Moll@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Domenico Andreoli" <cavokz@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        "Dave P Martin" <Dave.Martin@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
 Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com>
- <2460092.aLmjrOVh1g@flatron>
-In-Reply-To: <2460092.aLmjrOVh1g@flatron>
-X-WSS-ID: 7DED78E231W56453604-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+	people interested in device tree janitoring / cleanup?]
+Message-ID: <20130727110920.GE24642@n2100.arm.linux.org.uk>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <CAOesGMhEr3DiFm5uSgoHPFUMY4jWu4HkeTU2UmOGj=dS75Vk+g@mail.gmail.com> <20130727050406.GB4221@netboy> <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com> <51F3A238.3020505@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F3A238.3020505@broadcom.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 12:36 PM, Tomasz Figa wrote:
-> On Saturday 27 of July 2013 12:24:24 Arend van Spriel wrote:
->> On 07/27/2013 11:51 AM, Tomasz Figa wrote:
->>> On Saturday 27 of July 2013 07:04:08 Richard Cochran wrote:
->>>> On Fri, Jul 26, 2013 at 08:49:43AM -0700, Olof Johansson wrote:
->>>>> Long term, final goal is likely to be close to what Russell is
->>>>> saying
->>>>
->>>> Why is this a long term goal? Start today.
->>>>
->>>>> -- nothing should go into the kernel tree unless the binding is in a
->>>>> fully stable state. However, we have a transitional period between
->>>>> now
->>>>> and then, and even when we're at the final state there will be need
->>>>> to
->>>>> have some sort of sandbox for development and test of future
->>>>> bindings.
->>>>
->>>> Why not just set up a git tree right away?
->>>>
->>>>> Dealing with all that, as well as the actual process for locking in
->>>>> bindings, is what needs to be sorted out.
->>>>>
->>>>> I think we're all in agreement that bindings that change over time
->>>>> are
->>>>> nothing but pain, but we're arguing that in circles anyway.
->>>>
->>>> No.
->>>>
->>>> I keep saying, the bindings must be stable ABI, *today*.
->>>>
->>>> You keep saying, maybe later, but until then we will make things up
->>>> as
->>>> we go along.
->>>
->>> We have currently a lot of broken bindings, because people didn't know
->>> how to define ones and those they defined have not been properly
->>> reviewed. Do you really want such broken ABI in the kernel?
->>>
->>> Sure, there are many existing bindings that can be just made stable
->>> and
->>> well they probably are already de facto stable. This is mostly about
->>> subsystem bindings and whatever already has many users, both made them
->>> get more thought when designing and more review before merging.
->>>
->>> Still, a lot of device and platform-specific bindings are simply
->>> broken. Take max8925 backlight driver, that Olof started this whole
->>> discussion with, as an example. We need to sort them out before they
->>> can be stabilized.
->>
->> That is a nice summary of how we got from null to now and Richard seems
->> to be simply saying: let's stop mucking about and make this a project
->> with a well-defined process of dealing with staging and stable bindings
->> and keep stable bindings stable. Whether it should be within the kernel
->> repo as a separate subsystem or in an entire different repo is a trivial
->> decision, but still a decision that needs to be made.
+On Sat, Jul 27, 2013 at 12:34:32PM +0200, Arend van Spriel wrote:
+> Oh, and the reason for my tinkering on dts is here:
 >
-> Yes, basically that's our current situation.
+> http://mid.gmane.org/51E7AA24.6080600@broadcom.com
 >
-> Still, I would disagree about the decision being trivial, as each choice
-> will have further, and likely pretty significant, consequences on binding
-> maintenance, submission, review and for dependent things, like drivers or
-> platforms using such bindings. This needs to be discussed enough.
->
->> Apart from stable DT bindings I would love to see a DT compiler that
->> that next to DT syntax detects mistakes in properties used for the
->> selfish reason that I spent hours debugging regulator code, because I
->> typed vmmc_supply iso vmmc-supply. I did not go through all the
->> bindings, but this may require a more formal description so it could be
->> compiled/read in the DT compiler.
->
-> This bothered me as well and that's why I'm working on this. I still can't
-> get myself to write a very long mail (I'm more a coder than writer...)
-> about the whole idea, my proposal of how it could look and problems we
-> need to solve, but I'll try better this evening.
+> Happily using Pandaboard for my driver testing and than *kaboom*.  
+> board-omap4panda.c is gone although the device tree does not provide the  
+> same functionality. Of course, this is not about DT bindings.
 
-Let's see how many people go and scream if I say this: Too bad .dts 
-files are not done using XML format as DT bindings could be described 
-using XML Schema.
+Similar happened to the 4430SDP board - and I took it out of the build
+system for over a month because of that.  I knew it would be _painful_
+to get DT and running on the board, and I was right, not only because of
+the different build process, but also trying to find which kernel config
+options need to be added to a previously working configuration for what
+is essentially a black box board.
 
-Regards,
-Arend
+The MMC device for the rootfs magically changed too - which meant finding
+out how to tell the kernel which device to use as the rootfs without
+giving it an explicit device.  (Using UUIDs, which aren't real UUIDs and
+aren't related to the filesystem UUID either - I've still no idea where
+this magic number comes from or how to identify it from a running system.)
 
+It's also made a total mess of the boot log.  I've no idea if all the
+devices were successfully probed because there's now soo much noise from
+the deferred probing that it's like trying to work out if there's any
+serious warnings in a kernel build where every file spits out a warning.
+It's almost a pen and paper job to work it out.  There's just too much
+noise in the kernel boot now that I'm just not going to bother reading
+the boot log anymore unless there's something which has noticably failed.
+
+On the plus side, the DT description for the SDP board _may_ have helped
+to solve a problem I've had for over two years: that is why the LCDs don't
+seem to work on the board.  It seems I need the TWL PWM driver.  I don't
+yet know if this has solved the problem or not, because I've not seen the
+board boot with that driver in it.  However, it's not clear to me from the
+DT description whether that covers both of the LCDs or just one though.
