@@ -1,266 +1,474 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758469Ab3G0BXu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 21:23:50 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55794 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756301Ab3G0BXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 21:23:46 -0400
-Date: Fri, 26 Jul 2013 18:23:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
-        Jan Kara <jack@suse.cz>, curtw@google.com,
-        Jens Axboe <jaxboe@fusionio.com>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH RFC fs] v2 Make sync() satisfy many requests with one
- invocation
-Message-ID: <20130727012339.GA26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130726232852.GA15147@linux.vnet.ibm.com>
- <CA+55aFx_+hLT8Ze2Aihjow660vxyfnqCL9T+xQRw-mbmdA39xA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx_+hLT8Ze2Aihjow660vxyfnqCL9T+xQRw-mbmdA39xA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072701-7182-0000-0000-000007E189E5
+	id S1758514Ab3G0B0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 21:26:38 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:41846 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab3G0B0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 26 Jul 2013 21:26:36 -0400
+From: Dong Fang <yp.fangdong@gmail.com>
+To: mfasheh@suse.com, jlbec@evilplan.org, akpm@linux-foundation.org,
+        jeff.liu@oracle.com, viro@zeniv.linux.org.uk, sunil.mushran@gmail.com,
+        tim.gardner@canonical.com, xuejiufei@huawei.com,
+        shencanquan@huawei.com, dan.carpenter@oracle.com
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Dong Fang <yp.fangdong@gmail.com>
+Subject: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of list_for_each()
+Date: Sat, 27 Jul 2013 09:23:49 -0400
+Message-Id: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 05:29:44PM -0700, Linus Torvalds wrote:
-> On Fri, Jul 26, 2013 at 4:28 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > +
-> > +       snap = ACCESS_ONCE(sync_seq);
-> > +       smp_mb();  /* Prevent above from bleeding into critical section. */
-> > +       mutex_lock(&sync_mutex);
-> > +       snap_done = ACCESS_ONCE(sync_seq);
-> > +       if (ULONG_CMP_GE(snap_done, ((snap + 1) & ~0x1) + 2)) {
-> 
-> Ugh. I dislike this RCU'ism. It's bad code. It doesn't just look ugly
-> and complex, it's also not even clever.
-> 
-> It is possible that the compiler can fix up this horrible stuff and
-> turn it into the nice clever stuff, but I dunno.
-> 
-> The two things that make me go "Eww":
-> 
->  - "((snap + 1) & ~0x1) + 2" just isn't the smart way of doing things.
-> Afaik, "(snap+3)&~1" gives the same answer with a simpler arithmetic.
 
-You are right, this is a better approach, and I have changed this
-patch to use it.
+Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
+---
+ fs/ocfs2/cluster/heartbeat.c |   14 +++++---------
+ fs/ocfs2/dlm/dlmast.c        |    8 +++-----
+ fs/ocfs2/dlm/dlmcommon.h     |    4 +---
+ fs/ocfs2/dlm/dlmconvert.c    |   11 +++--------
+ fs/ocfs2/dlm/dlmdebug.c      |   15 ++++-----------
+ fs/ocfs2/dlm/dlmdomain.c     |   20 +++++---------------
+ fs/ocfs2/dlm/dlmlock.c       |    9 ++-------
+ fs/ocfs2/dlm/dlmmaster.c     |   17 ++++-------------
+ fs/ocfs2/dlm/dlmthread.c     |   19 +++++--------------
+ fs/ocfs2/dlm/dlmunlock.c     |    4 +---
+ 10 files changed, 33 insertions(+), 88 deletions(-)
 
-I will also apply it to the similar code in RCU.
-
->  - that ULONG_CMP_GE() macro is disgusting. What's wrong with doing it
-> the sane way, which is how (for example) the time comparison functions
-> do it (see time_before() and friends): Just do it
-> 
->      ((long)(a-b) >= 0)
-> 
->    which doesn't need large constants.
-
-True, and I used to use this approach, but it can result in signed integer
-overflow, which is undefined in C.  (Yes, we use -fno-strict-overflow,
-but there might come a day when we don't want to.)  And ULONG_CMP_GE()
-generated exactly the same code as ((long)(a-b) >= 0) last I tried it.
-
-> And yeah, a smart compiler will hopefully do one or both of those, but
-> what annoys me about the source code is that it actually isn't even
-> any more readable despite being more complicated and needing more
-> compiler tricks for good code generation.
-> 
-> So that one line is (a) totally undocumented, (b) not obvious and (c)
-> not very clever.
-
-For (a), how about I add the following comment?
-
-	/*
-	 * If the value in snap is odd, we need to wait for the current
-	 * do_sync() to complete, then wait for the next one, in other
-	 * words, we need the value of snap_done to be three larger than
-	 * the value of snap.  On the other hand, if the value in snap is
-	 * even, we only have to wait for the next request to complete,
-	 * in other words, we need the value of snap_done to be only two
-	 * greater than the value of snap.  The "(snap + 3) & 0x1" computes
-	 * this for us.
-	 */
-
-Hopefully, this helps with (b).  For (c), I now use the expression
-you suggested above.
-
-Does that help, or is more needed.
-
-> I'm also not a huge believer in those two WARN_ON_ONCE's you have. The
-> sequence count is *only* updated in this place, it is *only* updated
-> inside a lock, and dammit, if those tests ever trigger, we have bigger
-> problems than that piece of code. Those warnings may make sense in
-> code when you write it the first time (because you're thinking things
-> through), but they do *not* make sense at the point where that code is
-> actually committed to the project. I notice that you have those
-> warnings in the RCU code itself, and I don't really think they make
-> sense there either.
-
-I agree that the fact that this variable is updated only in this one
-place in sys_sync() makes these warning less than useful in production.
-I will therefore remove them once this patch get beyond RFC status.
-
-However, the similar warnings in RCU have been very helpful in spotting
-bugs in the callers of rcu_idle_enter() and friends, so I would very
-much prefer to keep them.
-
-> Finally, the ACCESS_ONCE() is also only correct in the one place where
-> you do the access speculatively outside the lock. Inside the lock,
-> there is no excuse/reason for them, since the value is stable, and you
-> need the memory barriers anyway, so there's no way the compiler could
-> migrate things regardless. So the other two ACCESS_ONCE calls are
-> actually misleading and wrong, and only likely to make the compiler
-> generate much worse code.
-> 
-> In fact, the ACCESS_ONCE() is pretty much *guaranteed* to cause the
-> compiler to unnecessarily generate worse code, since there is
-> absolutely no reason why the compiler couldn't reuse the "snap_done"
-> value it reads when it then does the "sync_seq++". There's no way the
-> value could possible have changed from the "snap_done" value earlier,
-> since we're inside the lock, so why force the compiler to reload it?
-
-Good point, I have removed the second ACCESS_ONCE().
-
-> In short, I think the code does too much. I'm sure it works, but I
-> think it might make people believe that the extra work (like those
-> later ACCESS_ONCE ones) is meaningful, when it isn't. It's just
-> make-believe, afaik.
-> 
-> But maybe I'm missing something, and there actually *is* reason for
-> the extra work/complexity?
-
-Only for the ULONG_CMP_GE().  On the rest, you are quite right, and
-the updated patch is as follows.  
-
-But I will believe it works only if it helps Dave Jones's tests.  ;-)
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
-Dave Jones reported RCU stalls, overly long hrtimer interrupts, and
-amazingly long NMI handlers from a trinity-induced workload involving
-lots of concurrent sync() calls (https://lkml.org/lkml/2013/7/23/369).
-There are any number of things that one might do to make sync() behave
-better under high levels of contention, but it is also the case that
-multiple concurrent sync() system calls can be satisfied by a single
-sys_sync() invocation.
-
-Given that this situation is reminiscent of rcu_barrier(), this commit
-applies the rcu_barrier() approach to sys_sync().  This approach uses
-a global mutex and a sequence counter.  The mutex is held across the
-sync() operation, which eliminates contention between concurrent sync()
-operations.  The counter is incremented at the beginning and end of
-each sync() operation, so that it is odd while a sync() operation is in
-progress and even otherwise, just like sequence locks.
-
-The code that used to be in sys_sync() is now in do_sync(), and sys_sync()
-now handles the concurrency.  The sys_sync() function first takes a
-snapshot of the counter, then acquires the mutex, and then takes another
-snapshot of the counter.  If the values of the two snapshots indicate that
-a full do_sync() executed during the mutex acquisition, the sys_sync()
-function releases the mutex and returns ("Our work is done!").  Otherwise,
-sys_sync() increments the counter, invokes do_sync(), and increments
-the counter again.
-
-This approach allows a single call to do_sync() to satisfy an arbitrarily
-large number of sync() system calls, which should eliminate issues due
-to large numbers of concurrent invocations of the sync() system call.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Curt Wohlgemuth <curtw@google.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-fsdevel@vger.kernel.org
-[ paulmck: Updated based on Linus Torvalds feedback. ]
-
-diff --git a/fs/sync.c b/fs/sync.c
-index 905f3f6..174ad9b 100644
---- a/fs/sync.c
-+++ b/fs/sync.c
-@@ -99,7 +99,7 @@ static void fdatawait_one_bdev(struct block_device *bdev, void *arg)
-  * just write metadata (such as inodes or bitmaps) to block device page cache
-  * and do not sync it on their own in ->sync_fs().
-  */
--SYSCALL_DEFINE0(sync)
-+static void do_sync(void)
+diff --git a/fs/ocfs2/cluster/heartbeat.c b/fs/ocfs2/cluster/heartbeat.c
+index 5c1c864..25b72e8 100644
+--- a/fs/ocfs2/cluster/heartbeat.c
++++ b/fs/ocfs2/cluster/heartbeat.c
+@@ -628,11 +628,9 @@ static void o2hb_fire_callbacks(struct o2hb_callback *hbcall,
+ 				struct o2nm_node *node,
+ 				int idx)
  {
- 	int nowait = 0, wait = 1;
+-	struct list_head *iter;
+ 	struct o2hb_callback_func *f;
  
-@@ -111,6 +111,60 @@ SYSCALL_DEFINE0(sync)
- 	iterate_bdevs(fdatawait_one_bdev, NULL);
- 	if (unlikely(laptop_mode))
- 		laptop_sync_completion();
-+	return;
-+}
-+
-+static DEFINE_MUTEX(sync_mutex);	/* One do_sync() at a time. */
-+static unsigned long sync_seq;		/* Many sync()s from one do_sync(). */
-+					/*  Overflow harmless, extra wait. */
-+
-+/*
-+ * Only allow one task to do sync() at a time, and further allow
-+ * concurrent sync() calls to be satisfied by a single do_sync()
-+ * invocation.
-+ */
-+SYSCALL_DEFINE0(sync)
-+{
-+	unsigned long snap;
-+	unsigned long snap_done;
-+
-+	snap = ACCESS_ONCE(sync_seq);
-+	smp_mb();  /* Prevent above from bleeding into critical section. */
-+	mutex_lock(&sync_mutex);
-+	snap_done = sync_seq;
-+
-+	/*
-+	 * If the value in snap is odd, we need to wait for the current
-+	 * do_sync() to complete, then wait for the next one, in other
-+	 * words, we need the value of snap_done to be three larger than
-+	 * the value of snap.  On the other hand, if the value in snap is
-+	 * even, we only have to wait for the next request to complete,
-+	 * in other words, we need the value of snap_done to be only two
-+	 * greater than the value of snap.  The "(snap + 3) & 0x1" computes
-+	 * this for us (thank you, Linus!).
-+	 */
-+	if (ULONG_CMP_GE(snap_done, (snap + 3) & ~0x1)) {
-+		/*
-+		 * A full do_sync() executed between our two fetches from
-+		 * sync_seq, so our work is done!
-+		 */
-+		smp_mb(); /* Order test with caller's subsequent code. */
-+		mutex_unlock(&sync_mutex);
-+		return 0;
-+	}
-+
-+	/* Record the start of do_sync(). */
-+	ACCESS_ONCE(sync_seq)++;
-+	WARN_ON_ONCE((sync_seq & 0x1) != 1);
-+	smp_mb(); /* Keep prior increment out of do_sync(). */
-+
-+	do_sync();
-+
-+	/* Record the end of do_sync(). */
-+	smp_mb(); /* Keep subsequent increment out of do_sync(). */
-+	ACCESS_ONCE(sync_seq)++;
-+	WARN_ON_ONCE((sync_seq & 0x1) != 0);
-+	mutex_unlock(&sync_mutex);
- 	return 0;
+-	list_for_each(iter, &hbcall->list) {
+-		f = list_entry(iter, struct o2hb_callback_func, hc_item);
++	list_for_each_entry(f, &hbcall->list, hc_item) {
+ 		mlog(ML_HEARTBEAT, "calling funcs %p\n", f);
+ 		(f->hc_func)(node, idx, f->hc_data);
+ 	}
+@@ -2516,8 +2514,7 @@ unlock:
+ int o2hb_register_callback(const char *region_uuid,
+ 			   struct o2hb_callback_func *hc)
+ {
+-	struct o2hb_callback_func *tmp;
+-	struct list_head *iter;
++	struct o2hb_callback_func *f;
+ 	struct o2hb_callback *hbcall;
+ 	int ret;
+ 
+@@ -2540,10 +2537,9 @@ int o2hb_register_callback(const char *region_uuid,
+ 
+ 	down_write(&o2hb_callback_sem);
+ 
+-	list_for_each(iter, &hbcall->list) {
+-		tmp = list_entry(iter, struct o2hb_callback_func, hc_item);
+-		if (hc->hc_priority < tmp->hc_priority) {
+-			list_add_tail(&hc->hc_item, iter);
++	list_for_each_entry(f, &hbcall->list, hc_item) {
++		if (hc->hc_priority < f->hc_priority) {
++			list_add_tail(&hc->hc_item, &f->hc_item);
+ 			break;
+ 		}
+ 	}
+diff --git a/fs/ocfs2/dlm/dlmast.c b/fs/ocfs2/dlm/dlmast.c
+index fbec0be..b46278f 100644
+--- a/fs/ocfs2/dlm/dlmast.c
++++ b/fs/ocfs2/dlm/dlmast.c
+@@ -292,7 +292,7 @@ int dlm_proxy_ast_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	struct dlm_lock *lock = NULL;
+ 	struct dlm_proxy_ast *past = (struct dlm_proxy_ast *) msg->buf;
+ 	char *name;
+-	struct list_head *iter, *head=NULL;
++	struct list_head *head = NULL;
+ 	__be64 cookie;
+ 	u32 flags;
+ 	u8 node;
+@@ -373,8 +373,7 @@ int dlm_proxy_ast_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	/* try convert queue for both ast/bast */
+ 	head = &res->converting;
+ 	lock = NULL;
+-	list_for_each(iter, head) {
+-		lock = list_entry (iter, struct dlm_lock, list);
++	list_for_each_entry(lock, head, list) {
+ 		if (lock->ml.cookie == cookie)
+ 			goto do_ast;
+ 	}
+@@ -385,8 +384,7 @@ int dlm_proxy_ast_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	else
+ 		head = &res->granted;
+ 
+-	list_for_each(iter, head) {
+-		lock = list_entry (iter, struct dlm_lock, list);
++	list_for_each_entry(lock, head, list) {
+ 		if (lock->ml.cookie == cookie)
+ 			goto do_ast;
+ 	}
+diff --git a/fs/ocfs2/dlm/dlmcommon.h b/fs/ocfs2/dlm/dlmcommon.h
+index de854cc..e051776 100644
+--- a/fs/ocfs2/dlm/dlmcommon.h
++++ b/fs/ocfs2/dlm/dlmcommon.h
+@@ -1079,11 +1079,9 @@ static inline int dlm_lock_compatible(int existing, int request)
+ static inline int dlm_lock_on_list(struct list_head *head,
+ 				   struct dlm_lock *lock)
+ {
+-	struct list_head *iter;
+ 	struct dlm_lock *tmplock;
+ 
+-	list_for_each(iter, head) {
+-		tmplock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(tmplock, head, list) {
+ 		if (tmplock == lock)
+ 			return 1;
+ 	}
+diff --git a/fs/ocfs2/dlm/dlmconvert.c b/fs/ocfs2/dlm/dlmconvert.c
+index 29a886d..a2bda15 100644
+--- a/fs/ocfs2/dlm/dlmconvert.c
++++ b/fs/ocfs2/dlm/dlmconvert.c
+@@ -123,7 +123,6 @@ static enum dlm_status __dlmconvert_master(struct dlm_ctxt *dlm,
+ 					   int *kick_thread)
+ {
+ 	enum dlm_status status = DLM_NORMAL;
+-	struct list_head *iter;
+ 	struct dlm_lock *tmplock=NULL;
+ 
+ 	assert_spin_locked(&res->spinlock);
+@@ -185,16 +184,14 @@ static enum dlm_status __dlmconvert_master(struct dlm_ctxt *dlm,
+ 
+ 	/* upconvert from here on */
+ 	status = DLM_NORMAL;
+-	list_for_each(iter, &res->granted) {
+-		tmplock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(tmplock, &res->granted, list) {
+ 		if (tmplock == lock)
+ 			continue;
+ 		if (!dlm_lock_compatible(tmplock->ml.type, type))
+ 			goto switch_queues;
+ 	}
+ 
+-	list_for_each(iter, &res->converting) {
+-		tmplock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(tmplock, &res->converting, list) {
+ 		if (!dlm_lock_compatible(tmplock->ml.type, type))
+ 			goto switch_queues;
+ 		/* existing conversion requests take precedence */
+@@ -424,7 +421,6 @@ int dlm_convert_lock_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	struct dlm_ctxt *dlm = data;
+ 	struct dlm_convert_lock *cnv = (struct dlm_convert_lock *)msg->buf;
+ 	struct dlm_lock_resource *res = NULL;
+-	struct list_head *iter;
+ 	struct dlm_lock *lock = NULL;
+ 	struct dlm_lockstatus *lksb;
+ 	enum dlm_status status = DLM_NORMAL;
+@@ -471,8 +467,7 @@ int dlm_convert_lock_handler(struct o2net_msg *msg, u32 len, void *data,
+ 		dlm_error(status);
+ 		goto leave;
+ 	}
+-	list_for_each(iter, &res->granted) {
+-		lock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->granted, list) {
+ 		if (lock->ml.cookie == cnv->cookie &&
+ 		    lock->ml.node == cnv->node_idx) {
+ 			dlm_lock_get(lock);
+diff --git a/fs/ocfs2/dlm/dlmdebug.c b/fs/ocfs2/dlm/dlmdebug.c
+index 0e28e24..e33cd7a 100644
+--- a/fs/ocfs2/dlm/dlmdebug.c
++++ b/fs/ocfs2/dlm/dlmdebug.c
+@@ -96,7 +96,6 @@ static void __dlm_print_lock(struct dlm_lock *lock)
+ 
+ void __dlm_print_one_lock_resource(struct dlm_lock_resource *res)
+ {
+-	struct list_head *iter2;
+ 	struct dlm_lock *lock;
+ 	char buf[DLM_LOCKID_NAME_MAX];
+ 
+@@ -118,18 +117,15 @@ void __dlm_print_one_lock_resource(struct dlm_lock_resource *res)
+ 	       res->inflight_locks, atomic_read(&res->asts_reserved));
+ 	dlm_print_lockres_refmap(res);
+ 	printk("  granted queue:\n");
+-	list_for_each(iter2, &res->granted) {
+-		lock = list_entry(iter2, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->granted, list) {
+ 		__dlm_print_lock(lock);
+ 	}
+ 	printk("  converting queue:\n");
+-	list_for_each(iter2, &res->converting) {
+-		lock = list_entry(iter2, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->converting, list) {
+ 		__dlm_print_lock(lock);
+ 	}
+ 	printk("  blocked queue:\n");
+-	list_for_each(iter2, &res->blocked) {
+-		lock = list_entry(iter2, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->blocked, list) {
+ 		__dlm_print_lock(lock);
+ 	}
  }
+@@ -446,7 +442,6 @@ static int debug_mle_print(struct dlm_ctxt *dlm, char *buf, int len)
+ {
+ 	struct dlm_master_list_entry *mle;
+ 	struct hlist_head *bucket;
+-	struct hlist_node *list;
+ 	int i, out = 0;
+ 	unsigned long total = 0, longest = 0, bucket_count = 0;
  
+@@ -456,9 +451,7 @@ static int debug_mle_print(struct dlm_ctxt *dlm, char *buf, int len)
+ 	spin_lock(&dlm->master_lock);
+ 	for (i = 0; i < DLM_HASH_BUCKETS; i++) {
+ 		bucket = dlm_master_hash(dlm, i);
+-		hlist_for_each(list, bucket) {
+-			mle = hlist_entry(list, struct dlm_master_list_entry,
+-					  master_hash_node);
++		hlist_for_each_entry(mle, bucket, master_hash_node) {
+ 			++total;
+ 			++bucket_count;
+ 			if (len - out < 200)
+diff --git a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
+index dbb17c0..b9b175c 100644
+--- a/fs/ocfs2/dlm/dlmdomain.c
++++ b/fs/ocfs2/dlm/dlmdomain.c
+@@ -193,7 +193,7 @@ struct dlm_lock_resource * __dlm_lookup_lockres_full(struct dlm_ctxt *dlm,
+ 						     unsigned int hash)
+ {
+ 	struct hlist_head *bucket;
+-	struct hlist_node *list;
++	struct dlm_lock_resource *res;
+ 
+ 	mlog(0, "%.*s\n", len, name);
+ 
+@@ -201,9 +201,7 @@ struct dlm_lock_resource * __dlm_lookup_lockres_full(struct dlm_ctxt *dlm,
+ 
+ 	bucket = dlm_lockres_hash(dlm, hash);
+ 
+-	hlist_for_each(list, bucket) {
+-		struct dlm_lock_resource *res = hlist_entry(list,
+-			struct dlm_lock_resource, hash_node);
++	hlist_for_each_entry(res, bucket, hash_node) {
+ 		if (res->lockname.name[0] != name[0])
+ 			continue;
+ 		if (unlikely(res->lockname.len != len))
+@@ -263,14 +261,12 @@ struct dlm_lock_resource * dlm_lookup_lockres(struct dlm_ctxt *dlm,
+ static struct dlm_ctxt * __dlm_lookup_domain_full(const char *domain, int len)
+ {
+ 	struct dlm_ctxt *tmp = NULL;
+-	struct list_head *iter;
+ 
+ 	assert_spin_locked(&dlm_domain_lock);
+ 
+ 	/* tmp->name here is always NULL terminated,
+ 	 * but domain may not be! */
+-	list_for_each(iter, &dlm_domains) {
+-		tmp = list_entry (iter, struct dlm_ctxt, list);
++	list_for_each_entry(tmp, &dlm_domains, list) {
+ 		if (strlen(tmp->name) == len &&
+ 		    memcmp(tmp->name, domain, len)==0)
+ 			break;
+@@ -366,14 +362,11 @@ static void __dlm_get(struct dlm_ctxt *dlm)
+  * you shouldn't trust your pointer. */
+ struct dlm_ctxt *dlm_grab(struct dlm_ctxt *dlm)
+ {
+-	struct list_head *iter;
+ 	struct dlm_ctxt *target = NULL;
+ 
+ 	spin_lock(&dlm_domain_lock);
+ 
+-	list_for_each(iter, &dlm_domains) {
+-		target = list_entry (iter, struct dlm_ctxt, list);
+-
++	list_for_each_entry(target, &dlm_domains, list) {
+ 		if (target == dlm) {
+ 			__dlm_get(target);
+ 			break;
+@@ -2296,13 +2289,10 @@ static DECLARE_RWSEM(dlm_callback_sem);
+ void dlm_fire_domain_eviction_callbacks(struct dlm_ctxt *dlm,
+ 					int node_num)
+ {
+-	struct list_head *iter;
+ 	struct dlm_eviction_cb *cb;
+ 
+ 	down_read(&dlm_callback_sem);
+-	list_for_each(iter, &dlm->dlm_eviction_callbacks) {
+-		cb = list_entry(iter, struct dlm_eviction_cb, ec_item);
+-
++	list_for_each_entry(cb, &dlm->dlm_eviction_callbacks, ec_item) {
+ 		cb->ec_func(node_num, cb->ec_data);
+ 	}
+ 	up_read(&dlm_callback_sem);
+diff --git a/fs/ocfs2/dlm/dlmlock.c b/fs/ocfs2/dlm/dlmlock.c
+index 47e67c2..5d32f75 100644
+--- a/fs/ocfs2/dlm/dlmlock.c
++++ b/fs/ocfs2/dlm/dlmlock.c
+@@ -91,19 +91,14 @@ void dlm_destroy_lock_cache(void)
+ static int dlm_can_grant_new_lock(struct dlm_lock_resource *res,
+ 				  struct dlm_lock *lock)
+ {
+-	struct list_head *iter;
+ 	struct dlm_lock *tmplock;
+ 
+-	list_for_each(iter, &res->granted) {
+-		tmplock = list_entry(iter, struct dlm_lock, list);
+-
++	list_for_each_entry(tmplock, &res->granted, list) {
+ 		if (!dlm_lock_compatible(tmplock->ml.type, lock->ml.type))
+ 			return 0;
+ 	}
+ 
+-	list_for_each(iter, &res->converting) {
+-		tmplock = list_entry(iter, struct dlm_lock, list);
+-
++	list_for_each_entry(tmplock, &res->converting, list) {
+ 		if (!dlm_lock_compatible(tmplock->ml.type, lock->ml.type))
+ 			return 0;
+ 		if (!dlm_lock_compatible(tmplock->ml.convert_type,
+diff --git a/fs/ocfs2/dlm/dlmmaster.c b/fs/ocfs2/dlm/dlmmaster.c
+index 33ecbe0..24758f3 100644
+--- a/fs/ocfs2/dlm/dlmmaster.c
++++ b/fs/ocfs2/dlm/dlmmaster.c
+@@ -342,16 +342,13 @@ static int dlm_find_mle(struct dlm_ctxt *dlm,
+ {
+ 	struct dlm_master_list_entry *tmpmle;
+ 	struct hlist_head *bucket;
+-	struct hlist_node *list;
+ 	unsigned int hash;
+ 
+ 	assert_spin_locked(&dlm->master_lock);
+ 
+ 	hash = dlm_lockid_hash(name, namelen);
+ 	bucket = dlm_master_hash(dlm, hash);
+-	hlist_for_each(list, bucket) {
+-		tmpmle = hlist_entry(list, struct dlm_master_list_entry,
+-				     master_hash_node);
++	hlist_for_each_entry(tmpmle, bucket, master_hash_node) {
+ 		if (!dlm_mle_equal(dlm, tmpmle, name, namelen))
+ 			continue;
+ 		dlm_get_mle(tmpmle);
+@@ -3183,7 +3180,6 @@ void dlm_clean_master_list(struct dlm_ctxt *dlm, u8 dead_node)
+ 	struct dlm_master_list_entry *mle;
+ 	struct dlm_lock_resource *res;
+ 	struct hlist_head *bucket;
+-	struct hlist_node *list;
+ 	unsigned int i;
+ 
+ 	mlog(0, "dlm=%s, dead node=%u\n", dlm->name, dead_node);
+@@ -3194,10 +3190,7 @@ top:
+ 	spin_lock(&dlm->master_lock);
+ 	for (i = 0; i < DLM_HASH_BUCKETS; i++) {
+ 		bucket = dlm_master_hash(dlm, i);
+-		hlist_for_each(list, bucket) {
+-			mle = hlist_entry(list, struct dlm_master_list_entry,
+-					  master_hash_node);
+-
++		hlist_for_each_entry(mle, bucket, master_hash_node) {
+ 			BUG_ON(mle->type != DLM_MLE_BLOCK &&
+ 			       mle->type != DLM_MLE_MASTER &&
+ 			       mle->type != DLM_MLE_MIGRATION);
+@@ -3378,7 +3371,7 @@ void dlm_force_free_mles(struct dlm_ctxt *dlm)
+ 	int i;
+ 	struct hlist_head *bucket;
+ 	struct dlm_master_list_entry *mle;
+-	struct hlist_node *tmp, *list;
++	struct hlist_node *tmp;
+ 
+ 	/*
+ 	 * We notified all other nodes that we are exiting the domain and
+@@ -3394,9 +3387,7 @@ void dlm_force_free_mles(struct dlm_ctxt *dlm)
+ 
+ 	for (i = 0; i < DLM_HASH_BUCKETS; i++) {
+ 		bucket = dlm_master_hash(dlm, i);
+-		hlist_for_each_safe(list, tmp, bucket) {
+-			mle = hlist_entry(list, struct dlm_master_list_entry,
+-					  master_hash_node);
++		hlist_for_each_entry_safe(mle, tmp, bucket, master_hash_node) {
+ 			if (mle->type != DLM_MLE_BLOCK) {
+ 				mlog(ML_ERROR, "bad mle: %p\n", mle);
+ 				dlm_print_one_mle(mle);
+diff --git a/fs/ocfs2/dlm/dlmthread.c b/fs/ocfs2/dlm/dlmthread.c
+index e73c833..9db869d 100644
+--- a/fs/ocfs2/dlm/dlmthread.c
++++ b/fs/ocfs2/dlm/dlmthread.c
+@@ -286,8 +286,6 @@ static void dlm_shuffle_lists(struct dlm_ctxt *dlm,
+ 			      struct dlm_lock_resource *res)
+ {
+ 	struct dlm_lock *lock, *target;
+-	struct list_head *iter;
+-	struct list_head *head;
+ 	int can_grant = 1;
+ 
+ 	/*
+@@ -314,9 +312,7 @@ converting:
+ 		     dlm->name, res->lockname.len, res->lockname.name);
+ 		BUG();
+ 	}
+-	head = &res->granted;
+-	list_for_each(iter, head) {
+-		lock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->granted, list) {
+ 		if (lock==target)
+ 			continue;
+ 		if (!dlm_lock_compatible(lock->ml.type,
+@@ -333,9 +329,8 @@ converting:
+ 					target->ml.convert_type;
+ 		}
+ 	}
+-	head = &res->converting;
+-	list_for_each(iter, head) {
+-		lock = list_entry(iter, struct dlm_lock, list);
++
++	list_for_each_entry(lock, &res->converting, list) {
+ 		if (lock==target)
+ 			continue;
+ 		if (!dlm_lock_compatible(lock->ml.type,
+@@ -384,9 +379,7 @@ blocked:
+ 		goto leave;
+ 	target = list_entry(res->blocked.next, struct dlm_lock, list);
+ 
+-	head = &res->granted;
+-	list_for_each(iter, head) {
+-		lock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->granted, list) {
+ 		if (lock==target)
+ 			continue;
+ 		if (!dlm_lock_compatible(lock->ml.type, target->ml.type)) {
+@@ -400,9 +393,7 @@ blocked:
+ 		}
+ 	}
+ 
+-	head = &res->converting;
+-	list_for_each(iter, head) {
+-		lock = list_entry(iter, struct dlm_lock, list);
++	list_for_each_entry(lock, &res->converting, list) {
+ 		if (lock==target)
+ 			continue;
+ 		if (!dlm_lock_compatible(lock->ml.type, target->ml.type)) {
+diff --git a/fs/ocfs2/dlm/dlmunlock.c b/fs/ocfs2/dlm/dlmunlock.c
+index 850aa7e..5698b52 100644
+--- a/fs/ocfs2/dlm/dlmunlock.c
++++ b/fs/ocfs2/dlm/dlmunlock.c
+@@ -388,7 +388,6 @@ int dlm_unlock_lock_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	struct dlm_ctxt *dlm = data;
+ 	struct dlm_unlock_lock *unlock = (struct dlm_unlock_lock *)msg->buf;
+ 	struct dlm_lock_resource *res = NULL;
+-	struct list_head *iter;
+ 	struct dlm_lock *lock = NULL;
+ 	enum dlm_status status = DLM_NORMAL;
+ 	int found = 0, i;
+@@ -458,8 +457,7 @@ int dlm_unlock_lock_handler(struct o2net_msg *msg, u32 len, void *data,
+ 	}
+ 
+ 	for (i=0; i<3; i++) {
+-		list_for_each(iter, queue) {
+-			lock = list_entry(iter, struct dlm_lock, list);
++		list_for_each_entry(lock, queue, list) {
+ 			if (lock->ml.cookie == unlock->cookie &&
+ 		    	    lock->ml.node == unlock->node_idx) {
+ 				dlm_lock_get(lock);
+-- 
+1.7.1
 
