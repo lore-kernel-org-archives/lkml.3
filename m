@@ -1,180 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab3G0RUZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:20:25 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:44786 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517Ab3G0RUV (ORCPT
+	id S1752553Ab3G0RbV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 13:31:21 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:54807 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3G0RbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:20:21 -0400
-From: oscherler@ithink.ch
-To: jkosina@suse.cz, linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Cc: Olivier Scherler <oscherler@ithink.ch>
-Subject: =?UTF-8?q?=5BPATCH=5D=20hid=3A=20Add=20new=20driver=20for=20non-compliant=20Xin-Mo=20devices=2E?=
-Date: Sat, 27 Jul 2013 19:20:02 +0200
-Message-Id: <1374945602-11894-2-git-send-email-oscherler@ithink.ch>
-X-Mailer: git-send-email 1.7.10.2 (Apple Git-33)
-In-Reply-To: <1374945602-11894-1-git-send-email-oscherler@ithink.ch>
-References: <1374945602-11894-1-git-send-email-oscherler@ithink.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sat, 27 Jul 2013 13:31:20 -0400
+From: "santosh.anbu" <asantoshking@gmail.com>
+To: ericvh@gmail.com
+Cc: asantosh.king@gmail.com, linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Subject: [PATCH] Events: 9p.h:	Fixed a brace coding style issues
+Date: Sat, 27 Jul 2013 23:03:13 +0530
+Message-Id: <1374946393-7418-1-git-send-email-asantosh.king@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Olivier Scherler <oscherler@ithink.ch>
+From: "santosh.anbu" <asantosh.king@gmail.com>
 
-The driver currently only supports the Dual Arcade controller.
-It fixes the negative axis event values (the devices sends -2) to match the
-logical axis minimum of the HID report descriptor (the report announces -1).
-It is needed because hid-input discards out of bounds values.
+Fixed few brace relate coding style issues
 
-Signed-off-by: Olivier Scherler <oscherler@ithink.ch>
+Signed-off-by: santosh.anbu <asantosh.king@gmail.com>
 ---
- drivers/hid/Kconfig     |  8 ++++++
- drivers/hid/Makefile    |  1 +
- drivers/hid/hid-core.c  |  1 +
- drivers/hid/hid-ids.h   |  3 +++
- drivers/hid/hid-xinmo.c | 72 +++++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 85 insertions(+)
- create mode 100644 drivers/hid/hid-xinmo.c
+ include/trace/events/9p.h | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 14ef6ab..3d7c9f6 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -743,6 +743,14 @@ config HID_WIIMOTE
- 	To compile this driver as a module, choose M here: the
- 	module will be called hid-wiimote.
+diff --git a/include/trace/events/9p.h b/include/trace/events/9p.h
+index a066636..9b53b8a 100644
+--- a/include/trace/events/9p.h
++++ b/include/trace/events/9p.h
+@@ -83,9 +83,9 @@ TRACE_EVENT(9p_client_req,
+ 	    TP_ARGS(clnt, type, tag),
  
-+config HID_XINMO
-+	tristate "Xin-Mo non-fully compliant devices"
-+	depends on HID
-+	---help---
-+	Support for Xin-Mo devices that are not fully compliant with the HID
-+	standard. Currently only supports the Xin-Mo Dual Arcade. Say Y here
-+	if you have a Xin-Mo Dual Arcade controller.
-+
- config HID_ZEROPLUS
- 	tristate "Zeroplus based game controller support"
- 	depends on HID
-diff --git a/drivers/hid/Makefile b/drivers/hid/Makefile
-index 6f68728..a959f4a 100644
---- a/drivers/hid/Makefile
-+++ b/drivers/hid/Makefile
-@@ -110,6 +110,7 @@ obj-$(CONFIG_HID_TIVO)		+= hid-tivo.o
- obj-$(CONFIG_HID_TOPSEED)	+= hid-topseed.o
- obj-$(CONFIG_HID_TWINHAN)	+= hid-twinhan.o
- obj-$(CONFIG_HID_UCLOGIC)	+= hid-uclogic.o
-+obj-$(CONFIG_HID_XINMO)		+= hid-xinmo.o
- obj-$(CONFIG_HID_ZEROPLUS)	+= hid-zpff.o
- obj-$(CONFIG_HID_ZYDACRON)	+= hid-zydacron.o
- obj-$(CONFIG_HID_WACOM)		+= hid-wacom.o
-diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-index 36668d1..283c70f 100644
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -1736,6 +1736,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_MEDIA_TABLET_14_1_INCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_WALTOP, USB_DEVICE_ID_WALTOP_SIRIUS_BATTERY_FREE_TABLET) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_X_TENSIONS, USB_DEVICE_ID_SPEEDLINK_VAD_CEZANNE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_XIN_MO, USB_DEVICE_ID_XIN_MO_DUAL_ARCADE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
-diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-index ffe4c7a..6051be8 100644
---- a/drivers/hid/hid-ids.h
-+++ b/drivers/hid/hid-ids.h
-@@ -887,6 +887,9 @@
- #define USB_VENDOR_ID_XAT	0x2505
- #define USB_DEVICE_ID_XAT_CSR	0x0220
+ 	    TP_STRUCT__entry(
+-		    __field(    void *,		clnt			     )
+-		    __field(	__u8,		type			     )
+-		    __field(	__u32,		tag			     )
++		    __field(    void *,	clnt	)
++		    __field(	__u8,	type	)
++		    __field(	__u32,	tag		)
+ 		    ),
  
-+#define USB_VENDOR_ID_XIN_MO			0x16c0
-+#define USB_DEVICE_ID_XIN_MO_DUAL_ARCADE	0x05e1
-+
- #define USB_VENDOR_ID_XIROKU		0x1477
- #define USB_DEVICE_ID_XIROKU_SPX	0x1006
- #define USB_DEVICE_ID_XIROKU_MPX	0x1007
-diff --git a/drivers/hid/hid-xinmo.c b/drivers/hid/hid-xinmo.c
-new file mode 100644
-index 0000000..6153e50
---- /dev/null
-+++ b/drivers/hid/hid-xinmo.c
-@@ -0,0 +1,72 @@
-+/*
-+ *  HID driver for Xin-Mo devices, currently only the Dual Arcade controller.
-+ *  Fixes the negative axis event values (the devices sends -2) to match the
-+ *  logical axis minimum of the HID report descriptor (the report announces
-+ *  -1). It is needed because hid-input discards out of bounds values.
-+ *  (This module is based on "hid-saitek" and "hid-lg".)
-+ *
-+ *  Copyright (c) 2013 Olivier Scherler
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the Free
-+ * Software Foundation; either version 2 of the License, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/hid.h>
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+
-+#include "hid-ids.h"
-+
-+/*
-+ * Fix negative events that are out of bounds.
-+ */
-+static int xinmo_event(struct hid_device *hdev, struct hid_field *field,
-+		struct hid_usage *usage, __s32 value)
-+{
-+	switch (usage->code) {
-+	case ABS_X:
-+	case ABS_Y:
-+	case ABS_Z:
-+	case ABS_RX:
-+		if (value < -1) {
-+			input_event(field->hidinput->input, usage->type,
-+				usage->code, -1);
-+			return 1;
-+		}
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct hid_device_id xinmo_devices[] = {
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_XIN_MO, USB_DEVICE_ID_XIN_MO_DUAL_ARCADE) },
-+	{ }
-+};
-+
-+MODULE_DEVICE_TABLE(hid, xinmo_devices);
-+
-+static struct hid_driver xinmo_driver = {
-+	.name = "xinmo",
-+	.id_table = xinmo_devices,
-+	.event = xinmo_event
-+};
-+
-+static int __init xinmo_init(void)
-+{
-+	return hid_register_driver(&xinmo_driver);
-+}
-+
-+static void __exit xinmo_exit(void)
-+{
-+	hid_unregister_driver(&xinmo_driver);
-+}
-+
-+module_init(xinmo_init);
-+module_exit(xinmo_exit);
-+MODULE_LICENSE("GPL");
+ 	    TP_fast_assign(
+@@ -97,7 +97,7 @@ TRACE_EVENT(9p_client_req,
+ 	    TP_printk("client %lu request %s tag  %d",
+ 		    (long)__entry->clnt, show_9p_op(__entry->type),
+ 		    __entry->tag)
+- );
++);
+ 
+ TRACE_EVENT(9p_client_res,
+ 	    TP_PROTO(struct p9_client *clnt, int8_t type, int tag, int err),
+@@ -105,10 +105,10 @@ TRACE_EVENT(9p_client_res,
+ 	    TP_ARGS(clnt, type, tag, err),
+ 
+ 	    TP_STRUCT__entry(
+-		    __field(    void *,		clnt			     )
+-		    __field(	__u8,		type			     )
+-		    __field(	__u32,		tag			     )
+-		    __field(	__u32,		err			     )
++		    __field(    void *,	clnt	)
++		    __field(	__u8,	type	)
++		    __field(	__u32,	tag		)
++		    __field(	__u32,	err		)
+ 		    ),
+ 
+ 	    TP_fast_assign(
+@@ -131,9 +131,9 @@ TRACE_EVENT(9p_protocol_dump,
+ 	    TP_ARGS(clnt, pdu),
+ 
+ 	    TP_STRUCT__entry(
+-		    __field(	void *,		clnt				)
+-		    __field(	__u8,		type				)
+-		    __field(	__u16,		tag				)
++		    __field(	void *,	clnt	)
++		    __field(	__u8,	type	)
++		    __field(	__u16,	tag	)
+ 		    __array(	unsigned char,	line,	P9_PROTO_DUMP_SZ	)
+ 		    ),
+ 
+@@ -146,7 +146,7 @@ TRACE_EVENT(9p_protocol_dump,
+ 	    TP_printk("clnt %lu %s(tag = %d)\n%.3x: %16ph\n%.3x: %16ph\n",
+ 		      (unsigned long)__entry->clnt, show_9p_op(__entry->type),
+ 		      __entry->tag, 0, __entry->line, 16, __entry->line + 16)
+- );
++);
+ 
+ #endif /* _TRACE_9P_H */
+ 
 -- 
 1.8.1.2
 
