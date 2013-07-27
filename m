@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751490Ab3G0Kvn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 06:51:43 -0400
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:53673 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab3G0Kvm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 06:51:42 -0400
-Message-ID: <51F3B450.9010502@kernel.org>
-Date: Sat, 27 Jul 2013 12:51:44 +0100
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751502Ab3G0LAx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 07:00:53 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1729 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab3G0LAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 07:00:50 -0400
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Message-ID: <51F3A82E.2000907@broadcom.com>
+Date: Sat, 27 Jul 2013 12:59:58 +0200
+From: "Arend van Spriel" <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
+ Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Oleksandr Kravchenko <x0199363@ti.com>
-CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: Re: [PATCH] iio: core: Avoid double minus in sysfs output
-References: <1374491763-16149-1-git-send-email-x0199363@ti.com>
-In-Reply-To: <1374491763-16149-1-git-send-email-x0199363@ti.com>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Tomasz Figa" <tomasz.figa@gmail.com>
+cc: "Richard Cochran" <richardcochran@gmail.com>,
+        "Olof Johansson" <olof@lixom.net>, "Mark Brown" <broonie@kernel.org>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "Ian Campbell" <ian.campbell@citrix.com>,
+        "Pawel Moll" <Pawel.Moll@arm.com>,
+        "Stephen Warren" <swarren@wwwdotorg.org>,
+        "Domenico Andreoli" <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
+        "Dave P Martin" <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com>
+ <2460092.aLmjrOVh1g@flatron>
+In-Reply-To: <2460092.aLmjrOVh1g@flatron>
+X-WSS-ID: 7DED78E231W56453604-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/13 12:16, Oleksandr Kravchenko wrote:
-> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-> 
-> This patch fixes the issue with double minus in output when
-> reading channels from sysfs for IIO_VAL_INT_PLUS_MICRO and
-> IIO_VAL_INT_PLUS_NANO cases. Until this patch if val and val2
-> both are negatives output string contains "--" before
-> digits. It is result of "-%d..." in sprintf() format.
-> 
-> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Applied to the togreg branch of iio.git
+On 07/27/2013 12:36 PM, Tomasz Figa wrote:
+> On Saturday 27 of July 2013 12:24:24 Arend van Spriel wrote:
+>> On 07/27/2013 11:51 AM, Tomasz Figa wrote:
+>>> On Saturday 27 of July 2013 07:04:08 Richard Cochran wrote:
+>>>> On Fri, Jul 26, 2013 at 08:49:43AM -0700, Olof Johansson wrote:
+>>>>> Long term, final goal is likely to be close to what Russell is
+>>>>> saying
+>>>>
+>>>> Why is this a long term goal? Start today.
+>>>>
+>>>>> -- nothing should go into the kernel tree unless the binding is in a
+>>>>> fully stable state. However, we have a transitional period between
+>>>>> now
+>>>>> and then, and even when we're at the final state there will be need
+>>>>> to
+>>>>> have some sort of sandbox for development and test of future
+>>>>> bindings.
+>>>>
+>>>> Why not just set up a git tree right away?
+>>>>
+>>>>> Dealing with all that, as well as the actual process for locking in
+>>>>> bindings, is what needs to be sorted out.
+>>>>>
+>>>>> I think we're all in agreement that bindings that change over time
+>>>>> are
+>>>>> nothing but pain, but we're arguing that in circles anyway.
+>>>>
+>>>> No.
+>>>>
+>>>> I keep saying, the bindings must be stable ABI, *today*.
+>>>>
+>>>> You keep saying, maybe later, but until then we will make things up
+>>>> as
+>>>> we go along.
+>>>
+>>> We have currently a lot of broken bindings, because people didn't know
+>>> how to define ones and those they defined have not been properly
+>>> reviewed. Do you really want such broken ABI in the kernel?
+>>>
+>>> Sure, there are many existing bindings that can be just made stable
+>>> and
+>>> well they probably are already de facto stable. This is mostly about
+>>> subsystem bindings and whatever already has many users, both made them
+>>> get more thought when designing and more review before merging.
+>>>
+>>> Still, a lot of device and platform-specific bindings are simply
+>>> broken. Take max8925 backlight driver, that Olof started this whole
+>>> discussion with, as an example. We need to sort them out before they
+>>> can be stabilized.
+>>
+>> That is a nice summary of how we got from null to now and Richard seems
+>> to be simply saying: let's stop mucking about and make this a project
+>> with a well-defined process of dealing with staging and stable bindings
+>> and keep stable bindings stable. Whether it should be within the kernel
+>> repo as a separate subsystem or in an entire different repo is a trivial
+>> decision, but still a decision that needs to be made.
+>
+> Yes, basically that's our current situation.
+>
+> Still, I would disagree about the decision being trivial, as each choice
+> will have further, and likely pretty significant, consequences on binding
+> maintenance, submission, review and for dependent things, like drivers or
+> platforms using such bindings. This needs to be discussed enough.
+>
+>> Apart from stable DT bindings I would love to see a DT compiler that
+>> that next to DT syntax detects mistakes in properties used for the
+>> selfish reason that I spent hours debugging regulator code, because I
+>> typed vmmc_supply iso vmmc-supply. I did not go through all the
+>> bindings, but this may require a more formal description so it could be
+>> compiled/read in the DT compiler.
+>
+> This bothered me as well and that's why I'm working on this. I still can't
+> get myself to write a very long mail (I'm more a coder than writer...)
+> about the whole idea, my proposal of how it could look and problems we
+> need to solve, but I'll try better this evening.
 
-Not taken this as a fix as I don't know of any current drivers where this will
-be a problem.
+Let's see how many people go and scream if I say this: Too bad .dts 
+files are not done using XML format as DT bindings could be described 
+using XML Schema.
 
-Thanks.
-> ---
->  drivers/iio/industrialio-core.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
-> index d56d122..97f0297 100644
-> --- a/drivers/iio/industrialio-core.c
-> +++ b/drivers/iio/industrialio-core.c
-> @@ -383,14 +383,14 @@ static ssize_t iio_read_channel_info(struct device *dev,
->  		scale_db = true;
->  	case IIO_VAL_INT_PLUS_MICRO:
->  		if (val2 < 0)
-> -			return sprintf(buf, "-%d.%06u%s\n", val, -val2,
-> +			return sprintf(buf, "-%ld.%06u%s\n", abs(val), -val2,
->  				scale_db ? " dB" : "");
->  		else
->  			return sprintf(buf, "%d.%06u%s\n", val, val2,
->  				scale_db ? " dB" : "");
->  	case IIO_VAL_INT_PLUS_NANO:
->  		if (val2 < 0)
-> -			return sprintf(buf, "-%d.%09u\n", val, -val2);
-> +			return sprintf(buf, "-%ld.%09u\n", abs(val), -val2);
->  		else
->  			return sprintf(buf, "%d.%09u\n", val, val2);
->  	case IIO_VAL_FRACTIONAL:
-> 
+Regards,
+Arend
+
