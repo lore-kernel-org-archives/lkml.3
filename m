@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab3G0RpJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:45:09 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:47576 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752528Ab3G0RpG (ORCPT
+	id S1752638Ab3G0Rqx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 13:46:53 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:41339 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752519Ab3G0Rqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:45:06 -0400
-Message-ID: <51F40570.9050209@gmail.com>
-Date: Sat, 27 Jul 2013 19:37:52 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, criu@openvz.org, devel@openvz.org,
-        xemul@parallels.com
-Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
-References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com>
-In-Reply-To: <51F404D0.6070004@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Jul 2013 13:46:51 -0400
+From: "santosh.anbu" <asantoshking@gmail.com>
+To: airlied@linux.ie
+Cc: asantosh.king@gmail.com, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] i2c.c: Fixed coding style issue for if statement
+Date: Sat, 27 Jul 2013 23:18:36 +0530
+Message-Id: <1374947316-7864-1-git-send-email-asantosh.king@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
-> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
->> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
->>> Hi,
->>>
->>> We want to propose a way to upgrade a kernel on a machine without
->>> restarting all the user-space services. This is to be done with CRIU
->>> project, but we need help from the kernel to preserve some data in
->>> memory while doing kexec.
->>>
->>> The key point of our implementation is leaving process memory in-place
->>> during reboot. This should eliminate most io operations the services
->>> would produce during initialization. To achieve this, we have
->>> implemented a pseudo file system that preserves its content during
->>> kexec. We propose saving CRIU dump files to this file system, kexec'ing
->>> and then restoring the processes in the newly booted kernel.
->>>
->>
->> http://pramfs.sourceforge.net/
->
-> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
-> already been merged, requires hardware support for over-reboot
-> persistency, so called non-volatile RAM, i.e. RAM which is not directly
-> accessible and so is not used by the kernel. On the contrary, what we'd
-> like to have is preserving usual RAM on kexec. It is possible, because
-> RAM is not reset during kexec. This would allow leaving applications
-> working set as well as filesystem caches in place, speeding the reboot
-> process as a whole and reducing the downtime significantly.
->
-> Thanks.
+From: "santosh.anbu" <asantosh.king@gmail.com>
 
-Actually not. You can use normal system RAM reserved at boot with mem 
-parameter without any kernel change. Until an hard reset happens, that 
-area will be "persistent".
+Fixed coding style issue
 
-Regards,
+Signed-off-by: santosh.anbu <asantosh.king@gmail.com>
+---
+ drivers/gpu/drm/nouveau/core/subdev/bios/i2c.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-Marco
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/bios/i2c.c b/drivers/gpu/drm/nouveau/core/subdev/bios/i2c.c
+index cfb9288..e88529c 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/bios/i2c.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/bios/i2c.c
+@@ -114,15 +114,19 @@ dcb_i2c_parse(struct nouveau_bios *bios, u8 idx, struct dcb_i2c_entry *info)
+ 
+ 		if (idx == 0) {
+ 			info->drive = nv_ro08(bios, ent + 4);
+-			if (!info->drive) info->drive = 0x3f;
++			if (!info->drive)
++				info->drive = 0x3f;
+ 			info->sense = nv_ro08(bios, ent + 5);
+-			if (!info->sense) info->sense = 0x3e;
++			if (!info->sense)
++				info->sense = 0x3e;
+ 		} else
+ 		if (idx == 1) {
+ 			info->drive = nv_ro08(bios, ent + 6);
+-			if (!info->drive) info->drive = 0x37;
++			if (!info->drive)
++				info->drive = 0x37;
+ 			info->sense = nv_ro08(bios, ent + 7);
+-			if (!info->sense) info->sense = 0x36;
++			if (!info->sense)
++				info->sense = 0x36;
+ 		}
+ 
+ 		info->type  = DCB_I2C_NV04_BIT;
+-- 
+1.8.1.2
+
