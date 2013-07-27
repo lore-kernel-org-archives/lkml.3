@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab3G0Krf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 06:47:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:40816 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab3G0Kre (ORCPT
+	id S1751490Ab3G0Kvn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 06:51:43 -0400
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:53673 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab3G0Kvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 06:47:34 -0400
-From: Hanjun Guo <hanjun.guo@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>
-Subject: [RFC][PATCH 2/2] ARM64: introduce cluster id and make a difference between socket id
-Date: Sat, 27 Jul 2013 18:42:08 +0800
-Message-Id: <1374921728-9007-2-git-send-email-hanjun.guo@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
+	Sat, 27 Jul 2013 06:51:42 -0400
+Message-ID: <51F3B450.9010502@kernel.org>
+Date: Sat, 27 Jul 2013 12:51:44 +0100
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Oleksandr Kravchenko <x0199363@ti.com>
+CC: jic23@cam.ac.uk, linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: Re: [PATCH] iio: core: Avoid double minus in sysfs output
+References: <1374491763-16149-1-git-send-email-x0199363@ti.com>
+In-Reply-To: <1374491763-16149-1-git-send-email-x0199363@ti.com>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the cpu topology information, we define topology_physical_package_id()
-as cpu socket id, which means that the socket id is the idenfication for
-physical processor, not for a cluster in a cpu die.
+On 07/22/13 12:16, Oleksandr Kravchenko wrote:
+> From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+> 
+> This patch fixes the issue with double minus in output when
+> reading channels from sysfs for IIO_VAL_INT_PLUS_MICRO and
+> IIO_VAL_INT_PLUS_NANO cases. Until this patch if val and val2
+> both are negatives output string contains "--" before
+> digits. It is result of "-%d..." in sprintf() format.
+> 
+> Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Applied to the togreg branch of iio.git
 
-On ARM64 platform, multi cluster in a cpu die will be normal, here is a
-example with 2 cores in a cluster and 2 cluster in a socket:
+Not taken this as a fix as I don't know of any current drivers where this will
+be a problem.
 
-|--------------------------------------|
-|                socket                |
-|                                      |
-| |---------------|  |---------------| |
-| |    cluster    |  |    cluster    | |
-| |               |  |               | |
-| | |----| |----| |  | |----| |----| | |
-| | |core| |core| |  | |core| |core| | |
-| | |----| |----| |  | |----| |----| | |
-| |               |  |               | |
-| |---------------|  |---------------| |
-|                                      |
-|--------------------------------------|
-
-ARM64 extended the MPIDR into 64 bit and introduce another affinity level,
-we can use this affinity level for socket id and use the third highest level
-affinity for cluster id, which  make the socket id behavior in its original
-way.
-
-Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
----
- arch/arm64/include/asm/topology.h |    1 +
- arch/arm64/kernel/topology.c      |    8 ++++++--
- 2 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm64/include/asm/topology.h b/arch/arm64/include/asm/topology.h
-index 8631808..ff68ecc 100644
---- a/arch/arm64/include/asm/topology.h
-+++ b/arch/arm64/include/asm/topology.h
-@@ -8,6 +8,7 @@
- struct cputopo_arm64 {
- 	int thread_id;
- 	int core_id;
-+	int cluster_id;
- 	int socket_id;
- 	cpumask_t thread_sibling;
- 	cpumask_t core_sibling;
-diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
-index 1eb0435..6d1e5a6 100644
---- a/arch/arm64/kernel/topology.c
-+++ b/arch/arm64/kernel/topology.c
-@@ -80,12 +80,14 @@ void store_cpu_topology(unsigned int cpuid)
- 			/* core performance interdependency */
- 			cpuid_topo->thread_id = MPIDR_AFFINITY_LEVEL_0(mpidr);
- 			cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
--			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
-+			cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
-+			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_3(mpidr);
- 		} else {
- 			/* largely independent cores */
- 			cpuid_topo->thread_id = -1;
- 			cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL_0(mpidr);
--			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
-+			cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
-+			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
- 		}
- 	} else {
- 		/*
-@@ -95,6 +97,7 @@ void store_cpu_topology(unsigned int cpuid)
- 		 */
- 		cpuid_topo->thread_id = -1;
- 		cpuid_topo->core_id = 0;
-+		cpuid_topo->cluster_id = -1;
- 		cpuid_topo->socket_id = -1;
- 	}
- 
-@@ -120,6 +123,7 @@ void __init init_cpu_topology(void)
- 
- 		topo->thread_id = -1;
- 		topo->core_id =  -1;
-+		topo->cluster_id = -1;
- 		topo->socket_id = -1;
- 		cpumask_clear(&topo->core_sibling);
- 		cpumask_clear(&topo->thread_sibling);
--- 
-1.7.9.5
-
+Thanks.
+> ---
+>  drivers/iio/industrialio-core.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+> index d56d122..97f0297 100644
+> --- a/drivers/iio/industrialio-core.c
+> +++ b/drivers/iio/industrialio-core.c
+> @@ -383,14 +383,14 @@ static ssize_t iio_read_channel_info(struct device *dev,
+>  		scale_db = true;
+>  	case IIO_VAL_INT_PLUS_MICRO:
+>  		if (val2 < 0)
+> -			return sprintf(buf, "-%d.%06u%s\n", val, -val2,
+> +			return sprintf(buf, "-%ld.%06u%s\n", abs(val), -val2,
+>  				scale_db ? " dB" : "");
+>  		else
+>  			return sprintf(buf, "%d.%06u%s\n", val, val2,
+>  				scale_db ? " dB" : "");
+>  	case IIO_VAL_INT_PLUS_NANO:
+>  		if (val2 < 0)
+> -			return sprintf(buf, "-%d.%09u\n", val, -val2);
+> +			return sprintf(buf, "-%ld.%09u\n", abs(val), -val2);
+>  		else
+>  			return sprintf(buf, "%d.%09u\n", val, val2);
+>  	case IIO_VAL_FRACTIONAL:
+> 
