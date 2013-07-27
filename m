@@ -1,98 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354Ab3G0C5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 22:57:14 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:61491 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756301Ab3G0C5K (ORCPT
+	id S1758467Ab3G0DD0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 23:03:26 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:45043 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756301Ab3G0DDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 22:57:10 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqkGAFY281F5LPxH/2dsb2JhbABbgwY1uHqFMoEZF3SCJAEBBTocIxAIAxgJJQ8FJQMhE4gPDbhvBBaNGIJPB4MWbwOXXpFNgyYq
-Date: Sat, 27 Jul 2013 12:57:03 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: davej@redhat.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, hch@lst.de,
-        jack@suse.cz, curtw@google.com, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH RFC fs] v2 Make sync() satisfy many requests with one
- invocation
-Message-ID: <20130727025703.GF21982@dastard>
-References: <20130726232852.GA15147@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726232852.GA15147@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 26 Jul 2013 23:03:25 -0400
+From: Hanjun Guo <hanjun.guo@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chris Metcalf <cmetcalf@tilera.com>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Mike Travis <travis@sgi.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Naresh Bhat <naresh.bhat@linaro.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        Hanjun Guo <hanjun.guo@linaro.org>
+Subject: [PATCH 1/3] cpu topology: remove stale arch_provides_topology_pointers and define_siblings_show_map/list()
+Date: Sat, 27 Jul 2013 11:00:49 +0800
+Message-Id: <1374894051-31634-1-git-send-email-hanjun.guo@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 04:28:52PM -0700, Paul E. McKenney wrote:
-> Dave Jones reported RCU stalls, overly long hrtimer interrupts, and
-> amazingly long NMI handlers from a trinity-induced workload involving
-> lots of concurrent sync() calls (https://lkml.org/lkml/2013/7/23/369).
-> There are any number of things that one might do to make sync() behave
-> better under high levels of contention, but it is also the case that
-> multiple concurrent sync() system calls can be satisfied by a single
-> sys_sync() invocation.
-> 
-> Given that this situation is reminiscent of rcu_barrier(), this commit
-> applies the rcu_barrier() approach to sys_sync().  This approach uses
-> a global mutex and a sequence counter.  The mutex is held across the
-> sync() operation, which eliminates contention between concurrent sync()
-> operations.
->
-> The counter is incremented at the beginning and end of
-> each sync() operation, so that it is odd while a sync() operation is in
-> progress and even otherwise, just like sequence locks.
-> 
-> The code that used to be in sys_sync() is now in do_sync(), and sys_sync()
-> now handles the concurrency.  The sys_sync() function first takes a
-> snapshot of the counter, then acquires the mutex, and then takes another
-> snapshot of the counter.  If the values of the two snapshots indicate that
-> a full do_sync() executed during the mutex acquisition, the sys_sync()
-> function releases the mutex and returns ("Our work is done!").  Otherwise,
-> sys_sync() increments the counter, invokes do_sync(), and increments
-> the counter again.
-> 
-> This approach allows a single call to do_sync() to satisfy an arbitrarily
-> large number of sync() system calls, which should eliminate issues due
-> to large numbers of concurrent invocations of the sync() system call.
+arch_provides_topology_pointers was introduced in commit 23ca4bba3 (x86:
+cleanup early per cpu variables/accesses v4) to indicate pointers to the
+topology cpumask_t maps are valid to avoid copying data on to/off of the
+stack.
 
-This is not addressing the problem that is causing issues during
-sync. Indeed, it only puts a bandaid over the currently observed
-trigger.
+But later in commit fbd59a8d (cpumask: Use topology_core_cpumask()/
+topology_thread_cpumask()), the pointers to the topology struct cpumask maps
+are always valid.
 
-Indeed, i suspect that this will significantly slow down concurrent
-sync operations, as it serialised sync across all superblocks rather
-than serialising per-superblock like is currently done. Indeed, that
-per-superblock serialisation is where all the lock contention
-problems are. And it's not sync alone that causes the contention
-problems - it has to be combined with other concurrent workloads
-that add or remove inodes from the inode cache at tha same time.
+After that commit, the only difference is that there is a redundant
+"unsigned int cpu = dev->id;" if arch_provides_topology_pointers defined, but
+dev->id is type 'u32' which devolves to 'unsigned int' on all supported arches.
+So this arch_provides_topology_pointers define is pointless and only cause
+obfuscation now, remove it.
 
-I have patches to address that by removing the source
-of the lock contention completely, and not just for the sys_sync
-trigger. Those patches make the problems with concurrent
-sys_sync operation go away completely for me, not to mention improve
-performance for 8+ thread metadata workloads on XFS significantly.
+Tested on x86 machine, topology information in sys/devices/system/cpu/
+cpuX/topology/ is the same after appling this patch set.
 
-IOWs, I don't see that concurrent sys_sync operation is a problem at
-all, and it is actively desirable for systems that have multiple
-busy filesystems as it allows concurrent dispatch of IO across those
-multiple filesystems. Serialising all sys_sync work might stop the
-contention problems, but it will also slow down concurrent sync
-operations on busy systems as it only allows one thread to dispatch
-and wait for IO at a time.
+Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+---
+ drivers/base/topology.c |   20 --------------------
+ 1 file changed, 20 deletions(-)
 
-So, let's not slap a bandaid over a symptom - let's address the
-cause of the lock contention properly....
-
-Cheers,
-
-Dave.
+diff --git a/drivers/base/topology.c b/drivers/base/topology.c
+index 2f5919e..94ffee3 100644
+--- a/drivers/base/topology.c
++++ b/drivers/base/topology.c
+@@ -62,25 +62,6 @@ static ssize_t show_cpumap(int type, const struct cpumask *mask, char *buf)
+ }
+ #endif
+ 
+-#ifdef arch_provides_topology_pointers
+-#define define_siblings_show_map(name)					\
+-static ssize_t show_##name(struct device *dev,				\
+-			   struct device_attribute *attr, char *buf)	\
+-{									\
+-	unsigned int cpu = dev->id;					\
+-	return show_cpumap(0, topology_##name(cpu), buf);		\
+-}
+-
+-#define define_siblings_show_list(name)					\
+-static ssize_t show_##name##_list(struct device *dev,			\
+-				  struct device_attribute *attr,	\
+-				  char *buf)				\
+-{									\
+-	unsigned int cpu = dev->id;					\
+-	return show_cpumap(1, topology_##name(cpu), buf);		\
+-}
+-
+-#else
+ #define define_siblings_show_map(name)					\
+ static ssize_t show_##name(struct device *dev,				\
+ 			   struct device_attribute *attr, char *buf)	\
+@@ -95,7 +76,6 @@ static ssize_t show_##name##_list(struct device *dev,			\
+ {									\
+ 	return show_cpumap(1, topology_##name(dev->id), buf);		\
+ }
+-#endif
+ 
+ #define define_siblings_show_func(name)		\
+ 	define_siblings_show_map(name); define_siblings_show_list(name)
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.9.5
+
