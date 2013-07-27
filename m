@@ -1,193 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3G0GnU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 02:43:20 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37265 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab3G0GnS (ORCPT
+	id S1753898Ab3G0Gom (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 02:44:42 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:58171 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204Ab3G0Goi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 02:43:18 -0400
-Message-ID: <51F36C03.2050303@linaro.org>
-Date: Sat, 27 Jul 2013 08:43:15 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Sat, 27 Jul 2013 02:44:38 -0400
+Message-ID: <51F36A27.9030709@huawei.com>
+Date: Sat, 27 Jul 2013 14:35:19 +0800
+From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jeremy Eder <jeder@redhat.com>
-CC: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com, riel@redhat.com,
-        youquan.song@intel.com, paulmck@linux.vnet.ibm.com,
-        arjan@linux.intel.com, len.brown@intel.com
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-References: <20130726173306.GB17985@jeder.rdu.redhat.com>
-In-Reply-To: <20130726173306.GB17985@jeder.rdu.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tracing: fix wrong output of the __array field type string
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.66.58.241]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/26/2013 07:33 PM, Jeremy Eder wrote:
-> Hello,
-> 
-> We believe we've identified a particular commit to the cpuidle code that
-> seems to be impacting performance of variety of workloads.  The simplest way to
-> reproduce is using netperf TCP_RR test, so we're using that, on a pair of
-> Sandy Bridge based servers.  We also have data from a large database setup
-> where performance is also measurably/positively impacted, though that test
-> data isn't easily share-able.
-> 
-> Included below are test results from 3 test kernels:
+ A bug was found in events/sched/sched_switch/format.
 
-Is the system tickless or with a periodic tick ?
+	field:char prev_comm[32];       offset:8;       size:16;        signed:1;
 
+and prev_comm field is defined as:
 
+	__array(        char,   prev_comm,      TASK_COMM_LEN   )
 
-> kernel       reverts
-> -----------------------------------------------------------
-> 1) vanilla   upstream (no reverts)
-> 
-> 2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
-> 
-> 3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
->                      e11538d1f03914eb92af5a1a378375c05ae8520c
-> 
-> In summary, netperf TCP_RR numbers improve by approximately 4% after
-> reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
-> 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency never
-> seems to get above 40%.  Taking that patch out gets C0 near 100% quite
-> often, and performance increases.
-> 
-> The below data are histograms representing the %c0 residency @ 1-second
-> sample rates (using turbostat), while under netperf test.
-> 
-> - If you look at the first 4 histograms, you can see %c0 residency almost
->   entirely in the 30,40% bin.
-> - The last pair, which reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4,
->   shows %c0 in the 80,90,100% bins.
-> 
-> Below each kernel name are netperf TCP_RR trans/s numbers for the
-> particular kernel that can be disclosed publicly, comparing the 3 test
-> kernels.  We ran a 4th test with the vanilla kernel where we've also set
-> /dev/cpu_dma_latency=0 to show overall impact boosting single-threaded
-> TCP_RR performance over 11% above baseline.
-> 
-> 3.10-rc2 vanilla RX + c0 lock (/dev/cpu_dma_latency=0):  
-> TCP_RR trans/s 54323.78
-> 
-> -----------------------------------------------------------
-> 3.10-rc2 vanilla RX (no reverts)
-> TCP_RR trans/s 48192.47
-> 
-> Receiver %c0 
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     0]: 
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [    59]: 
-> ***********************************************************
->    40.0000 -    50.0000 [     1]: *
->    50.0000 -    60.0000 [     0]: 
->    60.0000 -    70.0000 [     0]: 
->    70.0000 -    80.0000 [     0]: 
->    80.0000 -    90.0000 [     0]: 
->    90.0000 -   100.0000 [     0]: 
-> 
-> Sender %c0
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     0]: 
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [    11]: ***********
->    40.0000 -    50.0000 [    49]:
-> *************************************************
->    50.0000 -    60.0000 [     0]: 
->    60.0000 -    70.0000 [     0]: 
->    70.0000 -    80.0000 [     0]: 
->    80.0000 -    90.0000 [     0]: 
->    90.0000 -   100.0000 [     0]: 
-> 
-> -----------------------------------------------------------
-> 3.10-rc2 perfteam2 RX (reverts commit
-> e11538d1f03914eb92af5a1a378375c05ae8520c)
-> TCP_RR trans/s 49698.69
-> 
-> Receiver %c0 
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     1]: *
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [    59]:
-> ***********************************************************
->    40.0000 -    50.0000 [     0]: 
->    50.0000 -    60.0000 [     0]: 
->    60.0000 -    70.0000 [     0]: 
->    70.0000 -    80.0000 [     0]: 
->    80.0000 -    90.0000 [     0]: 
->    90.0000 -   100.0000 [     0]: 
-> 
-> Sender %c0 
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     0]: 
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [     2]: **
->    40.0000 -    50.0000 [    58]:
-> **********************************************************
->    50.0000 -    60.0000 [     0]: 
->    60.0000 -    70.0000 [     0]: 
->    70.0000 -    80.0000 [     0]: 
->    80.0000 -    90.0000 [     0]: 
->    90.0000 -   100.0000 [     0]: 
-> 
-> -----------------------------------------------------------
-> 3.10-rc2 test RX (reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 and
-> e11538d1f03914eb92af5a1a378375c05ae8520c)
-> TCP_RR trans/s 47766.95
-> 
-> Receiver %c0
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     1]: *
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [    27]: ***************************
->    40.0000 -    50.0000 [     2]: **
->    50.0000 -    60.0000 [     0]: 
->    60.0000 -    70.0000 [     2]: **
->    70.0000 -    80.0000 [     0]: 
->    80.0000 -    90.0000 [     0]: 
->    90.0000 -   100.0000 [    28]: ****************************
-> 
-> Sender:
->     0.0000 -    10.0000 [     1]: *
->    10.0000 -    20.0000 [     0]: 
->    20.0000 -    30.0000 [     0]: 
->    30.0000 -    40.0000 [    11]: ***********
->    40.0000 -    50.0000 [     0]: 
->    50.0000 -    60.0000 [     1]: *
->    60.0000 -    70.0000 [     0]: 
->    70.0000 -    80.0000 [     3]: ***
->    80.0000 -    90.0000 [     7]: *******
->    90.0000 -   100.0000 [    38]: **************************************
-> 
-> These results demonstrate gaining back the tendency of the CPU to stay in
-> more responsive, performant C-states (and thus yield measurably better
-> performance), by reverting commit 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.
-> 
-> While taking into account the changing landscape with regards to CPU
-> governors, and both P- and C-states, we think that a single-thread should
-> still be able to achieve maximum performance.  With the current upstream
-> code base, workloads with a low number of "hot" threads are not able to
-> achieve maximum performance "out of the box".
-> 
-> Also recently, Intel's LAD has posted upstream performance results that
-> include an interesting column with their table of results.  See upstream
-> commit 0a4db187a999, column #3 within the "Performance numbers" table.  It
-> seems known, even within Intel, that the deeper C-states incur a cost too
-> high to bear, as they've explicitly tested restricting the CPU to higher
-> c-states of C0,1.
-> 
-> -- Jeremy Eder
-> 
+Note TASK_COMM_LEN is 16, but the arrary len is 32 in there.
 
+The root cause is we use global temp buffer event_storage as
+constant type string in trace_define_field function when
+define __array field, this will make old field type string
+flushed by new string in event_storage.
 
+In this patch, type string is checked by core_kernel_data firstly,
+if it's not core kernel data, then copy the storage.
+
+This patch also kill the global storage event_storage.
+
+events/sched/sched_switch/format changed after patch:
+
+	field:char prev_comm[16];       offset:8;       size:16;        signed:1;
+
+Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
+---
+ include/linux/ftrace_event.h |    2 --
+ include/trace/ftrace.h       |    4 ++--
+ kernel/trace/trace_events.c  |   20 +++++++++++++-------
+ kernel/trace/trace_export.c  |    4 ++--
+ 4 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..bd91f0e 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -324,8 +324,6 @@ enum {
+ };
+
+ #define EVENT_STORAGE_SIZE 128
+-extern struct mutex event_storage_mutex;
+-extern char event_storage[EVENT_STORAGE_SIZE];
+
+ extern int trace_event_raw_init(struct ftrace_event_call *call);
+ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index d615f78..c8bd295 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -303,7 +303,8 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
+-		mutex_lock(&event_storage_mutex);			\
++		char event_storage[EVENT_STORAGE_SIZE];			\
++									\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+ 		snprintf(event_storage, sizeof(event_storage),		\
+ 			 "%s[%d]", #type, len);				\
+@@ -311,7 +312,6 @@ static struct trace_event_functions ftrace_event_type_funcs_##call = {	\
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), FILTER_OTHER);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5f694ce..5827287 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -27,12 +27,6 @@
+
+ DEFINE_MUTEX(event_mutex);
+
+-DEFINE_MUTEX(event_storage_mutex);
+-EXPORT_SYMBOL_GPL(event_storage_mutex);
+-
+-char event_storage[EVENT_STORAGE_SIZE];
+-EXPORT_SYMBOL_GPL(event_storage);
+-
+ LIST_HEAD(ftrace_events);
+ static LIST_HEAD(ftrace_common_fields);
+
+@@ -100,7 +94,15 @@ static int __trace_define_field(struct list_head *head, const char *type,
+ 		goto err;
+
+ 	field->name = name;
+-	field->type = type;
++
++	/* for __array field, type is not a constant string */
++	if (!core_kernel_data((unsigned long)type)) {
++		field->type = kstrdup(type, GFP_KERNEL);
++		if (!field->type)
++			goto err;
++	} else {
++		field->type = type;
++	}
+
+ 	if (filter_type == FILTER_OTHER)
+ 		field->filter_type = filter_assign_type(type);
+@@ -166,6 +168,10 @@ static void trace_destroy_fields(struct ftrace_event_call *call)
+ 	head = trace_get_fields(call);
+ 	list_for_each_entry_safe(field, next, head, link) {
+ 		list_del(&field->link);
++
++		if (!core_kernel_data((unsigned long)field->type))
++			kfree(field->type);
++
+ 		kmem_cache_free(field_cachep, field);
+ 	}
+ }
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index d21a746..490eb32 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -95,15 +95,15 @@ static void __always_unused ____ftrace_check_##name(void)		\
+ #undef __array
+ #define __array(type, item, len)					\
+ 	do {								\
++		char event_storage[EVENT_STORAGE_SIZE];			\
++									\
+ 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
+-		mutex_lock(&event_storage_mutex);			\
+ 		snprintf(event_storage, sizeof(event_storage),		\
+ 			 "%s[%d]", #type, len);				\
+ 		ret = trace_define_field(event_call, event_storage, #item, \
+ 				 offsetof(typeof(field), item),		\
+ 				 sizeof(field.item),			\
+ 				 is_signed_type(type), filter_type);	\
+-		mutex_unlock(&event_storage_mutex);			\
+ 		if (ret)						\
+ 			return ret;					\
+ 	} while (0);
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+1.7.9.7
 
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
