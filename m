@@ -1,27 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751696Ab3G0MAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 08:00:44 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43203 "EHLO hydra.sisk.pl"
+	id S1751662Ab3G0MId (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 08:08:33 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43222 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751659Ab3G0MAl convert rfc822-to-8bit (ORCPT
+	id S1751585Ab3G0MIa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 08:00:41 -0400
+	Sat, 27 Jul 2013 08:08:30 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Cc: Rik van Riel <riel@redhat.com>, Jeremy Eder <jeder@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+To: Kalle Valo <kvalo@adurom.com>
+Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        youquan.song@intel.com, paulmck@linux.vnet.ibm.com,
-        daniel.lezcano@linaro.org, "Brown, Len" <len.brown@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: RFC: revert request for cpuidle patches e11538d1 and 69a37bea
-Date: Sat, 27 Jul 2013 14:10:44 +0200
-Message-ID: <3673963.IpA4v4b2LB@vostro.rjw.lan>
+        Steven Newbury <steve@snewbury.org.uk>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        Jani Nikula <jani.nikula@linux.intel.com>
+Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
+Date: Sat, 27 Jul 2013 14:18:34 +0200
+Message-ID: <2993276.3bLcHY9ihM@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAJvTdKn3LMhcuWqmNjhpaFX1GPrH1LBtDX1tWPWxDsUZSt4WjQ@mail.gmail.com>
-References: <20130726173306.GB17985@jeder.rdu.redhat.com> <10589669.3DKeJru7h0@vostro.rjw.lan> <CAJvTdKn3LMhcuWqmNjhpaFX1GPrH1LBtDX1tWPWxDsUZSt4WjQ@mail.gmail.com>
+In-Reply-To: <871u6ky3ai.fsf@purkki.adurom.net>
+References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <2218913.HKGjJcYT1G@vostro.rjw.lan> <871u6ky3ai.fsf@purkki.adurom.net>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
 Content-Type: text/plain; charset="utf-8"
@@ -29,55 +35,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 27, 2013 02:22:53 AM Len Brown wrote:
-> >> OK, I'll queue up the reverts as fixes for 3.11-rc4.
-> >
-> > So, the reverts are on the fixes-next branch of the linux-pm.git tree that you
-> > can access at
-> >
-> > http://git.kernel.org/cgit/linux/kernel/git/rafael/linux-pm.git/log/?h=fixes-next
-> >
-> > However, they are not simple reverts as we've had some non-trivial changes on
-> > top of those commits already, so I'd appreciate it a lot if somebody could
-> > double check if I didn't break anything in them.
+On Saturday, July 27, 2013 08:34:13 AM Kalle Valo wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
 > 
-> I've verified that the reverts improve netperf TCP_RR performance.
+> > James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
+> > fixes the backlight for you.
 > 
-> Here I've got two Xeon's, slightly different, so I run in both directions.
-> Also I run two ways -- Out-of-the-box, plus with cpufreq
-> set to max frequency.  The reverts improve all 4 cases:
+> I did three suspend-resume cycles and didn't notice anything wrong so
+> this patch fixes the issue for me. I'll continue testing and will report
+> if I spot any problems.
 > 
-> JKT → IVT                IVT → JKT
-> 
->  3.11.0-rc2        baseline w/o revert                Out of Box
-> 
-> 20420                19963
-> 20658                19915
-> 20298                20320
-> 
->  3.11.0-rc2        baseline w/o revert                max freq
-> 
-> 59658                51427
-> 59663                51503
-> 59416                51343
-> 
-> 3.11.0-rc2-00002-g74bce39                        Linux-pm “fixes-next” branch
-> 
-> 3.11.0-rc2-00002-g74bce39                Out of box
-> 23227                22056
-> 23306                22125
-> 23387                40226                40k result saw some 2.2 ghz
-> vs 1.2 ghz in other runs
->                 21991
-> 
-> 3.11.0-rc2-00002-g74bce39                Max-freq
-> 67240                57645
-> 64880                56764
-> 65924                57435
-> 
-> Tested-by: Len Brown <len.brown@intel.com>
+> Tested-by: Kalle Valo <kvalo@adurom.com>
 
-Many thanks Len!
+Thanks a lot for the confirmation, this already is in the Linus' tree.
 
 Rafael
 
