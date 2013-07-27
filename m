@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758522Ab3G0DOa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 23:14:30 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:1808 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752993Ab3G0DO3 (ORCPT
+	id S1758550Ab3G0DTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 23:19:13 -0400
+Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:35470 "EHLO
+	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758214Ab3G0DTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 23:14:29 -0400
-Message-ID: <51F33AC9.3040603@huawei.com>
-Date: Sat, 27 Jul 2013 11:13:13 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Fri, 26 Jul 2013 23:19:09 -0400
+Date: Fri, 26 Jul 2013 23:20:00 -0400 (EDT)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Adrian Hunter <adrian.hunter@intel.com>, mingo@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Update perf_event_type documentation
+In-Reply-To: <20130726085730.GD27075@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1307262316590.6448@pianoman.cluster.toy>
+References: <20130716150907.GL23818@dyad.programming.kicks-ass.net> <tip-a5cdd40c9877e9aba704c020fd65d26b5cfecf18@git.kernel.org> <alpine.DEB.2.02.1307241348250.7828@pianoman.cluster.toy> <51F0C41C.8080005@intel.com> <alpine.DEB.2.02.1307252313460.26062@pianoman.cluster.toy>
+ <20130726085730.GD27075@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2][RESEND] tracing: Shrink the size of struct ftrace_event_field
-References: <51F08D1B.1080300@huawei.com> <51F08D4B.3010201@huawei.com> <1374851376.6580.34.camel@gandalf.local.home>
-In-Reply-To: <1374851376.6580.34.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.68.215]
-X-CFilter-Loop: Reflected
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020201.51F33C2B.0057,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> @@ -111,6 +111,11 @@ static int __trace_define_field(struct list_head *head, const char *type,
->>  	field->size = size;
->>  	field->is_signed = is_signed;
-> 
-> I think we should just change is_signed to bool. At least the parameter.
-> Or we can make the assignment: field->is_signed = !!is_signed; and nuke
-> the check below.
-> 
+On Fri, 26 Jul 2013, Peter Zijlstra wrote:
 
-Changing field->is_signed to bool won't shrink the size of the struct.
-I prefer: field->is_signed = !!is_signed.
-
->>  
->> +	WARN_ON(offset >= (1 << 12));
->> +	WARN_ON(size >= (1 << 12));
->> +	WARN_ON(is_signed >= (1 << 1));
->> +	WARN_ON(field->filter_type >= (1 << 4));
+> On Thu, Jul 25, 2013 at 11:20:24PM -0400, Vince Weaver wrote:
+> > 
+> > a thing that personally bothers me are these imaginary struct definitions 
+> > added as part of the documentation that aren't actually available in the 
+> > public perf_event.h
+> > 
+> > I can see why it's done, but it can be confusing picking out in later 
+> > definitions which struct fields are real and which ones are conceptual.
 > 
-> Note, the test for field->filter_type is wrong.
+> Would it help if we changed the syntax to not look as much as real C
+> would?
+
+I've been thinking and I can't really think of a clearer way to present 
+the layout.   So I guess it's fine the way it is.  Hopefully not many 
+people are stuck having to implement code based on header file comments 
+anyway.
+
+> > It might be clearer
+> > if you stuck the perf_event_attr::sample_id_all qualifier each
+> > place you add the sample_id field.
 > 
+> Ah, I actually considered that but then got lazy and used the 0 sized
+> struct idea :/
 
-oops.
+It might just be me.  For whatever reason the C parser in my head doesn't 
+handle GNU extensions like 0-sized structs.
 
-> We should make a helper macro:
-> 
-> #define VERIFY_SIZE(type) WARN_ON(type > field->type)
-> 
-
-Much better!
-
-> and then have:
-> 
-> 	VERIFY_SIZE(offset);
-> 	VERIFY_SIZE(size);
-> 	VERIFY_SIZE(filter_type);
-
+Vince
