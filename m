@@ -1,176 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab3G0NFa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 09:05:30 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43303 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab3G0NEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 09:04:41 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: [PATCH 3/3] ACPI / PM: Use ACPI_STATE_D3_COLD instead of ACPI_STATE_D3 everywhere
-Date: Sat, 27 Jul 2013 15:14:44 +0200
-Message-ID: <2158879.Vvb1Htqafe@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <10433383.dueoNg39qi@vostro.rjw.lan>
-References: <10433383.dueoNg39qi@vostro.rjw.lan>
+	id S1751817Ab3G0NHE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 09:07:04 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:63672 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab3G0NHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 09:07:01 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
+References: <1373895429-8846-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1373895429-8846-2-git-send-email-benjamin.tissoires@redhat.com>
+Date: Sat, 27 Jul 2013 15:07:00 +0200
+Message-ID: <CANq1E4RfTLtDz1RYixg4qdkNxrU22rSaZxFss4++A-0hYM0bEQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] input/uinput: add UI_GET_SYSPATH ioctl to retrieve
+ the sysfs path
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        "open list:HID CORE LAYER" <linux-input@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi
 
-There are several places in the tree where ACPI_STATE_D3 is used
-instead of ACPI_STATE_D3_COLD which should be used instead for
-clarity.  Modify them all to use ACPI_STATE_D3_COLD as appropriate.
+On Mon, Jul 15, 2013 at 3:37 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> Evemu [1] uses uinput to replay devices traces it has recorded. However,
+> the way evemu uses uinput is slightly different from how uinput is
+> supposed to be used.
+> Evemu creates the device node through uinput, bu inject events through
+> the input device node directly (and skipping the uinput node).
+>
+> Currently, evemu relies on an heuristic to guess which input node was
+> created. The problem is that is heuristic is subjected to races between
+> different uinput devices or even with physical devices. Having a way
+> to retrieve the sysfs path allows us to find the event node without
+> having to rely on this heuristic.
 
-[The definition of ACPI_STATE_D3 itself cannot go away at this point
- as it is part of ACPICA.]
+It would actually be enough to return the "input_no" from
+input_register_device() (which is currently local but we could save it
+in "dev"). Or only the device-name. I don't know why you want the full
+syspath. It's just overhead in the kernel that we could easily let
+user-space do. And the path /sys/class/input/<devname> can be put
+together by user-space.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/fan.c         |    4 ++--
- drivers/acpi/power.c       |    2 +-
- drivers/acpi/scan.c        |    4 ++--
- drivers/ata/libata-acpi.c  |    4 ++--
- drivers/ide/ide-acpi.c     |    5 +++--
- drivers/pnp/pnpacpi/core.c |    6 +++---
- include/acpi/acpi_bus.h    |    3 ++-
- 7 files changed, 15 insertions(+), 13 deletions(-)
+Anyway, Dmitry has to decide on that. Apart from some style-issues I
+mentioned below:
+  Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
 
-Index: linux-pm/drivers/acpi/fan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/fan.c
-+++ linux-pm/drivers/acpi/fan.c
-@@ -93,7 +93,7 @@ static int fan_get_cur_state(struct ther
- 	if (result)
- 		return result;
- 
--	*state = (acpi_state == ACPI_STATE_D3 ? 0 :
-+	*state = (acpi_state == ACPI_STATE_D3_COLD ? 0 :
- 		 (acpi_state == ACPI_STATE_D0 ? 1 : -1));
- 	return 0;
- }
-@@ -108,7 +108,7 @@ fan_set_cur_state(struct thermal_cooling
- 		return -EINVAL;
- 
- 	result = acpi_bus_set_power(device->handle,
--				state ? ACPI_STATE_D0 : ACPI_STATE_D3);
-+				state ? ACPI_STATE_D0 : ACPI_STATE_D3_COLD);
- 
- 	return result;
- }
-Index: linux-pm/drivers/acpi/power.c
-===================================================================
---- linux-pm.orig/drivers/acpi/power.c
-+++ linux-pm/drivers/acpi/power.c
-@@ -784,7 +784,7 @@ int acpi_power_get_inferred_state(struct
- 		}
- 	}
- 
--	*state = ACPI_STATE_D3;
-+	*state = ACPI_STATE_D3_COLD;
- 	return 0;
- }
- 
-Index: linux-pm/drivers/acpi/scan.c
-===================================================================
---- linux-pm.orig/drivers/acpi/scan.c
-+++ linux-pm/drivers/acpi/scan.c
-@@ -1409,8 +1409,8 @@ static void acpi_bus_get_power_flags(str
- 	/* Set defaults for D0 and D3 states (always valid) */
- 	device->power.states[ACPI_STATE_D0].flags.valid = 1;
- 	device->power.states[ACPI_STATE_D0].power = 100;
--	device->power.states[ACPI_STATE_D3].flags.valid = 1;
--	device->power.states[ACPI_STATE_D3].power = 0;
-+	device->power.states[ACPI_STATE_D3_COLD].flags.valid = 1;
-+	device->power.states[ACPI_STATE_D3_COLD].power = 0;
- 
- 	/* Set D3cold's explicit_set flag if _PS3 exists. */
- 	if (device->power.states[ACPI_STATE_D3_HOT].flags.explicit_set)
-Index: linux-pm/drivers/ata/libata-acpi.c
-===================================================================
---- linux-pm.orig/drivers/ata/libata-acpi.c
-+++ linux-pm/drivers/ata/libata-acpi.c
-@@ -947,11 +947,11 @@ static void pata_acpi_set_state(struct a
- 			continue;
- 
- 		acpi_bus_set_power(dev_handle, state.event & PM_EVENT_RESUME ?
--						ACPI_STATE_D0 : ACPI_STATE_D3);
-+					ACPI_STATE_D0 : ACPI_STATE_D3_COLD);
- 	}
- 
- 	if (!(state.event & PM_EVENT_RESUME))
--		acpi_bus_set_power(port_handle, ACPI_STATE_D3);
-+		acpi_bus_set_power(port_handle, ACPI_STATE_D3_COLD);
- }
- 
- /**
-Index: linux-pm/drivers/ide/ide-acpi.c
-===================================================================
---- linux-pm.orig/drivers/ide/ide-acpi.c
-+++ linux-pm/drivers/ide/ide-acpi.c
-@@ -520,11 +520,12 @@ void ide_acpi_set_state(ide_hwif_t *hwif
- 	ide_port_for_each_present_dev(i, drive, hwif) {
- 		if (drive->acpidata->obj_handle)
- 			acpi_bus_set_power(drive->acpidata->obj_handle,
--					   on ? ACPI_STATE_D0 : ACPI_STATE_D3);
-+				on ? ACPI_STATE_D0 : ACPI_STATE_D3_COLD);
- 	}
- 
- 	if (!on)
--		acpi_bus_set_power(hwif->acpidata->obj_handle, ACPI_STATE_D3);
-+		acpi_bus_set_power(hwif->acpidata->obj_handle,
-+				   ACPI_STATE_D3_COLD);
- }
- 
- /**
-Index: linux-pm/drivers/pnp/pnpacpi/core.c
-===================================================================
---- linux-pm.orig/drivers/pnp/pnpacpi/core.c
-+++ linux-pm/drivers/pnp/pnpacpi/core.c
-@@ -131,7 +131,7 @@ static int pnpacpi_disable_resources(str
- 	/* acpi_unregister_gsi(pnp_irq(dev, 0)); */
- 	ret = 0;
- 	if (acpi_bus_power_manageable(handle))
--		acpi_bus_set_power(handle, ACPI_STATE_D3);
-+		acpi_bus_set_power(handle, ACPI_STATE_D3_COLD);
- 		/* continue even if acpi_bus_set_power() fails */
- 	if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DIS", NULL, NULL)))
- 		ret = -ENODEV;
-@@ -174,10 +174,10 @@ static int pnpacpi_suspend(struct pnp_de
- 
- 	if (acpi_bus_power_manageable(handle)) {
- 		int power_state = acpi_pm_device_sleep_state(&dev->dev, NULL,
--							     ACPI_STATE_D3);
-+							ACPI_STATE_D3_COLD);
- 		if (power_state < 0)
- 			power_state = (state.event == PM_EVENT_ON) ?
--					ACPI_STATE_D0 : ACPI_STATE_D3;
-+					ACPI_STATE_D0 : ACPI_STATE_D3_COLD;
- 
- 		/*
- 		 * acpi_bus_set_power() often fails (keyboard port can't be
-Index: linux-pm/include/acpi/acpi_bus.h
-===================================================================
---- linux-pm.orig/include/acpi/acpi_bus.h
-+++ linux-pm/include/acpi/acpi_bus.h
-@@ -477,7 +477,8 @@ static inline int acpi_pm_device_sleep_s
- 	if (p)
- 		*p = ACPI_STATE_D0;
- 
--	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3) ? m : ACPI_STATE_D0;
-+	return (m >= ACPI_STATE_D0 && m <= ACPI_STATE_D3_COLD) ?
-+		m : ACPI_STATE_D0;
- }
- static inline void acpi_dev_pm_add_dependent(acpi_handle handle,
- 					     struct device *depdev) {}
+Cheers
+David
 
+> [1] http://www.freedesktop.org/wiki/Evemu/
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/input/misc/uinput.c | 37 ++++++++++++++++++++++++++++++++++++-
+>  include/linux/uinput.h      |  1 +
+>  include/uapi/linux/uinput.h |  3 +++
+>  3 files changed, 40 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/input/misc/uinput.c b/drivers/input/misc/uinput.c
+> index 7d518b4..49a9f7d 100644
+> --- a/drivers/input/misc/uinput.c
+> +++ b/drivers/input/misc/uinput.c
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *             - update uinput_user_dev struct to allow abs resolution
+> + *             - add UI_GET_SYSPATH ioctl
+
+What tree is that patch against? I cannot see an "0.4" entry in:
+http://git.kernel.org/cgit/linux/kernel/git/dtor/input.git/tree/drivers/input/misc/uinput.c?h=next
+
+>   *     0.3     09/04/2006 (Anssi Hannula <anssi.hannula@gmail.com>)
+>   *             - updated ff support for the changes in kernel interface
+>   *             - added MODULE_VERSION
+> @@ -667,6 +668,21 @@ static int uinput_ff_upload_from_user(const char __user *buffer,
+>         __ret;                                          \
+>  })
+>
+> +static int uinput_str_to_user(const char *str, unsigned int maxlen,
+> +                             void __user *p)
+
+As Peter mentioned, I'd move "maxlen" to the end.
+
+> +{
+> +       int len;
+> +
+> +       if (!str)
+> +               return -ENOENT;
+> +
+> +       len = strlen(str) + 1;
+> +       if (len > maxlen)
+> +               len = maxlen;
+> +
+> +       return copy_to_user(p, str, len) ? -EFAULT : len;
+
+I'd prefer a "strlcpy()" so we guarantee a terminating 0 for
+user-space, but I guess that'd be rather complex to do here. I
+couldn't find any strlcpy_to_user()...
+
+> +}
+> +
+>  static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>                                  unsigned long arg, void __user *p)
+>  {
+> @@ -676,6 +692,8 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>         struct uinput_ff_erase  ff_erase;
+>         struct uinput_request   *req;
+>         char                    *phys;
+> +       const char              *path;
+> +       unsigned int            size;
+>
+>         retval = mutex_lock_interruptible(&udev->mutex);
+>         if (retval)
+> @@ -828,7 +846,24 @@ static long uinput_ioctl_handler(struct file *file, unsigned int cmd,
+>                         break;
+>
+>                 default:
+> -                       retval = -EINVAL;
+> +                       retval = -EAGAIN;
+> +       }
+> +
+> +       if (retval == -EAGAIN) {
+> +               size = _IOC_SIZE(cmd);
+> +
+> +               /* Now check variable-length commands */
+> +               switch (cmd & ~IOCSIZE_MASK) {
+> +                       case UI_GET_SYSPATH(0):
+> +                               path = kobject_get_path(&udev->dev->dev.kobj,
+> +                                                       GFP_KERNEL);
+
+I know, device registration is protected by udev->mutex but I'd still prefer:
+  if (udev->state != UIST_CREATED)
+    return -ENOENT;
+
+But that's probably a matter of taste.
+
+> +                               retval = uinput_str_to_user(path, size, p);
+> +                               kfree(path);
+> +                               break;
+> +
+> +                       default:
+> +                               retval = -EINVAL;
+> +               }
+>         }
+>
+>   out:
+> diff --git a/include/linux/uinput.h b/include/linux/uinput.h
+> index 6291a22..64fab81 100644
+> --- a/include/linux/uinput.h
+> +++ b/include/linux/uinput.h
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *             - update uinput_user_dev struct to allow abs resolution
+> + *             - add UI_GET_SYSPATH ioctl
+>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>   *             - update ff support for the changes in kernel interface
+>   *             - add UINPUT_VERSION
+> diff --git a/include/uapi/linux/uinput.h b/include/uapi/linux/uinput.h
+> index f6a393b..d826409 100644
+> --- a/include/uapi/linux/uinput.h
+> +++ b/include/uapi/linux/uinput.h
+> @@ -22,6 +22,7 @@
+>   * Changes/Revisions:
+>   *     0.4     12/07/2013 (Peter Hutterer <peter.hutterer@redhat.com>)
+>   *             - update uinput_user_dev struct to allow abs resolution
+> + *             - add UI_GET_SYSPATH ioctl
+>   *     0.3     24/05/2006 (Anssi Hannula <anssi.hannulagmail.com>)
+>   *             - update ff support for the changes in kernel interface
+>   *             - add UINPUT_VERSION
+> @@ -75,6 +76,8 @@ struct uinput_ff_erase {
+>  #define UI_BEGIN_FF_ERASE      _IOWR(UINPUT_IOCTL_BASE, 202, struct uinput_ff_erase)
+>  #define UI_END_FF_ERASE                _IOW(UINPUT_IOCTL_BASE, 203, struct uinput_ff_erase)
+>
+> +#define UI_GET_SYSPATH(len)    _IOC(_IOC_READ, UINPUT_IOCTL_BASE, 300, len)
+> +
+>  /*
+>   * To write a force-feedback-capable driver, the upload_effect
+>   * and erase_effect callbacks in input_dev must be implemented.
+> --
+> 1.8.3.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
