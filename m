@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab3G0UiI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 16:38:08 -0400
-Received: from mail-yh0-f47.google.com ([209.85.213.47]:52195 "EHLO
-	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab3G0UiG (ORCPT
+	id S1752750Ab3G0VBr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 17:01:47 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:34899 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab3G0VBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 16:38:06 -0400
-From: Samuel Williams <sam8641@gmail.com>
-To: mlindner@marvell.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Samuel Williams <sam8641@gmail.com>
-Subject: [PATCH] sky2: detect and prevent kernel panic from a possible faulty hardware
-Date: Sat, 27 Jul 2013 15:35:54 -0500
-Message-Id: <1374957354-10142-1-git-send-email-sam8641@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 27 Jul 2013 17:01:46 -0400
+Date: Sun, 28 Jul 2013 01:01:43 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+Message-ID: <20130727210143.GA2524@moon>
+References: <20130726201807.GJ8661@moon>
+ <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com>
+ <20130726211844.GB8508@moon>
+ <CALCETrW7Ukh8KfKzpNgRc1D_5OK1o7bmEmFbtQTYoSoFiOSeKw@mail.gmail.com>
+ <20130727062512.GC8508@moon>
+ <CALCETrWbF_e98w0d9-0tLOaTUv-mZv_RQgqOpuNiVaDOacHT0g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrWbF_e98w0d9-0tLOaTUv-mZv_RQgqOpuNiVaDOacHT0g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A possible faulty hardware might interrupt with a status of 0xffffffff which
-may kernel panic if sky2 driver tries to handle it. Detecting this problem
-may avoid kernel panic.
+On Sat, Jul 27, 2013 at 10:06:01AM -0700, Andy Lutomirski wrote:
+> 
+> That being said, a MAP_PRIVATE, un-cowed mapping must be clean -- if
+> it had been (soft-)dirtied, it would also have been cowed.  So you
+> might be okay.
 
-Signed-off-by: Samuel Williams <sam8641@gmail.com>
----
- drivers/net/ethernet/marvell/sky2.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/net/ethernet/marvell/sky2.c b/drivers/net/ethernet/marvell/sky2.c
-index e09a8c6..43fe2f3 100644
---- a/drivers/net/ethernet/marvell/sky2.c
-+++ b/drivers/net/ethernet/marvell/sky2.c
-@@ -3049,8 +3049,17 @@ static int sky2_poll(struct napi_struct *napi, int work_limit)
- 	int work_done = 0;
- 	u16 idx;
- 
--	if (unlikely(status & Y2_IS_ERROR))
-+	if (unlikely(status & Y2_IS_ERROR)) {
-+		if (status == 0xFFFFFFFF) {
-+			dev_err(&hw->pdev->dev,
-+				"fatal hardware inturrupt error\n");
-+			napi_complete(napi);
-+			napi_disable(&hw->napi);
-+			return 0;
-+		}
- 		sky2_err_intr(hw, status);
-+	}
-+
- 
- 	if (status & Y2_IS_IRQ_PHY1)
- 		sky2_phy_intr(hw, 0);
--- 
-1.7.10.4
-
+Yas, as far as I know we are either cow'ed or in clean state, thus
+either soft-bit set on #pf (and when reclaimed rest in file-pte)
+or it remains clean and there is no change we need to track.
