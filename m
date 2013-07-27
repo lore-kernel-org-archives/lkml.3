@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751268Ab3G0J6x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 05:58:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57845 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab3G0J6t (ORCPT
+	id S1751296Ab3G0KDN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 06:03:13 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5707 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3G0KDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 05:58:49 -0400
-Date: Sat, 27 Jul 2013 02:58:20 -0700
-From: tip-bot for Zhang Yanfei <tipbot@zytor.com>
-Message-ID: <tip-45f1330af6819b348fbac89e69d59d8129d61960@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        zhangyanfei@cn.fujitsu.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        zhangyanfei@cn.fujitsu.com, tglx@linutronix.de
-In-Reply-To: <51EE7F1C.9020506@gmail.com>
-References: <51EE7F1C.9020506@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86/acpi:
-  Correct out-of-date comment of __acpi_map_table()
-Git-Commit-ID: 45f1330af6819b348fbac89e69d59d8129d61960
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sat, 27 Jul 2013 06:03:10 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sat, 27 Jul 2013 03:03:09 -0700
+Message-ID: <51F39D98.1090008@nvidia.com>
+Date: Sat, 27 Jul 2013 15:44:48 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (terminus.zytor.com [127.0.0.1]); Sat, 27 Jul 2013 02:58:28 -0700 (PDT)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] pinctrl: pinconf_generic: add utility functions for
+ add map/configs
+References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-2-git-send-email-ldewangan@nvidia.com> <51F2B384.9050706@wwwdotorg.org>
+In-Reply-To: <51F2B384.9050706@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  45f1330af6819b348fbac89e69d59d8129d61960
-Gitweb:     http://git.kernel.org/tip/45f1330af6819b348fbac89e69d59d8129d61960
-Author:     Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-AuthorDate: Tue, 23 Jul 2013 21:03:24 +0800
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 26 Jul 2013 22:12:36 +0200
+On Friday 26 July 2013 11:06 PM, Stephen Warren wrote:
+> On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
+>> Some of pincontrol driver needs the utility function to create map
+>> list. The utility function needed for adding mux, configs etc.
+> Which other drivers already contain this code? Are you planning on
+> converting them over to use these new functions? The code looks
+> familiar, so I assume it's just cut/paste from Tegra with some renames,
+> so I didn't read it through in detail.
 
-x86/acpi: Correct out-of-date comment of __acpi_map_table()
+Yes, these functions are taken from the pinctrl-tegra driver. Other 
+drivers which have similar implementation are nomadik, tegra, abx500, 
+tz1090, tz1090-pdc.
+So All can use these utility function to avoid duplication and reduce 
+code size.
+Yes, I have plan to use this in Tegra atleast but once this patch get 
+accepted.
 
-The implementation of function __acpi_map_table() has been
-changed long time ago, and now it directly invokes
-early_ioremap() to setup the temporarily acpi table mappings.
 
-So correct its out-of-date comment.
+>
+>>   drivers/pinctrl/pinconf-generic.c       |  105 +++++++++++++++++++++++++++++++
+>>   include/linux/pinctrl/pinconf-generic.h |   52 +++++++++++++++
+> I don't think those are the correct files for this code. Presumably
+> there's no reason at all why a pinctrl driver that doesn't require
+> CONFIG_GENERIC_PINCONF can't use these basic utility functions. Perhaps
+> add a new pinctrl-utils file?
 
-Signed-off-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
-Cc: len.brown@intel.com
-Cc: pavel@ucw.cz
-Cc: rjw@sisk.pl
-Link: http://lkml.kernel.org/r/51EE7F1C.9020506@gmail.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/acpi/boot.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+I thought generic implementation of parsing of dt is pinctrl-generic 
+file and as these newly added APIs are require for the parsing the DT 
+node, I added here.
+I can move this to pinctrl-util.c/h also.
 
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 2627a81..c7f61cf 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -141,16 +141,8 @@ static u32 irq_to_gsi(int irq)
- }
- 
- /*
-- * Temporarily use the virtual area starting from FIX_IO_APIC_BASE_END,
-- * to map the target physical address. The problem is that set_fixmap()
-- * provides a single page, and it is possible that the page is not
-- * sufficient.
-- * By using this area, we can map up to MAX_IO_APICS pages temporarily,
-- * i.e. until the next __va_range() call.
-- *
-- * Important Safety Note:  The fixed I/O APIC page numbers are *subtracted*
-- * from the fixed base.  That's why we start at FIX_IO_APIC_BASE_END and
-- * count idx down while incrementing the phys address.
-+ * This is just a simple wrapper around early_ioremap(),
-+ * with sanity checks for phys == 0 and size == 0.
-  */
- char *__init __acpi_map_table(unsigned long phys, unsigned long size)
- {
-@@ -160,6 +152,7 @@ char *__init __acpi_map_table(unsigned long phys, unsigned long size)
- 
- 	return early_ioremap(phys, size);
- }
-+
- void __init __acpi_unmap_table(char *map, unsigned long size)
- {
- 	if (!map || !size)
+
+
