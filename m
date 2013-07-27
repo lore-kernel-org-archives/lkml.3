@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3G0Rix (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:38:53 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:37189 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3G0Riw (ORCPT
+	id S1752623Ab3G0RpJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 13:45:09 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:47576 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab3G0RpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:38:52 -0400
-Message-ID: <1374946729.3669.5.camel@edumazet-glaptop>
-Subject: Re: [ 42/79] vlan: fix a race in egress prio management
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Eric Dumazet <edumazet@google.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Date: Sat, 27 Jul 2013 10:38:49 -0700
-In-Reply-To: <1374944157.13555.43.camel@deadeye.wl.decadent.org.uk>
-References: <20130726204721.849052763@linuxfoundation.org>
-	 <20130726204726.846842461@linuxfoundation.org>
-	 <1374944157.13555.43.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Sat, 27 Jul 2013 13:45:06 -0400
+Message-ID: <51F40570.9050209@gmail.com>
+Date: Sat, 27 Jul 2013 19:37:52 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, criu@openvz.org, devel@openvz.org,
+        xemul@parallels.com
+Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
+References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com>
+In-Reply-To: <51F404D0.6070004@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-07-27 at 17:55 +0100, Ben Hutchings wrote:
-> On Fri, 2013-07-26 at 13:47 -0700, Greg Kroah-Hartman wrote:
-> > 3.10-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Eric Dumazet <edumazet@google.com>
-> > 
-> > [ Upstream commit 3e3aac497513c669e1c62c71e1d552ea85c1d974 ]
-> > 
-> > egress_priority_map[] hash table updates are protected by rtnl,
-> > and we never remove elements until device is dismantled.
-> > 
-> > We have to make sure that before inserting an new element in hash table,
-> > all its fields are committed to memory or else another cpu could
-> > find corrupt values and crash.
-> > 
-> > Signed-off-by: Eric Dumazet <edumazet@google.com>
-> > Cc: Patrick McHardy <kaber@trash.net>
-> > Signed-off-by: David S. Miller <davem@davemloft.net>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > ---
-> >  net/8021q/vlan_dev.c |    7 +++++++
-> >  1 file changed, 7 insertions(+)
-> > 
-> > --- a/net/8021q/vlan_dev.c
-> > +++ b/net/8021q/vlan_dev.c
-> > @@ -73,6 +73,8 @@ vlan_dev_get_egress_qos_mask(struct net_
-> >  {
-> >  	struct vlan_priority_tci_mapping *mp;
-> >  
-> > +	smp_rmb(); /* coupled with smp_wmb() in vlan_dev_set_egress_priority() */
-> > +
-> >  	mp = vlan_dev_priv(dev)->egress_priority_map[(skb->priority & 0xF)];
-> 
-> This barrier is the wrong type in the wrong place; there should be a
-> smp_read_barrier_depends() *after* reading the pointer from
-> egress_priority_map, and after reading each next pointer.
-> 
+Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
+> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
+>> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
+>>> Hi,
+>>>
+>>> We want to propose a way to upgrade a kernel on a machine without
+>>> restarting all the user-space services. This is to be done with CRIU
+>>> project, but we need help from the kernel to preserve some data in
+>>> memory while doing kexec.
+>>>
+>>> The key point of our implementation is leaving process memory in-place
+>>> during reboot. This should eliminate most io operations the services
+>>> would produce during initialization. To achieve this, we have
+>>> implemented a pseudo file system that preserves its content during
+>>> kexec. We propose saving CRIU dump files to this file system, kexec'ing
+>>> and then restoring the processes in the newly booted kernel.
+>>>
+>>
+>> http://pramfs.sourceforge.net/
+>
+> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
+> already been merged, requires hardware support for over-reboot
+> persistency, so called non-volatile RAM, i.e. RAM which is not directly
+> accessible and so is not used by the kernel. On the contrary, what we'd
+> like to have is preserving usual RAM on kexec. It is possible, because
+> RAM is not reset during kexec. This would allow leaving applications
+> working set as well as filesystem caches in place, speeding the reboot
+> process as a whole and reducing the downtime significantly.
+>
+> Thanks.
 
-Not sure its a problem anyway, as we insert new items at the beginning
-of the chain, and we never delete any item. What you describe would make
-sense if we were deleting an item.
+Actually not. You can use normal system RAM reserved at boot with mem 
+parameter without any kernel change. Until an hard reset happens, that 
+area will be "persistent".
 
-Once a reader gets a pointer, the whole chain is stable.
+Regards,
 
-The important part of the patch was the smp_wmb(), to make sure np->next
-was committed before "vlan->egress_priority_map[skb_prio & 0xF] = np;"
-
-
-
+Marco
