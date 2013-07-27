@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329Ab3G0KLu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 06:11:50 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:11841 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab3G0KLt (ORCPT
+	id S1751338Ab3G0KNH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 06:13:07 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:50350 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab3G0KNE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 06:11:49 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sat, 27 Jul 2013 03:11:48 -0700
-Message-ID: <51F39F9F.5020607@nvidia.com>
-Date: Sat, 27 Jul 2013 15:53:27 +0530
-From: Laxman Dewangan <ldewangan@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/2] pinctrl: palmas: add pincontrol driver
-References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-3-git-send-email-ldewangan@nvidia.com> <20130726164122.GT9858@sirena.org.uk>
-In-Reply-To: <20130726164122.GT9858@sirena.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Jul 2013 06:13:04 -0400
+From: Azat Khuzhin <a3at.mail@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: chris.mason@fusionio.com, Azat Khuzhin <a3at.mail@gmail.com>,
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
+Date: Sat, 27 Jul 2013 14:12:45 +0400
+Message-Id: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 26 July 2013 10:11 PM, Mark Brown wrote:
-> * PGP Signed by an unknown key
->
-> On Fri, Jul 26, 2013 at 03:45:54PM +0530, Laxman Dewangan wrote:
->
->> +pins: gpio0_id, gpio1_vbus_det_led1_pwm1, gpio2_regen_led2_pwm2, gpio3_chrg_det,
->> +	gpio4_sysen1, gpio5_clk32kgaudio_usb_psel, gpio6_sysen2,
->> +	gpio7_msecure_pwrhold, gpio8_sim1rsti, gpio9_low_vbat,
->> +	gpio10_wireless_chrg1, gpio11_rcm, gpio12_sim2rsto, gpio13, gpio14,
->> +	gpio15_sim2rsti, vac, powergood_usb_psel, nreswarm, pwrdown,
->> +	gpadc_start, reset_in, nsleep, enable1, enable2, int.
-> Would it not be easier to just name the GPIOs gpioN rather than using
-> the full names with the possible functions?
->
+Replace list_for_each_entry() by list_for_each_entry_safe() in
+__btrfs_close_devices()
 
-I took the name approach as what we have on Tegra.
-But I think I can put the name of the pins same as what we have in 
-datasheet. So pin name will be exact same as what we have in datasheet. 
-That will be easy to interpret.
+There is another place that delete items lock_stripe_add(), but there we
+don't need safe version, because after deleting we exit from loop.
+
+Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+---
+ fs/btrfs/volumes.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+index 78b8717..1d1b595 100644
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
+ 
+ static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+ {
+-	struct btrfs_device *device;
++	struct btrfs_device *device, *next;
+ 
+ 	if (--fs_devices->opened > 0)
+ 		return 0;
+ 
+ 	mutex_lock(&fs_devices->device_list_mutex);
+-	list_for_each_entry(device, &fs_devices->devices, dev_list) {
++	list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
+ 		struct btrfs_device *new_device;
+ 		struct rcu_string *name;
+ 
+-- 
+1.7.10.4
 
