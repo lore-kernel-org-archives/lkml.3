@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab3G0RTW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:19:22 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:48489 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab3G0RTV (ORCPT
+	id S1752512Ab3G0RUQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 13:20:16 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:51596 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450Ab3G0RUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:19:21 -0400
-Message-ID: <51F40114.9060607@opensuse.org>
-Date: Sat, 27 Jul 2013 13:19:16 -0400
-From: =?ISO-8859-1?Q?Cristian_Rodr=EDguez?= <crrodriguez@opensuse.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: acpi_backlight=vendor no longer working around buggy laptop from
- hell
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 27 Jul 2013 13:20:14 -0400
+From: oscherler@ithink.ch
+To: jkosina@suse.cz, linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Cc: Olivier Scherler <oscherler@ithink.ch>
+Subject: [PATCH 0/1] hid: Add new driver for non-compliant Xin-Mo devices.
+Date: Sat, 27 Jul 2013 19:20:01 +0200
+Message-Id: <1374945602-11894-1-git-send-email-oscherler@ithink.ch>
+X-Mailer: git-send-email 1.7.10.2 (Apple Git-33)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi:
+From: Olivier Scherler <oscherler@ithink.ch>
 
-I have a DELL XPS 15z laptop with the latest BIOS (A12).
+The Xin-Mo Dual Arcade Controller sends axis values that are out of
+range with respect to the HID report descriptor. This patch adds a
+driver to correct the input values so they are not thrown out by the
+range check in hid-input.c.
 
-This piece of crap have never worked properly without special boot 
-parameters. Up to kernel 3.10, passing acpi_backlight=vendor was enough 
-to allow the machine to complete boot and be usable.
+The issue is discussed here: <https://bugs.launchpad.net/bugs/1077359>
 
-Now with 3.11 rc2 (also with today's linus tree) unbootable machine 
-problem is back.
+checkpatch.pl gives warnings for two lines that are over 80 characters,
+but I decided not to change them since similar lines in other HID
+drivers. The third warning asks for a paragraph that describes the new
+config symbol in Kconfig fully. I will gladly accept advice on how to
+improve it.
 
-In the past I spent many hours figuring out workarounds and they go 
-_now_ as the following.
+This has been tested on Ubuntu Desktop 13.04 in a VMware VM and on a
+Raspberry Pi running Raspbian.
 
-Booting with:
+Olivier Scherler (1):
+  hid: Add new driver for non-compliant Xin-Mo devices.
 
-"nox2apic" --> machine works, flawless.
+ drivers/hid/Kconfig     |  8 ++++++
+ drivers/hid/Makefile    |  1 +
+ drivers/hid/hid-core.c  |  1 +
+ drivers/hid/hid-ids.h   |  3 +++
+ drivers/hid/hid-xinmo.c | 72 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 85 insertions(+)
+ create mode 100644 drivers/hid/hid-xinmo.c
 
-"x2apic_phys acpi_backlight=vendor" --> machine works, except for the 
-big problem that the laptop keyboard and touchpad are unresponsive, I 
-have to plug USB keyboard/mouse to get anything done.
-
-With no boot parameters the machine hangs at random points in the boot 
-sequence either:
-
--Very early at boot and there is no way to retrieve any useful debug 
-info. [OR]
-
-- Somehow it looses "connection" with the ATA controller and the 
-filesystems cannot be mounted. [OR]
-
-- In very few ocassions, the boot proceeds with no keyboard or touchpad 
-then the iwlwifi wireless card does something stupid (firmware error...)
-
-The only possible hint in the logs I could ever find is:
-
-[    3.844586] [Firmware Bug]: ACPI(PEGP) defines _DOD but not _DOS
-
-
-I tried in the past to obtain any debug information, with no luck.
-
-Help is appreciated to get to the bottom of the problem. ;)
-
+-- 
+1.8.1.2
 
