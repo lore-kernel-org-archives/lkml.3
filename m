@@ -1,138 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959Ab3G0O1G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 10:27:06 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:47837 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab3G0O1E (ORCPT
+	id S1752040Ab3G0Ono (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 10:43:44 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62194 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab3G0Onn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 10:27:04 -0400
+	Sat, 27 Jul 2013 10:43:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 1/1] drivers: misc: Add support for ANDROID_PMEM
+Date: Sat, 27 Jul 2013 16:43:38 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: =?iso-8859-1?q?B=E1lint_Czobor?= <czoborbalint@gmail.com>,
+        linux-kernel@vger.kernel.org
+References: <1374662321-27152-1-git-send-email-czoborbalint@gmail.com> <CAL6DFdeJFz2F5FP+0w44ygfATDkNQTBpV7ODkbBFwerq50H4Rw@mail.gmail.com> <20130726145608.GA27289@kroah.com>
+In-Reply-To: <20130726145608.GA27289@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20130726173956.GA14078@google.com>
-References: <51F23D0F.7090909@oracle.com>
-	<20130726173956.GA14078@google.com>
-Date: Sat, 27 Jul 2013 07:27:03 -0700
-X-Google-Sender-Auth: 3SweF3W6yD3Bg09wQHj8SHv2hkw
-Message-ID: <CAE9FiQX7g_L=u_EGGUgbHZ4z_u1feu47UeuvDkaK7eXChyHGGg@mail.gmail.com>
-Subject: Re: [PATCH] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: ethan zhao <ethan.zhao@oracle.com>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ethan Zhao <ethan.kernel@gmail.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201307271643.38995.arnd@arndb.de>
+X-Provags-ID: V02:K0:78ae+UURrbLLCKznbcFvXyhzVnp6su17rbSgFBJm2sL
+ hItAQIu8yaVUUZ0MBLMLYSSKjlPBJ2RvIQwMODf6E66bup3c0p
+ AaezpAprdEJLvded5folKuDH93C503nnSEkPRIbofGELfhOf+Z
+ aZXPzH26+lcRkfa7dZPQiOAb7ZqkTHRPOhxIJQrd4cfgeK+kaR
+ 8hxqfX1QxihXhU6NG2k0fQ5YfLdzytigpsrX0FczUZVE+MT69x
+ AcJ+E9l3WdCFhs7IXwpSDylcghGvbWz2RTi+Y1hnYOkdk7dDsm
+ taAAM2L6IQllqEZlZjdz+Qt69r2IrTK1dFPu39ZUgG23UeSNUS
+ VGzsf1ruoGrFSuLlVj3E=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 10:39 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> [+cc Jiang, linux-pci, -cc bjorn.helgaas@hp.com (dead address)]
->
-> On Fri, Jul 26, 2013 at 05:10:39PM +0800, ethan zhao wrote:
->> Cleanup the -EINVAL return value handling and add warning message
->> for invalid
->> start,end,addr parameters.
->>
->> Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
->
-> This patch was corrupted, so I couldn't apply it directly.  See
-> Documentation/SubmittingPatches, sections 5-7.
->
->> ---
->>  arch/x86/pci/mmconfig-shared.c |   12 ++++++------
->>  1 files changed, 6 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
->> index 082e881..37f6c7f 100644
->> --- a/arch/x86/pci/mmconfig-shared.c
->> +++ b/arch/x86/pci/mmconfig-shared.c
->> @@ -700,8 +700,13 @@ int pci_mmconfig_insert(struct device *dev, u16
->> seg, u8 start, u8 end,
->>      if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
->>          return -ENODEV;
->>
->> -    if (start > end)
->> +    if (start > end || !addr) {
->> +        dev_warn(dev, FW_WARN
->> +                                 "Invalid address to add MMCONFIG"
->> +                                 "start %02x end %02x addr %pR\n",
->> +                                  start, end, addr);
->>          return -EINVAL;
->> +    }
->
-> I like the "!addr" cleanup.
->
-> Did you actually see this problem on a machine?
->
-> I expect this would be a BIOS bug, and one that should be found
-> early in development, long before a machine is released.
-> Therefore, I doubt that it's worth adding another printk for it.
-> If an end-user sees this problem, I think we'll already get a
-> generic message from check_segment().
->
-> I propose the patch below; what do you think?
->
->>
->>      mutex_lock(&pci_mmcfg_lock);
->>      cfg = pci_mmconfig_lookup(seg, start);
->> @@ -716,11 +721,6 @@ int pci_mmconfig_insert(struct device *dev, u16
->> seg, u8 start, u8 end,
->>          return -EEXIST;
->>      }
->>
->> -    if (!addr) {
->> -        mutex_unlock(&pci_mmcfg_lock);
->> -        return -EINVAL;
->> -    }
->> -
->>      rc = -EBUSY;
->>      cfg = pci_mmconfig_alloc(seg, start, end, addr);
->>      if (cfg == NULL) {
->
->
->
-> Author: ethan.zhao <ethan.zhao@oracle.com>
-> Date:   Fri Jul 26 11:21:24 2013 -0600
->
->     x86/PCI: MMCONFIG: Check earlier for MMCONFIG region at address zero
->
->     We can check for addr being zero earlier and thus avoid the mutex_unlock()
->     cleanup path.
->
->     [bhelgaas: changelog, drop printk]
->     Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->     Acked-by: Yinghai Lu <yinghai@kerne.org>
+On Friday 26 July 2013, Greg Kroah-Hartman wrote:
+> On Fri, Jul 26, 2013 at 02:53:21PM +0200, Bálint Czobor wrote:
+> > Thank you for the info.
+> > However some devices still use it, sorry, I haven't seen that commit.
+> 
+> No modern Android devices should use pmem, only obsolete ones, right?
+> That's why the code was removed.
+> 
+> Do you have a device that requires this?
+> 
+> You also mixed in a lot of device-specific changes, do you need those to
+> be applied?  If so, please make up a separate patch and submit it.
 
-looks like I had typo in ack. please update to
+One particular problem is that it adds a dependency between the pmem driver
+and the mach-msm directory for header files. This conflicts with the attempt
+to remove all global header files from mach-msm, which is needed to support
+multiplatform kernels.
 
-Acked-by: Yinghai Lu <yinghai@kernel.org>
-
->
-> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-> index 082e881..5596c7b 100644
-> --- a/arch/x86/pci/mmconfig-shared.c
-> +++ b/arch/x86/pci/mmconfig-shared.c
-> @@ -700,7 +700,7 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
->         if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
->                 return -ENODEV;
->
-> -       if (start > end)
-> +       if (start > end || !addr)
->                 return -EINVAL;
->
->         mutex_lock(&pci_mmcfg_lock);
-> @@ -716,11 +716,6 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
->                 return -EEXIST;
->         }
->
-> -       if (!addr) {
-> -               mutex_unlock(&pci_mmcfg_lock);
-> -               return -EINVAL;
-> -       }
-> -
->         rc = -EBUSY;
->         cfg = pci_mmconfig_alloc(seg, start, end, addr);
->         if (cfg == NULL) {
+	Arnd
