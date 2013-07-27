@@ -1,99 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab3G0GcD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 02:32:03 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35861 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752985Ab3G0Gb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 02:31:59 -0400
-Message-ID: <1374906605.3795.11.camel@pasglop>
-Subject: Re: [RFC PATCH 4/5] cpuidle/ppc: CPU goes tickless if there are no
- arch-specific constraints
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, rjw@sisk.pl,
-        shangw@linux.vnet.ibm.com, arnd@arndb.de, linux-pm@vger.kernel.org,
-        geoff@infradead.org, rostedt@goodmis.org, deepthi@linux.vnet.ibm.com,
-        paul.gortmaker@windriver.com, paulus@samba.org,
-        srivatsa.bhat@linux.vnet.ibm.com, schwidefsky@de.ibm.com,
-        john.stultz@linaro.org, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        chenhui.zhao@freescale.com
-Date: Sat, 27 Jul 2013 16:30:05 +1000
-In-Reply-To: <51F1E15B.3050106@linux.vnet.ibm.com>
-References: <20130725090016.12500.28888.stgit@preeti.in.ibm.com>
-	 <20130725090302.12500.42998.stgit@preeti.in.ibm.com>
-	 <20130725133044.GA7400@somewhere> <51F1E15B.3050106@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753788Ab3G0GnU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 02:43:20 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37265 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab3G0GnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 02:43:18 -0400
+Message-ID: <51F36C03.2050303@linaro.org>
+Date: Sat, 27 Jul 2013 08:43:15 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Jeremy Eder <jeder@redhat.com>
+CC: linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com, riel@redhat.com,
+        youquan.song@intel.com, paulmck@linux.vnet.ibm.com,
+        arjan@linux.intel.com, len.brown@intel.com
+Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
+References: <20130726173306.GB17985@jeder.rdu.redhat.com>
+In-Reply-To: <20130726173306.GB17985@jeder.rdu.redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-07-26 at 08:09 +0530, Preeti U Murthy wrote:
-> *The lapic of a broadcast CPU is active always*. Say CPUX, wants the
-> broadcast CPU to wake it up at timeX.  Since we cannot program the lapic
-> of a remote CPU, CPUX will need to send an IPI to the broadcast CPU,
-> asking it to program its lapic to fire at timeX so as to wake up CPUX.
-> *With multiple CPUs the overhead of sending IPI, could result in
-> performance bottlenecks and may not scale well.*
+On 07/26/2013 07:33 PM, Jeremy Eder wrote:
+> Hello,
 > 
-> Hence the workaround is that the broadcast CPU on each of its timer
-> interrupt checks if any of the next timer event of a CPU in deep idle
-> state has expired, which can very well be found from dev->next_event of
-> that CPU. For example the timeX that has been mentioned above has
-> expired. If so the broadcast handler is called to send an IPI to the
-> idling CPU to wake it up.
+> We believe we've identified a particular commit to the cpuidle code that
+> seems to be impacting performance of variety of workloads.  The simplest way to
+> reproduce is using netperf TCP_RR test, so we're using that, on a pair of
+> Sandy Bridge based servers.  We also have data from a large database setup
+> where performance is also measurably/positively impacted, though that test
+> data isn't easily share-able.
 > 
-> *If the broadcast CPU, is in tickless idle, its timer interrupt could be
-> many ticks away. It could miss waking up a CPU in deep idle*, if its
-> wakeup is much before this timer interrupt of the broadcast CPU. But
-> without tickless idle, atleast at each period we are assured of a timer
-> interrupt. At which time broadcast handling is done as stated in the
-> previous paragraph and we will not miss wakeup of CPUs in deep idle states.
+> Included below are test results from 3 test kernels:
 
-But that means a great loss of power saving on the broadcast CPU when the machine
-is basically completely idle. We might be able to come up with some thing better.
+Is the system tickless or with a periodic tick ?
 
-(Note : I do no know the timer offload code if it exists already, I'm describing
-how things could happen "out of the blue" without any knowledge of pre-existing
-framework here)
 
-We can know when the broadcast CPU expects to wake up next. When a CPU goes to
-a deep sleep state, it can then
 
- - Indicate to the broadcast CPU when it intends to be woken up by queuing
-itself into an ordered queue (ordered by target wakeup time). (OPTIMISATION:
-Play with the locality of that: have one queue (and one "broadcast CPU") per
-chip or per node instead of a global one to limit cache bouncing).
+> kernel       reverts
+> -----------------------------------------------------------
+> 1) vanilla   upstream (no reverts)
+> 
+> 2) perfteam2 reverts e11538d1f03914eb92af5a1a378375c05ae8520c
+> 
+> 3) test      reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4
+>                      e11538d1f03914eb92af5a1a378375c05ae8520c
+> 
+> In summary, netperf TCP_RR numbers improve by approximately 4% after
+> reverting 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.  When
+> 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 is included, C0 residency never
+> seems to get above 40%.  Taking that patch out gets C0 near 100% quite
+> often, and performance increases.
+> 
+> The below data are histograms representing the %c0 residency @ 1-second
+> sample rates (using turbostat), while under netperf test.
+> 
+> - If you look at the first 4 histograms, you can see %c0 residency almost
+>   entirely in the 30,40% bin.
+> - The last pair, which reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4,
+>   shows %c0 in the 80,90,100% bins.
+> 
+> Below each kernel name are netperf TCP_RR trans/s numbers for the
+> particular kernel that can be disclosed publicly, comparing the 3 test
+> kernels.  We ran a 4th test with the vanilla kernel where we've also set
+> /dev/cpu_dma_latency=0 to show overall impact boosting single-threaded
+> TCP_RR performance over 11% above baseline.
+> 
+> 3.10-rc2 vanilla RX + c0 lock (/dev/cpu_dma_latency=0):  
+> TCP_RR trans/s 54323.78
+> 
+> -----------------------------------------------------------
+> 3.10-rc2 vanilla RX (no reverts)
+> TCP_RR trans/s 48192.47
+> 
+> Receiver %c0 
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     0]: 
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [    59]: 
+> ***********************************************************
+>    40.0000 -    50.0000 [     1]: *
+>    50.0000 -    60.0000 [     0]: 
+>    60.0000 -    70.0000 [     0]: 
+>    70.0000 -    80.0000 [     0]: 
+>    80.0000 -    90.0000 [     0]: 
+>    90.0000 -   100.0000 [     0]: 
+> 
+> Sender %c0
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     0]: 
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [    11]: ***********
+>    40.0000 -    50.0000 [    49]:
+> *************************************************
+>    50.0000 -    60.0000 [     0]: 
+>    60.0000 -    70.0000 [     0]: 
+>    70.0000 -    80.0000 [     0]: 
+>    80.0000 -    90.0000 [     0]: 
+>    90.0000 -   100.0000 [     0]: 
+> 
+> -----------------------------------------------------------
+> 3.10-rc2 perfteam2 RX (reverts commit
+> e11538d1f03914eb92af5a1a378375c05ae8520c)
+> TCP_RR trans/s 49698.69
+> 
+> Receiver %c0 
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     1]: *
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [    59]:
+> ***********************************************************
+>    40.0000 -    50.0000 [     0]: 
+>    50.0000 -    60.0000 [     0]: 
+>    60.0000 -    70.0000 [     0]: 
+>    70.0000 -    80.0000 [     0]: 
+>    80.0000 -    90.0000 [     0]: 
+>    90.0000 -   100.0000 [     0]: 
+> 
+> Sender %c0 
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     0]: 
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [     2]: **
+>    40.0000 -    50.0000 [    58]:
+> **********************************************************
+>    50.0000 -    60.0000 [     0]: 
+>    60.0000 -    70.0000 [     0]: 
+>    70.0000 -    80.0000 [     0]: 
+>    80.0000 -    90.0000 [     0]: 
+>    90.0000 -   100.0000 [     0]: 
+> 
+> -----------------------------------------------------------
+> 3.10-rc2 test RX (reverts 69a37beabf1f0a6705c08e879bdd5d82ff6486c4 and
+> e11538d1f03914eb92af5a1a378375c05ae8520c)
+> TCP_RR trans/s 47766.95
+> 
+> Receiver %c0
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     1]: *
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [    27]: ***************************
+>    40.0000 -    50.0000 [     2]: **
+>    50.0000 -    60.0000 [     0]: 
+>    60.0000 -    70.0000 [     2]: **
+>    70.0000 -    80.0000 [     0]: 
+>    80.0000 -    90.0000 [     0]: 
+>    90.0000 -   100.0000 [    28]: ****************************
+> 
+> Sender:
+>     0.0000 -    10.0000 [     1]: *
+>    10.0000 -    20.0000 [     0]: 
+>    20.0000 -    30.0000 [     0]: 
+>    30.0000 -    40.0000 [    11]: ***********
+>    40.0000 -    50.0000 [     0]: 
+>    50.0000 -    60.0000 [     1]: *
+>    60.0000 -    70.0000 [     0]: 
+>    70.0000 -    80.0000 [     3]: ***
+>    80.0000 -    90.0000 [     7]: *******
+>    90.0000 -   100.0000 [    38]: **************************************
+> 
+> These results demonstrate gaining back the tendency of the CPU to stay in
+> more responsive, performant C-states (and thus yield measurably better
+> performance), by reverting commit 69a37beabf1f0a6705c08e879bdd5d82ff6486c4.
+> 
+> While taking into account the changing landscape with regards to CPU
+> governors, and both P- and C-states, we think that a single-thread should
+> still be able to achieve maximum performance.  With the current upstream
+> code base, workloads with a low number of "hot" threads are not able to
+> achieve maximum performance "out of the box".
+> 
+> Also recently, Intel's LAD has posted upstream performance results that
+> include an interesting column with their table of results.  See upstream
+> commit 0a4db187a999, column #3 within the "Performance numbers" table.  It
+> seems known, even within Intel, that the deeper C-states incur a cost too
+> high to bear, as they've explicitly tested restricting the CPU to higher
+> c-states of C0,1.
+> 
+> -- Jeremy Eder
+> 
 
- - Check if that happens before the broadcast CPU intended wake time (we
-need statistics to see how often that happens), and in that case send an IPI
-to wake it up now. When the broadcast CPU goes to sleep, it limits its sleep
-time to the min of it's intended sleep time and the new sleeper time.
-(OPTIMISATION: Dynamically chose a broadcast CPU based on closest expiry ?)
 
- - We can probably limit spurrious wakeups a *LOT* by aligning that target time
-to a global jiffy boundary, meaning that several CPUs going to idle are likely
-to be choosing the same. Or maybe better, an adaptative alignment by essentially
-getting more coarse grained as we go further in the future
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
- - When the "broadcast" CPU goes to sleep, it can play the same game of alignment.
-
-I don't like the concept of a dedicated broadcast CPU however. I'd rather have a
-general queue (or per node) of sleepers needing a wakeup and more/less dynamically
-pick a waker to be the last man standing, but it does make things a bit more
-tricky with tickless scheduler (non-idle).
-
-Still, I wonder if we could just have some algorithm to actually pick wakers
-more dynamically based on who ever has the closest "next wakeup" planned,
-that sort of thing. A fixed broadcaster will create an imbalance in
-power/thermal within the chip in addition to needing to be moved around on
-hotplug etc...
-
-Cheers,
-Ben.
-
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
