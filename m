@@ -1,77 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab3G0FQJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 01:16:09 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:63320 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab3G0FQG (ORCPT
+	id S1752791Ab3G0F1M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 01:27:12 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:62355 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752372Ab3G0F1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 01:16:06 -0400
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: chris.mason@fusionio.com, Azat Khuzhin <a3at.mail@gmail.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
-Date: Sat, 27 Jul 2013 09:15:49 +0400
-Message-Id: <1374902150-389-1-git-send-email-a3at.mail@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 27 Jul 2013 01:27:08 -0400
+Message-ID: <51F35A2A.1080408@linaro.org>
+Date: Sat, 27 Jul 2013 07:27:06 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-pm] [PATCH 1/3] cpuidle/powernv: cpuidle backend driver
+ for powernv
+References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090137.7291.36657.stgit@deepthi.in.ibm.com>
+In-Reply-To: <20130723090137.7291.36657.stgit@deepthi.in.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace list_for_each_entry() by list_for_each_entry_safe() in next
-functions:
-- lock_stripe_add()
-- __btrfs_close_devices()
+On 07/23/2013 11:01 AM, Deepthi Dharwar wrote:
+> This patch implements a back-end cpuidle driver for
+> powernv calling power7_nap and snooze idle states.
+> This can be extended by adding more idle states
+> in the future to the existing framework.
+> 
+> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/platforms/powernv/Kconfig          |    9 +
+>  arch/powerpc/platforms/powernv/Makefile         |    1 
+>  arch/powerpc/platforms/powernv/processor_idle.c |  239 +++++++++++++++++++++++
+>  3 files changed, 249 insertions(+)
+>  create mode 100644 arch/powerpc/platforms/powernv/processor_idle.c
+> 
+> diff --git a/arch/powerpc/platforms/powernv/Kconfig b/arch/powerpc/platforms/powernv/Kconfig
+> index c24684c..ace2d22 100644
+> --- a/arch/powerpc/platforms/powernv/Kconfig
+> +++ b/arch/powerpc/platforms/powernv/Kconfig
+> @@ -20,3 +20,12 @@ config PPC_POWERNV_RTAS
+>  	default y
+>  	select PPC_ICS_RTAS
+>  	select PPC_RTAS
+> +
+> +config POWERNV_IDLE
+> +	bool "CPUIdle driver for powernv platform"
+> +	depends on CPU_IDLE
+> +	depends on PPC_POWERNV
+> +	default y
+> +	help
+> +	Select this option to enable processor idle state management
+> +	through cpuidle subsystem.
+> diff --git a/arch/powerpc/platforms/powernv/Makefile b/arch/powerpc/platforms/powernv/Makefile
+> index 7fe5951..c0e44eb 100644
+> --- a/arch/powerpc/platforms/powernv/Makefile
+> +++ b/arch/powerpc/platforms/powernv/Makefile
+> @@ -4,3 +4,4 @@ obj-y			+= opal-rtc.o opal-nvram.o
+>  obj-$(CONFIG_SMP)	+= smp.o
+>  obj-$(CONFIG_PCI)	+= pci.o pci-p5ioc2.o pci-ioda.o
+>  obj-$(CONFIG_EEH)	+= eeh-ioda.o eeh-powernv.o
+> +obj-$(CONFIG_POWERNV_IDLE)     += processor_idle.o
+> diff --git a/arch/powerpc/platforms/powernv/processor_idle.c b/arch/powerpc/platforms/powernv/processor_idle.c
+> new file mode 100644
+> index 0000000..f43ad91a
+> --- /dev/null
+> +++ b/arch/powerpc/platforms/powernv/processor_idle.c
+> @@ -0,0 +1,239 @@
+> +/*
+> + *  processor_idle - idle state cpuidle driver.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/moduleparam.h>
+> +#include <linux/cpuidle.h>
+> +#include <linux/cpu.h>
+> +#include <linux/notifier.h>
+> +
+> +#include <asm/machdep.h>
+> +#include <asm/runlatch.h>
+> +
+> +struct cpuidle_driver powernv_idle_driver = {
+> +	.name =		"powernv_idle",
+> +	.owner =	THIS_MODULE,
+> +};
+> +
+> +#define MAX_IDLE_STATE_COUNT	2
+> +
+> +static int max_idle_state = MAX_IDLE_STATE_COUNT - 1;
+> +static struct cpuidle_device __percpu *powernv_cpuidle_devices;
+> +static struct cpuidle_state *cpuidle_state_table;
+> +
+> +static int snooze_loop(struct cpuidle_device *dev,
+> +			struct cpuidle_driver *drv,
+> +			int index)
+> +{
+> +	int cpu = dev->cpu;
+> +
+> +	local_irq_enable();
+> +	set_thread_flag(TIF_POLLING_NRFLAG);
+> +
+> +	while ((!need_resched()) && cpu_online(cpu)) {
+> +		ppc64_runlatch_off();
+> +		HMT_very_low();
+> +	}
 
-Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
----
- fs/btrfs/raid56.c  |    4 ++--
- fs/btrfs/volumes.c |    4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Why are you using the cpu_online test here ?
 
-diff --git a/fs/btrfs/raid56.c b/fs/btrfs/raid56.c
-index 0525e13..37e6dc9 100644
---- a/fs/btrfs/raid56.c
-+++ b/fs/btrfs/raid56.c
-@@ -636,7 +636,7 @@ static noinline int lock_stripe_add(struct btrfs_raid_bio *rbio)
- {
- 	int bucket = rbio_bucket(rbio);
- 	struct btrfs_stripe_hash *h = rbio->fs_info->stripe_hash_table->table + bucket;
--	struct btrfs_raid_bio *cur;
-+	struct btrfs_raid_bio *cur, *next;
- 	struct btrfs_raid_bio *pending;
- 	unsigned long flags;
- 	DEFINE_WAIT(wait);
-@@ -646,7 +646,7 @@ static noinline int lock_stripe_add(struct btrfs_raid_bio *rbio)
- 	int walk = 0;
- 
- 	spin_lock_irqsave(&h->lock, flags);
--	list_for_each_entry(cur, &h->hash_list, hash_list) {
-+	list_for_each_entry_safe(cur, next, &h->hash_list, hash_list) {
- 		walk++;
- 		if (cur->raid_map[0] == rbio->raid_map[0]) {
- 			spin_lock(&cur->bio_list_lock);
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 78b8717..1d1b595 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
- 
- static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- {
--	struct btrfs_device *device;
-+	struct btrfs_device *device, *next;
- 
- 	if (--fs_devices->opened > 0)
- 		return 0;
- 
- 	mutex_lock(&fs_devices->device_list_mutex);
--	list_for_each_entry(device, &fs_devices->devices, dev_list) {
-+	list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
- 		struct btrfs_device *new_device;
- 		struct rcu_string *name;
- 
+> +
+> +	HMT_medium();
+> +	clear_thread_flag(TIF_POLLING_NRFLAG);
+> +	smp_mb();
+> +	return index;
+> +}
+> +
+> +
+> +static int nap_loop(struct cpuidle_device *dev,
+> +				struct cpuidle_driver *drv,
+> +				int index)
+> +{
+> +	ppc64_runlatch_off();
+> +	power7_idle();
+> +	return index;
+> +}
+> +
+> +/*
+> + * States for dedicated partition case.
+> + */
+> +static struct cpuidle_state powernv_states[MAX_IDLE_STATE_COUNT] = {
+> +	{ /* Snooze */
+> +		.name = "snooze",
+> +		.desc = "snooze",
+> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.exit_latency = 0,
+> +		.target_residency = 0,
+> +		.enter = &snooze_loop },
+> +	 { /* Nap */
+> +		.name = "Nap",
+> +		.desc = "Nap",
+> +		.flags = CPUIDLE_FLAG_TIME_VALID,
+> +		.exit_latency = 10,
+> +		.target_residency = 100,
+> +		.enter = &nap_loop },
+> +};
+> +
+> +static int powernv_cpuidle_add_cpu_notifier(struct notifier_block *n,
+> +			unsigned long action, void *hcpu)
+> +{
+> +	int hotcpu = (unsigned long)hcpu;
+> +	struct cpuidle_device *dev =
+> +			per_cpu_ptr(powernv_cpuidle_devices, hotcpu);
+> +
+> +	if (dev && cpuidle_get_driver()) {
+> +		switch (action) {
+> +		case CPU_ONLINE:
+> +		case CPU_ONLINE_FROZEN:
+> +			cpuidle_pause_and_lock();
+> +			cpuidle_enable_device(dev);
+> +			cpuidle_resume_and_unlock();
+> +			break;
+> +
+> +		case CPU_DEAD:
+> +		case CPU_DEAD_FROZEN:
+> +			cpuidle_pause_and_lock();
+> +			cpuidle_disable_device(dev);
+> +			cpuidle_resume_and_unlock();
+> +			break;
+> +
+> +		default:
+> +			return NOTIFY_DONE;
+> +		}
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block setup_hotplug_notifier = {
+> +	.notifier_call = powernv_cpuidle_add_cpu_notifier,
+> +};
+
+This is duplicated code with the pseries cpuidle driver and IMHO it
+should be moved to the cpuidle framework.
+
+
+> +/*
+> + * powernv_cpuidle_driver_init()
+> + */
+> +static int powernv_cpuidle_driver_init(void)
+> +{
+> +	int idle_state;
+> +	struct cpuidle_driver *drv = &powernv_idle_driver;
+> +
+> +	drv->state_count = 0;
+> +
+> +	for (idle_state = 0; idle_state < MAX_IDLE_STATE_COUNT; ++idle_state) {
+> +
+> +		if (idle_state > max_idle_state)
+> +			break;
+> +
+> +		/* is the state not enabled? */
+> +		if (cpuidle_state_table[idle_state].enter == NULL)
+> +			continue;
+> +
+> +		drv->states[drv->state_count] =	/* structure copy */
+> +			cpuidle_state_table[idle_state];
+> +
+> +		drv->state_count += 1;
+> +	}
+> +
+> +	return 0;
+> +}
+
+
+Instead of doing struct copy, why don't you use the state's 'disable'
+field of the driver and then enable the state in the routine ?
+
+
+> +/* powernv_idle_devices_uninit(void)
+> + * unregister cpuidle devices and de-allocate memory
+> + */
+> +static void powernv_idle_devices_uninit(void)
+> +{
+> +	int i;
+> +	struct cpuidle_device *dev;
+> +
+> +	for_each_possible_cpu(i) {
+> +		dev = per_cpu_ptr(powernv_cpuidle_devices, i);
+> +		cpuidle_unregister_device(dev);
+> +	}
+> +
+> +	free_percpu(powernv_cpuidle_devices);
+> +	return;
+> +}
+> +
+> +/* powernv_idle_devices_init()
+> + * allocate, initialize and register cpuidle device
+> + */
+> +static int powernv_idle_devices_init(void)
+> +{
+> +	int i;
+> +	struct cpuidle_driver *drv = &powernv_idle_driver;
+> +	struct cpuidle_device *dev;
+> +
+> +	powernv_cpuidle_devices = alloc_percpu(struct cpuidle_device);
+> +	if (powernv_cpuidle_devices == NULL)
+> +		return -ENOMEM;
+> +
+> +	for_each_possible_cpu(i) {
+> +		dev = per_cpu_ptr(powernv_cpuidle_devices, i);
+> +		dev->state_count = drv->state_count;
+> +		dev->cpu = i;
+> +		if (cpuidle_register_device(dev)) {
+> +			printk(KERN_DEBUG \
+> +				"cpuidle_register_device %d failed!\n", i);
+> +			return -EIO;
+> +		}
+> +	}
+> +	return 0;
+
+
+There is now the cpuidle_register(struct cpuidle_driver *, cpumask *);
+
+You can get rid of the cpuidle_device struct and this init routine.
+
+> +}
+> +
+> +/*
+> + * powernv_idle_probe()
+> + * Choose state table for shared versus dedicated partition
+> + */
+> +static int powernv_idle_probe(void)
+> +{
+> +
+> +	if (cpuidle_disable != IDLE_NO_OVERRIDE)
+> +		return -ENODEV;
+> +
+> +	cpuidle_state_table = powernv_states;
+> +	return 0;
+> +}
+> +
+> +static int __init powernv_processor_idle_init(void)
+> +{
+> +	int retval;
+> +
+> +	retval = powernv_idle_probe();
+> +	if (retval)
+> +		return retval;
+> +
+> +	powernv_cpuidle_driver_init();
+> +	retval = cpuidle_register_driver(&powernv_idle_driver);
+> +	if (retval) {
+> +		printk(KERN_DEBUG "Registration of powernv driver failed.\n");
+> +		return retval;
+> +	}
+> +
+> +	retval = powernv_idle_devices_init();
+> +	if (retval) {
+> +		powernv_idle_devices_uninit();
+> +		cpuidle_unregister_driver(&powernv_idle_driver);
+> +		return retval;
+> +	}
+> +
+> +	register_cpu_notifier(&setup_hotplug_notifier);
+> +	printk(KERN_DEBUG "powernv_idle_driver registered\n");
+> +
+> +	return 0;
+> +}
+> +
+> +static void __exit powernv_processor_idle_exit(void)
+> +{
+> +
+> +	unregister_cpu_notifier(&setup_hotplug_notifier);
+> +	powernv_idle_devices_uninit();
+> +	cpuidle_unregister_driver(&powernv_idle_driver);
+> +
+> +	return;
+> +}
+> +
+> +module_init(powernv_processor_idle_init);
+> +module_exit(powernv_processor_idle_exit);
+> +
+> +MODULE_AUTHOR("Deepthi Dharwar <deepthi@linux.vnet.ibm.com>");
+> +MODULE_DESCRIPTION("Cpuidle driver for POWERNV");
+> +MODULE_LICENSE("GPL");
+> 
+
+
 -- 
-1.7.10.4
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
