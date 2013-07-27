@@ -1,131 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751594Ab3G0LgT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 07:36:19 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:50601 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab3G0LgP (ORCPT
+	id S1751626Ab3G0L77 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 07:59:59 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:13678 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab3G0L75 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 07:36:15 -0400
-Date: Sat, 27 Jul 2013 12:36:02 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Message-ID: <20130727113602.GD9858@sirena.org.uk>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
- <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F168FC.9070906@wwwdotorg.org>
- <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <20130725213753.GC17616@obsidianresearch.com>
- <20130726045433.GB4100@netboy>
- <20130726171524.GB28895@obsidianresearch.com>
- <20130727085259.GA6207@netboy>
+	Sat, 27 Jul 2013 07:59:57 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sat, 27 Jul 2013 04:58:41 -0700
+Message-ID: <51F3B8F7.4000809@nvidia.com>
+Date: Sat, 27 Jul 2013 17:41:35 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="wqjXpb7PT9zw0UX/"
-Content-Disposition: inline
-In-Reply-To: <20130727085259.GA6207@netboy>
-X-Cookie: You will be awarded some great honor.
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [PATCH 2/2] pinctrl: palmas: add pincontrol driver
+References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-3-git-send-email-ldewangan@nvidia.com> <51F2C970.7000200@wwwdotorg.org>
+In-Reply-To: <51F2C970.7000200@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stephen,
+Thanks for detail review.
+Agree on most of review. Some info/answer on some of query.
 
---wqjXpb7PT9zw0UX/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Saturday 27 July 2013 12:39 AM, Stephen Warren wrote:
+> (Also CC'ing in the DT bindings maintainers, hence quoting all of the
+> binding.)
+>
+> On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
+>
+> That field looks odd. From what I can tell in the code, the location of
+> the pull-up/down/... registers/bits varies depending on which mux
+> function is selected for a particular pin? That's a very strange HW
+> design. Are you sure the set of pins/functions this driver exposes is
+> the correct way to represent the HW?
 
-On Sat, Jul 27, 2013 at 10:53:01AM +0200, Richard Cochran wrote:
-> On Fri, Jul 26, 2013 at 11:15:24AM -0600, Jason Gunthorpe wrote:
 
-> > Why do you think our experiences are so different?
+Yes, the pull up/down register is different for different mux/function. 
+It is not for pin specific.
 
-> Here are a few recent examples:
+>> +     unsigned mux_reg_base;
+>> +     unsigned mux_reg_add;
+> This isn't an issue with this patch, but more with the way palmas_read()
+> works. Here, the MFD component is telling the MFD top-level object where
+> the MFD component exists within the top-level address space. That's
+> backwards. The top-level MFD is what know how the components are put
+> together to create the whole particular chip, and it's entirely possible
+> this could vary chip-to-chip. :-(
 
-OK, let's go through these...
+I think this was original Idea when Graeme thought of the Palmas DT. But 
+unfortunately this was not written.
+The base address or the address space should be provided from the DT and 
+the address of particular register should be in offset to that base. But 
+not fully hardware support this neither the framework is written like 
+this for the palmas.
 
-> * What happens when one wants to boot vanilla kernel on the beaglebone?
+>> +     for (i = 0; i < ARRAY_SIZE(g->opt); i++) {
+>> +             if (g->opt[i]->mux_opt == function)
+>> +                     break;
+>> +     }
+> So, when I create the Tegra bindings, I created the list of mux
+> functions by looking at the logical meaning of each register value
+> (0..3) for each pin, and then made the list of functions have a value
+> for each logical meaning. This requires a mapping table between the
+> pinctrl subsystem's mux function values and the HW mux function values,
+> which is what the loop above implements. Instead, if might be simpler to
+> just have functions named "0", "1", "2", ... and have all pins support
+> those functions. This simplifies the driver, and the DT bindings.
+> Whether doing so would make the DT bindings better probably depends on
+> exactly how the HW's documentation is written...
 
->   http://www.spinics.net/lists/arm-kernel/msg198431.html
+I am not sure I got it completely or not. Let me try out this and get 
+reviewed by you.
 
-This actually sounds pretty good - glancing over the thread it seems you
-were trying to boot a shiny new board that people were in the process of
-trying to upstream support for and were just a bit too early.  Device
-tree doesn't seem to have made a difference either way here.
 
-> * Wanting already merged code to work is too much to ask.
+>
+>> +static int palmas_pinconf_get(struct pinctrl_dev *pctldev,
+>> +                     unsigned pin, unsigned long *config)
+>> +{
+>> +     dev_err(pctldev->dev, "pin_config_get op not supported\n");
+>> +     return -ENOTSUPP;
+>> +}
+> Are the pin configuration values applied per pin in HW? If so, you
+> should probably implement palmas_pinconf_get/set() rather than
+> palmas_pinconf_group_get/set(). You'd also need to change the DT->map
+> conversion function to use PIN_MAP_TYPE_CONFIGS_PIN rather than
+> PIN_MAP_TYPE_CONFIGS_GROUP.
 
->   http://www.spinics.net/lists/linux-omap/msg79731.html
+Yes, this is applied per pin in HW.
 
-Paul's reply here seems fairly clear - someone had merged a driver which
-had been developed in an out of tree or pre-DT environment without DT
-support so they just hadn't added DT support.  Sadly doing that is new
-feature development and so not appropriate for the stabalisation phase
-of development.
-
-> * When people try in good faith to conduct methodical boot tests,
->   DT is working against them.
-
->   http://www.spinics.net/lists/linux-omap/msg79960.html
-
-Again I don't see anything particularly related to DT here but instead
-do with using a SoC and board that are in the early phases of mainline
-integration.
-
-I think what you're seeing here is not to do with DT but rather with the
-way most SoC vendors engage with mainline - typically they do their SoC
-bringup out of tree and then if things do get submitted to mainline that
-happens after the SoC is released.  In this respect things seem to have
-been going relatively well here, there were clearly active efforts to
-get things integrated and facilitate mainline use.
-
-It'd be much better if SoC vendors were to change the way they engage
-with the kernel so that support was already in mainline at about the
-time the SoC was released but that's a bigger commercial discussion
-which isn't really relevant to this one.
-
---wqjXpb7PT9zw0UX/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR87CfAAoJELSic+t+oim9cpIP/2WXy0UmOxOqh/xhVTEVnBJW
-CjJvQz40aPiR2Pc6EU3YswYnsaDnLgdKmJoVqHPudnFsdYo4EkgxKhQsHvB5oe9F
-hBbCMhRWzboW9lNS1o9VjOTA5AVCFAqLUvkekUMdwVv4LeIT1un7LsCWH2iTJUVA
-J0pkd/fiKT89Kn3PRhb0+1JxEcu81k/5/i/W13M5cC/B048A5iRoI/61B6GD5VVO
-DorWFiXsVXWwdIWigHJA1vvKQ5GLcRLERWbq2y3AaME4OLgfHcRAks+/2wlDtFzh
-ZS5aS2K+rfgFXxgVYOMHVajqio+S5EdmFccuOVgTfkQQutKq0azlsWJzDVoDZdoh
-F4ukB3BW8d5NvQAYq5oMI7jkCGUmmXWGs8DZ9xdMPOviC/FJrvunsu5YQx2wJ5BF
-Jhr+ILJyFfmR7FXkzRMvRCIS4uqvdpVxk/xYGzoCIFKufMr0UAObY0OUwdamnU16
-CwctNe/Zvk+ojXAqpdwdcvygtWOrfIXA9Zcs1XZxKPhgwNq4iqFUoDxPxMInDMto
-yO3ievwt9Ktalp2npdhR8UOKAYhiJi0dMgSZLiM4sGUZyN8AlBopekDJcty1ryMt
-gneo7u/ueVHcaIMwk2ioQfU35kBasM0EdI7WHDU1BQnGMocNYFh6BsxdFcAjF4N3
-IM8DOIRAp+0gpU2Y0Vup
-=iWWJ
------END PGP SIGNATURE-----
-
---wqjXpb7PT9zw0UX/--
