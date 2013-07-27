@@ -1,45 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752816Ab3G0XH6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 19:07:58 -0400
-Received: from mail-ea0-f180.google.com ([209.85.215.180]:57857 "EHLO
-	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527Ab3G0XH5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 19:07:57 -0400
-From: Cong Ding <dinggnu@gmail.com>
-To: Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org
-Cc: Cong Ding <dinggnu@gmail.com>
-Subject: [PATCH] avr32: boards/atngw100/mrmt.c: fix building error
-Date: Sat, 27 Jul 2013 19:07:51 -0400
-Message-Id: <1374966478-16279-1-git-send-email-dinggnu@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1752845Ab3G0XVw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 19:21:52 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:43997 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751614Ab3G0XVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 19:21:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ben Guthro <Ben.Guthro@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>
+Subject: Re: [PATCH v4 0/5] Xen/ACPI: support sleep state entering on hardware reduced systems
+Date: Sun, 28 Jul 2013 01:31:52 +0200
+Message-ID: <4416509.Jzyj46NPce@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <2A50FCBD-CD54-4C8D-A780-1CA7ACBC4E0B@citrix.com>
+References: <1372345323-9266-1-git-send-email-benjamin.guthro@citrix.com> <2455068.P7gO5JL6M7@vostro.rjw.lan> <2A50FCBD-CD54-4C8D-A780-1CA7ACBC4E0B@citrix.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-there is an additional "{", which causes building error.
+On Saturday, July 27, 2013 03:33:31 PM Ben Guthro wrote:
+> 
+> On Jul 27, 2013, at 9:51 AM, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Thursday, June 27, 2013 11:01:58 AM Ben Guthro wrote:
+> >> In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+> >> reduced hardware sleep support, and the two changes didn't get
+> >> synchronized: The new code doesn't call the hook function (if so
+> >> requested). Fix this, requiring a boolean parameter to be added to the
+> >> hook function to distinguish "extended" from "legacy" sleep.
+> >> 
+> >> This requires adjusting TXT, but the adjustments only go as far as
+> >> failing the extended mode call (since, looking at the TXT interface,
+> >> there doesn't even appear to be precautions to deal with that
+> >> alternative interface).
+> >> 
+> >> The hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+> >> v5 (reduced HW) sleep interface") on the master branch of
+> >> git://xenbits.xen.org/xen.git.
+> >> 
+> >> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+> >> Cc: Gang Wei <gang.wei@intel.com>
+> >> Cc: Shane Wang <shane.wang@intel.com>
+> >> Cc: Bob Moore <robert.moore@intel.com>
+> >> Cc: Rafaell J. Wysocki <rjw@sisk.pl>
+> >> Cc: linux-acpi@vger.kernel.org
+> >> Cc: tboot-devel@lists.sourceforge.net 
+> >> 
+> >> v2: Extend description to include reference to hypervisor side change
+> >> v3: Split into multiple patches, separating subsystems
+> >>    Remove bool parameters, in favor of u8
+> >> v4: Remove linux/acpi.h dependencies
+> >>    Further patch split to break out acpica from OSL
+> >>    More bool vs u8 fixes
+> >> 
+> >> Ben Guthro (5):
+> >>  acpi: Remove need to include linux/acpi.h in common acpica code
+> >>  acpi: Call acpi_os_prepare_sleep hook in reduced hardware sleep path
+> >>  acpi: Adjust linux acpi OS functions to new extended parameter
+> >>  x86/tboot: Fail extended mode reduced hardware sleep
+> >>  xen/acpi: notify xen when reduced hardware sleep is available
+> > 
+> > The ongoing discussion means to me that the ACPICA maintainers don't want
+> > acpi_os_prepare_sleep() and quite frankly I understand them, because ACPICA
+> > is about implementing the spec and not about things beyond it.
+> > 
+> > This means that patch [1/5] goes away.
+> > 
+> > That said, at the same time we need to address the problem at hand, which
+> > is to make Xen work with the reduced HW sleep.
+> > 
+> > For that, I don't honestly think that modifying acpi_os_prepare_sleep() the
+> > way the patchset is doing it is appropriate and the change of the meaning of
+> > the arguments is simply disgusting.
+> > 
+> > To me, it would be much cleaner to add acpi_os_prepare_extended_sleep()
+> > specifically to be called by acpi_hw_extended_sleep() and make tboot and Xen
+> > use that.
+> > 
+> > This way or another, we'll need to live with one more divergence between the
+> > upstream ACPICA and the Linux ACPICA code because of that, but that'd be just
+> > a few added lines in acpi_hw_extended_sleep(), so I suppose it wouldn't be
+> > such a big deal.
+> > 
+> 
+> Ok, thank you for the review, and being open to addressing the problem at
+> hand,
 
-Signed-off-by: Cong Ding <dinggnu@gmail.com>
----
- arch/avr32/boards/atngw100/mrmt.c |    1 -
- 1 file changed, 1 deletion(-)
+No problem, although I'm not exactly happy with it.
 
-diff --git a/arch/avr32/boards/atngw100/mrmt.c b/arch/avr32/boards/atngw100/mrmt.c
-index ccc9599..1ba09e4 100644
---- a/arch/avr32/boards/atngw100/mrmt.c
-+++ b/arch/avr32/boards/atngw100/mrmt.c
-@@ -150,7 +150,6 @@ static struct ac97c_platform_data __initdata ac97c0_data = {
- static struct platform_device rmt_ts_device = {
- 	.name	= "ucb1400_ts",
- 	.id	= -1,
--	}
- };
- #endif
- 
--- 
-1.7.10.4
+> without a full architecture rework (not to say that that discussion is not
+> also needed)
+
+Sure, it is needed.
+
+> I will try to make some time next week to rework the patch set to address
+> these concerns, and submit a new series. 
+
+Thanks!
+
+Rafael
 
