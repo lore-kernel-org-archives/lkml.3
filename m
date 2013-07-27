@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab3G0DHU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 23:07:20 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:42056 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758512Ab3G0DHP (ORCPT
+	id S1758522Ab3G0DOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 23:14:30 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:1808 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab3G0DO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 23:07:15 -0400
+	Fri, 26 Jul 2013 23:14:29 -0400
+Message-ID: <51F33AC9.3040603@huawei.com>
+Date: Sat, 27 Jul 2013 11:13:13 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <51F2DD90.2030405@linutronix.de>
-References: <1374516607-2705-1-git-send-email-bigeasy@linutronix.de>
-	<1374516607-2705-15-git-send-email-bigeasy@linutronix.de>
-	<CADYTM3a5xzs+-VCTeKLGiRjo7JOqOJ5H4EWDACpTMovY5_ooRA@mail.gmail.com>
-	<51EEBE05.2040000@linutronix.de>
-	<CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
-	<20130726163101.GB29819@linutronix.de>
-	<CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
-	<CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
-	<51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-Date: Fri, 26 Jul 2013 22:07:14 -0500
-Message-ID: <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2][RESEND] tracing: Shrink the size of struct ftrace_event_field
+References: <51F08D1B.1080300@huawei.com> <51F08D4B.3010201@huawei.com> <1374851376.6580.34.camel@gandalf.local.home>
+In-Reply-To: <1374851376.6580.34.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
+>> @@ -111,6 +111,11 @@ static int __trace_define_field(struct list_head *head, const char *type,
+>>  	field->size = size;
+>>  	field->is_signed = is_signed;
+> 
+> I think we should just change is_signed to bool. At least the parameter.
+> Or we can make the assignment: field->is_signed = !!is_signed; and nuke
+> the check below.
+> 
 
-On Fri, Jul 26, 2013 at 3:35 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
->> My build server is down this afternoon. Once it comes back next week,
->> I will try 3.8 again, to see how I can help on this USB1 host mode
->> issue. its devctl register should stay on 0x19 even nothing is
->> connected.
->
-> Your help is greatly appreciated. To hear what will happen :)
->
-> Sebastian
+Changing field->is_signed to bool won't shrink the size of the struct.
+I prefer: field->is_signed = !!is_signed.
 
-I have not tested it yet, but I believe I found why host mode works on
-TI 3.2 kernel but not on mainline. Please look at Line 786 in 3.2
-kernel musb_core.c [1].
+>>  
+>> +	WARN_ON(offset >= (1 << 12));
+>> +	WARN_ON(size >= (1 << 12));
+>> +	WARN_ON(is_signed >= (1 << 1));
+>> +	WARN_ON(field->filter_type >= (1 << 4));
+> 
+> Note, the test for field->filter_type is wrong.
+> 
 
-773         if ((int_usb & MUSB_INTR_DISCONNECT) && !musb->ignore_disconnect) {
-......
-785                                 if (musb->a_wait_bcon != 0 &&
-786                                                 is_otg_enabled(musb))
-787                                         musb_platform_try_idle(musb, jiffies
-788                                         +
-msecs_to_jiffies(musb->a_wait_bcon));
+oops.
 
-So when the device is unplugged, *_try_idle() is not called in host
-mode, then the SESSION bit will stay set. But in mainline kernel,
-*_try_idle() will be called regardless.
+> We should make a helper macro:
+> 
+> #define VERIFY_SIZE(type) WARN_ON(type > field->type)
+> 
 
-Please let me know your thoughts.
+Much better!
 
-Regards,
--Bin.
+> and then have:
+> 
+> 	VERIFY_SIZE(offset);
+> 	VERIFY_SIZE(size);
+> 	VERIFY_SIZE(filter_type);
 
-[1] http://arago-project.org/git/projects/?p=linux-am33x.git;a=blob;f=drivers/usb/musb/musb_core.c;h=075aa5f9bec7cd041aa24eb534209fa756ed84fe;hb=refs/heads/v3.2-staging
