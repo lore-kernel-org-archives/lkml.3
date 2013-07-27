@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760445Ab3G0A6N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 26 Jul 2013 20:58:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53162 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758212Ab3G0A6L (ORCPT
+	id S1758428Ab3G0BIr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 26 Jul 2013 21:08:47 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:36359 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756230Ab3G0BIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 26 Jul 2013 20:58:11 -0400
-Date: Fri, 26 Jul 2013 17:58:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH 1/2] uio: provide vm access to UIO_MEM_PHYS maps
-Message-ID: <20130727005810.GA16817@kroah.com>
-References: <1373995264-31448-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <1373995264-31448-2-git-send-email-u.kleine-koenig@pengutronix.de>
+	Fri, 26 Jul 2013 21:08:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1373995264-31448-2-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130726215011.GK27075@twins.programming.kicks-ass.net>
+References: <9E84D12D-7389-4D9A-803A-91FD704A92FA@gustavus.edu>
+ <20130725112123.GT27075@twins.programming.kicks-ass.net> <228E8D34-E1A9-4D82-B353-F095E473B8D7@gustavus.edu>
+ <20130725164051.GZ27075@twins.programming.kicks-ass.net> <20130725211521.GE18254@gmail.com>
+ <CAPM31RJNgDS+gCZobJCt138J6MfbYhwTuTH8MrhP7DEqHGqi5g@mail.gmail.com>
+ <CAPM31RJ7Xh5A9cTT_-qd47RH3pRhCqiuh-uKx1gktDk0g-5NNg@mail.gmail.com>
+ <20130726210317.GC20909@twins.programming.kicks-ass.net> <CAPM31RKTznL=VKrMG=NV6OGit6EUj46x63L7tWXd40CGTaZKOg@mail.gmail.com>
+ <20130726215011.GK27075@twins.programming.kicks-ass.net>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 26 Jul 2013 18:08:15 -0700
+Message-ID: <CAPM31RJ1aPGehNJTtCakSdpFoPh6T=UCk1o0NEoN7PNtVtzhOg@mail.gmail.com>
+Subject: Re: PROBLEM: Persistent unfair sharing of a processor by auto groups
+ in 3.11-rc2 (has twice regressed)
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Max Hailperin <max@gustavus.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 16, 2013 at 07:21:03PM +0200, Uwe Kleine-König wrote:
-> This makes it possible to let gdb access mappings of the process that is
-> being debugged.
-> 
-> uio_mmap_logical was moved and uio_vm_ops renamed to group related code
-> and differentiate to new stuff.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+On Fri, Jul 26, 2013 at 2:50 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Jul 26, 2013 at 02:24:50PM -0700, Paul Turner wrote:
+>> On Fri, Jul 26, 2013 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >
+>> >
+>> > OK, so I have the below; however on a second look, Paul, shouldn't that
+>> > update_cfs_shares() call be in entity_tick(), right after calling
+>> > update_cfs_rq_blocked_load(). Because placing it in
+>> > update_cfs_rq_blocked_load() means its now called twice on the
+>> > enqueue/dequeue paths through:
+>> >
+>> >   {en,de}queue_entity()
+>> >     {en,de}queue_entity_load_avg()
+>> >       update_cfs_rq_blocked_load()
+>> >         update_cfs_shares()
+>>
+>> Yes, I agree: placing it directly in entity_tick() would be better.
+>
+> OK, how about the below then?
 
-This patch breaks the build:
+Looks good.
 
-drivers/uio/uio.c: In function ‘uio_mmap_logical’:
-drivers/uio/uio.c:627:17: error: ‘uio_vm_ops’ undeclared (first use in this function)
+>
+>> [ In f269ae046 the calls to update_cfs_rq_blocked_load() were amortized
+>> and the separate update in {en,de}queue_entity_load_avg() were
+>> removed. ]
+>
+> Right, I remember/saw that. Did you ever figure out why that regressed;
+> as in should we look to bring some of that back?
 
-:(
+Yes, the savings are measurable (we actually still use it internally).
+
+So the particular problem in Linus's workload was that the amortization meant
+that there was more delay until the first update for a newly created task.  This
+then had negative interactivity with a make -j <N> workload since it allowed the
+tasks to be over-represented in terms of the group shares they received.
+
+With:
+  a75cdaa9: "sched: Set an initial value of runnable avg for new forked task"
+
+This should now be improved so we should look at bringing it back.
