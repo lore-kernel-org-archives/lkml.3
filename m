@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751662Ab3G0MId (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 08:08:33 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:43222 "EHLO hydra.sisk.pl"
+	id S1751724Ab3G0MP6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 08:15:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab3G0MIa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 08:08:30 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kalle Valo <kvalo@adurom.com>
-Cc: James Hogan <james@albanarts.com>, Kamal Mostafa <kamal@canonical.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Steven Newbury <steve@snewbury.org.uk>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        =?ISO-8859-1?Q?J=F6rg?= Otte <jrg.otte@gmail.com>,
-        Martin Steigerwald <Martin@lichtvoll.de>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jani Nikula <jani.nikula@linux.intel.com>
-Subject: Re: Linux 3.11-rc2 (acpi backlight, revert)
-Date: Sat, 27 Jul 2013 14:18:34 +0200
-Message-ID: <2993276.3bLcHY9ihM@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <871u6ky3ai.fsf@purkki.adurom.net>
-References: <CA+55aFy330bSRjK5HT1n0wXioPykL3RquHXyBPjm5GpTz_Y=DQ@mail.gmail.com> <2218913.HKGjJcYT1G@vostro.rjw.lan> <871u6ky3ai.fsf@purkki.adurom.net>
+	id S1751637Ab3G0MPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 27 Jul 2013 08:15:55 -0400
+Date: Sat, 27 Jul 2013 14:15:18 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH] perf: sample after exit loses thread correlation
+Message-ID: <20130727121518.GA1038@krava.brq.redhat.com>
+References: <1374876254-44372-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374876254-44372-1-git-send-email-dsahern@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 27, 2013 08:34:13 AM Kalle Valo wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Fri, Jul 26, 2013 at 04:04:14PM -0600, David Ahern wrote:
+> Occassionally events (e.g., context-switch, sched tracepoints) are losing
+> the conversion of sample data associated with a thread. For example:
 > 
-> > James, Kamal, Steven, Jörg, Martin, Kalle, please check if the apppended patch
-> > fixes the backlight for you.
+> $ perf record -e sched:sched_switch -c 1 -a -- sleep 5
+> $ perf script
+> <selected events shown>
+>     ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+>     ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> :30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
 > 
-> I did three suspend-resume cycles and didn't notice anything wrong so
-> this patch fixes the issue for me. I'll continue testing and will report
-> if I spot any problems.
+> The last line lost the conversion from tid to comm. If you look at the events
+> (perf script -D) you see why - SAMPLE event is generated after the EXIT:
 > 
-> Tested-by: Kalle Valo <kvalo@adurom.com>
+> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+> ... thread: :30482:30482
+> 
+> When perf processes the EXIT event the thread is moved to the dead_threads
+> list. When the SAMPLE event is processed no thread exists for the pid so a new
+> one is created by machine__findnew_thread.
+> 
+> This patch addresses the problem by saving the exit time and checking the
+> dead_threads list for the requested tid. If the time passed into
+> machine_findnew_thread is non-0 the dead_threads list is walked looking for
+> the tid. If the thread struct associated with the tid exited within 1 msec
+> of the time passed in the thread is considered a match and returned.
+> 
+> If samples do not contain timestamps then sample->time will be 0 and the
+> dead_threads list will not be checked. -1 can be used to force always checking
+> the dead_threads list and returning a match.
+> 
+> With this patch we get the previous example shows:
+> 
+> ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
+> 
+> and
+> 
+> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
+> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
+> ... thread: ls:30482
+> 
+> v2: Rebased to latest perf/core branch. Changed time comparison to use
+>     a macro which explicitly shows the time basis
+> 
+> Signed-off-by: David Ahern <dsahern@gmail.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Jiri Olsa <jolsa@redhat.com>
 
-Thanks a lot for the confirmation, this already is in the Linus' tree.
+tested and
 
-Rafael
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
+jirka
