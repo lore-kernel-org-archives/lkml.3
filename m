@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751338Ab3G0KNH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 06:13:07 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:50350 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab3G0KNE (ORCPT
+	id S1751360Ab3G0KUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 06:20:17 -0400
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:40158 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab3G0KUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 06:13:04 -0400
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: chris.mason@fusionio.com, Azat Khuzhin <a3at.mail@gmail.com>,
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
-Date: Sat, 27 Jul 2013 14:12:45 +0400
-Message-Id: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 27 Jul 2013 06:20:12 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device tree janitoring / cleanup?]
+Date: Sat, 27 Jul 2013 12:20:05 +0200
+Message-ID: <1776866.moAxavOOUJ@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130727085259.GA6207@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130726171524.GB28895@obsidianresearch.com> <20130727085259.GA6207@netboy>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace list_for_each_entry() by list_for_each_entry_safe() in
-__btrfs_close_devices()
+On Saturday 27 of July 2013 10:53:01 Richard Cochran wrote:
+> On Fri, Jul 26, 2013 at 11:15:24AM -0600, Jason Gunthorpe wrote:
+> > On Fri, Jul 26, 2013 at 06:54:33AM +0200, Richard Cochran wrote:
+> > > I too work on commercial embedded systems, and DT has proven to be
+> > > one gigantic *PITA*.
+> > 
+> > Why do you think our experiences are so different?
+> 
+> Here are a few recent examples:
+> 
+> * What happens when one wants to boot vanilla kernel on the beaglebone?
+> 
+>   http://www.spinics.net/lists/arm-kernel/msg198431.html
 
-There is another place that delete items lock_stripe_add(), but there we
-don't need safe version, because after deleting we exit from loop.
+Not really understand point of quoting this thread here. Lack of support 
+for Beaglebone at that time was not really related to device tree in any 
+way, just not enough support for it was merged at that time (as I could 
+read here: http://www.spinics.net/lists/arm-kernel/msg199863.html)
 
-Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
----
- fs/btrfs/volumes.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> * Wanting already merged code to work is too much to ask.
+> 
+>   http://www.spinics.net/lists/linux-omap/msg79731.html
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 78b8717..1d1b595 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
- 
- static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
- {
--	struct btrfs_device *device;
-+	struct btrfs_device *device, *next;
- 
- 	if (--fs_devices->opened > 0)
- 		return 0;
- 
- 	mutex_lock(&fs_devices->device_list_mutex);
--	list_for_each_entry(device, &fs_devices->devices, dev_list) {
-+	list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
- 		struct btrfs_device *new_device;
- 		struct rcu_string *name;
- 
--- 
-1.7.10.4
+This is about not enough synchronization between OMAP people and TI not 
+pushing enough and quickly enough to mainline...
+
+> * When people try in good faith to conduct methodical boot tests,
+>   DT is working against them.
+> 
+>   http://www.spinics.net/lists/linux-omap/msg79960.html
+
+I don't really see any relation with DT in this thread. Again this looks 
+like support for this platform was not yet developed enough at that time 
+in mainline kernel. Still, you managed to boot 3.7-rc2 
+(http://thread.gmane.org/gmane.linux.ports.arm.omap/86719/focus=86952), 
+didn't you?
+
+I wouldn't really connect all the problems we are having currently with DT 
+alone. For many ARM people this is still something new, something that 
+they don't fully know how to work with yet. We don't have proper 
+processes, examples, best practices, etc. This is what we are trying to 
+fix and a key point of all those discussions like this one.
+
+Best regards,
+Tomasz
 
