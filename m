@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3G0RfU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 13:35:20 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42468 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab3G0RfS (ORCPT
+	id S1752593Ab3G0RiE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 13:38:04 -0400
+Received: from mail-ea0-f178.google.com ([209.85.215.178]:35525 "EHLO
+	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab3G0RiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 13:35:18 -0400
-Message-ID: <51F404D0.6070004@parallels.com>
-Date: Sat, 27 Jul 2013 21:35:12 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Sat, 27 Jul 2013 13:38:02 -0400
+Date: Sat, 27 Jul 2013 19:37:48 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130727173748.GA4813@netboy>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726045433.GB4100@netboy>
+ <20130726171524.GB28895@obsidianresearch.com>
+ <20130727084825.GA4707@netboy>
+ <20130727104018.GC9858@sirena.org.uk>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
-        <xemul@parallels.com>
-Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
-References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com>
-In-Reply-To: <51F3EA2A.3090905@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130727104018.GC9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 07:41 PM, Marco Stornelli wrote:
-> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
->> Hi,
->>
->> We want to propose a way to upgrade a kernel on a machine without
->> restarting all the user-space services. This is to be done with CRIU
->> project, but we need help from the kernel to preserve some data in
->> memory while doing kexec.
->>
->> The key point of our implementation is leaving process memory in-place
->> during reboot. This should eliminate most io operations the services
->> would produce during initialization. To achieve this, we have
->> implemented a pseudo file system that preserves its content during
->> kexec. We propose saving CRIU dump files to this file system, kexec'ing
->> and then restoring the processes in the newly booted kernel.
->>
->
-> http://pramfs.sourceforge.net/
+On Sat, Jul 27, 2013 at 11:40:18AM +0100, Mark Brown wrote:
+> On Sat, Jul 27, 2013 at 10:48:26AM +0200, Richard Cochran wrote:
+> 
+> > [ I disagree about the "more thought" part. The current discussion,
+> >   coming years too late after the introduction of DT to ARM Linux, is
+> >   contrary evidence enough. ]
+> 
+> We did have exactly the same discussion when the DT transition was
+> started - this isn't something that people only just realised might be
+> an issue.  There was a deliberate decision to focus on getting the
+> technology deployed to the point where it could be used as a straight
+> replacement for board files and accept that sometimes the results won't
+> be perfect and that we may need to rework as a result.
 
-AFAIU it's a bit different thing: PRAMFS as well as pstore, which has 
-already been merged, requires hardware support for over-reboot 
-persistency, so called non-volatile RAM, i.e. RAM which is not directly 
-accessible and so is not used by the kernel. On the contrary, what we'd 
-like to have is preserving usual RAM on kexec. It is possible, because 
-RAM is not reset during kexec. This would allow leaving applications 
-working set as well as filesystem caches in place, speeding the reboot 
-process as a whole and reducing the downtime significantly.
+Can you tell a bit more about this decision? When was it made? Who
+made it? How was it made public?
 
-Thanks.
+Thanks,
+Richard
