@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab3G1DJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 23:09:47 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:46135 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753104Ab3G1DJo convert rfc822-to-8bit (ORCPT
+	id S1753120Ab3G1DOv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 23:14:51 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33292 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752978Ab3G1DOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 23:09:44 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH V2] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
-From: Mark D Rustad <mrustad@gmail.com>
-In-Reply-To: <1374953558-4704-1-git-send-email-ethan.kernel@gmail.com>
-Date: Sat, 27 Jul 2013 20:09:41 -0700
-Cc: bhelgaas@google.com, yinghai@kernel.org, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, jiang.liu@huawei.com,
-        linux-pci@vger.kernel.org, joe.jin@oracle.com,
-        "ethan.zhao" <ethan.zhao@oracle.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7F52345F-242F-4A9D-8CD2-5805936ABAEE@gmail.com>
-References: <1374953558-4704-1-git-send-email-ethan.kernel@gmail.com>
-To: ethan.kernel@gmail.com
-X-Mailer: Apple Mail (2.1508)
+	Sat, 27 Jul 2013 23:14:50 -0400
+Message-ID: <1374981271.2476.0.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 06/79] net: Swap ver and type in pppoe_hdr
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Miller <davem@davemloft.net>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Date: Sun, 28 Jul 2013 04:14:31 +0100
+In-Reply-To: <20130727.175541.1879192128080680197.davem@davemloft.net>
+References: <20130726204721.849052763@linuxfoundation.org>
+	 <20130726204722.608161811@linuxfoundation.org>
+	 <1374940708.13555.37.camel@deadeye.wl.decadent.org.uk>
+	 <20130727.175541.1879192128080680197.davem@davemloft.net>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-zJEjhscTEb69nzOADJF3"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.101
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another nit below:
 
-On Jul 27, 2013, at 12:32 PM, ethan.kernel@gmail.com wrote:
+--=-zJEjhscTEb69nzOADJF3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Cleanup the -EINVAL return value handling and add warning message for invalid
-> start,end,addr parameters.
-> 
-> V2: Corrected code style and tested for Linux v 3.11-rc2
-> 
-> Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
-> ---
-> arch/x86/pci/mmconfig-shared.c |   12 ++++++------
-> 1 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
-> index 082e881..37f6c7f 100644
-> --- a/arch/x86/pci/mmconfig-shared.c
-> +++ b/arch/x86/pci/mmconfig-shared.c
-> @@ -700,8 +700,13 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
-> 	if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
-> 		return -ENODEV;
-> 
-> -	if (start > end)
-> +	if (start > end || !addr) {
-> +		dev_warn(dev, FW_INFO
-> +			"Invalid address to add MMCONFIG"
-> +			"start %02x end %02x addr %pR\n",
+On Sat, 2013-07-27 at 17:55 -0700, David Miller wrote:
+> From: Ben Hutchings <ben@decadent.org.uk>
+> Date: Sat, 27 Jul 2013 16:58:28 +0100
+>=20
+> > I'm not so sure this is suitable for stable.  It doesn't seem to be
+> > helpful to either userland or kernel code.
+> >=20
+> > In the kernel, we were checking that ver =3D=3D 1 and type =3D=3D 1 thu=
+s this
+> > wasn't hurting us.
+> >=20
+> > If userland does anything more with these fields then it's probably
+> > already working around the swapped fields.  It can work with both old
+> > and new headers by doing:
+>=20
+> It's up to you, I would rather have the corrected version propagated
+> as soon as possible.  But that's just me.
 
-As it is here, there will be no space between MMCONFIG and the word start. Better still, put the entire string on one line to aid those searching for the message. There is a general exception to the 80-column rule for user-visible messages such as this.
+Let's see what Greg thinks.
 
-<snip>
+Ben.
 
--- 
-Mark Rustad, MRustad@gmail.com
+--=20
+Ben Hutchings
+All extremists should be taken out and shot.
 
+--=-zJEjhscTEb69nzOADJF3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUfSMl+e/yOyVhhEJAQovMhAAsbFORQIrlgto9DtoqMmPkaaiIc2U2Ppm
+MeXw6GMBTKzkXaUcFPqt283ZPUcL00bWSa3RUGS3+5+hDuXvDFp4ICvq5LgAVYd2
+njXUTtQCTwQfux+Fz7jE0VUK9EH1xeZF6r4BRxfp0kxE90jsqRVgaVbFPe8o9DdQ
+G9VOPq9e9n8jVB72KJIRvRtPuNLedIkE8INT9OnAgfYRBIXYZ/ypnK4C0NBOZR2j
+SL0luu/qzu8vK6rCcqX5v3Jq0Kh2abKv4a83qCX2OoImvPkKZ+mYXL0RtoBbxZCG
+7jCHi6LaASWYS2BsDGCUuVvCkYE40Hk32ij3LT87rFYye2c/CvY3+Z8ueb3qhNv6
+I/7LD00fDSmfAK0OzQE5RRv378HEgfAd0XM86c1Ps/9QLKOU9LoaTy03iCxtA+Ea
+XotULhHUlIAlx2Kb4fk+SKJkSHtNi7CQ6b++vBSPOKx7wFS1fqZJodcXY2Q95u0d
+BLFd1LpEAOTqfUJzmGPyvbbPt77uztVXy+Bb2b7mEHQQWVmBkL2RHXtcRGZPuKpT
+/U393iix26Lb8+ytfaXavYUB9RipJQ7zWAWVs309oM6akB+WYD4S61D1MR03wIzb
+KxhwXORzle9XkhM2wjB7q8gbCJTMy4SD4a0nDR0eIQMWFqbHQy6rNBK+6G/7uggx
+pQAgeA68Ni8=
+=uM5y
+-----END PGP SIGNATURE-----
+
+--=-zJEjhscTEb69nzOADJF3--
