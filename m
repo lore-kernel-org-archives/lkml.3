@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab3G1Ejq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 00:39:46 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52692 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730Ab3G1Ejo (ORCPT
+	id S1752508Ab3G1FA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 01:00:28 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:59166 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab3G1FA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 00:39:44 -0400
-Date: Sat, 27 Jul 2013 21:39:43 -0700 (PDT)
-Message-Id: <20130727.213943.1973842777687951434.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [ 06/79] net: Swap ver and type in pppoe_hdr
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130728041616.GA32761@kroah.com>
-References: <20130727.175541.1879192128080680197.davem@davemloft.net>
-	<1374981271.2476.0.camel@deadeye.wl.decadent.org.uk>
-	<20130728041616.GA32761@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 27 Jul 2013 21:39:43 -0700 (PDT)
+	Sun, 28 Jul 2013 01:00:26 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control its IRQ domain ?
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1681089.qGWOhLKTTo@avalon>
+References: <1624911.6TtmtVmU1T@avalon> <1408178.cxAUTUGJc5@avalon> <20130725131556.GD9858@sirena.org.uk> <1681089.qGWOhLKTTo@avalon>
+Date: Sat, 27 Jul 2013 23:00:21 -0600
+Message-Id: <20130728050021.4370E3E0A24@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
-Date: Sat, 27 Jul 2013 21:16:16 -0700
-
-> On Sun, Jul 28, 2013 at 04:14:31AM +0100, Ben Hutchings wrote:
->> On Sat, 2013-07-27 at 17:55 -0700, David Miller wrote:
->> > From: Ben Hutchings <ben@decadent.org.uk>
->> > Date: Sat, 27 Jul 2013 16:58:28 +0100
->> > 
->> > > I'm not so sure this is suitable for stable.  It doesn't seem to be
->> > > helpful to either userland or kernel code.
->> > > 
->> > > In the kernel, we were checking that ver == 1 and type == 1 thus this
->> > > wasn't hurting us.
->> > > 
->> > > If userland does anything more with these fields then it's probably
->> > > already working around the swapped fields.  It can work with both old
->> > > and new headers by doing:
->> > 
->> > It's up to you, I would rather have the corrected version propagated
->> > as soon as possible.  But that's just me.
->> 
->> Let's see what Greg thinks.
+On Thu, 25 Jul 2013 15:22:29 +0200, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> Hi Mark,
 > 
-> I'm guessing that Linus's tree is also "wrong" here, correct?  If so,
-> the fix that goes into that tree should also go here as well.
+> On Thursday 25 July 2013 14:15:56 Mark Brown wrote:
+> > On Thu, Jul 25, 2013 at 11:45:33AM +0200, Laurent Pinchart wrote:
+> > > The two devices are independent, so there's no real parent/child
+> > > relationship. However, as Grant proposed, I could list all the interrupts
+> > > associated with GPIOs in the GPIO controller DT node. I would then just
+> > > call irq_of_parse_and_map() in the .to_irq() handler to magically
+> > > translate the GPIO number to a mapped IRQ number.
+> > > 
+> > > The number of interrupts can be pretty high (up to 58 in the worst case so
+> > > far), so an alternative would be to specify the interrupt-parent only, and
+> > > call irq_create_of_mapping() directly. What solution would you prefer ?
+> > 
+> > Are the interrupts in a contiguous block in the controller so you can just
+> > pass around the controller and a base number?
 > 
-> Or am I confused?
+> In two of the three SoCs I need to fix they are. I've just realized that in 
+> the last one the interrupts are in two contiguous blocks in two different 
+> parents. I will thus need at least a list of <parent-phandle base count>. Our 
+> standard interrupt bindings don't seem to support multiple parents,
 
-Linus's tree has had this change for a full release.  It went into
-3.10
+You can actually do it by using a dummy node with interrupt-map and
+interrupt-map-mask properties, but it is a pretty ugly solution in my
+opinion.
 
-It's correcting a mistake that has been there since the header
-file even existed.
+> is that 
+> something that we want to fix or should I go for custom bindings ?
 
+Yes, I think it is something that we want to fix. Jean-Christophe was
+going to propose an alternative to the interrupts property which allows
+an array of <phandle interrupt-specifier> tuples, but I've not seen
+anything yet. Go ahead and make a proposal.
+
+You could try to encode a base+count variant, but honestly I don't think
+it would be a good idea because it only would work with a very narrow
+set of use cases. Consider if #interrupt-cells was set to 2. Which cell
+gets incremented in the range of interrupts specified? Better I think to
+merely have an array of fully specified irqs. Support for that property
+could be transparently baked into the core interrupt parsing functions.
+
+g.
