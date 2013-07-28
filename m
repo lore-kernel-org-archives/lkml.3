@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab3G1Ihb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 04:37:31 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:40916 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab3G1Ih3 (ORCPT
+	id S1753277Ab3G1Isa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 04:48:30 -0400
+Received: from mga09.intel.com ([134.134.136.24]:6759 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752865Ab3G1Is2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 04:37:29 -0400
-Message-ID: <1375000643.21010.2.camel@phoenix>
-Subject: [PATCH RESEND] regulator: da903x: Convert da9034 ldo12 to use
- linear ranges
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sun, 28 Jul 2013 16:37:23 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 28 Jul 2013 04:48:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,763,1367996400"; 
+   d="scan'208";a="372417185"
+From: "Winkler, Tomas" <tomas.winkler@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
+Subject: RE: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Thread-Topic: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Thread-Index: AQHOiIb0dT8QWA0joUSnTutOsRQJK5l0Aa0g///P94CAAE2lEP//9n6AgAW3aVA=
+Date: Sun, 28 Jul 2013 08:48:24 +0000
+Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE76B1B@HASMSX106.ger.corp.intel.com>
+References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
+ <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
+ <20130724160008.GA17083@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
+ <20130724162605.GA9700@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE73993@HASMSX106.ger.corp.intel.com>
+ <20130724202957.GA14913@kroah.com>
+In-Reply-To: <20130724202957.GA14913@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.184.70.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The voltage table of da9034 LDO12 is:
-1700000, 1750000, 1800000, 1850000, 1900000, 1950000, 2000000, 2050000
-2700000, 2750000, 2800000, 2850000, 2900000, 2950000, 3000000, 3050000
+> On Wed, Jul 24, 2013 at 06:04:33PM +0000, Winkler, Tomas wrote:
+> >
+> >
+> > > >
+> > > > Just to make sure, is this what you're suggesting ?
+> > > >
+> > > > device->groups = mei_attr_groups
+> > > > mei_misc_device.parent = device;
+> > > > ret = misc_register(&mei_misc_device);
+> > >
+> > > Yes, that should work.  If not, please let me know, the code
+> > > underwent some changes in 3.11-rc2.
+> >
+> > I don' t see the file being created.
+> > Not sure if the  misc_register setup the parent sysfs as well.
+> 
+> Oops, wait, the parent is already registered, that's not going to work, you
+> want to create the files for the device itself that you are creating, so set the -
+> >groups field for that device.
+> 
+> sorry about that.
 
-The voltage table is composed of two linear ranges:
-for selector 0 ... 7:
-        volt = 1700000 + 50000 * selector
-for selector: 8 ... 15:
-        volt = 2700000 + 50000 * (selector - 8)
-
-This patch converts da9034 LDO12 to use newly introduced helpers for multiple
-linear ranges.
-
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-hi Mark,
-This patch was sent on https://lkml.org/lkml/2013/7/15/678
-and you replied applied.
-However, I still can not find the patch in both linux-next and regulator tree.
-So here is a resend.
-
-Regards,
-Axel
- drivers/regulator/da903x.c | 45 ++++++++++-----------------------------------
- 1 file changed, 10 insertions(+), 35 deletions(-)
-
-diff --git a/drivers/regulator/da903x.c b/drivers/regulator/da903x.c
-index 2afa573..1378a24 100644
---- a/drivers/regulator/da903x.c
-+++ b/drivers/regulator/da903x.c
-@@ -252,39 +252,12 @@ static int da9034_set_dvc_voltage_sel(struct regulator_dev *rdev,
- 	return ret;
- }
- 
--static int da9034_map_ldo12_voltage(struct regulator_dev *rdev,
--				    int min_uV, int max_uV)
--{
--	struct da903x_regulator_info *info = rdev_get_drvdata(rdev);
--	int sel;
--
--	if (check_range(info, min_uV, max_uV)) {
--		pr_err("invalid voltage range (%d, %d) uV\n", min_uV, max_uV);
--		return -EINVAL;
--	}
--
--	sel = DIV_ROUND_UP(min_uV - info->desc.min_uV, info->desc.uV_step);
--	sel = (sel >= 20) ? sel - 12 : ((sel > 7) ? 8 : sel);
--
--	return sel;
--}
--
--static int da9034_list_ldo12_voltage(struct regulator_dev *rdev,
--				     unsigned selector)
--{
--	struct da903x_regulator_info *info = rdev_get_drvdata(rdev);
--	int volt;
--
--	if (selector >= 8)
--		volt = 2700000 + rdev->desc->uV_step * (selector - 8);
--	else
--		volt = rdev->desc->min_uV + rdev->desc->uV_step * selector;
--
--	if (volt > info->max_uV)
--		return -EINVAL;
--
--	return volt;
--}
-+static const struct regulator_linear_range da9034_ldo12_ranges[] = {
-+	{ .min_uV = 1700000, .max_uV = 2050000, .min_sel =  0, .max_sel = 7,
-+	  .uV_step =  50000 },
-+	{ .min_uV = 2700000, .max_uV = 3050000, .min_sel =  8, .max_sel = 15,
-+	  .uV_step =  50000 },
-+};
- 
- static struct regulator_ops da903x_regulator_ldo_ops = {
- 	.set_voltage_sel = da903x_set_voltage_sel,
-@@ -332,8 +305,8 @@ static struct regulator_ops da9034_regulator_dvc_ops = {
- static struct regulator_ops da9034_regulator_ldo12_ops = {
- 	.set_voltage_sel = da903x_set_voltage_sel,
- 	.get_voltage_sel = da903x_get_voltage_sel,
--	.list_voltage	= da9034_list_ldo12_voltage,
--	.map_voltage	= da9034_map_ldo12_voltage,
-+	.list_voltage	= regulator_list_voltage_linear_range,
-+	.map_voltage	= regulator_map_voltage_linear_range,
- 	.enable		= da903x_enable,
- 	.disable	= da903x_disable,
- 	.is_enabled	= da903x_is_enabled,
-@@ -476,6 +449,8 @@ static int da903x_regulator_probe(struct platform_device *pdev)
- 	if (ri->desc.id == DA9034_ID_LDO12) {
- 		ri->desc.ops = &da9034_regulator_ldo12_ops;
- 		ri->desc.n_voltages = 16;
-+		ri->desc.linear_ranges = da9034_ldo12_ranges;
-+		ri->desc.n_linear_ranges = ARRAY_SIZE(da9034_ldo12_ranges);
- 	}
- 
- 	if (ri->desc.id == DA9030_ID_LDO14)
--- 
-1.8.1.2
-
-
+So is this okay to go as  is?
+Thanks
+Tomas
 
