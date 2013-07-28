@@ -1,210 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753398Ab3G1Knk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 06:43:40 -0400
-Received: from mga14.intel.com ([143.182.124.37]:18667 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753365Ab3G1Kni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 06:43:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,763,1367996400"; 
-   d="scan'208";a="338043166"
-Message-ID: <51F4F5D4.8080405@intel.com>
-Date: Sun, 28 Jul 2013 13:43:32 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1753431Ab3G1LJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 07:09:27 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:53849 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab3G1LJZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 07:09:25 -0400
+Message-ID: <51F4FA34.2070509@gmail.com>
+Date: Sun, 28 Jul 2013 13:02:12 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V8 04/15] perf tools: change machine__findnew_thread()
- to set thread pid
-References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com> <1374144177-24762-5-git-send-email-adrian.hunter@intel.com> <51F29DAC.7000803@gmail.com>
-In-Reply-To: <51F29DAC.7000803@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Vladimir Davydov <vdavydov@parallels.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, criu@openvz.org, devel@openvz.org,
+        xemul@parallels.com
+Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
+References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com> <51F40570.9050209@gmail.com> <51F4ECF2.6040408@parallels.com>
+In-Reply-To: <51F4ECF2.6040408@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/07/2013 7:02 p.m., David Ahern wrote:
-> On 7/18/13 4:42 AM, Adrian Hunter wrote:
->> Add a new parameter for 'pid' to machine__findnew_thread().
->> Change callers to pass 'pid' when it is known.
+Il 28/07/2013 12:05, Vladimir Davydov ha scritto:
+> On 07/27/2013 09:37 PM, Marco Stornelli wrote:
+>> Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
+>>> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
+>>>> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
+>>>>> Hi,
+>>>>>
+>>>>> We want to propose a way to upgrade a kernel on a machine without
+>>>>> restarting all the user-space services. This is to be done with CRIU
+>>>>> project, but we need help from the kernel to preserve some data in
+>>>>> memory while doing kexec.
+>>>>>
+>>>>> The key point of our implementation is leaving process memory in-place
+>>>>> during reboot. This should eliminate most io operations the services
+>>>>> would produce during initialization. To achieve this, we have
+>>>>> implemented a pseudo file system that preserves its content during
+>>>>> kexec. We propose saving CRIU dump files to this file system,
+>>>>> kexec'ing
+>>>>> and then restoring the processes in the newly booted kernel.
+>>>>>
+>>>>
+>>>> http://pramfs.sourceforge.net/
+>>>
+>>> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
+>>> already been merged, requires hardware support for over-reboot
+>>> persistency, so called non-volatile RAM, i.e. RAM which is not directly
+>>> accessible and so is not used by the kernel. On the contrary, what we'd
+>>> like to have is preserving usual RAM on kexec. It is possible, because
+>>> RAM is not reset during kexec. This would allow leaving applications
+>>> working set as well as filesystem caches in place, speeding the reboot
+>>> process as a whole and reducing the downtime significantly.
+>>>
+>>> Thanks.
 >>
->> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
->> ---
->> tools/perf/builtin-inject.c | 2 +-
->> tools/perf/builtin-kmem.c | 3 ++-
->> tools/perf/builtin-kvm.c | 3 ++-
->> tools/perf/builtin-lock.c | 3 ++-
->> tools/perf/builtin-sched.c | 17 +++++++++--------
->> tools/perf/builtin-script.c | 3 ++-
->> tools/perf/builtin-trace.c | 12 +++++++++---
->> tools/perf/tests/hists_link.c | 3 ++-
->> tools/perf/util/build-id.c | 7 +++++--
->> tools/perf/util/event.c | 3 ++-
->> tools/perf/util/machine.c | 23 ++++++++++++++++-------
->> tools/perf/util/machine.h | 3 ++-
->> tools/perf/util/session.c | 2 +-
->> 13 files changed, 55 insertions(+), 29 deletions(-)
->>
->> diff --git a/tools/perf/builtin-inject.c b/tools/perf/builtin-inject.c
->> index 1d8de2e..0d4ae1d 100644
->> --- a/tools/perf/builtin-inject.c
->> +++ b/tools/perf/builtin-inject.c
->> @@ -198,7 +198,7 @@ static int perf_event__inject_buildid(struct
->> perf_tool *tool,
->>
->> cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
->>
->> - thread = machine__findnew_thread(machine, event->ip.pid);
->> + thread = machine__findnew_thread(machine, event->ip.pid,
->> event->ip.pid);
+>> Actually not. You can use normal system RAM reserved at boot with mem
+>> parameter without any kernel change. Until an hard reset happens, that
+>> area will be "persistent".
 >
-> event->ip.tid? at a minimum current functionality is retained with
-> machine__findnew_thread(machine, 0, event->ip.pid)
+> Thank you, we'll look at PRAMFS closer, but right now, after trying it I
+> have a couple of concerns I'd appreciate if you could clarify:
+>
+> 1) As you advised, I tried to reserve a range of memory (passing
+> memmap=4G$4G at boot) and mounted PRAMFS using the following options:
+>
+> # mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096 none /mnt/pramfs
+>
+> And it turned out that PRAMFS is very slow as compared to ramfs:
+>
+> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
+> bs=4096 count=$[100*1024]
+> 102400+0 records in
+> 102400+0 records out
+> 419430400 bytes (419 MB) copied, 9.23498 s, 45.4 MB/s
+> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
+> bs=4096 count=$[100*1024] conv=notrunc
+> 102400+0 records in
+> 102400+0 records out
+> 419430400 bytes (419 MB) copied, 3.04692 s, 138 MB/s
+>
+> We need it to be as fast as usual RAM, because otherwise the benefit of
+> it over hdd disappears. So before diving into the code, I'd like to ask
+> you if it's intrinsic to PRAMFS, or can it be fixed? Or, perhaps, I used
+> wrong mount/boot/config options (btw, I enabled only CONFIG_PRAMFS)?
+>
 
-perf tools records mmap information against the process's main thread
-for which pid == tid.  So the correct values are being passed here.
+In x86 you should have the write protection enabled. Turn it off or 
+mount it with noprotect option.
 
+> 2) To enable saving application dump files in memory using PRAMFS, one
+> should reserve half of RAM for it. That's too expensive. While with
+> ramfs, once SPLICE_F_MOVE flag is implemented, one could move anonymous
+> memory pages to ramfs page cache and after kexec move it back so that
+> almost no extra memory space costs would be required. Of course,
+> SPLICE_F_MOVE is to be yet implemented, but with PRAMFS significant
+> memory costs are inevitable... or am I wrong?
 >
->
->> if (thread == NULL) {
->> pr_err("problem processing %d event, skipping it.\n",
->> event->header.type);
->> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
->> index b49f5c5..c324778 100644
->> --- a/tools/perf/builtin-kmem.c
->> +++ b/tools/perf/builtin-kmem.c
->> @@ -305,7 +305,8 @@ static int process_sample_event(struct perf_tool
->> *tool __maybe_unused,
->> struct perf_evsel *evsel,
->> struct machine *machine)
->> {
->> - struct thread *thread = machine__findnew_thread(machine,
->> event->ip.pid);
->> + struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
->> + event->ip.pid);
->
-> ditto.
->
->
->> diff --git a/tools/perf/tests/hists_link.c
->> b/tools/perf/tests/hists_link.c
->> index 89085a9..5a178d5 100644
->> --- a/tools/perf/tests/hists_link.c
->> +++ b/tools/perf/tests/hists_link.c
->> @@ -88,7 +88,8 @@ static struct machine *setup_fake_machine(struct
->> machines *machines)
->> for (i = 0; i < ARRAY_SIZE(fake_threads); i++) {
->> struct thread *thread;
->>
->> - thread = machine__findnew_thread(machine, fake_threads[i].pid);
->> + thread = machine__findnew_thread(machine, fake_threads[i].pid,
->> + fake_threads[i].pid);
->
-> And here
->
->> if (thread == NULL)
->> goto out;
->>
->> diff --git a/tools/perf/util/build-id.c b/tools/perf/util/build-id.c
->> index 5295625..0f9d27a 100644
->> --- a/tools/perf/util/build-id.c
->> +++ b/tools/perf/util/build-id.c
->> @@ -24,7 +24,8 @@ int build_id__mark_dso_hit(struct perf_tool *tool
->> __maybe_unused,
->> {
->> struct addr_location al;
->> u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
->> - struct thread *thread = machine__findnew_thread(machine,
->> event->ip.pid);
->> + struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
->> + event->ip.pid);
->
-> and here.
->
->> diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
->> index 9541270..ec494a3 100644
->> --- a/tools/perf/util/event.c
->> +++ b/tools/perf/util/event.c
->> @@ -677,7 +677,8 @@ int perf_event__preprocess_sample(const union
->> perf_event *event,
->> symbol_filter_t filter)
->> {
->> u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
->> - struct thread *thread = machine__findnew_thread(machine,
->> event->ip.pid);
->> + struct thread *thread = machine__findnew_thread(machine, event->ip.pid,
->> + event->ip.pid);
->
-> and here
->
->>
->> if (thread == NULL)
->> return -1;
->> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
->> index 67ba572..16b84ac 100644
->> --- a/tools/perf/util/machine.c
->> +++ b/tools/perf/util/machine.c
->> @@ -30,7 +30,8 @@ int machine__init(struct machine *machine, const
->> char *root_dir, pid_t pid)
->> return -ENOMEM;
->>
->> if (pid != HOST_KERNEL_ID) {
->> - struct thread *thread = machine__findnew_thread(machine, pid);
->> + struct thread *thread = machine__findnew_thread(machine, 0,
->> + pid);
->> char comm[64];
->>
->> if (thread == NULL)
->> @@ -282,9 +283,10 @@ static struct thread
->> *__machine__findnew_thread(struct machine *machine,
->> return th;
->> }
->>
->> -struct thread *machine__findnew_thread(struct machine *machine, pid_t
->> tid)
->> +struct thread *machine__findnew_thread(struct machine *machine, pid_t
->> pid,
->> + pid_t tid)
->> {
->> - return __machine__findnew_thread(machine, 0, tid, true);
->> + return __machine__findnew_thread(machine, pid, tid, true);
->> }
->>
->> struct thread *machine__find_thread(struct machine *machine, pid_t tid)
->> @@ -294,7 +296,9 @@ struct thread *machine__find_thread(struct machine
->> *machine, pid_t tid)
->>
->> int machine__process_comm_event(struct machine *machine, union
->> perf_event *event)
->> {
->> - struct thread *thread = machine__findnew_thread(machine,
->> event->comm.tid);
->> + struct thread *thread = machine__findnew_thread(machine,
->> + event->comm.pid,
->> + event->comm.tid);
->>
->> if (dump_trace)
->> perf_event__fprintf_comm(event, stdout);
->> @@ -975,7 +979,8 @@ int machine__process_mmap_event(struct machine
->> *machine, union perf_event *event
->> return 0;
->> }
->>
->> - thread = machine__findnew_thread(machine, event->mmap.pid);
->> + thread = machine__findnew_thread(machine, event->mmap.pid,
->> + event->mmap.pid);
->
-> and here.
->
-> David
+> Thanks.
 
+ From this point of view you are right. Pramfs (or other solution like 
+that) are out of page cache, so you can't do any memory transfer. It's 
+like to have a disk but it's actually a separate piece of RAM. We could 
+talk about it again when this kind of implementation will be done.
+
+Marco
