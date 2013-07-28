@@ -1,100 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab3G1KFq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 06:05:46 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57782 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab3G1KFn (ORCPT
+	id S1753366Ab3G1KH4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 06:07:56 -0400
+Received: from mail-bk0-f48.google.com ([209.85.214.48]:36504 "EHLO
+	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753242Ab3G1KHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 06:05:43 -0400
-Message-ID: <51F4ECF2.6040408@parallels.com>
-Date: Sun, 28 Jul 2013 14:05:38 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Sun, 28 Jul 2013 06:07:54 -0400
+From: Tomasz Figa <tomasz.figa@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-gpio@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Subject: Re: How to create IRQ mappings in a GPIO driver that doesn't control its IRQ domain ?
+Date: Sun, 28 Jul 2013 12:07:48 +0200
+Message-ID: <12170068.F0utKQgh5l@flatron>
+User-Agent: KMail/4.10.5 (Linux/3.10.1-gentoo; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <1624911.6TtmtVmU1T@avalon>
+References: <1624911.6TtmtVmU1T@avalon>
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
-        <xemul@parallels.com>
-Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
-References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com> <51F40570.9050209@gmail.com>
-In-Reply-To: <51F40570.9050209@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.21.94]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 09:37 PM, Marco Stornelli wrote:
-> Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
->> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
->>> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
->>>> Hi,
->>>>
->>>> We want to propose a way to upgrade a kernel on a machine without
->>>> restarting all the user-space services. This is to be done with CRIU
->>>> project, but we need help from the kernel to preserve some data in
->>>> memory while doing kexec.
->>>>
->>>> The key point of our implementation is leaving process memory in-place
->>>> during reboot. This should eliminate most io operations the services
->>>> would produce during initialization. To achieve this, we have
->>>> implemented a pseudo file system that preserves its content during
->>>> kexec. We propose saving CRIU dump files to this file system, 
->>>> kexec'ing
->>>> and then restoring the processes in the newly booted kernel.
->>>>
->>>
->>> http://pramfs.sourceforge.net/
->>
->> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
->> already been merged, requires hardware support for over-reboot
->> persistency, so called non-volatile RAM, i.e. RAM which is not directly
->> accessible and so is not used by the kernel. On the contrary, what we'd
->> like to have is preserving usual RAM on kexec. It is possible, because
->> RAM is not reset during kexec. This would allow leaving applications
->> working set as well as filesystem caches in place, speeding the reboot
->> process as a whole and reducing the downtime significantly.
->>
->> Thanks.
->
-> Actually not. You can use normal system RAM reserved at boot with mem 
-> parameter without any kernel change. Until an hard reset happens, that 
-> area will be "persistent".
+Hi Laurent,
 
-Thank you, we'll look at PRAMFS closer, but right now, after trying it I 
-have a couple of concerns I'd appreciate if you could clarify:
+On Wednesday 24 of July 2013 01:21:44 Laurent Pinchart wrote:
+> Hello,
+> 
+> I'm running into an issue on several Renesas SoC with IRQ domains and
+> GPIOs.
+> 
+> On sh73a0, r8a73a4 and r8a7740, GPIOs and external interrupts are
+> handled by two separate IP cores, namely the PFC (Pin Function
+> Controller) and INTC (Interrupt Controller). The former is handled by
+> the sh-pfc driver (drivers/pinctrl/sh-pfc) and the later by the
+> irq-renesas-intc-irqpin driver (drivers/irqchip), referred to below as
+> the irqpin driver.
 
-1) As you advised, I tried to reserve a range of memory (passing 
-memmap=4G$4G at boot) and mounted PRAMFS using the following options:
+Is the INTC used for anything more than just external interrupts on GPIO 
+lines?
 
-# mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096 none /mnt/pramfs
+> The sh73a0, for instance, has 32 external interrupt lines that are
+> multiplexed on pins usable as GPIOs. Both the GPIO and external
+> interrupt functions are usable at the same time, which allows reading
+> the state of the interrupt lines.
+> 
+> These external interrupts are for MMC/SD support, among other devices.
+> In this specific case the MMC/SD Card Detect signal is wired to one of
+> the external interrupt signals, and the corresponding GPIO is passed to
+> the MMC/SD controller driver. Depending on other configuration
+> parameters the driver can then either poll the Card Detect signal, or
+> register an interrupt handler to detect changes in the signal state.
+> This features is implemented by the MMC/SD core, which call
+> gpio_to_irq() on the GPIO to retrieve the corresponding IRQ number.
+> 
+> On non-DT systems the external IRQs are statically mapped at a known
+> offset. The sh-pfc driver, to implement the gpio_to_irq() function
+> (through its gpiochip .to_irq() handler), simply searches a
+> SoC-specific lookup table for the fixed IRQ number associated with a
+> given GPIO.
+> 
+> However, on DT systems, IRQs are mapped dynamically on demand. The
+> irqpin driver registers a simple IRQ domain, and the
+> irq_create_mapping() function can then be used to map a given IRQ,
+> specified as an offset in the domain. This is where the problem
+> appears, as the irqchip .to_irq() function is implemented in the sh-pfc
 
-And it turned out that PRAMFS is very slow as compared to ramfs:
+I assume it should be s/irqchip/gpiochip/ in the line above, shouldn't it?
 
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024]
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 9.23498 s, 45.4 MB/s
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024] conv=notrunc
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 3.04692 s, 138 MB/s
+> driver, which doesn't have access to the IRQ domain registered by the
+> irqpin driver.
+> 
+> I could hack around this by exporting a function in the irqpin driver
+> that would map an IRQ, and call that function from the sh-pfc driver.
+> I'd rather avoid that solution as it would add a direct dependency
+> between the two drivers.
 
-We need it to be as fast as usual RAM, because otherwise the benefit of 
-it over hdd disappears. So before diving into the code, I'd like to ask 
-you if it's intrinsic to PRAMFS, or can it be fixed? Or, perhaps, I used 
-wrong mount/boot/config options (btw, I enabled only CONFIG_PRAMFS)?
+If you could just get the IRQ domain registered by irqpin driver and use 
+it in sh-pfc, then I guess it would solve your problem, as you could 
+simply call irq_create_mapping() with the domain and hwirq as args in your 
+gpiochip .to_irq() callback.
 
-2) To enable saving application dump files in memory using PRAMFS, one 
-should reserve half of RAM for it. That's too expensive. While with 
-ramfs, once SPLICE_F_MOVE flag is implemented, one could move anonymous 
-memory pages to ramfs page cache and after kexec move it back so that 
-almost no extra memory space costs would be required. Of course, 
-SPLICE_F_MOVE is to be yet implemented, but with PRAMFS significant 
-memory costs are inevitable... or am I wrong?
+I'm not sure if it's not a hack, but you could add a property to the node 
+of your pin controller that would contain a phandle to your interrupt 
+controller. Then you could use of_parse_phandle() to get to device node of 
+the INTC and then irq_find_host() to retrieve irq domain associated with 
+it.
 
-Thanks.
+> Has anyone run into a similar issue ? My gut feeling is that the
+> architecture isn't right somewhere, but I can't really pinpoint where.
+> As the external IRQs are handled by an IP core separate from the PFC
+
+Well, the fact that it's separate doesn't mean anything yet. Here my 
+question whether it's used exclusively for GPIO interrupts or not becomes 
+significant. If yes, maybe it could be simply moved to the pinctrl driver?
+
+Best regards,
+Tomasz
+
