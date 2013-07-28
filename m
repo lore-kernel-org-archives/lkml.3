@@ -1,169 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab3G1OcA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 10:32:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:57045 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3G1Ob7 (ORCPT
+	id S1753829Ab3G1PJI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 11:09:08 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:36104 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753713Ab3G1PJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 10:31:59 -0400
-Message-ID: <51F52B59.1010309@parallels.com>
-Date: Sun, 28 Jul 2013 18:31:53 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Sun, 28 Jul 2013 11:09:06 -0400
+Message-ID: <51F5340A.1090901@metafoo.de>
+Date: Sun, 28 Jul 2013 17:08:58 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-To: Marco Stornelli <marco.stornelli@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <criu@openvz.org>, <devel@openvz.org>,
-        <xemul@parallels.com>
-Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
-References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com> <51F40570.9050209@gmail.com> <51F4ECF2.6040408@parallels.com> <51F4FA34.2070509@gmail.com>
-In-Reply-To: <51F4FA34.2070509@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
+To: Vinod Koul <vinod.koul@intel.com>
+CC: Dan Williams <djbw@fb.com>, Jassi Brar <jaswinder.singh@linaro.org>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH v2] dma: pl330: Fix cyclic transfers
+References: <1374567890-27593-1-git-send-email-lars@metafoo.de> <20130728134546.GE1986@intel.com>
+In-Reply-To: <20130728134546.GE1986@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.24.21.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/2013 03:02 PM, Marco Stornelli wrote:
-> Il 28/07/2013 12:05, Vladimir Davydov ha scritto:
->> On 07/27/2013 09:37 PM, Marco Stornelli wrote:
->>> Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
->>>> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
->>>>> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
->>>>>> Hi,
->>>>>>
->>>>>> We want to propose a way to upgrade a kernel on a machine without
->>>>>> restarting all the user-space services. This is to be done with CRIU
->>>>>> project, but we need help from the kernel to preserve some data in
->>>>>> memory while doing kexec.
->>>>>>
->>>>>> The key point of our implementation is leaving process memory 
->>>>>> in-place
->>>>>> during reboot. This should eliminate most io operations the services
->>>>>> would produce during initialization. To achieve this, we have
->>>>>> implemented a pseudo file system that preserves its content during
->>>>>> kexec. We propose saving CRIU dump files to this file system,
->>>>>> kexec'ing
->>>>>> and then restoring the processes in the newly booted kernel.
->>>>>>
->>>>>
->>>>> http://pramfs.sourceforge.net/
->>>>
->>>> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
->>>> already been merged, requires hardware support for over-reboot
->>>> persistency, so called non-volatile RAM, i.e. RAM which is not 
->>>> directly
->>>> accessible and so is not used by the kernel. On the contrary, what 
->>>> we'd
->>>> like to have is preserving usual RAM on kexec. It is possible, because
->>>> RAM is not reset during kexec. This would allow leaving applications
->>>> working set as well as filesystem caches in place, speeding the reboot
->>>> process as a whole and reducing the downtime significantly.
->>>>
->>>> Thanks.
->>>
->>> Actually not. You can use normal system RAM reserved at boot with mem
->>> parameter without any kernel change. Until an hard reset happens, that
->>> area will be "persistent".
+On 07/28/2013 03:45 PM, Vinod Koul wrote:
+> On Tue, Jul 23, 2013 at 10:24:50AM +0200, Lars-Peter Clausen wrote:
+>> Allocate a descriptor for each period of a cyclic transfer, not just the first.
+>> Also since the callback needs to be called for each finished period make sure to
+>> initialize the callback and callback_param fields of each descriptor in a cyclic
+>> transfer.
 >>
->> Thank you, we'll look at PRAMFS closer, but right now, after trying it I
->> have a couple of concerns I'd appreciate if you could clarify:
->>
->> 1) As you advised, I tried to reserve a range of memory (passing
->> memmap=4G$4G at boot) and mounted PRAMFS using the following options:
->>
->> # mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096 none 
->> /mnt/pramfs
->>
->> And it turned out that PRAMFS is very slow as compared to ramfs:
->>
->> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
->> bs=4096 count=$[100*1024]
->> 102400+0 records in
->> 102400+0 records out
->> 419430400 bytes (419 MB) copied, 9.23498 s, 45.4 MB/s
->> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
->> bs=4096 count=$[100*1024] conv=notrunc
->> 102400+0 records in
->> 102400+0 records out
->> 419430400 bytes (419 MB) copied, 3.04692 s, 138 MB/s
->>
->> We need it to be as fast as usual RAM, because otherwise the benefit of
->> it over hdd disappears. So before diving into the code, I'd like to ask
->> you if it's intrinsic to PRAMFS, or can it be fixed? Or, perhaps, I used
->> wrong mount/boot/config options (btw, I enabled only CONFIG_PRAMFS)?
->>
+>> Cc: stable@vger.kernel.org
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Applied thanks
 >
-> In x86 you should have the write protection enabled. Turn it off or 
-> mount it with noprotect option.
-
-I tried. This helps, but the write rate is still too low:
-
-with write protect:
-
-# mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096 none /mnt/pramfs
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024]
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 17.6007 s, 23.8 MB/s
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024] conv=notrunc
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 4.32923 s, 96.9 MB/s
-
-w/o write protect:
-
-# mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096,noprotect none 
-/mnt/pramfs
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024]
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 9.07748 s, 46.2 MB/s
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy 
-bs=4096 count=$[100*1024] conv=notrunc
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 3.04596 s, 138 MB/s
-
-Also tried turning off CONFIG_PRAMFS_WRITE_PROTECT, the result is the 
-same: the rate does not exceed 150 MB/s, which is too slow comparing to 
-ramfs:
-
-# mount -t ramfs none /mnt/ramfs
-# dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/ramfs/dummy 
-bs=4096 count=$[100*1024]
-102400+0 records in
-102400+0 records out
-419430400 bytes (419 MB) copied, 0.200809 s, 2.1 GB/s
-
->
->> 2) To enable saving application dump files in memory using PRAMFS, one
->> should reserve half of RAM for it. That's too expensive. While with
->> ramfs, once SPLICE_F_MOVE flag is implemented, one could move anonymous
->> memory pages to ramfs page cache and after kexec move it back so that
->> almost no extra memory space costs would be required. Of course,
->> SPLICE_F_MOVE is to be yet implemented, but with PRAMFS significant
->> memory costs are inevitable... or am I wrong?
->>
->> Thanks.
->
-> From this point of view you are right. Pramfs (or other solution like 
-> that) are out of page cache, so you can't do any memory transfer. It's 
-> like to have a disk but it's actually a separate piece of RAM. We 
-> could talk about it again when this kind of implementation will be done
-
-Yeah, that's the main difference. PRAMFS lives in a dedicated region, 
-while page cache is spread all over the whole RAM, and what is worse, 
-some pages can be used at early boot.
-
-I believe dealing with page cache could be wired into PRAMFS, but the 
-question is what would be clearer: implement something lightweight and 
-standalone, or blow existing code, which was not initially planned to 
-handle things like that? I will think about that.
 
 Thanks.
+
+> Btw the switch moved should have return error for default case when direction is
+> not slave, but thats not in context of this as you moved that code
+
+Checking inside the loop makes the error handling more complicated since at 
+that point the descriptor is already allocated and needs to be freed again. So 
+we check this right at the beginning (Using is_slave_direction), so we'll never 
+get to the loop if the direction is not OK. The default statement is mainly 
+there to keep the compiler happy.
+
+- Lars
+
+
