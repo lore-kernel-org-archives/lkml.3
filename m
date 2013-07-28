@@ -1,141 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab3G1Sk4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 14:40:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12643 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751121Ab3G1Sky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 14:40:54 -0400
-Date: Sun, 28 Jul 2013 20:35:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 6/6] tracing: Change remove_event_file_dir() to clear
-	"d_subdirs"->i_private
-Message-ID: <20130728183527.GB16723@redhat.com>
-References: <20130726172513.GA3586@redhat.com> <20130726172551.GA3632@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726172551.GA3632@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753964Ab3G1Sr0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 14:47:26 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:33065 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753558Ab3G1SrC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 14:47:02 -0400
+Message-ID: <1375037219.3669.34.camel@edumazet-glaptop>
+Subject: Re: [PATCH jiffies] Avoid undefined behavior from signed overflow
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, davem@davemloft.net,
+        arnd@arndb.de, mingo@kernel.org, torvalds@linux-foundation.org
+Date: Sun, 28 Jul 2013 11:46:59 -0700
+In-Reply-To: <20130727225828.GA11864@linux.vnet.ibm.com>
+References: <20130727225828.GA11864@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change remove_event_file_dir() to clear ->i_private for every
-file we are going to remove.
+On Sat, 2013-07-27 at 15:58 -0700, Paul E. McKenney wrote:
+> According to the C standard 3.4.3p3, overflow of a signed integer results
+> in undefined behavior.  This commit therefore changes the definitions
+> of time_after() and time_after_eq() to avoid this undefined behavior.
+> The trick is that the subtraction is done using unsigned arithmetic,
+> which according to 6.2.5p9 cannot overflow because it is defined as
+> modulo arithmetic.  This has the added (though admittedly quite small)
+> benefit of shortening two lines of code by four characters each.
+> 
+> Note that the C standard considers the cast from signed to
+> unsigned to be implementation-defined, see 6.3.1.3p3.  However, on a
+> two-complement system, an implementation that defines anything other
+> than a reinterpretation of the bits is free come to me, and I will be
+> happy to act as a witness for its being committed to an insane asylum.
+> (Although I have nothing against saturating arithmetic or signals in
+> some cases, these things really should not be the default.)
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+> index 97ba4e7..97967ba 100644
+> --- a/include/linux/jiffies.h
+> +++ b/include/linux/jiffies.h
+> @@ -101,13 +101,13 @@ static inline u64 get_jiffies_64(void)
+>  #define time_after(a,b)		\
+>  	(typecheck(unsigned long, a) && \
+>  	 typecheck(unsigned long, b) && \
+> -	 ((long)(b) - (long)(a) < 0))
+> +	 ((long)((b) - (a)) < 0))
+>  #define time_before(a,b)	time_after(b,a)
+>  
+>  #define time_after_eq(a,b)	\
+>  	(typecheck(unsigned long, a) && \
+>  	 typecheck(unsigned long, b) && \
+> -	 ((long)(a) - (long)(b) >= 0))
+> +	 ((long)((a) - (b)) >= 0))
+>  #define time_before_eq(a,b)	time_after_eq(b,a)
+>  
 
-We need to check file->dir != NULL because event_create_dir()
-can fail. debugfs_remove_recursive(NULL) is fine but the patch
-moves it under the same check anyway for readability.
 
-spin_lock(d_lock) and "d_inode != NULL" check are not needed
-afaics, but I do not understand this code enough.
 
-tracing_open_generic_file() and tracing_release_generic_file()
-can go away, ftrace_enable_fops and ftrace_event_filter_fops()
-use tracing_open_generic() but only to check tracing_disabled.
+time_after64() & time_after_eq64() probably need the same.
 
-This fixes all races with event_remove() or instance_delete().
-f_op->read/write/whatever can never use the freed file/call,
-all event/* files were changed to check and use ->i_private
-under event_mutex.
 
-Note: this doesn't not fix other problems, event_remove() can
-destroy the active ftrace_event_call, we need more changes but
-those changes are completely orthogonal.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/trace/trace_events.c |   47 +++++++++++++-----------------------------
- 1 files changed, 15 insertions(+), 32 deletions(-)
-
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 2a4f68a..79a2743 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -428,42 +428,26 @@ static void *event_file_data(struct file *filp)
- 
- static void remove_event_file_dir(struct ftrace_event_file *file)
- {
-+	struct dentry *dir = file->dir;
-+	struct dentry *child;
-+
-+	if (dir) {
-+		spin_lock(&dir->d_lock);	/* probably unneeded */
-+		list_for_each_entry(child, &dir->d_subdirs, d_u.d_child) {
-+			if (child->d_inode)	/* probably unneeded */
-+				child->d_inode->i_private = NULL;
-+		}
-+		spin_unlock(&dir->d_lock);
-+
-+		debugfs_remove_recursive(dir);
-+	}
-+
- 	list_del(&file->list);
--	debugfs_remove_recursive(file->dir);
- 	remove_subsystem(file->system);
- 	kmem_cache_free(file_cachep, file);
- }
- 
- /*
-- * Open and update trace_array ref count.
-- * Must have the current trace_array passed to it.
-- */
--static int tracing_open_generic_file(struct inode *inode, struct file *filp)
--{
--	struct ftrace_event_file *file = inode->i_private;
--	struct trace_array *tr = file->tr;
--	int ret;
--
--	if (trace_array_get(tr) < 0)
--		return -ENODEV;
--
--	ret = tracing_open_generic(inode, filp);
--	if (ret < 0)
--		trace_array_put(tr);
--	return ret;
--}
--
--static int tracing_release_generic_file(struct inode *inode, struct file *filp)
--{
--	struct ftrace_event_file *file = inode->i_private;
--	struct trace_array *tr = file->tr;
--
--	trace_array_put(tr);
--
--	return 0;
--}
--
--/*
-  * __ftrace_set_clr_event(NULL, NULL, NULL, set) will set/unset all events.
-  */
- static int
-@@ -1277,10 +1261,9 @@ static const struct file_operations ftrace_set_event_fops = {
- };
- 
- static const struct file_operations ftrace_enable_fops = {
--	.open = tracing_open_generic_file,
-+	.open = tracing_open_generic,
- 	.read = event_enable_read,
- 	.write = event_enable_write,
--	.release = tracing_release_generic_file,
- 	.llseek = default_llseek,
- };
- 
--- 
-1.5.5.1
 
 
