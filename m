@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab3G1D2h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 23:28:37 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:62536 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753080Ab3G1D2g (ORCPT
+	id S1753170Ab3G1D3a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 23:29:30 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:45094 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab3G1D33 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 23:28:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com>
- <2460092.aLmjrOVh1g@flatron> <51F3A82E.2000907@broadcom.com>
- <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
- <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com> <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 27 Jul 2013 21:28:15 -0600
-X-Google-Sender-Auth: ldHs45zot471kE7vb3Tbkqo3uwk
-Message-ID: <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Cc: Arend van Spriel <arend@broadcom.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+	Sat, 27 Jul 2013 23:29:29 -0400
+References: <1374953558-4704-1-git-send-email-ethan.kernel@gmail.com> <7F52345F-242F-4A9D-8CD2-5805936ABAEE@gmail.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <7F52345F-242F-4A9D-8CD2-5805936ABAEE@gmail.com>
+Content-Type: text/plain;
+	charset=GB2312
+Content-Transfer-Encoding: 8BIT
+Message-Id: <77E02B89-C51A-4CCA-81ED-851F87A44EF5@gmail.com>
+Cc: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "joe.jin@oracle.com" <joe.jin@oracle.com>,
+        "ethan.zhao" <ethan.zhao@oracle.com>
+X-Mailer: iPad Mail (10B329)
+From: ethan <ethan.kernel@gmail.com>
+Subject: Re: [PATCH V2] x86/PCI: MMCONFIG: cleanup and add address warning to pci_mmconfig_insert
+Date: Sun, 28 Jul 2013 11:29:19 +0800
+To: Mark D Rustad <mrustad@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 27, 2013 at 2:25 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, Jul 27, 2013 at 2:01 PM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
->> On Sat, Jul 27, 2013 at 3:45 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> On Sat, Jul 27, 2013 at 4:59 AM, Arend van Spriel <arend@broadcom.com> wrote:
->>>> Let's see how many people go and scream if I say this: Too bad .dts files
->>>> are not done using XML format as DT bindings could be described using XML
->>>> Schema.
->>>
->>> Draft an example and show us how it would look!  :-)  There is
->>> absolutely nothing preventing us from expressing a DT in XML format,
->>> or even using XSLT to define DT schema while still using our current
->>> .dts syntax. It would be trivial to do lossless translation between
->>> .dts syntax and xml.
->>>
->>> The problem that I have with XML and XSLT is that it is very verbose
->>> and not entirely friendly to mere-mortals. However, I'm more than
->>> willing to be proved wrong on this point.
->>
->> I considered this approach a while ago and discarded it. It would work
->> but it is just too much of a Frankenstein monster.
->>
->> Much cleaner to modify dtc to take a schema as part of the compilation
->> process. The schema language itself has no requirement to look like
->> DTS syntax. Whoever wrote dtc probably has a favorite language that
->> would be good for writing schemas in.
->
-> Making it part of dtc is a required feature as far as I'm concerned.
-> Using XML/XSLT and dtc-integration are not mutually exclusive, but I
-> digress.
+thanks£¬got it ,you are right.
 
-Oops, ignore the XSLT bit. XSLT isn't schema and has no bearing on the
-discussion of schema. Sorry for the noise.
 
-g.
+ÔÚ 2013-7-28£¬11:09£¬Mark D Rustad <mrustad@gmail.com> Ð´µÀ£º
+
+> Another nit below:
+> 
+> On Jul 27, 2013, at 12:32 PM, ethan.kernel@gmail.com wrote:
+> 
+>> Cleanup the -EINVAL return value handling and add warning message for invalid
+>> start,end,addr parameters.
+>> 
+>> V2: Corrected code style and tested for Linux v 3.11-rc2
+>> 
+>> Signed-off-by: ethan.zhao <ethan.zhao@oracle.com>
+>> ---
+>> arch/x86/pci/mmconfig-shared.c |   12 ++++++------
+>> 1 files changed, 6 insertions(+), 6 deletions(-)
+>> 
+>> diff --git a/arch/x86/pci/mmconfig-shared.c b/arch/x86/pci/mmconfig-shared.c
+>> index 082e881..37f6c7f 100644
+>> --- a/arch/x86/pci/mmconfig-shared.c
+>> +++ b/arch/x86/pci/mmconfig-shared.c
+>> @@ -700,8 +700,13 @@ int pci_mmconfig_insert(struct device *dev, u16 seg, u8 start, u8 end,
+>>    if (!(pci_probe & PCI_PROBE_MMCONF) || pci_mmcfg_arch_init_failed)
+>>        return -ENODEV;
+>> 
+>> -    if (start > end)
+>> +    if (start > end || !addr) {
+>> +        dev_warn(dev, FW_INFO
+>> +            "Invalid address to add MMCONFIG"
+>> +            "start %02x end %02x addr %pR\n",
+> 
+> As it is here, there will be no space between MMCONFIG and the word start. Better still, put the entire string on one line to aid those searching for the message. There is a general exception to the 80-column rule for user-visible messages such as this.
+> 
+> <snip>
+> 
+> -- 
+> Mark Rustad, MRustad@gmail.com
+> 
