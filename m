@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab3G1NvH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 09:51:07 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43937 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480Ab3G1NvF (ORCPT
+	id S1753655Ab3G1OD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 10:03:56 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:57977 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab3G1ODy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 09:51:05 -0400
-Date: Sun, 28 Jul 2013 15:51:03 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: "Wyborny, Carolyn" <carolyn.wyborny@intel.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Greg KH <greg@kroah.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Joe Lawrence <joe.lawrence@stratus.com>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Dave, Tushar N" <tushar.n.dave@intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: Re: /sys/module/pcie_aspm/parameters/policy not writable?
-Message-ID: <20130728135103.GC5382@amd.pavel.ucw.cz>
-References: <20130709012611.GA22371@amd.pavel.ucw.cz>
- <20130709041321.GA30555@kroah.com>
- <20130709094906.GA3870@amd.pavel.ucw.cz>
- <20130709101039.GA4479@amd.pavel.ucw.cz>
- <CAErSpo57qjTkGbNK5qLzJcKuqBGK5=R=raEdyL6M1d5O=FkK_Q@mail.gmail.com>
- <20130710132950.GA3684@amd.pavel.ucw.cz>
- <CAErSpo5ig3bxZ3hBUUrzTdc=YqHy7cBGBxOLru4NYdyOOR+W5w@mail.gmail.com>
- <20130712111121.GB3515@amd.pavel.ucw.cz>
- <CAErSpo6NYZNHyV9xh2wRSQp72-dxg+FrFW4XrjE5Ps=bW6AGCw@mail.gmail.com>
- <9BBC4E0CF881AA4299206E2E1412B6264F921872@ORSMSX102.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9BBC4E0CF881AA4299206E2E1412B6264F921872@ORSMSX102.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 28 Jul 2013 10:03:54 -0400
+From: Mark Brown <broonie@kernel.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@linaro.org>
+Date: Sun, 28 Jul 2013 15:03:48 +0100
+Message-Id: <1375020228-25965-1-git-send-email-broonie@kernel.org>
+X-Mailer: git-send-email 1.8.3.2
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [PATCH] mfd: stmpe: Staticise stmpe_of_probe()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 2013-07-24 15:19:55, Wyborny, Carolyn wrote:
-> > -----Original Message-----
-> > From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> [..}
-> >
-> > We *could* consider something like this, since its scope is limited.
-> > But since the problem also occurs with Windows, it's pretty likely that there's a
-> > BIOS update to fix it.  I notice on the X60 support page that there are several
-> > versions newer than what you're running.
-> > 
-> > Bjorn
-> 
-> I believe that some BIOS don't allow user control on this feature, thus we end up unable to disable it from driverspace or from userspace, with the method we use today in this scenario.
-> 
-> I have a patch almost ready that attempts to disable using the pci_disable_link_state() call but then checks again to see if its still enabled and if not, then changes the pci config space on the devices on either side of the pcie link.  I plan to send it to this list for Pavel's testing as soon as I have it finished, at worst end of week.
-> 
+From: Mark Brown <broonie@linaro.org>
 
-If there's patch, I'll gladly try it :-). Thanks,
-									Pavel
+It is only called from this file so there is no need for it to be in the
+global namespace and cause sparse to warn.
+
+Signed-off-by: Mark Brown <broonie@linaro.org>
+---
+ drivers/mfd/stmpe.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 5d5e6f9..fff63a4 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -1106,7 +1106,8 @@ static int stmpe_devices_init(struct stmpe *stmpe)
+ 	return ret;
+ }
+ 
+-void stmpe_of_probe(struct stmpe_platform_data *pdata, struct device_node *np)
++static void stmpe_of_probe(struct stmpe_platform_data *pdata,
++			   struct device_node *np)
+ {
+ 	struct device_node *child;
+ 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.8.3.2
+
