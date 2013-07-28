@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833Ab3G1V6G (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 17:58:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:42556 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752159Ab3G1V6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 17:58:02 -0400
-Date: Mon, 29 Jul 2013 07:46:37 +1000
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130728214637.GC29970@voom.fritz.box>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <1416484.XDfk5G56BI@flatron>
- <20130728131901.GA8864@netboy>
- <2529481.u8xHuXumcd@flatron>
- <CAKON4OzReTRb5JnJE+07vNJ-uDndLfqq8ha04J7K3x=WtsZEWw@mail.gmail.com>
- <20130728153546.GB5224@netboy>
+	id S1752185Ab3G1Xdf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 19:33:35 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:55416 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab3G1Xde (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 19:33:34 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="iFRdW5/EC4oqxDHL"
-Content-Disposition: inline
-In-Reply-To: <20130728153546.GB5224@netboy>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 29 Jul 2013 01:33:33 +0200
+Message-ID: <CACRpkdah5T7SZ-JoifP1bzvXn4o7rRbPpss_Rwjevm0H8a7PaA@mail.gmail.com>
+Subject: [GIT PULL] pin control fixes for the v3.11 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---iFRdW5/EC4oqxDHL
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+these are some accumulated pin control changes for
+the v3.11 series. It's been pretty calm in this tree post
+the merge window this time.
 
-On Sun, Jul 28, 2013 at 05:35:46PM +0200, Richard Cochran wrote:
-> On Sun, Jul 28, 2013 at 10:09:57AM -0400, jonsmirl@gmail.com wrote:
-> >=20
-> > 3.z kernel is free to alter the schema. But it will have to supply the
-> > necessary quirks needed to keep those old dtb's functioning.
->=20
-> The quirks idea sounds okay to me, if it can really provide forward
-> compatibility. In practice, I doubt anyone will really spend the
-> effort to make this work. I think it would be much easier to make sure
-> the bindings are "future proof" in the first place.
+Please pull them in!
 
-I should clarify.  The idea of DT quirks is not to remove the need to
-properly design and review bindings.  It's to limit the damage when
-there are, inevitably, failings in that process.  And when, also
-inevitably, firmware vendors ship DTs that don't follow the bindings
-correctly, even when there is a good one available.
+Yours,
+Linus Walleij
 
-I think it's more likely that people will create, and get right, a
-well localized bit of quirk code, than they will get backwards compat
-code correct for every place in which a driver wants info from the
-device tree.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+The following changes since commit ad81f0545ef01ea651886dddac4bef6cec930092:
 
---iFRdW5/EC4oqxDHL
-Content-Type: application/pgp-signature
+  Linux 3.11-rc1 (2013-07-14 15:18:27 -0700)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.13 (GNU/Linux)
+are available in the git repository at:
 
-iEYEARECAAYFAlH1kT0ACgkQaILKxv3ab8ZJ1wCgiTBGSRHcmagJGaoAseiRWiAi
-T50An0FNjwVq2aNaVE2D36wlc5t9j/vj
-=D2pq
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-for-v3.11-2
 
---iFRdW5/EC4oqxDHL--
+for you to fetch changes up to db6c2c69c27f2c4fd1e2a1c6b0b1119b1e885f8a:
+
+  pinctrl: fix a memleak when freeing maps (2013-07-25 17:18:36 +0200)
+
+----------------------------------------------------------------
+Pin control fixes for the v3.11 series:
+
+- Driver fixes for AM33xx, SIRF and PFC pin controllers.
+
+- Fix a compile warning from the pinctrl single-register
+  driver.
+
+- Fix a little nasty memory leak.
+
+----------------------------------------------------------------
+Barry Song (1):
+      arm/dts: sirf: fix the pingroup name mismatch between drivers and dts
+
+Guennadi Liakhovetski (1):
+      pinctrl: sh-pfc: fix SDHI0 VccQ regulator on sh73a0 with DT
+
+Ian Campbell (1):
+      pinctrl: am33xx dt binding: correct include path
+
+Jean-Francois Moine (1):
+      pinctrl: pinctrl-single: fix compile warning when no CONFIG_PM
+
+Linus Walleij (1):
+      pinctrl: fix a memleak when freeing maps
+
+Qipan Li (2):
+      pinctrl: sirf: fix the pin number and mux bit for usp0
+      pinctrl: sirf: add usp0_uart_nostreamctrl pin group for usp-uart
+without flowctrl
+
+ arch/arm/boot/dts/atlas6.dtsi         | 22 ++++++++++++++--------
+ arch/arm/boot/dts/prima2.dtsi         | 16 ++++++++--------
+ drivers/pinctrl/core.c                |  1 +
+ drivers/pinctrl/pinctrl-single.c      |  2 ++
+ drivers/pinctrl/sh-pfc/pfc-sh73a0.c   |  1 +
+ drivers/pinctrl/sirf/pinctrl-atlas6.c | 24 ++++++++++++++++++++++--
+ include/dt-bindings/pinctrl/am33xx.h  |  2 +-
+ 7 files changed, 49 insertions(+), 19 deletions(-)
