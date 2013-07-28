@@ -1,32 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab3G1MmX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 08:42:23 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:60311 "EHLO
+	id S1753560Ab3G1Mvg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 08:51:36 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36687 "EHLO
 	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab3G1MmW (ORCPT
+	with ESMTP id S1753509Ab3G1Mvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 08:42:22 -0400
-Date: Sun, 28 Jul 2013 13:42:14 +0100
+	Sun, 28 Jul 2013 08:51:35 -0400
+Date: Sun, 28 Jul 2013 13:51:11 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20130728124214.GT9858@sirena.org.uk>
-References: <1375000643.21010.2.camel@phoenix>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Message-ID: <20130728125111.GW9858@sirena.org.uk>
+References: <1374773943-7454-1-git-send-email-p.zabel@pengutronix.de>
+ <1374773943-7454-3-git-send-email-p.zabel@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+ks7CzZv1QI9FGuw"
+	protocol="application/pgp-signature"; boundary="jaPd8mitbVMxGCA+"
 Content-Disposition: inline
-In-Reply-To: <1375000643.21010.2.camel@phoenix>
+In-Reply-To: <1374773943-7454-3-git-send-email-p.zabel@pengutronix.de>
 X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 94.175.92.69
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RESEND] regulator: da903x: Convert da9034 ldo12 to use
- linear ranges
+Subject: Re: [PATCH v2 2/2] regulator: Add Dialog DA9063 voltage regulators
+ support.
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
 X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,37 +34,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+ks7CzZv1QI9FGuw
+--jaPd8mitbVMxGCA+
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Sun, Jul 28, 2013 at 04:37:23PM +0800, Axel Lin wrote:
-> The voltage table of da9034 LDO12 is:
-> 1700000, 1750000, 1800000, 1850000, 1900000, 1950000, 2000000, 2050000
-> 2700000, 2750000, 2800000, 2850000, 2900000, 2950000, 3000000, 3050000
+On Thu, Jul 25, 2013 at 07:39:03PM +0200, Philipp Zabel wrote:
 
-Applied, thanks.
+>  - 1x power switch to switch on/off 32 KHz oscilator output (32K_OUT).
 
---+ks7CzZv1QI9FGuw
+The driver looks good except this should be implemented using the clock
+API not the regulator API - some drivers did this while we didn't have a
+clock API but we do now and in any case the clock shouldn't appear as a
+regulator in the DT bindings.
+
+--jaPd8mitbVMxGCA+
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.20 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR9RGjAAoJELSic+t+oim9NPoP/2lO9OXLyx/NK5mAk7oJ5mbj
-+4lnC3k08Ze3RKiGrQNBi1Iccu0XDzpCT64GDy7FtXFuIsUgd04mOIyawZIau5F6
-TSLbNL7PRNOx5VeF1KoTaq0zMlkC/daQRZYsqX7DzedSobfNFXKvd9NSvrZokQNn
-LSMGsAfP979Ljk/hP2QQeyrChV+sNUYZqq3DW+1X+2Of/H8G/SP9qNes34GIAv0W
-JAzwizWscn7j9NNYwECiP3kAJ3ywvYchIRAMlJFSJX6kJkQ3xIqby4yGfzdKQWjC
-wWqR7xy+EHFJYbEXdwgV2Ijht26oopoF0N9VMxFLA1LH4kp8i7UBd3t/M5g6K5El
-yGcXe778VaBqPt1c9iwvHLN5CvWR6vjZEf08NylM4R9whzYsS8EDjYKrGL2IdvRw
-04BJFHORHvjng6XKahUt4LJ7zEvcwpEfXmobT9IOjqdXMwqTIG1IhEQTE85ufShV
-YkJiTZy9OqY0sUS5d2BMiAyzEsWX4NDI9AiHA0wOTNiOgXz0wmSPfjWWIwcwWf5i
-ivEA+9czSrYsfyj7z7nSvygtVuxm8Jjda5RgBjLDKB7OhN3z08b8d6P/mJBCADt0
-AIrSLXleJ8Vb548C3TXPinMoSls7ZQiSRgeZu9QqH/PE0H2wO7qVpvBJxno8oN2U
-UStxkC3QCUW3P4zdLamh
-=OqHN
+iQIcBAEBAgAGBQJR9RO8AAoJELSic+t+oim9pdIP+QFRHrjmL3jSauFoaKHzjTys
+ZIIdbPN4zyVvwPLZUVMi3Nn1L9ZswHuLd4/POwt5WJF1+yFAm9H6soIbyZwAmY5b
+f3f3K+2SkR58RwGQVXb/VIrx5E1WTGR2L+a+/7VmFzL71QShcN2e8y/6m4uubI4d
+jd/OxJ/Ozx/Xdjl14pZq10KBUv4uwVUM+Mvv8vcFT5Prx1eFotbIfDRNw3DlRAcT
+SGgB/h5nOwwpS2QmcZk+g1LBSSaPwBRHFmJtVsHNXV6daswAVFIkxGVfgsbSpvj1
+dc3vgX65pB5D1+BgQjdoP3GVcOQ9uBKFLPApuJxS7qh4Rp5cG5ve75IZtSMHQfrr
++VWVp5loPB/VAPASCEQHHb/Xm0oIwyqycwQQhBCoyvm6Wq2LMtrOo2XZRqEUrIWY
+um0OhUco/ujfxVwHEsdHBir/kusP/FF+LEDsCKm/hSXOMWAjU74EfaoOKCv8R/gd
+vJEdXfHSibAqWTEHwNXw/T3LNB4Vhb3HAIDWubn7OBZEOwBeIOSntDigRsamjcm0
+aVzAmoQfAACn6MOleDlqeosa1k+GfvmMIeTFi74RxbO66ApP0w0yJQ9fBM69ePgT
+jbqQHh4wtVxbJErKPKjVMxaWlDGFBzTUhclS29dOTXXVk+1mswcdyj88ER0yAlvv
+L1uMhzX1uDnPMhR4AC4K
+=IcJr
 -----END PGP SIGNATURE-----
 
---+ks7CzZv1QI9FGuw--
+--jaPd8mitbVMxGCA+--
