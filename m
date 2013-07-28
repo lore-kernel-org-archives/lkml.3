@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab3G1L2P (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 07:28:15 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:34556 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab3G1L2N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 07:28:13 -0400
-Date: Sun, 28 Jul 2013 12:27:46 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ian Campbell <ian.campbell@citrix.com>
-Message-ID: <20130728112746.GM9858@sirena.org.uk>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F168FC.9070906@wwwdotorg.org>
- <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
- <20130725184834.GA8296@netboy>
- <20130725213753.GC17616@obsidianresearch.com>
- <20130726045433.GB4100@netboy>
- <20130726171524.GB28895@obsidianresearch.com>
- <20130727084825.GA4707@netboy>
- <20130727104018.GC9858@sirena.org.uk>
- <20130727173748.GA4813@netboy>
+	id S1753455Ab3G1LlF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 07:41:05 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:45771 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753412Ab3G1LlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 07:41:03 -0400
+Date: Sun, 28 Jul 2013 07:40:53 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [ 71/79] ext4: fix error handling in ext4_ext_truncate()
+Message-ID: <20130728114053.GA19995@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+	stable@vger.kernel.org,
+	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+References: <20130726204721.849052763@linuxfoundation.org>
+ <20130726204730.256399621@linuxfoundation.org>
+ <1374960811.3607.15.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PI2T0JrbAUafY2qi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130727173748.GA4813@netboy>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <1374960811.3607.15.camel@deadeye.wl.decadent.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Jul 27, 2013 at 10:33:31PM +0100, Ben Hutchings wrote:
+> > --- a/fs/ext4/extents.c
+> > +++ b/fs/ext4/extents.c
+> > @@ -4386,9 +4386,20 @@ void ext4_ext_truncate(handle_t *handle,
+> >  
+> >  	last_block = (inode->i_size + sb->s_blocksize - 1)
+> >  			>> EXT4_BLOCK_SIZE_BITS(sb);
+> > +retry:
+> >  	err = ext4_es_remove_extent(inode, last_block,
+> >  				    EXT_MAX_BLOCKS - last_block);
+> > +	if (err == ENOMEM) {
+> 
+> Positive ENOMEM?!  It looks like this value is bubbled up from
+> __es_insert_extent() which returns the usual negative error codes.
 
---PI2T0JrbAUafY2qi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Nice catch.  Yup, that's a problem.  I'll fix this upstream and mark
+it cc:stable.
 
-On Sat, Jul 27, 2013 at 07:37:48PM +0200, Richard Cochran wrote:
-> On Sat, Jul 27, 2013 at 11:40:18AM +0100, Mark Brown wrote:
+Until this goes upstream stable kernel maintainers can either: (a) fix
+up this patch by making the line read "err == -ENOMEM", (b) hold back
+this patch until the companion patch to fix this goes upstream, or (c)
+apply this now, since it's otherwise harmless and it does add error
+checking to the ext4_ext_remove_space() call.
 
-> > We did have exactly the same discussion when the DT transition was
-> > started - this isn't something that people only just realised might be
-> > an issue.  There was a deliberate decision to focus on getting the
-> > technology deployed to the point where it could be used as a straight
-> > replacement for board files and accept that sometimes the results won't
-> > be perfect and that we may need to rework as a result.
+> 
+> Ben.
+> 
+> > +		cond_resched();
+> > +		congestion_wait(BLK_RW_ASYNC, HZ/50);
+> > +		goto retry;
+> > +	}
+> > +	if (err) {
+> > +		ext4_std_error(inode->i_sb, err);
+> > +		return;
+> > +	}
+> >  	err = ext4_ext_remove_space(inode, last_block, EXT_MAX_BLOCKS - 1);
+> > +	ext4_std_error(inode->i_sb, err);
+> >  }
+> >  
+> >  static void ext4_falloc_update_inode(struct inode *inode,
+> > 
+> 
+> -- 
+> Ben Hutchings
+> Once a job is fouled up, anything done to improve it makes it worse.
 
-> Can you tell a bit more about this decision? When was it made? Who
-> made it? How was it made public?
 
-I honestly can't remember exactly - it was part of the discussion about
-keeping the .dtb files in the kernel IIRC.  Given the timing and the
-fact that I remember it it'd have been a mailing list discussion but I
-couldn't point you at it without searching for a needle in a haystack,
-sorry.  Perhaps there's a LWN writeup or something.
-
-It's not the "we don't care" that you're seeing, it's more a product of
-"we're not sure what we're doing yet, let's give ourselves a pass if we
-mess things up while we're still learning" so it's probably buried in
-some thread.
-
---PI2T0JrbAUafY2qi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR9QAvAAoJELSic+t+oim94hwP/jMU8xE6tke4MrdRyKEsbnje
-QokN+rpuJ1K1f62HstHucFjmQlTgDd5Wb0MtSKX122Us5++9RRJbtqB2wSxQ72E2
-WDFzviIWyFdO6TxXXNzzgJTxROFt8FUDk82RfqTpwP/uYGddcEnfCJXkRqS0VJpJ
-lWGavSswnGCoK7YqSasSXllrq2WEWZHnQLcwiNjUt9YoAgrimLpTeMbjr4UXys1E
-uzCG2lBbQh66eB74d+JxHNbkRenibdvLHviGy7xbi3uY7K9MXJI+Ar67VxwGXfRX
-dGP51h8nHcReZXc4NWlzlB2vwO4FOGfs6A+1VeODHDaoqg/NndLSHNl+44QGCRvK
-7mmkgngKFUXQGFbHTtkCRRFPLgSslleBgcmYod5gJ5nbBrkBwX6obGSQhK0XQ/QI
-NzU98ICbAD6PKSiRyPJuor2b0+0tUEckhslZCdKELxCC7nmAhAWFYVrWsKS/YfBA
-6HzVNB0PjtfRH81BEv9/tzaKRPOzo/5IVZsd7AH/esDzYraMuQPh4/utJCA+A1Li
-LIurv/hqPpOnY6UgJuMckM7isSdJlakFdTJIvIQ4iWFIqmq4p5okLMLbTH1rXE7h
-Nwsa1lWrd4Br5znuzqZjFKprpm2W5Yf5VLhcIudI04nZnwCiQtrodEUkK9f/Bu3F
-jGrVvQH67P52AEIFYa9x
-=L0zL
------END PGP SIGNATURE-----
-
---PI2T0JrbAUafY2qi--
