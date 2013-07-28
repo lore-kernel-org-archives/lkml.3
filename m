@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732Ab3G1VqO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 17:46:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36163 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751650Ab3G1VqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 17:46:09 -0400
-Message-ID: <1375047960.2546.43.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: radeon firmware
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Borislav Petkov <bp@alien8.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Alex Deucher <alexdeucher@gmail.com>
-Date: Sun, 28 Jul 2013 22:46:00 +0100
-In-Reply-To: <CADnq5_PYtzY-fnRKbxioUcUTatCS+YvM3Cr-BxF+ZDzZ1uvnCA@mail.gmail.com>
-References: <20130721093610.GA30711@pd.tnic>
-	 <CADnq5_PYtzY-fnRKbxioUcUTatCS+YvM3Cr-BxF+ZDzZ1uvnCA@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-1yWuHbzsukCepZC6HcsX"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.101
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1752833Ab3G1V6G (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 17:58:06 -0400
+Received: from ozlabs.org ([203.10.76.45]:42556 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752159Ab3G1V6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 17:58:02 -0400
+Date: Mon, 29 Jul 2013 07:46:37 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130728214637.GC29970@voom.fritz.box>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <1416484.XDfk5G56BI@flatron>
+ <20130728131901.GA8864@netboy>
+ <2529481.u8xHuXumcd@flatron>
+ <CAKON4OzReTRb5JnJE+07vNJ-uDndLfqq8ha04J7K3x=WtsZEWw@mail.gmail.com>
+ <20130728153546.GB5224@netboy>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="iFRdW5/EC4oqxDHL"
+Content-Disposition: inline
+In-Reply-To: <20130728153546.GB5224@netboy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-1yWuHbzsukCepZC6HcsX
-Content-Type: text/plain; charset="UTF-8"
+--iFRdW5/EC4oqxDHL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Sun, 2013-07-21 at 09:12 -0400, Alex Deucher wrote:
-> On Sun, Jul 21, 2013 at 5:36 AM, Borislav Petkov <bp@alien8.de> wrote:
-> > Hey Alex,
-> >
-> > I keep getting people's configs with
-> >
-> > CONFIG_EXTRA_FIRMWARE=3D"... radeon/RV710_uvd.bin radeon/RV730_smc.bin.=
-.."
-> >
-> > but I can't find those blobs in the k.org fw repo:
-> >
-> > git://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.g=
-it
-> >
-> > This here http://www.x.org/wiki/radeonBuildHowTo/ says that
-> > http://people.freedesktop.org/~agd5f/radeon_ucode/ contains them, and,
-> > AFAICT, the license is the same. So what's the story, are those going
-> > into the firmware-linux repo anytime soon?
+On Sun, Jul 28, 2013 at 05:35:46PM +0200, Richard Cochran wrote:
+> On Sun, Jul 28, 2013 at 10:09:57AM -0400, jonsmirl@gmail.com wrote:
+> >=20
+> > 3.z kernel is free to alter the schema. But it will have to supply the
+> > necessary quirks needed to keep those old dtb's functioning.
 >=20
-> The UVD ucode is already there.  I send Ben the patches for the smc
-> ucode week or so ago, but I guess they haven't been applied yet.
+> The quirks idea sounds okay to me, if it can really provide forward
+> compatibility. In practice, I doubt anyone will really spend the
+> effort to make this work. I think it would be much easier to make sure
+> the bindings are "future proof" in the first place.
 
-I've just pushed them, so they should be available there in a few
-minutes.
+I should clarify.  The idea of DT quirks is not to remove the need to
+properly design and review bindings.  It's to limit the damage when
+there are, inevitably, failings in that process.  And when, also
+inevitably, firmware vendors ship DTs that don't follow the bindings
+correctly, even when there is a good one available.
 
-Ben.
+I think it's more likely that people will create, and get right, a
+well localized bit of quirk code, than they will get backwards compat
+code correct for every place in which a driver wants info from the
+device tree.
 
 --=20
-Ben Hutchings
-All extremists should be taken out and shot.
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
---=-1yWuHbzsukCepZC6HcsX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--iFRdW5/EC4oqxDHL
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Version: GnuPG v1.4.13 (GNU/Linux)
 
-iQIVAwUAUfWRGee/yOyVhhEJAQouoQ//U1Bw7+UDaAGGqCbjxBMtjNp+4s+nwVam
-0aA5qp7Es0IsQmbBcRZe6sYXf4qVpjscsHHBkrRR3MQ6H6xIaRniIXotgzkXw/7n
-Yd8lfQbf8sKhidjURj03BuHYMW2MZ6+XnVCYji9aYP9Jzvj93GMRZV0mboRwQgem
-qFLcpZn8sl921Aok5Jqs6SBIo+f09+dG8ZYPfSsojdHQ4FgvpHVCzzYK5MjG4Ssj
-zHIlyofg1mPyfpt4mW4DZGOdUhh/NapCxKG2kUPU0NNI210a3DpkUZiuooQJ2yXv
-dzx6ki4HD4zjYTohXEhze5qac/0jFqUCKFkQzbUvzQwDjFjvIFDa4ipQvcjp/sAy
-C6uCySvAgYvxAzEaW9RPv47hhXrz1vYD7uoDR4zF0ngsk755SRQWZWfeUqZ6ODS1
-oH5Rp/eMgwFQabLpZh/Csiom6BEjUwKwclH9o4OXKwNL59sr0CkzaZ2qOS8+RO5M
-+9p5B4LZTplwYNwSb/9ibIr8VPujTI3ML6FWJG98wlOEif12P+i3YfA0a4NziBPN
-DmbJ6NWW6MjdTsh0yPCY3PuwQWyZ/kc1VzCMIP2c0pNd3zUFlh9rUYWaJfwqBqGG
-q+efNRGYoV10v4j7DEwKItyEwfL2kUjEw1TZqX6rlojDZPG8C8jAdiv4CQCIbRSi
-MfiZMQKukIs=
-=9qpS
+iEYEARECAAYFAlH1kT0ACgkQaILKxv3ab8ZJ1wCgiTBGSRHcmagJGaoAseiRWiAi
+T50An0FNjwVq2aNaVE2D36wlc5t9j/vj
+=D2pq
 -----END PGP SIGNATURE-----
 
---=-1yWuHbzsukCepZC6HcsX--
+--iFRdW5/EC4oqxDHL--
