@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab3G1Eja (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 00:39:30 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:64903 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3G1Ej3 (ORCPT
+	id S1752670Ab3G1Ejq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 00:39:46 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52692 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730Ab3G1Ejo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 00:39:29 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: DT bindings as ABI [was: Do we have people interested in device tree janitoring / cleanup?]
-To: Olof Johansson <olof@lixom.net>, Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
-References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
-Date: Sat, 27 Jul 2013 22:39:25 -0600
-Message-Id: <20130728043925.8F3BE3E08FE@localhost>
+	Sun, 28 Jul 2013 00:39:44 -0400
+Date: Sat, 27 Jul 2013 21:39:43 -0700 (PDT)
+Message-Id: <20130727.213943.1973842777687951434.davem@davemloft.net>
+To: gregkh@linuxfoundation.org
+Cc: ben@decadent.org.uk, linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [ 06/79] net: Swap ver and type in pppoe_hdr
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130728041616.GA32761@kroah.com>
+References: <20130727.175541.1879192128080680197.davem@davemloft.net>
+	<1374981271.2476.0.camel@deadeye.wl.decadent.org.uk>
+	<20130728041616.GA32761@kroah.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 27 Jul 2013 21:39:43 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 25 Jul 2013 09:09:19 -0700, Olof Johansson <olof@lixom.net> wrote:
-> [I'm adding LKML and ksummit-discuss to this thread, since the ACPI/DT
-> discussions have been covered there and this overlaps some with that]
-> 
-> On Thu, Jul 25, 2013 at 7:38 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Thu, Jul 25, 2013 at 03:27:02PM +0100, Russell King - ARM Linux wrote:
-> >> Remember the stated assertion when DT was first added to the kernel: the
-> >> DT descriptions _will_ become a separately maintained project which is
-> >> independent of the kernel.  They will _not_ be kernel version specific.
-> >
-> > I'm looking forward to this.
-> >
-> > Question for the DT guys: what are the plans here? Are we going to get
-> > rid of the .dts files inside the kernel tree?
-> 
-> In the discussions we had in Dublin, a couple of options on how to
-> lock in bindings were discussed. I'm a little surprised that Grant
-> didn't cover them in his initial emails on the new maintainership
-> model, but maybe he wanted the new group to handle it. And they didn't
-> bring it up yet either. So I am. :-)
+From: Greg KH <gregkh@linuxfoundation.org>
+Date: Sat, 27 Jul 2013 21:16:16 -0700
 
-Excellent! My plan to avoid responsibility for stuff is proceeding.
-Actually, I think I touched on it, but the details got lost in my head
-among all the other stuff we discussed two weeks ago. Thanks for getting
-this detail down into an email.
+> On Sun, Jul 28, 2013 at 04:14:31AM +0100, Ben Hutchings wrote:
+>> On Sat, 2013-07-27 at 17:55 -0700, David Miller wrote:
+>> > From: Ben Hutchings <ben@decadent.org.uk>
+>> > Date: Sat, 27 Jul 2013 16:58:28 +0100
+>> > 
+>> > > I'm not so sure this is suitable for stable.  It doesn't seem to be
+>> > > helpful to either userland or kernel code.
+>> > > 
+>> > > In the kernel, we were checking that ver == 1 and type == 1 thus this
+>> > > wasn't hurting us.
+>> > > 
+>> > > If userland does anything more with these fields then it's probably
+>> > > already working around the swapped fields.  It can work with both old
+>> > > and new headers by doing:
+>> > 
+>> > It's up to you, I would rather have the corrected version propagated
+>> > as soon as possible.  But that's just me.
+>> 
+>> Let's see what Greg thinks.
+> 
+> I'm guessing that Linus's tree is also "wrong" here, correct?  If so,
+> the fix that goes into that tree should also go here as well.
+> 
+> Or am I confused?
 
-g.
+Linus's tree has had this change for a full release.  It went into
+3.10
+
+It's correcting a mistake that has been there since the header
+file even existed.
 
