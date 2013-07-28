@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab3G1AA1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 20:00:27 -0400
-Received: from server.prisktech.co.nz ([115.188.14.127]:51809 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611Ab3G1AAZ (ORCPT
+	id S1752894Ab3G1AIV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 20:08:21 -0400
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:63241 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752611Ab3G1AIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 20:00:25 -0400
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] dts: wandboard: Add support for SDIO bcm4329
-Date: Sun, 28 Jul 2013 12:00:20 +1200
-Message-Id: <1374969621-4187-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 27 Jul 2013 20:08:20 -0400
+MIME-Version: 1.0
+Date: Sun, 28 Jul 2013 08:08:18 +0800
+Message-ID: <CAPgLHd8v7oSuXuRwiMRJZQhW1UNHXwD-UtxFNMVW8LcP465xKA@mail.gmail.com>
+Subject: [PATCH] drm/cirrus: fix error handling in cirrus_device_init()
+From: Wei Yongjun <weiyj.lk@gmail.com>
+To: airlied@linux.ie, daniel.vetter@ffwll.ch, airlied@gmail.com,
+        paulmck@linux.vnet.ibm.com, dhowells@redhat.com, davej@redhat.com
+Cc: yongjun_wei@trendmicro.com.cn, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wandboard has a Broadcom 4329 WiFi connected via SDIO. This patch
-sets the required pins to enable the wifi module.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Fix the error handling in function cirrus_device_init() to avoid resources
+leak in the error handling case.
+
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- arch/arm/boot/dts/imx6qdl-wandboard.dtsi |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_main.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-index 7a46f64..2fb0e9b 100644
---- a/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-+++ b/arch/arm/boot/dts/imx6qdl-wandboard.dtsi
-@@ -73,9 +73,14 @@
- 	hog {
- 		pinctrl_hog: hoggrp {
- 			fsl,pins = <
--				MX6QDL_PAD_GPIO_0__CCM_CLKO1 	0x130b0
--				MX6QDL_PAD_GPIO_2__GPIO1_IO02	0x80000000
--				MX6QDL_PAD_EIM_DA9__GPIO3_IO09	0x80000000
-+				MX6QDL_PAD_GPIO_0__CCM_CLKO1 	 0x130b0
-+				MX6QDL_PAD_GPIO_2__GPIO1_IO02	 0x80000000
-+				MX6QDL_PAD_EIM_DA9__GPIO3_IO09	 0x80000000
-+				MX6QDL_PAD_EIM_EB1__GPIO2_IO29   0x80000000 /* WL_REF_ON */
-+				MX6QDL_PAD_EIM_A25__GPIO5_IO02   0x80000000 /* WL_RST_N */
-+				MX6QDL_PAD_ENET_RXD1__GPIO1_IO26 0x80000000 /* WL_REG_ON */
-+				MX6QDL_PAD_ENET_TXD1__GPIO1_IO29 0x80000000 /* WL_HOST_WAKE */
-+				MX6QDL_PAD_ENET_TXD0__GPIO1_IO30 0x80000000 /* WL_WAKE */
- 			>;
- 		};
- 	};
--- 
-1.7.9.5
+diff --git a/drivers/gpu/drm/cirrus/cirrus_main.c b/drivers/gpu/drm/cirrus/cirrus_main.c
+index 3a7a0ef..5f59bb0 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_main.c
++++ b/drivers/gpu/drm/cirrus/cirrus_main.c
+@@ -138,17 +138,22 @@ int cirrus_device_init(struct cirrus_device *cdev,
+ 	}
+ 
+ 	cdev->rmmio = ioremap(cdev->rmmio_base, cdev->rmmio_size);
+-
+-	if (cdev->rmmio == NULL)
+-		return -ENOMEM;
++	if (cdev->rmmio == NULL) {
++		ret = -ENOMEM;
++		goto err_ioremap;
++	}
+ 
+ 	ret = cirrus_vram_init(cdev);
+-	if (ret) {
+-		release_mem_region(cdev->rmmio_base, cdev->rmmio_size);
+-		return ret;
+-	}
++	if (ret)
++		goto err_init;
+ 
+ 	return 0;
++
++err_init:
++	iounmap(cdev->rmmio);
++err_ioremap:
++	release_mem_region(cdev->rmmio_base, cdev->rmmio_size);
++	return ret;
+ }
+ 
+ void cirrus_device_fini(struct cirrus_device *cdev)
 
