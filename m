@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab3G1IAz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 04:00:55 -0400
-Received: from smtp.xy24.at ([85.126.109.136]:54506 "EHLO renate.xy24.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753234Ab3G1IAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 04:00:54 -0400
-X-Greylist: delayed 897 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Jul 2013 04:00:53 EDT
-Message-ID: <51F4CC18.4090109@universalnet.at>
-Date: Sun, 28 Jul 2013 09:45:28 +0200
-From: Bernd Krumboeck <krumboeck@universalnet.at>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1753270Ab3G1IMd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 04:12:33 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39888 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab3G1IM2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 04:12:28 -0400
+Message-ID: <51F4D18A.7080605@linux.vnet.ibm.com>
+Date: Sun, 28 Jul 2013 13:38:42 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: linux-can@vger.kernel.org
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
-Subject: Re: [PATCH] can: usb_8dev: fix urb leak on failure path in usb_8dev_start()
-References: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
-In-Reply-To: <1374096033-28981-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.4 (renate.xy24.at [85.126.109.136]); Sun, 28 Jul 2013 09:45:48 +0200 (CEST)
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: stable 3-10-3: strange output of  "lsmod | grep ^acpi_cpufreq"
+References: <51F40612.2050403@gmx.de> <4531734.kTFAPunoch@vostro.rjw.lan> <51F4D17F.1090107@gmx.de>
+In-Reply-To: <51F4D17F.1090107@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072808-1396-0000-0000-000003534E05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks!
+On 07/28/2013 01:38 PM, Toralf Förster wrote:
+> On 07/28/2013 01:39 AM, Rafael J. Wysocki wrote:
+>> On Saturday, July 27, 2013 07:40:34 PM Toralf Förster wrote:
+>>> it gives at a ThinkPad T420:
+>>>
+>>> tfoerste@n22 ~/tmp $ lsmod | grep ^acpi_cpufreq
+>>> acpi_cpufreq           12902  2147483647
+>>
+>> That is -1, which indicates some module refcount woes.
+>>
+>> I definitely can't see that with the mainline on my machines.
+> 
+> It might be a regression in -stable only, b/c in 3,10.2 I did not
+> observed it.
+> 
+> Srivatsa,
+> 
+> by any chance - could the revert of the cpufreq patches have something
+> to do with that ?
+>
 
-Added to repository on github: https://github.com/krumboeck/usb2can
+Hmmm? Those reverts didn't touch anything related to module
+refcounts.. So I don't think they have anything to do with this.
 
-regards,
-Bernd
+Also, is the issue related to suspend/resume at all? (Sorry, I don't
+have your original email, so I'm not sure what the exact issue is).
 
-
-Am 2013-07-17 23:20, schrieb Alexey Khoroshilov:
-> If usb_8dev_start() fails to submit urb,
-> it unanchors the urb but forgets to free it.
->
-> Found by Linux Driver Verification project (linuxtesting.org).
->
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
-> ---
->   drivers/net/can/usb/usb_8dev.c | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/net/can/usb/usb_8dev.c b/drivers/net/can/usb/usb_8dev.c
-> index cbd388e..8becd3d 100644
-> --- a/drivers/net/can/usb/usb_8dev.c
-> +++ b/drivers/net/can/usb/usb_8dev.c
-> @@ -779,6 +779,7 @@ static int usb_8dev_start(struct usb_8dev_priv *priv)
->   			usb_unanchor_urb(urb);
->   			usb_free_coherent(priv->udev, RX_BUFFER_SIZE, buf,
->   					  urb->transfer_dma);
-> +			usb_free_urb(urb);
->   			break;
->   		}
->
->
+ 
+Regards,
+Srivatsa S. Bhat
 
