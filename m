@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753738Ab3G1POm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 11:14:42 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:54050 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753657Ab3G1POk (ORCPT
+	id S1753757Ab3G1Paj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 11:30:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37801 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab3G1Pai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 11:14:40 -0400
-From: David Ahern <dsahern@gmail.com>
-To: acme@ghostprotocols.net, linux-kernel@vger.kernel.org
-Cc: David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf tool: Actually show symbol offset in stack trace when requested
-Date: Sun, 28 Jul 2013 09:14:34 -0600
-Message-Id: <1375024474-45726-1-git-send-email-dsahern@gmail.com>
-X-Mailer: git-send-email 1.7.10.1
+	Sun, 28 Jul 2013 11:30:38 -0400
+Date: Sun, 28 Jul 2013 08:31:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
+Subject: Re: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Message-ID: <20130728153155.GA6781@kroah.com>
+References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
+ <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
+ <20130724160008.GA17083@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
+ <20130724162605.GA9700@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE73993@HASMSX106.ger.corp.intel.com>
+ <20130724202957.GA14913@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE76B1B@HASMSX106.ger.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AE76B1B@HASMSX106.ger.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Symbol offset is one of the fields that can be requested in perf-script.
-Currently you do not get that data when requested. e.g.,
+On Sun, Jul 28, 2013 at 08:48:24AM +0000, Winkler, Tomas wrote:
+> > On Wed, Jul 24, 2013 at 06:04:33PM +0000, Winkler, Tomas wrote:
+> > >
+> > >
+> > > > >
+> > > > > Just to make sure, is this what you're suggesting ?
+> > > > >
+> > > > > device->groups = mei_attr_groups
+> > > > > mei_misc_device.parent = device;
+> > > > > ret = misc_register(&mei_misc_device);
+> > > >
+> > > > Yes, that should work.  If not, please let me know, the code
+> > > > underwent some changes in 3.11-rc2.
+> > >
+> > > I don' t see the file being created.
+> > > Not sure if the  misc_register setup the parent sysfs as well.
+> > 
+> > Oops, wait, the parent is already registered, that's not going to work, you
+> > want to create the files for the device itself that you are creating, so set the -
+> > >groups field for that device.
+> > 
+> > sorry about that.
+> 
+> So is this okay to go as  is?
 
-perf script -f comm,tid,pid,time,cpu,sym,symoff,ip
-...
-gcc  6201/6201  [006] 762250.617897:
-    ffffffff81090d95 update_curr
-    ffffffff810911b8 dequeue_entity
-    ffffffff81091825 dequeue_task_fair
-    ffffffff81087163 dequeue_task
-    ffffffff81087c03 deactivate_task
-...
-
-With this patch you get the offset:
-...
-gcc  6201/6201  [006] 762250.617897:
-    ffffffff81090d95 update_curr+0x1c5
-    ffffffff810911b8 dequeue_entity+0x28
-    ffffffff81091825 dequeue_task_fair+0x45
-    ffffffff81087163 dequeue_task+0x93
-    ffffffff81087c03 deactivate_task+0x23
-...
-
-Signed-off-by: David Ahern <dsahern@gmail.com>
----
- tools/perf/util/session.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index 272c9cf..38320ac 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1411,8 +1411,13 @@ void perf_evsel__print_ip(struct perf_evsel *evsel, union perf_event *event,
- 			printf("\t%16" PRIx64, node->ip);
- 			if (print_sym) {
- 				printf(" ");
--				symbol__fprintf_symname(node->sym, stdout);
-+				if (print_symoffset) {
-+					al.addr = node->ip;
-+					symbol__fprintf_symname_offs(node->sym, &al, stdout);
-+				} else
-+					symbol__fprintf_symname(node->sym, stdout);
- 			}
-+
- 			if (print_dso) {
- 				printf(" (");
- 				map__fprintf_dsoname(node->map, stdout);
--- 
-1.7.10.1
-
+What is "this"?
