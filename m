@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab3G1LJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 07:09:27 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:53849 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab3G1LJZ (ORCPT
+	id S1753451Ab3G1L2P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 07:28:15 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:34556 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753412Ab3G1L2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 07:09:25 -0400
-Message-ID: <51F4FA34.2070509@gmail.com>
-Date: Sun, 28 Jul 2013 13:02:12 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Sun, 28 Jul 2013 07:28:13 -0400
+Date: Sun, 28 Jul 2013 12:27:46 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Message-ID: <20130728112746.GM9858@sirena.org.uk>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726045433.GB4100@netboy>
+ <20130726171524.GB28895@obsidianresearch.com>
+ <20130727084825.GA4707@netboy>
+ <20130727104018.GC9858@sirena.org.uk>
+ <20130727173748.GA4813@netboy>
 MIME-Version: 1.0
-To: Vladimir Davydov <vdavydov@parallels.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, criu@openvz.org, devel@openvz.org,
-        xemul@parallels.com
-Subject: Re: [PATCH RFC] pram: persistent over-kexec memory file system
-References: <1374841763-11958-1-git-send-email-vdavydov@parallels.com> <51F3EA2A.3090905@gmail.com> <51F404D0.6070004@parallels.com> <51F40570.9050209@gmail.com> <51F4ECF2.6040408@parallels.com>
-In-Reply-To: <51F4ECF2.6040408@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PI2T0JrbAUafY2qi"
+Content-Disposition: inline
+In-Reply-To: <20130727173748.GA4813@netboy>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 28/07/2013 12:05, Vladimir Davydov ha scritto:
-> On 07/27/2013 09:37 PM, Marco Stornelli wrote:
->> Il 27/07/2013 19:35, Vladimir Davydov ha scritto:
->>> On 07/27/2013 07:41 PM, Marco Stornelli wrote:
->>>> Il 26/07/2013 14:29, Vladimir Davydov ha scritto:
->>>>> Hi,
->>>>>
->>>>> We want to propose a way to upgrade a kernel on a machine without
->>>>> restarting all the user-space services. This is to be done with CRIU
->>>>> project, but we need help from the kernel to preserve some data in
->>>>> memory while doing kexec.
->>>>>
->>>>> The key point of our implementation is leaving process memory in-place
->>>>> during reboot. This should eliminate most io operations the services
->>>>> would produce during initialization. To achieve this, we have
->>>>> implemented a pseudo file system that preserves its content during
->>>>> kexec. We propose saving CRIU dump files to this file system,
->>>>> kexec'ing
->>>>> and then restoring the processes in the newly booted kernel.
->>>>>
->>>>
->>>> http://pramfs.sourceforge.net/
->>>
->>> AFAIU it's a bit different thing: PRAMFS as well as pstore, which has
->>> already been merged, requires hardware support for over-reboot
->>> persistency, so called non-volatile RAM, i.e. RAM which is not directly
->>> accessible and so is not used by the kernel. On the contrary, what we'd
->>> like to have is preserving usual RAM on kexec. It is possible, because
->>> RAM is not reset during kexec. This would allow leaving applications
->>> working set as well as filesystem caches in place, speeding the reboot
->>> process as a whole and reducing the downtime significantly.
->>>
->>> Thanks.
->>
->> Actually not. You can use normal system RAM reserved at boot with mem
->> parameter without any kernel change. Until an hard reset happens, that
->> area will be "persistent".
->
-> Thank you, we'll look at PRAMFS closer, but right now, after trying it I
-> have a couple of concerns I'd appreciate if you could clarify:
->
-> 1) As you advised, I tried to reserve a range of memory (passing
-> memmap=4G$4G at boot) and mounted PRAMFS using the following options:
->
-> # mount -t pramfs -o physaddr=0x100000000,init=4G,bs=4096 none /mnt/pramfs
->
-> And it turned out that PRAMFS is very slow as compared to ramfs:
->
-> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
-> bs=4096 count=$[100*1024]
-> 102400+0 records in
-> 102400+0 records out
-> 419430400 bytes (419 MB) copied, 9.23498 s, 45.4 MB/s
-> # dd if=/dev/zero of=/mnt/pramfs if=/dev/zero of=/mnt/pramfs/dummy
-> bs=4096 count=$[100*1024] conv=notrunc
-> 102400+0 records in
-> 102400+0 records out
-> 419430400 bytes (419 MB) copied, 3.04692 s, 138 MB/s
->
-> We need it to be as fast as usual RAM, because otherwise the benefit of
-> it over hdd disappears. So before diving into the code, I'd like to ask
-> you if it's intrinsic to PRAMFS, or can it be fixed? Or, perhaps, I used
-> wrong mount/boot/config options (btw, I enabled only CONFIG_PRAMFS)?
->
 
-In x86 you should have the write protection enabled. Turn it off or 
-mount it with noprotect option.
+--PI2T0JrbAUafY2qi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 2) To enable saving application dump files in memory using PRAMFS, one
-> should reserve half of RAM for it. That's too expensive. While with
-> ramfs, once SPLICE_F_MOVE flag is implemented, one could move anonymous
-> memory pages to ramfs page cache and after kexec move it back so that
-> almost no extra memory space costs would be required. Of course,
-> SPLICE_F_MOVE is to be yet implemented, but with PRAMFS significant
-> memory costs are inevitable... or am I wrong?
->
-> Thanks.
+On Sat, Jul 27, 2013 at 07:37:48PM +0200, Richard Cochran wrote:
+> On Sat, Jul 27, 2013 at 11:40:18AM +0100, Mark Brown wrote:
 
- From this point of view you are right. Pramfs (or other solution like 
-that) are out of page cache, so you can't do any memory transfer. It's 
-like to have a disk but it's actually a separate piece of RAM. We could 
-talk about it again when this kind of implementation will be done.
+> > We did have exactly the same discussion when the DT transition was
+> > started - this isn't something that people only just realised might be
+> > an issue.  There was a deliberate decision to focus on getting the
+> > technology deployed to the point where it could be used as a straight
+> > replacement for board files and accept that sometimes the results won't
+> > be perfect and that we may need to rework as a result.
 
-Marco
+> Can you tell a bit more about this decision? When was it made? Who
+> made it? How was it made public?
+
+I honestly can't remember exactly - it was part of the discussion about
+keeping the .dtb files in the kernel IIRC.  Given the timing and the
+fact that I remember it it'd have been a mailing list discussion but I
+couldn't point you at it without searching for a needle in a haystack,
+sorry.  Perhaps there's a LWN writeup or something.
+
+It's not the "we don't care" that you're seeing, it's more a product of
+"we're not sure what we're doing yet, let's give ourselves a pass if we
+mess things up while we're still learning" so it's probably buried in
+some thread.
+
+--PI2T0JrbAUafY2qi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR9QAvAAoJELSic+t+oim94hwP/jMU8xE6tke4MrdRyKEsbnje
+QokN+rpuJ1K1f62HstHucFjmQlTgDd5Wb0MtSKX122Us5++9RRJbtqB2wSxQ72E2
+WDFzviIWyFdO6TxXXNzzgJTxROFt8FUDk82RfqTpwP/uYGddcEnfCJXkRqS0VJpJ
+lWGavSswnGCoK7YqSasSXllrq2WEWZHnQLcwiNjUt9YoAgrimLpTeMbjr4UXys1E
+uzCG2lBbQh66eB74d+JxHNbkRenibdvLHviGy7xbi3uY7K9MXJI+Ar67VxwGXfRX
+dGP51h8nHcReZXc4NWlzlB2vwO4FOGfs6A+1VeODHDaoqg/NndLSHNl+44QGCRvK
+7mmkgngKFUXQGFbHTtkCRRFPLgSslleBgcmYod5gJ5nbBrkBwX6obGSQhK0XQ/QI
+NzU98ICbAD6PKSiRyPJuor2b0+0tUEckhslZCdKELxCC7nmAhAWFYVrWsKS/YfBA
+6HzVNB0PjtfRH81BEv9/tzaKRPOzo/5IVZsd7AH/esDzYraMuQPh4/utJCA+A1Li
+LIurv/hqPpOnY6UgJuMckM7isSdJlakFdTJIvIQ4iWFIqmq4p5okLMLbTH1rXE7h
+Nwsa1lWrd4Br5znuzqZjFKprpm2W5Yf5VLhcIudI04nZnwCiQtrodEUkK9f/Bu3F
+jGrVvQH67P52AEIFYa9x
+=L0zL
+-----END PGP SIGNATURE-----
+
+--PI2T0JrbAUafY2qi--
