@@ -1,100 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab3G1Sjr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 14:39:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39022 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932Ab3G1Sjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752649Ab3G1Sjp (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 28 Jul 2013 14:39:45 -0400
-Date: Sun, 28 Jul 2013 11:39:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux@roeck-us.net, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        stable@vger.kernel.org
-Subject: Re: [ 00/45] 3.0.88-stable review
-Message-ID: <20130728183944.GB27253@kroah.com>
-References: <20130726205654.896050165@linuxfoundation.org>
- <20130727062230.5580181gtrfxe83k@67.228.131.205>
- <1374967837.3607.31.camel@deadeye.wl.decadent.org.uk>
+Received: from mx1.redhat.com ([209.132.183.28]:64250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab3G1Sjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 14:39:43 -0400
+Date: Sun, 28 Jul 2013 20:34:07 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/6] tracing: open/delete fixes
+Message-ID: <20130728183407.GA16723@redhat.com>
+References: <20130726172513.GA3586@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374967837.3607.31.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130726172513.GA3586@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 28, 2013 at 12:30:37AM +0100, Ben Hutchings wrote:
-> On Sat, 2013-07-27 at 06:22 -0500, linux@roeck-us.net wrote:
-> > Quoting Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> > 
-> > > This is the start of the stable review cycle for the 3.0.88 release.
-> > > There are 45 patches in this series, all will be posted as a response
-> > > to this one.  If anyone has any issues with these being applied, please
-> > > let me know.
-> > >
-> > > Responses should be made by Sun Jul 28 20:54:53 UTC 2013.
-> > > Anything received after that time might be too late.
-> > >
-> > > The whole patch series can be found in one patch at:
-> > > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.88-rc1.gz
-> > > and the diffstat can be found below.
-> > >
-> > We have additional build failures.
-> > 
-> > Total builds: 54 Total build errors: 20
-> > 
-> > Link:  
-> > http://desktop.roeck-us.net/buildlogs/v3.0.87-45-g367423c.2013-07-27.03:09:16
-> > 
-> > Previously:
-> > Total builds: 54 Total build errors: 17
-> > 
-> > Additional failures are i386/allmodconfig, i386/allyesconfig and mips/malta.
-> > 
-> > I don't have time to track down the culprit tonight (I am still in  
-> > Down Under ;). I hope I can do it tomorrow.
-> 
-> I iterated through the 3.0 patch queue with i386/allmodconfig, and got
-> to:
-> 
-> Applying patch ifb-fix-rcu_sched-self-detected-stalls.patch
-> patching file drivers/net/ifb.c
-> 
-> Now at patch ifb-fix-rcu_sched-self-detected-stalls.patch
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CALL    scripts/checksyscalls.sh
->   CHK     include/generated/compile.h
->   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
->   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
->   VDSOSYM arch/x86/vdso/vdso32-syms.lds
->   LD      arch/x86/vdso/built-in.o
->   LD      arch/x86/built-in.o
->   CC [M]  drivers/net/ifb.o
-> drivers/net/ifb.c: In function ‘ifb_init_module’:
-> drivers/net/ifb.c:257:3: error: implicit declaration of function ‘cond_resched’ [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> make[2]: *** [drivers/net/ifb.o] Error 1
-> make[1]: *** [drivers/net] Error 2
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [drivers] Error 2
-> 
-> I think this patch needs to add a '#include <linux/sched.h>', but that
-> header is being included indirectly in some other configurations (and in
-> mainline).
-> 
-> With that change, I can apply the remaining patches and compile
-> 3.0.88-rc1 successfully.
+On 07/26, Oleg Nesterov wrote:
+>
+> Testing: seems to work, but assumes that debugs was fixed too. Hopefully
+> "debugfs: debugfs_remove_recursive() must not rely on list_empty(d_subdirs)"
+> is fine.
+>
+> (We should probably make debugfs_remove_recursive() to return the error
+>  and trace_events.c should warn if it fails)
+>
+> However: I am still testing this patches, so this is still mostly for
+> review. I'll report if I find anything,
 
-Odd that this didn't trigger on x86-64.  Anyway, thanks, I've made this
-change to the patch, so all should be good in the final version.  If
-not, please let me know.
+I tried to play more with these patches, and didn't find anything wrong.
 
-thanks,
+However, after I re-read 6/6 I think it should be updated:
 
-greg k-h
+	- remove_event_file_dir() needs to check file->dir != NULL
+
+	  it can be NULL if event_create_dir()->debugfs_create_dir()
+	  fails, or if event_create_dir() fails before.
+
+	- I've also added spin_lock(d_lock) and d_inode != NULL check.
+
+	  I do not think this is needed. Afaics __create_file() can't
+	  leave the !debugfs_positive() file on ->d_subdirs list if
+	  debugfs_get_inode() fails, dput()->d_kill() should remove it.
+
+	  But I do not understand this code enough, and debugfs checks
+	  d_inode != NULL all the time.
+
+I am sending "PATCH v3 6/6" in reply to "PATCH v2 6/6". See the diff
+below.
+
+So I am waiting for your review. If you and Masami agree with these
+changes I'll resend other fixes (1 from me and 2 from Steven) on top
+of this series.
+
+Oleg.
+
+--- x/kernel/trace/trace_events.c
++++ x/kernel/trace/trace_events.c
+@@ -431,12 +431,18 @@ static void remove_event_file_dir(struct
+ 	struct dentry *dir = file->dir;
+ 	struct dentry *child;
+ 
+-	/* ->i_mutex is not needed, nobody can create/remove a file */
+-	list_for_each_entry(child, &dir->d_subdirs, d_u.d_child)
+-		child->d_inode->i_private = NULL;
++	if (dir) {
++		spin_lock(&dir->d_lock);	/* probably unneeded */
++		list_for_each_entry(child, &dir->d_subdirs, d_u.d_child) {
++			if (child->d_inode)	/* probably unneeded */
++				child->d_inode->i_private = NULL;
++		}
++		spin_unlock(&dir->d_lock);
++
++		debugfs_remove_recursive(dir);
++	}
+ 
+ 	list_del(&file->list);
+-	debugfs_remove_recursive(dir);
+ 	remove_subsystem(file->system);
+ 	kmem_cache_free(file_cachep, file);
+ }
+
