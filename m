@@ -1,50 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753157Ab3G1DVK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 27 Jul 2013 23:21:10 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52177 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753007Ab3G1DVI (ORCPT
+	id S1753167Ab3G1D2h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 27 Jul 2013 23:28:37 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:62536 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753080Ab3G1D2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 27 Jul 2013 23:21:08 -0400
-Date: Sat, 27 Jul 2013 20:21:07 -0700 (PDT)
-Message-Id: <20130727.202107.555068116238400560.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: gregkh@linuxfoundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 1/3] net/usb/r815x: replace USB buffer from stack to
- DMA-able
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1374739144-732-1-git-send-email-hayeswang@realtek.com>
-References: <20130724.174947.452272360732442554.davem@davemloft.net>
-	<1374739144-732-1-git-send-email-hayeswang@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Sat, 27 Jul 2013 20:21:08 -0700 (PDT)
+	Sat, 27 Jul 2013 23:28:36 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com>
+ <2460092.aLmjrOVh1g@flatron> <51F3A82E.2000907@broadcom.com>
+ <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
+ <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com> <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 27 Jul 2013 21:28:15 -0600
+X-Google-Sender-Auth: ldHs45zot471kE7vb3Tbkqo3uwk
+Message-ID: <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
+ interested in device tree janitoring / cleanup?]
+To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Cc: Arend van Spriel <arend@broadcom.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Thu, 25 Jul 2013 15:59:02 +0800
+On Sat, Jul 27, 2013 at 2:25 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Sat, Jul 27, 2013 at 2:01 PM, jonsmirl@gmail.com <jonsmirl@gmail.com> wrote:
+>> On Sat, Jul 27, 2013 at 3:45 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>> On Sat, Jul 27, 2013 at 4:59 AM, Arend van Spriel <arend@broadcom.com> wrote:
+>>>> Let's see how many people go and scream if I say this: Too bad .dts files
+>>>> are not done using XML format as DT bindings could be described using XML
+>>>> Schema.
+>>>
+>>> Draft an example and show us how it would look!  :-)  There is
+>>> absolutely nothing preventing us from expressing a DT in XML format,
+>>> or even using XSLT to define DT schema while still using our current
+>>> .dts syntax. It would be trivial to do lossless translation between
+>>> .dts syntax and xml.
+>>>
+>>> The problem that I have with XML and XSLT is that it is very verbose
+>>> and not entirely friendly to mere-mortals. However, I'm more than
+>>> willing to be proved wrong on this point.
+>>
+>> I considered this approach a while ago and discarded it. It would work
+>> but it is just too much of a Frankenstein monster.
+>>
+>> Much cleaner to modify dtc to take a schema as part of the compilation
+>> process. The schema language itself has no requirement to look like
+>> DTS syntax. Whoever wrote dtc probably has a favorite language that
+>> would be good for writing schemas in.
+>
+> Making it part of dtc is a required feature as far as I'm concerned.
+> Using XML/XSLT and dtc-integration are not mutually exclusive, but I
+> digress.
 
-> Some USB buffers use stack which may not be DMA-able.
-> Use the buffers from kmalloc to replace those one.
-> 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+Oops, ignore the XSLT bit. XSLT isn't schema and has no bearing on the
+discussion of schema. Sorry for the noise.
 
-I don't think it's reasonable to kmalloc() a small integer every time
-you want to use a USB message transfer to read or write chip
-registers.
-
-Instead, add a scratch buffer to struct r8152 which is allocated once
-at driver attach time and which you can use for the transfers.
-
-I think you only need an array of two u32's so something like:
-
-	u32		transfer_buf[2];
-
-ought to be sufficient.
-
+g.
