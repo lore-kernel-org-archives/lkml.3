@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab3G1J3A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 05:29:00 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54293 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab3G1J27 (ORCPT
+	id S1753348Ab3G1J51 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 05:57:27 -0400
+Received: from mail-lb0-f193.google.com ([209.85.217.193]:44725 "EHLO
+	mail-lb0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab3G1J50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 05:28:59 -0400
-Message-ID: <51F4E446.6060907@parallels.com>
-Date: Sun, 28 Jul 2013 13:28:38 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Sun, 28 Jul 2013 05:57:26 -0400
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "Xiao Guangrong" <xiaoguangrong@linux.vnet.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "Stephen Rothwell" <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
-References: <20130726201807.GJ8661@moon> <CALCETrUJa-Y40vnb6YOPry0dCXb3zCQ0y19i2yHWdzKR75HUzg@mail.gmail.com> <51F41FA0.6060205@parallels.com>
-In-Reply-To: <51F41FA0.6060205@parallels.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [89.169.95.100]
+Date: Sun, 28 Jul 2013 15:27:24 +0530
+Message-ID: <CALHRZurovUkQboM_o-q7U-EK6n5zJ78vcoNEc1HFv=-R52wMvA@mail.gmail.com>
+Subject: [RFC] Request for suggestions
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org, arnd@arndb.de,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 11:29 PM, Pavel Emelyanov wrote:
-> On 07/27/2013 12:55 AM, Andy Lutomirski wrote:
->> On Fri, Jul 26, 2013 at 1:18 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>> Andy reported that if file page get reclaimed we loose soft-dirty bit
->>> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
->>> get encoded into pte entry. Thus when #pf happens on such non-present
->>> pte we can restore it back.
->>>
->>
->> Unless I'm misunderstanding this, it's saving the bit in the
->> non-present PTE.  This sounds wrong -- what happens if the entire pmd
->> (or whatever the next level is called) gets zapped?  (Also, what
->> happens if you unmap a file and map a different file there?)
-> 
-> The whole pte gets zapped on vma unmap, and in this case forgetting
-> the soft-dirty bit completely is OK.
+Hi All,
 
-I mean -- soft-dirty bits denote changes in the vm area, if you remove
-one, then it can be found out from the /proc/pid/maps file that the
-vma has disappeared.
+AXI bus Monitor(AM) has set of counters which are used to collect
+metrics related to AXI transactions happening between Masters and Slaves
+in an AXI system. Example metrics which can be calculated using AM are
+as below:
+Read Latency
+Write Latency
+Idle Read/Write Cycle counts
+Number of Transactions
+Number of Bytes transferred
+Number of Read/Write Last signals issued.
+etc.,
+AM raises interrupts during counter overflows and there is Sample Interval
+down counter which raises interrupt and takes snapshot of all counters and
+stores in set of registers. Use case for this IP will be as follows:
+User confiures his required metrics to be collected by Counters.
+User sets Sample Interval down counter depending on the metrics
+monitoring sampling rate.
+Start counters.
+Collect metrics data when AM issues Sample Interval
+down Counter interrupt.
 
-But one problem really went unnoticed here -- if we map a new vma in 
-place of some old one with the same flags and prots. It looks like we 
-need a vma soft-dirty mark, that is set on mmap and mremap, is cleared 
-on soft dirty clear and is propagated into pte pagemap bits.
-
->> --Andy
+What would be the appropriate framework/interface of Linux Driver for AM?
+I have been thinking of interfaces-
+UIO
+Char
+sysfs
+The main problem I see is signalling interrupts to Userspace.
+Please suggest me the best interface.
 
 Thanks,
-Pavel
+Sundeep
