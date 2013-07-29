@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab3G2SRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:17:18 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:43091 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab3G2SRP (ORCPT
+	id S1758649Ab3G2SSI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:18:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39167 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab3G2SSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:17:15 -0400
-Date: Mon, 29 Jul 2013 20:17:11 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: memcg creates an unkillable task in 3.2-rc2
-Message-ID: <20130729181711.GA6174@dhcp22.suse.cz>
-References: <20130723174711.GE21100@mtj.dyndns.org>
- <8761vui4cr.fsf@xmission.com>
- <20130729075939.GA4678@dhcp22.suse.cz>
- <87ehahg312.fsf@xmission.com>
- <20130729095109.GB4678@dhcp22.suse.cz>
- <20130729161026.GD22605@mtj.dyndns.org>
- <87r4eh70yg.fsf@xmission.com>
- <20130729172046.GI22605@mtj.dyndns.org>
+	Mon, 29 Jul 2013 14:18:05 -0400
+Date: Mon, 29 Jul 2013 19:16:07 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in
+	device tree janitoring / cleanup?]
+Message-ID: <20130729181607.GM24642@n2100.arm.linux.org.uk>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com> <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <51F168FC.9070906@wwwdotorg.org> <20130725182920.GA24955@e106331-lin.cambridge.arm.com> <20130725184834.GA8296@netboy> <20130725213753.GC17616@obsidianresearch.com> <20130726045433.GB4100@netboy> <20130726171524.GB28895@obsidianresearch.com> <20130727084825.GA4707@netboy> <20130729175400.GB15861@obsidianresearch.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729172046.GI22605@mtj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130729175400.GB15861@obsidianresearch.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-07-13 13:20:46, Tejun Heo wrote:
-> Hey, Eric.
+On Mon, Jul 29, 2013 at 11:54:00AM -0600, Jason Gunthorpe wrote:
+> There is no way I can possibly ship a product with a DT that is
+> finished. I can't tie my company's product release cycles to the whims
+> of the kernel community.
 > 
-> On Mon, Jul 29, 2013 at 10:03:35AM -0700, Eric W. Biederman wrote:
-> > So this is not a simple matter of a frozen task not dying when SIGKILL
-> > is received.  For the most part not dying when SIGKILL is received seems
-> > like correct behavior for a frozne task.  Certainly it is correct
-> > behavior for any other signal.
-> > 
-> > The issue is that the tasks don't freeze or that when thawed the SIGKILL
-> > is still ignored.  It seems a wake up is being missed in there somewhere.
+> So embedded people are going to ship with unfinished DT and upgrade
+> later. They have to. There is no choice. Stable DT doesn't change
+> anything unless you can create perfect stable bindings for a new SOC
+> instantaneously.
 > 
-> That's actually interesting and shouldn't be happening.  Can you
-> please provide more data as to what's going on while freezing?  It's
-> likely that the problem is not caused by freezer per-se, the task
-> might be stuck elsewhere and just fails to reach the freezing point.
-> 
-> Would it be possible for memcg and freezer to deadlock?
+> This is where I see the whole disconnect in this
+> discussion. General-purpose and embedded are *DIFFERENT* users, and
+> they have different use-cases and different needs.
 
-Hmm, all that memcg cares about is to have only one task to call oom
-handler and put other tasks on the wait queue. If the memcg oom is
-disabled, and supposed to be handled from the userspace, then all of
-them are sitting on the wait queue.
-All the waiters are woken up when there is an uncharge and/or after
-mem_cgroup_out_of_memory has been called.
+We have had for the last 20 odd years a stable kernel syscall ABI, in
+that syscalls which were around 20 years ago are still around today,
+and still function according to how they're meant to.
 
-> Note that while freezing is in progress, some tasks will enter freezer
-> earlier than others (of course) and won't respond to anything.  If
-> memcg adds wait dependency among the tasks being frozen, it'll surely
-> deadlock.
+However, some syscalls were found to be insufficient for todays needs,
+so they got augmented.  For example, the uid/gid IDs used to be 16-bit.
+We now have 32-bit versions, but the 16-bit versions are still there.
+(Since ARM started out from early 1.0 times, it too has the 16-bit
+syscalls, and _still_ does.)
 
-If memcg oom is enabled and the killed task is frozen then we might end
-up with one task looping there until the oom victim is unfrozen. There
-is no entry point to the fridge from the charging path so I believe that
-memcg under oom might be unfreezable under certain conditions.
+So, "stable" is possible.
 
-If the memcg is disabled, like in this case, then there shouldn't be any
-way to deadlock or prevent from freezing unless there is an issue with
-freezer vs. wait queue.
+What has to be realised to achieve that it requires nothing more than
+a "keep existing stuff working" attitude towards it.  When you need to
+change the interface, you supplement it, leaving the old version to
+work in the same manner that it used to (yes, you should choose to
+implement the old interfaces using the new stuff, just like we support
+the 16-bit UID calls but internally deal with 32-bit UIDs.)
 
-[...]
-> > I am also seeing what looks like a leak somewhere in the cgroup code as
-> > well.  After some runs of the same reproducer I get into a state where
-> > after everything is clean up.  All of the control groups have been
-> > removed and the cgroup filesystem is unmounted, I can mount a cgroup
-> > filesystem with that same combindation of subsystems, but I can't mount
-> > a cgroup filesystem with any of those subsystems in any other
-> > combination.  So I am guessing that the superblock is from the original
-> > mounting is still lingering for some reason.
-> 
-> Hmmm... yeah, if there are cgroups with refs remaining, that'd happen.
-> Note that AFAIU memcg keeps the cgroups hangling around until all the
-> pages are gone from it, so it could just be that it's still draining
-> which may take a long time.
+What does it take?  Good practice, care, thought and planning.  All
+the qualities which should already be present for kernel _engineers_.
+Not an "lets create something for me, I don't care about anyone else"
+attitude.
 
-If the KMEM accounting is not enabled then all the charges will be gone
-during offlining. Otherwise yes, it might take really long until slab
-page will be freed.
+We can draw the line at an interface becoming stable in exactly the
+same way that we do every other "stable" interface like syscalls - if
+it's in a -final kernel, then it has been released at that point as a
+stable interface to the world.  That's how syscalls are dealt with -
+if a syscall is supported by a -final kernel, then that interface
+immediately becomes part of the userland ABI and can't be changed or
+deleted without some really serious thought, a migration path, and
+sufficient (which means many years) warning to users that it's obsolete.
 
-> Maybe dropping cache would work?
+If that is followed, then there is absolutely no reason why a "Stable
+DT" is not possible - one which it's possible to write a DT file today,
+and it should still work in 20 years time with updated kernels.  That's
+what a stable interface _should_ allow, and this is what DT _should_ be.
 
-KMEM is not used here so I do not think this would help.
+It should be possible to say "I have a XYZ ethernet device, it is
+hooked up like this, uses this interrupt" etc and that same way work
+in 20 years time to describe exactly the same connections.
 
--- 
-Michal Hocko
-SUSE Labs
+Sure, we can create a "staging" directory for stuff which we want to
+merge but is not deemed to be properly fit for the kernel, and deem
+_that_ stuff to be unstable - just like drivers/stable.  Maybe some
+of it can live in drivers/stable too...
