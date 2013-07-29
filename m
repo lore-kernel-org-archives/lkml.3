@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3G2PhD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:37:03 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:60195 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3G2PhB (ORCPT
+	id S1756099Ab3G2PmR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:42:17 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:42044 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab3G2PmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:37:01 -0400
+	Mon, 29 Jul 2013 11:42:16 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374697248-23401-1-git-send-email-sboyd@codeaurora.org>
-References: <1374697248-23401-1-git-send-email-sboyd@codeaurora.org>
-Date: Mon, 29 Jul 2013 17:37:00 +0200
-Message-ID: <CACRpkdY+FSjs5_tVDo3OtbMjk1qq8XO=U1JudRvbSwqUOG536w@mail.gmail.com>
-Subject: Re: [PATCH] gpio_msm: Fix build error due to missing err.h
+In-Reply-To: <1374331893-16009-1-git-send-email-b.brezillon@overkiz.com>
+References: <1374331893-16009-1-git-send-email-b.brezillon@overkiz.com>
+Date: Mon, 29 Jul 2013 17:42:15 +0200
+Message-ID: <CACRpkdaGdgLeYrahv0qAJJjL3S2aiZeVwRVUtNcDqQgL3_mQkA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: at91: choose appropriate handler for level interrupts
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Tushar Behera <tushar.behera@linaro.org>
+To: Boris BREZILLON <b.brezillon@overkiz.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 10:20 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+On Sat, Jul 20, 2013 at 4:51 PM, Boris BREZILLON
+<b.brezillon@overkiz.com> wrote:
 
-> drivers/gpio/gpio-msm-v1.c: In function 'gpio_msm_v1_probe':
-> drivers/gpio/gpio-msm-v1.c:656:2:
-> error: implicit declaration of function 'IS_ERR'
-> [-Werror=implicit-function-declaration]
-> drivers/gpio/gpio-msm-v1.c:657:3:
-> error: implicit declaration of function 'PTR_ERR'
-> [-Werror=implicit-function-declaration]
+> The current implementation handle both edge and level interrupts with the
+> 'handle_simple_irq' handler.
 >
-> This driver failed to compile after commit 68515bb
-> (gpio_msm: Convert to use devm_ioremap_resource,
-> 2013-06-10).
+> Level interrupts are active as long as the pin stays at the configured
+> level (low or high). In this case we have to use 'handle_level_irq' which
+> mask the interrupt until the handle has treated it.
 >
-> Cc: Tushar Behera <tushar.behera@linaro.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> Signed-off-by: Boris BREZILLON <b.brezillon@overkiz.com>
 
-Thanks, patch applied and queued for fixes.
+Nicolas/Jean-Christophe: any opinion on this patch?
+
+I am tempted to just apply it and see if you react to it :-)
 
 Yours,
 Linus Walleij
