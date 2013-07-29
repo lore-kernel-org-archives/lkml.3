@@ -1,77 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab3G2Qip (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:38:45 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:37210 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab3G2Qio (ORCPT
+	id S1757650Ab3G2Qjb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:39:31 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:64749 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3G2Qj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:38:44 -0400
-Message-ID: <51F69A8F.2000802@wwwdotorg.org>
-Date: Mon, 29 Jul 2013 10:38:39 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 29 Jul 2013 12:39:29 -0400
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/2] pinctrl: pinconf_generic: add utility functions for
- add map/configs
-References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-2-git-send-email-ldewangan@nvidia.com> <51F2B384.9050706@wwwdotorg.org> <51F39D98.1090008@nvidia.com>
-In-Reply-To: <51F39D98.1090008@nvidia.com>
-X-Enigmail-Version: 1.4.6
+In-Reply-To: <1374602524-3398-7-git-send-email-wsa@the-dreams.de>
+References: <1374602524-3398-1-git-send-email-wsa@the-dreams.de>
+	<1374602524-3398-7-git-send-email-wsa@the-dreams.de>
+Date: Mon, 29 Jul 2013 18:39:29 +0200
+Message-ID: <CACRpkdba0FHnWsCkNOEevmqvD9hZ_mroJ+mqbpjecG7sTAfBFw@mail.gmail.com>
+Subject: Re: [PATCH 06/27] drivers/i2c/busses: don't check resource with devm_ioremap_resource
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 04:14 AM, Laxman Dewangan wrote:
-> On Friday 26 July 2013 11:06 PM, Stephen Warren wrote:
->> On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
->>> Some of pincontrol driver needs the utility function to create map
->>> list. The utility function needed for adding mux, configs etc.
->> Which other drivers already contain this code? Are you planning on
->> converting them over to use these new functions? The code looks
->> familiar, so I assume it's just cut/paste from Tegra with some renames,
->> so I didn't read it through in detail.
-> 
-> Yes, these functions are taken from the pinctrl-tegra driver. Other
-> drivers which have similar implementation are nomadik, tegra, abx500,
-> tz1090, tz1090-pdc.
-> So All can use these utility function to avoid duplication and reduce
-> code size.
-> Yes, I have plan to use this in Tegra atleast but once this patch get
-> accepted.
-> 
-> 
->>
->>>   drivers/pinctrl/pinconf-generic.c       |  105
->>> +++++++++++++++++++++++++++++++
->>>   include/linux/pinctrl/pinconf-generic.h |   52 +++++++++++++++
->> I don't think those are the correct files for this code. Presumably
->> there's no reason at all why a pinctrl driver that doesn't require
->> CONFIG_GENERIC_PINCONF can't use these basic utility functions. Perhaps
->> add a new pinctrl-utils file?
-> 
-> I thought generic implementation of parsing of dt is pinctrl-generic
-> file and as these newly added APIs are require for the parsing the DT
-> node, I added here.
-> I can move this to pinctrl-util.c/h also.
+On Tue, Jul 23, 2013 at 8:01 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
 
-pinctrl-generic isn't about DT, it's about defining generic options for
-pin configuration rather than SoC-/driver-specific options for pin
-configuration. (pin configuration being e.g. pull-up/down, bias
-direction/strength, slew rate, etc.)
+> devm_ioremap_resource does sanity checks on the given resource. No need to
+> duplicate this in the driver.
+>
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> ---
+> Please apply via the subsystem-tree.
 
+Are you talking to yourself ;-)
+
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Yours,
+Linus Walleij
