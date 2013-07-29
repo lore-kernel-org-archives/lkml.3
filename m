@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757644Ab3G2SjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:39:17 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:44493 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757607Ab3G2SjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:39:12 -0400
-Date: Mon, 29 Jul 2013 20:38:52 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>, Arend van Spriel <arend@broadcom.com>,
-        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130729183851.GB4209@netboy>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <1441731.8CGUI1tUxh@flatron>
- <20130728085650.GA4683@netboy>
- <1416484.XDfk5G56BI@flatron>
- <20130728131901.GA8864@netboy>
- <20130729073123.GB1441@lukather>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1757335Ab3G2Sjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:39:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751435Ab3G2Sjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:39:52 -0400
+Date: Mon, 29 Jul 2013 14:39:30 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>
+Message-ID: <1375123170-v27s5zvu-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 11/18] mm, hugetlb: move down outside_reserve check
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20130729073123.GB1441@lukather>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 09:31:23AM +0200, Maxime Ripard wrote:
+On Mon, Jul 29, 2013 at 02:32:02PM +0900, Joonsoo Kim wrote:
+> Just move down outsider_reserve check.
+> This makes code more readable.
 > 
-> I'm afraid this kind of use case will never be properly supported, DT
-> stable ABI or not.
-> 
-> Think about this: what kernel will actually be shipped in that board?
-> Most likely, it will be a BSP kernel from the vendor. Does the vendor
-> will have made that commitment to have a stable ABI for the DT? Will it
-> use the same bindings than mainline? Do we want to support all the crazy
-> bindings every vendor will come up with?
-> 
-> I'm afraid the answer to these three questions will most of the time be
-> "no.".
+> There is no functional change.
 
-Yes, I know, and it is sad but true.
- 
-We can't stop the vendors from shipping half-baked BSPs. I really
-don't mind that they do that. After all, they want to get *something*
-working when they launch their chips.
-
-> That doesn't mean we shouldn't aim for *mainline* having a stable DT
-> ABI, but that kind of use case doesn't seem very realistic to me.
-
-Right, we can and should do better. I got the beaglebone Ethernet
-working in mainline (not by writing the driver, but by complaining
-over and over again). I except that it will continue to work and not
-fall victim to some random DT change.
+Why don't you do this in 10/18?
 
 Thanks,
-Richard
+Naoya Horiguchi
 
-
-
-
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 5f31ca5..94173e0 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2530,20 +2530,6 @@ retry_avoidcopy:
+>  		return 0;
+>  	}
+>  
+> -	/*
+> -	 * If the process that created a MAP_PRIVATE mapping is about to
+> -	 * perform a COW due to a shared page count, attempt to satisfy
+> -	 * the allocation without using the existing reserves. The pagecache
+> -	 * page is used to determine if the reserve at this address was
+> -	 * consumed or not. If reserves were used, a partial faulted mapping
+> -	 * at the time of fork() could consume its reserves on COW instead
+> -	 * of the full address range.
+> -	 */
+> -	if (!(vma->vm_flags & VM_MAYSHARE) &&
+> -			is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
+> -			old_page != pagecache_page)
+> -		outside_reserve = 1;
+> -
+>  	page_cache_get(old_page);
+>  
+>  	/* Drop page_table_lock as buddy allocator may be called */
+> @@ -2557,6 +2543,20 @@ retry_avoidcopy:
+>  		spin_lock(&mm->page_table_lock);
+>  		return VM_FAULT_OOM;
+>  	}
+> +
+> +	/*
+> +	 * If the process that created a MAP_PRIVATE mapping is about to
+> +	 * perform a COW due to a shared page count, attempt to satisfy
+> +	 * the allocation without using the existing reserves. The pagecache
+> +	 * page is used to determine if the reserve at this address was
+> +	 * consumed or not. If reserves were used, a partial faulted mapping
+> +	 * at the time of fork() could consume its reserves on COW instead
+> +	 * of the full address range.
+> +	 */
+> +	if (!(vma->vm_flags & VM_MAYSHARE) &&
+> +			is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
+> +			old_page != pagecache_page)
+> +		outside_reserve = 1;
+>  	use_reserve = use_reserve && !outside_reserve;
+>  
+>  	new_page = alloc_huge_page(vma, address, use_reserve);
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
