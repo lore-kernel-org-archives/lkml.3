@@ -1,62 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120Ab3G2RFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:05:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:48856 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3G2RFn (ORCPT
+	id S1756235Ab3G2RKi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:10:38 -0400
+Received: from mail-gh0-f175.google.com ([209.85.160.175]:53639 "EHLO
+	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753524Ab3G2RKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:05:43 -0400
-Message-ID: <51F6A0A9.5040702@infradead.org>
-Date: Mon, 29 Jul 2013 10:04:41 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 13:10:36 -0400
+Date: Mon, 29 Jul 2013 13:10:25 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Tang Chen <tangchen@cn.fujitsu.com>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
+        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
+        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
+        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
+        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
+        x86@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH 14/21] x86, acpi, numa: Reserve hotpluggable memory at
+ early time.
+Message-ID: <20130729171025.GH22605@mtj.dyndns.org>
+References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
+ <1374220774-29974-15-git-send-email-tangchen@cn.fujitsu.com>
+ <20130723205557.GS21100@mtj.dyndns.org>
+ <20130723213212.GA21100@mtj.dyndns.org>
+ <51F089C1.4010402@cn.fujitsu.com>
+ <20130725151719.GE26107@mtj.dyndns.org>
+ <51F1F0E0.7040800@cn.fujitsu.com>
+ <20130726102609.GB30786@mtj.dyndns.org>
+ <51F5CF98.1080101@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Jonathan Kim <jonathankim@gctsemi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dean ahn <deanahn@gctsemi.com>
-Subject: Re: linux-next: Tree for Jul 29 (staging/gdm724x)
-References: <20130729163906.7ba07f7c024ad364b2feb513@canb.auug.org.au>
-In-Reply-To: <20130729163906.7ba07f7c024ad364b2feb513@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F5CF98.1080101@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/28/13 23:39, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20130726:
-> 
+Hello, Tang.
 
-on i386:
-# CONFIG_TTY is not set
+On Mon, Jul 29, 2013 at 10:12:40AM +0800, Tang Chen wrote:
+> So the point is, how to mark the hotpluggable regions and at the
+> same time, make
+> ACPI and memblock parts independent, right ?
 
+No, not at all.  My point is that the roles need to be divided
+clearly.  The firmware (be that ACPI or whatever) knows memory areas
+are hotpluggable but it shouldn't be making policy decisions like not
+dispending hotpluggable memory through memblock allocator because that
+part of logic has *nothing* to do with ACPI.  That is the generic
+kernel memory management policy which will apply regardless of what
+type of firmware the machine happens to be running on top of.
 
-ERROR: "tty_port_tty_get" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_port_close_end" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_register_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_buffer_request_room" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "put_tty_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_port_close_start" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_set_operations" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_port_init" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_insert_flip_string_fixed_flag" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_register_device" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_unregister_device" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_std_termios" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_unregister_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "__tty_alloc_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_flip_buffer_push" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_port_tty_set" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_wakeup" [drivers/staging/gdm724x/gdmtty.ko] undefined!
-ERROR: "tty_port_block_til_ready" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+So, please make ACPI inform memblock of the hotpluggable regions and
+implement the allocation policies inside memblock proper.
 
+> So are you saying mark the hotpluggable regions in memblock.memory, but not
+> reserve them in memblock.reserved, and make the default allocate
+> function avoid
+> the hotpluggable regions in memblock.memory ?
+>
+> This way will be convenient when we put the node_data on local node
+> (don't need
+> to free regions from memblock.reserved, as you mentioned before), right?
 
+I don't care too much about the specifics and it's likely that you'll
+find out which way (flag in memblock.memory, separate region array or
+whatever) is better as implementation progresses, but let's please put
+things where they belong; otherwise, we end up with weird mess, and,
+later on, have to do things like freeing part of reserved hotpluggable
+memory for node data from firmware side as you said above, which
+basically moves part of memory allocation logic into ACPI, which is
+just horrible.
+
+Thanks.
 
 -- 
-~Randy
+tejun
