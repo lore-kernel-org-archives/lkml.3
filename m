@@ -1,55 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab3G2HFf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:05:35 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:60867 "EHLO extserv.mm-sol.com"
+	id S1755527Ab3G2HGj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:06:39 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:60880 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755052Ab3G2HFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:05:33 -0400
+	id S1755321Ab3G2HFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 03:05:35 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: balbi@ti.com, gregkh@linuxfoundation.org
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v2 0/6] usb: phy: msm: Fixes and cleanups
-Date: Mon, 29 Jul 2013 10:04:18 +0300
-Message-Id: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+Subject: [PATCH v2 5/6] usb: phy: msm: Fix WARNING: quoted string split across lines
+Date: Mon, 29 Jul 2013 10:04:23 +0300
+Message-Id: <1375081464-14206-6-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-v2
---
-* Fix compilation issue in patch 1
-* Separate regulator changes
-* Merge devm_ related changes to one commit
-* Drop Lindent patch
+This fixes checkpatch.pl warnings.
 
-v1
---
-Following patches make initial cleanup of usb phy found in the Qualcomm
-chipsets. Changes include:
-* Build time error fix.
-* Move driver to Managed Device Resource allocation.
-* Checkpatch warnings and error fixes
-* Removed usage of global regulators variables.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c |   33 +++++++++++----------------------
+ 1 file changed, 11 insertions(+), 22 deletions(-)
 
-Ivan T. Ivanov (6):
-  usb: phy: msm: Move mach depndend code to platform data
-  usb: phy: msm: move global regulators variables to driver state
-  usb: phy: msm: Migrate to Managed Device Resource allocation
-  usb: phy: msm: Remove unnecessarily check for valid regulators.
-  usb: phy: msm: Fix WARNING: quoted string split across lines
-  usb: phy: msm: Fix WARNING: Prefer seq_puts to seq_printf
-
- arch/arm/mach-msm/board-msm7x30.c |   35 ++++
- arch/arm/mach-msm/board-qsd8x50.c |   35 ++++
- drivers/usb/phy/phy-msm-usb.c     |  342 +++++++++++++------------------------
- include/linux/usb/msm_hsusb.h     |    6 +
- 4 files changed, 198 insertions(+), 220 deletions(-)
-
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 0e93dbc..118bd0a 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -67,8 +67,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 				USB_PHY_VDD_DIG_VOL_MIN,
+ 				USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret) {
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 			return ret;
+ 		}
+ 
+@@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+ 		ret = regulator_set_voltage(motg->vddcx, 0,
+ 			USB_PHY_VDD_DIG_VOL_MAX);
+ 		if (ret)
+-			dev_err(motg->phy.dev, "unable to set the voltage "
+-					"for hsusb vddcx\n");
++			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 		ret = regulator_disable(motg->vddcx);
+ 		if (ret)
+ 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
+@@ -97,8 +95,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
+ 				USB_PHY_3P3_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 3p3\n");
++			dev_err(motg->phy.dev, "Cannot set v3p3 voltage\n");
+ 			goto exit;
+ 		}
+ 		rc = regulator_enable(motg->v3p3);
+@@ -109,8 +106,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
+ 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
+ 				USB_PHY_1P8_VOL_MAX);
+ 		if (rc) {
+-			dev_err(motg->phy.dev, "unable to set voltage level "
+-					"for hsusb 1p8\n");
++			dev_err(motg->phy.dev, "Cannot set v1p8 voltage\n");
+ 			goto disable_3p3;
+ 		}
+ 		rc = regulator_enable(motg->v1p8);
+@@ -144,8 +140,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
+ 
+ 	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
+ 	if (ret) {
+-		pr_err("%s: unable to set the voltage for regulator "
+-			"HSUSB_VDDCX\n", __func__);
++		dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+ 		return ret;
+ 	}
+ 
+@@ -163,15 +158,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set HPM for v1p8\n");
+ 			return ret;
+ 		}
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_HPM_LOAD);
+ 		if (ret < 0) {
+-			pr_err("%s: Unable to set HPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set HPM for v3p3\n");
+ 			regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 			return ret;
+@@ -180,13 +173,11 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_1p8\n", __func__);
++			pr_err("Could not set LPM for v1p8\n");
+ 		ret = regulator_set_optimum_mode(motg->v3p3,
+ 				USB_PHY_3P3_LPM_LOAD);
+ 		if (ret < 0)
+-			pr_err("%s: Unable to set LPM of the regulator "
+-				"HSUSB_3p3\n", __func__);
++			pr_err("Could not set LPM for v3p3\n");
+ 	}
+ 
+ 	pr_debug("reg (%s)\n", on ? "HPM" : "LPM");
+@@ -519,8 +510,7 @@ static int msm_otg_resume(struct msm_otg *motg)
+ 		 * PHY. USB state can not be restored. Re-insertion
+ 		 * of USB cable is the only way to get USB working.
+ 		 */
+-		dev_err(phy->dev, "Unable to resume USB."
+-				"Re-plugin the cable\n");
++		dev_err(phy->dev, "Unable to resume USB. Re-plugin the cable\n");
+ 		msm_otg_reset(phy);
+ 	}
+ 
+@@ -1508,8 +1498,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
+ 			motg->pdata->otg_control == OTG_USER_CONTROL) {
+ 		ret = msm_otg_debugfs_init(motg);
+ 		if (ret)
+-			dev_dbg(&pdev->dev, "mode debugfs file is"
+-					"not available\n");
++			dev_dbg(&pdev->dev, "Can not create mode change file\n");
+ 	}
+ 
+ 	pm_runtime_set_active(&pdev->dev);
 -- 
 1.7.9.5
 
