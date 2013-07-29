@@ -1,183 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab3G3PXp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:23:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44315 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756159Ab3G3PXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:23:38 -0400
-Date: Tue, 30 Jul 2013 17:23:33 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Dave Jones <davej@redhat.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Minchan Kim <minchan@kernel.org>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
-Message-ID: <20130730152333.GJ15847@dhcp22.suse.cz>
-References: <20130730142957.GG15847@dhcp22.suse.cz>
- <1375195560-23888-1-git-send-email-mhocko@suse.cz>
- <20130730145834.GA32226@laptop.programming.kicks-ass.net>
+	id S1756782Ab3G3PXy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:23:54 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:42569 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486Ab3G3PXt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 11:23:49 -0400
+Date: Mon, 29 Jul 2013 10:06:24 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Cody P Schafer <cody@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 2/5] rbtree: add rbtree_postorder_for_each_entry_safe()
+ helper
+Message-ID: <20130729150624.GB4381@variantweb.net>
+References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1374873223-25557-3-git-send-email-cody@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130730145834.GA32226@laptop.programming.kicks-ass.net>
+In-Reply-To: <1374873223-25557-3-git-send-email-cody@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073102-3568-0000-0000-00000401FFC1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30-07-13 16:58:34, Peter Zijlstra wrote:
-> On Tue, Jul 30, 2013 at 04:46:00PM +0200, Michal Hocko wrote:
-[...]
-> > +/*
-> > + * Now, reclaim path never holds hugetlbfs_inode->i_mmap_mutex while it could
-> > + * hold normal inode->i_mmap_mutex so this annotation avoids a lockdep splat.
+On Fri, Jul 26, 2013 at 02:13:40PM -0700, Cody P Schafer wrote:
+> Because deletion (of the entire tree) is a relatively common use of the
+> rbtree_postorder iteration, and because doing it safely means fiddling
+> with temporary storage, provide a helper to simplify postorder rbtree
+> iteration.
 > 
-> How about something like:
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  include/linux/rbtree.h | 17 +++++++++++++++++
+>  1 file changed, 17 insertions(+)
 > 
-> /*
->  * Hugetlbfs is not reclaimable; therefore its i_mmap_mutex will never
->  * be taken from reclaim -- unlike regular filesystems. This needs an
->  * annotation because huge_pmd_share() does an allocation under
->  * i_mmap_mutex.
->  */
+> diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+> index 2879e96..64ab98b 100644
+> --- a/include/linux/rbtree.h
+> +++ b/include/linux/rbtree.h
+> @@ -85,4 +85,21 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+>  	*rb_link = node;
+>  }
 > 
-> It clarifies the exact conditions and makes easier to verify the
-> validity of the annotation.
+> +/**
+> + * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
+> + * given type safe against removal of rb_node entry
+> + *
+> + * @pos:	the 'type *' to use as a loop cursor.
+> + * @n:		another 'type *' to use as temporary storage
+> + * @root:	'rb_root *' of the rbtree.
+> + * @field:	the name of the rb_node field within 'type'.
+> + */
+> +#define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
+> +	for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
+> +	      n = rb_entry(rb_next_postorder(&pos->field), \
+> +		      typeof(*pos), field); \
+> +	     &pos->field; \
+> +	     pos = n, \
+> +	      n = rb_entry(rb_next_postorder(&pos->field), typeof(*pos), field))
 
-Yes, looks much better. Thanks!
----
->From 673cbe2ca7df0decd7320987d97585660542e468 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Tue, 30 Jul 2013 17:22:14 +0200
-Subject: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
+One too many spaces.  Also mix of tabs and spaces is weird, but
+checkpatch doesn't complain so...
 
-Dave has reported the following lockdep splat:
-[128095.470960] =================================
-[128095.471315] [ INFO: inconsistent lock state ]
-[128095.471660] 3.11.0-rc1+ #9 Not tainted
-[128095.472156] ---------------------------------
-[128095.472905] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-[128095.473650] kswapd0/49 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[128095.474373]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<c114971b>] page_referenced+0x87/0x5e3
-[128095.475128] {RECLAIM_FS-ON-W} state was registered at:
-[128095.475866]   [<c10a6232>] mark_held_locks+0x81/0xe7
-[128095.476597]   [<c10a8db3>] lockdep_trace_alloc+0x5e/0xbc
-[128095.477322]   [<c112316b>] __alloc_pages_nodemask+0x8b/0x9b6
-[128095.478049]   [<c1123ab6>] __get_free_pages+0x20/0x31
-[128095.478769]   [<c1123ad9>] get_zeroed_page+0x12/0x14
-[128095.479477]   [<c113fe1e>] __pmd_alloc+0x1c/0x6b
-[128095.480138]   [<c1155ea7>] huge_pmd_share+0x265/0x283
-[128095.480138]   [<c1155f22>] huge_pte_alloc+0x5d/0x71
-[128095.480138]   [<c115612e>] hugetlb_fault+0x7c/0x64a
-[128095.480138]   [<c114087c>] handle_mm_fault+0x255/0x299
-[128095.480138]   [<c15bbab0>] __do_page_fault+0x142/0x55c
-[128095.480138]   [<c15bbed7>] do_page_fault+0xd/0x16
-[128095.480138]   [<c15b927c>] error_code+0x6c/0x74
-[128095.480138] irq event stamp: 3136917
-[128095.480138] hardirqs last  enabled at (3136917): [<c15b8139>] _raw_spin_unlock_irq+0x27/0x50
-[128095.480138] hardirqs last disabled at (3136916): [<c15b7f4e>] _raw_spin_lock_irq+0x15/0x78
-[128095.480138] softirqs last  enabled at (3136180): [<c1048e4a>] __do_softirq+0x137/0x30f
-[128095.480138] softirqs last disabled at (3136175): [<c1049195>] irq_exit+0xa8/0xaa
-[128095.480138]
-other info that might help us debug this:
-[128095.480138]  Possible unsafe locking scenario:
-[128095.480138]        CPU0
-[128095.480138]        ----
-[128095.480138]   lock(&mapping->i_mmap_mutex);
-[128095.480138]   <Interrupt>
-[128095.480138]     lock(&mapping->i_mmap_mutex);
-[128095.480138]
- *** DEADLOCK ***
-[128095.480138] no locks held by kswapd0/49.
-[128095.480138]
-stack backtrace:
-[128095.480138] CPU: 1 PID: 49 Comm: kswapd0 Not tainted 3.11.0-rc1+ #9
-[128095.480138] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
-[128095.480138]  c1d32630 00000000 ee39fb18 c15b001e ee395780 ee39fb54 c15acdcb c1751845
-[128095.480138]  c1751bbf 00000031 00000000 00000000 00000000 00000000 00000001 00000001
-[128095.480138]  c1751bbf 00000008 ee395c44 00000100 ee39fb88 c10a6130 00000008 0000d8fb
-[128095.480138] Call Trace:
-[128095.480138]  [<c15b001e>] dump_stack+0x4b/0x79
-[128095.480138]  [<c15acdcb>] print_usage_bug+0x1d9/0x1e3
-[128095.480138]  [<c10a6130>] mark_lock+0x1e0/0x261
-[128095.480138]  [<c10a5878>] ? check_usage_backwards+0x109/0x109
-[128095.480138]  [<c10a6cde>] __lock_acquire+0x623/0x17f2
-[128095.480138]  [<c107aa43>] ? sched_clock_cpu+0xcd/0x130
-[128095.480138]  [<c107a7e8>] ? sched_clock_local+0x42/0x12e
-[128095.480138]  [<c10a84cf>] lock_acquire+0x7d/0x195
-[128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-[128095.480138]  [<c15b3671>] mutex_lock_nested+0x6c/0x3a7
-[128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-[128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
-[128095.480138]  [<c11661d5>] ? mem_cgroup_charge_statistics.isra.24+0x61/0x9e
-[128095.480138]  [<c114971b>] page_referenced+0x87/0x5e3
-[128095.480138]  [<f8433030>] ? raid0_congested+0x26/0x8a [raid0]
-[128095.480138]  [<c112b9c7>] shrink_page_list+0x3d9/0x947
-[128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
-[128095.480138]  [<c112c3cf>] shrink_inactive_list+0x155/0x4cb
-[128095.480138]  [<c112cd07>] shrink_lruvec+0x300/0x5ce
-[128095.480138]  [<c112d028>] shrink_zone+0x53/0x14e
-[128095.480138]  [<c112e531>] kswapd+0x517/0xa75
-[128095.480138]  [<c112e01a>] ? mem_cgroup_shrink_node_zone+0x280/0x280
-[128095.480138]  [<c10661ff>] kthread+0xa8/0xaa
-[128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
-[128095.480138]  [<c15bf737>] ret_from_kernel_thread+0x1b/0x28
-[128095.480138]  [<c1066157>] ? insert_kthread_work+0x63/0x63
+Seth
 
-which is a false positive caused by hugetlb pmd sharing code which
-allocates a new pmd from withing mappint->i_mmap_mutex. If this
-allocation causes reclaim then the lockdep detector complains that we
-might self-deadlock.
+> +
+>  #endif	/* _LINUX_RBTREE_H */
+> -- 
+> 1.8.3.4
+> 
 
-This is not correct though, because hugetlb pages are not reclaimable so
-their mapping will be never touched from the reclaim path.
-
-The patch tells lockup detector that hugetlb i_mmap_mutex is special
-by assigning it a separate lockdep class so it won't report possible
-deadlocks on unrelated mappings.
-
-[peterz@infradead.org: comment for annotation]
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- fs/hugetlbfs/inode.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index a3f868a..3442397 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -463,6 +463,14 @@ static struct inode *hugetlbfs_get_root(struct super_block *sb,
- 	return inode;
- }
- 
-+/*
-+ * Hugetlbfs is not reclaimable; therefore its i_mmap_mutex will never
-+ * be taken from reclaim -- unlike regular filesystems. This needs an
-+ * annotation because huge_pmd_share() does an allocation under
-+ * i_mmap_mutex.
-+ */
-+struct lock_class_key hugetlbfs_i_mmap_mutex_key;
-+
- static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 					struct inode *dir,
- 					umode_t mode, dev_t dev)
-@@ -474,6 +482,8 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 		struct hugetlbfs_inode_info *info;
- 		inode->i_ino = get_next_ino();
- 		inode_init_owner(inode, dir, mode);
-+		lockdep_set_class(&inode->i_mapping->i_mmap_mutex,
-+				&hugetlbfs_i_mmap_mutex_key);
- 		inode->i_mapping->a_ops = &hugetlbfs_aops;
- 		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
--- 
-1.8.3.2
-
--- 
-Michal Hocko
-SUSE Labs
