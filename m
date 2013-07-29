@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755130Ab3G2FdY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:33:24 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47164 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755170Ab3G2FcZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755183Ab3G2FcZ (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 29 Jul 2013 01:32:25 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-27-51f5fe65e554
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44032 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755108Ab3G2FcV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:32:21 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-09-51f5fe63f6fa
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 18/18] mm, hugetlb: remove a hugetlb_instantiation_mutex
-Date: Mon, 29 Jul 2013 14:32:09 +0900
-Message-Id: <1375075929-6119-19-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 01/18] mm, hugetlb: protect reserved pages when softofflining requests the pages
+Date: Mon, 29 Jul 2013 14:31:52 +0900
+Message-Id: <1375075929-6119-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,77 +32,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, we have prepared to have an infrastructure in order to remove a this
-awkward mutex which serialize all faulting tasks, so remove it.
+alloc_huge_page_node() use dequeue_huge_page_node() without
+any validation check, so it can steal reserved page unconditionally.
+To fix it, check the number of free_huge_page in alloc_huge_page_node().
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 909075b..4fab047 100644
+index 6782b41..d971233 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -2533,9 +2533,7 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- /*
-  * Hugetlb_cow() should be called with page lock of the original hugepage held.
-- * Called with hugetlb_instantiation_mutex held and pte_page locked so we
-- * cannot race with other handlers or page migration.
-- * Keep the pte_same checks anyway to make transition from the mutex easier.
-+ * Called with pte_page locked so we cannot race with page migration.
+@@ -935,10 +935,11 @@ static struct page *alloc_buddy_huge_page(struct hstate *h, int nid)
   */
- static int hugetlb_cow(struct mm_struct *mm, struct vm_area_struct *vma,
- 			unsigned long address, pte_t *ptep, pte_t pte,
-@@ -2844,7 +2842,6 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int ret;
- 	struct page *page = NULL;
- 	struct page *pagecache_page = NULL;
--	static DEFINE_MUTEX(hugetlb_instantiation_mutex);
- 	struct hstate *h = hstate_vma(vma);
+ struct page *alloc_huge_page_node(struct hstate *h, int nid)
+ {
+-	struct page *page;
++	struct page *page = NULL;
  
- 	address &= huge_page_mask(h);
-@@ -2864,17 +2861,9 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	if (!ptep)
- 		return VM_FAULT_OOM;
+ 	spin_lock(&hugetlb_lock);
+-	page = dequeue_huge_page_node(h, nid);
++	if (h->free_huge_pages - h->resv_huge_pages > 0)
++		page = dequeue_huge_page_node(h, nid);
+ 	spin_unlock(&hugetlb_lock);
  
--	/*
--	 * Serialize hugepage allocation and instantiation, so that we don't
--	 * get spurious allocation failures if two CPUs race to instantiate
--	 * the same page in the page cache.
--	 */
--	mutex_lock(&hugetlb_instantiation_mutex);
- 	entry = huge_ptep_get(ptep);
--	if (huge_pte_none(entry)) {
--		ret = hugetlb_no_page(mm, vma, address, ptep, flags);
--		goto out_mutex;
--	}
-+	if (huge_pte_none(entry))
-+		return hugetlb_no_page(mm, vma, address, ptep, flags);
- 
- 	ret = 0;
- 
-@@ -2887,10 +2876,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	 * consumed.
- 	 */
- 	if ((flags & FAULT_FLAG_WRITE) && !huge_pte_write(entry)) {
--		if (vma_has_reserves(h, vma, address) < 0) {
--			ret = VM_FAULT_OOM;
--			goto out_mutex;
--		}
-+		if (vma_has_reserves(h, vma, address) < 0)
-+			return VM_FAULT_OOM;
- 
- 		if (!(vma->vm_flags & VM_MAYSHARE))
- 			pagecache_page = hugetlbfs_pagecache_page(h,
-@@ -2939,9 +2926,6 @@ out_page_table_lock:
- 		unlock_page(page);
- 	put_page(page);
- 
--out_mutex:
--	mutex_unlock(&hugetlb_instantiation_mutex);
--
- 	return ret;
- }
- 
+ 	if (!page)
 -- 
 1.7.9.5
 
