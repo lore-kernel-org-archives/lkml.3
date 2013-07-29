@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab3G2UUr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:20:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842Ab3G2UUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:20:36 -0400
-Date: Mon, 29 Jul 2013 16:20:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Andi Shyti <andi@etezian.org>
-Cc: smfrench@gmail.com, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mikko.rapeli@iki.fi,
-        pshilovsky@samba.org
-Subject: Re: [PATCH v2] cifs: file: initialize oparms.reconnect before using
- it
-Message-ID: <20130729162016.3299ead3@tlielax.poochiereds.net>
-In-Reply-To: <1375121075-11239-1-git-send-email-andi@etezian.org>
-References: <20130729093241.437315e1@corrin.poochiereds.net>
-	<1375121075-11239-1-git-send-email-andi@etezian.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755026Ab3G2UXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:23:00 -0400
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:61316 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab3G2UW6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:22:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <7981076.SojlpLkL71@vostro.rjw.lan>
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+	<7981076.SojlpLkL71@vostro.rjw.lan>
+Date: Mon, 29 Jul 2013 15:22:56 -0500
+Message-ID: <CAMP44s1=VfRLPVxwuu1Qhim-nyCHe1gKzQDfiffWw3DDpK0Apg@mail.gmail.com>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013 20:04:35 +0200
-Andi Shyti <andi@etezian.org> wrote:
+On Mon, Jul 29, 2013 at 3:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday, July 29, 2013 02:20:58 PM Felipe Contreras wrote:
+>> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+>> because presumably the ACPI code contains stub code when Windows 8 OSI is
+>> reported.
+>>
+>> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+>> backlight driver, however, on this machine it turns the backlight completely
+>> off when it reaches level 0%, after which the user might have a lot trouble
+>> trying to bring it back.
+>>
+>> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
+>> to v3.6 behavior, and it should remain that way until the intel backlight
+>> driver is fixed.
+>
+> Well, it really is a workaround, so perhaps it would be fair to call it this
+> way?
 
-> In the cifs_reopen_file function, if the following statement is
-> asserted:
-> 
-> (tcon->unix_ext && cap_unix(tcon->ses) &&
->             (CIFS_UNIX_POSIX_PATH_OPS_CAP &
->             (tcon->fsUnixInfo.Capability)))
-> 
-> and we succeed to open with cifs_posix_open, the function jumps
-> to the label reopen_success and checks for oparms.reconnect
-> which is not initialized.
-> 
-> This issue has been reported by scan.coverity.com
-> 
-> Signed-off-by: Andi Shyti <andi@etezian.org>
-> ---
->  fs/cifs/file.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 1e57f36..7e36ae3 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -647,6 +647,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
->  				     oflags, &oplock, &cfile->fid.netfid, xid);
->  		if (rc == 0) {
->  			cifs_dbg(FYI, "posix reopen succeeded\n");
-> +			oparms.reconnect = true;
->  			goto reopen_success;
->  		}
->  		/*
+Maybe, but to me, and to most users, the important thing is that it
+fixes a regression.
 
-Still doesn't do much to improve this code, but that fix shouldn't
-break anything.
+>> Since v3.7, users have been forced to fix the initial regression by modifying
+>> the boot arguments [1].
+>>
+>> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
+>>
+>> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+>
+> I don't really feel this is the right approach, but then I don't care enough
+> to fight with you. :-)
 
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
+It's not the right approach, I don't think I (or anybody) argued
+otherwise, but unless the Intel driver is fixed before 3.11, it's the
+only sane approach.
+
+-- 
+Felipe Contreras
