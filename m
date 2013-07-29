@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab3G2OcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:32:12 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:44659 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753926Ab3G2OcK (ORCPT
+	id S1756718Ab3G2Ocs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:32:48 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48355 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753437Ab3G2Ocr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:32:10 -0400
+	Mon, 29 Jul 2013 10:32:47 -0400
+Date: Mon, 29 Jul 2013 11:32:23 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] ARM: dove: switch to DT MBus
+Message-ID: <20130729143222.GB2417@localhost>
+References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
-References: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 29 Jul 2013 08:31:49 -0600
-Message-ID: <CAErSpo4jww8mX61-tw8aTXtv5TR2fCg_+6pfwPKHdwB=iL=mBA@mail.gmail.com>
-Subject: Re: [PATCH] PCI: update NumVFs register properly during
- enable/disable sriov
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Don Dutile <ddutile@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+cc Don]
+Hello Sebastian,
 
-On Wed, Jul 24, 2013 at 3:26 AM, Yijing Wang <wangyijing@huawei.com> wrote:
-> Currently, we only update NumVFs register during sriov_enable().
-> This register should also be updated properly during sriov_disable.
-> Otherwise, we will get the stale "Number of VFs" info from lspci.
+On Mon, Jul 29, 2013 at 02:31:49PM +0200, Sebastian Hesselbarth wrote:
+> This patch set converts DT based Dove boards to DT probed MBus to be
+> introduced with v3.12.
+> 
+> The first two patches prepare Dove DT nodes for MBus ID remapping by using
+> preprocessor includes and adding the MBUS_ID macro. The third patch adds a
+> MBus DT node to Dove SoC dtsi with required ranges for internal MBus and
+> AXI registers, and PCIe mem and I/O apertures. The forth patch relocates
+> the nodes for the internal devices to the new MBus node. Also, internal-regs
+> ranges are updated to allow proper translation of MBus children's reg
+> properties. Finally, legacy MBus init is replaced by DT based MBus init
+> for DT based Dove.
+> 
+> The patch set depends on the MBus device tree patches that should appear
+> in v3.12. Currently, it is based on v3.11-rc2 with Dove DT cleanup patches
+> and MBus patch set v8 applied.
+> 
+> The patch set is _not_ sent to devicetree mainling list, because the MBus
+> binding will be discussed there on the MBus patches itself.
+> 
+> Sebastian Hesselbarth (5):
+>   ARM: dove: use preprocessor on device tree files
+>   ARM: dove: add MBUS_ID macro to Dove DT
+>   ARM: dove: add MBus DT node
+>   ARM: dove: relocate internal registers device nodes
 
-Has this always been broken, or was it broken by a recent change?
+Great, thanks for doing this. I just have a minor suggestion
+on the patch 4/5 "ARM: dove: relocate internal registers device nodes".
 
-Can you post a transcript demonstrating what's going wrong?  Doesn't
-have to be in the changelog unless it's short, but just something to
-help reproduce the problem.
-
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> ---
->  drivers/pci/iov.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
-> index de8ffac..6e4844b 100644
-> --- a/drivers/pci/iov.c
-> +++ b/drivers/pci/iov.c
-> @@ -286,7 +286,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
->             (!(iov->cap & PCI_SRIOV_CAP_VFM) && (nr_virtfn > initial)))
->                 return -EINVAL;
->
-> -       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
->         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_OFFSET, &offset);
->         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_STRIDE, &stride);
->         if (!offset || (nr_virtfn > 1 && !stride))
-> @@ -334,6 +333,7 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
->                         return rc;
->         }
->
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
->         iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
->         pci_cfg_access_lock(dev);
->         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-> @@ -368,6 +368,7 @@ failed:
->         iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
->         pci_cfg_access_lock(dev);
->         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
->         ssleep(1);
->         pci_cfg_access_unlock(dev);
->
-> @@ -401,6 +402,7 @@ static void sriov_disable(struct pci_dev *dev)
->                 sysfs_remove_link(&dev->dev.kobj, "dep_link");
->
->         iov->num_VFs = 0;
-> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
->  }
->
->  static int sriov_init(struct pci_dev *dev, int pos)
-> --
-> 1.7.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Regards,
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
