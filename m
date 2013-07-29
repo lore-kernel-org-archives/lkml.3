@@ -1,159 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab3G2Uvb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:51:31 -0400
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:48231 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab3G2Uv3 (ORCPT
+	id S1755054Ab3G2U5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:57:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59289 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752779Ab3G2U5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:51:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <51F16F2B.5020606@schaufler-ca.com>
-References: <51F16CFB.6040603@schaufler-ca.com>
-	<51F16F2B.5020606@schaufler-ca.com>
-Date: Mon, 29 Jul 2013 13:51:28 -0700
-X-Google-Sender-Auth: BwShpi7J1IiqwtWSWMaeWhDtPBM
-Message-ID: <CAGXu5jLEd8vt0d7aEecP7BMCduTyeFs56wv07TCCXbRr001B+Q@mail.gmail.com>
-Subject: Re: [PATCH v14 3/6] LSM: Explicit individual LSM associations
-From: Kees Cook <keescook@chromium.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        SE Linux <selinux@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Jul 2013 16:57:45 -0400
+Date: Mon, 29 Jul 2013 13:57:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.hansen@intel.com,
+        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bp@suse.de, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info
+ message
+Message-Id: <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
+In-Reply-To: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:32 AM, Casey Schaufler
-<casey@schaufler-ca.com> wrote:
-> Subject: [PATCH v14 3/6] LSM: Explicit individual LSM associations
-> [...]
-> Introduce feature specific security operation vectors
-> for NetLabel, XFRM, secmark and presentation in the
-> traditional /proc/.../attr interfaces. This allows
-> proper handling of secids.
-> [...]
-> --- a/include/linux/lsm.h
-> +++ b/include/linux/lsm.h
-> @@ -164,9 +164,18 @@ static inline void lsm_init_secid(struct secids *secid, u32 lsecid, int order)
->  {
->         memset(secid, 0, sizeof(*secid));
->
-> -       if (lsecid != 0)
-> +       if (lsecid == 0)
-> +               return;
-> +       /*
-> +        * An order of -1 means set it for all LSMs.
-> +        */
-> +       if (order < 0) {
-> +               secid->si_lsm[0] = lsecid;
-> +               secid->si_count++;
-> +       } else {
-> +               secid->si_lsm[order] = lsecid;
->                 secid->si_count = 1;
-> -       secid->si_lsm[order] = lsecid;
-> +       }
->  }
->
->  static inline int lsm_zero_secid(struct secids *secid)
-> @@ -178,39 +187,64 @@ static inline int lsm_zero_secid(struct secids *secid)
->
->  #ifdef CONFIG_SECURITY
->
-> +extern struct security_operations *present_ops;
->  static inline struct security_operations *lsm_present_ops(void)
->  {
-> -       return security_ops;
-> +       return present_ops;
->  }
->
->  static inline int lsm_present_order(void)
->  {
-> -       return 0;
-> +       return present_ops->order;
->  }
->
-> +#ifdef CONFIG_NETLABEL
-> +extern struct security_operations *netlbl_ops;
-> +
->  static inline struct security_operations *lsm_netlbl_ops(void)
->  {
-> -       return security_ops;
-> +       return netlbl_ops;
->  }
->
->  static inline int lsm_netlbl_order(void)
->  {
-> -       return 0;
-> +       return netlbl_ops->order;
->  }
-> +#endif /* CONFIG_NETLABEL */
-> +
-> +#ifdef CONFIG_SECURITY_NETWORK_XFRM
-> +extern struct security_operations *xfrm_ops;
->
->  static inline struct security_operations *lsm_xfrm_ops(void)
->  {
-> -       return security_ops;
-> +       return xfrm_ops;
->  }
->
->  static inline int lsm_xfrm_order(void)
->  {
-> -       return 0;
-> +       return xfrm_ops->order;
->  }
-> +#endif /* CONFIG_SECURITY_NETWORK_XFRM */
-> +
-> +#ifdef CONFIG_NETWORK_SECMARK
-> +extern struct security_operations *secmark_ops;
->
->  static inline struct security_operations *lsm_secmark_ops(void)
->  {
-> -       return security_ops;
-> +       return secmark_ops;
-> +}
-> +
-> +static inline int lsm_secmark_order(void)
-> +{
-> +       return secmark_ops->order;
-> +}
-> +#endif /* CONFIG_NETWORK_SECMARK */
-> +
-> +#else /* CONFIG_SECURITY */
-> +
-> +static inline int lsm_xfrm_order(void)
-> +{
-> +       return 0;
->  }
->
->  static inline int lsm_secmark_order(void)
-> @@ -218,6 +252,11 @@ static inline int lsm_secmark_order(void)
->         return 0;
->  }
->
-> +static inline struct security_operations *lsm_secmark_ops(void)
-> +{
-> +       return NULL;
-> +}
-> +
->  #endif /* CONFIG_SECURITY */
->
->  #endif /* ! _LINUX_LSM_H */
+On Fri, 26 Jul 2013 14:44:29 +0200 Michal Hocko <mhocko@suse.cz> wrote:
 
-Something went wrong here with the #ifdef/#else stuff here. I built
-without CONFIG_SECURITY_NETWORK_XFRM and it fails, missing
-lsm_xfrm_order().
+> ...
+>
+> : There is plenty of anecdotal evidence and a load of blog posts
+> : suggesting that using "drop_caches" periodically keeps your system
+> : running in "tip top shape".  Perhaps adding some kernel
+> : documentation will increase the amount of accurate data on its use.
+> :
+> : If we are not shrinking caches effectively, then we have real bugs.
+> : Using drop_caches will simply mask the bugs and make them harder
+> : to find, but certainly does not fix them, nor is it an appropriate
+> : "workaround" to limit the size of the caches.
+> :
+> : It's a great debugging tool, and is really handy for doing things
+> : like repeatable benchmark runs.  So, add a bit more documentation
+> : about it, and add a little KERN_NOTICE.  It should help developers
+> : who are chasing down reclaim-related bugs.
+> 
+> ...
+>
+> --- a/fs/drop_caches.c
+> +++ b/fs/drop_caches.c
+> @@ -59,6 +59,8 @@ int drop_caches_sysctl_handler(ctl_table *table, int write,
+>  	if (ret)
+>  		return ret;
+>  	if (write) {
+> +		printk(KERN_INFO "%s (%d): dropped kernel caches: %d\n",
+> +		       current->comm, task_pid_nr(current), sysctl_drop_caches);
+>  		if (sysctl_drop_caches & 1)
+>  			iterate_supers(drop_pagecache_sb, NULL);
+>  		if (sysctl_drop_caches & 2)
 
-If I added an #else to the CONFIG_SECURITY_NETWORK_XFRM check and made
-lsm_xfrm_order() return 0 there too, it built fine.
+How about we do
 
--Kees
+	if (!(sysctl_drop_caches & 4))
+		printk(....)
 
--- 
-Kees Cook
-Chrome OS Security
+so people can turn it off if it's causing problems?
