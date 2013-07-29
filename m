@@ -1,102 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab3G2F4U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:56:20 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:40583 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754806Ab3G2F4S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:56:18 -0400
-Date: Mon, 29 Jul 2013 15:56:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the spi tree
-Message-Id: <20130729155609.bb9d635427d8eef1da954e3a@canb.auug.org.au>
-In-Reply-To: <20130729050011.GJ9858@sirena.org.uk>
-References: <20130729134223.bbae9d9f2a9cd6ca1717c976@canb.auug.org.au>
-	<20130729050011.GJ9858@sirena.org.uk>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+	id S1754864Ab3G2F5L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:57:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50216 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752515Ab3G2F5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:57:08 -0400
+Date: Mon, 29 Jul 2013 15:56:55 +1000
+From: NeilBrown <neilb@suse.de>
+To: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
+Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
+ SSD)
+Message-ID: <20130729155655.38572fed@notabene.brown>
+In-Reply-To: <001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
+References: <000501ce85fc$d3a60a10$7af21e30$@lucidpixels.com>
+	<20130722090257.2faa0874@notabene.brown>
+	<009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com>
+	<20130726103549.1e6b0b92@notabene.brown>
+	<001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Jul_2013_15_56_09_+1000_76k97KRii/DMK2cu"
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/+vNN0dWy8kXzo7pzO5Vn8zX"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Jul_2013_15_56_09_+1000_76k97KRii/DMK2cu
+--Sig_/+vNN0dWy8kXzo7pzO5Vn8zX
 Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Mark,
+On Fri, 26 Jul 2013 05:56:51 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
+wrote:
 
-On Mon, 29 Jul 2013 06:00:11 +0100 Mark Brown <broonie@kernel.org> wrote:
->
-> On Mon, Jul 29, 2013 at 01:42:23PM +1000, Stephen Rothwell wrote:
 >=20
-> > drivers/spi/spi-pxa2xx-pxadma.c: In function 'wait_dma_channel_stop':
-> > drivers/spi/spi-pxa2xx-pxadma.c:136:2: error: implicit declaration of f=
-unction 'DCSR' [-Werror=3Dimplicit-function-declaration]
-> >   while (!(DCSR(channel) & DCSR_STOPSTATE) && --limit)
 >=20
-> > Frankly, Mark, if you are unable or unwilling to do some basic cross
-> > build testing, please do not do any more of these patches that add
-> > CONFIG_COMPILE_TEST.  Leave them to someone who can.
+> -----Original Message-----
+> From: NeilBrown [mailto:neilb@suse.de]=20
+> Sent: Thursday, July 25, 2013 8:36 PM
+> To: Justin Piszcz
+> Cc: linux-kernel@vger.kernel.org; linux-raid@vger.kernel.org
+> Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
+> SSD)
 >=20
-> This was cross built.  It didn't show up due to the fact that the
-> minimal configs I use for build coverage (and in fact every single
-> config I was building) didn't have PCI turned on (which is a dependency
-> for this option actually building anything) which allowed this config
-> symbol to be enabled without showing the problem due to the slightly odd
-> way the config for the driver is structured; any system with PCI that's
-> not PXA would be affected.
+> On Thu, 25 Jul 2013 19:10:50 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.c=
+om>
+> wrote:
 >=20
-> Most (though not all) of the other issues have been due to similar
-> stuff.  I do rely on the 0 day tester for the full builds but I do pretty
-> routinely test (especially on x86) these days though with minimal
-> configs and on my full working tree.
+> > Did the fix by chance make it into 3.10.3?
+>=20
+> No, it looks like it missed again.  I gather there was a large inflow of
+> patches for -stable in the 3.11-rc1 merge window and Greg has been
+> processing
+> them in batches.  Hopefully in 3.10.4.
+>=20
+> The relevant patch is commit 30bc9b53878a9921b02e3 in mainline.
+>=20
+> NeilBrown
+>=20
+> --
+>=20
+> Method to get patch via git and patch kernel:
+>=20
+> $ git clone
+> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+> $ git log |grep 30bc9b53878a9921b02e3
+> commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
+> $ git show 30bc9b53878a9921b02e3b5bc4283ac1c6de102a > /tmp/a
+> # patch -p1 < /tmp/a
+> patching file drivers/md/raid1.c
+> Hunk #1 succeeded at 1848 (offset -1 lines).
+> Hunk #2 succeeded at 1886 (offset -1 lines).
+> Hunk #3 succeeded at 1915 (offset -1 lines).
+>=20
+> Reboot- tested, success, thanks..!
+>=20
+> One follow-up question:
+> $ cat /sys/block/md1/md/mismatch_cnt
+> 314112
+> -> On a live RAID-1 (root filesystem) without swap, is it normal to have
+> such a high mismatch_cnt even after a repair?
+>=20
+> First repair:
+> Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
+> 314112 sectors.
+> Second repair:
+> Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
+> 313600 sectors.
 
-Did the 0 day tester find these?  If so, then maybe you should wait a
-while longer before adding these things to your published trees.  If not,
-then I wonder why not.
+Those two lines have exactly the same timestamp and  array name but differe=
+nt
+mismatch counts.  That is very strange.
 
-Even so as a developer, you should not really be submitting patches that
-have not been at least build tested.   You can find out which files are
-affected by these config changes and then really simply do:
-(assuming an x86 native platform - adjust for cross compiling)
+Did you run two consecutive 'repair's on the one array, both with the patch=
+ed
+kernel?  If so and the second mismatch_cnt wasn't zero (or close to
+it..maybe) then something is definitely wrong.
 
-$ mkdir ../test.obj
-$ make O=3D../test.obj allmodconfig
-<make sure that the CONFIG options got turned on>
-$ make O=3D../test.obj <files affected s/.c/.o/>
+NeilBrown
 
-You don't need to do full builds to find most of this stuff.  Of course,
-this will not find link time errors or missing module symbols.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Mon__29_Jul_2013_15_56_09_+1000_76k97KRii/DMK2cu
-Content-Type: application/pgp-signature
+>=20
+> Should I be concerned?
+>=20
+>=20
+> Testing the patch:
+>=20
+> Personalities : [raid1]
+> md1 : active raid1 sdc2[0] sdb2[1]
+>       233381376 blocks [2/2] [UU]
+>       [>....................]  check =3D  0.3% (838976/233381376)
+> finish=3D9.2min speed=3D419488K/sec
+>=20
+> md0 : active raid1 sdc1[0] sdb1[1]
+>       1048512 blocks [2/2] [UU]
+>=20
+> Personalities : [raid1]
+> md1 : active raid1 sdc2[0] sdb2[1]
+>       233381376 blocks [2/2] [UU]
+>       [=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D>.....]  check =3D 77=
+.5% (180889856/233381376)
+> finish=3D2.5min speed=3D342654K/sec
+>=20
+> md0 : active raid1 sdc1[0] sdb1[1]
+>       1048512 blocks [2/2] [UU]
+>=20
+> Personalities : [raid1]
+> md1 : active raid1 sdc2[0] sdb2[1]
+>       233381376 blocks [2/2] [UU]
+>=20
+> md0 : active raid1 sdc1[0] sdb1[1]
+>       1048512 blocks [2/2] [UU]
+>=20
+>=20
+> Justin.
+>=20
+
+
+--Sig_/+vNN0dWy8kXzo7pzO5Vn8zX
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBCAAGBQJR9gP9AAoJEECxmPOUX5FEUnMP/io/BBkFTS+XKzmzusE/+x+W
-AVsBizL5RizO5rvpg0TY6OYzchP7+08pt3FwKs70XlGhXLan2bBmp0bSqUbxqrIN
-kz3VZjnddno6hDCewH6YMgENVsbnXb6PScDhhv9++zRIy00uD3XCxniBUzNfFT8J
-dVR3/fCrpYEIZ6hbj7X65vgdRCdYs5/lO4NqvLROePQizt6LeS9NH7Tazc2faLYz
-r+1uXqw7Srgr9XLJwp7a35ePpeWKJUprQAYMa7dl2hWAPu2xgjtfD+SNQraAFg0N
-hn3N4pjgNqDQjRuMZc6XK+zDcTdQvnbf9uY4n2PjqG2ZfHC4hjw/gheUZ9pTkZ59
-iVjXE0AGG/YBq2GeXEA8Il/wfaJc9zC+EB/HH+4KYYXG/1R0UcllVBvChGC2MNqc
-SPSH5KMuHIQdIj/a1t1/r02m/kADiBoafHk95Zwb0nJTqOi/qK5ubb5Q4zpcO1No
-jd/ZdgDauF8chH2a+8j/u/agxR9617RIklvuUmee2zzBIm1y0qfAe8TfEEYRF/t9
-HKMIjhT2VEkWV2uehSsf/9+eTr7dejTSj2jrJoK5t4YFyZNbFgfglW+WqrmsH8Iw
-OG8I1NwwXGWTlnZdg500Tsz2n0i/A/ftRyOIHRFotpNFxHZSpXHysKNCe4XyBqED
-6i52mEC1yiZpKAY7XlFH
-=8Mu9
+iQIVAwUBUfYEKDnsnt1WYoG5AQLN2xAApE2JFdBRjs4r+Udi4Cf+4LDVwbN+7y/q
+9ijonMktuAgkcf9ybruHP6yG2aRueVajZWwZ3YzzDQZP3XLI3pfntc7rwe0k9am0
+EGairvnHyxkCsOnOcmdaQl4nnjidoH4OSMIYkYsHjoVsGiC/+jT4E9xRAaZPWUnH
+L7uU3jfZP32LtAodHaL+0OyQRxlIX1yl2lGy+j1wIwGaoyJabdX0lStHaiEK8eO0
+Kx/biLXPKq8S4ztm3XKtf0OCviKwhLWHjIjmYLiVZ5GnYWkAF13L+LJRpWoI2p9Z
+7xHdb6QzyELBCDKPm02Ed9MEqGblh6l4FM70P/FsMkUzWaSS1nBASNRy9B8X9bt2
+XWAevy/lcT4pPz16g9L9twYn5QUIJdl1JDllpTXo/XNEvtdGs3rpX58r/Ba9/5JA
+DLmIctSMfjNJo38FlJKDSpCq23/IFn4/zKtVopO3nNhAxMUGibgoGSot9ruChzIv
+sSANmD7KAZH2xIIex0t0ZJs9GkozhEBq899ICrsT1/MZ2ifFzhmMQg3oKhJJq3QS
+gWh7+efkzCULW+fMvlrNBQik/3vlsS6KNjOL9s66ZsC/P8kNaCTrQy97tv560Z1m
++g5Jw3NLUSffOUDyylB0hJDWkeTk5X16WH6bgGxO1NBE2CnjVxr3vn+ZYnEB7ZdP
+Pzf+6psqQnE=
+=cIcR
 -----END PGP SIGNATURE-----
 
---Signature=_Mon__29_Jul_2013_15_56_09_+1000_76k97KRii/DMK2cu--
+--Sig_/+vNN0dWy8kXzo7pzO5Vn8zX--
