@@ -1,200 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758258Ab3G2REq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:04:46 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46780 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab3G2RDm (ORCPT
+	id S1755120Ab3G2RFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:05:45 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48856 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750820Ab3G2RFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:03:42 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Benoit Cousson <benoit.cousson@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-CC: l-o <linux-omap@vger.kernel.org>, dt list <devicetree@vger.kernel.org>,
-        l-a <linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>,
-        Nishanth Menon <nm@ti.com>
-Subject: [PATCH V2 1/3] ARM: dts: omap5-uevm: document regulator signals used on the actual board
-Date: Mon, 29 Jul 2013 12:03:01 -0500
-Message-ID: <1375117383-19285-2-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375117383-19285-1-git-send-email-nm@ti.com>
-References: <51F67D7D.9070003@ti.com>
- <1375117383-19285-1-git-send-email-nm@ti.com>
+	Mon, 29 Jul 2013 13:05:43 -0400
+Message-ID: <51F6A0A9.5040702@infradead.org>
+Date: Mon, 29 Jul 2013 10:04:41 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Jonathan Kim <jonathankim@gctsemi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dean ahn <deanahn@gctsemi.com>
+Subject: Re: linux-next: Tree for Jul 29 (staging/gdm724x)
+References: <20130729163906.7ba07f7c024ad364b2feb513@canb.auug.org.au>
+In-Reply-To: <20130729163906.7ba07f7c024ad364b2feb513@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit e00c27ef3b4c23e39d0a77b7c8e5be44c28001c7
-(ARM: dts: OMAP5: Add Palmas MFD node and regulator nodes)
-introduced regulator entries for OMAP5uEVM.
+On 07/28/13 23:39, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Changes since 20130726:
+> 
 
-However, currently we use the Palmas regulator names which is used for
-different purposes on uEVM. Document the same based on 750-2628-XXX
-boards - which is meant to be supported by this dts.
+on i386:
+# CONFIG_TTY is not set
 
-Reported-by: Marc Jüttner <m-juettner@ti.com>
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Acked-by: J Keerthy <j-keerthy@ti.com>
----
 
-V2: no change
-V1: https://patchwork.kernel.org/patch/2828862/
+ERROR: "tty_port_tty_get" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_port_close_end" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_register_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_buffer_request_room" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "put_tty_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_port_close_start" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_set_operations" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_port_init" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_insert_flip_string_fixed_flag" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_register_device" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_unregister_device" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_std_termios" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_unregister_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "__tty_alloc_driver" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_flip_buffer_push" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_port_tty_set" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_wakeup" [drivers/staging/gdm724x/gdmtty.ko] undefined!
+ERROR: "tty_port_block_til_ready" [drivers/staging/gdm724x/gdmtty.ko] undefined!
 
- arch/arm/boot/dts/omap5-uevm.dts |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap5-uevm.dts b/arch/arm/boot/dts/omap5-uevm.dts
-index 08b7267..b430b8f 100644
---- a/arch/arm/boot/dts/omap5-uevm.dts
-+++ b/arch/arm/boot/dts/omap5-uevm.dts
-@@ -282,6 +282,7 @@
- 
- 			regulators {
- 				smps123_reg: smps123 {
-+					/* VDD_OPP_MPU */
- 					regulator-name = "smps123";
- 					regulator-min-microvolt = < 600000>;
- 					regulator-max-microvolt = <1500000>;
-@@ -290,6 +291,7 @@
- 				};
- 
- 				smps45_reg: smps45 {
-+					/* VDD_OPP_MM */
- 					regulator-name = "smps45";
- 					regulator-min-microvolt = < 600000>;
- 					regulator-max-microvolt = <1310000>;
-@@ -298,6 +300,7 @@
- 				};
- 
- 				smps6_reg: smps6 {
-+					/* VDD_DDR3 - over VDD_SMPS6 */
- 					regulator-name = "smps6";
- 					regulator-min-microvolt = <1200000>;
- 					regulator-max-microvolt = <1200000>;
-@@ -306,6 +309,7 @@
- 				};
- 
- 				smps7_reg: smps7 {
-+					/* VDDS_1v8_OMAP over VDDS_1v8_MAIN */
- 					regulator-name = "smps7";
- 					regulator-min-microvolt = <1800000>;
- 					regulator-max-microvolt = <1800000>;
-@@ -314,6 +318,7 @@
- 				};
- 
- 				smps8_reg: smps8 {
-+					/* VDD_OPP_CORE */
- 					regulator-name = "smps8";
- 					regulator-min-microvolt = < 600000>;
- 					regulator-max-microvolt = <1310000>;
-@@ -322,6 +327,7 @@
- 				};
- 
- 				smps9_reg: smps9 {
-+					/* VDDA_2v1_AUD over VDD_2v1 */
- 					regulator-name = "smps9";
- 					regulator-min-microvolt = <2100000>;
- 					regulator-max-microvolt = <2100000>;
-@@ -331,6 +337,7 @@
- 				};
- 
- 				smps10_reg: smps10 {
-+					/* VBUS_5V_OTG */
- 					regulator-name = "smps10";
- 					regulator-min-microvolt = <5000000>;
- 					regulator-max-microvolt = <5000000>;
-@@ -339,6 +346,7 @@
- 				};
- 
- 				ldo1_reg: ldo1 {
-+					/* VDDAPHY_CAM: vdda_csiport */
- 					regulator-name = "ldo1";
- 					regulator-min-microvolt = <2800000>;
- 					regulator-max-microvolt = <2800000>;
-@@ -347,6 +355,7 @@
- 				};
- 
- 				ldo2_reg: ldo2 {
-+					/* VCC_2V8_DISP: Does not go anywhere */
- 					regulator-name = "ldo2";
- 					regulator-min-microvolt = <2900000>;
- 					regulator-max-microvolt = <2900000>;
-@@ -355,6 +364,7 @@
- 				};
- 
- 				ldo3_reg: ldo3 {
-+					/* VDDAPHY_MDM: vdda_lli */
- 					regulator-name = "ldo3";
- 					regulator-min-microvolt = <3000000>;
- 					regulator-max-microvolt = <3000000>;
-@@ -363,6 +373,7 @@
- 				};
- 
- 				ldo4_reg: ldo4 {
-+					/* VDDAPHY_DISP: vdda_dsiport/hdmi */
- 					regulator-name = "ldo4";
- 					regulator-min-microvolt = <2200000>;
- 					regulator-max-microvolt = <2200000>;
-@@ -371,6 +382,7 @@
- 				};
- 
- 				ldo5_reg: ldo5 {
-+					/* VDDA_1V8_PHY: usb/sata/hdmi.. */
- 					regulator-name = "ldo5";
- 					regulator-min-microvolt = <1800000>;
- 					regulator-max-microvolt = <1800000>;
-@@ -379,6 +391,7 @@
- 				};
- 
- 				ldo6_reg: ldo6 {
-+					/* VDDS_1V2_WKUP: hsic/ldo_emu_wkup */
- 					regulator-name = "ldo6";
- 					regulator-min-microvolt = <1500000>;
- 					regulator-max-microvolt = <1500000>;
-@@ -387,6 +400,7 @@
- 				};
- 
- 				ldo7_reg: ldo7 {
-+					/* VDD_VPP: vpp1 */
- 					regulator-name = "ldo7";
- 					regulator-min-microvolt = <1500000>;
- 					regulator-max-microvolt = <1500000>;
-@@ -395,6 +409,7 @@
- 				};
- 
- 				ldo8_reg: ldo8 {
-+					/* VDD_3v0: Does not go anywhere */
- 					regulator-name = "ldo8";
- 					regulator-min-microvolt = <1500000>;
- 					regulator-max-microvolt = <1500000>;
-@@ -403,6 +418,7 @@
- 				};
- 
- 				ldo9_reg: ldo9 {
-+					/* VCC_DV_SDIO: vdds_sdcard */
- 					regulator-name = "ldo9";
- 					regulator-min-microvolt = <1800000>;
- 					regulator-max-microvolt = <3300000>;
-@@ -411,6 +427,7 @@
- 				};
- 
- 				ldoln_reg: ldoln {
-+					/* VDDA_1v8_REF: vdds_osc/mm_l4per.. */
- 					regulator-name = "ldoln";
- 					regulator-min-microvolt = <1800000>;
- 					regulator-max-microvolt = <1800000>;
-@@ -419,6 +436,7 @@
- 				};
- 
- 				ldousb_reg: ldousb {
-+					/* VDDA_3V_USB: VDDA_USBHS33 */
- 					regulator-name = "ldousb";
- 					regulator-min-microvolt = <3250000>;
- 					regulator-max-microvolt = <3250000>;
+
 -- 
-1.7.9.5
-
+~Randy
