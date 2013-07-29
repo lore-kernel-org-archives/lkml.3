@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab3G2F7q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:59:46 -0400
-Received: from guitar.tcltek.co.il ([192.115.133.116]:54782 "EHLO
-	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab3G2F7p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:59:45 -0400
-Date: Mon, 29 Jul 2013 08:59:39 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-xtensa@linux-xtensa.org
-Subject: Re: [PATCH] time: sched_clock: fix integer overflow
-Message-ID: <20130729055939.GK5161@tarshish>
-References: <232c026d1b8d2556679aea56cf77a6811f9a96c5.1374054369.git.baruch@tkos.co.il>
+	id S1754974Ab3G2GDA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 02:03:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56529 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754922Ab3G2GC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 02:02:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,767,1367996400"; 
+   d="scan'208";a="338279351"
+Date: Mon, 29 Jul 2013 10:53:13 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Xiang Wang <wangxfdu@gmail.com>
+Cc: Dan Williams <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        cxie4@marvell.com, Xiang Wang <wangx@marvell.com>
+Subject: Re: [PATCH V2] dma: mmp_pdma: support for getting residual bytes
+Message-ID: <20130729052313.GB29095@intel.com>
+References: <1371544880-26782-1-git-send-email-wangxfdu@gmail.com>
+ <20130705064449.GC10947@intel.com>
+ <CACDNBm0HA_Ptgq_he-07-PpocZ6Qf7E+rP_W1yAFpSnmoZVaeQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <232c026d1b8d2556679aea56cf77a6811f9a96c5.1374054369.git.baruch@tkos.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACDNBm0HA_Ptgq_he-07-PpocZ6Qf7E+rP_W1yAFpSnmoZVaeQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas, John,
+On Thu, Jul 11, 2013 at 10:54:29AM +0800, Xiang Wang wrote:
+> >> +static u32 mmp_pdma_get_bytes_residue(struct mmp_pdma_chan *chan)
+> >> +{
+> >> +     u32 reg, orig_pos, cur_pos, ddadr, residue = 0;
+> >> +     bool running_desc_found = false;
+> >> +     struct mmp_pdma_desc_sw *desc_sw;
+> >> +
+> >> +     /*
+> >> +      * When a phy channel is unavailable, maybe it has been freed, return
+> >> +      * last stored value for safe.
+> >> +      */
+> >> +     if (!chan->phy)
+> >> +             return chan->bytes_residue;
+> >> +
+> >> +     reg = (chan->phy->idx << 4) + DDADR;
+> >> +     ddadr = readl_relaxed(chan->phy->base + reg);
+> >> +
+> >> +     /* iterate over all descriptors to sum up the number of pending bytes */
+> > and why?
+> >
+> > Residue does not mean sum of all pending bytes across all descriptors submitted
+> > You need to find the residue of current descriptor only and return
+> >
+> Here are my thoughts:
+> We tell dma engine to transmit x bytes for us and it creates n
+> descriptors to transmit which is transparent to us.
+> So when we want to find out how many bytes are left, dma engine should
+> sum up all pending bytes across all descriptors.
+> What's your opinion?
+but you may have multiple transactions submmited. Iterating over _all_
+descriptors doesnt make sense then. You need to iterate over descriptors for
+current transaction only.
 
-On Wed, Jul 17, 2013 at 12:46:53PM +0300, Baruch Siach wrote:
-> The expression '(1 << 32)' happens to evaluate as 0 on ARM, but it evaluates as
-> 1 on xtensa and x86_64. This zeros sched_clock_mask, and breaks sched_clock().
-> Set the type of 1 to 'unsigned long long' to get the value we need.
+> >> +     list_for_each_entry(desc_sw, &chan->chain_running, node) {
+> >> +             /* for the case of a running descriptor */
+> >> +             if (desc_sw->desc.ddadr == ddadr && !running_desc_found) {
+> >> +                     switch (chan->dir) {
+> >> +                     case DMA_DEV_TO_MEM:
+> >> +                     case DMA_MEM_TO_MEM:
+> >> +                             reg = (chan->phy->idx << 4) + DTADR;
+> >> +                             cur_pos = readl_relaxed(chan->phy->base + reg);
+> >> +                             orig_pos = desc_sw->desc.dtadr;
+> >> +                             break;
+> >> +
+> >> +                     case DMA_MEM_TO_DEV:
+> >> +                             reg = (chan->phy->idx << 4) + DSADR;
+> >> +                             cur_pos = readl_relaxed(chan->phy->base + reg);
+> >> +                             orig_pos = desc_sw->desc.dsadr;
+> >> +                             break;
+> >> +
+> >> +                     default:
+> >> +                             cur_pos = 0;
+> >> +                             orig_pos = 0;
+> > This makes no sense...
+> What do you recommend for the default case? Just return 0?
+why should direction be anything other than these? This is error!
 
-Ping? -rc3 is out, and this bug (which currently breaks xtensa) is not fixed 
-yet. Please consider applying.
-
-baruch
-
-> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
-> Tested-by: Max Filippov <jcmvbkbc@gmail.com>
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-> ---
->  kernel/time/sched_clock.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-> index a326f27..0b479a6 100644
-> --- a/kernel/time/sched_clock.c
-> +++ b/kernel/time/sched_clock.c
-> @@ -121,7 +121,7 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
->  	BUG_ON(bits > 32);
->  	WARN_ON(!irqs_disabled());
->  	read_sched_clock = read;
-> -	sched_clock_mask = (1 << bits) - 1;
-> +	sched_clock_mask = (1ULL << bits) - 1;
->  	cd.rate = rate;
->  
->  	/* calculate the mult/shift to convert counter ticks to ns. */
-> -- 
-
+~Vinod
 -- 
-     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
