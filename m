@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756497Ab3G2W7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:59:07 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:43112 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756268Ab3G2W7F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:59:05 -0400
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Subject: [PATCH v2 7/7] cpufreq: Perform light-weight init/teardown during
- suspend/resume
-To: rjw@sisk.pl, viresh.kumar@linaro.org, toralf.foerster@gmx.de,
-        robert.jarzmik@intel.com, durgadoss.r@intel.com, tianyu.lan@intel.com,
-        lantianyu1986@gmail.com, dirk.brandewie@gmail.com
-Cc: stern@rowland.harvard.edu, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 30 Jul 2013 04:25:25 +0530
-Message-ID: <20130729225519.20863.61030.stgit@srivatsabhat.in.ibm.com>
-In-Reply-To: <20130729225213.20863.56722.stgit@srivatsabhat.in.ibm.com>
-References: <20130729225213.20863.56722.stgit@srivatsabhat.in.ibm.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1756316Ab3G2XBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:01:24 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:60268 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755005Ab3G2XBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 19:01:23 -0400
+Message-ID: <1375138880.2075.82.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: enforce sane perl version
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Hansen <dave@sr71.net>, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+Date: Mon, 29 Jul 2013 16:01:20 -0700
+In-Reply-To: <20130729155210.cc90c5790ad83d63bd30e508@linux-foundation.org>
+References: <20130729200606.2651EE1E@viggo.jf.intel.com>
+	 <1375128613.2075.56.camel@joe-AO722>
+	 <20130729155210.cc90c5790ad83d63bd30e508@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072922-8256-0000-0000-00000890FE7E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have the infrastructure to perform a light-weight init/tear-down,
-use that in the cpufreq CPU hotplug notifier when invoked from the
-suspend/resume path.
+On Mon, 2013-07-29 at 15:52 -0700, Andrew Morton wrote:
+> On Mon, 29 Jul 2013 13:10:13 -0700 Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2013-07-29 at 13:06 -0700, Dave Hansen wrote:
+> > > From: Dave Hansen <dave.hansen@linux.intel.com>
+> > > I got a bug report from a couple of users who said
+> > > checkpatch.pl was broken for them.  It was erroring out on
+> > > fairly random lines most commonly with messages like:
+> > > 
+> > > 	Nested quantifiers in regex; marked by <--HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at ./checkpatch.pl line 340.
+> > > 
+> > > The bug reporter was running a version of perl 5.8 which was
+> > > end-of-lifed in 2008
+[]
+> > Other than Andrew Morton's (continuing?) use of perl 5.8
+> > I'm fine with this.
+> > 
+> > Andrew?  Time to update your perl version?
+> 
+> I run an FC6 test box just to irritate you guys.
 
-This also ensures that the file permissions of the cpufreq sysfs files are
-preserved across suspend/resume, something which commit a66b2e (cpufreq:
-Preserve sysfs files across suspend/resume) originally intended to do, but
-had to be reverted due to other problems.
+;)
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
----
+yabut do you (have to) use checkpatch on that
+creakingly old test box?
 
- drivers/cpufreq/cpufreq.c       |   18 +++++++++++-------
- drivers/cpufreq/cpufreq_stats.c |    2 --
- 2 files changed, 11 insertions(+), 9 deletions(-)
+Maybe I can find a box with slackware 2.0 for you.
+It had perl 5.0.0.
 
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 4c5ad4a..170d344 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -2028,22 +2028,26 @@ static int cpufreq_cpu_callback(struct notifier_block *nfb,
- {
- 	unsigned int cpu = (unsigned long)hcpu;
- 	struct device *dev;
-+	bool frozen = false;
- 
- 	dev = get_cpu_device(cpu);
- 	if (dev) {
--		switch (action) {
-+
-+		if (action & CPU_TASKS_FROZEN)
-+			frozen = true;
-+
-+		switch (action & ~CPU_TASKS_FROZEN) {
- 		case CPU_ONLINE:
--		case CPU_ONLINE_FROZEN:
--			cpufreq_add_dev(dev, NULL);
-+			__cpufreq_add_dev(dev, NULL, frozen);
- 			cpufreq_update_policy(cpu);
- 			break;
-+
- 		case CPU_DOWN_PREPARE:
--		case CPU_DOWN_PREPARE_FROZEN:
--			__cpufreq_remove_dev(dev, NULL, false);
-+			__cpufreq_remove_dev(dev, NULL, frozen);
- 			break;
-+
- 		case CPU_DOWN_FAILED:
--		case CPU_DOWN_FAILED_FROZEN:
--			cpufreq_add_dev(dev, NULL);
-+			__cpufreq_add_dev(dev, NULL, frozen);
- 			break;
- 		}
- 	}
-diff --git a/drivers/cpufreq/cpufreq_stats.c b/drivers/cpufreq/cpufreq_stats.c
-index bc73be2..cb38413 100644
---- a/drivers/cpufreq/cpufreq_stats.c
-+++ b/drivers/cpufreq/cpufreq_stats.c
-@@ -349,11 +349,9 @@ static int cpufreq_stat_cpu_callback(struct notifier_block *nfb,
- 
- 	switch (action) {
- 	case CPU_DOWN_PREPARE:
--	case CPU_DOWN_PREPARE_FROZEN:
- 		cpufreq_stats_free_sysfs(cpu);
- 		break;
- 	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
- 		cpufreq_stats_free_table(cpu);
- 		break;
- 	}
 
