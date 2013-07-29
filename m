@@ -1,60 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab3G2O2d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:28:33 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56267 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab3G2O2b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:28:31 -0400
-Date: Mon, 29 Jul 2013 07:28:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Kevin Easton <kevin@guarana.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, davem@davemloft.net,
-        arnd@arndb.de, mingo@kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH jiffies] Avoid undefined behavior from signed overflow
-Message-ID: <20130729142812.GN26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130727225828.GA11864@linux.vnet.ibm.com>
- <20130729153035.18805zox54aoyubf@chicago.guarana.org>
- <20130729135411.GM26694@linux.vnet.ibm.com>
- <20130730000103.35524r83mpydvs7z@chicago.guarana.org>
+	id S1756657Ab3G2O2n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:28:43 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:47098 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3G2O2k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:28:40 -0400
+Message-ID: <51F67BE5.10701@linux.vnet.ibm.com>
+Date: Mon, 29 Jul 2013 19:57:49 +0530
+From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130219 Thunderbird/17.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730000103.35524r83mpydvs7z@chicago.guarana.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+CC: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] cpuidle/powernv: Enable idle powernv cpu to call
+ into the cpuidle framework.
+References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090150.7291.89879.stgit@deepthi.in.ibm.com> <51F35AC7.8060909@linaro.org>
+In-Reply-To: <51F35AC7.8060909@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072914-5806-0000-0000-00002238F929
+x-cbid: 13072914-7014-0000-0000-000003648B3E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 12:01:03AM +1000, Kevin Easton wrote:
-> Quoting "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>:
+On 07/27/2013 10:59 AM, Daniel Lezcano wrote:
+> On 07/23/2013 11:01 AM, Deepthi Dharwar wrote:
+>> This patch enables idle powernv cpu to hook on to the cpuidle
+>> framework, if available, else call on to default idle platform
+>> code.
 > 
-> >On Mon, Jul 29, 2013 at 03:30:35PM +1000, caf@guarana.org wrote:
-> >>Quoting "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>:
-> >>
-> ...
-> >>>
-> >>>Note that the C standard considers the cast from signed to
-> >>>unsigned to be implementation-defined, see 6.3.1.3p3.
-> ...
-> >>
-> >>Don't worry, the case from signed to unsigned is actually well-defined -
-> >>the relevant part is 6.3.1.3p2 (in C99):
-> >>
-> >>>Otherwise, if the new type is unsigned, the value is converted by
-> >>>repeatedly adding or subtracting one more than the maximum value that
-> >>>can be represented in the new type until the value is in the range of
-> >>>the new type.
-> >
-> >Yep, but we are going in the other direction, from unsigned to signed.
+> Why do you need to do that ?
 > 
-> Ahh, there's an error in the commit message (it says signed to unsigned).
 
-Good catch, fixed!
+Hi Daniel,
 
-							Thanx, Paul
+Well, this is needed in case when one does not compile with CPU_IDLE
+config option.
+
+When CPUIDLE is not configured, idle cpus are needed to be running some
+sort of default idle code or loop ( in the worst case) if cpuidle driver
+is not registered or if one decides not to have that config enabled.
+
+Regards,
+Deepthi
+
+> 
+>> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+>> ---
+>>  arch/powerpc/platforms/powernv/setup.c |   12 +++++++++++-
+>>  1 file changed, 11 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+>> index 84438af..97d0951 100644
+>> --- a/arch/powerpc/platforms/powernv/setup.c
+>> +++ b/arch/powerpc/platforms/powernv/setup.c
+>> @@ -25,6 +25,7 @@
+>>  #include <linux/of.h>
+>>  #include <linux/interrupt.h>
+>>  #include <linux/bug.h>
+>> +#include <linux/cpuidle.h>
+>>  
+>>  #include <asm/machdep.h>
+>>  #include <asm/firmware.h>
+>> @@ -196,6 +197,15 @@ static int __init pnv_probe(void)
+>>  	return 1;
+>>  }
+>>  
+>> +void powernv_idle(void)
+>> +{
+>> +	/* Hook to cpuidle framework if available, else
+>> +	 * call on default platform idle code
+>> +	 */
+>> +	if (cpuidle_idle_call())
+>> +		power7_idle();
+>> +}
+>> +
+>>  define_machine(powernv) {
+>>  	.name			= "PowerNV",
+>>  	.probe			= pnv_probe,
+>> @@ -205,7 +215,7 @@ define_machine(powernv) {
+>>  	.show_cpuinfo		= pnv_show_cpuinfo,
+>>  	.progress		= pnv_progress,
+>>  	.machine_shutdown	= pnv_shutdown,
+>> -	.power_save             = power7_idle,
+>> +	.power_save             = powernv_idle,
+>>  	.calibrate_decr		= generic_calibrate_decr,
+>>  #ifdef CONFIG_KEXEC
+>>  	.kexec_cpu_down		= pnv_kexec_cpu_down,
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+> 
+> 
 
