@@ -1,80 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033Ab3G2TY1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:24:27 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51401 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753118Ab3G2TYY (ORCPT
+	id S1754117Ab3G2TYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:24:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23717 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3G2TXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:24:24 -0400
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-Date: Mon, 29 Jul 2013 14:20:58 -0500
-Message-Id: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.8.3.4
+	Mon, 29 Jul 2013 15:23:36 -0400
+X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=-QpYvyFRs40A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=B7fq5NeUHE8A:10 a=VnNF1IyMAAAA:8 a=JG-vPKiU-p_K2tTHVwwA:9 a=jeBq3FmKZ4MA:10 a=37GXWBexuTM6R5Kx:21 a=cLn3MIIgLTY8wd71:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-Id: <20130729192333.943964999@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Mon, 29 Jul 2013 15:21:34 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 1/4] tracing: Add __tracepoint_string() to export string pointers
+References: <20130729192133.143455334@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Add-__tracepoint_string-to-export-string-poi.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since v3.7 the acpi backlight driver doesn't work at all on this machine
-because presumably the ACPI code contains stub code when Windows 8 OSI is
-reported.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
-backlight driver, however, on this machine it turns the backlight completely
-off when it reaches level 0%, after which the user might have a lot trouble
-trying to bring it back.
+There are several tracepoints (mostly in RCU), that reference a string
+pointer and uses the print format of "%s" to display the string that
+exists in the kernel, instead of copying the actual string to the
+ring buffer (saves time and ring buffer space).
 
-This patch fixes both regressions by blacklisting the win8 OSI, so we are back
-to v3.6 behavior, and it should remain that way until the intel backlight
-driver is fixed.
+But this has an issue with userspace tools that read the binary buffers
+that has the address of the string but has no access to what the string
+itself is. The end result is just output that looks like:
 
-Since v3.7, users have been forced to fix the initial regression by modifying
-the boot arguments [1].
+ rcu_dyntick:          ffffffff818adeaa 1 0
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_dyntick:          ffffffff818adeb5 0 140000000000000
+ rcu_utilization:      ffffffff8184333b
+ rcu_utilization:      ffffffff8184333b
 
-[1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
+The above is pretty useless when read by the userspace tools. Ideally
+we would want something that looks like this:
 
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+ rcu_dyntick:          Start 1 0
+ rcu_dyntick:          End 0 140000000000000
+ rcu_dyntick:          Start 140000000000000 0
+ rcu_callback:         rcu_preempt rhp=0xffff880037aff710 func=put_cred_rcu 0/4
+ rcu_callback:         rcu_preempt rhp=0xffff880078961980 func=file_free_rcu 0/5
+ rcu_dyntick:          End 0 1
+
+The trace_printk() which also only stores the address of the string
+format instead of recording the string into the buffer itself, exports
+the mapping of kernel addresses to format strings via the printk_format
+file in the debugfs tracing directory.
+
+The tracepoint strings can use this same method and output the format
+to the same file and the userspace tools will be able to decipher
+the address without any modification.
+
+The tracepoint strings need its own section to save the strings because
+the trace_printk section will cause the trace_printk() buffers to be
+allocated if anything exists within the section. trace_printk() is only
+used for debugging and should never exist in the kernel, we can not use
+the trace_printk sections.
+
+Add a new tracepoint_str section that will also be examined by the output
+of the printk_format file.
+
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/acpi/blacklist.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ include/asm-generic/vmlinux.lds.h |    7 ++++++-
+ include/linux/ftrace_event.h      |   34 ++++++++++++++++++++++++++++++++++
+ kernel/trace/trace.h              |    3 +++
+ kernel/trace/trace_printk.c       |   19 +++++++++++++++++++
+ 4 files changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-index cb96296..a404127 100644
---- a/drivers/acpi/blacklist.c
-+++ b/drivers/acpi/blacklist.c
-@@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
- 	acpi_osi_setup("!Windows 2009");
- 	return 0;
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 69732d2..83e2c31 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -122,8 +122,12 @@
+ #define TRACE_PRINTKS() VMLINUX_SYMBOL(__start___trace_bprintk_fmt) = .;      \
+ 			 *(__trace_printk_fmt) /* Trace_printk fmt' pointer */ \
+ 			 VMLINUX_SYMBOL(__stop___trace_bprintk_fmt) = .;
++#define TRACEPOINT_STR() VMLINUX_SYMBOL(__start___tracepoint_str) = .;	\
++			 *(__tracepoint_str) /* Trace_printk fmt' pointer */ \
++			 VMLINUX_SYMBOL(__stop___tracepoint_str) = .;
+ #else
+ #define TRACE_PRINTKS()
++#define TRACEPOINT_STR()
+ #endif
+ 
+ #ifdef CONFIG_FTRACE_SYSCALLS
+@@ -190,7 +194,8 @@
+ 	VMLINUX_SYMBOL(__stop___verbose) = .;				\
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+-	TRACE_PRINTKS()
++	TRACE_PRINTKS()							\
++	TRACEPOINT_STR()
+ 
+ /*
+  * Data section helpers
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 4372658..81af18a 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -357,6 +357,40 @@ do {									\
+ 		__trace_printk(ip, fmt, ##args);			\
+ } while (0)
+ 
++/**
++ * tracepoint_string - register constant persistent string to trace system
++ * @str - a constant persistent string that will be referenced in tracepoints
++ *
++ * If constant strings are being used in tracepoints, it is faster and
++ * more efficient to just save the pointer to the string and reference
++ * that with a printf "%s" instead of saving the string in the ring buffer
++ * and wasting space and time.
++ *
++ * The problem with the above approach is that userspace tools that read
++ * the binary output of the trace buffers do not have access to the string.
++ * Instead they just show the address of the string which is not very
++ * useful to users.
++ *
++ * With tracepoint_string(), the string will be registered to the tracing
++ * system and exported to userspace via the debugfs/tracing/printk_formats
++ * file that maps the string address to the string text. This way userspace
++ * tools that read the binary buffers have a way to map the pointers to
++ * the ASCII strings they represent.
++ *
++ * The @str used must be a constant string and persistent as it would not
++ * make sense to show a string that no longer exists. But it is still fine
++ * to be used with modules, because when modules are unloaded, if they
++ * had tracepoints, the ring buffers are cleared too. As long as the string
++ * does not change during the life of the module, it is fine to use
++ * tracepoint_string() within a module.
++ */
++#define tracepoint_string(str)						\
++	({								\
++		static const char *___tp_str __tracepoint_string = str; \
++		___tp_str;						\
++	})
++#define __tracepoint_string	__attribute__((section("__tracepoint_str")))
++
+ #ifdef CONFIG_PERF_EVENTS
+ struct perf_event;
+ 
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 4a4f6e1..ba321f1 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -1022,6 +1022,9 @@ extern struct list_head ftrace_events;
+ extern const char *__start___trace_bprintk_fmt[];
+ extern const char *__stop___trace_bprintk_fmt[];
+ 
++extern const char *__start___tracepoint_str[];
++extern const char *__stop___tracepoint_str[];
++
+ void trace_printk_init_buffers(void);
+ void trace_printk_start_comm(void);
+ int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set);
+diff --git a/kernel/trace/trace_printk.c b/kernel/trace/trace_printk.c
+index a9077c1..2900817 100644
+--- a/kernel/trace/trace_printk.c
++++ b/kernel/trace/trace_printk.c
+@@ -244,12 +244,31 @@ static const char **find_next(void *v, loff_t *pos)
+ {
+ 	const char **fmt = v;
+ 	int start_index;
++	int last_index;
+ 
+ 	start_index = __stop___trace_bprintk_fmt - __start___trace_bprintk_fmt;
+ 
+ 	if (*pos < start_index)
+ 		return __start___trace_bprintk_fmt + *pos;
+ 
++	/*
++	 * The __tracepoint_str section is treated the same as the
++	 * __trace_printk_fmt section. The difference is that the
++	 * __trace_printk_fmt section should only be used by trace_printk()
++	 * in a debugging environment, as if anything exists in that section
++	 * the trace_prink() helper buffers are allocated, which would just
++	 * waste space in a production environment.
++	 *
++	 * The __tracepoint_str sections on the other hand are used by
++	 * tracepoints which need to map pointers to their strings to
++	 * the ASCII text for userspace.
++	 */
++	last_index = start_index;
++	start_index = __stop___tracepoint_str - __start___tracepoint_str;
++
++	if (*pos < last_index + start_index)
++		return __start___tracepoint_str + (*pos - last_index);
++
+ 	return find_next_mod_format(start_index, v, fmt, pos);
  }
-+static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
-+{
-+	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
-+	acpi_osi_setup("!Windows 2012");
-+	return 0;
-+}
  
- static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 	{
-@@ -267,6 +273,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
- 		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
- 		},
- 	},
-+	{
-+	.callback = dmi_disable_osi_win8,
-+	.ident = "ASUS Zenbook Prime UX31A",
-+	.matches = {
-+		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
-+		},
-+	},
- 
- 	/*
- 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
 -- 
-1.8.3.4
+1.7.10.4
+
 
