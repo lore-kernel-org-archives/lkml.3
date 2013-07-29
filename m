@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754404Ab3G2CfR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:35:17 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38447 "EHLO
+	id S1754423Ab3G2CfU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:35:20 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38483 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754379Ab3G2CfP (ORCPT
+	with ESMTP id S1754380Ab3G2CfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 28 Jul 2013 22:35:15 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
@@ -12,9 +12,9 @@ To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
         <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
         <libo.chen@huawei.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 5/9] syslog_ns: make permisiion check per user namespace
-Date: Mon, 29 Jul 2013 10:31:16 +0800
-Message-ID: <1375065080-26740-6-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH 6/9] syslog_ns: use init syslog_ns for console action
+Date: Mon, 29 Jul 2013 10:31:17 +0800
+Message-ID: <1375065080-26740-7-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
 References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
@@ -26,35 +26,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use ns_capable to check capability in user ns,
-instead of capable function. The user ns is the
-owner of current syslog ns.
+While flags SYSLOG_ACTION_CONSOLE_ON/OFF/LEVEL of
+console actin are used in syslog syscall, the related
+hanlding should be targeted at host by init_syslog_ns.
 
 Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 ---
- kernel/printk.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ kernel/printk.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
 diff --git a/kernel/printk.c b/kernel/printk.c
-index 846fef5..c5c65a8 100644
+index c5c65a8..fd2d600 100644
 --- a/kernel/printk.c
 +++ b/kernel/printk.c
-@@ -380,13 +380,13 @@ static int check_syslog_permissions(int type, bool from_file,
+@@ -379,6 +379,11 @@ static int check_syslog_permissions(int type, bool from_file,
+ 	if (from_file && type != SYSLOG_ACTION_OPEN)
  		return 0;
  
++	if (type == SYSLOG_ACTION_CONSOLE_OFF
++		|| type == SYSLOG_ACTION_CONSOLE_ON
++		|| type == SYSLOG_ACTION_CONSOLE_LEVEL)
++		ns = &init_syslog_ns;
++
  	if (syslog_action_restricted(type, ns)) {
--		if (capable(CAP_SYSLOG))
-+		if (ns_capable(ns->owner, CAP_SYSLOG))
+ 		if (ns_capable(ns->owner, CAP_SYSLOG))
  			return 0;
- 		/*
- 		 * For historical reasons, accept CAP_SYS_ADMIN too, with
- 		 * a warning.
- 		 */
--		if (capable(CAP_SYS_ADMIN)) {
-+		if (ns_capable(ns->owner, CAP_SYS_ADMIN)) {
- 			pr_warn_once("%s (%d): Attempt to access syslog with "
- 				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
- 				     "(deprecated).\n",
 -- 
 1.8.2.2
 
