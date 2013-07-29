@@ -1,118 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab3G2Pbr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:31:47 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43183 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751560Ab3G2Pbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:31:44 -0400
-Message-ID: <51F68AB2.5090402@ti.com>
-Date: Mon, 29 Jul 2013 21:00:58 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757360Ab3G2PcP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:32:15 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:51717 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756423Ab3G2PcM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:32:12 -0400
+Date: Mon, 29 Jul 2013 11:32:05 -0400
+From: Matt Porter <matt.porter@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Jason Cooper <jason@lakedaemon.net>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130729153204.GJ5022@ohporter.com>
+References: <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726080115.GA5436@netboy>
+ <1374831744.2923.42.camel@shinybook.infradead.org>
+ <20130726130927.GC4219@netboy>
+ <20130726132709.GH29916@titan.lakedaemon.net>
+ <1374846070.14574.92.camel@i7.infradead.org>
+ <CAKON4OzrkHzUzKkULWCgiEpAtJ5gLxUm78R5ctd7p6trqq_gCA@mail.gmail.com>
+ <20130726142140.GR24642@n2100.arm.linux.org.uk>
+ <20130726144047.GH9858@sirena.org.uk>
 MIME-Version: 1.0
-To: Kamil Debski <k.debski@samsung.com>
-CC: <gregkh@linuxfoundation.org>, <kyungmin.park@samsung.com>, <balbi@ti.com>,
-        <jg1.han@samsung.com>, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        <kgene.kim@samsung.com>, <stern@rowland.harvard.edu>,
-        <broonie@kernel.org>, <tomasz.figa@gmail.com>, <arnd@arndb.de>,
-        <grant.likely@linaro.org>, <tony@atomide.com>, <swarren@nvidia.com>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
-        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
-        <linux@arm.linux.org.uk>, Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [RESEND PATCH v10 1/8] drivers: phy: add generic PHY framework
-References: <1374842963-13545-1-git-send-email-kishon@ti.com> <1374842963-13545-2-git-send-email-kishon@ti.com> <023801ce8c70$427cbd20$c7763760$%debski@samsung.com>
-In-Reply-To: <023801ce8c70$427cbd20$c7763760$%debski@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130726144047.GH9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 July 2013 08:58 PM, Kamil Debski wrote:
-> Hi Kishon,
+On Fri, Jul 26, 2013 at 03:40:47PM +0100, Mark Brown wrote:
+> On Fri, Jul 26, 2013 at 03:21:40PM +0100, Russell King - ARM Linux wrote:
 > 
-> A small fix follows inline.
+> > So this is why I'm seeing patches just a short time ago removing existing
+> > compatible strings from the DT descriptions and associated driver, and
+> > replacing them with new ones... meaning that the old DT files won't work
+> > with newer kernels.
 > 
->> From: linux-media-owner@vger.kernel.org [mailto:linux-media-
->> owner@vger.kernel.org] On Behalf Of Kishon Vijay Abraham I
->> Sent: Friday, July 26, 2013 2:49 PM
->>
->> The PHY framework provides a set of APIs for the PHY drivers to
->> create/destroy a PHY and APIs for the PHY users to obtain a reference
->> to the PHY with or without using phandle. For dt-boot, the PHY drivers
->> should also register *PHY provider* with the framework.
->>
->> PHY drivers should create the PHY by passing id and ops like init, exit,
->> power_on and power_off. This framework is also pm runtime enabled.
->>
->> The documentation for the generic PHY framework is added in
->> Documentation/phy.txt and the documentation for dt binding can be found
->> at Documentation/devicetree/bindings/phy/phy-bindings.txt
->>
->> Cc: Tomasz Figa <t.figa@samsung.com>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> Acked-by: Felipe Balbi <balbi@ti.com>
->> Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> ---
->>  .../devicetree/bindings/phy/phy-bindings.txt       |   66 ++
->>  Documentation/phy.txt                              |  166 +++++
->>  MAINTAINERS                                        |    8 +
->>  drivers/Kconfig                                    |    2 +
->>  drivers/Makefile                                   |    2 +
->>  drivers/phy/Kconfig                                |   18 +
->>  drivers/phy/Makefile                               |    5 +
->>  drivers/phy/phy-core.c                             |  714
->> ++++++++++++++++++++
->>  include/linux/phy/phy.h                            |  270 ++++++++
->>  9 files changed, 1251 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/phy/phy-
->> bindings.txt
->>  create mode 100644 Documentation/phy.txt  create mode 100644
->> drivers/phy/Kconfig  create mode 100644 drivers/phy/Makefile  create
->> mode 100644 drivers/phy/phy-core.c  create mode 100644
->> include/linux/phy/phy.h
->>
-> 
-> [snip]
-> 
->> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h new file
->> mode 100644 index 0000000..e444b23
->> --- /dev/null
->> +++ b/include/linux/phy/phy.h
->> @@ -0,0 +1,270 @@
-> 
-> [snip]
-> 
->> +struct phy_init_data {
->> +	unsigned int num_consumers;
->> +	struct phy_consumer *consumers;
->> +};
->> +
->> +#define PHY_CONSUMER(_dev_name, _port)				\
->> +{								\
->> +	.dev_name	= _dev_name,				\
->> +	.port		= _port,				\
->> +}
->> +
->> +#define	to_phy(dev)	(container_of((dev), struct phy, dev))
->> +
->> +#define	of_phy_provider_register(dev, xlate)	\
->> +	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
->> +
->> +#define	devm_of_phy_provider_register(dev, xlate)	\
->> +	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
-> 
-> I think this should be:
-> +	__devm_of_phy_provider_register((dev), THIS_MODULE, (xlate))
-> Right?
+> The big question is if you're seeing such patches merged.  People making
+> mistakes on submissions is totally normal.
 
-right.. thanks for spotting this.
+Over in the bcm53xx thread, we've discussed such a patch to fix
+inconsistencies. The problem here is that there is no canonical answer
+to what a mistake is. I can make a strong argument that the support for
+these parts is in such an early stage that the bindings (in this case
+specifically the two different compatible strings for one vendor) should
+be considered unstable and ok to fix the consistency issue. Mark Rutland
+suggests we should change nothing and possibly add a third vendor prefix
+for new bindings. I'm having trouble accepting that just because these
+bindings made it into a final kernel during a period where
+scrutinization of these things was not very high that we need to forever
+carry this inconsistency in the "specification".
 
-Regards
-Kishon
+http://www.spinics.net/lists/arm-kernel/msg262059.html
+
+> 
+> If it's the case I think you mean TBH I'm not sure anyone cares, I don't
+> think anyone is using that stuff in production yet as those chips go
+> almost exclusively into Android phones.
+
+At least the bcm281xx stuff falls into this category as you describe.
+There's simply nobody that would be upset if its bindings changed from
+bcm-><something_else> as there's just nobody using the DT-based upstream
+work except for internal Broadcom and a couple people external working
+closely with them.
+
+This situation seems to illustrate the strong need for an unstable
+binding period that's longer than just inclusion in a final kernel
+release.
+
+-Matt
