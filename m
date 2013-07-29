@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab3G2Fc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:32:28 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:47164 "EHLO
+	id S1755213Ab3G2Fc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:32:26 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58282 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755107Ab3G2FcV (ORCPT
+	with ESMTP id S1755111Ab3G2FcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Jul 2013 01:32:21 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-07-51f5fe63ea42
+X-AuditID: 9c930197-b7bfbae000000e88-0a-51f5fe63638a
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,103 +21,104 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 00/18] mm, hugetlb: remove a hugetlb_instantiation_mutex
-Date: Mon, 29 Jul 2013 14:31:51 +0900
-Message-Id: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 02/18] mm, hugetlb: change variable name reservations to resv
+Date: Mon, 29 Jul 2013 14:31:53 +0900
+Message-Id: <1375075929-6119-3-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without a hugetlb_instantiation_mutex, if parallel fault occur, we can
-fail to allocate a hugepage, because many threads dequeue a hugepage
-to handle a fault of same address. This makes reserved pool shortage
-just for a little while and this cause faulting thread who is ensured
-to have enough reserved hugepages to get a SIGBUS signal.
+'reservations' is so long name as a variable and we use 'resv_map'
+to represent 'struct resv_map' in other place. To reduce confusion and
+unreadability, change it.
 
-To solve this problem, we already have a nice solution, that is,
-a hugetlb_instantiation_mutex. This blocks other threads to dive into
-a fault handler. This solve the problem clearly, but it introduce
-performance degradation, because it serialize all fault handling.
-    
-Now, I try to remove a hugetlb_instantiation_mutex to get rid of
-performance problem reported by Davidlohr Bueso [1].
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-It is implemented by following 3-steps.
-
-Step 1.	Protect region tracking via per region spin_lock.
-
-	Currently, region tracking is protected by a
-	hugetlb_instantiation_mutex, so before removing it, we should
-	replace it with another solution.
-
-Step 2.	Decide whether we use reserved page pool or not by an uniform way.
-
-	We need a graceful failure handling if there is no lock like as
-	hugetlb_instantiation_mutex. To decide whether we need to handle
-	a failure or not, we need to know current status properly.
-
-Step 3.	Graceful failure handling if we failed with reserved page or
-	failed to allocate with use_reserve.
-
-	Failure handling consist of two cases. One is if we failed with
-	having reserved page, we return back to reserved pool properly.
-	Current code doesn't recover a reserve count properly, so we need
-	to fix it. The other is if we failed to allocate a new huge page
-	with use_reserve indicator, we return 0 to fault handler,
-	instead of SIGBUS. This makes this thread retrying fault handling.
-	With above handlings, we can succeed to handle a fault
-	on any situation without a hugetlb_instantiation_mutex.
-
-Patch 1: Fix a minor problem
-Patch 2-5: Implement Step 1.
-Patch 6-11: Implement Step 2.
-Patch 12-18: Implement Step 3.
-
-These patches are based on my previous patchset [2].
-[2] is based on v3.10.
-
-With applying these, I passed a libhugetlbfs test suite clearly which
-have allocation-instantiation race test cases.
-
-If there is a something I should consider, please let me know!
-Thanks.
-
-[1] http://lwn.net/Articles/558863/ 
-	"[PATCH] mm/hugetlb: per-vma instantiation mutexes"
-[2] https://lkml.org/lkml/2013/7/22/96
-	"[PATCH v2 00/10] mm, hugetlb: clean-up and possible bug fix"
-
-
-Joonsoo Kim (18):
-  mm, hugetlb: protect reserved pages when softofflining requests the
-    pages
-  mm, hugetlb: change variable name reservations to resv
-  mm, hugetlb: unify region structure handling
-  mm, hugetlb: region manipulation functions take resv_map rather
-    list_head
-  mm, hugetlb: protect region tracking via newly introduced resv_map
-    lock
-  mm, hugetlb: remove vma_need_reservation()
-  mm, hugetlb: pass has_reserve to dequeue_huge_page_vma()
-  mm, hugetlb: do hugepage_subpool_get_pages() when avoid_reserve
-  mm, hugetlb: unify has_reserve and avoid_reserve to use_reserve
-  mm, hugetlb: call vma_has_reserve() before entering alloc_huge_page()
-  mm, hugetlb: move down outside_reserve check
-  mm, hugetlb: remove a check for return value of alloc_huge_page()
-  mm, hugetlb: grab a page_table_lock after page_cache_release
-  mm, hugetlb: clean-up error handling in hugetlb_cow()
-  mm, hugetlb: move up anon_vma_prepare()
-  mm, hugetlb: return a reserved page to a reserved pool if failed
-  mm, hugetlb: retry if we fail to allocate a hugepage with use_reserve
-  mm, hugetlb: remove a hugetlb_instantiation_mutex
-
- fs/hugetlbfs/inode.c    |   12 +-
- include/linux/hugetlb.h |   10 ++
- mm/hugetlb.c            |  361 +++++++++++++++++++++++++----------------------
- 3 files changed, 217 insertions(+), 166 deletions(-)
-
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index d971233..12b6581 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1095,9 +1095,9 @@ static long vma_needs_reservation(struct hstate *h,
+ 	} else  {
+ 		long err;
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *reservations = vma_resv_map(vma);
++		struct resv_map *resv = vma_resv_map(vma);
+ 
+-		err = region_chg(&reservations->regions, idx, idx + 1);
++		err = region_chg(&resv->regions, idx, idx + 1);
+ 		if (err < 0)
+ 			return err;
+ 		return 0;
+@@ -1115,10 +1115,10 @@ static void vma_commit_reservation(struct hstate *h,
+ 
+ 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+ 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *reservations = vma_resv_map(vma);
++		struct resv_map *resv = vma_resv_map(vma);
+ 
+ 		/* Mark this page used in the map. */
+-		region_add(&reservations->regions, idx, idx + 1);
++		region_add(&resv->regions, idx, idx + 1);
+ 	}
+ }
+ 
+@@ -2168,7 +2168,7 @@ out:
+ 
+ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
+ {
+-	struct resv_map *reservations = vma_resv_map(vma);
++	struct resv_map *resv = vma_resv_map(vma);
+ 
+ 	/*
+ 	 * This new VMA should share its siblings reservation map if present.
+@@ -2178,34 +2178,34 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
+ 	 * after this open call completes.  It is therefore safe to take a
+ 	 * new reference here without additional locking.
+ 	 */
+-	if (reservations)
+-		kref_get(&reservations->refs);
++	if (resv)
++		kref_get(&resv->refs);
+ }
+ 
+ static void resv_map_put(struct vm_area_struct *vma)
+ {
+-	struct resv_map *reservations = vma_resv_map(vma);
++	struct resv_map *resv = vma_resv_map(vma);
+ 
+-	if (!reservations)
++	if (!resv)
+ 		return;
+-	kref_put(&reservations->refs, resv_map_release);
++	kref_put(&resv->refs, resv_map_release);
+ }
+ 
+ static void hugetlb_vm_op_close(struct vm_area_struct *vma)
+ {
+ 	struct hstate *h = hstate_vma(vma);
+-	struct resv_map *reservations = vma_resv_map(vma);
++	struct resv_map *resv = vma_resv_map(vma);
+ 	struct hugepage_subpool *spool = subpool_vma(vma);
+ 	unsigned long reserve;
+ 	unsigned long start;
+ 	unsigned long end;
+ 
+-	if (reservations) {
++	if (resv) {
+ 		start = vma_hugecache_offset(h, vma, vma->vm_start);
+ 		end = vma_hugecache_offset(h, vma, vma->vm_end);
+ 
+ 		reserve = (end - start) -
+-			region_count(&reservations->regions, start, end);
++			region_count(&resv->regions, start, end);
+ 
+ 		resv_map_put(vma);
+ 
 -- 
 1.7.9.5
 
