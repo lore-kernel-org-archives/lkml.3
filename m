@@ -1,93 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab3G2WLW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:11:22 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46574 "EHLO hydra.sisk.pl"
+	id S1756041Ab3G2WP3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:15:29 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49587 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755975Ab3G2WLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:11:19 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/3] ACPI / PM: Only set power states of devices that are power manageable
-Date: Tue, 30 Jul 2013 00:21:28 +0200
-Message-ID: <3386345.rYEkrXssx8@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51F677B1.9090502@intel.com>
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1657971.1utElu0Hzo@vostro.rjw.lan> <51F677B1.9090502@intel.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1754671Ab3G2WP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 18:15:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,773,1367996400"; 
+   d="scan'208";a="353861255"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org
+Subject: [PATCH] pch_uart: Fix signed-ness and casting of uartclk related fields
+Date: Mon, 29 Jul 2013 15:15:07 -0700
+Message-Id: <ffa173ec15e8f7fcce6cf9f988110448a4dcf072.1375136107.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 10:09:53 PM Aaron Lu wrote:
-> On 07/27/2013 09:10 PM, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Make acpi_device_set_power() check if the given device is power
-> > manageable before checking if the given power state is valid for that
-> > device.  Otherwise it will print that "Device does not support" that
-> > power state into the kernel log, which may not make sense for some
-> > power states (D0 and D3cold are supported by all devices by
-> > definition).
-> 
-> It will not print "Device does not support" that power state if that
-> power state is D0 or D3cold since we have unconditionally set those two
-> power state's valid flag.
+Storing one struct per known board would be overkill. Pre-cast the
+driver_data pointer to an unsigned long to avoid the pointer to int
+compiler warning:
 
-So you didn't actually looked at acpi_bus_get_power_flags() that set the
-power.states[].flags.valid flag, because If you had looked at it, you would
-have seen that that's not the case.
+drivers/tty/serial/pch_uart.c:431:10: warning: cast from pointer to
+integer of different size [-Wpointer-to-int-cast]
 
-No, we don't set the valid flag for devices that aren't power manageable
-(i.e. have flags.power_manageable unset), which is the *whole* *point* of
-this change.
+Unify the signed-ness of the baud and uartclk types throughout the
+driver.
 
-> OTOH, what value should we return for a device node that is not power
-> manageable in acpi_device_set_power when the target state is D0 or D3
-> cold? The old behavior is to return 0, meanning success without taking
-> any actual action.
-> 
-> In acpi_bus_set_power, if the device is not power manageable, we will
-> return -ENODEV; in acpi_dev_pm_full/low_power, we will return 0 as in
-> the original acpi_device_set_power. So return -EINVAL here is correct?
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-serial@vger.kernel.org
+---
+ drivers/tty/serial/pch_uart.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-No, the original acpi_device_set_power() will return -ENODEV then, but
-in my opinion returning -EINVAL is more accurate, because "power
-manageable" means "you can change power state of it".
-
-Thanks,
-Rafael
-
-
-> > Tested-by: Yinghai Lu <yinghai@kernel.org>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/device_pm.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > Index: linux-pm/drivers/acpi/device_pm.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/device_pm.c
-> > +++ linux-pm/drivers/acpi/device_pm.c
-> > @@ -159,7 +159,8 @@ int acpi_device_set_power(struct acpi_de
-> >  	int result = 0;
-> >  	bool cut_power = false;
-> >  
-> > -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
-> > +	if (!device || !device->flags.power_manageable
-> > +	    || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
-> >  		return -EINVAL;
-> >  
-> >  	/* Make sure this is a valid target state */
-> > 
-> 
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index bc0aa08..5040c51 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -232,7 +232,7 @@ struct eg20t_port {
+ 	unsigned int iobase;
+ 	struct pci_dev *pdev;
+ 	int fifo_size;
+-	int uartclk;
++	unsigned int uartclk;
+ 	int start_tx;
+ 	int start_rx;
+ 	int tx_empty;
+@@ -419,7 +419,7 @@ static struct dmi_system_id pch_uart_dmi_table[] = {
+ };
+ 
+ /* Return UART clock, checking for board specific clocks. */
+-static int pch_uart_get_uartclk(void)
++static unsigned int pch_uart_get_uartclk(void)
+ {
+ 	const struct dmi_system_id *d;
+ 
+@@ -428,7 +428,7 @@ static int pch_uart_get_uartclk(void)
+ 
+ 	d = dmi_first_match(pch_uart_dmi_table);
+ 	if (d)
+-		return (int)d->driver_data;
++		return (unsigned long)d->driver_data;
+ 
+ 	return DEFAULT_UARTCLK;
+ }
+@@ -449,7 +449,7 @@ static void pch_uart_hal_disable_interrupt(struct eg20t_port *priv,
+ 	iowrite8(ier, priv->membase + UART_IER);
+ }
+ 
+-static int pch_uart_hal_set_line(struct eg20t_port *priv, int baud,
++static int pch_uart_hal_set_line(struct eg20t_port *priv, unsigned int baud,
+ 				 unsigned int parity, unsigned int bits,
+ 				 unsigned int stb)
+ {
+@@ -484,7 +484,7 @@ static int pch_uart_hal_set_line(struct eg20t_port *priv, int baud,
+ 	lcr |= bits;
+ 	lcr |= stb;
+ 
+-	dev_dbg(priv->port.dev, "%s:baud = %d, div = %04x, lcr = %02x (%lu)\n",
++	dev_dbg(priv->port.dev, "%s:baud = %u, div = %04x, lcr = %02x (%lu)\n",
+ 		 __func__, baud, div, lcr, jiffies);
+ 	iowrite8(PCH_UART_LCR_DLAB, priv->membase + UART_LCR);
+ 	iowrite8(dll, priv->membase + PCH_UART_DLL);
+@@ -1390,9 +1390,8 @@ static void pch_uart_shutdown(struct uart_port *port)
+ static void pch_uart_set_termios(struct uart_port *port,
+ 				 struct ktermios *termios, struct ktermios *old)
+ {
+-	int baud;
+ 	int rtn;
+-	unsigned int parity, bits, stb;
++	unsigned int baud, parity, bits, stb;
+ 	struct eg20t_port *priv;
+ 	unsigned long flags;
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.3.1
+
