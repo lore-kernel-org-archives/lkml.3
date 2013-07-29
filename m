@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753053Ab3G2TFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:05:17 -0400
-Received: from mail.linux-iscsi.org ([67.23.28.174]:35421 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171Ab3G2TFO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:05:14 -0400
-Message-ID: <1375125066.5171.10.camel@haakon3.risingtidesystems.com>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Mon, 29 Jul 2013 12:11:06 -0700
-In-Reply-To: <20130729115011.GC20951@mtj.dyndns.org>
-References: <1374248000.2266.20.camel@dabdike>
-	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
-	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
-	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
-	 <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
-	 <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
-	 <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
-	 <20130726020928.GL29296@kernel.dk>
-	 <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
-	 <1374885793.7397.1537.camel@haakon3.risingtidesystems.com>
-	 <20130729115011.GC20951@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1753362Ab3G2TF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:05:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24353 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643Ab3G2TF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:05:57 -0400
+Date: Mon, 29 Jul 2013 15:05:37 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>
+Message-ID: <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 15/18] mm, hugetlb: move up anon_vma_prepare()
 Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Mutt-References: <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 07:50 -0400, Tejun Heo wrote:
-> Yo,
+On Mon, Jul 29, 2013 at 02:32:06PM +0900, Joonsoo Kim wrote:
+> If we fail with a allocated hugepage, it is hard to recover properly.
+> One such example is reserve count. We don't have any method to recover
+> reserve count. Although, I will introduce a function to recover reserve
+> count in following patch, it is better not to allocate a hugepage
+> as much as possible. So move up anon_vma_prepare() which can be failed
+> in OOM situation.
 > 
-> On Fri, Jul 26, 2013 at 05:43:13PM -0700, Nicholas A. Bellinger wrote:
-> > Considering there can be more than a single ata_device hanging off each
-> > ata_port, the '*sdev = ap->link.device[0].sdev' in __ata_qc_from_tag()
-> > is definitely bogus, but I'm not sure how else to correlate
-> > blk-mq/scsi-mq per device descriptors to existing code expecting
-> > ata_port->qcmd[] descriptors to be shared across multiple devices..
-> > 
-> > Tejun..?
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 683fd38..bb8a45f 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2536,6 +2536,15 @@ retry_avoidcopy:
+>  	/* Drop page_table_lock as buddy allocator may be called */
+>  	spin_unlock(&mm->page_table_lock);
+>  
+> +	/*
+> +	 * When the original hugepage is shared one, it does not have
+> +	 * anon_vma prepared.
+> +	 */
+> +	if (unlikely(anon_vma_prepare(vma))) {
+> +		ret = VM_FAULT_OOM;
+> +		goto out_old_page;
+> +	}
+> +
+>  	use_reserve = vma_has_reserves(h, vma, address);
+>  	if (use_reserve == -ENOMEM) {
+>  		ret = VM_FAULT_OOM;
+> @@ -2590,15 +2599,6 @@ retry_avoidcopy:
+>  		goto out_lock;
+>  	}
+>  
+> -	/*
+> -	 * When the original hugepage is shared one, it does not have
+> -	 * anon_vma prepared.
+> -	 */
+> -	if (unlikely(anon_vma_prepare(vma))) {
+> -		ret = VM_FAULT_OOM;
+> -		goto out_new_page;
+> -	}
+> -
+>  	copy_user_huge_page(new_page, old_page, address, vma,
+>  			    pages_per_huge_page(h));
+>  	__SetPageUptodate(new_page);
+> @@ -2625,7 +2625,6 @@ retry_avoidcopy:
+>  	spin_unlock(&mm->page_table_lock);
+>  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+>  
+> -out_new_page:
+>  	page_cache_release(new_page);
+>  out_old_page:
+>  	page_cache_release(old_page);
+> -- 
+> 1.7.9.5
 > 
-> I have no idea.  Let's please just do simpler conversion and worry
-> about embedding qc's into scsi_cmnds later.  libata isn't a normal
-> SCSI driver and has a rather its own thick midlayer doing the
-> impedance matching inbetween && I really don't think there is too much
-> benefit to be reaped from embedding qc's into scsi_cmnds.
-> 
-
-That is essentially the same conclusion that I came to, but wanted to at
-least give you a chance to comment here.  ;)
-
-So that said, I'll include a simple conversion for libata into the
-scsi-mq WIP branch, and folks who are interested in more detailed
-conversions can pursue them as separate items.
-
---nab 
-
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
