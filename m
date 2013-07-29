@@ -1,307 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab3G2HHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:07:47 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:60869 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754975Ab3G2HFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:05:33 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH v2 1/6] usb: phy: msm: Move mach depndend code to platform data
-Date: Mon, 29 Jul 2013 10:04:19 +0300
-Message-Id: <1375081464-14206-2-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
-References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+	id S1755638Ab3G2HI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:08:28 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:27726 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3G2HI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 03:08:26 -0400
+Message-ID: <51F614C4.7060602@huawei.com>
+Date: Mon, 29 Jul 2013 15:07:48 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Glauber Costa <glommer@parallels.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
+        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
+        <linux-mm@kvack.org>
+Subject: [PATCH v3 1/8] cgroup: convert cgroup_ida to cgroup_idr
+References: <51F614B2.6010503@huawei.com>
+In-Reply-To: <51F614B2.6010503@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+This enables us to lookup a cgroup by its id.
 
-This patch fix compilation error and is an intermediate step
-before the addition of DeviceTree support for newer targets.
-Fix suggested here: https://lkml.org/lkml/2013/6/19/381
+v3:
+- on success, idr_alloc() returns the id but not 0, so fix the BUG_ON()
+  in cgroup_init().
+- pass the right value to idr_alloc() so that the id for dummy cgroup is 0.
 
-Cc: David Brown <davidb@codeaurora.org>
-Cc: Daniel Walker <dwalker@fifo99.com>
-Cc: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 ---
- arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
- arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++
- drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------------
- include/linux/usb/msm_hsusb.h     |    3 ++
- 4 files changed, 87 insertions(+), 41 deletions(-)
+ include/linux/cgroup.h |  4 ++--
+ kernel/cgroup.c        | 28 ++++++++++++++++++++++------
+ 2 files changed, 24 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-index db3d8c0..6b35953 100644
---- a/arch/arm/mach-msm/board-msm7x30.c
-+++ b/arch/arm/mach-msm/board-msm7x30.c
-@@ -31,6 +31,7 @@
- #include <asm/setup.h>
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 297462b..2bd052d 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -161,7 +161,7 @@ struct cgroup_name {
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
  
- #include <mach/board.h>
-+#include <mach/clk.h>
- #include <mach/msm_iomap.h>
- #include <mach/dma.h>
+-	int id;				/* ida allocated in-hierarchy ID */
++	int id;				/* idr allocated in-hierarchy ID */
  
-@@ -61,10 +62,44 @@ static int hsusb_phy_init_seq[] = {
- 	-1
- };
+ 	/*
+ 	 * We link our 'sibling' struct into our parent's 'children'.
+@@ -322,7 +322,7 @@ struct cgroupfs_root {
+ 	unsigned long flags;
  
-+static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
-+{
-+	int ret;
-+
-+	if (assert) {
-+		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk assert failed\n");
-+	} else {
-+		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk deassert failed\n");
-+	}
-+	return ret;
-+}
-+
-+static int hsusb_phy_clk_reset(struct clk *phy_clk)
-+{
-+	int ret;
-+
-+	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-+	if (ret) {
-+		pr_err("usb phy clk assert failed\n");
-+		return ret;
-+	}
-+	usleep_range(10000, 12000);
-+	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-+	if (ret)
-+		pr_err("usb phy clk deassert failed\n");
-+	return ret;
-+}
-+
- static struct msm_otg_platform_data msm_otg_pdata = {
- 	.phy_init_seq		= hsusb_phy_init_seq,
- 	.mode                   = USB_PERIPHERAL,
- 	.otg_control		= OTG_PHY_CONTROL,
-+	.link_clk_reset		= hsusb_link_clk_reset,
-+	.phy_clk_reset		= hsusb_phy_clk_reset,
- };
+ 	/* IDs for cgroups in this hierarchy */
+-	struct ida cgroup_ida;
++	struct idr cgroup_idr;
  
- struct msm_gpiomux_config msm_gpiomux_configs[GPIOMUX_NGPIOS] = {
-diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
-index f14a73d..eb013f7 100644
---- a/arch/arm/mach-msm/board-qsd8x50.c
-+++ b/arch/arm/mach-msm/board-qsd8x50.c
-@@ -32,6 +32,7 @@
- #include <mach/irqs.h>
- #include <mach/sirc.h>
- #include <mach/vreg.h>
-+#include <mach/clk.h>
- #include <linux/platform_data/mmc-msm_sdcc.h>
+ 	/* The path to use for release notifications. */
+ 	char release_agent_path[PATH_MAX];
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 345fac8..b7c7c68 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -866,8 +866,6 @@ static void cgroup_free_fn(struct work_struct *work)
+ 	 */
+ 	dput(cgrp->parent->dentry);
  
- #include "devices.h"
-@@ -82,10 +83,44 @@ static int hsusb_phy_init_seq[] = {
- 	-1
- };
- 
-+static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
-+{
-+	int ret;
-+
-+	if (assert) {
-+		ret = clk_reset(link_clk, CLK_RESET_ASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk assert failed\n");
-+	} else {
-+		ret = clk_reset(link_clk, CLK_RESET_DEASSERT);
-+		if (ret)
-+			pr_err("usb hs_clk deassert failed\n");
-+	}
-+	return ret;
-+}
-+
-+static int hsusb_phy_clk_reset(struct clk *phy_clk)
-+{
-+	int ret;
-+
-+	ret = clk_reset(phy_clk, CLK_RESET_ASSERT);
-+	if (ret) {
-+		pr_err("usb phy clk assert failed\n");
-+		return ret;
-+	}
-+	usleep_range(10000, 12000);
-+	ret = clk_reset(phy_clk, CLK_RESET_DEASSERT);
-+	if (ret)
-+		pr_err("usb phy clk deassert failed\n");
-+	return ret;
-+}
-+
- static struct msm_otg_platform_data msm_otg_pdata = {
- 	.phy_init_seq		= hsusb_phy_init_seq,
- 	.mode                   = USB_PERIPHERAL,
- 	.otg_control		= OTG_PHY_CONTROL,
-+	.link_clk_reset		= hsusb_link_clk_reset,
-+	.phy_clk_reset		= hsusb_phy_clk_reset,
- };
- 
- static struct platform_device *devices[] __initdata = {
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index d08f334..7b74b26 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -40,8 +40,6 @@
- #include <linux/usb/msm_hsusb_hw.h>
- #include <linux/regulator/consumer.h>
- 
--#include <mach/clk.h>
+-	ida_simple_remove(&cgrp->root->cgroup_ida, cgrp->id);
 -
- #define MSM_USB_BASE	(motg->regs)
- #define DRIVER_NAME	"msm_otg"
- 
-@@ -306,51 +304,20 @@ static void ulpi_init(struct msm_otg *motg)
- 	}
+ 	/*
+ 	 * Drop the active superblock reference that we took when we
+ 	 * created the cgroup. This will free cgrp->root, if we are
+@@ -1379,6 +1377,7 @@ static void init_cgroup_root(struct cgroupfs_root *root)
+ 	cgrp->root = root;
+ 	RCU_INIT_POINTER(cgrp->name, &root_cgroup_name);
+ 	init_cgroup_housekeeping(cgrp);
++	idr_init(&root->cgroup_idr);
  }
  
--static int msm_otg_link_clk_reset(struct msm_otg *motg, bool assert)
--{
--	int ret;
--
--	if (assert) {
--		ret = clk_reset(motg->clk, CLK_RESET_ASSERT);
--		if (ret)
--			dev_err(motg->phy.dev, "usb hs_clk assert failed\n");
--	} else {
--		ret = clk_reset(motg->clk, CLK_RESET_DEASSERT);
--		if (ret)
--			dev_err(motg->phy.dev, "usb hs_clk deassert failed\n");
--	}
--	return ret;
--}
--
--static int msm_otg_phy_clk_reset(struct msm_otg *motg)
--{
--	int ret;
--
--	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_ASSERT);
--	if (ret) {
--		dev_err(motg->phy.dev, "usb phy clk assert failed\n");
--		return ret;
--	}
--	usleep_range(10000, 12000);
--	ret = clk_reset(motg->phy_reset_clk, CLK_RESET_DEASSERT);
--	if (ret)
--		dev_err(motg->phy.dev, "usb phy clk deassert failed\n");
--	return ret;
--}
--
- static int msm_otg_phy_reset(struct msm_otg *motg)
- {
-+	struct msm_otg_platform_data *pdata = motg->pdata;
- 	u32 val;
- 	int ret;
- 	int retries;
+ static int cgroup_init_root_id(struct cgroupfs_root *root, int start, int end)
+@@ -1451,7 +1450,6 @@ static struct cgroupfs_root *cgroup_root_from_opts(struct cgroup_sb_opts *opts)
+ 	 */
+ 	root->subsys_mask = opts->subsys_mask;
+ 	root->flags = opts->flags;
+-	ida_init(&root->cgroup_ida);
+ 	if (opts->release_agent)
+ 		strcpy(root->release_agent_path, opts->release_agent);
+ 	if (opts->name)
+@@ -1467,7 +1465,7 @@ static void cgroup_free_root(struct cgroupfs_root *root)
+ 		/* hierarhcy ID shoulid already have been released */
+ 		WARN_ON_ONCE(root->hierarchy_id);
  
--	ret = msm_otg_link_clk_reset(motg, 1);
-+	ret = pdata->link_clk_reset(motg->clk, true);
- 	if (ret)
- 		return ret;
--	ret = msm_otg_phy_clk_reset(motg);
-+	ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		return ret;
--	ret = msm_otg_link_clk_reset(motg, 0);
-+	ret = pdata->link_clk_reset(motg->clk, false);
- 	if (ret)
- 		return ret;
- 
-@@ -362,7 +329,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 				ULPI_CLR(ULPI_FUNC_CTRL));
- 		if (!ret)
- 			break;
--		ret = msm_otg_phy_clk_reset(motg);
-+		ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 		if (ret)
- 			return ret;
+-		ida_destroy(&root->cgroup_ida);
++		idr_destroy(&root->cgroup_idr);
+ 		kfree(root);
  	}
-@@ -370,7 +337,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 		return -ETIMEDOUT;
+ }
+@@ -1582,6 +1580,11 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		mutex_lock(&cgroup_mutex);
+ 		mutex_lock(&cgroup_root_mutex);
  
- 	/* This reset calibrates the phy, if the above write succeeded */
--	ret = msm_otg_phy_clk_reset(motg);
-+	ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 	if (ret)
- 		return ret;
- 
-@@ -378,7 +345,7 @@ static int msm_otg_phy_reset(struct msm_otg *motg)
- 		ret = ulpi_read(&motg->phy, ULPI_DEBUG);
- 		if (ret != -ETIMEDOUT)
- 			break;
--		ret = msm_otg_phy_clk_reset(motg);
-+		ret = pdata->phy_clk_reset(motg->phy_reset_clk);
- 		if (ret)
- 			return ret;
- 	}
-@@ -1414,16 +1381,22 @@ static void msm_otg_debugfs_cleanup(void)
- static int __init msm_otg_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
-+	struct msm_otg_platform_data *pdata = pdev->dev.platform_data;
- 	struct resource *res;
- 	struct msm_otg *motg;
- 	struct usb_phy *phy;
- 
- 	dev_info(&pdev->dev, "msm_otg probe\n");
--	if (!pdev->dev.platform_data) {
-+	if (!pdata) {
- 		dev_err(&pdev->dev, "No platform data given. Bailing out\n");
- 		return -ENODEV;
- 	}
- 
-+	if (!pdata->phy_clk_reset || !pdata->link_clk_reset) {
-+		dev_err(&pdev->dev, "No phy or link clock reset methods\n");
-+		return -ENODEV;
-+	}
++		root_cgrp->id = idr_alloc(&root->cgroup_idr, root_cgrp,
++					   0, 1, GFP_KERNEL);
++		if (root_cgrp->id < 0)
++			goto unlock_drop;
 +
- 	motg = kzalloc(sizeof(struct msm_otg), GFP_KERNEL);
- 	if (!motg) {
- 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index 22a396c..3275483 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -20,6 +20,7 @@
+ 		/* Check for name clashes with existing mounts */
+ 		ret = -EBUSY;
+ 		if (strlen(root->name))
+@@ -4273,7 +4276,11 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		goto err_free_cgrp;
+ 	rcu_assign_pointer(cgrp->name, name);
  
- #include <linux/types.h>
- #include <linux/usb/otg.h>
-+#include <linux/clk.h>
+-	cgrp->id = ida_simple_get(&root->cgroup_ida, 1, 0, GFP_KERNEL);
++	/*
++	 * Temporarily set the pointer to NULL, so idr_find() won't return
++	 * a half-baked cgroup.
++	 */
++	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+ 	if (cgrp->id < 0)
+ 		goto err_free_name;
  
- /**
-  * Supported USB modes
-@@ -135,6 +136,8 @@ struct msm_otg_platform_data {
- 	enum msm_usb_phy_type phy_type;
- 	void (*setup_gpio)(enum usb_otg_state state);
- 	char *pclk_src_name;
-+	int (*link_clk_reset)(struct clk *link_clk, bool assert);
-+	int (*phy_clk_reset)(struct clk *phy_clk);
- };
+@@ -4371,6 +4378,8 @@ static long cgroup_create(struct cgroup *parent, struct dentry *dentry,
+ 		}
+ 	}
  
- /**
++	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
++
+ 	err = cgroup_addrm_files(cgrp, NULL, cgroup_base_files, true);
+ 	if (err)
+ 		goto err_destroy;
+@@ -4397,7 +4406,7 @@ err_free_all:
+ 	/* Release the reference count that we took on the superblock */
+ 	deactivate_super(sb);
+ err_free_id:
+-	ida_simple_remove(&root->cgroup_ida, cgrp->id);
++	idr_remove(&root->cgroup_idr, cgrp->id);
+ err_free_name:
+ 	kfree(rcu_dereference_raw(cgrp->name));
+ err_free_cgrp:
+@@ -4590,6 +4599,9 @@ static void cgroup_offline_fn(struct work_struct *work)
+ 	/* delete this cgroup from parent->children */
+ 	list_del_rcu(&cgrp->sibling);
+ 
++	if (cgrp->id)
++		idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
++
+ 	dput(d);
+ 
+ 	set_bit(CGRP_RELEASABLE, &parent->flags);
+@@ -4915,6 +4927,10 @@ int __init cgroup_init(void)
+ 
+ 	BUG_ON(cgroup_init_root_id(&cgroup_dummy_root, 0, 1));
+ 
++	err = idr_alloc(&cgroup_dummy_root.cgroup_idr, cgroup_dummy_top,
++			0, 1, GFP_KERNEL);
++	BUG_ON(err < 0);
++
+ 	mutex_unlock(&cgroup_root_mutex);
+ 	mutex_unlock(&cgroup_mutex);
+ 
 -- 
-1.7.9.5
+1.8.0.2
 
