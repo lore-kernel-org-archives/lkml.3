@@ -1,165 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3G2Jzh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:55:37 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:54949 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab3G2Jzf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:55:35 -0400
+	id S1755091Ab3G2J5l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:57:41 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:52431 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751245Ab3G2J5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:57:40 -0400
+Message-ID: <51F63C74.6070503@ti.com>
+Date: Mon, 29 Jul 2013 15:27:08 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <1374144177-24762-11-git-send-email-adrian.hunter@intel.com>
-References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
-	<1374144177-24762-11-git-send-email-adrian.hunter@intel.com>
-Date: Mon, 29 Jul 2013 11:55:34 +0200
-Message-ID: <CABPqkBQeE07FZ2TfAhcFFt6r23Fs_Ph3eTHy1JMu6QuVsRFb6A@mail.gmail.com>
-Subject: Re: [PATCH V8 10/15] perf: make events stream always parsable
-From: Stephane Eranian <eranian@google.com>
-To: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Nishanth Menon <nm@ti.com>
+CC: =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <benoit.cousson@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH 0/9] ARM: dts: omap5-uevm: fixup wrong regulator configuration
+References: <1374079538-19548-1-git-send-email-nm@ti.com>
+In-Reply-To: <1374079538-19548-1-git-send-email-nm@ti.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 18, 2013 at 12:42 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
-> The event stream is not always parsable because the format of a sample
-> is dependent on the sample_type of the selected event.  When there
-> is more than one selected event and the sample_types are not the
-> same then parsing becomes problematic.  A sample can be matched to its
-> selected event using the ID that is allocated when the event is opened.
-> Unfortunately, to get the ID from the sample means first parsing it.
->
-> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
-> the ID at a fixed position so that the ID can be retrieved without
-> parsing the sample.  For sample events, that is the first position
-> immediately after the header.  For non-sample events, that is the last
-> position.
->
+Hi Nishanth,
 
-I think you should add to your description a paragraph explaining that
-the reason
-this solves the problem is because you always get the event description BEFORE
-you get any sample records. Otherwise, how would you know you're dealing with
-a perf.data file that is using PERF_SAMPLE_IDENTIFIER? And that holds for
-both file and pipe modes.
+On Wednesday 17 July 2013 10:15 PM, Nishanth Menon wrote:
+> Due to wrong older revision of documentation used as reference, we
+> seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
+> series is based power tree on production board 750-2628-XXX platform.
+> Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
+> supply hardware blocks at voltages that are out of specification.
 
+This series looks good to me.
 
-> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
-> ---
->  include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
->  kernel/events/core.c            | 11 ++++++++++-
->  2 files changed, 30 insertions(+), 8 deletions(-)
+Acked-by:  J Keerthy <j-keerthy@ti.com>
+> Also available at:
+> based on v3.11-rc1 tag
+> http link: https://github.com/nmenon/linux-2.6-playground/commits/push/omap5-palmas-fixes
+> git link: git://github.com/nmenon/linux-2.6-playground.git
+> branch: push/omap5-palmas-fixes
 >
-> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-> index 876a18c..71f1ad3 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -134,8 +134,9 @@ enum perf_event_sample_format {
->         PERF_SAMPLE_STACK_USER                  = 1U << 13,
->         PERF_SAMPLE_WEIGHT                      = 1U << 14,
->         PERF_SAMPLE_DATA_SRC                    = 1U << 15,
-> +       PERF_SAMPLE_IDENTIFIER                  = 1U << 16,
+> Tested with https://patchwork.kernel.org/patch/2545061/
+>   + https://git.kernel.org/cgit/linux/kernel/git/ssantosh/linux.git/log/?h=for_3.11/out_of_tree/omap5_clk_data
+> Test result: http://pastebin.com/YqASYkXG
 >
-> -       PERF_SAMPLE_MAX = 1U << 16,             /* non-ABI */
-> +       PERF_SAMPLE_MAX = 1U << 17,             /* non-ABI */
->  };
+> Relevant documentation:
+> - OMAP5 uEVM documentation: https://www.svtronics.com/omap/omap54xx?product_id=33
+> - OMAP5432 Data Manual: http://www.ti.com/product/OMAP5432
+> - TWL6037 / OTP information: Currently available only under NDA
 >
->  /*
-> @@ -471,12 +472,12 @@ enum perf_event_type {
->         /*
->          * If perf_event_attr.sample_id_all is set then all event types will
->          * have the sample_type selected fields related to where/when
-> -        * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
-> -        * described in PERF_RECORD_SAMPLE below, it will be stashed just after
-> -        * the perf_event_header and the fields already present for the existing
-> -        * fields, i.e. at the end of the payload. That way a newer perf.data
-> -        * file will be supported by older perf tools, with these new optional
-> -        * fields being ignored.
-> +        * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
-> +        * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
-> +        * just after the perf_event_header and the fields already present for
-> +        * the existing fields, i.e. at the end of the payload. That way a newer
-> +        * perf.data file will be supported by older perf tools, with these new
-> +        * optional fields being ignored.
->          *
->          * struct sample_id {
->          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
-> @@ -484,7 +485,12 @@ enum perf_event_type {
->          *      { u64                   id;       } && PERF_SAMPLE_ID
->          *      { u64                   stream_id;} && PERF_SAMPLE_STREAM_ID
->          *      { u32                   cpu, res; } && PERF_SAMPLE_CPU
-> +        *      { u64                   id;       } && PERF_SAMPLE_IDENTIFIER
->          * } && perf_event_attr.sample_id_all
-> +        *
-> +        * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
-> +        * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
-> +        * relative to header.size.
->          */
+> Nishanth Menon (9):
+>    ARM: dts: omap5-uevm: document regulator signals used on the actual
+>      board
+>    ARM: dts: omap5-uevm: update SMPS9 settings
+>    ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
+>    ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
+>    ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
+>    ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
+>    ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
+>    ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
+>    ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
 >
->         /*
-> @@ -574,6 +580,13 @@ enum perf_event_type {
->          * struct {
->          *      struct perf_event_header        header;
->          *
-> +        *      #
-> +        *      # Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
-> +        *      # The advantage of PERF_SAMPLE_IDENTIFIER is that its position
-> +        *      # is fixed relative to header.
-> +        *      #
-> +        *
-> +        *      { u64                   id;       } && PERF_SAMPLE_IDENTIFIER
->          *      { u64                   ip;       } && PERF_SAMPLE_IP
->          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
->          *      { u64                   time;     } && PERF_SAMPLE_TIME
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index c9ef899..91c241d 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -1216,6 +1216,9 @@ static void perf_event__id_header_size(struct perf_event *event)
->         if (sample_type & PERF_SAMPLE_TIME)
->                 size += sizeof(data->time);
+>   arch/arm/boot/dts/omap5-uevm.dts |   78 ++++++++++++++++++++++++--------------
+>   1 file changed, 49 insertions(+), 29 deletions(-)
 >
-> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
-> +               size += sizeof(data->id);
-> +
->         if (sample_type & PERF_SAMPLE_ID)
->                 size += sizeof(data->id);
->
-> @@ -4251,7 +4254,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
->         if (sample_type & PERF_SAMPLE_TIME)
->                 data->time = perf_clock();
->
-> -       if (sample_type & PERF_SAMPLE_ID)
-> +       if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
->                 data->id = primary_event_id(event);
->
->         if (sample_type & PERF_SAMPLE_STREAM_ID)
-> @@ -4290,6 +4293,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
->
->         if (sample_type & PERF_SAMPLE_CPU)
->                 perf_output_put(handle, data->cpu_entry);
-> +
-> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
-> +               perf_output_put(handle, data->id);
->  }
->
->  void perf_event__output_id_sample(struct perf_event *event,
-> @@ -4402,6 +4408,9 @@ void perf_output_sample(struct perf_output_handle *handle,
->
->         perf_output_put(handle, *header);
->
-> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
-> +               perf_output_put(handle, data->id);
-> +
->         if (sample_type & PERF_SAMPLE_IP)
->                 perf_output_put(handle, data->ip);
->
-> --
-> 1.7.11.7
->
+Regards,
+Keerthy
