@@ -1,234 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab3G2BNB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 21:13:01 -0400
-Received: from mga01.intel.com ([192.55.52.88]:13675 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586Ab3G2BM6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 21:12:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,765,1367996400"; 
-   d="scan'208";a="377521272"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Corey Minyard <minyard@acm.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "openipmi-developer@lists.sourceforge.net" 
-	<openipmi-developer@lists.sourceforge.net>
-Subject: RE: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device
- members
-Thread-Topic: [PATCH 08/13] ACPI/IPMI: Cleanup several acpi_ipmi_device
- members
-Thread-Index: AQHOh3wTsQNPPv8b+Uqs/vln3K70lJl1dsAAgAC3YGCAAEecgIAEbERA
-Date: Mon, 29 Jul 2013 01:12:54 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802436240@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <1882662.xsnVH6Carz@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E8802435B14@SHSMSX101.ccr.corp.intel.com>
- <1877208.aj3aZU16C0@vostro.rjw.lan>
-In-Reply-To: <1877208.aj3aZU16C0@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1753990Ab3G2B2h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 21:28:37 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:2006 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab3G2B2g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 21:28:36 -0400
+Message-ID: <51F5C504.6040504@huawei.com>
+Date: Mon, 29 Jul 2013 09:27:32 +0800
+From: Kefeng Wang <wangkefeng.wang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120824 Thunderbird/15.0
 MIME-Version: 1.0
+To: Jingoo Han <jg1.han@samsung.com>
+CC: "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>,
+        "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <guohanjun@huawei.com>,
+        "'Luis Henriques'" <luis.henriques@canonical.com>
+Subject: Re: [PATCH] video: remove unused variable dev
+References: <1374919513-15356-1-git-send-email-wangkefeng.wang@huawei.com> <009601ce8bf5$e88bfda0$b9a3f8e0$@samsung.com>
+In-Reply-To: <009601ce8bf5$e88bfda0$b9a3f8e0$@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.221]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6T1D4eC023004
 
-> From: linux-acpi-owner@vger.kernel.org
-> [mailto:linux-acpi-owner@vger.kernel.org] On Behalf Of Rafael J. Wysocki
+On 07/29 8:52, Jingoo Han wrote:
+> On Saturday, July 27, 2013 7:05 PM, Kefeng Wang wrote:
+>>
+>> Due to commit: e21d2170f [video: remove unnecessary platform_set_drvdata()],
+>> variable dev is unused, so remove it.
+>>
+>> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
+>> ---
+>>  drivers/video/vga16fb.c | 1 -
+>>  1 file changed, 1 deletion(-)
 > 
-> On Friday, July 26, 2013 01:25:12 AM Zheng, Lv wrote:
-> > > From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> > > Sent: Friday, July 26, 2013 6:26 AM
-> > >
-> > > On Tuesday, July 23, 2013 04:10:06 PM Lv Zheng wrote:
-> > > > This is a trivial patch:
-> > > > 1. Deletes a member of the acpi_ipmi_device - smi_data which is not
-> > > >    actually used.
-> > > > 2. Updates a member of the acpi_ipmi_device - pnp_dev which is only
-> used
-> > > >    by dev_warn() invocations, so changes it to struct device.
-> > > >
-> > > > Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> > > > Reviewed-by: Huang Ying <ying.huang@intel.com>
-> > > > ---
-> > > >  drivers/acpi/acpi_ipmi.c |   30 ++++++++++++++----------------
-> > > >  1 file changed, 14 insertions(+), 16 deletions(-)
-> > > >
-> > > > diff --git a/drivers/acpi/acpi_ipmi.c b/drivers/acpi/acpi_ipmi.c index
-> > > > 0ee1ea6..7f93ffd 100644
-> > > > --- a/drivers/acpi/acpi_ipmi.c
-> > > > +++ b/drivers/acpi/acpi_ipmi.c
-> > > > @@ -63,11 +63,10 @@ struct acpi_ipmi_device {
-> > > >  	struct list_head tx_msg_list;
-> > > >  	spinlock_t	tx_msg_lock;
-> > > >  	acpi_handle handle;
-> > > > -	struct pnp_dev *pnp_dev;
-> > > > +	struct device *dev;
-> > > >  	ipmi_user_t	user_interface;
-> > > >  	int ipmi_ifnum; /* IPMI interface number */
-> > > >  	long curr_msgid;
-> > > > -	struct ipmi_smi_info smi_data;
-> > > >  	atomic_t refcnt;
-> > > >  };
-> > > >
-> > > > @@ -132,7 +131,7 @@ static struct ipmi_driver_data driver_data = {  };
-> > > >
-> > > >  static struct acpi_ipmi_device *
-> > > > -ipmi_dev_alloc(int iface, struct ipmi_smi_info *smi_data, acpi_handle
-> > > > handle)
-> > > > +ipmi_dev_alloc(int iface, struct device *pdev, acpi_handle handle)
-> > >
-> > > Why is the second arg called pdev?
-> >
-> > OK, I will change it to dev.
+> CC'ed Luis Henriques.
 > 
-> OK, thanks.
 > 
-> > >
-> > > >  {
-> > > >  	struct acpi_ipmi_device *ipmi_device;
-> > > >  	int err;
-> > > > @@ -148,14 +147,13 @@ ipmi_dev_alloc(int iface, struct ipmi_smi_info
-> > > *smi_data, acpi_handle handle)
-> > > >  	spin_lock_init(&ipmi_device->tx_msg_lock);
-> > > >
-> > > >  	ipmi_device->handle = handle;
-> > > > -	ipmi_device->pnp_dev = to_pnp_dev(get_device(smi_data->dev));
-> > > > -	memcpy(&ipmi_device->smi_data, smi_data, sizeof(struct
-> > > ipmi_smi_info));
-> > > > +	ipmi_device->dev = get_device(pdev);
-> > > >  	ipmi_device->ipmi_ifnum = iface;
-> > > >
-> > > >  	err = ipmi_create_user(iface, &driver_data.ipmi_hndlrs,
-> > > >  			       ipmi_device, &user);
-> > > >  	if (err) {
-> > > > -		put_device(smi_data->dev);
-> > > > +		put_device(pdev);
-> > > >  		kfree(ipmi_device);
-> > > >  		return NULL;
-> > > >  	}
-> > > > @@ -175,7 +173,7 @@ acpi_ipmi_dev_get(struct acpi_ipmi_device
-> > > > *ipmi_device)  static void ipmi_dev_release(struct acpi_ipmi_device
-> > > > *ipmi_device)  {
-> > > >  	ipmi_destroy_user(ipmi_device->user_interface);
-> > > > -	put_device(ipmi_device->smi_data.dev);
-> > > > +	put_device(ipmi_device->dev);
-> > > >  	kfree(ipmi_device);
-> > > >  }
-> > > >
-> > > > @@ -263,7 +261,7 @@ static int acpi_format_ipmi_request(struct
-> > > acpi_ipmi_msg *tx_msg,
-> > > >  	buffer = (struct acpi_ipmi_buffer *)value;
-> > > >  	/* copy the tx message data */
-> > > >  	if (buffer->length > ACPI_IPMI_MAX_MSG_LENGTH) {
-> > > > -		dev_WARN_ONCE(&tx_msg->device->pnp_dev->dev, true,
-> > > > +		dev_WARN_ONCE(tx_msg->device->dev, true,
-> > > >  			      "Unexpected request (msg len %d).\n",
-> > > >  			      buffer->length);
-> > > >  		return -EINVAL;
-> > > > @@ -382,11 +380,11 @@ static void ipmi_msg_handler(struct
-> > > ipmi_recv_msg *msg, void *user_msg_data)
-> > > >  	struct acpi_ipmi_device *ipmi_device = user_msg_data;
-> > > >  	int msg_found = 0;
-> > > >  	struct acpi_ipmi_msg *tx_msg;
-> > > > -	struct pnp_dev *pnp_dev = ipmi_device->pnp_dev;
-> > > > +	struct device *dev = ipmi_device->dev;
-> > > >  	unsigned long flags;
-> > > >
-> > > >  	if (msg->user != ipmi_device->user_interface) {
-> > > > -		dev_warn(&pnp_dev->dev,
-> > > > +		dev_warn(dev,
-> > > >  			 "Unexpected response is returned. returned user %p,
-> expected
-> > > user %p\n",
-> > > >  			 msg->user, ipmi_device->user_interface);
-> > > >  		goto out_msg;
-> > > > @@ -404,7 +402,7 @@ static void ipmi_msg_handler(struct
-> ipmi_recv_msg
-> > > *msg, void *user_msg_data)
-> > > >  	spin_unlock_irqrestore(&ipmi_device->tx_msg_lock, flags);
-> > > >
-> > > >  	if (!msg_found) {
-> > > > -		dev_warn(&pnp_dev->dev,
-> > > > +		dev_warn(dev,
-> > > >  			 "Unexpected response (msg id %ld) is returned.\n",
-> > > >  			 msg->msgid);
-> > > >  		goto out_msg;
-> > > > @@ -412,7 +410,7 @@ static void ipmi_msg_handler(struct
-> ipmi_recv_msg
-> > > > *msg, void *user_msg_data)
-> > > >
-> > > >  	/* copy the response data to Rx_data buffer */
-> > > >  	if (msg->msg.data_len > ACPI_IPMI_MAX_MSG_LENGTH) {
-> > > > -		dev_WARN_ONCE(&pnp_dev->dev, true,
-> > > > +		dev_WARN_ONCE(dev, true,
-> > > >  			      "Unexpected response (msg len %d).\n",
-> > > >  			      msg->msg.data_len);
-> > > >  		goto out_comp;
-> > > > @@ -431,7 +429,7 @@ out_msg:
-> > > >  static void ipmi_register_bmc(int iface, struct device *dev)  {
-> > > >  	struct acpi_ipmi_device *ipmi_device, *temp;
-> > > > -	struct pnp_dev *pnp_dev;
-> > > > +	struct device *pdev;
-> > >
-> > > And here?
-> >
-> > The dev is the parameter of the ipmi_register_bmc(), it is not possible to
-> name the "struct ipmi_smi_info " as dev here for this quick fix.
+> Hi Kefeng Wang,
 > 
-> Right.  What about smi_dev?  Or just use smi_data.dev directly?  It's just
-> two
-> places and shouldn't cause any line wraps to happen.
+> The same patch was submitted by Luis Henriques 2 weeks ago.
+> Also, the patch was already applied by Tomi Valkeinen.
+> 
+> Best regards,
+> Jingoo Han
+> 
 
-Sounds good, I'll take your advice. :-)
+Thanks for your reply, I got it, so ignore it.
 
-Thanks and best regards
--Lv
+>>
+>> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
+>> index 830ded4..2827333 100644
+>> --- a/drivers/video/vga16fb.c
+>> +++ b/drivers/video/vga16fb.c
+>> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+>>
+>>  static void vga16fb_destroy(struct fb_info *info)
+>>  {
+>> -	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
+>>  	iounmap(info->screen_base);
+>>  	fb_dealloc_cmap(&info->cmap);
+>>  	/* XXX unshare VGA regions */
+>> --
+>> 1.8.2.2
+> 
+> 
+> 
+> 
 
-> 
-> Rafael
-> 
-> 
-> > > >  	int err;
-> > > >  	struct ipmi_smi_info smi_data;
-> > > >  	acpi_handle handle;
-> > > > @@ -445,11 +443,11 @@ static void ipmi_register_bmc(int iface, struct
-> > > device *dev)
-> > > >  	handle = smi_data.addr_info.acpi_info.acpi_handle;
-> > > >  	if (!handle)
-> > > >  		goto err_ref;
-> > > > -	pnp_dev = to_pnp_dev(smi_data.dev);
-> > > > +	pdev = smi_data.dev;
-> > > >
-> > > > -	ipmi_device = ipmi_dev_alloc(iface, &smi_data, handle);
-> > > > +	ipmi_device = ipmi_dev_alloc(iface, pdev, handle);
-> > > >  	if (!ipmi_device) {
-> > > > -		dev_warn(&pnp_dev->dev, "Can't create IPMI user
-> interface\n");
-> > > > +		dev_warn(pdev, "Can't create IPMI user interface\n");
-> > > >  		goto err_ref;
-> > > >  	}
-> > > >
-> > > >
-> > > --
-> > > I speak only for myself.
-> > > Rafael J. Wysocki, Intel Open Source Technology Center.
-> >
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
