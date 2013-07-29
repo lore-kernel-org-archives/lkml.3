@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab3G2SQU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:16:20 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57943 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755615Ab3G2SQS (ORCPT
+	id S1758636Ab3G2SRS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:17:18 -0400
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:43091 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab3G2SRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:16:18 -0400
-Date: Mon, 29 Jul 2013 19:15:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Message-ID: <20130729181554.GB9858@sirena.org.uk>
-References: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
- <1375117247-6376-7-git-send-email-p.zabel@pengutronix.de>
+	Mon, 29 Jul 2013 14:17:15 -0400
+Date: Mon, 29 Jul 2013 20:17:11 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
+        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: memcg creates an unkillable task in 3.2-rc2
+Message-ID: <20130729181711.GA6174@dhcp22.suse.cz>
+References: <20130723174711.GE21100@mtj.dyndns.org>
+ <8761vui4cr.fsf@xmission.com>
+ <20130729075939.GA4678@dhcp22.suse.cz>
+ <87ehahg312.fsf@xmission.com>
+ <20130729095109.GB4678@dhcp22.suse.cz>
+ <20130729161026.GD22605@mtj.dyndns.org>
+ <87r4eh70yg.fsf@xmission.com>
+ <20130729172046.GI22605@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="C3GVr9oncBafBIUo"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375117247-6376-7-git-send-email-p.zabel@pengutronix.de>
-X-Cookie: You will be awarded some great honor.
+In-Reply-To: <20130729172046.GI22605@mtj.dyndns.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 94.175.92.69
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3 6/6] mfd: da9063: add 32 kHz output clock to clock tree
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
-X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 29-07-13 13:20:46, Tejun Heo wrote:
+> Hey, Eric.
+> 
+> On Mon, Jul 29, 2013 at 10:03:35AM -0700, Eric W. Biederman wrote:
+> > So this is not a simple matter of a frozen task not dying when SIGKILL
+> > is received.  For the most part not dying when SIGKILL is received seems
+> > like correct behavior for a frozne task.  Certainly it is correct
+> > behavior for any other signal.
+> > 
+> > The issue is that the tasks don't freeze or that when thawed the SIGKILL
+> > is still ignored.  It seems a wake up is being missed in there somewhere.
+> 
+> That's actually interesting and shouldn't be happening.  Can you
+> please provide more data as to what's going on while freezing?  It's
+> likely that the problem is not caused by freezer per-se, the task
+> might be stuck elsewhere and just fails to reach the freezing point.
+> 
+> Would it be possible for memcg and freezer to deadlock?
 
---C3GVr9oncBafBIUo
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hmm, all that memcg cares about is to have only one task to call oom
+handler and put other tasks on the wait queue. If the memcg oom is
+disabled, and supposed to be handled from the userspace, then all of
+them are sitting on the wait queue.
+All the waiters are woken up when there is an uncharge and/or after
+mem_cgroup_out_of_memory has been called.
 
-On Mon, Jul 29, 2013 at 07:00:47PM +0200, Philipp Zabel wrote:
+> Note that while freezing is in progress, some tasks will enter freezer
+> earlier than others (of course) and won't respond to anything.  If
+> memcg adds wait dependency among the tasks being frozen, it'll surely
+> deadlock.
 
-> +	clk = devm_clk_register(da9063->dev, &out_32k->clk_hw);
-> +	if (IS_ERR(clk))
-> +		return PTR_ERR(clk);
-> +
+If memcg oom is enabled and the killed task is frozen then we might end
+up with one task looping there until the oom victim is unfrozen. There
+is no entry point to the fridge from the charging path so I believe that
+memcg under oom might be unfreezable under certain conditions.
 
-This introduces a dependency on COMMON_CLK.  It might be best to make
-this a function device in drivers/clk, and for something like this we
-really ought to be able to create regmap helpers though that can be done
-later on.
+If the memcg is disabled, like in this case, then there shouldn't be any
+way to deadlock or prevent from freezing unless there is an issue with
+freezer vs. wait queue.
 
---C3GVr9oncBafBIUo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+[...]
+> > I am also seeing what looks like a leak somewhere in the cgroup code as
+> > well.  After some runs of the same reproducer I get into a state where
+> > after everything is clean up.  All of the control groups have been
+> > removed and the cgroup filesystem is unmounted, I can mount a cgroup
+> > filesystem with that same combindation of subsystems, but I can't mount
+> > a cgroup filesystem with any of those subsystems in any other
+> > combination.  So I am guessing that the superblock is from the original
+> > mounting is still lingering for some reason.
+> 
+> Hmmm... yeah, if there are cgroups with refs remaining, that'd happen.
+> Note that AFAIU memcg keeps the cgroups hangling around until all the
+> pages are gone from it, so it could just be that it's still draining
+> which may take a long time.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+If the KMEM accounting is not enabled then all the charges will be gone
+during offlining. Otherwise yes, it might take really long until slab
+page will be freed.
 
-iQIcBAEBAgAGBQJR9rFXAAoJELSic+t+oim9xqMQAIlBbiAvebaP2NtIIPMhrG4W
-V5IGpS8IrgiPlv/CO34FxsTFnaoYz3gH+m6EH4GSW7rq/hzHoZ3yXazdbs0SVGXN
-TSaWSUJevb18s96xucsjIfFur0jyh91PGxpw/jAvi4QRd1/YgFRxoeCPbWxGVcfV
-wlhlXliIUXG0RvGR0QrF/Z4y08vxa2pW8G3mK74L++v3YzM0V1FwJ4/HO7vkBM79
-1hdUiy3f2UkEtnzODb+Vl/T7EqckQrUdtc2Pw1N7FvYBs9XZxF96ggWHWITHy9+i
-O1rWBddq1X1w3TMYHH9NbrVESSqBG1diuo2lVip9U9vt9zl5q50ZFgJFnFCVSHsz
-nBku53LQ/NUNnYEL/697o/owWISPMULIR/4e3n8B5cc7DuRv/LllKMc7dnlLq0XY
-U6Qp0jnCrAuvBwYwi1nMKHEYezV70QIJNO7EfbHaF++WV5Sci93cZ3FOJkP2m2WW
-Skh3GSp+Pg2lzapf8QxrI43XnL7OZjtpCjRyLlw+SzFmTZxvbeSUyAUxbpX1izko
-ghruOeUlPmTuZzwZmTY1U3zBZphdEowc8jy6NhV1ciH9G09+eD1p3d6iWQUuVybo
-kCSN0lc+WAROXCROuEN7/UPaZGySdQ/KAqhmDaI1umt53I6ysRr6aVFi+uK4laGE
-OEcS+2S3C1PI6IIWQKux
-=Z06a
------END PGP SIGNATURE-----
+> Maybe dropping cache would work?
 
---C3GVr9oncBafBIUo--
+KMEM is not used here so I do not think this would help.
+
+-- 
+Michal Hocko
+SUSE Labs
