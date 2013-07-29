@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab3G2O0u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:26:50 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33299 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab3G2O0t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:26:49 -0400
-To: Nick Alcock <nix@esperi.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle Corporation
-References: <87r4ehfzhf.fsf@spindle.srvr.nix>
-Date: Mon, 29 Jul 2013 10:26:36 -0400
-In-Reply-To: <87r4ehfzhf.fsf@spindle.srvr.nix> (Nick Alcock's message of "Mon,
-	29 Jul 2013 11:10:36 +0100")
-Message-ID: <yq11u6hl9wj.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
+	id S1755914Ab3G2O1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:27:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246Ab3G2O1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:27:30 -0400
+Date: Mon, 29 Jul 2013 16:21:58 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 6/6] tracing: Change remove_event_file_dir() to
+	clear "d_subdirs"->i_private
+Message-ID: <20130729142158.GA9338@redhat.com>
+References: <20130726172551.GA3632@redhat.com> <51F6392C.8000806@hitachi.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F6392C.8000806@hitachi.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Nick" == Nick Alcock <nix@esperi.org.uk> writes:
+On 07/29, Masami Hiramatsu wrote:
+>
+> (2013/07/27 2:25), Oleg Nesterov wrote:
+> > Change remove_event_file_dir() to clear ->i_private for every
+> > file we are going to remove.
+>
+> Oleg, I think this should be done first.
+>
+> AFAICS, your former patches depend strongly on this change.
+> Without this, they don't work as you expected, and it may
+> prevent git-bisect.
 
-Nick> My server's ARC-1210 has been working fine for years, but when I
-Nick> upgraded from 3.10.1, it started failing:
+Why?
 
-Nick> [ 0.784044] Areca RAID Controller0: F/W V1.46 2009-01-06 & Model
-Nick> ARC-1210 [ 0.804028] scsi0 : Areca SATA Host Adapter RAID
-Nick> Controller
-Nick>  Driver Version 1.20.00.15 2010/08/05
-Nick> [...]
+v2 specially does this in the last change for bisecting/etc.
 
-Interesting. Please provide the output of:
+1-4 change f_op->read/write to check i_private != NULL but until
+this final patch i_private == NULL is not possible.
 
-# sg_inq /dev/sdd
-# sg_vpd /dev/sdd
-# sg_vpd -p ai /dev/sdd
+> I see, including this patch also breaks current ftrace.
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Could you clarify?
+
+Oleg.
+
