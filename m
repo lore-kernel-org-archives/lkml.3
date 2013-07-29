@@ -1,79 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab3G2V2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:28:50 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:38347 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753016Ab3G2V2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:28:49 -0400
-Date: Tue, 30 Jul 2013 00:28:35 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Julius Werner <jwerner@chromium.org>
-CC: Felipe Balbi <balbi@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-samsung-soc@vger.kernel.org>, Tomasz Figa <t.figa@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>, <devicetree@vger.kernel.org>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Subject: Re: [PATCH v2] usb: phy-samsung-usb: Simplify PMU register handling
-Message-ID: <20130729212835.GC6901@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375132676-15966-1-git-send-email-jwerner@chromium.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="f+W+jCU1fRNres8c"
-Content-Disposition: inline
-In-Reply-To: <1375132676-15966-1-git-send-email-jwerner@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755994Ab3G2V3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:29:25 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:56939 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755702Ab3G2V3U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 17:29:20 -0400
+From: David Daney <ddaney.cavm@gmail.com>
+To: ralf@linux-mips.org, linux-gpio@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>
+Subject: [PATCH v2 2/2] gpio MIPS/OCTEON: Add a driver for OCTEON's on-chip GPIO pins.
+Date: Mon, 29 Jul 2013 14:29:10 -0700
+Message-Id: <1375133350-18828-3-git-send-email-ddaney.cavm@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---f+W+jCU1fRNres8c
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: David Daney <david.daney@cavium.com>
 
-On Mon, Jul 29, 2013 at 02:17:56PM -0700, Julius Werner wrote:
-> This patch simplifies the way the phy-samsung-usb code finds the correct
-> power management register to enable PHY clock gating. Previously, the
-> code would calculate the register address from a device tree supplied
-> base address and add an offset based on the PHY type.
->=20
-> Since every PHY has its own device tree entry and needs only one
-> register, we can just encode the address itself in the device tree and
-> remove the diffentiation in the code. The bitmask needed to specify the
-> bit within that register stays in place, allowing support for platforms
-> like s3c64xx that use different bits within the same register. Due to
-> this simplification, the whole complication of a Samsung-specific USB
-> PHY type can be removed from the PHY driver.
->=20
-> Change-Id: Id823f04bbf1942f307bd1d24ec9d8d55a69b0e56
+The SOCs in the OCTEON family have 16 (or in some cases 20) on-chip
+GPIO pins, this driver handles them all.  Configuring the pins as
+interrupt sources is handled elsewhere (OCTEON's irq handling code).
 
-remove this Gerrit Change-Id, please. Also resend with
-linux-usb@vger.kernel.org in Cc.
+Signed-off-by: David Daney <david.daney@cavium.com>
+---
 
---=20
-balbi
+Device tree binding defintions already exist for this device in
+Documentation/devicetree/bindings/gpio/cavium-octeon-gpio.txt
 
---f+W+jCU1fRNres8c
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+ drivers/gpio/Kconfig       |   8 +++
+ drivers/gpio/Makefile      |   1 +
+ drivers/gpio/gpio-octeon.c | 157 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 166 insertions(+)
+ create mode 100644 drivers/gpio/gpio-octeon.c
 
-iQIcBAEBAgAGBQJR9t6CAAoJEIaOsuA1yqREk4cP/1dOiP9b4+Wk5lScWYJM3z39
-rrP4t75wt8dnCyrjX4pyxvFkeGCIdx5qJPxkN1tbahYdDlgLx1VhUxD6bYYlA/LF
-TK5VHSozldkdCE6VtjqHSwZUBLyBgSuXjTIYW3sMSp+lRhlsCwZZm5jhKJHYojWB
-bs/7E/ynY/4gf3s3gjgdoAnB/KfHAm0hkMjS9oAyG5J7j2aEU0r/44+taupr6e/W
-Ouk5J815zkxZdKQJi3QM6MZn14bVKPgD+qVC4sdOCEJ5hD5OxFGtFheAn/zSIzoE
-3BKla0FdotqzG49SCIiHWJOGt0f3HR7RepAHRH/793zEyV/CQVDIdqb/GbEhRtZF
-2D21mhOhHf7vp05C/xYXLvu9ReABAJu190MFqOnVr+arX3EXC+oEzElXSb0KjmaL
-vKdalvCHJdrzrsZUo+kHD+1QTcx+PZb0LhzpEB+GubOdQchZIecgn5WHCDeVAfed
-q9FgCuTgdxfxuxATXblWXKB6xnMIOHpEitbA4Vo1ArHU+x7egAFp9/t7mjnjptEg
-MZ24FE/CqoCRwTyPVH6Ojyxlv497a1iuJGjk24MMbDAjCh8hrZXIDJCu6exdhj2t
-uWEU8gxXM6fOlt5iDmF776klvxvp1Pcb2qVDASYoCZLDKTQa8MnjWppz7FeQRm8j
-ZE+8Nzaz1oIVPlj+Viac
-=YREa
------END PGP SIGNATURE-----
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index b2450ba..b21b7a2 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -193,6 +193,14 @@ config GPIO_MXS
+ 	select GPIO_GENERIC
+ 	select GENERIC_IRQ_CHIP
+ 
++config GPIO_OCTEON
++	tristate "Cavium OCTEON GPIO"
++	depends on GPIOLIB && CAVIUM_OCTEON_SOC
++	default y
++	help
++	  Say yes here to support the on-chip GPIO lines on the OCTEON
++	  family of SOCs.
++
+ config GPIO_PL061
+ 	bool "PrimeCell PL061 GPIO support"
+ 	depends on ARM && ARM_AMBA
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index ef3e983..e7fd980 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -50,6 +50,7 @@ obj-$(CONFIG_GPIO_MSM_V2)	+= gpio-msm-v2.o
+ obj-$(CONFIG_GPIO_MVEBU)        += gpio-mvebu.o
+ obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
+ obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
++obj-$(CONFIG_GPIO_OCTEON)	+= gpio-octeon.o
+ obj-$(CONFIG_ARCH_OMAP)		+= gpio-omap.o
+ obj-$(CONFIG_GPIO_PCA953X)	+= gpio-pca953x.o
+ obj-$(CONFIG_GPIO_PCF857X)	+= gpio-pcf857x.o
+diff --git a/drivers/gpio/gpio-octeon.c b/drivers/gpio/gpio-octeon.c
+new file mode 100644
+index 0000000..71a4a31
+--- /dev/null
++++ b/drivers/gpio/gpio-octeon.c
+@@ -0,0 +1,157 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (C) 2011, 2012 Cavium Inc.
++ */
++
++#include <linux/platform_device.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/gpio.h>
++#include <linux/io.h>
++
++#include <asm/octeon/octeon.h>
++#include <asm/octeon/cvmx-gpio-defs.h>
++
++#define RX_DAT 0x80
++#define TX_SET 0x88
++#define TX_CLEAR 0x90
++/*
++ * The address offset of the GPIO configuration register for a given
++ * line.
++ */
++static unsigned int bit_cfg_reg(unsigned int offset)
++{
++	/*
++	 * The register stride is 8, with a discontinuity after the
++	 * first 16.
++	 */
++	if (offset < 16)
++		return 8 * offset;
++	else
++		return 8 * (offset - 16) + 0x100;
++}
++
++struct octeon_gpio {
++	struct gpio_chip chip;
++	u64 register_base;
++};
++
++static int octeon_gpio_dir_in(struct gpio_chip *chip, unsigned offset)
++{
++	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
++
++	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), 0);
++	return 0;
++}
++
++static void octeon_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
++	u64 mask = 1ull << offset;
++	u64 reg = gpio->register_base + (value ? TX_SET : TX_CLEAR);
++	cvmx_write_csr(reg, mask);
++}
++
++static int octeon_gpio_dir_out(struct gpio_chip *chip, unsigned offset,
++			       int value)
++{
++	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
++	union cvmx_gpio_bit_cfgx cfgx;
++
++	octeon_gpio_set(chip, offset, value);
++
++	cfgx.u64 = 0;
++	cfgx.s.tx_oe = 1;
++
++	cvmx_write_csr(gpio->register_base + bit_cfg_reg(offset), cfgx.u64);
++	return 0;
++}
++
++static int octeon_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct octeon_gpio *gpio = container_of(chip, struct octeon_gpio, chip);
++	u64 read_bits = cvmx_read_csr(gpio->register_base + RX_DAT);
++
++	return ((1ull << offset) & read_bits) != 0;
++}
++
++static int octeon_gpio_probe(struct platform_device *pdev)
++{
++	struct octeon_gpio *gpio;
++	struct gpio_chip *chip;
++	struct resource *res_mem;
++	int err = 0;
++
++	gpio = devm_kzalloc(&pdev->dev, sizeof(*gpio), GFP_KERNEL);
++	if (!gpio)
++		return -ENOMEM;
++	chip = &gpio->chip;
++
++	res_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (res_mem == NULL) {
++		dev_err(&pdev->dev, "found no memory resource\n");
++		err = -ENXIO;
++		goto out;
++	}
++	if (!devm_request_mem_region(&pdev->dev, res_mem->start,
++					resource_size(res_mem),
++				     res_mem->name)) {
++		dev_err(&pdev->dev, "request_mem_region failed\n");
++		err = -ENXIO;
++		goto out;
++	}
++	gpio->register_base = (u64)devm_ioremap(&pdev->dev, res_mem->start,
++						resource_size(res_mem));
++
++	pdev->dev.platform_data = chip;
++	chip->label = "octeon-gpio";
++	chip->dev = &pdev->dev;
++	chip->owner = THIS_MODULE;
++	chip->base = 0;
++	chip->can_sleep = 0;
++	chip->ngpio = 20;
++	chip->direction_input = octeon_gpio_dir_in;
++	chip->get = octeon_gpio_get;
++	chip->direction_output = octeon_gpio_dir_out;
++	chip->set = octeon_gpio_set;
++	err = gpiochip_add(chip);
++	if (err)
++		goto out;
++
++	dev_info(&pdev->dev, "OCTEON GPIO driver probed.\n");
++out:
++	return err;
++}
++
++static int octeon_gpio_remove(struct platform_device *pdev)
++{
++	struct gpio_chip *chip = pdev->dev.platform_data;
++	return gpiochip_remove(chip);
++}
++
++static struct of_device_id octeon_gpio_match[] = {
++	{
++		.compatible = "cavium,octeon-3860-gpio",
++	},
++	{},
++};
++MODULE_DEVICE_TABLE(of, octeon_gpio_match);
++
++static struct platform_driver octeon_gpio_driver = {
++	.driver = {
++		.name		= "octeon_gpio",
++		.owner		= THIS_MODULE,
++		.of_match_table = octeon_gpio_match,
++	},
++	.probe		= octeon_gpio_probe,
++	.remove		= octeon_gpio_remove,
++};
++
++module_platform_driver(octeon_gpio_driver);
++
++MODULE_DESCRIPTION("Cavium Inc. OCTEON GPIO Driver");
++MODULE_AUTHOR("David Daney");
++MODULE_LICENSE("GPL");
+-- 
+1.7.11.7
 
---f+W+jCU1fRNres8c--
