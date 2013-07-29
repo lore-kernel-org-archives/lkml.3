@@ -1,130 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754634Ab3G2Jia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:38:30 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:60535 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab3G2Ji3 (ORCPT
+	id S1754655Ab3G2JjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:39:08 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:33277 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3G2JjG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:38:29 -0400
+	Mon, 29 Jul 2013 05:39:06 -0400
 MIME-Version: 1.0
-In-Reply-To: <1374921728-9007-2-git-send-email-hanjun.guo@linaro.org>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
-	<1374921728-9007-2-git-send-email-hanjun.guo@linaro.org>
-Date: Mon, 29 Jul 2013 11:38:28 +0200
-Message-ID: <CAKfTPtBXi4C3ncLmsWZQEs3x80VbPhHo+gC9hG_EFwMdafJmOQ@mail.gmail.com>
-Subject: Re: [RFC][PATCH 2/2] ARM64: introduce cluster id and make a
- difference between socket id
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-acpi@lists.linaro.org, Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1375075701-5998-9-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075701-5998-9-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Mon, 29 Jul 2013 17:39:05 +0800
+Message-ID: <CAJd=RBAFLneY_k-dPKAe02QHVXtmyr-n5_cNfBfZLqzjwrSznA@mail.gmail.com>
+Subject: Re: [PATCH v3 8/9] mm, hugetlb: remove decrement_hugepage_resv_vma()
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> In the cpu topology information, we define topology_physical_package_id()
-> as cpu socket id, which means that the socket id is the idenfication for
-> physical processor, not for a cluster in a cpu die.
+On Mon, Jul 29, 2013 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> Now, Checking condition of decrement_hugepage_resv_vma() and
+> vma_has_reserves() is same, so we can clean-up this function with
+> vma_has_reserves(). Additionally, decrement_hugepage_resv_vma() has only
+> one call site, so we can remove function and embed it into
+> dequeue_huge_page_vma() directly. This patch implement it.
 >
-> On ARM64 platform, multi cluster in a cpu die will be normal, here is a
-> example with 2 cores in a cluster and 2 cluster in a socket:
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 >
-> |--------------------------------------|
-> |                socket                |
-> |                                      |
-> | |---------------|  |---------------| |
-> | |    cluster    |  |    cluster    | |
-> | |               |  |               | |
-> | | |----| |----| |  | |----| |----| | |
-> | | |core| |core| |  | |core| |core| | |
-> | | |----| |----| |  | |----| |----| | |
-> | |               |  |               | |
-> | |---------------|  |---------------| |
-> |                                      |
-> |--------------------------------------|
->
-> ARM64 extended the MPIDR into 64 bit and introduce another affinity level,
-> we can use this affinity level for socket id and use the third highest level
-> affinity for cluster id, which  make the socket id behavior in its original
-> way.
->
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/include/asm/topology.h |    1 +
->  arch/arm64/kernel/topology.c      |    8 ++++++--
->  2 files changed, 7 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm64/include/asm/topology.h b/arch/arm64/include/asm/topology.h
-> index 8631808..ff68ecc 100644
-> --- a/arch/arm64/include/asm/topology.h
-> +++ b/arch/arm64/include/asm/topology.h
-> @@ -8,6 +8,7 @@
->  struct cputopo_arm64 {
->         int thread_id;
->         int core_id;
-> +       int cluster_id;
->         int socket_id;
->         cpumask_t thread_sibling;
->         cpumask_t core_sibling;
-> diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
-> index 1eb0435..6d1e5a6 100644
-> --- a/arch/arm64/kernel/topology.c
-> +++ b/arch/arm64/kernel/topology.c
-> @@ -80,12 +80,14 @@ void store_cpu_topology(unsigned int cpuid)
->                         /* core performance interdependency */
->                         cpuid_topo->thread_id = MPIDR_AFFINITY_LEVEL_0(mpidr);
->                         cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
-> -                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
-> +                       cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
-> +                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_3(mpidr);
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-socket_id is currently used by update_siblings_masks to update the
-core_sibling mask. This mask defines which CPUs share their cache and
-AFAICT, the cache are shared at the cluster level so cluster_id should
-be used instead socket_id.
-
-Have you got more information about the goal of this new level_3 ?
-
-Vincent
-
->                 } else {
->                         /* largely independent cores */
->                         cpuid_topo->thread_id = -1;
->                         cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL_0(mpidr);
-> -                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
-> +                       cpuid_topo->cluster_id = MPIDR_AFFINITY_LEVEL_1(mpidr);
-> +                       cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL_2(mpidr);
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index ca15854..4b1b043 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -434,25 +434,6 @@ static int is_vma_resv_set(struct vm_area_struct *vma, unsigned long flag)
+>         return (get_vma_private_data(vma) & flag) != 0;
+>  }
+>
+> -/* Decrement the reserved pages in the hugepage pool by one */
+> -static void decrement_hugepage_resv_vma(struct hstate *h,
+> -                       struct vm_area_struct *vma)
+> -{
+> -       if (vma->vm_flags & VM_NORESERVE)
+> -               return;
+> -
+> -       if (vma->vm_flags & VM_MAYSHARE) {
+> -               /* Shared mappings always use reserves */
+> -               h->resv_huge_pages--;
+> -       } else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+> -               /*
+> -                * Only the process that called mmap() has reserves for
+> -                * private mappings.
+> -                */
+> -               h->resv_huge_pages--;
+> -       }
+> -}
+> -
+>  /* Reset counters to 0 and clear all HPAGE_RESV_* flags */
+>  void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+>  {
+> @@ -466,10 +447,18 @@ static int vma_has_reserves(struct vm_area_struct *vma)
+>  {
+>         if (vma->vm_flags & VM_NORESERVE)
+>                 return 0;
+> +
+> +       /* Shared mappings always use reserves */
+>         if (vma->vm_flags & VM_MAYSHARE)
+>                 return 1;
+> +
+> +       /*
+> +        * Only the process that called mmap() has reserves for
+> +        * private mappings.
+> +        */
+>         if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
+>                 return 1;
+> +
+>         return 0;
+>  }
+>
+> @@ -564,8 +553,8 @@ retry_cpuset:
+>                 if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+>                         page = dequeue_huge_page_node(h, zone_to_nid(zone));
+>                         if (page) {
+> -                               if (!avoid_reserve)
+> -                                       decrement_hugepage_resv_vma(h, vma);
+> +                               if (!avoid_reserve && vma_has_reserves(vma))
+> +                                       h->resv_huge_pages--;
+>                                 break;
+>                         }
 >                 }
->         } else {
->                 /*
-> @@ -95,6 +97,7 @@ void store_cpu_topology(unsigned int cpuid)
->                  */
->                 cpuid_topo->thread_id = -1;
->                 cpuid_topo->core_id = 0;
-> +               cpuid_topo->cluster_id = -1;
->                 cpuid_topo->socket_id = -1;
->         }
->
-> @@ -120,6 +123,7 @@ void __init init_cpu_topology(void)
->
->                 topo->thread_id = -1;
->                 topo->core_id =  -1;
-> +               topo->cluster_id = -1;
->                 topo->socket_id = -1;
->                 cpumask_clear(&topo->core_sibling);
->                 cpumask_clear(&topo->thread_sibling);
 > --
 > 1.7.9.5
 >
