@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3G2F3A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:29:00 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51757 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754727Ab3G2F21 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:28:27 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-bb-51f5fd787869
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 8/9] mm, hugetlb: remove decrement_hugepage_resv_vma()
-Date: Mon, 29 Jul 2013 14:28:20 +0900
-Message-Id: <1375075701-5998-9-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1754853Ab3G2F3V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:29:21 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:40631 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754585Ab3G2F3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:29:17 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-acpi@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, wimax@linuxwimax.org
+Subject: [PATCH 0/3] networking: Use ETH_ALEN where appropriate
+Date: Sun, 28 Jul 2013 22:29:02 -0700
+Message-Id: <cover.1375075325.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, Checking condition of decrement_hugepage_resv_vma() and
-vma_has_reserves() is same, so we can clean-up this function with
-vma_has_reserves(). Additionally, decrement_hugepage_resv_vma() has only
-one call site, so we can remove function and embed it into
-dequeue_huge_page_vma() directly. This patch implement it.
+Convert the uses mac addresses to ETH_ALEN so
+it's easier to find and verify where mac addresses
+need to be __aligned(2)
 
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Joe Perches (3):
+  uapi: Convert some uses of 6 to ETH_ALEN
+  include: Convert ethernet mac address declarations to use ETH_ALEN
+  ethernet: Convert mac address uses of 6 to ETH_ALEN
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index ca15854..4b1b043 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -434,25 +434,6 @@ static int is_vma_resv_set(struct vm_area_struct *vma, unsigned long flag)
- 	return (get_vma_private_data(vma) & flag) != 0;
- }
- 
--/* Decrement the reserved pages in the hugepage pool by one */
--static void decrement_hugepage_resv_vma(struct hstate *h,
--			struct vm_area_struct *vma)
--{
--	if (vma->vm_flags & VM_NORESERVE)
--		return;
--
--	if (vma->vm_flags & VM_MAYSHARE) {
--		/* Shared mappings always use reserves */
--		h->resv_huge_pages--;
--	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
--		/*
--		 * Only the process that called mmap() has reserves for
--		 * private mappings.
--		 */
--		h->resv_huge_pages--;
--	}
--}
--
- /* Reset counters to 0 and clear all HPAGE_RESV_* flags */
- void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
- {
-@@ -466,10 +447,18 @@ static int vma_has_reserves(struct vm_area_struct *vma)
- {
- 	if (vma->vm_flags & VM_NORESERVE)
- 		return 0;
-+
-+	/* Shared mappings always use reserves */
- 	if (vma->vm_flags & VM_MAYSHARE)
- 		return 1;
-+
-+	/*
-+	 * Only the process that called mmap() has reserves for
-+	 * private mappings.
-+	 */
- 	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
- 		return 1;
-+
- 	return 0;
- }
- 
-@@ -564,8 +553,8 @@ retry_cpuset:
- 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
- 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
- 			if (page) {
--				if (!avoid_reserve)
--					decrement_hugepage_resv_vma(h, vma);
-+				if (!avoid_reserve && vma_has_reserves(vma))
-+					h->resv_huge_pages--;
- 				break;
- 			}
- 		}
+ drivers/net/ethernet/8390/ax88796.c                |  4 +-
+ drivers/net/ethernet/amd/pcnet32.c                 |  6 +--
+ drivers/net/ethernet/broadcom/cnic_if.h            |  6 +--
+ drivers/net/ethernet/dec/tulip/tulip_core.c        |  8 +--
+ drivers/net/ethernet/i825xx/sun3_82586.h           |  4 +-
+ drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |  2 +-
+ drivers/net/ethernet/nuvoton/w90p910_ether.c       |  4 +-
+ drivers/net/ethernet/pasemi/pasemi_mac.c           | 13 ++---
+ drivers/net/ethernet/pasemi/pasemi_mac.h           |  4 +-
+ drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |  4 +-
+ drivers/net/ethernet/qlogic/qlge/qlge.h            |  2 +-
+ include/acpi/actbl2.h                              |  4 +-
+ include/linux/dm9000.h                             |  4 +-
+ include/linux/fs_enet_pd.h                         |  3 +-
+ include/linux/ieee80211.h                          | 59 +++++++++++-----------
+ include/linux/mlx4/device.h                        | 11 ++--
+ include/linux/mlx4/qp.h                            |  5 +-
+ include/linux/mv643xx_eth.h                        |  3 +-
+ include/linux/sh_eth.h                             |  3 +-
+ include/linux/smsc911x.h                           |  3 +-
+ include/linux/uwb/spec.h                           |  5 +-
+ include/media/tveeprom.h                           |  4 +-
+ include/net/irda/irlan_common.h                    |  3 +-
+ include/uapi/linux/dn.h                            |  3 +-
+ include/uapi/linux/if_bridge.h                     |  3 +-
+ include/uapi/linux/netfilter_bridge/ebt_802_3.h    |  5 +-
+ include/uapi/linux/netfilter_ipv4/ipt_CLUSTERIP.h  |  3 +-
+ include/uapi/linux/virtio_net.h                    |  2 +-
+ include/uapi/linux/wimax/i2400m.h                  |  4 +-
+ 29 files changed, 103 insertions(+), 81 deletions(-)
+
 -- 
-1.7.9.5
+1.8.1.2.459.gbcd45b4.dirty
 
