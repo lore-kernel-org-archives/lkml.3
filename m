@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757409Ab3G2QJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:09:53 -0400
-Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:36268 "EHLO
-	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab3G2QJv (ORCPT
+	id S1757424Ab3G2QKf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:10:35 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:61365 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3G2QKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:09:51 -0400
-Message-ID: <51F63F12.6070300@hp.com>
-Date: Mon, 29 Jul 2013 10:08:18 +0000
-From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 12:10:33 -0400
+Date: Mon, 29 Jul 2013 12:10:26 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
+        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: memcg creates an unkillable task in 3.2-rc2
+Message-ID: <20130729161026.GD22605@mtj.dyndns.org>
+References: <20130723174711.GE21100@mtj.dyndns.org>
+ <8761vui4cr.fsf@xmission.com>
+ <20130729075939.GA4678@dhcp22.suse.cz>
+ <87ehahg312.fsf@xmission.com>
+ <20130729095109.GB4678@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, T Makphaibulchoke <tmac@hp.com>,
-        viro@zeniv.linux.org.uk, adilger.kernel@dilger.ca,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, tmakph@gmail.com, aswin@hp.com
-Subject: Re: [PATCH 0/2] ext4: increase mbcache scalability
-References: <1374108910-50444-1-git-send-email-tmac@hp.com> <20130718163024.GA12727@thunk.org> <20130718163301.GB12727@thunk.org>
-In-Reply-To: <20130718163301.GB12727@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130729095109.GB4678@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2013 04:33 PM, Theodore Ts'o wrote:
-> On Thu, Jul 18, 2013 at 12:30:24PM -0400, Theodore Ts'o wrote:
->> On Wed, Jul 17, 2013 at 06:55:10PM -0600, T Makphaibulchoke wrote:
->>> This patch intends to improve the scalability of an ext4 filesystem by
->>> introducing higher degree of parallelism to the usages of its mb_cache and
->>> mb_cache_entries.
->>>
->>> ...
->>>
->>>  fs/ext4/ext4.h          |   1 +
->>>  fs/ext4/super.c         |   8 ++
->>>  fs/ext4/xattr.c         |  41 +++++---
->>>  fs/ext4/xattr.h         |   3 +
->>>  fs/mbcache.c            | 432 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
->>>  include/linux/mbcache.h |   5 +
->>>  6 files changed, 385 insertions(+), 105 deletions(-)
->>>
->>
->> I see the diff stats, but there was no patch attached to your message.
->> Could you please resend the patch to the linux-ext4 list?
-> 
-> Never mind, I see them now.  I didn't notice this was a 0/2 message,
-> and since you are apparently using an old versio of git which doesn't
-> enable --thread by default (or you have a git config setting which
-> disables the use of mail threading), I didn't see the patches chained
-> to the message.
-> 
-> Sorry for being confused,
-> 
-> 						- Ted
-> 
-Hi Ted,
+Hello,
 
-Could you please let me know if you have comment, suggestion or feedback for the patch.  Thanks in advance.
+On Mon, Jul 29, 2013 at 11:51:09AM +0200, Michal Hocko wrote:
+> Isn't this a bug in freezer then? I am not familiar with the freezer
+> much but memcg oom handling seems correct to me. The task is sleeping
+> KILLABLE and fatal_signal_pending in mem_cgroup_handle_oom will tell us
+> to bypass the charge and let the taks go away.
 
-Thanks,
-Mak.
+Is the problem a frozen task not being killed even when SIGKILL is
+received?  If so, it is a known problem and a side-effect of
+cgroup_freezer (ab)using and making the existing power management
+freezer visible to userland without really thinking about the
+implications.  :(
 
+So, yeah, if you use cgroup_freezer now, the tasks will get stuck in
+states which aren't well defined when visible from userland and will
+just stay there until unfrozen no matter what.  Yet another reason
+I'll be screaming like a banshee at anyone who says that cgroup is
+built to delegate subtree access rights to !root users.
+
+It's on the to-do list but a very long term one.  Right now, if you
+combine userland OOM handling with freezer and whatnot, it'd be pretty
+easy to get into trouble.
+
+Thanks.
+
+-- 
+tejun
