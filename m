@@ -1,165 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab3G2Joo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:44:44 -0400
-Received: from mail-la0-f47.google.com ([209.85.215.47]:43978 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751229Ab3G2Jon (ORCPT
+	id S1754704Ab3G2JpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:45:09 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:58411 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab3G2JpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:44:43 -0400
-From: Jonas Jensen <jonas.jensen@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
-        mark.rutland@arm.com, tomasz.figa@gmail.com,
-        Jonas Jensen <jonas.jensen@gmail.com>
-Subject: [PATCH v6] clk: add MOXA ART SoCs clock driver
-Date: Mon, 29 Jul 2013 11:44:22 +0200
-Message-Id: <1375091062-3773-1-git-send-email-jonas.jensen@gmail.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
-References: <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
+	Mon, 29 Jul 2013 05:45:07 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19QTxuW1phhyKdR/6OwyoYh
+Date: Mon, 29 Jul 2013 02:45:02 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Balbi <balbi@ti.com>, Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] pinctrl: Allow pinctrl to have multiple active
+ states
+Message-ID: <20130729094501.GC7656@atomide.com>
+References: <20130718151213.30990.45828.stgit@localhost>
+ <20130718151507.30990.67174.stgit@localhost>
+ <CACRpkdY5-OFN4YQywPj06jkf493BhwgJGMEnmKmbovTh+co2Yg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY5-OFN4YQywPj06jkf493BhwgJGMEnmKmbovTh+co2Yg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds MOXA ART SoCs clock driver support.
+* Linus Walleij <linus.walleij@linaro.org> [130722 16:01]:
+> On Thu, Jul 18, 2013 at 5:15 PM, Tony Lindgren <tony@atomide.com> wrote:
+> 
+> > It's quite common that we need to dynamically change some pins for a
+> > device for runtime PM, or toggle a pin between rx and tx. Changing all
+> 
+> What does "change" mean above?
+> 
+> Please reword to "remux" if that is what is meant.
 
-Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
----
-
-Notes:
-    Changes since v5:
-    
-    1. corrected of_iomap return value check
-    2. don't panic, print the error and return
-    
-    Applies to next-20130729
-
- .../bindings/clock/moxa,moxart-core-clock.txt      | 23 +++++++
- drivers/clk/Makefile                               |  1 +
- drivers/clk/clk-moxart.c                           | 71 ++++++++++++++++++++++
- 3 files changed, 95 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
- create mode 100644 drivers/clk/clk-moxart.c
-
-diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
-new file mode 100644
-index 0000000..379ae79
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
-@@ -0,0 +1,23 @@
-+Device Tree Clock bindings for arch-moxart
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+MOXA ART SoCs allow to determine core clock frequencies by reading
-+a register.
-+
-+Required properties:
-+- compatible : Must be "moxa,moxart-core-clock"
-+- #clock-cells : Should be 0
-+- reg : Should contain registers location and length
-+- clock-output-names : Should be "coreclk"
-+
-+For example:
-+
-+	coreclk: core-clock@98100000 {
-+		compatible = "moxa,moxart-core-clock";
-+		#clock-cells = <0>;
-+		reg = <0x98100000 0x34>;
-+		clock-output-names = "coreclk";
-+	};
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 4038c2b..933622f 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+Yes remux or reconfigure the pinconf depending on the hardware.
+And possibly based on the board specific configuration if both
+options are available.
  
- # SoCs specific
- obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
-+obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
- obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
- obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
- obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
-diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
-new file mode 100644
-index 0000000..14d5b26
---- /dev/null
-+++ b/drivers/clk/clk-moxart.c
-@@ -0,0 +1,71 @@
-+/*
-+ * MOXA ART SoCs clock driver.
-+ *
-+ * Copyright (C) 2013 Jonas Jensen
-+ *
-+ * Jonas Jensen <jonas.jensen@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/io.h>
-+#include <linux/of_address.h>
-+#include <linux/clkdev.h>
-+
-+void __init moxart_of_clk_init(struct device_node *node)
-+{
-+	static void __iomem *base;
-+	struct clk *clk;
-+	unsigned long rate;
-+	unsigned int mul, val, div;
-+	const char *name;
-+
-+	base = of_iomap(node, 0);
-+	if (!base) {
-+		pr_err("%s: of_iomap failed\n", node->full_name);
-+		return;
-+	}
-+
-+	mul = (readl(base + 0x30) >> 3) & 0x1ff;
-+	val = (readl(base + 0x0c) >> 4) & 0x7;
-+
-+	switch (val) {
-+	case 1:
-+		div = 3;
-+		break;
-+	case 2:
-+		div = 4;
-+		break;
-+	case 3:
-+		div = 6;
-+		break;
-+	case 4:
-+		div = 8;
-+		break;
-+	default:
-+		div = 2;
-+		break;
-+	}
-+
-+	/*
-+	 * the rate calculation below is only tested and proven
-+	 * to be true for UC-7112-LX
-+	 *
-+	 * UC-7112-LX: mul=80 val=0
-+	 *
-+	 * to support other moxart SoC hardware, this may need
-+	 * a change, though it's possible it works there too
-+	 */
-+	rate = (mul * 1200000 / div);
-+
-+	of_property_read_string(node, "clock-output-names", &name);
-+	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
-+	clk_register_clkdev(clk, NULL, name);
-+	of_clk_add_provider(node, of_clk_src_simple_get, clk);
-+
-+	iounmap(base);
-+}
-+CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
--- 
-1.8.2.1
+> > the pins for a device is not efficient way of doing it.
+> >
+> > So let's allow setting up multiple active states for pinctrl.
+> 
+> Do you mean multiple default states?
+> 
+> I have a hard time understanding so please help me out :-/
 
+One default state, which should only contain the static pins that
+don't need to be remuxed or reconfigured during runtime PM.
+
+It should probably say "support for multiple currently activated
+states", does that make it clearer?
+ 
+> > Currently
+> > we only need PINCTRL_STATIC and PINCTRL_DYNAMIC, where PINCTRL_STATIC
+> > covers the current default pins, and PINCTRL_DYNAMIC holds the dynamic
+> > pins that need to be toggled.
+> 
+> Toggled when?
+
+Remuxed or reconfigured constantly for runtime PM.
+ 
+> When changing state to another one? Any other state? Or back to
+> this state? Sorry not following ... this needs to be more verbose.
+
+How about "toggle dynamic pins between active and idle state
+for runtime PM"?
+ 
+> > --- a/drivers/pinctrl/core.h
+> > +++ b/drivers/pinctrl/core.h
+> > @@ -53,12 +53,18 @@ struct pinctrl_dev {
+> >  #endif
+> >  };
+> >
+> > +enum pinctrl_states {
+> > +       PINCTRL_STATIC,
+> > +       PINCTRL_DYNAMIC,
+> > +       PINCTRL_NR_STATES,
+> > +};
+> 
+> This needs some very precise kerneldoc so it is chrystal clear what these
+> states are all about. "pinctrl_states" is not a good name for this enum,
+> please find some more precise name, because we have functions
+> with names like pinctrl_select_state() which is not related to this.
+> 
+> Is this substates or?
+
+This lists the sets of pins that can be activated the same
+time. So after this, we support two sets of pins that a
+pinctrl consumer driver can have activated the same time:
+static pins and dynamic pins. There can be any number of
+named modes for dynamic pins, but typically only active and
+idle.
+
+Then if for some reason we need more than two sets activated
+the same time, we can expand the array as needed. So that's
+mostly to try to keep things future proof and not limit things
+to two sets as noted by Stephen earlier.
+ 
+> > +
+> >  /**
+> >   * struct pinctrl - per-device pin control state holder
+> >   * @node: global list node
+> >   * @dev: the device using this pin control handle
+> >   * @states: a list of states for this device
+> > - * @state: the current state
+> > + * @state: the current state(s)
+> 
+> How can more than one state be the current state? Sorry I don't get this.
+> This needs to be more precise I think.
+
+Hopefully the explanation above helps with that, if not,
+let me know.
+ 
+Regards,
+
+Tony
