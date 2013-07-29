@@ -1,203 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752076Ab3G2SxL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:53:11 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:31667 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab3G2SxJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:53:09 -0400
-Message-ID: <1375123985.2089.5.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
- introduced resv_map lock
-From: Davidlohr Bueso <davidlohr.bueso@hp.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>
-Date: Mon, 29 Jul 2013 11:53:05 -0700
-In-Reply-To: <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
-	 <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752017Ab3G2SyX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:54:23 -0400
+Received: from mout.gmx.net ([212.227.15.19]:55169 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3G2SyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:54:22 -0400
+From: Christian Eggers <ceggers@gmx.de>
+To: spi-devel-general@lists.sourceforge.net, Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [resubmit2] [PATCH] spi: spi-davinci: Fix direction in dma_map_single()
+Date: Mon, 29 Jul 2013 20:54:09 +0200
+Message-ID: <1388690.s58sU4PUYE@p2400>
+User-Agent: KMail/4.8.5 (Linux/3.9.4-1.g51bf0ff-desktop; KDE/4.8.5; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:NSbkt18i0a69IIiBjhYhnjPVjRxEYqxVJZFYePuzA/Vmz3JKEUu
+ 9gKx0a3Mn8K7pgMItzLYZm8xxT7u1fBhJDPgyTuCxb/vMsTwJ1L2fCQaqcCwcJh7oTG7l4z
+ 299ApfUNjvWIjPe443BuMojG5Q9Jw5QD9Su+Sci9gSnhCtO2+022K64xGbraOP45k/QN//p
+ zAxKdco9FS+Sy34DO9+9w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 14:31 +0900, Joonsoo Kim wrote:
-> There is a race condition if we map a same file on different processes.
-> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> grab a mmap_sem. This doesn't prevent other process to modify region
-> structure, so it can be modified by two processes concurrently.
-> 
-> To solve this, I introduce a lock to resv_map and make region manipulation
-> function grab a lock before they do actual work. This makes region
-> tracking safe.
+The following patch I already sent on 2013-04-18 and 2013-06-06. 
+Unfortunately it hasn't been committed yet.
 
-I think we can use a rwsem here instead of a spinlock, similar to my
-previous 1/2 approach.
+Commit 048177ce3b3962852fd34a7e04938959271c7e70 (spi: spi-davinci: 
+convert to DMA engine API) introduced a regression: dma_map_single() 
+is called with direction DMA_FROM_DEVICE for rx and for tx.
 
-> 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 2677c07..e29e28f 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -26,6 +26,7 @@ struct hugepage_subpool {
->  
->  struct resv_map {
->  	struct kref refs;
-> +	spinlock_t lock;
->  	struct list_head regions;
->  };
->  extern struct resv_map *resv_map_alloc(void);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 24c0111..bf2ee11 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
->   * Region tracking -- allows tracking of reservations and instantiated pages
->   *                    across the pages in a mapping.
->   *
-> - * The region data structures are protected by a combination of the mmap_sem
-> - * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-> - * must either hold the mmap_sem for write, or the mmap_sem for read and
-> - * the hugetlb_instantiation_mutex:
-> - *
-> - *	down_write(&mm->mmap_sem);
-> - * or
-> - *	down_read(&mm->mmap_sem);
-> - *	mutex_lock(&hugetlb_instantiation_mutex);
-> + * The region data structures are embedded into a resv_map and
-> + * protected by a resv_map's lock
->   */
->  struct file_region {
->  	struct list_head link;
-> @@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	struct list_head *head = &resv->regions;
->  	struct file_region *rg, *nrg, *trg;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -184,6 +178,7 @@ static long region_add(struct resv_map *resv, long f, long t)
->  	}
->  	nrg->from = f;
->  	nrg->to = t;
-> +	spin_unlock(&resv->lock);
->  	return 0;
->  }
->  
-> @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  	struct file_region *rg, *nrg;
->  	long chg = 0;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are before or in. */
->  	list_for_each_entry(rg, head, link)
->  		if (f <= rg->to)
-> @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  	 * size such that we can guarantee to record the reservation. */
->  	if (&rg->link == head || t < rg->from) {
->  		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
-> -		if (!nrg)
-> -			return -ENOMEM;
-> +		if (!nrg) {
-> +			chg = -ENOMEM;
-> +			goto out;
-> +		}
-> +
->  		nrg->from = f;
->  		nrg->to   = f;
->  		INIT_LIST_HEAD(&nrg->link);
->  		list_add(&nrg->link, rg->link.prev);
->  
-> -		return t - f;
-> +		chg = t - f;
-> +		goto out;
->  	}
->  
->  	/* Round our left edge to the current segment if it encloses us. */
-> @@ -223,7 +223,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		if (&rg->link == head)
->  			break;
->  		if (rg->from > t)
-> -			return chg;
-> +			goto out;
->  
->  		/* We overlap with this area, if it extends further than
->  		 * us then we must extend ourselves.  Account for its
-> @@ -234,6 +234,9 @@ static long region_chg(struct resv_map *resv, long f, long t)
->  		}
->  		chg -= rg->to - rg->from;
->  	}
-> +
-> +out:
-> +	spin_unlock(&resv->lock);
->  	return chg;
->  }
->  
-> @@ -243,12 +246,13 @@ static long region_truncate(struct resv_map *resv, long end)
->  	struct file_region *rg, *trg;
->  	long chg = 0;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate the region we are either in or before. */
->  	list_for_each_entry(rg, head, link)
->  		if (end <= rg->to)
->  			break;
->  	if (&rg->link == head)
-> -		return 0;
-> +		goto out;
->  
->  	/* If we are in the middle of a region then adjust it. */
->  	if (end > rg->from) {
-> @@ -265,6 +269,9 @@ static long region_truncate(struct resv_map *resv, long end)
->  		list_del(&rg->link);
->  		kfree(rg);
->  	}
-> +
-> +out:
-> +	spin_unlock(&resv->lock);
->  	return chg;
->  }
->  
-> @@ -274,6 +281,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->  	struct file_region *rg;
->  	long chg = 0;
->  
-> +	spin_lock(&resv->lock);
->  	/* Locate each segment we overlap with, and count that overlap. */
->  	list_for_each_entry(rg, head, link) {
->  		long seg_from;
-> @@ -289,6 +297,7 @@ static long region_count(struct resv_map *resv, long f, long t)
->  
->  		chg += seg_to - seg_from;
->  	}
-> +	spin_unlock(&resv->lock);
->  
->  	return chg;
->  }
-> @@ -386,6 +395,7 @@ struct resv_map *resv_map_alloc(void)
->  		return NULL;
->  
->  	kref_init(&resv_map->refs);
-> +	spin_lock_init(&resv_map->lock);
->  	INIT_LIST_HEAD(&resv_map->regions);
->  
->  	return resv_map;
-
+Signed-off-by: Christian Eggers <ceggers@gmx.de>
+Cc: stable@vger.kernel.org # v3.7.x+
+Acked-by: Matt Porter <mporter@ti.com>
+---
+--- drivers/spi/spi-davinci.c.orig	2013-04-18 20:54:02.728719412 +0200
++++ drivers/spi/spi-davinci.c	2013-04-18 20:54:51.900623956 +0200
+@@ -608,7 +608,7 @@ static int davinci_spi_bufs(struct spi_d
+ 		else
+ 			buf = (void *)t->tx_buf;
+ 		t->tx_dma = dma_map_single(&spi->dev, buf,
+-				t->len, DMA_FROM_DEVICE);
++				t->len, DMA_TO_DEVICE);
+ 		if (!t->tx_dma) {
+ 			ret = -EFAULT;
+ 			goto err_tx_map;
 
