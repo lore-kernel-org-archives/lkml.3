@@ -1,74 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab3G3PYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:24:20 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:59611 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754420Ab3G3PXs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756709Ab3G3PXs (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Jul 2013 11:23:48 -0400
-Date: Mon, 29 Jul 2013 10:11:04 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:55518 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486Ab3G3PXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 11:23:46 -0400
+Date: Mon, 29 Jul 2013 10:08:05 -0500
 From: Seth Jennings <sjenning@linux.vnet.ibm.com>
 To: Cody P Schafer <cody@linux.vnet.ibm.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
         LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
         David Woodhouse <David.Woodhouse@intel.com>,
         Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
-Subject: Re: [PATCH 0/5] Add rbtree postorder iteration functions, runtime
- tests, and update zswap to use.
-Message-ID: <20130729151104.GD4381@variantweb.net>
+Subject: Re: [PATCH 5/5] mm/zswap: use postorder iteration when destroying
+ rbtree
+Message-ID: <20130729150805.GC4381@variantweb.net>
 References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1374873223-25557-6-git-send-email-cody@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com>
+In-Reply-To: <1374873223-25557-6-git-send-email-cody@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073015-8878-0000-0000-0000082C3292
+x-cbid: 13073015-1618-0000-0000-0000045EB44B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 02:13:38PM -0700, Cody P Schafer wrote:
-> Postorder iteration yields all of a node's children prior to yielding the node
-> itself, and this particular implementation also avoids examining the leaf links
-> in a node after that node has been yielded.
+On Fri, Jul 26, 2013 at 02:13:43PM -0700, Cody P Schafer wrote:
+> Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+> ---
+>  mm/zswap.c | 15 ++-------------
+>  1 file changed, 2 insertions(+), 13 deletions(-)
 > 
-> In what I expect will be it's most common usage, postorder iteration allows the
+> diff --git a/mm/zswap.c b/mm/zswap.c
+> index deda2b6..98d99c4 100644
+> --- a/mm/zswap.c
+> +++ b/mm/zswap.c
+> @@ -791,25 +791,14 @@ static void zswap_frontswap_invalidate_area(unsigned type)
+>  {
+>  	struct zswap_tree *tree = zswap_trees[type];
+>  	struct rb_node *node;
 
-s/it's/its/
+Getting used variable warning on this now.  Just need to remove it.
 
-> deletion of every node in an rbtree without modifying the rbtree nodes (no
-> _requirement_ that they be nulled) while avoiding referencing child nodes after
-> they have been "deleted" (most commonly, freed).
+Seth
+
+> -	struct zswap_entry *entry;
+> +	struct zswap_entry *entry, *n;
 > 
-> I have only updated zswap to use this functionality at this point, but numerous
-> bits of code (most notably in the filesystem drivers) use a hand rolled
-> postorder iteration that NULLs child links as it traverses the tree. Each of
-> those instances could be replaced with this common implementation.
-
-Thanks for doing this Cody!  Other than the nits I've sent, it looks
-good.  Whole set:
-
-Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-
+>  	if (!tree)
+>  		return;
 > 
-> Cody P Schafer (5):
->   rbtree: add postorder iteration functions.
->   rbtree: add rbtree_postorder_for_each_entry_safe() helper.
->   rbtree_test: add test for postorder iteration.
->   rbtree: allow tests to run as builtin
->   mm/zswap: use postorder iteration when destroying rbtree
-> 
->  include/linux/rbtree.h | 21 +++++++++++++++++++++
->  lib/Kconfig.debug      |  2 +-
->  lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
->  lib/rbtree_test.c      | 12 ++++++++++++
->  mm/zswap.c             | 15 ++-------------
->  5 files changed, 76 insertions(+), 14 deletions(-)
-> 
+>  	/* walk the tree and free everything */
+>  	spin_lock(&tree->lock);
+> -	/*
+> -	 * TODO: Even though this code should not be executed because
+> -	 * the try_to_unuse() in swapoff should have emptied the tree,
+> -	 * it is very wasteful to rebalance the tree after every
+> -	 * removal when we are freeing the whole tree.
+> -	 *
+> -	 * If post-order traversal code is ever added to the rbtree
+> -	 * implementation, it should be used here.
+> -	 */
+> -	while ((node = rb_first(&tree->rbroot))) {
+> -		entry = rb_entry(node, struct zswap_entry, rbnode);
+> -		rb_erase(&entry->rbnode, &tree->rbroot);
+> +	rbtree_postorder_for_each_entry_safe(entry, n, &tree->rbroot, rbnode) {
+>  		zbud_free(tree->pool, entry->handle);
+>  		zswap_entry_cache_free(entry);
+>  		atomic_dec(&zswap_stored_pages);
 > -- 
 > 1.8.3.4
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
 
