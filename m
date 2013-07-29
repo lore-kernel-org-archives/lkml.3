@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab3G2JaU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:30:20 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:43362 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab3G2JaS (ORCPT
+	id S1754314Ab3G2Jb3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:31:29 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:20339 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751151Ab3G2Jb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:30:18 -0400
+	Mon, 29 Jul 2013 05:31:28 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+HIYPazXW3qKgqAvhMvFD6
+Date: Mon, 29 Jul 2013 02:31:25 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130729093125.GB7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <CACRpkdY6-f1DKfPDfCpYAX9weXMtB7koJ3VwkRgHGm_MzgFawQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1375075701-5998-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375075701-5998-6-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Mon, 29 Jul 2013 17:30:17 +0800
-Message-ID: <CAJd=RBC5XwDp9p1b48EgkfRAQ=zVj0=TG_qFQrQ325RsFM5zsQ@mail.gmail.com>
-Subject: Re: [PATCH v3 5/9] mm, hugetlb: remove redundant list_empty check in gather_surplus_pages()
-From: Hillf Danton <dhillf@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdY6-f1DKfPDfCpYAX9weXMtB7koJ3VwkRgHGm_MzgFawQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> If list is empty, list_for_each_entry_safe() doesn't do anything.
-> So, this check is redundant. Remove it.
->
-> Acked-by: Michal Hocko <mhocko@suse.cz>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-Acked-by: Hillf Danton <dhillf@gmail.com>
+* Linus Walleij <linus.walleij@linaro.org> [130722 16:14]:
+> On Tue, Jul 16, 2013 at 11:05 AM, Tony Lindgren <tony@atomide.com> wrote:
+> 
+> > To toggle dynamic states, let's add the optional active state in
+> > addition to the static default state. Then if the optional active
+> > state is defined, we can require that idle and sleep states cover
+> > the same pingroups as the active state.
+> 
+> OK...
+> 
+> > Then let's add pinctrl_check_dynamic() and pinctrl_select_dynamic()
+> > to use instead of pinctrl_select() to avoid breaking existing users.
+> >
+> > With pinctrl_check_dynamic() we can check that idle and sleep states
+> > match the active state for pingroups during init, and don't need to
+> > do it during runtime.
+> 
+> I do not understand why this complexity need to be exposed outside
+> of the subsystem.
 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 87d7637..2e52afea 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1020,11 +1020,8 @@ free:
->         spin_unlock(&hugetlb_lock);
->
->         /* Free unnecessary surplus pages to the buddy allocator */
-> -       if (!list_empty(&surplus_list)) {
-> -               list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
-> -                       put_page(page);
-> -               }
-> -       }
-> +       list_for_each_entry_safe(page, tmp, &surplus_list, lru)
-> +               put_page(page);
->         spin_lock(&hugetlb_lock);
->
->         return ret;
-> --
-> 1.7.9.5
->
+Unfortunately it's mostly to deal with supporting the current behaviour
+of pinctrl_select_state() which is not quite suitable for runtime PM.
+ 
+> pinctrl_select_state() and the PM accessors are enough IMO. Why
+> should say a driver care about whether it is dynamic or not?
+
+I think we can make this all transparent to the consumer drivers
+for runtime PM. Basically drivers/base/pinctrl.c needs these for the
+checks because of the current pinctrl_select_state().
+ 
+> Surely the checking and different paths for static/dynamic configurations
+> can be an intrinsic detail of the pinctrl subsystem, by adding flags and
+> members to private structs like struct pinctrl itself in worst case.
+
+I'll take a look if we can bury more things inside the pinctrl
+subsystem.
+ 
+> So I'm not buying into this, it looks like it is making things complicated
+> for consumers outside the subsystem for no reason.
+
+I don't think the consumer drivers eventually need to do much
+anything ideally. We're missing runtime PM related set_irq_wake()
+but that's a minor detail as we can initially keep the runtime
+PM related wake-up events always enabled.
+
+Regards,
+
+Tony
