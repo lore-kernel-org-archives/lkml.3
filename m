@@ -1,180 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053Ab3G2B4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 21:56:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52620 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752037Ab3G2B4n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 21:56:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,766,1367996400"; 
-   d="scan'208";a="353315328"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
- operation region handlers
-Thread-Topic: [PATCH 06/13] ACPI/IPMI: Add reference counting for ACPI
- operation region handlers
-Thread-Index: AQHOh3wWhtcRfGeNDUSAzJ7WvM5MAZl1Zu+AgADNjlCAAFUQgIAEYZFA
-Date: Mon, 29 Jul 2013 01:56:38 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880243628D@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1370652213.git.lv.zheng@intel.com>
- <2501577.sf07PMEtR1@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E8802435B7C@SHSMSX101.ccr.corp.intel.com>
- <3196577.UQScsUKI1B@vostro.rjw.lan>
-In-Reply-To: <3196577.UQScsUKI1B@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1754062Ab3G2B6j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 21:58:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:62464 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab3G2B6i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 21:58:38 -0400
+X-AuditID: cbfee68d-b7f096d0000043fc-46-51f5cc4ad6ac
+From: Jingoo Han <jg1.han@samsung.com>
+To: Daniel Jeong <gshark.jeong@gmail.com>
+Cc: "'Daniel Jeong'" <daniel.jeong@ti.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Richard Purdie'" <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>
+References: <1374829330-20603-1-git-send-email-daniel.jeong@ti.com>
+In-reply-to: <1374829330-20603-1-git-send-email-daniel.jeong@ti.com>
+Subject: Re: [PATCH v1] backlight-lm3630-apply chip revision
+Date: Mon, 29 Jul 2013 10:58:33 +0900
+Message-id: <009701ce8bff$21cae730$6560b590$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIL2tecdEDowa68rXp4Hct3pyJUcpkAPnSw
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t8zY12vM18DDbrniljMWb+GzeLlIU2L
+	PdueMltM3t3FanF54SUgsWsOm8XuXU9ZHdg9ds66y+5xYsZvFo8983+wevRtWcXocfzGdiaP
+	z5vkAtiiuGxSUnMyy1KL9O0SuDKmT7vOWNAjVLG2cSpbA+Nqvi5GTg4JAROJJ6d7mCBsMYkL
+	99azdTFycQgJLGOUWH58FitM0a9Z61kgEosYJdb8uMAK4fxilNh6fx9YFZuAmsSXL4fZuxg5
+	OEQENCV2LakBqWEWOMgo8er5BLAaIQFniT9duxhBajgFXCSOLq8GCQsL2Eg0XFvICGKzCKhK
+	PFu7lQXE5hWwlJj1/T4rhC0o8WPyPbA4s4CWxPqdx5kgbHmJzWveMkMcqiCx4+xrsDkiAkYS
+	jZu7oOpFJPa9eMcIco+EwFd2iUf9v5ghlglIfJt8iAXkHgkBWYlNB6DmSEocXHGDZQKjxCwk
+	q2chWT0LyepZSFYsYGRZxSiaWpBcUJyUXmSoV5yYW1yal66XnJ+7iRESx707GG8fsD7EmAy0
+	fiKzlGhyPjAN5JXEGxqbGVmYmpgaG5lbmpEmrCTOq9ZiHSgkkJ5YkpqdmlqQWhRfVJqTWnyI
+	kYmDU6qBschl5SbD+XuWG9+Rlqs+4LZkqV+ERd/77aorO+zkbfm/rf5zr33RjS1bp748NDva
+	6L3lQVHxztCSxCOtvEm2yXt1P7c/5eZMO/v6eYCUr36wWYT94ppvdx9a3C7aubpL6MtExrA/
+	D34aMe6Yf22NFc++7//lT/sYTPLxv1k/bd7+xY9SE3+IdSmxFGckGmoxFxUnAgC8l7Pu+QIA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMKsWRmVeSWpSXmKPExsVy+t9jAV2vM18DDV584beYs34Nm8XLQ5oW
+	e7Y9ZbaYvLuL1eLywktAYtccNovdu56yOrB77Jx1l93jxIzfLB575v9g9ejbsorR4/iN7Uwe
+	nzfJBbBFNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl
+	5gDdoqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMmD7tOmNBj1DF2sap
+	bA2Mq/m6GDk5JARMJH7NWs8CYYtJXLi3nq2LkYtDSGARo8SaHxdYIZxfjBJb7+9jBaliE1CT
+	+PLlMHsXIweHiICmxK4lNSA1zAIHGSVePZ8AViMk4Czxp2sXI0gNp4CLxNHl1SBhYQEbiYZr
+	CxlBbBYBVYlna7eCLeYVsJSY9f0+K4QtKPFj8j2wOLOAlsT6nceZIGx5ic1r3jJDHKogsePs
+	a7A5IgJGEo2bu6DqRST2vXjHOIFRaBaSUbOQjJqFZNQsJC0LGFlWMYqmFiQXFCel5xrpFSfm
+	Fpfmpesl5+duYgQniWfSOxhXNVgcYhTgYFTi4X3g9CVQiDWxrLgy9xCjBAezkggvh9HXQCHe
+	lMTKqtSi/Pii0pzU4kOMyUCfTmSWEk3OByawvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJ
+	pCeWpGanphakFsFsYeLglGpgrF5wenrINzVjXgXemJKUO580A0IiKmS/rr0c+yHq+rRVgTkT
+	AkUmrNjgtrDI4bOawa2ScmmB/93+OdMFJ9W8lPiccvTke1fDzWcCFsfyLmgJ9tNkuskfv6fw
+	++/+Jy9CXl+ZZyG/iWvSLjPhXds3a+9W4orhW5oQcT7uvPjPXZtENrdVHfhjrsRSnJFoqMVc
+	VJwIAHoGc9lWAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r6T1un8k023122
 
-> On Friday, July 26, 2013 10:49 PM Rafael J. Wysocki wrote:
-> > On Friday, July 26, 2013 01:54:00 AM Zheng, Lv wrote:
-> > > On Friday, July 26, 2013 5:29 AM Rafael J. Wysocki wrote:
-> > > On Tuesday, July 23, 2013 04:09:43 PM Lv Zheng wrote:
-> > > > This patch adds reference couting for ACPI operation region
-> > > > handlers to fix races caused by the ACPICA address space callback
-> invocations.
-> > > >
-> > > > ACPICA address space callback invocation is not suitable for Linux
-> > > > CONFIG_MODULE=y execution environment.
-> > >
-> > > Actually, can you please explain to me what *exactly* the problem is?
-> >
-> > OK.  I'll add race explanations in the next revision.
-> >
-> > The problem is there is no "lock" held inside ACPICA for invoking
-> > operation region handlers.
-> > Thus races happens between the
-> > acpi_remove/install_address_space_handler and the handler/setup
-> callbacks.
-> 
-> I see.  Now you're trying to introduce something that would prevent those
-> races from happening, right?
+On Friday, July 26, 2013 6:02 PM, Daniel Jeong wrote:
+> Subject: [PATCH v1] backlight-lm3630-apply chip revision
 
-Yes. Let me explain this later in this email.
+Please don't use this subject, as I mentioned.
+Also, this patch version is v2.
+
+Thus, when you send the next version of this patch,
+you should use the subject as below:
+
+[PATCH v3] backlight: lm3630: apply chip revision
+
+According to 'Documentation/SubmittingPatches',
+15) The canonical patch format
+The canonical patch subject line is:
+    Subject: [PATCH 001/123] subsystem: summary phrase
 
 > 
-> > This is correct per ACPI specification.
-> > As if there is interpreter locks held for invoking operation region
-> > handlers, the timeout implemented inside the operation region handlers
-> > will make all locking facilities (Acquire or Sleep,...) timed out.
-> > Please refer to ACPI specification "5.5.2 Control Method Execution":
-> > Interpretation of a Control Method is not preemptive, but it can
-> > block. When a control method does block, OSPM can initiate or continue
-> > the execution of a different control method. A control method can only
-> > assume that access to global objects is exclusive for any period the control
-> method does not block.
-> >
-> > So it is pretty much likely that ACPI IO transfers are locked inside
-> > the operation region callback implementations.
-> > Using locking facility to protect the callback invocation will risk dead locks.
+> The LM3630 chip was revised by TI and chip name was also changed to LM3630A.
+> And register map, default values and intiial sequences are changed.
+
+Looks good.
+
+
+> lm3630_bl.c and .h files are deleted
+> lm3630_bla.c and .h files are added
+
+Fix the typo: lm3630_bla.c -> lm3630a_bl.c
+
+The following is simpler.
+lm3630_bl.{c,h} files are changed to lm3630a_bl.{c,h}.
+
+
+> www.ti.com
+>
+
+Please, don't add meaningless commit message.
+If you want to mention web address of your company,
+please mention what it means as below:
+
+The full datasheets are available from TI website:
+http://www.ti.com/product/lm3630a
+
+
+> Signed-off-by: daniel jeong <daniel.jeong@ti.com>
+
+Please use upper case as below:
+Signed-off-by: Daniel Jeong <daniel.jeong@ti.com>
+                   ^^^     ^^^
+
+In my opinion, you have to fix your .gitconfig file as below:
+
+[user]
+        email = daniel.jeong@ti.com
+        name = Daniel Jeong
+
+Daniel Jeong,
+Please, read the './Documentation/SubmittingPatches', before you send
+your patch.
+
+
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/video/backlight/Kconfig          |    6 +-
+>  drivers/video/backlight/Makefile         |    2 +-
+>  drivers/video/backlight/lm3630_bl.c      |  475 -----------------------------
+>  drivers/video/backlight/lm3630a_bl.c     |  482 ++++++++++++++++++++++++++++++
+>  include/linux/platform_data/lm3630_bl.h  |   57 ----
+>  include/linux/platform_data/lm3630a_bl.h |   65 ++++
+>  6 files changed, 551 insertions(+), 536 deletions(-)
+>  delete mode 100644 drivers/video/backlight/lm3630_bl.c
+>  create mode 100644 drivers/video/backlight/lm3630a_bl.c
+>  delete mode 100644 include/linux/platform_data/lm3630_bl.h
+>  create mode 100644 include/linux/platform_data/lm3630a_bl.h
 > 
-> No.  If you use a single global lock around all invocations of operation region
-> handlers, it won't deadlock, but it will *serialize* things.  This means that
-> there won't be two handlers executing in parallel.  That may or may not be
-> bad depending on what those handlers actually do.
-> 
-> Your concern seems to be that if one address space handler is buggy and it
-> blocks indefinitely, executing it under such a lock would affect the other address
-> space handlers and in my opinion this is a valid concern.
 
-It can be expressed in more detailed ways:
 
-The interpreter runs control methods in the following style according to the ACPI spec.
-CM1_Enter -> EnterInter -> CM1_Running -> OpRegion1 -> ExitInter -> EnterInter                            -> CM1_running -> ExitInter -> CM1_Exit
-CM2_Enter -> EnterInter ->                                       -> CM2_Running -> OpRegion1 -> ExitInter -> EnterInter               -> CM2_running -> ExitInter -> CM2_Exit
-
-EnterInter: Enter interpreter lock
-ExitInter: Leave interpreter lock
-
-Let me introduce two situations:
-
-1. If we hold global "mutex" before "EnterInter", then no second control method can be run "NotSerialized".
-If the CM1 just have some codes waiting for a hardware flag and CM2 can access other hardware IOs to trigger this flag, then nothing can happen any longer.
-This is a practical bug as what we have already seen in "NotSerialized" marked ACPI control methods behave in the interpreter mode executed in serialized way - kernel parameter "acpi_serialize".
-
-2. If we hold global "mutex" after "EnterInter" and Before OpRegion1
-If we do things this way, then all IO accesses are serialized, if we have something in an IPMI operation region failed due to timeout, then any other system IOs that should happen in parallel will just happen after 5 seconds.  This is not an acceptable experience.
-
-> 
-> So the idea seems to be to add wrappers around
-> acpi_install_address_space_handler()
-> and acpi_remove_address_space_handler (but I don't see where the latter is
-> called after the change?), such that they will know when it is safe to unregister
-> the handler.  That is simple enough.
-
-An obvious bug, it should be put between the while (atomic_read() > 1) block and the final atomic_dec().
-
-> However, I'm not sure it is needed in the context of IPMI.
-
-I think I do this just because I need a quick fix to test IPMI bug-fix series.
-The issue is highly related to ACPI interpreter design, and codes should be implemented inside ACPICA.
-And there is not only ACPI_ROOT_OBJECT based address space handlers, but also non-ACPI_ROOT_OBJECT based address space handlers, this patch can't protect the latter ones.
-
-> Your address space
-> handler's context is NULL, so even it if is executed after
-> acpi_remove_address_space_handler() has been called for it (or in parallel), it
-> doesn't depend on anything passed by the caller, so I don't see why the issue
-> can't be addressed by a proper synchronization between
-> acpi_ipmi_exit() and acpi_ipmi_space_handler().
-> 
-> Clearly, acpi_ipmi_exit() should wait for all already running instances of
-> acpi_ipmi_space_handler() to complete and all acpi_ipmi_space_handler()
-> instances started after acpi_ipmi_exit() has been called must return
-> immediately.
-> 
-> I would imagine an algorithm like this:
-> 
-> acpi_ipmi_exit()
->  1. Take "address space handler lock".
->  2. Set "unregistering address space handler" flag.
->  3. Check if "count of currently running handlers" is 0.  If so,
->     call acpi_remove_address_space_handler(), drop the lock (possibly clear
-> the
->     flag) and return.
->  4. Otherwise drop the lock and go to sleep in "address space handler wait
-> queue".
->  5. When woken up, take "address space handler lock" and go to 3.
-> 
-> acpi_ipmi_space_handler()
->  1. Take "address space handler lock".
->  2. Check "unregistering address space handler" flag.  If set, drop the lock
->     and return.
->  3. Increment "count of currently running handlers".
->  4. Drop the lock.
->  5. Do your work.
->  6. Take "address space handler lock".
->  7. Decrement "count of currently running handlers" and if 0, signal the
->     tasks waiting on it to wake up.
->  8. Drop the lock.
-
-Yes, it can also work, but the fix will go inside IPMI.
-And I agree that the codes should not appear in the IPMI context since the issue is highly ACPI interpreter related.
-What if we just stop doing any further work on this patch and just mark it as RFC or a test patch for information purpose.
-It is only useful for the testers.
-
-Thanks and best regards
--Lv
-
-> 
-> Thanks,
-> Rafael
-> 
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
