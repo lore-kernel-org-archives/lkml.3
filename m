@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab3G2UKP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:10:15 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34332 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753875Ab3G2UKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:10:13 -0400
-Message-ID: <1375128613.2075.56.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: enforce sane perl version
-From: Joe Perches <joe@perches.com>
-To: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
-Date: Mon, 29 Jul 2013 13:10:13 -0700
-In-Reply-To: <20130729200606.2651EE1E@viggo.jf.intel.com>
-References: <20130729200606.2651EE1E@viggo.jf.intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754675Ab3G2ULB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:11:01 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46419 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753144Ab3G2ULA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:11:00 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
+        tboot-devel@lists.sourceforge.net, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH v7 2/3] x86/tboot: Fail extended mode reduced hardware sleep
+Date: Mon, 29 Jul 2013 22:21:08 +0200
+Message-ID: <8791139.q8n07ejQ71@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1375118055-15942-3-git-send-email-benjamin.guthro@citrix.com>
+References: <1375118055-15942-1-git-send-email-benjamin.guthro@citrix.com> <1375118055-15942-3-git-send-email-benjamin.guthro@citrix.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 13:06 -0700, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
+On Monday, July 29, 2013 01:14:14 PM Ben Guthro wrote:
+> Register for the extended sleep callback from acpi.
+> As tboot currently does not support the reduced hardware sleep
+> interface, fail this extended call.
 > 
-> I got a bug report from a couple of users who said
-> checkpatch.pl was broken for them.  It was erroring out on
-> fairly random lines most commonly with messages like:
+> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> Cc: tboot-devel@lists.sourceforge.net
+> Cc: Gang Wei <gang.wei@intel.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/kernel/tboot.c |   12 ++++++++++++
+>  1 file changed, 12 insertions(+)
 > 
-> 	Nested quantifiers in regex; marked by <--HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at ./checkpatch.pl line 340.
-> 
-> The bug reporter was running a version of perl 5.8 which was
-> end-of-lifed in 2008: http://www.cpan.org/src/.  Versions of perl
-> this old are at _best_ quite untested.  At worst, they are crusty
-> and known to be completely broken.
-> 
-> If folks have a system _that_ old, then we should have mercy on
-> them and give them a half-decent error message rather than fail
-> with nutty error messages.
-> 
-> This patch enforces that checkpatch.pl is run with perl 5.10,
-> which was end-of-lifed in 2009.  The new --ignore-perl-version
-> command-line switch will let folks override this if they want.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> index addf7b5..760f431 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -301,6 +301,17 @@ static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+>  	return 0;
+>  }
+>  
+> +static int tboot_extended_sleep(u8 sleep_state, u32 val_a, u32 val_b)
+> +{
+> +	if (!tboot_enabled())
+> +		return 0;
+> +
+> +	pr_warning("tboot is not able to suspend on platforms with"
+> +		   " reduced hardware sleep (ACPIv5). Please contact"
+> +		   " tboot-devel@lists.sourceforge.net mailing list.");
+> +	return -1;
 
-Other than Andrew Morton's (continuing?) use of perl 5.8
-I'm fine with this.
+Please use a meaningful error code here.  For example -ENODEV.
 
-Andrew?  Time to update your perl version?
+> +}
+> +
+>  static atomic_t ap_wfs_count;
+>  
+>  static int tboot_wait_for_aps(int num_aps)
+> @@ -422,6 +433,7 @@ static __init int tboot_late_init(void)
+>  #endif
+>  
+>  	acpi_os_set_prepare_sleep(&tboot_sleep);
+> +	acpi_os_set_prepare_extended_sleep(&tboot_extended_sleep);
+>  	return 0;
+>  }
+
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
