@@ -1,64 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753781Ab3G2IcG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:32:06 -0400
-Received: from na3sys009aog129.obsmtp.com ([74.125.149.142]:51783 "EHLO
-	na3sys009aog129.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751559Ab3G2IcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:32:03 -0400
-From: Chao Xie <chao.xie@marvell.com>
-To: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
-        <xiechao.mail@gmail.com>
-CC: Chao Xie <chao.xie@marvell.com>
-Subject: [PATCH 1/4] mfd: 88pm800: Fix the bug that pdata may be NULL
-Date: Mon, 29 Jul 2013 04:29:24 -0400
-Message-ID: <1375086567-10705-2-git-send-email-chao.xie@marvell.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1375086567-10705-1-git-send-email-chao.xie@marvell.com>
-References: <1375086567-10705-1-git-send-email-chao.xie@marvell.com>
+	id S1753856Ab3G2Idh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 04:33:37 -0400
+Received: from etezian.org ([198.101.225.253]:59153 "EHLO mail.etezian.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab3G2Idf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 04:33:35 -0400
+Date: Mon, 29 Jul 2013 10:33:25 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Steve French <smfrench@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Andi Shyti <andi@etezian.org>, mikko.rapeli@iki.fi
+Subject: Re: [PATCH 2/2] cifs: file: initialize oparms.reconnect before using
+ it
+Message-ID: <20130729083325.GA1948@jack.whiskey>
+References: <CAH2r5msP8+qZnb38Rj5WMWmqWFtopmoe671G6TNTB=61BvYEnA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAH2r5msP8+qZnb38Rj5WMWmqWFtopmoe671G6TNTB=61BvYEnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-User pass platform data to device, and platform data may be
-NULL. Add the check for pdata.
+Hi Steve,
 
-Signed-off-by: Chao Xie <chao.xie@marvell.com>
----
- drivers/mfd/88pm800.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+> Your patch looks reasonable.   Would you repost the patch to
+> linux-cifs mailing list (and add any additional reviewers or testers
+> if you would like if you got feedback)?
 
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 6c95483..d4d272f 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -333,9 +333,11 @@ static int device_rtc_init(struct pm80x_chip *chip,
- {
- 	int ret;
- 
--	rtc_devs[0].platform_data = pdata->rtc;
--	rtc_devs[0].pdata_size =
--			pdata->rtc ? sizeof(struct pm80x_rtc_pdata) : 0;
-+	if (pdata) {
-+		rtc_devs[0].platform_data = pdata->rtc;
-+		rtc_devs[0].pdata_size =
-+				pdata->rtc ? sizeof(struct pm80x_rtc_pdata) : 0;
-+	}
- 	ret = mfd_add_devices(chip->dev, 0, &rtc_devs[0],
- 			      ARRAY_SIZE(rtc_devs), NULL, 0, NULL);
- 	if (ret) {
-@@ -578,7 +580,7 @@ static int pm800_probe(struct i2c_client *client,
- 		goto err_device_init;
- 	}
- 
--	if (pdata->plat_config)
-+	if (pdata && pdata->plat_config)
- 		pdata->plat_config(chip, pdata);
- 
- 	return 0;
--- 
-1.7.4.1
+Thanks for your mail,
 
+Actually linux-cifs is on CC and this is the output of
+get_maintainer:
+
+Steve French <sfrench@samba.org> (supporter:COMMON INTERNET F...)
+linux-cifs@vger.kernel.org (open list:COMMON INTERNET F...)
+samba-technical@lists.samba.org (moderated list:COMMON INTERNET F...)
+linux-kernel@vger.kernel.org (open list)
+
+All are on CC. get_maintainers, indeed sometimes is not very
+precise since gets the CC list by doing a git blame on the file
+and adding the ones who previously modified the specific lines.
+
+If this patch got lost I could enrich my To/Cc list by looking at
+git shortlog and more carefully at git blame.
+
+Thanks,
+Andi
