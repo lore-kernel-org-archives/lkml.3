@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756436Ab3G2OJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:09:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:59106 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756409Ab3G2OJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:09:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,769,1367996400"; 
-   d="scan'208";a="338470048"
-Message-ID: <51F677B1.9090502@intel.com>
-Date: Mon, 29 Jul 2013 22:09:53 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1755690Ab3G2OK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:10:27 -0400
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:48390 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3G2OKZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:10:25 -0400
+Message-ID: <51F677CB.4090100@gmail.com>
+Date: Mon, 29 Jul 2013 16:10:19 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/3] ACPI / PM: Only set power states of devices that
- are power manageable
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1657971.1utElu0Hzo@vostro.rjw.lan>
-In-Reply-To: <1657971.1utElu0Hzo@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
+To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Maen Suleiman <maen@marvell.com>, Lior Amsalem <alior@marvell.com>
+Subject: Re: [PATCH 1/4] ARM: dove: add cpu device tree node
+References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375100946-28521-2-git-send-email-sebastian.hesselbarth@gmail.com> <51F6630D.5010603@arm.com>
+In-Reply-To: <51F6630D.5010603@arm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 09:10 PM, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> 
-> Make acpi_device_set_power() check if the given device is power
-> manageable before checking if the given power state is valid for that
-> device.  Otherwise it will print that "Device does not support" that
-> power state into the kernel log, which may not make sense for some
-> power states (D0 and D3cold are supported by all devices by
-> definition).
+On 07/29/2013 02:41 PM, Sudeep KarkadaNagesha wrote:
+> On 29/07/13 13:29, Sebastian Hesselbarth wrote:
+>> This adds a node for the Marvell Sheeva PJ4A CPU found on Dove SoCs.
+>> While at it, also move the l2-cache node out of internal registers and
+>> consistently name different nodes.
+>>
+>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>> ---
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Jason Cooper <jason@lakedaemon.net>
+>> Cc: Andrew Lunn <andrew@lunn.ch>
+>> Cc: linux-arm-kernel@lists.infradead.org
+>> Cc: devicetree@vger.kernel.org
+>> Cc: linux-kernel@vger.kernel.org
+>> ---
+>>   arch/arm/boot/dts/dove.dtsi |   52 ++++++++++++++++++++++++++-----------------
+>>   1 file changed, 32 insertions(+), 20 deletions(-)
+>>
+>> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+>> index 8d5be1e8..09d9710 100644
+>> --- a/arch/arm/boot/dts/dove.dtsi
+>> +++ b/arch/arm/boot/dts/dove.dtsi
+>> @@ -10,6 +10,23 @@
+>>   		gpio2 = &gpio2;
+>>   	};
+>>
+>> +	cpus {
+>> +		#address-cells = <1>;
+>> +		#size-cells = <0>;
+>> +
+>> +		cpu0: cpu@0 {
+>> +			compatible = "marvell,pj4a", "marvell,sheeva-v7";
+>> +			device_type = "cpu";
+>> +			next-level-cache = <&l2>;
+>> +			reg = <0>;
+>> +		};
+>> +	};
+>> +
+>> +	l2: l2-cache {
+>> +		compatible = "marvell,tauros2-cache";
+>> +		marvell,tauros2-cache-features = <0>;
+>> +	};
+> Hi Sebastian,
+>
+> This is not entirely related to the patch but thought of checking with
+> you. I was trying to get info on L2 cache controller on Marvell SoCs,
+> mainly structure or way/set size. Is that something we can get
+> dynamically ? Some specification I referred said its integrated and some
+> said its separate(not unified). Basically I need information around
+> various L2 cache implementations(Tauros2/Feroceon) from Marvell.
+>
+> Any pointers or contacts to get this information will be helpful.
 
-It will not print "Device does not support" that power state if that
-power state is D0 or D3cold since we have unconditionally set those two
-power state's valid flag.
+Sudeep,
 
-OTOH, what value should we return for a device node that is not power
-manageable in acpi_device_set_power when the target state is D0 or D3
-cold? The old behavior is to return 0, meanning success without taking
-any actual action.
+I added Maen and Lior on Cc. Unfortunately, public Marvell SoC
+datasheets only refer some closed Marvell datasheets when it comes
+to CPU(s) used. Maybe they can help out.
 
-In acpi_bus_set_power, if the device is not power manageable, we will
-return -ENODEV; in acpi_dev_pm_full/low_power, we will return 0 as in
-the original acpi_device_set_power. So return -EINVAL here is correct?
-
--Aaron
-
-> 
-> Tested-by: Yinghai Lu <yinghai@kernel.org>
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> ---
->  drivers/acpi/device_pm.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> Index: linux-pm/drivers/acpi/device_pm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/device_pm.c
-> +++ linux-pm/drivers/acpi/device_pm.c
-> @@ -159,7 +159,8 @@ int acpi_device_set_power(struct acpi_de
->  	int result = 0;
->  	bool cut_power = false;
->  
-> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
-> +	if (!device || !device->flags.power_manageable
-> +	    || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->  		return -EINVAL;
->  
->  	/* Make sure this is a valid target state */
-> 
+Sebastian
 
