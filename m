@@ -1,49 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab3G2TAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:00:32 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:43919 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab3G2TA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:00:28 -0400
-Message-ID: <51F6BBEC.5070203@gmail.com>
-Date: Mon, 29 Jul 2013 15:01:00 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kosaki.motohiro@gmail.com
-Subject: Re: [patch 4/6] x86: finish user fault error path with fatal signal
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org> <1374791138-15665-5-git-send-email-hannes@cmpxchg.org>
-In-Reply-To: <1374791138-15665-5-git-send-email-hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+	id S1753136Ab3G2TDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:03:03 -0400
+Received: from ns.mm-sol.com ([212.124.72.66]:58420 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751708Ab3G2TDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:03:00 -0400
+Subject: Re: [PATCH v2 1/6] usb: phy: msm: Move mach depndend code to
+ platform data
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20130729122344.GH24801@radagast>
+References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+	 <1375081464-14206-2-git-send-email-iivanov@mm-sol.com>
+	 <20130729122344.GH24801@radagast>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 29 Jul 2013 22:02:58 +0300
+Message-ID: <1375124578.5444.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(7/25/13 6:25 PM), Johannes Weiner wrote:
-> The x86 fault handler bails in the middle of error handling when the
-> task has a fatal signal pending.  For a subsequent patch this is a
-> problem in OOM situations because it relies on
-> pagefault_out_of_memory() being called even when the task has been
-> killed, to perform proper per-task OOM state unwinding.
-> 
-> Shortcutting the fault like this is a rather minor optimization that
-> saves a few instructions in rare cases.  Just remove it for
-> user-triggered faults.
-> 
-> Use the opportunity to split the fault retry handling from actual
-> fault errors and add locking documentation that reads suprisingly
-> similar to ARM's.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Hi, 
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > Cc: Bryan Huntsman <bryanh@codeaurora.org>
+> > Cc: Felipe Balbi <balbi@ti.com>
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: linux-usb@vger.kernel.org
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > ---
+> >  arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
+> >  arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++
+> 
+> I need acks for these.
+> 
+> >  drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------------
+> >  include/linux/usb/msm_hsusb.h     |    3 ++
+> >  4 files changed, 87 insertions(+), 41 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+> > index db3d8c0..6b35953 100644
+> > --- a/arch/arm/mach-msm/board-msm7x30.c
+> > +++ b/arch/arm/mach-msm/board-msm7x30.c
+> > @@ -31,6 +31,7 @@
+> >  #include <asm/setup.h>
+> >  
+> >  #include <mach/board.h>
+> > +#include <mach/clk.h>
+> >  #include <mach/msm_iomap.h>
+> >  #include <mach/dma.h>
+> >  
+> > @@ -61,10 +62,44 @@ static int hsusb_phy_init_seq[] = {
+> >  	-1
+> >  };
+> >  
+> > +static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
+> 
+> looks like you should be using the reset controller framework ?
+> (drivers/reset)
+
+Probably, but there still nothing in place in the msm,
+which provide this functionality. I am looking it to
+right now.
+
+Regards,
+Ivan
+
+
 
