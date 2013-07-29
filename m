@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab3G2OJS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:09:18 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:43822 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755800Ab3G2OJQ (ORCPT
+	id S1756403Ab3G2OJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:09:23 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43394 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755821Ab3G2OJU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:09:16 -0400
-Message-ID: <51F67749.3070606@kernel.dk>
-Date: Mon, 29 Jul 2013 08:08:09 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 10:09:20 -0400
+Message-ID: <51F67777.6060609@parallels.com>
+Date: Mon, 29 Jul 2013 18:08:55 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: Alexander Gordeev <agordeev@redhat.com>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-References: <1374248000.2266.20.camel@dabdike> <1374267684.7397.1058.camel@haakon3.risingtidesystems.com> <1374296162.7397.1098.camel@haakon3.risingtidesystems.com> <20130722150359.GA16564@dhcp-26-207.brq.redhat.com> <1374527436.7397.1145.camel@haakon3.risingtidesystems.com> <20130725101641.GB31994@dhcp-26-207.brq.redhat.com> <1374790082.7397.1411.camel@haakon3.risingtidesystems.com> <20130726020928.GL29296@kernel.dk> <1374873276.7397.1512.camel@haakon3.risingtidesystems.com> <1374885793.7397.1537.camel@haakon3.risingtidesystems.com> <20130729111827.GA14283@dhcp-26-207.brq.redhat.com>
-In-Reply-To: <20130729111827.GA14283@dhcp-26-207.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+References: <20130726201807.GJ8661@moon>
+In-Reply-To: <20130726201807.GJ8661@moon>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 05:18 AM, Alexander Gordeev wrote:
->> -static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap)
->> +static struct ata_queued_cmd *ata_qc_new(struct ata_port *ap,
->> +                                        struct scsi_cmnd *sc)
->>  {
->>         struct ata_queued_cmd *qc = NULL;
->> -       unsigned int i;
->> +       struct request *rq = sc->request;
->>  
->>         /* no command while frozen */
->>         if (unlikely(ap->pflags & ATA_PFLAG_FROZEN))
->>                 return NULL;
->>  
->> -       /* the last tag is reserved for internal command. */
->> -       for (i = 0; i < ATA_MAX_QUEUE - 1; i++)
+On 07/27/2013 12:18 AM, Cyrill Gorcunov wrote:
+> Andy reported that if file page get reclaimed we loose soft-dirty bit
+> if it was there, so save _PAGE_BIT_SOFT_DIRTY bit when page address
+> get encoded into pte entry. Thus when #pf happens on such non-present
+> pte we can restore it back.
 > 
-> blk-mq does not prevent tag ATA_TAG_INTERNAL from being using. Would it make
-> sense to promote queue depth of length (ATA_MAX_QUEUE - 1) while always
-> pointing ATA_TAG_INTERNAL to qcmd (see below)?
+> Reported-by: Andy Lutomirski <luto@amacapital.net>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Matt Mackall <mpm@selenic.com>
+> Cc: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
 
-blk-mq does support a number of reserved tags, information just needs to
-be passed in appropriately. So there is support for reserving X number
-of error handling / emergency tags.
+> @@ -57,17 +57,25 @@ static int install_file_pte(struct mm_st
+>  		unsigned long addr, unsigned long pgoff, pgprot_t prot)
+>  {
+>  	int err = -ENOMEM;
+> -	pte_t *pte;
+> +	pte_t *pte, ptfile;
+>  	spinlock_t *ptl;
+>  
+>  	pte = get_locked_pte(mm, addr, &ptl);
+>  	if (!pte)
+>  		goto out;
+>  
+> -	if (!pte_none(*pte))
+> +	ptfile = pgoff_to_pte(pgoff);
+> +
+> +	if (!pte_none(*pte)) {
+> +#ifdef CONFIG_MEM_SOFT_DIRTY
+> +		if (pte_present(*pte) &&
+> +		    pte_soft_dirty(*pte))
 
--- 
-Jens Axboe
+I think there's no need in wrapping every such if () inside #ifdef CONFIG_...,
+since the pte_soft_dirty() routine itself would be 0 for non-soft-dirty case
+and compiler would optimize this code out.
 
+> +			pte_file_mksoft_dirty(ptfile);
+> +#endif
+>  		zap_pte(mm, vma, addr, pte);
+> +	}
+>  
+> -	set_pte_at(mm, addr, pte, pgoff_to_pte(pgoff));
+> +	set_pte_at(mm, addr, pte, ptfile);
+>  	/*
+>  	 * We don't need to run update_mmu_cache() here because the "file pte"
+>  	 * being installed by install_file_pte() is not a real pte - it's a
