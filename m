@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab3G2AUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 20:20:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46725 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab3G2AUq (ORCPT
+	id S1752859Ab3G2A1A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 20:27:00 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:57735 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab3G2A0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 20:20:46 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51F5B545.5050300@jp.fujitsu.com>
-Date: Mon, 29 Jul 2013 09:20:21 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: vgoyal@redhat.com
-CC: bhelgaas@google.com, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, iommu@lists.linux-foundation.org,
-        kexec@lists.infradead.org, ishii.hironobu@jp.fujitsu.com,
-        ddutile@redhat.com, bill.sumner@hp.com, alex.williamson@redhat.com,
-        hbabu@us.ibm.com
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com> <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com> <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com> <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com> <20130725142446.GK11993@redhat.com>
-In-Reply-To: <20130725142446.GK11993@redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Sun, 28 Jul 2013 20:26:52 -0400
+Date: Mon, 29 Jul 2013 10:26:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: problem fetching the drm-intel-fixes tree
+Message-Id: <20130729102642.4f1bf9d49a95f5c3dee87b37@canb.auug.org.au>
+In-Reply-To: <CAPM=9txKODStMCnLRjFKh4y7v8wijDsyMEHZvgdjjZoc7HQOug@mail.gmail.com>
+References: <20130729100843.8d129b9953ed39e55e1d5a31@canb.auug.org.au>
+	<CAPM=9txKODStMCnLRjFKh4y7v8wijDsyMEHZvgdjjZoc7HQOug@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/25 23:24), Vivek Goyal wrote:
-> On Wed, Jul 24, 2013 at 03:29:58PM +0900, Takao Indoh wrote:
->> Sorry for letting this discussion slide, I was busy on other works:-(
->> Anyway, the summary of previous discussion is:
->> - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
->>    boot. This expects PCI enumeration is done before IOMMU
->>    initialization as follows.
->>      (1) PCI enumeration
->>      (2) fs_initcall ---> device reset
->>      (3) IOMMU initialization
->> - This works on x86, but does not work on other architecture because
->>    IOMMU is initialized before PCI enumeration on some architectures. So,
->>    device reset should be done where IOMMU is initialized instead of
->>    initcall.
->> - Or, as another idea, we can reset devices in first kernel(panic kernel)
->>
->> Resetting devices in panic kernel is against kdump policy and seems not to
->> be good idea. So I think adding reset code into iommu initialization is
->> better. I'll post patches for that.
-> 
-> I don't understand all the details but I agree that idea of trying to
-> reset IOMMU in crashed kernel might not fly.
-> 
->>
->> Another discussion point is how to handle buggy devices. Resetting buggy
->> devices makes system more unstable. One of ideas is using boot parameter
->> so that user can choose to reset devices or not.
-> 
-> So who would decide which device is buggy and don't reset it. Give
-> some details here.
+--Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I found the case that kdump does not work after resetting devices and
-it works when removing reset patch. The cause of problem is a bug of
-PCIe switch chip. If there is boot parameter not to reset devices,
-user can use it as workaround.
+Hi Dave,
 
-I think in this case we should add PCI quirk to avoid this buggy
-hardware, but we need to wait errata from vendor and it basically takes
-long time.
+On Mon, 29 Jul 2013 10:15:50 +1000 Dave Airlie <airlied@gmail.com> wrote:
+>
+> > Trying to fetch the drm-intel-fixes tree
+> > (git://people.freedesktop.org/~danvet/drm-intel#drm-intel-fixes) this
+> > morning produced this error:
+>=20
+> There is some issue with personal fdo repos at the moment and anon git,
+>=20
+> I'll ask admin to look into it.
 
-> 
-> Can't we simply blacklist associated module, so that it never loads
-> and then it never tries to reset the devices?
-> 
+Thanks.  In the mean time, I will use what I fetched on Friday.
 
-So you mean that device reset should be done on its driver loading?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks,
-Takao Indoh
+--Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
+
+iQIcBAEBCAAGBQJR9bbJAAoJEECxmPOUX5FEVmQP/16N/8hKJL4H8cI10H8VLZ33
+kO2hOefgDYkUcV1pc8unK7Rn4bef0W5FGfWzLx7aLlCtIqLLODZhBgHte5Iemm5h
+3VlBXcRn6hZuMNyZIVFcVkL1P0vvmNwRsvDfkzRiGRl9dHFz/2vrQWMpw25HYjlB
+Zdqnd0DO/fd14w9XhefYjl4lsPDTbXBhOqZbDhHjLRRmC07WONoQvOIhW5nZ2v1N
+6Ui4k2eJIUEutwGXWktbCaRBST/xK4x6/DEPvg1uO/7N6LMHso15j6pllUAUmfqe
+NrTL5h4eVYiqUx98p/EOy7+j6hRAg4g+QvBk9iVuarQz/5g9F5yBHzHU2JI2TSP4
+tMa5xdhTlUTzHTdVHORn4N3LhXAJizn0MbrXlFnFV0ISLimMY7xM5elJRLsb37hQ
+6sxLrZkJVdhug6CsVR8ZcXXndpiABXlW7q9BUQzWiimvr8scgzfhFwp7aXxOaj+d
+RUhVu1ESqeqo9tr3C9CV0lHEaXitoftvhpm4ptfL5ZGehngkudGtKamUL+OvKazQ
+lbH+8Wu2omLlvlRuNNYG2dlIDKg+ONVCJp0EHf1qlKSKVoC5c/scus0uaPfLszeS
+w2KLTJX26fGmRhRoQ1NXaHppbNzKWJTUTsI3tfdpbd1Eq4FiRbntaCptGGLDNWtQ
+Oc4nClR/x3d2dcQ3e5Jt
+=kuV6
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N--
