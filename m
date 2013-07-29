@@ -1,141 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757354Ab3G2Pad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:30:33 -0400
-Received: from 15.mo5.mail-out.ovh.net ([178.33.107.29]:54145 "EHLO
-	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753843Ab3G2Pab (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:30:31 -0400
-Message-ID: <51F686D2.3020104@overkiz.com>
-Date: Mon, 29 Jul 2013 17:14:26 +0200
-From: boris brezillon <b.brezillon@overkiz.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1756565Ab3G2Pbr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:31:47 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:43183 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560Ab3G2Pbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:31:44 -0400
+Message-ID: <51F68AB2.5090402@ti.com>
+Date: Mon, 29 Jul 2013 21:00:58 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: Richard Genoud <richard.genoud@gmail.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
-Subject: Re: [PATCH v2 00/42] ARM: at91: move to common clk framework
-References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <51F28370.6050304@gmail.com> <51F2996B.6000406@overkiz.com> <51F2A556.8020109@overkiz.com> <CACQ1gAgw-v3z_sWcsk7SqFFW-ERLjS0RS5GTgAdd5Y1tj3Z1FA@mail.gmail.com> <51F63516.8090000@overkiz.com> <CACQ1gAi53KN=zE8zDxQO=+BY2zvQXakD=OSuzUqc0VLwWLySCA@mail.gmail.com> <51F67D7F.1050906@overkiz.com> <CACQ1gAirPir5vCyeK7OKHjw806Sv_LTiorDAp5mvhObxNTE3FA@mail.gmail.com>
-In-Reply-To: <CACQ1gAirPir5vCyeK7OKHjw806Sv_LTiorDAp5mvhObxNTE3FA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Kamil Debski <k.debski@samsung.com>
+CC: <gregkh@linuxfoundation.org>, <kyungmin.park@samsung.com>, <balbi@ti.com>,
+        <jg1.han@samsung.com>, Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        <kgene.kim@samsung.com>, <stern@rowland.harvard.edu>,
+        <broonie@kernel.org>, <tomasz.figa@gmail.com>, <arnd@arndb.de>,
+        <grant.likely@linaro.org>, <tony@atomide.com>, <swarren@nvidia.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, <linux-media@vger.kernel.org>,
+        <linux-fbdev@vger.kernel.org>, <akpm@linux-foundation.org>,
+        <balajitk@ti.com>, <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <linux@arm.linux.org.uk>, Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [RESEND PATCH v10 1/8] drivers: phy: add generic PHY framework
+References: <1374842963-13545-1-git-send-email-kishon@ti.com> <1374842963-13545-2-git-send-email-kishon@ti.com> <023801ce8c70$427cbd20$c7763760$%debski@samsung.com>
+In-Reply-To: <023801ce8c70$427cbd20$c7763760$%debski@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 9710323746893887653
-X-Ovh-Remote: 80.245.18.66 ()
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/07/2013 17:09, Richard Genoud wrote:
-> 2013/7/29 boris brezillon <b.brezillon@overkiz.com>:
->> On 29/07/2013 16:18, Richard Genoud wrote:
->>> 2013/7/29 boris brezillon <b.brezillon@overkiz.com>:
->>>> On 29/07/2013 10:00, Richard Genoud wrote:
->>>>> 2013/7/26 boris brezillon <b.brezillon@overkiz.com>:
->>>>>> On 26/07/2013 17:44, boris brezillon wrote:
->>>>>> I found 2 bugs:
->>>>>> 1) the main frequency ready test in recalc_rate function is wrong
->>>>>> 2) the common clk framework uses the first match for dt clk
->>>>>> registration
->>>>>>       and main clk has this compatible property:
->>>>>>       compatible = "atmel,at91rm9200-clk-main", "fixed-clock";
->>>>>>       As a result the main clk is always bound to the fixed-clock driver
->>>>>>       which set the clock frequency to 0 if 'clock-frequency' property
->>>>>> is
->>>>>>       missing.
->>>>>>
->>>>>> These bugs will be fixed in next version.
->>>>>> Tell me if you want need thesse patches for testing purpose.
->>>>> Hi Boris,
->>>>>
->>>>> I tested your patch, the clock is not at 0 anymore:
->>>>> AT91: PIT: mck rate = 8333333
->>>>>
->>>>> And it's booting correctly.
->>>>> There's a small bug I found in the at91sam9x5 dtsi file (ssc id is 28,
->>>>> not 27). (patch attached)
->>>>>
->>>>> And yes, I could use your patches for some more tests !
->>>>>
->>>>> Thanks,
->>>>>
->>>>> Richard.
->>>> Hi Richard,
->>>>
->>>> Thanks for the bug report.
->>>>
->>>> You'll find in attachements the pre-v3 series fixing the detected bugs
->>>> (including the ssc clock id bug).
->>>>
->>>> If you need anything else please let me know.
->>> Working on sam9g35ek !
->>> you can add my:
->>> Tested-by: Richard Genoud <richard.genoud@gmail.com>
->>>
->>>
->>> One remark though:
->>> Maybe it would be interesting to keep using the defines in the device
->>> tree for peripheral IDs.
->>> For instance, in arch/arm/boot/dts/at91sam9x5.dtsi : (patch 33)
->>> ssc_clk@28 {
->>>          id = <28>;
->>> };
->>> May be more readable with the SSC id AT91SAM9X5_ID_SSC, as it was
->>> defined in arch/arm/mach-at91/at91sam9x5.c (removed with patch 20)
->>>
->>> IMHO, all AT91SAM9X5_ID_xxx in
->>> arch/arm/mach-at91/include/mach/at91sam9x5.h can me moved in
->>> include/dt-bindings/ and used in at91sam9x5.dtsi
->> This was requested by Jean-Christophe too.
->> I'll add these macro files and make use of it in next version.
+On Monday 29 July 2013 08:58 PM, Kamil Debski wrote:
+> Hi Kishon,
+> 
+> A small fix follows inline.
+> 
+>> From: linux-media-owner@vger.kernel.org [mailto:linux-media-
+>> owner@vger.kernel.org] On Behalf Of Kishon Vijay Abraham I
+>> Sent: Friday, July 26, 2013 2:49 PM
 >>
->> BTW where should I put these macro files
->> (include/dt-bindings/at91/'soc-name'/peripherals.h) ?
-> That sounds correct I suppose.
-Ok, I will use this path pattern.
->> Should I use macros for address fied of clocks or just for id property (or
->> drop the address) ?
+>> The PHY framework provides a set of APIs for the PHY drivers to
+>> create/destroy a PHY and APIs for the PHY users to obtain a reference
+>> to the PHY with or without using phandle. For dt-boot, the PHY drivers
+>> should also register *PHY provider* with the framework.
 >>
->> ssc_clk@AT91SAM9X5_ID_SSC {
->>          id = <AT91SAM9X5_ID_SSC>;
->> };
+>> PHY drivers should create the PHY by passing id and ops like init, exit,
+>> power_on and power_off. This framework is also pm runtime enabled.
 >>
->> or
+>> The documentation for the generic PHY framework is added in
+>> Documentation/phy.txt and the documentation for dt binding can be found
+>> at Documentation/devicetree/bindings/phy/phy-bindings.txt
 >>
->> ssc_clk@28 {
->>          id = <AT91SAM9X5_ID_SSC>;
->> };
+>> Cc: Tomasz Figa <t.figa@samsung.com>
+>> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> Acked-by: Felipe Balbi <balbi@ti.com>
+>> Tested-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> ---
+>>  .../devicetree/bindings/phy/phy-bindings.txt       |   66 ++
+>>  Documentation/phy.txt                              |  166 +++++
+>>  MAINTAINERS                                        |    8 +
+>>  drivers/Kconfig                                    |    2 +
+>>  drivers/Makefile                                   |    2 +
+>>  drivers/phy/Kconfig                                |   18 +
+>>  drivers/phy/Makefile                               |    5 +
+>>  drivers/phy/phy-core.c                             |  714
+>> ++++++++++++++++++++
+>>  include/linux/phy/phy.h                            |  270 ++++++++
+>>  9 files changed, 1251 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/phy/phy-
+>> bindings.txt
+>>  create mode 100644 Documentation/phy.txt  create mode 100644
+>> drivers/phy/Kconfig  create mode 100644 drivers/phy/Makefile  create
+>> mode 100644 drivers/phy/phy-core.c  create mode 100644
+>> include/linux/phy/phy.h
 >>
->> or
->>
->> ssc_clk {
->>          id = <AT91SAM9X5_ID_SSC>;
->> };
-> I would drop the address, since the names are always different (for
-> instance, dma0_clk and dma1_clk are used).
-Ok, I'll drop the address.
-> And the define should also be used here:
-> ssc0: ssc@f0010000 { [...]
-> clocks = <&periph AT91SAM9X5_ID_SSC>;
-> [...]
-> }
-Yes of course, and it should be used for interrupt ids too (but this 
-will not be part of this series :)).
+> 
+> [snip]
+> 
+>> diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h new file
+>> mode 100644 index 0000000..e444b23
+>> --- /dev/null
+>> +++ b/include/linux/phy/phy.h
+>> @@ -0,0 +1,270 @@
+> 
+> [snip]
+> 
+>> +struct phy_init_data {
+>> +	unsigned int num_consumers;
+>> +	struct phy_consumer *consumers;
+>> +};
+>> +
+>> +#define PHY_CONSUMER(_dev_name, _port)				\
+>> +{								\
+>> +	.dev_name	= _dev_name,				\
+>> +	.port		= _port,				\
+>> +}
+>> +
+>> +#define	to_phy(dev)	(container_of((dev), struct phy, dev))
+>> +
+>> +#define	of_phy_provider_register(dev, xlate)	\
+>> +	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
+>> +
+>> +#define	devm_of_phy_provider_register(dev, xlate)	\
+>> +	__of_phy_provider_register((dev), THIS_MODULE, (xlate))
+> 
+> I think this should be:
+> +	__devm_of_phy_provider_register((dev), THIS_MODULE, (xlate))
+> Right?
 
-Thanks for your review.
+right.. thanks for spotting this.
 
-Best Regards,
-
-Boris
+Regards
+Kishon
