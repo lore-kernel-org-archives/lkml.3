@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab3G2Sbq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:31:46 -0400
-Received: from mail-ye0-f177.google.com ([209.85.213.177]:41449 "EHLO
-	mail-ye0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753680Ab3G2Sbp (ORCPT
+	id S1756424Ab3G2Sew (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57549 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab3G2Sev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:31:45 -0400
-Date: Mon, 29 Jul 2013 14:31:39 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Glauber Costa <glommer@parallels.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>,
-        linux-mm@kvack.org
-Subject: Re: [PATCH v3 3/8] cgroup: implement cgroup_from_id()
-Message-ID: <20130729183139.GE26076@mtj.dyndns.org>
-References: <51F614B2.6010503@huawei.com>
- <51F614DF.9010508@huawei.com>
+	Mon, 29 Jul 2013 14:34:51 -0400
+Date: Mon, 29 Jul 2013 11:34:50 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Lilis Iskandar <veeableful@gmail.com>
+Cc: devel@driverdev.osuosl.org, joe@perches.com, tulinizer@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] Staging: bcm: LeakyBucket: Fixed spacing/tabing
+ issues
+Message-ID: <20130729183450.GA26472@kroah.com>
+References: <1374953687-14386-1-git-send-email-veeableful@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <51F614DF.9010508@huawei.com>
+In-Reply-To: <1374953687-14386-1-git-send-email-veeableful@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:08:15PM +0800, Li Zefan wrote:
-> +struct cgroup *cgroup_from_id(struct cgroup_subsys *ss, int id)
-> +{
-> +	rcu_lockdep_assert(rcu_read_lock_held(),
-> +			   "cgroup_from_id() needs rcu_read_lock()"
-> +			   " protection");
+On Sun, Jul 28, 2013 at 03:34:43AM +0800, Lilis Iskandar wrote:
+> Sorry, I'm using git send-email now (previously Evolution). Fingers
+> crossed there won't be any more formatting issues. I also tested the
+> patches by emailing them to myself and use git am.
+> 
+> Joe, I don't understand what you mean by mentioning "git diff -w".
+> Perhaps you can clarify it for me? Sorry :(
+> 
+> Summary:
+> The series of patches fixes coding style issues. This one fixes
+> spacing/tabbing issues.
 
-Maybe we want to add notation for &cgroup_mutex for completeness?
+In the future, please put this in the 0/5 email, not in 1/5, because I
+have to edit this out by hand :(
 
-> +	return idr_find(&ss->root->cgroup_idr, id);
-> +}
-
-And maybe inline it?
-
-Thanks.
-
--- 
-tejun
+greg k-h
