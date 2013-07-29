@@ -1,230 +1,1045 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab3G2KWZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:22:25 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:36891 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab3G2KWX (ORCPT
+	id S1755471Ab3G2KZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:25:06 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:59518 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753567Ab3G2KZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:22:23 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-References: <20130723174711.GE21100@mtj.dyndns.org>
-	<8761vui4cr.fsf@xmission.com> <20130729075939.GA4678@dhcp22.suse.cz>
-	<87ehahg312.fsf@xmission.com> <20130729095109.GB4678@dhcp22.suse.cz>
-Date: Mon, 29 Jul 2013 03:21:59 -0700
-In-Reply-To: <20130729095109.GB4678@dhcp22.suse.cz> (Michal Hocko's message of
-	"Mon, 29 Jul 2013 11:51:09 +0200")
-Message-ID: <87siyxd5tk.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Mon, 29 Jul 2013 06:25:03 -0400
+X-Greylist: delayed 859 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 06:25:03 EDT
+From: Nick Alcock <nix@esperi.org.uk>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, nick.cheng@areca.com.tw
+Subject: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
+Emacs: more than just a Lisp interpreter, a text editor as well!
+Date: Mon, 29 Jul 2013 11:10:36 +0100
+Message-ID: <87r4ehfzhf.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18xdBJHaJTIlwelH4rjX6YSo5ek8CoMqL0=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.0 T_FRT_BELOW2 BODY: ReplaceTags: Below (2)
-	*  1.2 LotsOfNums_01 BODY: Lots of long strings of numbers
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4440]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
-	*  0.1 XMSolicitRefs_0 Weightloss drug
-	*  1.0 T_XMDrugObfuBody_04 obfuscated drug references
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ***;Michal Hocko <mhocko@suse.cz>
-X-Spam-Relay-Country: 
-Subject: Re: memcg creates an unkillable task in 3.2-rc2
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+X-DCC-wuwien-Metrics: spindle 1290; Body=4 Fuz1=4 Fuz2=4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Hocko <mhocko@suse.cz> writes:
+My server's ARC-1210 has been working fine for years, but when I
+upgraded from 3.10.1, it started failing:
 
-> On Mon 29-07-13 01:54:01, Eric W. Biederman wrote:
->> Michal Hocko <mhocko@suse.cz> writes:
->> 
->> > On Sun 28-07-13 17:42:28, Eric W. Biederman wrote:
->> >> Tejun Heo <tj@kernel.org> writes:
->> >> 
->> >> > Hello, Linus.
->> >> >
->> >> > This pull request contains two patches, both of which aren't fixes
->> >> > per-se but I think it'd be better to fast-track them.
->> >> >
->> >> Darn.  I was hoping to see a fix for the bug I just tripped over,
->> >> that results in a process stuck in short term disk wait.
->> >> 
->> >> Using the memory control group for it's designed function aka killing
->> >> processes that eats too much memory I just would up with an unkillable
->> >> process in 3.11-rc2.
->> >
->> > How many processes are in that group? Could you post stacks for all of
->> > them? Is the stack bellow stable?
->> 
->> Just this one, and yes the stack is stable.
->> And there was a pending sigkill.  Which is what is so bizarre.
->
-> Strange indeed. We have a shortcut to skip the charge if the task has
-> fatal_signals pending in __mem_cgroup_try_charge and
-> mem_cgroup_handle_oom. With a single task in the group it always calls
-> mem_cgroup_out_of_memory unless it is locked because of OOM from up the
-> hierarchy (but as you are able to echo to oom_control then this means
-> that you are under any hierarchy).
->
->> > Could you post dmesg output?
->> 
->> Nothing interesting was in dmesg.
->
-> No OOM messages at all?
+Instead of
 
-Not that I saw.  Perhaps I have something misconfigured, or perhaps I
-just missed it.
+[    0.784044] Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
+[    0.804028] scsi0 : Areca SATA Host Adapter RAID Controller
+ Driver Version 1.20.00.15 2010/08/05
+[...]
 
->> I lost the original hang but I seem to be able to reproduce it fairly
->> easily.
->
-> What are the steps to reproduce?
+[    4.111770] sd 7:0:0:1: [sdd] Assuming drive cache: write through
+[    4.115399] sd 7:0:0:1: [sdd] No Caching mode page present
+[    4.115401] sd 7:0:0:1: [sdd] Assuming drive cache: write through
+[    4.118081]  sdd: sdd1
+[    4.124363] sd 7:0:0:1: [sdd] No Caching mode page present
+[    4.124601] sd 7:0:0:1: [sdd] Assuming drive cache: write through
+[    4.124867] sd 7:0:0:1: [sdd] Attached SCSI removable disk
 
-In http://mesos.apache.org/.  There is a test case
-src/tests/ballon_framework.sh if you can get it to run it triggers all
-kinds of cgroups nasties by default.  Right now the shell script that
-starts it is broken.  I fixed the shell script and the cgroups started
-falling down around my ears.
+I now see (timestamps and some of the right edge chopped off because not
+captured on my camera, no netconsole as this machine has all my storage
+and is my loghost, and with this bug it can't get at any of that
+storage).
 
-I just reproduced it again and this time something was able to delete the
-memory control group with one process with 3 threads remaining inside.
-All unkillable.  Rebooting to clear this kind of mess gets old very
-fast.
+sd 7:0:0:1: [sdd] Assuming drive cache: write through
+sd 7:0:0:1: [sdd] No Caching mode page present
+sd 7:0:0:1: [sdd] Assuming drive cache: write through
+ sdd: sdd1
+sd 7:0:0:1: [sdd] No Caching mode page present
+sd 7:0:0:1: [sdd] Assuming drive cache: write through
+sd 7:0:0:1: [sdd] Attached SCSI removable disk
+arcmsr0: abort device command of scsi id = 0 lun = 1
+arcmsr0: abort device command of scsi id = 0 lun = 0
+arcmsr: executing bus reset eh.....num_resets=0, num_[...]
 
->> echo 0 > memory.oom_control is enough to unstick it.  But that does not
->> explain why the process does not die when SIGKILL is sent.
->
-> Interesting. This would mean that memcg_oom_recover woke up the task
-> from the wait queue and so it realizes it should die. This would suggest
-> a race when the task misses memcg_oom_recover resp. memcg_wakeup_oom but
-> that doesn't match with your single task in the group description or is
-> this just a final state and there were more tasks before OOM happened?
+arcmsr0: wait 'abort all outstanding command' timeout
+arcmsr0: executing hw bus reset ....
+arcmsr0: waiting for hw bus reset return, retry=0
+arcmsr0: waiting for hw bus reset return, retry=1
+Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
+arcmsr: scsi  bus reset eh returns with success
+[and back to the top of the error messages again, apparently forever,
+ not that the machine would be much use without its RAID array even
+ if this loop terminated at some point, so I only gave it a couple
+ of minutes]
 
-There was one process with I think originally with 4 threads (one per
-cpu). Some of the tasks are getting killd off some of the time.
+The failure happens precisely at the moment we transition to early
+userspace, so presumably userspace I/O is failing (or something related
+to raw device access, perhaps, since the first thing it does is a
+vgscan).
 
->> > You seem to have CONFIG_MEMCG_KMEM enabled. Have you set up kmem
->> > limit?
->> 
->> No kmem limits set.
->> 
->> >> I am really not certain what is going on although I haven't rebooted the
->> >> machine yet so I can look a bit further if someone has a good idea.
->> >> 
->> >> On the unkillable task I see.
->> >> 
->> >> /proc/<pid>/stack:
->> >> 
->> >> [<ffffffff8110342c>] mem_cgroup_iter+0x1e/0x1d2
->> >> [<ffffffff81105630>] __mem_cgroup_try_charge+0x779/0x8f9
->> >> [<ffffffff81070d46>] ktime_get_ts+0x36/0x74
->> >> [<ffffffff81104d84>] memcg_oom_wake_function+0x0/0x5a
->> >> [<ffffffff8110620c>] __mem_cgroup_try_charge_swapin+0x6c/0xac
->> >
->> > Hmm, mem_cgroup_handle_oom should be setting up the task for wait queue
->> > so the above is a bit confusing.
->> 
->> The mem_cgroup_iter looks like it is somethine stale on the stack.
->
-> mem_cgroup_iter could be part of mem_cgroup_{,un}mark_under_oom
+I haven't bisected yet (sorry, I have work to do which means this
+machine must be running right now), but nothing has changed in the
+arcmsr controller, nor in SCSI-land excepting
 
-mem_cgroup_handle_oom calls mem_cgroup_iter a littler earlier in the
-function and I believe that address is stale upon the stack.
+commit 98dcc2946adbe4349ef1ef9b99873b912831edd4
+Author: Martin K. Petersen <martin.petersen@oracle.com>
+Date:   Thu Jun 6 22:15:55 2013 -0400
 
->> The __mem_cgroup_try_charge is immediately after the schedule in
->> mem_cgroup_handle_oom.
->
-> I am confused now mem_cgroup_handle_oom doesn't call
-> __mem_cgroup_try_charge or have I just misunderstood what you are
-> saying?
+    SCSI: sd: Update WRITE SAME heuristics
 
-mem_cgroup_handle_oom is inlined in __mem_cgroup_try_charge.
+so my, admittedly largely baseless, suspicions currently fall there.
 
->> I have played with it a little bit and added
->> 	if (!fatal_signal_pending(current))
->> 		schedule();
->> 
->> On the off chance that it was an ordering thing that was triggering
->> this.  And that does not seem to be the problem in this instance.
->> The missing test before the schedule still looks wrong.
->
-> Shouldn't schedule take care of the pending singnals on its own and keep
-> the task on the runqueue?
 
-Certainly that is not the assumption the sane wait functions in wait.h
-make.  To the best of my knowledge schedule just give something else a
-chance to run.  Maybe there is a special case with signals but I have
-not run into it.
+Obviously, at this point, this machine has no modules loaded (it has
+almost none loaded even when fully operational)
 
->> > Anyway your group seems to be under OOM and the task is in the middle of
->> > mem_cgroup_handle_oom which tries to kill something. That something is
->> > probably not willing to die so this task will loop trying to charge the
->> > memory until something releases a charge or the limit for the group is
->> > increased.
->> 
->> And it is configured so that the manager process needs to send SIGKILL
->> instead of having the kernel pick a random process.
->
-> Ahh, OK, so you are having memcg OOM disabled and a manager sits on the
-> eventfd and sending SIGKILL to a task, right?
+.config, unchanged from 3.10.1 to 3.10.3:
 
-Yes.  And things are not dying when the SIGKILL is sent.
+CONFIG_64BIT=y
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_BUG_RELATIVE_POINTERS=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_ARCH_HAS_CPU_AUTOPROBE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ZONE_DMA32=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+CONFIG_ARCH_SUPPORTS_UPROBES=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_IRQ_WORK=y
+CONFIG_BUILDTIME_EXTABLE_SORT=y
 
->> > It would be interesting to see what other tasks are doing. We are aware
->> > of certain deadlock situations where memcg OOM killer tries to kill a
->> > task which is blocked on a lock (e.g. i_mutex) which is held by a task
->> > which is trying to charge but failing due to oom.
->> 
->> The only other weird thing that I see going on is the manager process
->> tries to freeze the entire cgroup, kill the processes, and the unfreeze
->> the cgroup and the freeze is failing.  But looking at /proc/<pid>/status
->> there was a SIGKILL pending.
->> 
->> Given how easy it was to wake up the process when I reproduced this
->> I don't think there is anything particularly subtle going on.  But
->> somehow we are going to sleep having SIGKILL delivered and not waking
->> up.  The not waking up bugs me.
->
-> OK, I guess this answers the most of my questions above.
->
-> Isn't this a bug in freezer then? I am not familiar with the freezer
-> much but memcg oom handling seems correct to me. The task is sleeping
-> KILLABLE and fatal_signal_pending in mem_cgroup_handle_oom will tell us
-> to bypass the charge and let the taks go away.
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+CONFIG_KERNEL_LZMA=y
+CONFIG_DEFAULT_HOSTNAME="spindle"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_FHANDLE=y
+CONFIG_AUDIT=y
+CONFIG_HAVE_GENERIC_HARDIRQS=y
 
-I am really not certain where what this is a bug.  The involvement of
-the freezer makes adds another dimension.  I think I will have to
-instrument up the code a little and see if I can figure out just what is
-going on.
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_DOMAIN=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_ARCH_CLOCKSOURCE_DATA=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
+CONFIG_GENERIC_CMOS_UPDATE=y
 
-Sometimes I can get the test case to run for quite a while without
-problems other times I shake things up a little and I get into a
-weird and completely unexpected cgroup state.
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ_COMMON=y
+CONFIG_NO_HZ_IDLE=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
 
-However I was able to send SIGTERM after I had all of the annoying
-management processes killed and the freezing disabled and SIGTERM showed
-up as pending but nothing happened.  Sigh I guess that makes sense as
-we are only in a killable sleep.  So wake up will only wake the thing
-up if there is a signal that promises to kill the process.  Ugh.  So
-maybe just dropping the original SIGKILL is sufficient.
+CONFIG_IRQ_TIME_ACCOUNTING=y
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
 
-Ugh nasy ick.  And now I had better sleep on it so I have the some grey
-matter functioning so I can look into this tomorrow.
+CONFIG_TREE_RCU=y
+CONFIG_RCU_STALL_COMMON=y
+CONFIG_RCU_FANOUT=8
+CONFIG_RCU_FANOUT_LEAF=8
+CONFIG_LOG_BUF_SHIFT=18
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_ARCH_SUPPORTS_NUMA_BALANCING=y
+CONFIG_ARCH_WANTS_PROT_NUMA_PROT_NONE=y
+CONFIG_CGROUPS=y
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+CONFIG_NAMESPACES=y
+CONFIG_PID_NS=y
+CONFIG_NET_NS=y
+CONFIG_UIDGID_CONVERTED=y
+CONFIG_SCHED_AUTOGROUP=y
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE="usr/initramfs.spindle"
+CONFIG_INITRAMFS_ROOT_UID=99
+CONFIG_INITRAMFS_ROOT_GID=101
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_INITRAMFS_COMPRESSION_LZMA=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_HAVE_UID16=y
+CONFIG_SYSCTL_EXCEPTION_TRACE=y
+CONFIG_HOTPLUG=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+CONFIG_UID16=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+CONFIG_PCI_QUIRKS=y
+CONFIG_HAVE_PERF_EVENTS=y
 
-Eric
+CONFIG_PERF_EVENTS=y
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_SLUB_DEBUG=y
+CONFIG_SLUB=y
+CONFIG_TRACEPOINTS=y
+CONFIG_HAVE_OPROFILE=y
+CONFIG_OPROFILE_NMI_TIMER=y
+CONFIG_JUMP_LABEL=y
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_ARCH_USE_BUILTIN_BSWAP=y
+CONFIG_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_KPROBES_ON_FTRACE=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_GENERIC_SMP_IDLE_THREAD=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_PERF_REGS=y
+CONFIG_HAVE_PERF_USER_STACK_DUMP=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
+CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
+CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
+CONFIG_HAVE_CMPXCHG_LOCAL=y
+CONFIG_HAVE_CMPXCHG_DOUBLE=y
+CONFIG_ARCH_WANT_COMPAT_IPC_PARSE_VERSION=y
+CONFIG_ARCH_WANT_OLD_COMPAT_IPC=y
+CONFIG_HAVE_ARCH_SECCOMP_FILTER=y
+CONFIG_SECCOMP_FILTER=y
+CONFIG_HAVE_CONTEXT_TRACKING=y
+CONFIG_HAVE_IRQ_TIME_ACCOUNTING=y
+CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE=y
+CONFIG_MODULES_USE_ELF_RELA=y
+CONFIG_OLD_SIGSUSPEND3=y
+CONFIG_COMPAT_OLD_SIGACTION=y
+
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_MODULES=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_BLOCK_COMPAT=y
+
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=m
+CONFIG_IOSCHED_CFQ=y
+CONFIG_DEFAULT_CFQ=y
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_PREEMPT_NOTIFIERS=y
+CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+CONFIG_INLINE_READ_UNLOCK=y
+CONFIG_INLINE_READ_UNLOCK_IRQ=y
+CONFIG_INLINE_WRITE_UNLOCK=y
+CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
+CONFIG_MUTEX_SPIN_ON_OWNER=y
+
+CONFIG_ZONE_DMA=y
+CONFIG_SMP=y
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_NO_BOOTMEM=y
+CONFIG_MCORE2=y
+CONFIG_X86_INTERNODE_CACHE_SHIFT=6
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_P6_NOP=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_DMI=y
+CONFIG_GART_IOMMU=y
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_NR_CPUS=8
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+CONFIG_PREEMPT_NONE=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+CONFIG_X86_MCE=y
+CONFIG_X86_MCE_INTEL=y
+CONFIG_X86_MCE_THRESHOLD=y
+CONFIG_X86_THERMAL_VECTOR=y
+CONFIG_MICROCODE=m
+CONFIG_MICROCODE_INTEL=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_MICROCODE_INTEL_LIB=y
+CONFIG_X86_MSR=m
+CONFIG_X86_CPUID=y
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_DIRECT_GBPAGES=y
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_HAVE_MEMBLOCK_NODE_MAP=y
+CONFIG_ARCH_DISCARD_MEMBLOCK=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_BALLOON_COMPACTION=y
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_MMU_NOTIFIER=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS=y
+CONFIG_CROSS_MEMORY_ATTACH=y
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_ARCH_RANDOM=y
+CONFIG_X86_SMAP=y
+CONFIG_SECCOMP=y
+CONFIG_HZ_100=y
+CONFIG_HZ=100
+CONFIG_SCHED_HRTICK=y
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+CONFIG_ACPI=y
+CONFIG_ACPI_PROC_EVENT=y
+CONFIG_ACPI_BUTTON=y
+CONFIG_ACPI_FAN=y
+CONFIG_ACPI_DOCK=y
+CONFIG_ACPI_I2C=y
+CONFIG_ACPI_PROCESSOR=y
+CONFIG_ACPI_IPMI=m
+CONFIG_ACPI_THERMAL=y
+CONFIG_ACPI_CUSTOM_DSDT_FILE=""
+CONFIG_ACPI_BLACKLIST_YEAR=0
+CONFIG_ACPI_PCI_SLOT=y
+CONFIG_X86_PM_TIMER=y
+
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_TABLE=y
+CONFIG_CPU_FREQ_GOV_COMMON=y
+CONFIG_CPU_FREQ_STAT=y
+CONFIG_CPU_FREQ_STAT_DETAILS=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND=y
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+
+CONFIG_X86_ACPI_CPUFREQ=y
+
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+CONFIG_INTEL_IDLE=y
+
+CONFIG_I7300_IDLE_IOAT_CHANNEL=y
+CONFIG_I7300_IDLE=y
+
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_DOMAINS=y
+CONFIG_PCIEPORTBUS=y
+CONFIG_PCIEAER=y
+CONFIG_PCIEASPM=y
+CONFIG_PCIEASPM_DEFAULT=y
+CONFIG_PCIE_PME=y
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+CONFIG_PCI_ATS=y
+CONFIG_PCI_IOV=y
+CONFIG_PCI_IOAPIC=y
+CONFIG_PCI_LABEL=y
+CONFIG_ISA_DMA_API=y
+CONFIG_AMD_NB=y
+
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+CONFIG_ARCH_BINFMT_ELF_RANDOMIZE_PIE=y
+CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS=y
+CONFIG_BINFMT_SCRIPT=y
+CONFIG_BINFMT_MISC=y
+CONFIG_COREDUMP=y
+CONFIG_IA32_EMULATION=y
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_KEYS_COMPAT=y
+CONFIG_HAVE_TEXT_POKE_SMP=y
+CONFIG_X86_DEV_DMA_OPS=y
+CONFIG_NET=y
+
+CONFIG_PACKET=y
+CONFIG_PACKET_DIAG=y
+CONFIG_UNIX=y
+CONFIG_UNIX_DIAG=y
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_ADVANCED_ROUTER=y
+CONFIG_IP_MULTIPLE_TABLES=y
+CONFIG_IP_PNP=y
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+CONFIG_INET_UDP_DIAG=y
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+CONFIG_IPV6=y
+CONFIG_IPV6_PRIVACY=y
+CONFIG_IPV6_ROUTER_PREF=y
+CONFIG_NETFILTER=y
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_BRIDGE_NETFILTER=y
+
+CONFIG_NETFILTER_NETLINK=m
+CONFIG_NETFILTER_NETLINK_ACCT=m
+CONFIG_NETFILTER_XTABLES=y
+
+CONFIG_NETFILTER_XT_MARK=y
+
+CONFIG_NETFILTER_XT_TARGET_LOG=y
+
+CONFIG_NETFILTER_XT_MATCH_ECN=m
+CONFIG_NETFILTER_XT_MATCH_IPRANGE=y
+CONFIG_NETFILTER_XT_MATCH_MULTIPORT=y
+CONFIG_NETFILTER_XT_MATCH_NFACCT=m
+CONFIG_NETFILTER_XT_MATCH_OWNER=y
+
+CONFIG_IP_NF_IPTABLES=y
+CONFIG_IP_NF_MANGLE=y
+
+CONFIG_STP=y
+CONFIG_BRIDGE=y
+CONFIG_BRIDGE_IGMP_SNOOPING=y
+CONFIG_HAVE_NET_DSA=y
+CONFIG_LLC=y
+CONFIG_DNS_RESOLVER=y
+CONFIG_NETLINK_DIAG=y
+CONFIG_RPS=y
+CONFIG_RFS_ACCEL=y
+CONFIG_XPS=y
+CONFIG_BQL=y
+CONFIG_BPF_JIT=y
+
+CONFIG_BT=y
+CONFIG_BT_RFCOMM=y
+
+CONFIG_BT_HCIBTUSB=y
+CONFIG_FIB_RULES=y
+CONFIG_HAVE_BPF_JIT=y
+
+
+CONFIG_UEVENT_HELPER_PATH=""
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE=""
+CONFIG_FW_LOADER_USER_HELPER=y
+
+CONFIG_PNP=y
+
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+CONFIG_BLK_DEV_LOOP=y
+CONFIG_BLK_DEV_LOOP_MIN_COUNT=8
+CONFIG_BLK_DEV_CRYPTOLOOP=m
+CONFIG_BLK_DEV_NBD=m
+CONFIG_CDROM_PKTCDVD=y
+CONFIG_CDROM_PKTCDVD_BUFFERS=16
+
+
+
+
+CONFIG_HAVE_IDE=y
+
+CONFIG_SCSI_MOD=y
+CONFIG_SCSI=y
+CONFIG_SCSI_DMA=y
+CONFIG_SCSI_PROC_FS=y
+
+CONFIG_BLK_DEV_SD=y
+CONFIG_BLK_DEV_SR=y
+CONFIG_CHR_DEV_SG=y
+CONFIG_SCSI_MULTI_LUN=y
+CONFIG_SCSI_SCAN_ASYNC=y
+
+CONFIG_SCSI_LOWLEVEL=y
+CONFIG_SCSI_ARCMSR=y
+CONFIG_ATA=y
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_ATA_ACPI=y
+
+CONFIG_SATA_AHCI=y
+CONFIG_MD=y
+CONFIG_BLK_DEV_DM=y
+CONFIG_DM_CRYPT=y
+CONFIG_DM_SNAPSHOT=y
+CONFIG_DM_MIRROR=y
+CONFIG_DM_ZERO=y
+
+CONFIG_FIREWIRE=m
+CONFIG_FIREWIRE_OHCI=m
+CONFIG_FIREWIRE_SBP2=m
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+CONFIG_DUMMY=m
+CONFIG_MII=y
+CONFIG_MACVLAN=y
+CONFIG_MACVTAP=y
+CONFIG_TUN=y
+
+CONFIG_VHOST_NET=y
+CONFIG_VHOST_RING=y
+
+CONFIG_ETHERNET=y
+CONFIG_NET_VENDOR_INTEL=y
+CONFIG_E1000E=y
+
+
+
+CONFIG_INPUT=y
+
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1680
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=1050
+CONFIG_INPUT_EVDEV=y
+
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=y
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_CYPRESS=y
+CONFIG_MOUSE_PS2_LIFEBOOK=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_JOYSTICK_ANALOG=y
+
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_LIBPS2=y
+CONFIG_GAMEPORT=y
+
+CONFIG_TTY=y
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+CONFIG_UNIX98_PTYS=y
+
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_SERIAL_8250_PCI=y
+CONFIG_SERIAL_8250_NR_UARTS=4
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+CONFIG_IPMI_HANDLER=m
+CONFIG_IPMI_PANIC_EVENT=y
+CONFIG_IPMI_DEVICE_INTERFACE=m
+CONFIG_IPMI_SI=m
+CONFIG_IPMI_POWEROFF=m
+CONFIG_NVRAM=m
+CONFIG_HPET=y
+CONFIG_HPET_MMAP=y
+CONFIG_DEVPORT=y
+CONFIG_I2C=y
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+CONFIG_I2C_CHARDEV=y
+CONFIG_I2C_HELPER_AUTO=y
+
+
+CONFIG_I2C_I801=y
+
+
+
+
+
+
+CONFIG_PPS=y
+
+
+
+CONFIG_PTP_1588_CLOCK=y
+
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIO_DEVRES=y
+CONFIG_HWMON=y
+CONFIG_HWMON_VID=y
+
+CONFIG_SENSORS_W83793=y
+
+CONFIG_THERMAL=y
+CONFIG_THERMAL_HWMON=y
+CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
+CONFIG_THERMAL_GOV_STEP_WISE=y
+CONFIG_SSB_POSSIBLE=y
+
+CONFIG_BCMA_POSSIBLE=y
+
+
+CONFIG_MFD_CORE=y
+CONFIG_LPC_ICH=y
+CONFIG_MEDIA_SUPPORT=y
+
+CONFIG_MEDIA_CAMERA_SUPPORT=y
+CONFIG_VIDEO_DEV=y
+CONFIG_VIDEO_V4L2=y
+
+
+
+CONFIG_MEDIA_SUBDRV_AUTOSELECT=y
+
+
+
+
+
+
+
+
+
+
+
+
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=1
+
+CONFIG_VGA_CONSOLE=y
+CONFIG_VGACON_SOFT_SCROLLBACK=y
+CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=256
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_SOUND=y
+CONFIG_SOUND_OSS_CORE=y
+CONFIG_SND=y
+CONFIG_SND_TIMER=y
+CONFIG_SND_PCM=y
+CONFIG_SND_JACK=y
+CONFIG_SND_SEQUENCER=y
+CONFIG_SND_SEQ_DUMMY=m
+CONFIG_SND_OSSEMUL=y
+CONFIG_SND_MIXER_OSS=y
+CONFIG_SND_PCM_OSS=y
+CONFIG_SND_PCM_OSS_PLUGINS=y
+CONFIG_SND_SEQUENCER_OSS=y
+CONFIG_SND_HRTIMER=y
+CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
+CONFIG_SND_DYNAMIC_MINORS=y
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_VMASTER=y
+CONFIG_SND_KCTL_JACK=y
+CONFIG_SND_DMA_SGBUF=y
+CONFIG_SND_PCI=y
+CONFIG_SND_HDA_INTEL=y
+CONFIG_SND_HDA_PREALLOC_SIZE=64
+CONFIG_SND_HDA_INPUT_JACK=y
+CONFIG_SND_HDA_GENERIC=y
+CONFIG_SND_HDA_POWER_SAVE_DEFAULT=0
+
+CONFIG_HID=y
+CONFIG_HID_GENERIC=y
+
+CONFIG_HID_A4TECH=y
+CONFIG_HID_APPLE=y
+CONFIG_HID_BELKIN=y
+CONFIG_HID_CHERRY=y
+CONFIG_HID_CHICONY=y
+CONFIG_HID_CYPRESS=y
+CONFIG_HID_EZKEY=y
+CONFIG_HID_KYE=y
+CONFIG_HID_KENSINGTON=y
+CONFIG_HID_LOGITECH=y
+CONFIG_HID_MICROSOFT=y
+CONFIG_HID_MONTEREY=y
+
+CONFIG_USB_HID=y
+
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB_ARCH_HAS_XHCI=y
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_COMMON=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB=y
+
+CONFIG_USB_DEFAULT_PERSIST=y
+CONFIG_USB_DYNAMIC_MINORS=y
+
+CONFIG_USB_EHCI_HCD=y
+CONFIG_USB_EHCI_PCI=y
+CONFIG_USB_UHCI_HCD=y
+
+CONFIG_USB_ACM=y
+
+
+CONFIG_USB_STORAGE=y
+
+
+CONFIG_USB_SERIAL=y
+CONFIG_USB_SERIAL_PL2303=m
+
+CONFIG_EDAC=y
+CONFIG_EDAC_MM_EDAC=y
+CONFIG_EDAC_I7CORE=y
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_SYSTOHC=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+
+
+
+CONFIG_RTC_DRV_CMOS=y
+
+
+CONFIG_VIRT_DRIVERS=y
+CONFIG_VIRTIO=m
+
+CONFIG_VIRTIO_PCI=m
+CONFIG_VIRTIO_BALLOON=m
+
+
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+CONFIG_IOMMU_SUPPORT=y
+
+
+CONFIG_MEMORY=y
+
+CONFIG_FIRMWARE_MEMMAP=y
+CONFIG_DMIID=y
+
+CONFIG_DCACHE_WORD_ACCESS=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_USE_FOR_EXT23=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_JBD2=y
+CONFIG_FS_MBCACHE=y
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=y
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_INOTIFY_USER=y
+CONFIG_FANOTIFY=y
+CONFIG_QUOTA=y
+CONFIG_QUOTA_NETLINK_INTERFACE=y
+CONFIG_PRINT_QUOTA_WARNING=y
+CONFIG_QUOTA_TREE=y
+CONFIG_QFMT_V2=y
+CONFIG_QUOTACTL=y
+CONFIG_QUOTACTL_COMPAT=y
+CONFIG_FUSE_FS=y
+CONFIG_CUSE=y
+CONFIG_GENERIC_ACL=y
+
+
+CONFIG_ISO9660_FS=y
+CONFIG_JOLIET=y
+CONFIG_UDF_FS=y
+CONFIG_UDF_NLS=y
+
+CONFIG_FAT_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=m
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
+
+CONFIG_PROC_FS=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+CONFIG_CONFIGFS_FS=y
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NFS_FS=y
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+CONFIG_NFS_USE_KERNEL_DNS=y
+CONFIG_NFSD=y
+CONFIG_NFSD_V2_ACL=y
+CONFIG_NFSD_V3=y
+CONFIG_NFSD_V3_ACL=y
+CONFIG_NFSD_V4=y
+CONFIG_LOCKD=y
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_ACL_SUPPORT=y
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=y
+CONFIG_SUNRPC_GSS=y
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="iso-8859-1"
+CONFIG_NLS_CODEPAGE_437=y
+CONFIG_NLS_ASCII=m
+CONFIG_NLS_ISO8859_1=y
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_UTF8=m
+
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_PRINTK_TIME=y
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=1024
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_DEBUG_FS=y
+CONFIG_DEBUG_KERNEL=y
+CONFIG_LOCKUP_DETECTOR=y
+CONFIG_HARDLOCKUP_DETECTOR=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+CONFIG_BOOTPARAM_HARDLOCKUP_PANIC_VALUE=1
+CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+CONFIG_PANIC_ON_OOPS_VALUE=0
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+CONFIG_SCHED_DEBUG=y
+CONFIG_SCHEDSTATS=y
+CONFIG_TIMER_STATS=y
+CONFIG_HAVE_DEBUG_KMEMLEAK=y
+CONFIG_STACKTRACE=y
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_INFO=y
+CONFIG_DEBUG_MEMORY_INIT=y
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_LATENCYTOP=y
+CONFIG_ARCH_HAS_DEBUG_STRICT_USER_COPY_CHECKS=y
+CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_FENTRY=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_TRACE_CLOCK=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+CONFIG_FUNCTION_TRACER=y
+CONFIG_BRANCH_PROFILE_NONE=y
+CONFIG_BLK_DEV_IO_TRACE=y
+CONFIG_DYNAMIC_FTRACE=y
+CONFIG_DYNAMIC_FTRACE_WITH_REGS=y
+CONFIG_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_ARCH_KGDB=y
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_STRICT_DEVMEM=y
+CONFIG_X86_VERBOSE_BOOTUP=y
+CONFIG_EARLY_PRINTK=y
+CONFIG_DEBUG_RODATA=y
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_0X80=y
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
+
+CONFIG_KEYS=y
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_NETWORK=y
+CONFIG_SECURITY_PATH=y
+CONFIG_SECURITY_APPARMOR=y
+CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE=0
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=y
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+CONFIG_CRYPTO_WORKQUEUE=y
+
+
+CONFIG_CRYPTO_CBC=y
+CONFIG_CRYPTO_ECB=y
+
+
+CONFIG_CRYPTO_CRC32C=y
+CONFIG_CRYPTO_SHA256=y
+
+CONFIG_CRYPTO_AES=y
+
+
+CONFIG_HAVE_KVM=y
+CONFIG_HAVE_KVM_IRQCHIP=y
+CONFIG_HAVE_KVM_IRQ_ROUTING=y
+CONFIG_HAVE_KVM_EVENTFD=y
+CONFIG_KVM_APIC_ARCHITECTURE=y
+CONFIG_KVM_MMIO=y
+CONFIG_KVM_ASYNC_PF=y
+CONFIG_HAVE_KVM_MSI=y
+CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT=y
+CONFIG_VIRTUALIZATION=y
+CONFIG_KVM=y
+CONFIG_KVM_INTEL=y
+CONFIG_BINARY_PRINTF=y
+
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_STRNCPY_FROM_USER=y
+CONFIG_GENERIC_STRNLEN_USER=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_GENERIC_PCI_IOMAP=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_IO=y
+CONFIG_CRC16=y
+CONFIG_CRC_ITU_T=y
+CONFIG_CRC32=y
+CONFIG_CRC32_SLICEBY8=y
+CONFIG_ZLIB_INFLATE=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_CHECK_SIGNATURE=y
+CONFIG_CPU_RMAP=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
+CONFIG_OID_REGISTRY=y
+
+-- 
+NULL && (void)
