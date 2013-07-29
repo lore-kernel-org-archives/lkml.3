@@ -1,62 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab3G2K20 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:28:26 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:60616 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753595Ab3G2K2Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:28:24 -0400
+	id S1755593Ab3G2K3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:29:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50918 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754513Ab3G2K3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:29:10 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
+   d="scan'208";a="8057443"
+Message-ID: <51F64313.4010700@cn.fujitsu.com>
+Date: Mon, 29 Jul 2013 18:25:23 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <51F640AB.2050709@arm.com>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
-	<CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com>
-	<51F640AB.2050709@arm.com>
-Date: Mon, 29 Jul 2013 12:28:24 +0200
-Message-ID: <CAKfTPtDBJUy6smFuACjQNVywQUiQs_iPMFs9T6uCwJOX5f7e8w@mail.gmail.com>
-Subject: Re: [RFC][PATCH 1/2] ARM64: add cpu topology definition
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>, Patch Tracking <patches@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
+        libo.chen@huawei.com
+Subject: Re: [PATCH 7/9] syslog_ns: implement function for creating syslog
+ ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-8-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375065080-26740-8-git-send-email-rui.xiang@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 18:26:58,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 18:26:59,
+	Serialize complete at 2013/07/29 18:26:59
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 July 2013 12:15, Sudeep KarkadaNagesha
-<Sudeep.KarkadaNagesha@arm.com> wrote:
-> On 29/07/13 10:46, Vincent Guittot wrote:
->> On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>> Power aware scheduling needs the cpu topology information to improve the
->>> cpu scheduler decision making.
->>
->> It's not only power aware scheduling. The scheduler already uses
->> topology and cache sharing when  CONFIG_SCHED_MC and/or
->> CONFIG_SCHED_SMT are enable. So you should also add these configs for
->> arm64 so the scheduler can use it
->>
-> Just for my knowledge, I thought power aware using SCHED_MC/SMT was
-> removed. I see commit 8e7fbcbc22c12414bcc9dfdd683637f58fb32759 "sched:
-> Remove stale power aware scheduling remnants and dysfunctional knobs"
-> I may be missing something here.
+Hi Rui,
 
-It's a common mistake to mixed SCHED_MC and powersaving balance with
-SCHED_MC. Only the powersaving policy has been removed but the
-SCHED_MC and SCHED_SMT are always in the scheduler and gives perf
-improvement on arm 32bits
+On 07/29/2013 10:31 AM, Rui Xiang wrote:
 
->
-> Regards,
-> Sudeep
->
+> Add create_syslog_ns function to create a new ns. We
+> must create a user_ns before create a new syslog ns.
+> And then tie the new syslog_ns to current user_ns
+> instead of original syslog_ns which comes from
+> parent user_ns.
+> 
+> Add a new syslog flag SYSLOG_ACTION_NEW_NS to implement
+> a new command(11) of __NR_syslog system call. Through
+> that command, we can create a new syslog ns in user
+> space.
+> 
+> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+> ---
+>  include/linux/syslog.h |  2 ++
+>  kernel/printk.c        | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+)
+> 
+> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+> index fbf0cb6..df57c21 100644
+> --- a/include/linux/syslog.h
+> +++ b/include/linux/syslog.h
+> @@ -46,6 +46,8 @@
+>  #define SYSLOG_ACTION_SIZE_UNREAD    9
+>  /* Return size of the log buffer */
+>  #define SYSLOG_ACTION_SIZE_BUFFER   10
+> +/* Create a new syslog ns */
+> +#define SYSLOG_ACTION_NEW_NS        11
+>  
+>  #define SYSLOG_FROM_READER           0
+>  #define SYSLOG_FROM_PROC             1
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index fd2d600..6b561db 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -384,6 +384,10 @@ static int check_syslog_permissions(int type, bool from_file,
+>  		|| type == SYSLOG_ACTION_CONSOLE_LEVEL)
+>  		ns = &init_syslog_ns;
+>  
+> +	/* create a new syslog ns */
+> +	if (type == SYSLOG_ACTION_NEW_NS)
+> +		return 0;
+> +
+
+Don't we need further permission or caps check here? Return success directly seems sloppy. 
+
+Thanks,
+Gu
+
+>  	if (syslog_action_restricted(type, ns)) {
+>  		if (ns_capable(ns->owner, CAP_SYSLOG))
+>  			return 0;
+> @@ -1131,6 +1135,51 @@ static int syslog_print_all(char __user *buf, int size, bool clear,
+>  	return len;
+>  }
+>  
+> +static int create_syslog_ns(void)
+> +{
+> +	struct user_namespace *userns = current_user_ns();
+> +	struct syslog_namespace *oldns, *newns;
+> +	int err;
+> +
+> +	/*
+> +	 * syslog ns belongs to a user ns.  So you can only unshare your
+> +	 * user_ns if you share a user_ns with your parent userns
+> +	 */
+> +	if (userns == &init_user_ns ||
+> +		userns->syslog_ns != userns->parent->syslog_ns)
+> +		return -EINVAL;
+> +
+> +	if (!ns_capable(userns, CAP_SYSLOG))
+> +		return -EPERM;
+> +
+> +	err = -ENOMEM;
+> +	oldns = userns->syslog_ns;
+> +	newns = kzalloc(sizeof(*newns), GFP_ATOMIC);
+> +	if (!newns)
+> +		goto out;
+> +	newns->log_buf_len = __LOG_BUF_LEN;
+> +	newns->log_buf = kzalloc(newns->log_buf_len, GFP_ATOMIC);
+> +	if (!newns->log_buf)
+> +		goto out;
+> +
+> +	newns->owner = get_user_ns(userns);
+> +	raw_spin_lock_init(&(newns->logbuf_lock));
+> +	newns->logbuf_cpu = UINT_MAX;
+> +	newns->dmesg_restrict = oldns->dmesg_restrict;
+> +	put_syslog_ns(oldns);
+> +	kref_init(&newns->kref);
+> +	userns->syslog_ns = newns;
+> +	newns = NULL;
+> +
+> +	err = 0;
+> +out:
+> +	if (newns) {
+> +		kfree(newns->log_buf);
+> +		kfree(newns);
+> +	}
+> +	return err;
+> +}
+> +
+>  int do_syslog(int type, char __user *buf, int len, bool from_file,
+>  		struct syslog_namespace *ns)
+>  {
+> @@ -1254,6 +1303,9 @@ int do_syslog(int type, char __user *buf, int len, bool from_file,
+>  	case SYSLOG_ACTION_SIZE_BUFFER:
+>  		error = ns->log_buf_len;
+>  		break;
+> +	case SYSLOG_ACTION_NEW_NS:
+> +		error = create_syslog_ns();
+> +		break;
+>  	default:
+>  		error = -EINVAL;
+>  		break;
+
+
