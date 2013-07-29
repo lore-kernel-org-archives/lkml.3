@@ -1,151 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab3G2OOw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:14:52 -0400
-Received: from mga14.intel.com ([143.182.124.37]:19510 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab3G2OOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:14:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,769,1367996400"; 
-   d="scan'208";a="338473761"
-Message-ID: <51F67901.9050409@intel.com>
-Date: Mon, 29 Jul 2013 22:15:29 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1756520Ab3G2OPF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:15:05 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:52084 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112Ab3G2OPB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:15:01 -0400
+Date: Mon, 29 Jul 2013 15:14:55 +0100
+From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Rik van Riel <riel@redhat.com>,
+        Jeremy Eder <jeder@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "youquan.song@intel.com" <youquan.song@intel.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "len.brown@intel.com" <len.brown@intel.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
+Message-ID: <20130729141455.GA9590@e102568-lin.cambridge.arm.com>
+References: <20130726173306.GB17985@jeder.rdu.redhat.com>
+ <51F2BC31.7000407@redhat.com>
+ <51F2BF8C.7010308@linux.intel.com>
+ <51F2C014.90102@redhat.com>
+ <51F37290.5050101@linaro.org>
+ <51F66A5A.9060901@linux.intel.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Joe Perches <joe@perches.com>, Lan Tianyu <lantianyu1986@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power()
- print device names
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1782275.A7JEhQIj8Q@vostro.rjw.lan> <51F65D1F.9050402@cogentembedded.com> <8023117.JJXk2RBLtn@vostro.rjw.lan>
-In-Reply-To: <8023117.JJXk2RBLtn@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <51F66A5A.9060901@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginalArrivalTime: 29 Jul 2013 14:14:58.0508 (UTC) FILETIME=[01CCE0C0:01CE8C66]
+X-MC-Unique: 113072915145901701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 09:36 PM, Rafael J. Wysocki wrote:
-> On Monday, July 29, 2013 04:16:31 PM Sergei Shtylyov wrote:
->> Hello.
->>
->> On 29-07-2013 16:17, Rafael J. Wysocki wrote:
->>
->> [...]
->>
->>>>>> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
->>>> []
->>>>>>          if (device->parent && (state < device->parent->power.state)) {
->>>>>> -               printk(KERN_WARNING PREFIX
->>>>>> -                             "Cannot set device to a higher-powered"
->>>>>> -                             " state than parent\n");
->>>>>> +               dev_warn(&device->dev, "Cannot transition to a higher-powered "
->>>>>> +                        "state than parent\n");
->>
->>>> coalesce format please.
->>
->>> I can, but then it'll cross the 80 columns boundary.
->>
->>    It's not a problem with checkpatch.pl anymore. Contrariwise, it whines 
->> about the broken up string literals, AFAIR.
-> 
-> Oh, at last.
-> 
-> Updated patch follows.
-> 
-> Thanks,
-> Rafael
+On Mon, Jul 29, 2013 at 02:12:58PM +0100, Arjan van de Ven wrote:
+> >
+> > The menu governor tries to deduce the next wakeup but based on events
+> > per cpu. That means if a task with a specific behavior is migrated
+> > across cpus, the statistics will be wrong.
 > 
 > 
-> ---
-> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> Subject: ACPI / PM: Make messages in acpi_device_set_power() print device names
+> btw this is largely a misunderstanding;
+> tasks are not the issue; tasks use timers and those are perfectly predictable.
+> It's interrupts that are not and the heuristics are for that.
 > 
-> Modify acpi_device_set_power() so that diagnostic messages printed by
-> it to the kernel log always contain the name of the device concerned
-> to make it possible to identify the device that triggered the message
-> if need be.
-> 
-> Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
-> function.
+> Now, if your hardware does the really-bad-for-power wake-all on any interrupt,
+> then the menu governor logic is not good for you; rather than looking at the next
+> timer on the current cpu you need to look at the earliest timer on the set of bundled
+> cpus as the upper bound of the next wake event.
 
-This makes the log much more informative, thanks!
+Yes, that's true and we have to look into this properly, but certainly
+a wake-up for a CPU in a package C-state is not beneficial to x86 CPUs either,
+or I am missing something ?
 
-> 
-> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Even if the wake-up interrupts just power up one of the CPUs in a package
+and leave other(s) alone, all HW state shared (ie caches) by those CPUs must
+be turned on. What I am asking is: this bundled next event is a concept
+that should apply to x86 CPUs too, or it is entirely managed in FW/HW
+and the kernel just should not care ?
 
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
+I still do not understand how this "bundled" next event is managed on
+x86 with the menu governor, or better why it is not managed at all, given
+the importance of package C-states.
 
-And I'll add the state information in another patch on top of this one
-later.
+> And maybe even more special casing is needed... but I doubt it.
 
--Aaron
+I lost you here, can you elaborate pls ?
 
-> ---
->  drivers/acpi/device_pm.c |   22 ++++++++++------------
->  1 file changed, 10 insertions(+), 12 deletions(-)
-> 
-> Index: linux-pm/drivers/acpi/device_pm.c
-> ===================================================================
-> --- linux-pm.orig/drivers/acpi/device_pm.c
-> +++ linux-pm/drivers/acpi/device_pm.c
-> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
->  	/* Make sure this is a valid target state */
->  
->  	if (state == device->power.state) {
-> -		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
-> +		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
-> +				  device->pnp.bus_id,
->  				  acpi_power_state_string(state)));
->  		return 0;
->  	}
->  
->  	if (!device->power.states[state].flags.valid) {
-> -		printk(KERN_WARNING PREFIX "Device does not support %s\n",
-> -		       acpi_power_state_string(state));
-> +		dev_warn(&device->dev, "Power state %s not supported\n",
-> +			 acpi_power_state_string(state));
->  		return -ENODEV;
->  	}
->  	if (device->parent && (state < device->parent->power.state)) {
-> -		printk(KERN_WARNING PREFIX
-> -			      "Cannot set device to a higher-powered"
-> -			      " state than parent\n");
-> +		dev_warn(&device->dev,
-> +			 "Cannot transition to a higher-powered state than parent\n");
->  		return -ENODEV;
->  	}
->  
-> @@ -192,8 +192,8 @@ int acpi_device_set_power(struct acpi_de
->  
->  	if (state < device->power.state && state != ACPI_STATE_D0
->  	    && device->power.state >= ACPI_STATE_D3_HOT) {
-> -		printk(KERN_WARNING PREFIX
-> -			"Cannot transition to non-D0 state from D3\n");
-> +		dev_warn(&device->dev,
-> +			 "Cannot transition to non-D0 state from D3\n");
->  		return -ENODEV;
->  	}
->  
-> @@ -220,10 +220,8 @@ int acpi_device_set_power(struct acpi_de
->  
->   end:
->  	if (result) {
-> -		printk(KERN_WARNING PREFIX
-> -			      "Device [%s] failed to transition to %s\n",
-> -			      device->pnp.bus_id,
-> -			      acpi_power_state_string(state));
-> +		dev_warn(&device->dev, "Failed to change power state to %s\n",
-> +			 acpi_power_state_string(state));
->  	} else {
->  		device->power.state = state;
->  		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> 
+Thanks a lot,
+Lorenzo
 
