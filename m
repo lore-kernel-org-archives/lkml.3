@@ -1,77 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab3G2OPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:15:05 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:52084 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab3G2OPB convert rfc822-to-8bit (ORCPT
+	id S1756535Ab3G2ORE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:17:04 -0400
+Received: from mailgw1.uni-kl.de ([131.246.120.220]:39131 "EHLO
+	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab3G2ORB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:15:01 -0400
-Date: Mon, 29 Jul 2013 15:14:55 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Rik van Riel <riel@redhat.com>,
-        Jeremy Eder <jeder@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "youquan.song@intel.com" <youquan.song@intel.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "len.brown@intel.com" <len.brown@intel.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-Message-ID: <20130729141455.GA9590@e102568-lin.cambridge.arm.com>
-References: <20130726173306.GB17985@jeder.rdu.redhat.com>
- <51F2BC31.7000407@redhat.com>
- <51F2BF8C.7010308@linux.intel.com>
- <51F2C014.90102@redhat.com>
- <51F37290.5050101@linaro.org>
- <51F66A5A.9060901@linux.intel.com>
+	Mon, 29 Jul 2013 10:17:01 -0400
+Message-ID: <51F67959.2060803@fastmail.fm>
+Date: Mon, 29 Jul 2013 16:16:57 +0200
+From: Bernd Schubert <bernd.schubert@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <51F66A5A.9060901@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 29 Jul 2013 14:14:58.0508 (UTC) FILETIME=[01CCE0C0:01CE8C66]
-X-MC-Unique: 113072915145901701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+To: Nix <nix@esperi.org.uk>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        nick.cheng@areca.com.tw
+Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup
+ / early userspace transition
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm> <87mwp5frdl.fsf@spindle.srvr.nix>
+In-Reply-To: <87mwp5frdl.fsf@spindle.srvr.nix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ITWM-CharSet: UTF-8
+X-ITWM-Scanned-By: mail2.itwm.fhg.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:12:58PM +0100, Arjan van de Ven wrote:
-> >
-> > The menu governor tries to deduce the next wakeup but based on events
-> > per cpu. That means if a task with a specific behavior is migrated
-> > across cpus, the statistics will be wrong.
-> 
-> 
-> btw this is largely a misunderstanding;
-> tasks are not the issue; tasks use timers and those are perfectly predictable.
-> It's interrupts that are not and the heuristics are for that.
-> 
-> Now, if your hardware does the really-bad-for-power wake-all on any interrupt,
-> then the menu governor logic is not good for you; rather than looking at the next
-> timer on the current cpu you need to look at the earliest timer on the set of bundled
-> cpus as the upper bound of the next wake event.
+On 07/29/2013 03:05 PM, Nix wrote:
+> On 29 Jul 2013, Bernd Schubert said:
+>
+>> Hi Nick,
+>>
+>> On 07/29/2013 12:10 PM, Nick Alcock wrote:
+>>> arcmsr0: abort device command of scsi id = 0 lun = 1
+>>> arcmsr0: abort device command of scsi id = 0 lun = 0
+>>> arcmsr: executing bus reset eh.....num_resets=0, num_[...]
+>>>
+>>> arcmsr0: wait 'abort all outstanding command' timeout
+>>> arcmsr0: executing hw bus reset ....
+>>> arcmsr0: waiting for hw bus reset return, retry=0
+>>> arcmsr0: waiting for hw bus reset return, retry=1
+>>> Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
+>>> arcmsr: scsi  bus reset eh returns with success
+>>> [and back to the top of the error messages again, apparently forever,
+>>>    not that the machine would be much use without its RAID array even
+>>>    if this loop terminated at some point, so I only gave it a couple
+>>>    of minutes]
+>>>
+>>> The failure happens precisely at the moment we transition to early
+>>> userspace, so presumably userspace I/O is failing (or something related
+>>> to raw device access, perhaps, since the first thing it does is a
+>>> vgscan).
+>>>
+>>> I haven't bisected yet (sorry, I have work to do which means this
+>>> machine must be running right now), but nothing has changed in the
+>>> arcmsr controller, nor in SCSI-land excepting
+>>>
+>>> commit 98dcc2946adbe4349ef1ef9b99873b912831edd4
+>>> Author: Martin K. Petersen <martin.petersen@oracle.com>
+>>> Date:   Thu Jun 6 22:15:55 2013 -0400
+> [...]
+>>> Obviously, at this point, this machine has no modules loaded (it has
+>>> almost none loaded even when fully operational)
+>>
+>> I tested this patch with ARC-1260 and F/W V1.49, no issues. Also, this
+>> patch is only in 3.10.3, but not yet in 3.10.1.
+>
+> ... and I see this problem with 3.10.3 but not 3.10.1. (Haven't tried
+> 3.10.2.)
 
-Yes, that's true and we have to look into this properly, but certainly
-a wake-up for a CPU in a package C-state is not beneficial to x86 CPUs either,
-or I am missing something ?
+Hmm, indeed that points to this commit. I just don't see what could fail 
+there.
 
-Even if the wake-up interrupts just power up one of the CPUs in a package
-and leave other(s) alone, all HW state shared (ie caches) by those CPUs must
-be turned on. What I am asking is: this bundled next event is a concept
-that should apply to x86 CPUs too, or it is entirely managed in FW/HW
-and the kernel just should not care ?
+Could you try to run these commands with 3.10.1?
 
-I still do not understand how this "bundled" next event is managed on
-x86 with the menu governor, or better why it is not managed at all, given
-the importance of package C-states.
+# # check if reporting opcodes works
+# sg_opcodes -v  -n /dev/sdX
 
-> And maybe even more special casing is needed... but I doubt it.
+# check ata information page
+# sg_vpd --page=0x89 /dev/sdX
 
-I lost you here, can you elaborate pls ?
+>
+>>                                                  And I don't think this
+>> commit can cause your issue at all, a failing heuristics would enable
+>> WRITE SAME and would cause issues with linux-md, but there shouldn't
+>> happen anything directly in the scsi-layer. Which was your last
+>> working kernel version?
+>
+> 3.10.1. :)
 
-Thanks a lot,
-Lorenzo
+Whoops, sorry, I missed that in your first sentence.
 
+>
+> No changes to arcmsr between those versions... I suspect I'll have to
+> bisect, which will be a complete pig because every failure means a hard
+> powerdown of this box. Always-on servers rarely appreciate hard
+> powerdowns :(
+>
+
+Maybe just revert this commit? Helpful would be some scsi logging to see 
+which command actually fails. I guess you don't have a serial console?
+
+
+Thanks,
+Bernd
