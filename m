@@ -1,65 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab3G2Oun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:50:43 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:52358 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939Ab3G2Oul (ORCPT
+	id S1756935Ab3G2Ov1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:51:27 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:48492 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756919Ab3G2Ov0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:50:41 -0400
+	Mon, 29 Jul 2013 10:51:26 -0400
+Date: Mon, 29 Jul 2013 11:51:30 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH 3/5] ARM: dove: add MBus DT node
+Message-ID: <20130729145129.GD2417@localhost>
+References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1375101114-28858-4-git-send-email-sebastian.hesselbarth@gmail.com>
+ <51F661DE.1070106@gmail.com>
+ <20130729135227.GA2417@localhost>
+ <51F67AD8.1070904@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130729144046.GE6634@pd.tnic>
-References: <1374526866-6813-1-git-send-email-bp@alien8.de>
- <20130724171347.GB29756@naverao1-tp.watson.ibm.com> <1374686598.18818.18.camel@joe-AO722>
- <51F10AA8.2050901@linux.vnet.ibm.com> <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
- <20130729135812.GD6634@pd.tnic> <CAErSpo6fbMmicX95j_wYkJRnQeJEZ_jQSm76j9ZN4sHP0C2Yhg@mail.gmail.com>
- <20130729144046.GE6634@pd.tnic>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 29 Jul 2013 08:50:19 -0600
-Message-ID: <CAErSpo69wNc1h6PyJhFfhdFzz0GOiM=SCCfrm-WO5XDFTFzcHw@mail.gmail.com>
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-To: Borislav Petkov <bp@alien8.de>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <51F67AD8.1070904@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 8:40 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Jul 29, 2013 at 08:28:05AM -0600, Bjorn Helgaas wrote:
->> > @@ -186,7 +186,7 @@ static int erst_exec_stall(struct apei_exec_context *ctx,
->> >
->> >         if (ctx->value > FIRMWARE_MAX_STALL) {
->> >                 if (!in_nmi())
->> > -                       pr_warning(FW_WARN ERST_PFX
->> > +                       pr_warn(FW_WARN
->> >                         "Too long stall time for stall instruction: %llx.\n",
->>
->> You didn't change this part, but this and similar messages look less
->> useful than they could be.  We're printing in hex, but there's no
->> indication in the output (no "0x" prefix).  And there's no instruction
->> pointer or anything to help connect this back to the source of the
->> problem.
->
-> Sounds like we don't want to print ctx->value at all but simply signal
-> about the stall? Or?
+On Mon, Jul 29, 2013 at 04:23:20PM +0200, Sebastian Hesselbarth wrote:
+> On 07/29/2013 03:52 PM, Ezequiel Garcia wrote:
+> > Hi Sebastian,
+> >
+> > (Ccing devicetree ML)
+> >
+> > On Mon, Jul 29, 2013 at 02:36:46PM +0200, Sebastian Hesselbarth wrote:
+> >> On 07/29/2013 02:31 PM, Sebastian Hesselbarth wrote:
+> >>> This adds a MBus node including ranges and pcie apertures required later.
+> >>>
+> >>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> >>> ---
+> >>>    arch/arm/boot/dts/dove.dtsi |   19 +++++++++++++++++++
+> >>>    1 file changed, 19 insertions(+)
+> >>>
+> >>> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> >>> index 397674c..bdda016 100644
+> >>> --- a/arch/arm/boot/dts/dove.dtsi
+> >>> +++ b/arch/arm/boot/dts/dove.dtsi
+> >>> @@ -29,6 +29,20 @@
+> >>>    		marvell,tauros2-cache-features = <0>;
+> >>>    	};
+> >>>
+> >>> +	mbus {
+> >>> +		compatible = "marvell,dove-mbus", "marvell,mbus", "simple-bus";
+> >>> +		#address-cells = <2>;
+> >>> +		#size-cells = <1>;
+> >>> +		pcie-mem-aperture = <0xe0000000 0x10000000>; /* 256M MEM space */
+> >>> +		pcie-io-aperture  = <0xf2000000 0x00200000>; /*   2M I/O space */
+> >>
+> >> Actually, current v9 of the mbus patch set still requires "controller"
+> >> property to match the corresponding controller node. I had a short
+> >> discussion with Ezequiel to possibly just use of_find_compatible_node
+> >> and blindly assumed post-v8 will already use it.
+> >
+> > Ah, regarding this: despite your good arguin against the 'controller' property approach,
+> > I still feel a bit inclined for it, as I like the way it tightly-binds the two nodes.
+> 
+> I understand that the phandle property *shows* you that both are
+> related. But with DT you should always ask for every property, if
+> (a) it is really required to do the job and (b) does it really
+> describe the HW or just your SW needs/wishes.
+> 
 
-If I were the firmware developer and got a report about this message,
-I think the information I would want is ctx->ip, so I could identify
-the corresponding source code.  But I don't know much about the ERST
-interpreter, so I don't know if "ctx->ip" is the right place to look.
-Maybe there's a method name or table name that would be needed in
-addition.
+I see and I understand your point. For some reason it still feels
+a bit dirty to set this kind of compatible nodes requirement (one
+node simply requiring another node).
 
-It just seems like "ERST: Too long stall time for stall instruction:
-4732." all by itself doesn't really contain any actionable
-information.
+I would hate to set a precedent for a dirty solution...
 
-Bjorn
+Maybe the DT maintainers can shed some light on this?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
