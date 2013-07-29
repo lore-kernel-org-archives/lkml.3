@@ -1,114 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab3G2V7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:59:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46545 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656Ab3G2V7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:59:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: Jiri Kosina <jkosina@suse.cz>, Samuel Ortiz <sameo@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development process
-Date: Tue, 30 Jul 2013 00:09:42 +0200
-Message-ID: <3402784.vRBPhVDbi3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <20130729081141.00818596@lwn.net>
-References: <20130729102452.GA2682@zurbaran> <7008541.g5m1pJPVp1@vostro.rjw.lan> <20130729081141.00818596@lwn.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755985Ab3G2WBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:01:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46398 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab3G2WBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 18:01:06 -0400
+From: Kumar Gala <galak@codeaurora.org>
+To: ohad@wizery.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        devicetree@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Jeffrey Hugo <jhugo@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
+Subject: [PATCH v2] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+Date: Mon, 29 Jul 2013 17:00:57 -0500
+Message-Id: <1375135257-17222-1-git-send-email-galak@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 08:11:41 AM Jonathan Corbet wrote:
-> On Mon, 29 Jul 2013 15:10:33 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > That actually is simple enough.
-> > 
-> > Check out the Linus' master branch and do
-> > 
-> > $ git log --ancestry-path --merges <commit>..
-> 
-> So I picked a recent, single-signoff patch mostly at random:
-> 
-> 	8ade62857ef77bdf639185410fbcd811aa700cb2
-> 
-> That "git log" command gives me 156 intervening commits involving at least
-> a dozen networking trees, along with virtio, parisc, blackfin, x86, ...
-> Even if one stops looking at the first merge performed by Linus, that's 47
-> to look at.  Did that patch really pass through all those peoples' hands?
-> 
-> Plus, of course, this assumes there's no fast-forward merges in the mix.
+Add driver for Qualcomm MSM Hardware Mutex block that exists on newer MSM
+SoC (MSM8974, etc).
 
-Well, let's just say that the "git describe --contains" method described by
-Paul (http://marc.info/?l=linux-kernel&m=137511549202238&w=4) is better and
-using gitk also works, as noted by Jiri
-(http://marc.info/?l=linux-kernel&m=137511562702289&w=4), but the point is that
-the information is there and the effort needed to extract it is not
-overwhelming.
+CC: Jeffrey Hugo <jhugo@codeaurora.org>
+CC: Eric Holmberg <eholmber@codeaurora.org>
+Signed-off-by: Kumar Gala <galak@codeaurora.org>
+---
+v2:
+* Fixed init of stride
+* Dealt with a number of comments from Stephen Boyd:
+  - use of <linux/io.h> instead of <asm/io.h>
+  - declaring msm_hwspinlock_of_match once & as const
+  - drop unneccessary () in an if statement
+  - style cleanup to have devm_kzalloc on one line
 
-What SOBs are useful for is to track the origins of a given patch before it
-enters a git repository, but once that's happened, all of the history is
-recorded by git.
+TODO:
+* feedback from Ohad on device tree binding location & hw-mutex name
+* comments from Eric/Jeff on use of mb() 
 
-> From your other message:
-> 
-> > And what about trusting maintainers?  If Linus trusts them enough to pull from
-> > them, why can't everybody else trust them enough to assume that they don't do
-> > bad things on purpose?
-> 
-> I hope you're not reading such thoughts into what *I* wrote.
+ .../devicetree/bindings/arm/msm/tcsr-mutex.txt     |  20 +++
+ drivers/hwspinlock/Kconfig                         |  11 ++
+ drivers/hwspinlock/Makefile                        |   1 +
+ drivers/hwspinlock/msm_hwspinlock.c                | 150 +++++++++++++++++++++
+ 4 files changed, 182 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+ create mode 100644 drivers/hwspinlock/msm_hwspinlock.c
 
-No, I'm not.
-
-And in fact this last paragraph of my previous message sounds much stronger
-than I wanted it to.  I didn't mean things like adding bad code to the kernel
-in a sneaky way, which in my opinion is out of the question.  I meant things
-like making changes with the maintainer's own SOB without posting them for
-public review beforehand, which would be an abuse of the process even if the
-changes themselves were useful and correct.
-
-> But most anybody who works on code occasionally does bad things by mistake,
-> that's why we have a review process.
-
-Of course.
-
-But that has nothing to do with how many SOB tags there are in the given
-commit log.  There are submitters whose patches already have a couple of them
-when they are first posted.
-
-A single SOB tag usually means that the committer himself is the author of
-the change set and I don't see why this should be regarded as a bad thing in
-principle.  Yes, it is technically possible for maintainers to "cheat", for
-example by making unreviewed changes and pushing them upstream with their
-own SOBs even without any linux-next testing, but they can do damage in some
-other ways too if they are irresponsible.
-
-We generally don't record information about what mailing lists the given patch
-was submitted and how much time the maintainer waited for comments before
-applying that patch.  I suppose we possibly could record it, but then I'm not
-sure how useful that will be in general.  It definitely would mean more work
-for maintainers and it's not like they don't have enough of that already.
-Moreover, perhaps we can simply expect maintainers not to abuse the process?
-
-I guess my point is that the fact that there are commits with one SOB tag only
-doesn't have to mean that we have a problem of any sort and it even doesn't
-have to indicate the existence of such a problem.
-
-Commits that have never been in linux-next are much more problematic in my
-opinion.
-
-Thanks,
-Rafael
-
-
+diff --git a/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+new file mode 100644
+index 0000000..ddd6889
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+@@ -0,0 +1,20 @@
++Qualcomm MSM Hardware Mutex Block:
++
++The hardware block provides mutexes utilized between different processors
++on the SoC as part of the communication protocol used by these processors.
++
++Required properties:
++- compatible: should be "qcom,tcsr-mutex"
++- reg: Should contain registers location and length of mutex registers
++- reg-names:
++	"mutex-base"  - string to identify mutex registers
++- qcom,num-locks: the number of locks/mutexes supported
++
++Example:
++
++	qcom,tcsr-mutex@fd484000 {
++		compatible = "qcom,tcsr-mutex";
++		reg = <0xfd484000 0x1000>;
++		reg-names = "mutex-base";
++		qcom,num-locks = <32>;
++	};
+diff --git a/drivers/hwspinlock/Kconfig b/drivers/hwspinlock/Kconfig
+index 70637d2..192e939 100644
+--- a/drivers/hwspinlock/Kconfig
++++ b/drivers/hwspinlock/Kconfig
+@@ -8,6 +8,17 @@ config HWSPINLOCK
+ 
+ menu "Hardware Spinlock drivers"
+ 
++config HWSPINLOCK_MSM
++	tristate "MSM Hardware Spinlock device"
++	depends on ARCH_MSM
++	select HWSPINLOCK
++	help
++	  Say y here to support the MSM Hardware Mutex functionality, which
++	  provides a synchronisation mechanism for the various processors on
++	  the SoC.
++
++	  If unsure, say N.
++
+ config HWSPINLOCK_OMAP
+ 	tristate "OMAP Hardware Spinlock device"
+ 	depends on ARCH_OMAP4 || SOC_OMAP5
+diff --git a/drivers/hwspinlock/Makefile b/drivers/hwspinlock/Makefile
+index 93eb64b..4074c56 100644
+--- a/drivers/hwspinlock/Makefile
++++ b/drivers/hwspinlock/Makefile
+@@ -3,5 +3,6 @@
+ #
+ 
+ obj-$(CONFIG_HWSPINLOCK)		+= hwspinlock_core.o
++obj-$(CONFIG_HWSPINLOCK_MSM)		+= msm_hwspinlock.o
+ obj-$(CONFIG_HWSPINLOCK_OMAP)		+= omap_hwspinlock.o
+ obj-$(CONFIG_HSEM_U8500)		+= u8500_hsem.o
+diff --git a/drivers/hwspinlock/msm_hwspinlock.c b/drivers/hwspinlock/msm_hwspinlock.c
+new file mode 100644
+index 0000000..dbd9a69
+--- /dev/null
++++ b/drivers/hwspinlock/msm_hwspinlock.c
+@@ -0,0 +1,150 @@
++/*
++ * Copyright (c) 2013, The Linux Foundation. All rights reserved.
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/err.h>
++#include <linux/kernel.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_device.h>
++#include <linux/hwspinlock.h>
++#include <linux/io.h>
++
++#include "hwspinlock_internal.h"
++
++#define SPINLOCK_ID_APPS_PROC	1
++#define BASE_ID			0
++
++static int msm_hwspinlock_trylock(struct hwspinlock *lock)
++{
++	void __iomem *lock_addr = lock->priv;
++
++	writel_relaxed(SPINLOCK_ID_APPS_PROC, lock_addr);
++	smp_mb();
++	return readl_relaxed(lock_addr) == SPINLOCK_ID_APPS_PROC;
++}
++
++static void msm_hwspinlock_unlock(struct hwspinlock *lock)
++{
++	int lock_owner;
++	void __iomem *lock_addr = lock->priv;
++
++	lock_owner = readl_relaxed(lock_addr);
++	if (lock_owner != SPINLOCK_ID_APPS_PROC) {
++		pr_err("%s: spinlock not owned by Apps (actual owner is %d)\n",
++				__func__, lock_owner);
++	}
++
++	writel_relaxed(0, lock_addr);
++	smp_mb();
++}
++
++static const struct hwspinlock_ops msm_hwspinlock_ops = {
++	.trylock	= msm_hwspinlock_trylock,
++	.unlock		= msm_hwspinlock_unlock,
++};
++
++static const struct of_device_id msm_hwspinlock_of_match[] = {
++	{
++		.compatible = "qcom,tcsr-mutex",
++		.data = (void *)0x80, /* register stride */
++	},
++	{ },
++};
++
++static int msm_hwspinlock_probe(struct platform_device *pdev)
++{
++	int ret, i, stride;
++	size_t array_size;
++	u32 num_locks;
++	struct hwspinlock_device *bank;
++	struct hwspinlock *hwlock;
++	struct resource *res;
++	void __iomem *iobase;
++	struct device_node *node = pdev->dev.of_node;
++	const struct of_device_id *match;
++
++	match = of_match_device(msm_hwspinlock_of_match, &pdev->dev);
++	if (!match)
++		return -EINVAL;
++
++	ret = of_property_read_u32(node, "qcom,num-locks", &num_locks);
++	if (ret || num_locks == 0)
++		return -ENODEV;
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mutex-base");
++	iobase = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(iobase))
++		return PTR_ERR(iobase);
++
++	array_size = num_locks * sizeof(*hwlock);
++	bank = devm_kzalloc(&pdev->dev, sizeof(*bank) + array_size, GFP_KERNEL);
++	if (!bank)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, bank);
++
++	stride = (int)match->data;
++	for (i = 0, hwlock = &bank->lock[0]; i < num_locks; i++, hwlock++)
++		hwlock->priv = iobase + i * stride;
++
++	ret = hwspin_lock_register(bank, &pdev->dev, &msm_hwspinlock_ops,
++						BASE_ID, num_locks);
++	return ret;
++}
++
++static int msm_hwspinlock_remove(struct platform_device *pdev)
++{
++	struct hwspinlock_device *bank = platform_get_drvdata(pdev);
++	int ret;
++
++	ret = hwspin_lock_unregister(bank);
++	if (ret) {
++		dev_err(&pdev->dev, "%s failed: %d\n", __func__, ret);
++		return ret;
++	}
++
++	return 0;
++}
++
++static struct platform_driver msm_hwspinlock_driver = {
++	.probe		= msm_hwspinlock_probe,
++	.remove		= msm_hwspinlock_remove,
++	.driver		= {
++		.name	= "msm_hwspinlock",
++		.owner	= THIS_MODULE,
++		.of_match_table = msm_hwspinlock_of_match,
++	},
++};
++
++static int __init msm_hwspinlock_init(void)
++{
++	return platform_driver_register(&msm_hwspinlock_driver);
++}
++/* board init code might need to reserve hwspinlocks for predefined purposes */
++postcore_initcall(msm_hwspinlock_init);
++
++static void __exit msm_hwspinlock_exit(void)
++{
++	platform_driver_unregister(&msm_hwspinlock_driver);
++}
++module_exit(msm_hwspinlock_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_DESCRIPTION("Hardware spinlock driver for MSM");
++MODULE_AUTHOR("Kumar Gala <galak@codeaurora.org>");
++MODULE_AUTHOR("Jeffrey Hugo <jhugo@codeaurora.org>");
++MODULE_AUTHOR("Eric Holmberg <eholmber@codeaurora.org>");
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.2.1
+
