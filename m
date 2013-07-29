@@ -1,82 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3G2OMa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:12:30 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38819 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751494Ab3G2OM3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:12:29 -0400
-Date: Mon, 29 Jul 2013 15:11:54 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "albert.u.boot@aribaud.net" <albert.u.boot@aribaud.net>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
-        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 05/10] ARM: sunxi: Add Allwinner A31 DTSI
-Message-ID: <20130729141154.GB25264@e106331-lin.cambridge.arm.com>
-References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
- <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
+	id S1756008Ab3G2OM6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:12:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41669 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab3G2OMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:12:55 -0400
+Date: Mon, 29 Jul 2013 16:12:50 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
+        x86@kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 6/6] mm: memcg: do not trap chargers with full callstack
+ on OOM
+Message-ID: <20130729141250.GF4678@dhcp22.suse.cz>
+References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
+ <1374791138-15665-7-git-send-email-hannes@cmpxchg.org>
+ <20130726144310.GH17761@dhcp22.suse.cz>
+ <20130726212808.GD17975@cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130726212808.GD17975@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:25:07PM +0100, Maxime Ripard wrote:
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/boot/dts/Makefile       |   3 +-
->  arch/arm/boot/dts/sun6i-a31.dtsi | 155 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 157 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/boot/dts/sun6i-a31.dtsi
+On Fri 26-07-13 17:28:09, Johannes Weiner wrote:
+> On Fri, Jul 26, 2013 at 04:43:10PM +0200, Michal Hocko wrote:
+> > On Thu 25-07-13 18:25:38, Johannes Weiner wrote:
+> > > @@ -2189,31 +2191,20 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
+> > >  }
+> > >  
+> > >  /*
+> > > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
+> > > + * try to call OOM killer
+> > >   */
+> > > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
+> > > -				  int order)
+> > > +static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
+> > >  {
+> > > -	struct oom_wait_info owait;
+> > > -	bool locked, need_to_kill;
+> > > +	bool locked, need_to_kill = true;
+> > >  
+> > > -	owait.memcg = memcg;
+> > > -	owait.wait.flags = 0;
+> > > -	owait.wait.func = memcg_oom_wake_function;
+> > > -	owait.wait.private = current;
+> > > -	INIT_LIST_HEAD(&owait.wait.task_list);
+> > > -	need_to_kill = true;
+> > > -	mem_cgroup_mark_under_oom(memcg);
+> > 
+> > You are marking memcg under_oom only for the sleepers. So if we have
+> > no sleepers then the memcg will never report it is under oom which
+> > is a behavior change. On the other hand who-ever relies on under_oom
+> > under such conditions (it would basically mean a busy loop reading
+> > memory.oom_control) would be racy anyway so it is questionable it
+> > matters at all. At least now when we do not have any active notification
+> > that under_oom has changed.
+> > 
+> > Anyway, this shouldn't be a part of this patch so if you want it because
+> > it saves a pointless hierarchy traversal then make it a separate patch
+> > with explanation why the new behavior is still OK.
+> 
+> This made me think again about how the locking and waking in there
+> works and I found a bug in this patch.
+> 
+> Basically, we have an open-coded sleeping lock in there and it's all
+> obfuscated by having way too much stuffed into the memcg_oom_lock
+> section.
+> 
+> Removing all the clutter, it becomes clear that I can't remove that
+> (undocumented) final wakeup at the end of the function.  As with any
+> lock, a contender has to be woken up after unlock.  We can't rely on
+> the lock holder's OOM kill to trigger uncharges and wakeups, because a
+> contender for the OOM lock could show up after the OOM kill but before
+> the lock is released.  If there weren't any more wakeups, the
+> contender would sleep indefinitely.
 
+I have checked that path again and I still do not see how wakeup_oom
+helps here. What prevents us from the following race then?
+
+spin_lock(&memcg_oom_lock)
+locked = mem_cgroup_oom_lock(memcg) # true
+spin_unlock(&memcg_oom_lock)
+						spin_lock(&memcg_oom_lock)
+						locked = mem_cgroup_oom_lock(memcg) # false
+						spin_unlock(&memcg_oom_lock)
+						<resched>
+mem_cgroup_out_of_memory()
+			<uncharge & memcg_oom_recover>
+spin_lock(&memcg_oom_lock)
+mem_cgroup_oom_unlock(memcg)
+memcg_wakeup_oom(memcg)
+						schedule()
+spin_unlock(&memcg_oom_lock)
+mem_cgroup_unmark_under_oom(memcg)
+
+> It also becomes clear that I can't remove the
+> mem_cgroup_mark_under_oom() like that because it is key in receiving
+> wakeups.  And as with any sleeping lock, we need to listen to wakeups
+> before attempting the trylock, or we might miss the wakeup from the
+> unlock.
+> 
+> It definitely became a separate patch, which cleans up this unholy
+> mess first before putting new things on top:
+
+I will check the patch tomorrow with a clean head.
 [...]
-
-> +	soc@01c20000 {
-> +		compatible = "simple-bus";
-> +		#address-cells = <1>;
-> +		#size-cells = <1>;
-> +		reg = <0x01c20000 0x300000>;
-
-That's unnecessary, nothing should be using this for a simple-bus.
-
-> +		ranges;
-> +
-> +		timer@01c20c00 {
-> +			compatible = "allwinner,sun4i-timer";
-> +			reg = <0x01c20c00 0xa0>;
-> +			interrupts = <
-> +					0 18 1
-> +					0 19 1
-> +					0 20 1
-> +					0 21 1
-> +					0 22 1
-> +					>;
-
-A cosmetic issue, but this would be nicer with each tuple bracketed:
-
-			interrupts = <0 18 1>,
-				     <0 19 1>,
-				     <0 20 1>,
-				     <0 21 1>,
-				     <0 22 1>;
-
-> +			clocks = <&osc>;
-> +		};
-
-Thanks,
-Mark.
+-- 
+Michal Hocko
+SUSE Labs
