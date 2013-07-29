@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab3G2PT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:19:28 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:52764 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254Ab3G2PT0 (ORCPT
+	id S1757290Ab3G2PUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:20:18 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:46298 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755547Ab3G2PUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:19:26 -0400
-Date: Mon, 29 Jul 2013 12:19:12 -0300
-From: Marcelo Cerri <mhcerri@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-        Fionnuala Gunter <fin@linux.vnet.ibm.com>,
-        Joel Schopp <jschopp@linux.vnet.ibm.com>,
-        Joy Latten <jmlatten@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] drivers/crypto/nx: fix limits to sg lists for SHA-2
-Message-ID: <20130729151912.GA4947@oc8526070481.ibm.com>
-References: <1374858488-24658-1-git-send-email-mhcerri@linux.vnet.ibm.com>
- <1374858488-24658-3-git-send-email-mhcerri@linux.vnet.ibm.com>
- <1374877892.9200.30.camel@pasglop>
+	Mon, 29 Jul 2013 11:20:16 -0400
+Date: Mon, 29 Jul 2013 17:20:01 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hugepage related lockdep trace.
+Message-ID: <20130729152001.GC22156@laptop.programming.kicks-ass.net>
+References: <20130717153223.GD27731@redhat.com>
+ <20130718000901.GA31972@blaptop>
+ <87hafrdatb.fsf@linux.vnet.ibm.com>
+ <20130719001303.GB23354@blaptop>
+ <20130723140120.GG8677@dhcp22.suse.cz>
+ <20130724024428.GA14795@bbox>
+ <20130725133040.GI12818@dhcp22.suse.cz>
+ <20130729082453.GB29129@bbox>
+ <20130729145308.GG4678@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1374877892.9200.30.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072915-2362-0000-0000-00000B540899
+In-Reply-To: <20130729145308.GG4678@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We think that it's very likely that AES may also be affected by a
-similar problem. But we still have to test it and I'd like to provide a
-separated patch for it.
+On Mon, Jul 29, 2013 at 04:53:08PM +0200, Michal Hocko wrote:
+> Peter, for you context the lockdep splat has been reported
+> here: https://lkml.org/lkml/2013/7/17/381
+> 
+> Minchan has proposed to workaround it by using SINGLE_DEPTH_NESTING
+> https://lkml.org/lkml/2013/7/23/812
+> 
+> my idea was to use a separate class key for hugetlb as it is quite
+> special in many ways:
+> https://lkml.org/lkml/2013/7/25/277
+> 
+> What is the preferred way of fixing such an issue?
 
-Regards,
-Marcelo
+The class is the safer annotation.
 
-On Sat, Jul 27, 2013 at 08:31:32AM +1000, Benjamin Herrenschmidt wrote:
-> On Fri, 2013-07-26 at 14:08 -0300, Marcelo Cerri wrote:
-> > ---
-> >  drivers/crypto/nx/nx-sha256.c | 108 +++++++++++++++++++++++-----------------
-> >  drivers/crypto/nx/nx-sha512.c | 113 ++++++++++++++++++++++++------------------
-> >  2 files changed, 129 insertions(+), 92 deletions(-)
-> 
-> What about the other nx drivers ? They are not affected ?
-> 
-> Cheers,
-> Ben.
-> 
-> 
+That said; it is a rather horrible issue any which way. This PMD sharing
+is very unique to hugetlbfs (also is that really worth the effort these
+days?) and it will make it impossible to make hugetlbfs swappable.
 
+The other solution is to make the pmd allocation GFP_NOFS.
