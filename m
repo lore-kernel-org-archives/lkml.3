@@ -1,89 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab3G2JuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:50:23 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56477 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab3G2JuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:50:22 -0400
-X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
-   d="scan'208";a="8057067"
-Message-ID: <51F639FB.304@cn.fujitsu.com>
-Date: Mon, 29 Jul 2013 17:46:35 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754865Ab3G2JvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:51:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58190 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab3G2JvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:51:12 -0400
+Date: Mon, 29 Jul 2013 11:51:09 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, cgroups@vger.kernel.org,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kent.overstreet@gmail.com, Li Zefan <lizefan@huawei.com>,
+        Glauber Costa <glommer@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: memcg creates an unkillable task in 3.2-rc2
+Message-ID: <20130729095109.GB4678@dhcp22.suse.cz>
+References: <20130723174711.GE21100@mtj.dyndns.org>
+ <8761vui4cr.fsf@xmission.com>
+ <20130729075939.GA4678@dhcp22.suse.cz>
+ <87ehahg312.fsf@xmission.com>
 MIME-Version: 1.0
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
-        libo.chen@huawei.com
-Subject: Re: [PATCH 2/9] syslog_ns: add syslog_ns into user_namespace
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
-In-Reply-To: <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:48:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:48:11,
-	Serialize complete at 2013/07/29 17:48:11
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ehahg312.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
-
-On 07/29/2013 10:31 AM, Rui Xiang wrote:
-
-> Add a syslog_ns pointer to user_namespace, and make
-> syslog_ns per user_namespace, not global.
+On Mon 29-07-13 01:54:01, Eric W. Biederman wrote:
+> Michal Hocko <mhocko@suse.cz> writes:
 > 
-> Since syslog_ns is assigned to user_ns, we can have
-> full capabilities in new user_ns to create a new syslog_ns.
+> > On Sun 28-07-13 17:42:28, Eric W. Biederman wrote:
+> >> Tejun Heo <tj@kernel.org> writes:
+> >> 
+> >> > Hello, Linus.
+> >> >
+> >> > This pull request contains two patches, both of which aren't fixes
+> >> > per-se but I think it'd be better to fast-track them.
+> >> >
+> >> Darn.  I was hoping to see a fix for the bug I just tripped over,
+> >> that results in a process stuck in short term disk wait.
+> >> 
+> >> Using the memory control group for it's designed function aka killing
+> >> processes that eats too much memory I just would up with an unkillable
+> >> process in 3.11-rc2.
+> >
+> > How many processes are in that group? Could you post stacks for all of
+> > them? Is the stack bellow stable?
 > 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  include/linux/syslog.h         | 5 +++++
->  include/linux/user_namespace.h | 1 +
->  2 files changed, 6 insertions(+)
+> Just this one, and yes the stack is stable.
+> And there was a pending sigkill.  Which is what is so bizarre.
+
+Strange indeed. We have a shortcut to skip the charge if the task has
+fatal_signals pending in __mem_cgroup_try_charge and
+mem_cgroup_handle_oom. With a single task in the group it always calls
+mem_cgroup_out_of_memory unless it is locked because of OOM from up the
+hierarchy (but as you are able to echo to oom_control then this means
+that you are under any hierarchy).
+
+> > Could you post dmesg output?
 > 
-> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-> index 425fafe..62ce47f 100644
-> --- a/include/linux/syslog.h
-> +++ b/include/linux/syslog.h
-> @@ -90,6 +90,11 @@ struct syslog_namespace {
->  	size_t syslog_partial;
->  
->  	int dmesg_restrict;
-> +
-> +	/*
-> +	 * user namespace which owns this syslog ns.
-> +	 */
-> +	struct user_namespace *owner;
->  };
->  
->  static inline struct syslog_namespace *get_syslog_ns(
-> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-> index b6b215f..ce2de5b 100644
-> --- a/include/linux/user_namespace.h
-> +++ b/include/linux/user_namespace.h
-> @@ -28,6 +28,7 @@ struct user_namespace {
->  	unsigned int		proc_inum;
->  	bool			may_mount_sysfs;
->  	bool			may_mount_proc;
-> +	struct syslog_namespace *syslog_ns;
+> Nothing interesting was in dmesg.
 
-As we add a syslog_ns pointer to user_namespace to make
-syslog_ns per user_namespace and the caps check.
-But why also add a point to syslog_namespace in
-user_namespace? Am I missing something?:)
+No OOM messages at all?
 
-Thanks,
-Gu
+> I lost the original hang but I seem to be able to reproduce it fairly
+> easily.
 
->  };
->  
->  extern struct user_namespace init_user_ns;
+What are the steps to reproduce?
 
+> echo 0 > memory.oom_control is enough to unstick it.  But that does not
+> explain why the process does not die when SIGKILL is sent.
 
+Interesting. This would mean that memcg_oom_recover woke up the task
+from the wait queue and so it realizes it should die. This would suggest
+a race when the task misses memcg_oom_recover resp. memcg_wakeup_oom but
+that doesn't match with your single task in the group description or is
+this just a final state and there were more tasks before OOM happened?
+
+> > You seem to have CONFIG_MEMCG_KMEM enabled. Have you set up kmem
+> > limit?
+> 
+> No kmem limits set.
+> 
+> >> I am really not certain what is going on although I haven't rebooted the
+> >> machine yet so I can look a bit further if someone has a good idea.
+> >> 
+> >> On the unkillable task I see.
+> >> 
+> >> /proc/<pid>/stack:
+> >> 
+> >> [<ffffffff8110342c>] mem_cgroup_iter+0x1e/0x1d2
+> >> [<ffffffff81105630>] __mem_cgroup_try_charge+0x779/0x8f9
+> >> [<ffffffff81070d46>] ktime_get_ts+0x36/0x74
+> >> [<ffffffff81104d84>] memcg_oom_wake_function+0x0/0x5a
+> >> [<ffffffff8110620c>] __mem_cgroup_try_charge_swapin+0x6c/0xac
+> >
+> > Hmm, mem_cgroup_handle_oom should be setting up the task for wait queue
+> > so the above is a bit confusing.
+> 
+> The mem_cgroup_iter looks like it is somethine stale on the stack.
+
+mem_cgroup_iter could be part of mem_cgroup_{,un}mark_under_oom
+
+> The __mem_cgroup_try_charge is immediately after the schedule in
+> mem_cgroup_handle_oom.
+
+I am confused now mem_cgroup_handle_oom doesn't call
+__mem_cgroup_try_charge or have I just misunderstood what you are
+saying?
+
+> I have played with it a little bit and added
+> 	if (!fatal_signal_pending(current))
+> 		schedule();
+> 
+> On the off chance that it was an ordering thing that was triggering
+> this.  And that does not seem to be the problem in this instance.
+> The missing test before the schedule still looks wrong.
+
+Shouldn't schedule take care of the pending singnals on its own and keep
+the task on the runqueue?
+
+> > Anyway your group seems to be under OOM and the task is in the middle of
+> > mem_cgroup_handle_oom which tries to kill something. That something is
+> > probably not willing to die so this task will loop trying to charge the
+> > memory until something releases a charge or the limit for the group is
+> > increased.
+> 
+> And it is configured so that the manager process needs to send SIGKILL
+> instead of having the kernel pick a random process.
+
+Ahh, OK, so you are having memcg OOM disabled and a manager sits on the
+eventfd and sending SIGKILL to a task, right?
+
+> > It would be interesting to see what other tasks are doing. We are aware
+> > of certain deadlock situations where memcg OOM killer tries to kill a
+> > task which is blocked on a lock (e.g. i_mutex) which is held by a task
+> > which is trying to charge but failing due to oom.
+> 
+> The only other weird thing that I see going on is the manager process
+> tries to freeze the entire cgroup, kill the processes, and the unfreeze
+> the cgroup and the freeze is failing.  But looking at /proc/<pid>/status
+> there was a SIGKILL pending.
+> 
+> Given how easy it was to wake up the process when I reproduced this
+> I don't think there is anything particularly subtle going on.  But
+> somehow we are going to sleep having SIGKILL delivered and not waking
+> up.  The not waking up bugs me.
+
+OK, I guess this answers the most of my questions above.
+
+Isn't this a bug in freezer then? I am not familiar with the freezer
+much but memcg oom handling seems correct to me. The task is sleeping
+KILLABLE and fatal_signal_pending in mem_cgroup_handle_oom will tell us
+to bypass the charge and let the taks go away.
+
+Tejun?
+-- 
+Michal Hocko
+SUSE Labs
