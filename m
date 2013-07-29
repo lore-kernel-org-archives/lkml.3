@@ -1,649 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab3G2PPK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:15:10 -0400
-Received: from ns.pmeerw.net ([87.118.82.44]:47569 "EHLO pmeerw.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755571Ab3G2PPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:15:08 -0400
-Date: Mon, 29 Jul 2013 17:15:03 +0200 (CEST)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Oleksandr Kravchenko <x0199363@ti.com>
-cc: linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, grant.likely@linaro.org,
-        rob.herring@calxeda.com, rob@landley.net, jic23@cam.ac.uk,
-        holler@ahsoftware.de, srinivas.pandruvada@intel.com,
-        devicetree-discuss@lists.ozlabs.org,
-        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
-Subject: Re: [PATCH 2/2] iio: add Bosch BMA180 acceleration sensor driver
-In-Reply-To: <1375109893-7917-2-git-send-email-x0199363@ti.com>
-Message-ID: <alpine.DEB.2.01.1307291704440.20459@pmeerw.net>
-References: <1375109893-7917-1-git-send-email-x0199363@ti.com> <1375109893-7917-2-git-send-email-x0199363@ti.com>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1753928Ab3G2PRx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:17:53 -0400
+Received: from smtprelay0220.b.hostedemail.com ([64.98.42.220]:34742 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751108Ab3G2PRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:17:51 -0400
+X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 11:17:51 EDT
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Panda: scanned!
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::,RULES_HIT:152:355:379:582:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2561:2564:2682:2685:2689:2693:2731:2859:2894:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:5007:6119:6261:6691:7903:8526:8599:9025:10004:10400:10848:11658:11914:12043:12517:12519:12555:12663:12679:12682:12698:12737:13025:13069:13071:13161:13229:13311:13357:13618:13845:13868,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: love58_5c5442b89093f
+X-Filterd-Recvd-Size: 2458
+Date: Mon, 29 Jul 2013 15:10:34 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org
+Message-ID: <2066879158.39771.1375110634453.JavaMail.mail@webmail09>
+Subject: A call to revise sockets behaviour
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="1985424466-785000783-1375110862=:20459"
-Content-ID: <alpine.DEB.2.01.1307291714300.20459@pmeerw.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.146.189.148]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hello,
 
---1985424466-785000783-1375110862=:20459
-Content-Type: TEXT/PLAIN; CHARSET=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.01.1307291714301.20459@pmeerw.net>
+Currently the Linux kernel disallows to start listening on a TCP/UDP socket if
+there are open connections against the port, regardless connections status. So even
+if _all_ you have is some stale (i.e. no longer active connections pending destruction)
+the kernel will not allow to reuse this socket.
 
+Stephen Hemminger argues that this behaviour is expected even though it's 100%
+counter productive, it defies common sense and I cannot think of any security implications
+should this feature be allowed.
 
-kicking out drivers fast :)
-few comments below; the driver exposes only minimal iio features and 
-integrates input subsystem, this doesn't seem right
+Besides, when discussing this bug on Wine's bugzilla I have shown that this behavior not
+only affect Windows applications running under Wine, but also native POSIX applications.
 
-p.
+If nothing else is listening to incoming connections how can _old_ _stale_ connections
+prevent an application from listening on the port? Windows has no qualms about allowing
+that, why the Linux kernel works differently?
 
-> diff --git a/Documentation/devicetree/bindings/iio/accel/bma180.txt b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> new file mode 100644
-> index 0000000..7c13c84
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/iio/accel/bma180.txt
-> @@ -0,0 +1,53 @@
-> +* Bosch BMA180 triaxial acceleration sensor
-> +
-> +http://omapworld.com/BMA180_111_1002839.pdf
-> +
-> +Required properties:
-> +
-> +  - compatible : should be "bosch,bma180"
-> +  - reg : the I2C address of the sensor
-> +
-> +Optional properties:
-> +
-> +  - interrupt-parent : should be the phandle for the interrupt controller
-> +
-> +  - interrupts : interrupt mapping for GPIO IRQ, it shuld by configured with
-> +		flags IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING
-> +
-> +  - range : select the full scale acceleration range
-> +		0 : -1g..+1g
-> +		1 : -1.5g..+1.5g
-> +		2 : -2g..+2g
-> +		3 : -3g..+3g
-> +		4 : -4g..+4g
-> +		5 : -8g..+8g
-> +		6 : -16g..+16g
-> +
-> +  - bw : select bandwidth bandwidth
-> +		0 : 10Hz
-> +		1 : 20Hz
-> +		2 : 40Hz
-> +		3 : 75Hz
-> +		4 : 150Hz
-> +		5 : 300Hz
-> +		Don't use bandwidth frequency more than 300Hz couse it
+I want to hear how the current apparently _broken_ behaviour, "The current socket API
+behavior is unlikely to be changed because so many applications expect it", can be expected.
 
-because
+Also I'd like to know which applications depend on this "feature".
 
-> +		influences the frequency of generating new data interrupts
-> +		and i2c reading phase can be longer than pheriod of interrupt
+Imagine a situation,
 
-period
+You have an apache server serving connections on port 80. For some reasons a crash in
+one of its modules causes the daemon crash but during the crash Apache had some open
+connections on this port.
 
-> +		generation.
-> +
-> +  - mode_config : 0 - select low noise mode, 1 - select low power mode
-> +
-> +  - fuzz : specifies fuzz value that is used to filter noise from the event stream
-> +
-> +Example:
-> +
-> +bma180@40 {
-> +	compatible = "bosch,bma180";
-> +	reg = <0x40>;
-> +	interrupt-parent = <&gpio6>;
-> +	interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
-> +	range = <2>;
-> +	bw = <0>;
-> +	mode_config = <1>;
-> +	fuzz = <555>;
-> +};
-> diff --git a/drivers/iio/accel/Kconfig b/drivers/iio/accel/Kconfig
-> index 719d83f..61fd29f 100644
-> --- a/drivers/iio/accel/Kconfig
-> +++ b/drivers/iio/accel/Kconfig
-> @@ -3,6 +3,16 @@
->  #
->  menu "Accelerometers"
->  
-> +config BMA180
-> +	tristate "Bosch BMA180 3-Axis Accelerometer Driver"
-> +	depends on I2C
-> +	help
-> +	  Say Y here if you want to build a driver for the Bosch BMA180
-> +	  triaxial acceleration sensor.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called bma180.
-> +
->  config HID_SENSOR_ACCEL_3D
->  	depends on HID_SENSOR_HUB
->  	select IIO_BUFFER
-> diff --git a/drivers/iio/accel/Makefile b/drivers/iio/accel/Makefile
-> index 87d8fa2..31a36fa 100644
-> --- a/drivers/iio/accel/Makefile
-> +++ b/drivers/iio/accel/Makefile
-> @@ -12,3 +12,5 @@ obj-$(CONFIG_IIO_ST_ACCEL_I2C_3AXIS) += st_accel_i2c.o
->  obj-$(CONFIG_IIO_ST_ACCEL_SPI_3AXIS) += st_accel_spi.o
->  
->  obj-$(CONFIG_KXSD9)	+= kxsd9.o
-> +
-> +obj-$(CONFIG_BMA180)	+= bma180.o
+According to Stephen Hemminger I cannot relaunch Apache until the kernel waits arbitrary
+time in order to clean stale connections for its networking pool.
 
-alphabetic order
+I fail to see how this behaviour can be "expected".
 
-> diff --git a/drivers/iio/accel/bma180.c b/drivers/iio/accel/bma180.c
-> new file mode 100644
-> index 0000000..9f5341f
-> --- /dev/null
-> +++ b/drivers/iio/accel/bma180.c
-> @@ -0,0 +1,462 @@
-> +/*
-> + * bma180.c - IIO driver for Bosch BMA180 triaxial acceleration sensor
-> + *
-> + * Copyright 2013 Oleksandr Kravchenko <x0199363@ti.com>
-> + *
-> + * This file is subject to the terms and conditions of version 2 of
-> + * the GNU General Public License.  See the file COPYING in the main
-> + * directory of this archive for more details.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/i2c.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/delay.h>
-> +#include <linux/input.h>
-> +#include <linux/of.h>
-> +#include <linux/bitops.h>
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/sysfs.h>
-> +#include <linux/iio/events.h>
-> +
-> +#define BMA180_DRV_NAME "bma180"
-> +#define BMA180_IRQ_NAME "bma180_event"
-> +
-> +/* Register set */
-> +#define BMA180_CHIP_ID		0x00 /* Need to distinguish BMA180 from other */
-> +#define BMA180_ACC_X_LSB	0x02 /* First of 6 registers of accel data */
-> +#define BMA180_CTRL_REG0	0x0d
-> +#define BMA180_RESET		0x10
-> +#define BMA180_BW_TCS		0x20
-> +#define BMA180_CTRL_REG3	0x21
-> +#define BMA180_TCO_Z		0x30
-> +#define BMA180_OFFSET_LSB1	0x35
-> +
-> +/* Control bits */
-> +#define BMA180_SLEEP		BIT(1) /* 1 - chip will sleep */
-> +#define BMA180_DIS_WAKE_UP	BIT(0) /* Disable wake up mode */
-> +#define BMA180_EE_W		BIT(4) /* Unlock writing to addr. from 0x20 */
-> +#define BMA180_NEW_DATA_INT	BIT(1) /* Intr every new accel data is ready */
-> +#define BMA180_SMP_SKIP		BIT(0) /* Sample skipping mode */
+More on it here:
 
-maybe say which bits belong to which CTRL reg?
+https://bugzilla.kernel.org/show_bug.cgi?id=45571
+http://bugs.winehq.org/show_bug.cgi?id=26031
 
-> +
-> +/* Bit masks fo registerts bit fields */
-
-typos: fo, registerts
-
-> +#define BMA180_RANGE		0x0e /* Range of accel measurment */
-> +#define BMA180_BW		0xf0 /* Accel measurmend bandwidth */
-
-typo: measurmend
-
-> +#define BMA180_MODE_CONFIG	0x03 /* Config operation modes */
-> +
-> +/* We have write this value in reset register to do soft reset */
-
-have 'to' write
-
-> +#define BMA180_RESET_VAL	0xb6
-> +
-> +/* Chip operation modes */
-> +#define BMA180_LOW_NOISE	0x00
-> +#define BMA180_LOW_POWER	0x03
-> +
-> +struct bma180_data {
-> +	struct i2c_client *client;
-> +	struct input_dev *input_dev;
-> +	struct mutex mutex;
-> +	int sleep_state;
-> +	int range;
-> +	int bw;
-> +	int mode;
-> +	int fuzz;
-> +	int acc_reg[3];
-> +};
-> +
-> +enum bma180_axis {
-> +	AXIS_X,
-> +	AXIS_Y,
-> +	AXIS_Z,
-> +};
-> +
-> +struct bma180_range {
-> +	int g_range;
-> +	int ratio;
-> +};
-> +
-> +static struct bma180_range bma180_range_table[7] = {
-> +	{ 1000, 130 },
-> +	{ 1500, 190 },
-> +	{ 2000, 250 },
-> +	{ 3000, 380 },
-> +	{ 4000, 500 },
-> +	{ 8000, 990 },
-> +	{ 16000, 1980 },
-> +};
-> +
-> +static int bma180_get_acc_reg(struct bma180_data *data, enum bma180_axis axis)
-> +{
-> +	u8 reg = BMA180_ACC_X_LSB + axis * 2;
-> +	int ret;
-> +
-> +	if (data->sleep_state)
-> +		return -EBUSY;
-> +
-> +	ret = i2c_smbus_read_word_data(data->client, reg);
-> +	if (ret < 0)
-> +		dev_err(&data->client->dev,
-> +			"failed to read accel_%c registers\n", 'x' + axis);
-
-just one register, not registers?
-
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_set_bits(struct bma180_data *data, u8 reg, u8 mask, u8 val)
-> +{
-> +	int ret = i2c_smbus_read_byte_data(data->client, reg);
-> +	u8 reg_val = (ret & ~mask) | (val << (ffs(mask) - 1));
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return i2c_smbus_write_byte_data(data->client, reg, reg_val);
-> +}
-> +
-> +static int bma180_set_new_data_intr_state(struct bma180_data *data, int state)
-> +{
-> +	u8 reg_val = state ? BMA180_NEW_DATA_INT : 0x00;
-> +	int ret = i2c_smbus_write_byte_data(data->client, BMA180_CTRL_REG3,
-> +			reg_val);
-> +
-> +	if (ret)
-> +		dev_err(&data->client->dev,
-> +			"failed to set new data interrupt state %d\n", state);
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_set_sleep_state(struct bma180_data *data, int state)
-> +{
-> +	int ret = bma180_set_bits(data, BMA180_CTRL_REG0, BMA180_SLEEP, state);
-> +
-> +	if (ret) {
-> +		dev_err(&data->client->dev,
-> +			"failed to set sleep state %d\n", state);
-> +		return ret;
-> +	}
-> +	data->sleep_state = state;
-> +
-> +	return 0;
-> +}
-> +
-> +static int bma180_set_ee_writing_state(struct bma180_data *data, int state)
-> +{
-> +	int ret = bma180_set_bits(data, BMA180_CTRL_REG0, BMA180_EE_W, state);
-> +
-> +	if (ret)
-> +		dev_err(&data->client->dev,
-> +			"failed to set ee writing state %d\n", state);
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_soft_reset(struct bma180_data *data)
-> +{
-> +	int ret = i2c_smbus_write_byte_data(data->client,
-> +			BMA180_RESET, BMA180_RESET_VAL);
-> +
-> +	if (ret)
-> +		dev_err(&data->client->dev, "failed to reset the chip\n");
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_chip_init(struct bma180_data *data)
-> +{
-> +	/* Try to read chip_id register. It must return 0x03. */
-> +	int ret = i2c_smbus_read_byte_data(data->client, BMA180_CHIP_ID);
-> +
-> +	if (ret < 0)
-> +		goto err;
-> +	if (ret != 0x03) {
-> +		ret = -ENODEV;
-> +		goto err;
-> +	}
-> +
-> +	ret = bma180_soft_reset(data);
-> +	if (ret)
-> +		goto err;
-> +	/*
-> +	 * No serial transaction should occur within minimum 10 μs
-> +	 * after soft_reset command
-> +	 */
-> +	msleep(20);
-> +
-> +	ret = bma180_set_bits(data, BMA180_CTRL_REG0, BMA180_DIS_WAKE_UP, 1);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_ee_writing_state(data, 1);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_new_data_intr_state(data, 0);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_bits(data, BMA180_BW_TCS, BMA180_BW, data->bw);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_bits(data,
-> +			BMA180_OFFSET_LSB1, BMA180_RANGE, data->range);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_bits(data, BMA180_TCO_Z, BMA180_MODE_CONFIG,
-> +			data->mode ? BMA180_LOW_POWER : BMA180_LOW_NOISE);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_bits(data, BMA180_OFFSET_LSB1, BMA180_SMP_SKIP, 1);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_new_data_intr_state(data, 1);
-> +	if (ret)
-> +		goto err;
-> +	ret = bma180_set_ee_writing_state(data, 0);
-> +	if (ret)
-> +		goto err;
-> +
-> +	return 0;
-> +
-> +err:
-> +	dev_err(&data->client->dev, "failed to init the chip\n");
-> +	return ret;
-> +}
-> +
-> +static void bma180_chip_disable(struct bma180_data *data)
-> +{
-> +	if (bma180_set_ee_writing_state(data, 1))
-> +		goto err;
-> +	if (bma180_set_new_data_intr_state(data, 0))
-> +		goto err;
-> +	if (bma180_set_ee_writing_state(data, 0))
-> +		goto err;
-> +	if (bma180_set_sleep_state(data, 1))
-> +		goto err;
-> +
-> +	return;
-> +
-> +err:
-> +	dev_err(&data->client->dev, "failed to disable the chip\n");
-> +}
-> +
-> +static int bma180_read_raw(struct iio_dev *indio_dev,
-> +		struct iio_chan_spec const *chan, int *val, int *val2,
-> +		long mask)
-> +{
-> +	struct bma180_data *data = iio_priv(indio_dev);
-> +	long tmp = ((s16)data->acc_reg[chan->channel] >> 2)
-> +		* bma180_range_table[data->range].ratio;
-> +
-> +	if (data->acc_reg[chan->channel] < 0)
-> +		return data->acc_reg[chan->channel];
-> +
-> +	*val = tmp / 1000000;
-> +	*val2 = (tmp % 1000000);
-> +
-> +	return IIO_VAL_INT_PLUS_MICRO;
-> +}
-> +
-> +static const struct iio_info bma180_info = {
-> +	.driver_module	= THIS_MODULE,
-> +	.read_raw	= &bma180_read_raw,
-> +};
-> +
-> +static const struct iio_chan_spec bma180_channels[] = {
-> +	{
-> +		.type = IIO_ACCEL,
-> +		.channel = AXIS_X,
-> +		.channel2 = IIO_MOD_X,
-> +		.indexed = true,
-
-do the channels need to be indexed?
-
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	}, {
-> +		.type = IIO_ACCEL,
-> +		.channel = AXIS_Y,
-> +		.channel2 = IIO_MOD_Y,
-> +		.indexed = true,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	}, {
-> +		.type = IIO_ACCEL,
-> +		.channel = AXIS_Z,
-> +		.channel2 = IIO_MOD_Z,
-> +		.indexed = true,
-> +		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
-> +	},
-> +};
-> +
-> +static irqreturn_t bma180_interrupt_handler(int irq, void *private)
-> +{
-> +	struct iio_dev *dev_info = private;
-> +	struct bma180_data *data = iio_priv(dev_info);
-> +	int i;
-> +
-> +	mutex_lock(&data->mutex);
-> +	for (i = AXIS_X; i <= AXIS_Z; ++i)
-> +		data->acc_reg[i] = bma180_get_acc_reg(data, i);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	input_report_abs(data->input_dev, ABS_X, data->acc_reg[AXIS_X]);
-> +	input_report_abs(data->input_dev, ABS_Y, data->acc_reg[AXIS_Y]);
-> +	input_report_abs(data->input_dev, ABS_Z, data->acc_reg[AXIS_Z]);
-
-input subsystem stuff within IIO?
-uhoh...
-
-the driver should probably support more iio features: trigger, scan_mode, 
-buffer
-
-> +	input_sync(data->input_dev);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int bma180_probe(struct i2c_client *client,
-> +		const struct i2c_device_id *id)
-> +{
-> +	struct input_dev *input_dev;
-> +	struct bma180_data *data;
-> +	struct iio_dev *indio_dev;
-> +	struct device_node *np = client->dev.of_node;
-> +	int i, ret;
-> +
-> +	if (!client->irq) {
-> +		dev_err(&client->dev, "this driver cann't work without IRQ\n");
-
-can't
-
-> +		return -ENODEV;
-> +	}
-> +
-> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	input_dev = input_allocate_device();
-> +	if (!input_dev)
-> +		return -ENOMEM;
-> +
-> +	data = iio_priv(indio_dev);
-> +	i2c_set_clientdata(client, indio_dev);
-> +	data->client = client;
-> +
-> +	of_property_read_u32(np, "bw", &data->bw);
-> +	of_property_read_u32(np, "range", &data->range);
-> +	of_property_read_u32(np, "mode", &data->mode);
-> +	of_property_read_u32(np, "fuzz", &data->fuzz);
-> +
-> +	ret = bma180_chip_init(data);
-> +	if (ret < 0)
-> +		goto err_1;
-> +
-> +	mutex_init(&data->mutex);
-> +
-> +	indio_dev->dev.parent = &client->dev;
-> +	indio_dev->channels = bma180_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(bma180_channels);
-> +	indio_dev->name = BMA180_DRV_NAME;
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +	indio_dev->info = &bma180_info;
-> +
-> +	input_dev->name = BMA180_DRV_NAME;
-> +	input_dev->id.bustype = BUS_I2C;
-> +	__set_bit(EV_ABS, input_dev->evbit);
-> +	for (i = ABS_X; i <= ABS_Z; ++i)
-> +		input_set_abs_params(input_dev, i,
-> +				     -bma180_range_table[data->range].g_range,
-> +				     bma180_range_table[data->range].g_range,
-> +				     data->fuzz, 0);
-> +	input_dev->dev.parent = &client->dev;
-> +	input_set_drvdata(input_dev, data);
-> +
-> +	data->input_dev = input_dev;
-> +
-> +	ret = devm_request_threaded_irq(&client->dev, client->irq,
-> +			NULL, bma180_interrupt_handler, IRQF_ONESHOT,
-> +			BMA180_IRQ_NAME, indio_dev);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "irq request error %d\n", -ret);
-> +		goto err_1;
-> +	}
-> +
-> +	ret = input_register_device(input_dev);
-> +	if (ret) {
-> +		dev_err(&client->dev, "unable to register input device\n");
-> +		goto err_1;
-> +	}
-> +
-> +
-
-extra newline
-
-> +	ret = iio_device_register(indio_dev);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "unable to register iio device\n");
-> +		goto err_2;
-> +	}
-> +
-> +	return 0;
-> +
-> +err_2:
-> +	input_unregister_device(input_dev);
-> +err_1:
-> +	input_free_device(input_dev);
-> +
-> +	bma180_chip_disable(data);
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_remove(struct i2c_client *client)
-> +{
-> +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-> +	struct bma180_data *data = iio_priv(indio_dev);
-> +
-> +	iio_device_unregister(indio_dev);
-> +	input_unregister_device(data->input_dev);
-> +
-> +	mutex_lock(&data->mutex);
-> +	bma180_chip_disable(data);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM_SLEEP
-> +static int bma180_suspend(struct device *dev)
-> +{
-> +	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
-> +	struct bma180_data *data = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	mutex_lock(&data->mutex);
-> +	ret = bma180_set_sleep_state(data, 1);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static int bma180_resume(struct device *dev)
-> +{
-> +	struct iio_dev *indio_dev = i2c_get_clientdata(to_i2c_client(dev));
-> +	struct bma180_data *data = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	mutex_lock(&data->mutex);
-> +	ret = bma180_set_sleep_state(data, 0);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static SIMPLE_DEV_PM_OPS(bma180_pm_ops, bma180_suspend, bma180_resume);
-> +#define BMA180_PM_OPS (&bma180_pm_ops)
-> +#else
-> +#define BMA180_PM_OPS NULL
-> +#endif
-> +
-> +static struct i2c_device_id bma180_id[] = {
-> +	{ BMA180_DRV_NAME, 0 },
-> +	{ }
-> +};
-> +
-> +MODULE_DEVICE_TABLE(i2c, bma180_id);
-> +
-> +static struct i2c_driver bma180_driver = {
-> +	.driver = {
-> +		.name	= BMA180_DRV_NAME,
-> +		.owner	= THIS_MODULE,
-> +		.pm	= BMA180_PM_OPS,
-> +	},
-> +	.probe		= bma180_probe,
-> +	.remove		= bma180_remove,
-> +	.id_table	= bma180_id,
-> +};
-> +
-> +module_i2c_driver(bma180_driver);
-> +
-> +MODULE_AUTHOR("Kravchenko Oleksandr <x0199363@ti.com>");
-> +MODULE_AUTHOR("Texas Instruments, Inc.");
-> +MODULE_DESCRIPTION("Bosch BMA180 triaxial acceleration sensor");
-> +MODULE_LICENSE("GPL");
-> 
-
--- 
-
-Peter Meerwald
-+43-664-2444418 (mobile)
---1985424466-785000783-1375110862=:20459--
+Artem
