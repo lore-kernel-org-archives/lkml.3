@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356Ab3G2Awk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 20:52:40 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:47269 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab3G2Awe (ORCPT
+	id S1753204Ab3G2BFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 21:05:25 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:61993 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab3G2BFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 20:52:34 -0400
-X-AuditID: cbfee690-b7f6f6d00000740c-c4-51f5bcd0eaa8
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kefeng Wang'" <wangkefeng.wang@huawei.com>,
-        "'Tomi Valkeinen'" <tomi.valkeinen@ti.com>
-Cc: "'Jean-Christophe Plagniol-Villard'" <plagnioj@jcrosoft.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        guohanjun@huawei.com,
-        "'Luis Henriques'" <luis.henriques@canonical.com>,
-        Jingoo Han <jg1.han@samsung.com>
-References: <1374919513-15356-1-git-send-email-wangkefeng.wang@huawei.com>
-In-reply-to: <1374919513-15356-1-git-send-email-wangkefeng.wang@huawei.com>
-Subject: Re: [PATCH] video: remove unused variable dev
-Date: Mon, 29 Jul 2013 09:52:32 +0900
-Message-id: <009601ce8bf5$e88bfda0$b9a3f8e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJPnaqycqCJG6TqcJyoBH2YBXjj05h4r3tQ
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zfd0Le74GGix6p2ZxcOdMdovLCy+x
-	Wpzo+8BqcXnXHDaLp/seMVmse/iCyWL9/FtsFo2f7zM6cHjMauhl82g58pbV49WFOywefVtW
-	MXocv7GdyePzJrkAtigum5TUnMyy1CJ9uwSujL4Ld5gK1nFU/Hr6lr2B8SlbFyMnh4SAicTr
-	/++hbDGJC/fWA9lcHEICyxgl9h/+xg5T9K7xDyNEYhGjxJvfvawQzi9Gid/9e1hBqtgE1CS+
-	fDkM1iEiECUx8e5sFpAiZoEXjBLT/twC2yEk4CWx5tMNMJtTwFtizcFeRhBbWMBM4vz7a8wg
-	NouAqsTWByeABnFw8ApYSszuZAIJ8woISvyYfI8FxGYW0JJYv/M4E4QtL7F5zVtmiEsVJHac
-	fc0IcYORxI4ZT6DqRST2vXgH9oGEQCOHxIk7yxkhdglIfJt8iAVkl4SArMSmA1BzJCUOrrjB
-	MoFRYhaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLRK07MLS7NS9dLzs/dxAiJ6gk7GO8d
-	sD7EmAy0fiKzlGhyPjAp5JXEGxqbGVmYmpgaG5lbmpEmrCTOq95iHSgkkJ5YkpqdmlqQWhRf
-	VJqTWnyIkYmDU6qBkeH3GqnZP5kuH897ze+YEmFe9WXvTp34yotMotNSpfeGH5r/dAHrm52C
-	DQ8SqxsLtA1sI/zY8ub/mDJBpXX1jxdCfv3bPQzak/5N3XhOSX1+jvzEw/z35spY3FRTC7fP
-	vT2xw8T6xpLjCxSdG3+WGK6f9Gxuxomkadu6f4uubu5m8N9d38H2UomlOCPRUIu5qDgRAO+g
-	RjgAAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jAd0Le74GGvTsUrI4uHMmu8XlhZdY
-	LU70fWC1uLxrDpvF032PmCzWPXzBZLF+/i02i8bP9xkdODxmNfSyebQcecvq8erCHRaPvi2r
-	GD2O39jO5PF5k1wAW1QDo01GamJKapFCal5yfkpmXrqtkndwvHO8qZmBoa6hpYW5kkJeYm6q
-	rZKLT4CuW2YO0EVKCmWJOaVAoYDE4mIlfTtME0JD3HQtYBojdH1DguB6jAzQQMI6xoy+C3eY
-	CtZxVPx6+pa9gfEpWxcjJ4eEgInEu8Y/jBC2mMSFe+uB4lwcQgKLGCXe/O5lhXB+MUr87t/D
-	ClLFJqAm8eXLYXYQW0QgSmLi3dksIEXMAi8YJab9uQU2VkjAS2LNpxtgNqeAt8Sag71gK4QF
-	zCTOv7/GDGKzCKhKbH1wAmgQBwevgKXE7E4mkDCvgKDEj8n3WEBsZgEtifU7jzNB2PISm9e8
-	ZYa4VEFix9nXjBA3GEnsmPEEql5EYt+Ld4wTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFx
-	UnquoV5xYm5xaV66XnJ+7iZGcMp4JrWDcWWDxSFGAQ5GJR7eh05fAoVYE8uKK3MPMUpwMCuJ
-	8HIYfQ0U4k1JrKxKLcqPLyrNSS0+xJgM9OhEZinR5HxgOssriTc0NjEzsjQyszAyMTcnTVhJ
-	nPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsb9jL0Ch2LLnj06e+bp9qOip1UubEj6Zm5nwN2f
-	Lvizfp7403c/dpru21dqzpI+qaek7JPU6ktPLKRF2GKWRPg5mRRucZIterCTP+zeE2W97/rR
-	+5L+qF4vbmA1qj268eEbF7FJHxZvWSQU7bLmUUl7eOO6X69swq+wOnMb7p9nu59X77VjgYQS
-	S3FGoqEWc1FxIgAHGvbPXQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Sun, 28 Jul 2013 21:05:20 -0400
+Message-ID: <51F5BFF6.7080506@gmail.com>
+Date: Mon, 29 Jul 2013 09:05:58 +0800
+From: Aaron Lu <aaron.lwe@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: =?UTF-8?B?Q3Jpc3RpYW4gUm9kcsOtZ3Vleg==?= <crrodriguez@opensuse.org>
+CC: linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: acpi_backlight=vendor no longer working around buggy laptop from
+ hell
+References: <51F40114.9060607@opensuse.org>
+In-Reply-To: <51F40114.9060607@opensuse.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 27, 2013 7:05 PM, Kefeng Wang wrote:
+On 07/28/2013 01:19 AM, Cristian Rodríguez wrote:
+> Hi:
 > 
-> Due to commit: e21d2170f [video: remove unnecessary platform_set_drvdata()],
-> variable dev is unused, so remove it.
+> I have a DELL XPS 15z laptop with the latest BIOS (A12).
 > 
-> Signed-off-by: Kefeng Wang <wangkefeng.wang@huawei.com>
-> ---
->  drivers/video/vga16fb.c | 1 -
->  1 file changed, 1 deletion(-)
+> This piece of crap have never worked properly without special boot 
+> parameters. Up to kernel 3.10, passing acpi_backlight=vendor was enough 
+> to allow the machine to complete boot and be usable.
+> 
+> Now with 3.11 rc2 (also with today's linus tree) unbootable machine 
+> problem is back.
+> 
+> In the past I spent many hours figuring out workarounds and they go 
+> _now_ as the following.
+> 
+> Booting with:
+> 
+> "nox2apic" --> machine works, flawless.
 
-CC'ed Luis Henriques.
+I've seen bug report with similar symptom:
+https://bugzilla.kernel.org/show_bug.cgi?id=56051
 
+It is possible the BIOS is not x2apic aware while Linux enabled x2apic,
+then some ACPI control method to do things like change backlight
+brightness level triggered SMI handler and freeze would occur. This
+might be the reason why adding acpi_backlight=vendor fixed your problem,
+since it would block ACPI video module's handling of backlight.
 
-Hi Kefeng Wang,
-
-The same patch was submitted by Luis Henriques 2 weeks ago.
-Also, the patch was already applied by Tomi Valkeinen.
-
-Best regards,
-Jingoo Han
+So does adding nox2apic still work for you with latest Linus' tree?
 
 > 
-> diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
-> index 830ded4..2827333 100644
-> --- a/drivers/video/vga16fb.c
-> +++ b/drivers/video/vga16fb.c
-> @@ -1265,7 +1265,6 @@ static void vga16fb_imageblit(struct fb_info *info, const struct fb_image *image
+> "x2apic_phys acpi_backlight=vendor" --> machine works, except for the 
+> big problem that the laptop keyboard and touchpad are unresponsive, I 
+> have to plug USB keyboard/mouse to get anything done.
 > 
->  static void vga16fb_destroy(struct fb_info *info)
->  {
-> -	struct platform_device *dev = container_of(info->device, struct platform_device, dev);
->  	iounmap(info->screen_base);
->  	fb_dealloc_cmap(&info->cmap);
->  	/* XXX unshare VGA regions */
+> With no boot parameters the machine hangs at random points in the boot 
+> sequence either:
+> 
+> -Very early at boot and there is no way to retrieve any useful debug 
+> info. [OR]
+
+Maybe this is when video.ko is loaded.
+
+> 
+> - Somehow it looses "connection" with the ATA controller and the 
+> filesystems cannot be mounted. [OR]
+> 
+> - In very few ocassions, the boot proceeds with no keyboard or touchpad 
+> then the iwlwifi wireless card does something stupid (firmware error...)
+
+All sounds like related to irq problem.
+
+> 
+> The only possible hint in the logs I could ever find is:
+> 
+> [    3.844586] [Firmware Bug]: ACPI(PEGP) defines _DOD but not _DOS
+
+This is subtle, meaning the BIOS doesn't provide the required method.
+
+-Aaron
+
+> 
+> 
+> I tried in the past to obtain any debug information, with no luck.
+> 
+> Help is appreciated to get to the bottom of the problem. ;)
+> 
+> 
 > --
-> 1.8.2.2
-
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
