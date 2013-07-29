@@ -1,58 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab3G2RAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:00:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58120 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab3G2RAy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:00:54 -0400
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Subject: [PATCH v3 0/6] Add Dialog DA9063 core and regulator drivers
-Date: Mon, 29 Jul 2013 19:00:41 +0200
-Message-Id: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
-X-Mailer: git-send-email 1.8.3.2
-X-SA-Exim-Connect-IP: 10.1.0.7
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1758046Ab3G2RBE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:01:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57823 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758024Ab3G2RA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 13:00:59 -0400
+Date: Mon, 29 Jul 2013 12:59:47 -0400
+From: Jeremy Eder <jeder@redhat.com>
+To: Youquan Song <youquan.song@linux.intel.com>
+Cc: Jeremy Eder <jeder@redhat.com>, linux-kernel@vger.kernel.org,
+        rafael.j.wysocki@intel.com, riel@redhat.com, youquan.song@intel.com,
+        paulmck@linux.vnet.ibm.com, daniel.lezcano@linaro.org,
+        arjan@linux.intel.com, len.brown@intel.com
+Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
+Message-ID: <20130729165947.GB31525@jeder.rdu.redhat.com>
+References: <20130726173306.GB17985@jeder.rdu.redhat.com>
+ <20130730035731.GA701@linux-youquan.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730035731.GA701@linux-youquan.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 130729 23:57:31, Youquan Song wrote:
+> Hi Jeremy,
+> 
+> I try reproduce your result and then fix the issue, but I do not reproduce it
+>  yet.
+> 
+> I run at netperf-2.6.0 at one machine as server: netserver, other
+> machine: netperf -t TCP_RR -H $SERVER_IP -l 60. The target machine is
+> used in both client and server. I do not reproduce the performance drop
+> issue. I also notice the result is not stable, sometime it is high,
+> sometime is low. In sumarry, it is hard to make a definite result.
+> 
+> Can you try tell me how to reproduce the issue? how do you get the C0
+> data?
+> 
+> What's your config for kernel?  Do you enable CONFIG_NO_HZ_FULL=y or
+> only CONFIG_NO_HZ=y?
+> 
+> 
+> Thanks
+> -Youquan 
+
 Hi,
 
-here is the third round of the DA9063 mfd core and regulator patches, with the
-following changes since v2:
- - Split DA9063 core driver patch into three more digestible parts
-   (register definitions, core mfd/i2c driver, regmap irqchip support)
- - Removed 32k clock output from the regulator driver
- - Added device tree binding documentation
- - Added 32k clock output to mfd driver using clock API
+To answer both your and Daniel's question, those results used only
+CONFIG_NO_HZ=y.
 
-The regmap irq patch depends on regmap changes available at
+These network latency benchmarks are fickle creatures, and need careful
+tuning to become reproducible.  Plus there are BIOS implications and tuning
+varies by vendor.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-irq-ack-mask
+Anyway for the most part it's probably not stable because in order to get
+any sort
+of reproducibility between runs you need to do at least these steps:
 
-regards
-Philipp
+- ensure as little is running in userspace as possible
+- determine PCI affinity for the NIC
+- on both machines, isolate the socket connected to the NIC from userspace
+  tasks
+- Turn off irqbalance and bind all IRQs for that NIC to a single core on
+  the same socket as the NIC
+- run netperf with -TX,Y where X,Y are core numbers that you wish
+  netperf/netserver to run on, respectively.
 
- .../devicetree/bindings/mfd/da9063-i2c.txt         |   68 ++
- drivers/mfd/Kconfig                                |   12 +
- drivers/mfd/Makefile                               |    3 +
- drivers/mfd/da9063-core.c                          |  261 +++++
- drivers/mfd/da9063-i2c.c                           |  182 ++++
- drivers/mfd/da9063-irq.c                           |  193 ++++
- drivers/regulator/Kconfig                          |   10 +
- drivers/regulator/Makefile                         |    1 +
- drivers/regulator/da9063-regulator.c               |  941 ++++++++++++++++++
- include/linux/mfd/da9063/core.h                    |   93 ++
- include/linux/mfd/da9063/pdata.h                   |  111 +++
- include/linux/mfd/da9063/registers.h               | 1028 ++++++++++++++++++++
- 12 files changed, 2903 insertions(+)
+For example, if your NIC is attached to socket 0 and socket 0 cores are
+enumerated 0-7, then:
 
+- set /proc/irq/NNN/smp_affinity_list to, say, 6 for all vectors on that
+  NIC.
+- nice -20 netperf -t TCP_RR - $SERVER_IP -l 60 -T4,4 -s 2
 
+That should get you most of the way there.  The -s 2 connects and waits 2
+seconds, I found this to help with the first few second's worth of data.
+Or
+you could just toss the first 2 seconds worth, it seems to take that long
+to stabilize.  What I mean is, if you're not using -D1,1 option to netperf,
+you might not have seen that netperf tests seem to take a few seconds to
+stabilize even
+when properly tuned.
+
+I got the C0 data by running turbostat in parallel with each benchmark run,
+then grabbing the C-state data for the cores relevant to the test.  In my
+case that was cores 4 and 6, where core 4 was where I put netperf/netserver
+and core 6 was where I put the NIC IRQs.  Then I parsed that output into a
+format that this could interpret:
+
+https://github.com/bitly/data_hacks/blob/master/data_hacks/histogram.py
+
+I'm building a kernel from Rafael's tree and will try to confirm what Len
+already sent.  Thanks everyone for looking into it.
