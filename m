@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab3G2QoF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:44:05 -0400
-Received: from s15283307.onlinehome-server.info ([87.106.208.187]:39352 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756291Ab3G2QoB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:44:01 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 6.5 \(1508\))
-Subject: Re: [PATCH] bluetooth: remove wrong dependency for BT_ATH3K
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
-Date: Mon, 29 Jul 2013 09:43:53 -0700
-Cc: <linux-bluetooth@vger.kernel.org>, <gustavo@padovan.org>,
-        <johan.hedberg@gmail.com>, <linux-kernel@vger.kernel.org>,
-        <vikram.kandukuri@atheros.com>, <suraj@atheros.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
-References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
-To: Hector Palacios <hector.palacios@digi.com>
-X-Mailer: Apple Mail (2.1508)
+	id S1757911Ab3G2QpQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:45:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53950 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756417Ab3G2QpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 12:45:14 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v3 0/3] Input: omap-keypad: Wakeup capability and w/a for i689 errata.
+Date: Mon, 29 Jul 2013 19:45:08 +0300
+Message-ID: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hector,
+This patchset adds wake up capability for the keypad and
+workaround for i689 errata.
 
-> The Atheros firmware download driver is not dependent on HCI
-> USB driver. This driver is needed to complement any Atheros
-> driver like BT_HCIUART_ATH3K.
-> 
-> Signed-off-by: Hector Palacios <hector.palacios@digi.com>
-> CC: Suraj Sumangala <suraj@atheros.com>
-> CC: Vikram Kandukuri <vikram.kandukuri@atheros.com>
-> ---
-> drivers/bluetooth/Kconfig | 1 -
-> 1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
-> index 11a6104..a1d482b 100644
-> --- a/drivers/bluetooth/Kconfig
-> +++ b/drivers/bluetooth/Kconfig
-> @@ -222,7 +222,6 @@ config BT_MRVL_SDIO
-> 
-> config BT_ATH3K
-> 	tristate "Atheros firmware download driver"
-> -	depends on BT_HCIBTUSB
-> 	select FW_LOADER
-> 	help
-> 	  Bluetooth firmware download driver.
-> 
+Based on top of v3.11-rc3
 
-I am confused now. How can an USB driver work with an UART driver? If you do not want to depend on BT_HCIBTUSB then that is fine, but at least you need to depend on USB.
+Depends on:
 
-Regards
+Input: omap-keypad: Convert to threaded IRQ
+https://patchwork.kernel.org/patch/2832920/
 
-Marcel
+Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
+https://patchwork.kernel.org/patch/2832913/
+
+Axel Haslam (1):
+  Input: omap-keypad: errata i689: Correct debounce time
+
+Illia Smyrnov (2):
+  Input: omap-keypad: Enable wakeup capability for keypad.
+  Input: omap-keypad: Setup irq type from DT
+
+ drivers/input/keyboard/omap4-keypad.c |   52 ++++++++++++++++++++++++++++++---
+ 1 file changed, 48 insertions(+), 4 deletions(-)
+
+-- 
+1.7.9.5
 
