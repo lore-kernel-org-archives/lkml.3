@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755699Ab3G2XO7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 19:14:59 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:48518 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645Ab3G2XO5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 19:14:57 -0400
-Date: Mon, 29 Jul 2013 17:14:25 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: David Gibson <david@gibson.dropbear.id.au>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
-        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+	id S1756332Ab3G2XR0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:17:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:60864 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3G2XRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 19:17:25 -0400
+Date: Mon, 29 Jul 2013 16:17:24 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: "arnd@arndb.de" <arnd@arndb.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-Message-ID: <20130729231425.GA4439@obsidianresearch.com>
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <51F39FD8.6080808@broadcom.com>
- <20130727183059.GD4813@netboy>
- <1441731.8CGUI1tUxh@flatron>
- <20130729180513.GB1884@obsidianresearch.com>
- <20130729222039.GE29970@voom.fritz.box>
+        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
+Subject: Re: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
+Message-ID: <20130729231724.GA10863@kroah.com>
+References: <20130724160008.GA17083@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
+ <20130724162605.GA9700@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE73993@HASMSX106.ger.corp.intel.com>
+ <20130724202957.GA14913@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE76B1B@HASMSX106.ger.corp.intel.com>
+ <20130728153155.GA6781@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE77A4E@HASMSX106.ger.corp.intel.com>
+ <20130729223805.GA9677@kroah.com>
+ <5B8DA87D05A7694D9FA63FD143655C1B1AE77AB9@HASMSX106.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729222039.GE29970@voom.fritz.box>
+In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AE77AB9@HASMSX106.ger.corp.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 08:20:39AM +1000, David Gibson wrote:
+On Mon, Jul 29, 2013 at 11:08:52PM +0000, Winkler, Tomas wrote:
+> How do I add new device specific sysfs in non-race way if my entry
+> point is the pci probe function.
 
-> > Clearly general purpose systems (eg servers, workstations, etc) with
-> > *full featured firmware* fall into category b. Linux already basically
-> > has stable DT for those systems - but the firmware is expected to do
-> > lots of work and hide all the low level details from the
-> > kernel.  Basically, the DT should stick to approximately ePAR and
-> > everything else is hidden by the firmware.
-> 
-> No.  With the exception of the hypervisor/virtualization extensions,
-> ePAPR describes (for now) an entirely passive firmware interface.
-> That is, once the handover to the OS has happened, there is *no*
-> further firmware interaction.  It is not capable of hiding any details
-> from the OS, except those which can be done by one-time
-> initialization.
+You do it in the device creation for the device you add below the PCI
+device in sysfs, by setting the groups field in the device.
 
-Well, one-time initialization details are actually exactly one of the
-areas I am thinking about. Some of the embedded SOCs have extensive
-one time initization code in the kernel that is highly SOC specific
-and on x86 it would live in the firmware.
+You don't create files in the sysfs directory for the PCI device itself,
+those are owned by the PCI bus core.
 
-But I see what you mean, ePAPR was the wrong reference, I didn't
-carefully check it. I ment the kind of DT use we've seen in SPARC,
-POWER servers, Apple stuff, etc - systems explicitly designed so that
-new hardware will boot old OSs.
+This is why you are your own "bus" here, use it :)
 
-Jason
+If you still have questions, how about we take it to code, post what you
+have, and I'll see what needs to be changed.
+
+hope this helps,
+
+greg k-h
