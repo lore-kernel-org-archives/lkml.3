@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754510Ab3G2T72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:59:28 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:56924 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab3G2T71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:59:27 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: balbi@ti.com
-Cc: Illia Smyrnov <illia.smyrnov@ti.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for keypad.
-Date: Mon, 29 Jul 2013 12:59:23 -0700
-Message-ID: <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.10.5 (Linux/3.9.9-201.fc18.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130729191324.GA5767@radagast>
-References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com> <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com> <20130729191324.GA5767@radagast>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754189Ab3G2UCr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:02:47 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:39734 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751551Ab3G2UCq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:02:46 -0400
+Message-ID: <1375128164.2075.53.camel@joe-AO722>
+Subject: Re: Checkpatch error on trace events macros
+From: Joe Perches <joe@perches.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Mon, 29 Jul 2013 13:02:44 -0700
+In-Reply-To: <20130729195201.GC14883@xanatos>
+References: <20130729195201.GC14883@xanatos>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 10:13:24 PM Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Jul 29, 2013 at 11:59:45AM -0700, Dmitry Torokhov wrote:
-> > > > @@ -439,12 +444,50 @@ static const struct of_device_id
-> > > > omap_keypad_dt_match[] = {>
-> > > > 
-> > > >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
-> > > >  #endif
-> > > > 
-> > > > +#ifdef CONFIG_PM_SLEEP
-> > > > +static int omap4_keypad_suspend(struct device *dev)
-> > > > +{
-> > > > +	struct platform_device *pdev = to_platform_device(dev);
-> > > 
-> > > you don't need to access the platform_device...
-> > > 
-> > > > +	struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
-> > > 
-> > > ... since this can become:
-> > > 	struct omap4_keypad *keypad_data = dev_get_drvdata(dev);
-> > 
-> > No, please use correct accessors for the objects. Platform drivers deal
-> > with platform devices and I prefer using platform_get_drvdata() on them.
-> 
-> The argument to this function is a struct device, you prefer to do some
-> pointer math to find the containing pdev, then deref that back to dev,
-> then to struct device_private and further to driver_data ?
-> 
-> Sounds like a waste of time IMHO. You already have the device pointer
-> anyway, why would you go through the trouble of calculating the
-> offsets for the containing struct platform_device ?
+On Mon, 2013-07-29 at 12:52 -0700, Sarah Sharp wrote:
+> Hi Andy and Joe,
 
-This assumes knowledge of dev_get_drvdata() implementation and assumption
-that it will stay the same. Unless I hear from device core guys that
-<bus>_{get|set}_drvdata() methods are obsolete and will be eventually
-removed I will require proper accessors being used.
+Hi Sarah.
 
-Thanks!
+> Checkpatch is complaining when code adds new trace events macros:
+> 
+> sarah@xanatos:~/git/kernels/xhci$ git am -s ~/Maildir.fetchmail/.to-apply
+> Applying: xhci: add traces for debug messages in xhci_address_device()
+> ERROR: Macros with complex values should be enclosed in parenthesis
+> #86: FILE: drivers/usb/host/xhci-trace.h:15:
+> +#define TRACE_SYSTEM xhci-hcd
 
--- 
-Dmitry
+<shrug>
+
+I think these are suboptimal as the files should use
+underscores rather than dashes.
+
+checkpatch sees this as a subtraction which really
+should have parentheses.
+
+> ERROR: Macros with complex values should be enclosed in parenthesis
+> #115: FILE: drivers/usb/host/xhci-trace.h:44:
+> +#define TRACE_INCLUDE_PATH .
+> 
+> ERROR: Macros with complex values should be enclosed in parenthesis
+> #118: FILE: drivers/usb/host/xhci-trace.h:47:
+> +#define TRACE_INCLUDE_FILE xhci-trace
+
+Don't expect to checkpatch to be perfect.
+
+It's not.
+
+It's a stupid little tool good for some things
+and good for highlighting areas that might need
+another look.
+
+Use your judgment about everything it spews.
+
+
