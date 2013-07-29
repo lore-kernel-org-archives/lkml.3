@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab3G2N13 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 09:27:29 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40777 "EHLO bear.ext.ti.com"
+	id S1753673Ab3G2Nav (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 09:30:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33938 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab3G2N11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 09:27:27 -0400
-Message-ID: <51F66D94.9060706@ti.com>
-Date: Mon, 29 Jul 2013 09:26:44 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751998Ab3G2Nas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 09:30:48 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 5/9] dma: edma: Leave linked to Null slot instead of DUMMY slot
+Date: Mon, 29 Jul 2013 08:29:51 -0500
+Message-ID: <1375104595-16018-6-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375104595-16018-1-git-send-email-joelf@ti.com>
+References: <1375104595-16018-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Chris Ball <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [RFC/RFT PATCH 0/5] mm: ARM nobootmem and few dma_mask fixes
-References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <20130726151021.GU24642@n2100.arm.linux.org.uk> <51F2A3AA.4060801@ti.com> <20130729111503.GG24642@n2100.arm.linux.org.uk>
-In-Reply-To: <20130729111503.GG24642@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 29 July 2013 07:15 AM, Russell King - ARM Linux wrote:
-> On Fri, Jul 26, 2013 at 12:28:26PM -0400, Santosh Shilimkar wrote:
->> On Friday 26 July 2013 11:10 AM, Russell King - ARM Linux wrote:
->>> On Fri, Jul 12, 2013 at 05:48:09PM -0400, Santosh Shilimkar wrote:
->>>> The series is an attempt to move ARM port to NO_BOOTMEM. As discussed
->>>> on list NO_BOOTMEM move needed updates to max*pfn meaning to be maximum
->>>> PFNs but that breaks the dma_mask for few block layer drivers since
->>>> ARM start of physical memory is not PFN0 unlike most of the architectures.
->>>> Some more read on it is here:
->>>> 	http://lwn.net/Articles/543408/
->>>> 	http://lwn.net/Articles/543424/
->>>>
->>>> To address this issue, we introduce generic dma_max_pfn() helper which
->>>> can be overridden from the architectures.
->>>> 	
->>>> Another intention behind move to nobootmem is also to convert ARM to
->>>> switch to memblock and getting rid of bootmem allocator dependency which
->>>> don't work for LPAE machines which has physical memory starting beyond
->>>> 4 GB boundary. It needs changes to core kernel and also a new memblock
->>>> API. More on this can be found here:
->>>> 	https://lkml.org/lkml/2013/6/29/77
->>>>
->>>> I have been trying to cook up these patches with kind help from Russell
->>>> and we know series don't solve all the dma_mask bad assumptions. But at
->>>> least I am hoping that it can get the ball rolling.	
->>>>
->>>> Comments/testing help is welcome !!
->>>
->>> As this is related to some of the cleanup of dma_mask which I've been
->>> doing, I think it may make sense to roll this into one tree.  Any
->>> objection to that?
->>>
->>> Can we get any acks on this stuff from Jens and Jejb etc - especially
->>> for the bits which touch block/ and for the scsi bits as these are
->>> touching other subsystems.  (oddly, linux-scsi wasn't on the original
->>> mail for this series summary.)
->>>
->> Sorry I missed the scsi lists on the summary patch.
->>
->> While browsing the code I found another spot in mmc layer which
->> needs fixing. The patch is at the end of the email with Chris
->> and linux-mmc cc'ed here.
-> 
-> Would you mind putting them all in the patch system, I can add the acks
-> should anyone supply them later, and I'll repost them along with my set
-> of dma-mask patches.  Thanks.
-> 
-Done.
-7794/1, 7795/1, 7796/1, 7797/1, 7798/1, 7799/1
+Dummy slot has been used as a way for missed-events not to be
+reported as missing. This has been particularly troublesome for cases
+where we might want to temporarily pause all incoming events.
 
-Didn't know how to get XXXX/1,2,3,4... pushed into the tracker.
-BTW, I have also pushed the patched on my git tree branch [1] just
-in case you or some one needs it.
+For EDMA DMAC, there is no way to do any such pausing of events as
+the occurence of the "next" event is not software controlled.
+Using "edma_pause" in IRQ handlers doesn't help as by then the event
+in concern from the slave is already missed.
 
-Regards,
-Santosh
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
-3.12/nobootmem_n_dma-mask
+Linking a dummy slot, is seen to absorb these events which we didn't
+want to miss. So we don't link to dummy, but instead leave it linked
+to NULL set, allow an error condition and detect the channel that
+missed it.
+
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/dma/edma.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index aa4989f..1eda5cc 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -159,9 +159,6 @@ static void edma_execute(struct edma_chan *echan)
+ 		/* Link to the previous slot if not the last set */
+ 		if (i != (total_process - 1))
+ 			edma_link(echan->slot[i], echan->slot[i+1]);
+-		/* Final pset links to the dummy pset */
+-		else
+-			edma_link(echan->slot[i], echan->ecc->dummy_slot);
+ 	}
+ 
+ 	edesc->total_processed += total_process;
+-- 
+1.7.9.5
 
