@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab3G2P5c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:57:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:1780 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab3G2P5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:57:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,770,1367996400"; 
-   d="scan'208";a="378375737"
-Date: Mon, 29 Jul 2013 17:57:27 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@kernel.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+	id S1755620Ab3G2P6Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:58:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36581 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab3G2P6X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:58:23 -0400
+Message-ID: <1375113464.4223.31.camel@pizza.hi.pengutronix.de>
 Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
-Message-ID: <20130729155727.GA11830@zurbaran>
-References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
- <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
- <20130725080443.GB3403@laptop>
- <20130725080800.GC3403@laptop>
- <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
- <20130729154614.GA7704@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Mon, 29 Jul 2013 17:57:44 +0200
 In-Reply-To: <20130729154614.GA7704@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
+	 <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
+	 <20130725080443.GB3403@laptop> <20130725080800.GC3403@laptop>
+	 <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
+	 <20130729154614.GA7704@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Lee,
 
-On Mon, Jul 29, 2013 at 04:46:14PM +0100, Lee Jones wrote:
+Am Montag, den 29.07.2013, 16:46 +0100 schrieb Lee Jones:
 > > > > > Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
 > > > > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
 > > > > > ---
@@ -54,15 +55,13 @@ On Mon, Jul 29, 2013 at 04:46:14PM +0100, Lee Jones wrote:
 > > definitions and the assignment of those to regmap and regmap-irq.
 > > 
 > > I could split this into (core+i2c) and (irq) parts if you insist.
-> 
-> I won't insist on it, 
-I would. Smaller patches are easier to review, track and bisect.
-So if you can logically split this patch into smaller pieces,, then
-please do so.
+>
+> I won't insist on it, but bear in mind it might take me longer to set
+> aside enough time to review the patch than if it were broken up. In
+> the latter case I could pick at it throughout the working day.
 
-Cheers,
-Samuel.
+Alright. I'll split it up a bit, then.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+regards
+Philipp
+
