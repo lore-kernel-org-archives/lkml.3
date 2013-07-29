@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab3G2IeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:34:01 -0400
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:50814 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab3G2Id7 (ORCPT
+	id S1753957Ab3G2If5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 04:35:57 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:40476 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753512Ab3G2If4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:33:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20130726113717.GN13468@dastard>
-References: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
-	<20130726020318.GD21982@dastard>
-	<CAEH94LiXtG=DD+Qn4kbNT_Y_Qn65wVYrpYvHKXOob6wru3SeDw@mail.gmail.com>
-	<20130726113717.GN13468@dastard>
-Date: Mon, 29 Jul 2013 16:33:58 +0800
-Message-ID: <CAEH94Lj27DCzCiWxwerEgwsExtdtviB_+S4bDbxg-wwq445rSA@mail.gmail.com>
-Subject: Re: [PATCH] xfs: fix an assertion failure
-From: Zhi Yong Wu <zwu.kernel@gmail.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfstests <xfs@oss.sgi.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        linux-kernel mlist <linux-kernel@vger.kernel.org>,
-        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 29 Jul 2013 04:35:56 -0400
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linus.walleij@linaro.org, sachin.kamat@linaro.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/1] pinctrl: sunxi: Fix incorrect NULL check
+Date: Mon, 29 Jul 2013 13:49:32 +0530
+Message-Id: <1375085972-657-1-git-send-email-sachin.kamat@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 7:37 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Fri, Jul 26, 2013 at 02:01:23PM +0800, Zhi Yong Wu wrote:
->> No, it still raised the same assertion as below:
->>
->> [  521.715103] XFS: Assertion failed: !(bip->bli_item.li_flags &
->> XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 940
->
-> How are you reproducing it?
->
-> Can you take an event trace with trace-cmd and attach the output of
-> the report?
-After kernel base is switched to Linux 3.11-rc3, when i try to take
-event trace with trace-cmd, that issue doesn't appear any more in my
-environment. :)
+*map should be tested for NULL instead of map as kmalloc pointer
+is assigned to it. This also fixes a potential null pointer dereference
+bug later in the code.
 
->
-> Cheers,
->
-> Dave.
-> --
-> Dave Chinner
-> david@fromorbit.com
+Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/pinctrl/pinctrl-sunxi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
-
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index c47fd1e..3655a5a 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -175,7 +175,7 @@ static int sunxi_pctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
+ 	}
+ 
+ 	*map = kmalloc(nmaps * sizeof(struct pinctrl_map), GFP_KERNEL);
+-	if (!map)
++	if (!*map)
+ 		return -ENOMEM;
+ 
+ 	of_property_for_each_string(node, "allwinner,pins", prop, group) {
 -- 
-Regards,
+1.7.9.5
 
-Zhi Yong Wu
