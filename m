@@ -1,96 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757554Ab3G2Qdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:33:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47272 "EHLO mx2.suse.de"
+	id S1757574Ab3G2QeN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:34:13 -0400
+Received: from etezian.org ([198.101.225.253]:60942 "EHLO mail.etezian.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757007Ab3G2Qdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:33:40 -0400
-Date: Mon, 29 Jul 2013 18:33:35 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Jonathan Corbet <corbet@lwn.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development
- process
-In-Reply-To: <51F698DE.4010300@windriver.com>
-Message-ID: <alpine.LNX.2.00.1307291832360.18809@pobox.suse.cz>
-References: <20130729102452.GA2682@zurbaran> <alpine.LNX.2.00.1307291230270.18809@pobox.suse.cz> <7008541.g5m1pJPVp1@vostro.rjw.lan> <20130729081141.00818596@lwn.net> <51F698DE.4010300@windriver.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755508Ab3G2QeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 12:34:10 -0400
+Date: Mon, 29 Jul 2013 18:35:32 +0200
+From: Andi Shyti <andi@etezian.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Andi Shyti <andi@etezian.org>, smfrench@gmail.com,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mikko.rapeli@iki.fi, pshilovsky@samba.org
+Subject: Re: [PATCH RESEND] cifs: file: initialize oparms.reconnect before
+ using it
+Message-ID: <20130729163532.GA4254@jack.whiskey>
+References: <1375088293-14110-1-git-send-email-andi@etezian.org>
+ <20130729093241.437315e1@corrin.poochiereds.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130729093241.437315e1@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013, Paul Gortmaker wrote:
+> > +	oparms.tcon = tcon;
+> > +	oparms.cifs_sb = cifs_sb;
+> > +	oparms.desired_access = desired_access;
+> > +	oparms.create_options = create_options;
+> 
+> This patch just moves the brokenness around. You're
+> setting .desired_access here to an unintialized variable.
+> create_options also looks like it may potentially be wrong at this
+> point.
 
-> >> That actually is simple enough.
-> >>
-> >> Check out the Linus' master branch and do
-> >>
-> >> $ git log --ancestry-path --merges <commit>..
-> > 
-> > So I picked a recent, single-signoff patch mostly at random:
-> > 
-> > 	8ade62857ef77bdf639185410fbcd811aa700cb2
-> > 
-> > That "git log" command gives me 156 intervening commits involving at least
-> > a dozen networking trees, along with virtio, parisc, blackfin, x86, ...
-> > Even if one stops looking at the first merge performed by Linus, that's 47
-> > to look at.  Did that patch really pass through all those peoples' hands?
-> 
-> Try this:
-> 
-> $ git describe --contains 8ade62857ef77bdf6391
-> v3.11-rc1~16^2~103^2^2~5^2~25
-> 
-> Looks scary, but lets deconstruct it right to left a chunk at
-> a time v3.11-rc1 ~16 ^2 ~103 ^2 ^2 ~5 ^2 ~25
-> 
-> So, your commit is 25 commits back in the 2nd branch of the merge
-> described by v3.11-rc1~16^2~103^2^2~5
-> 
-> git show v3.11-rc1~16^2~103^2^2~5
-> commit 76015021aaaa288bb4dc870258e0acc4d178c950
-> Merge: f7a01ca fded313
-> Author: John W. Linville <linville@tuxdriver.com>
-> Date:   Mon Jun 10 14:51:17 2013 -0400
-> 
->     Merge branch 'for-john' of git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/iwlwifi-next
-> 
-> which is by definition, 5 commits back from 2nd branch
-> of the merge v3.11-rc1~16^2~103^2
-> 
-> $ git show v3.11-rc1~16^2~103^2
-> commit 3899ba90a4ab2f3cab8e0f91a76c14ff131c8293
-> Merge: 45203a3 8b3e7be
-> Author: John W. Linville <linville@tuxdriver.com>
-> Date:   Tue Jun 11 14:48:32 2013 -0400
-> 
->     Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next into for-davem
-> 
-> and that merge was merged into the merge v3.11-rc1~16^2~103
-> 
-> git show v3.11-rc1~16^2~103
-> commit 4a2e667ac15edd19b02321bc030acb3ebeb22ab6
-> Merge: 8f728d7 3899ba9
-> Author: David S. Miller <davem@davemloft.net>
-> Date:   Wed Jun 12 14:23:41 2013 -0700
-> 
->     Merge branch 'for-davem' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-next
-> 
-> which means the above merge was 103 commits back from the last
-> (last = latest/newest) commit on the 2nd arm in merge v3.11-rc1~16
-> and so on.
-> 
-> All the data is there, regardless of whether a maintainer manually
-> manipulated the patch and added a SOB line or not.
+Urrrca! This is what I achieve when I do one last fix before
+going to sleep.
 
-Alternatively (and that's what I am using) you fire up gitk, and you see 
-all the information almost instantly.
+I spent a bit of time more going through the cifs/smb code and
+the most sensful fix looks this
 
--- 
-Jiri Kosina
-SUSE Labs
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index 1e57f36..7e36ae3 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -647,6 +647,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flu
+                                     oflags, &oplock, &cfile->fid.netfid, xid
+                if (rc == 0) {
+                        cifs_dbg(FYI, "posix reopen succeeded\n");
++                       oparms.reconnect = true;
+                        goto reopen_success;
+                }
+                /*
+
+There is only one case when reconnect becames false, that is when
+open = smb2_open_file and calls SMB2_open() that calls
+add_durable_context() that sets reconnect = false with some
+nested ifs in between, and still only in case
+everything succeeds. We are checking reconnect only for this
+case, otherwise we could get rid of the if (oparms.reconnect) and
+not falling into the unknown state.
+
+If it makes sense, I can send the above suggestion.
+
+Thanks,
+Andi
