@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab3G2FgQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:36:16 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58282 "EHLO
+	id S1755473Ab3G2FgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:36:14 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45636 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab3G2FcW (ORCPT
+	with ESMTP id S1755121Ab3G2FcX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:32:22 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-11-51f5fe644ff9
+	Mon, 29 Jul 2013 01:32:23 -0400
+X-AuditID: 9c930197-b7bfbae000000e88-10-51f5fe645676
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 07/18] mm, hugetlb: pass has_reserve to dequeue_huge_page_vma()
-Date: Mon, 29 Jul 2013 14:31:58 +0900
-Message-Id: <1375075929-6119-8-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 06/18] mm, hugetlb: remove vma_need_reservation()
+Date: Mon, 29 Jul 2013 14:31:57 +0900
+Message-Id: <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,53 +32,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't have to call vma_has_reserve() each time we need information.
-Passing has_reserve unburden this effort.
+vma_need_reservation() can be substituted by vma_has_reserves()
+with minor change. These function do almost same thing,
+so unifying them is better to maintain.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index ff46a2c..1426c03 100644
+index bf2ee11..ff46a2c 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -572,7 +572,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+@@ -451,8 +451,18 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ 		vma->vm_private_data = (void *)0;
+ }
+ 
+-/* Returns true if the VMA has associated reserve pages */
+-static int vma_has_reserves(struct vm_area_struct *vma, long chg)
++/*
++ * Determine if the huge page at addr within the vma has an associated
++ * reservation.  Where it does not we will need to logically increase
++ * reservation and actually increase subpool usage before an allocation
++ * can occur.  Where any new reservation would be required the
++ * reservation change is prepared, but not committed.  Once the page
++ * has been allocated from the subpool and instantiated the change should
++ * be committed via vma_commit_reservation.  No action is required on
++ * failure.
++ */
++static int vma_has_reserves(struct hstate *h,
++			struct vm_area_struct *vma, unsigned long addr)
+ {
+ 	if (vma->vm_flags & VM_NORESERVE) {
+ 		/*
+@@ -464,10 +474,22 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
+ 		 * step. Currently, we don't have any other solution to deal
+ 		 * with this situation properly, so add work-around here.
+ 		 */
+-		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
+-			return 1;
+-		else
+-			return 0;
++		if (vma->vm_flags & VM_MAYSHARE) {
++			struct address_space *mapping = vma->vm_file->f_mapping;
++			struct inode *inode = mapping->host;
++			pgoff_t idx = vma_hugecache_offset(h, vma, addr);
++			struct resv_map *resv = inode->i_mapping->private_data;
++			long chg;
++
++			chg = region_chg(resv, idx, idx + 1);
++			if (chg < 0)
++				return -ENOMEM;
++
++			if (chg == 0)
++				return 1;
++		}
++
++		return 0;
+ 	}
+ 
+ 	/* Shared mappings always use reserves */
+@@ -478,8 +500,16 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
+ 	 * Only the process that called mmap() has reserves for
+ 	 * private mappings.
+ 	 */
+-	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
++	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
++		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
++		struct resv_map *resv = vma_resv_map(vma);
++
++		/* Just for allocating region structure */
++		if (region_chg(resv, idx, idx + 1) < 0)
++			return -ENOMEM;
++
+ 		return 1;
++	}
+ 
+ 	return 0;
+ }
+@@ -542,8 +572,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
  
  static struct page *dequeue_huge_page_vma(struct hstate *h,
  				struct vm_area_struct *vma,
--				unsigned long address, int avoid_reserve)
-+				unsigned long address,
-+				int has_reserve, int avoid_reserve)
+-				unsigned long address, int avoid_reserve,
+-				long chg)
++				unsigned long address, int avoid_reserve)
  {
  	struct page *page = NULL;
  	struct mempolicy *mpol;
-@@ -587,8 +588,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+@@ -558,7 +587,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
  	 * have no page reserves. This check ensures that reservations are
  	 * not "stolen". The child may still get SIGKILLed
  	 */
--	if (!vma_has_reserves(h, vma, address) &&
--			h->free_huge_pages - h->resv_huge_pages == 0)
-+	if (!has_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+-	if (!vma_has_reserves(vma, chg) &&
++	if (!vma_has_reserves(h, vma, address) &&
+ 			h->free_huge_pages - h->resv_huge_pages == 0)
  		return NULL;
  
- 	/* If reserves cannot be used, ensure enough pages are in the pool */
-@@ -607,7 +607,7 @@ retry_cpuset:
+@@ -578,7 +607,7 @@ retry_cpuset:
  			if (page) {
  				if (avoid_reserve)
  					break;
--				if (!vma_has_reserves(h, vma, address))
-+				if (!has_reserve)
+-				if (!vma_has_reserves(vma, chg))
++				if (!vma_has_reserves(h, vma, address))
  					break;
  
  				h->resv_huge_pages--;
-@@ -1159,7 +1159,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+@@ -1077,42 +1106,6 @@ static void return_unused_surplus_pages(struct hstate *h,
+ 	}
+ }
+ 
+-/*
+- * Determine if the huge page at addr within the vma has an associated
+- * reservation.  Where it does not we will need to logically increase
+- * reservation and actually increase subpool usage before an allocation
+- * can occur.  Where any new reservation would be required the
+- * reservation change is prepared, but not committed.  Once the page
+- * has been allocated from the subpool and instantiated the change should
+- * be committed via vma_commit_reservation.  No action is required on
+- * failure.
+- */
+-static long vma_needs_reservation(struct hstate *h,
+-			struct vm_area_struct *vma, unsigned long addr)
+-{
+-	struct address_space *mapping = vma->vm_file->f_mapping;
+-	struct inode *inode = mapping->host;
+-
+-	if (vma->vm_flags & VM_MAYSHARE) {
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = inode->i_mapping->private_data;
+-
+-		return region_chg(resv, idx, idx + 1);
+-
+-	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
+-		return 1;
+-
+-	} else  {
+-		long err;
+-		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
+-		struct resv_map *resv = vma_resv_map(vma);
+-
+-		err = region_chg(resv, idx, idx + 1);
+-		if (err < 0)
+-			return err;
+-		return 0;
+-	}
+-}
+ static void vma_commit_reservation(struct hstate *h,
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+@@ -1140,8 +1133,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	struct hugepage_subpool *spool = subpool_vma(vma);
+ 	struct hstate *h = hstate_vma(vma);
+ 	struct page *page;
+-	long chg;
+-	int ret, idx;
++	int ret, idx, has_reserve;
+ 	struct hugetlb_cgroup *h_cg;
+ 
+ 	idx = hstate_index(h);
+@@ -1153,20 +1145,21 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 	 * need pages and subpool limit allocated allocated if no reserve
+ 	 * mapping overlaps.
+ 	 */
+-	chg = vma_needs_reservation(h, vma, addr);
+-	if (chg < 0)
++	has_reserve = vma_has_reserves(h, vma, addr);
++	if (has_reserve < 0)
+ 		return ERR_PTR(-ENOMEM);
+-	if (chg)
+-		if (hugepage_subpool_get_pages(spool, chg))
++
++	if (!has_reserve && (hugepage_subpool_get_pages(spool, 1) < 0))
+ 			return ERR_PTR(-ENOSPC);
+ 
+ 	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
+ 	if (ret) {
+-		hugepage_subpool_put_pages(spool, chg);
++		if (!has_reserve)
++			hugepage_subpool_put_pages(spool, 1);
  		return ERR_PTR(-ENOSPC);
  	}
  	spin_lock(&hugetlb_lock);
--	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
-+	page = dequeue_huge_page_vma(h, vma, addr, has_reserve, avoid_reserve);
+-	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
++	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
  	if (!page) {
  		spin_unlock(&hugetlb_lock);
  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+@@ -1174,7 +1167,8 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 			hugetlb_cgroup_uncharge_cgroup(idx,
+ 						       pages_per_huge_page(h),
+ 						       h_cg);
+-			hugepage_subpool_put_pages(spool, chg);
++			if (!has_reserve)
++				hugepage_subpool_put_pages(spool, 1);
+ 			return ERR_PTR(-ENOSPC);
+ 		}
+ 		spin_lock(&hugetlb_lock);
+@@ -2769,7 +2763,7 @@ retry:
+ 	 * the spinlock.
+ 	 */
+ 	if ((flags & FAULT_FLAG_WRITE) && !(vma->vm_flags & VM_SHARED))
+-		if (vma_needs_reservation(h, vma, address) < 0) {
++		if (vma_has_reserves(h, vma, address) < 0) {
+ 			ret = VM_FAULT_OOM;
+ 			goto backout_unlocked;
+ 		}
+@@ -2860,7 +2854,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	 * consumed.
+ 	 */
+ 	if ((flags & FAULT_FLAG_WRITE) && !huge_pte_write(entry)) {
+-		if (vma_needs_reservation(h, vma, address) < 0) {
++		if (vma_has_reserves(h, vma, address) < 0) {
+ 			ret = VM_FAULT_OOM;
+ 			goto out_mutex;
+ 		}
 -- 
 1.7.9.5
 
