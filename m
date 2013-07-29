@@ -1,62 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab3G2FVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:21:20 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5567 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab3G2FVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:21:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,766,1367996400"; 
-   d="scan'208";a="338270207"
-Date: Mon, 29 Jul 2013 13:05:14 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Gleb Natapov <gleb@redhat.com>, Youquan Song <youquan.song@intel.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
-Message-ID: <20130729170514.GB30371@linux-youquan.bj.intel.com>
-References: <1373592159-459-1-git-send-email-youquan.song@intel.com> <CAE9FiQVDZGbTEd7jpmOQY9+_Gb=DRrd=CCmvQPqXWoyww2NjdQ@mail.gmail.com> <20130724062254.GA16400@redhat.com> <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQWbVDRpLUCUTF=Jpmm-nn6kgBYFW25PPTEiPK-R-mX0jA@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1754772Ab3G2F2a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:28:30 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51848 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab3G2F22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:28:28 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-be-51f5fd78fcec
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 9/9] mm, hugetlb: decrement reserve count if VM_NORESERVE alloc page cache
+Date: Mon, 29 Jul 2013 14:28:21 +0900
+Message-Id: <1375075701-5998-10-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes. It would be great, if Youquan can point out where is the intel doc
-> about the change.
-> 
-> Also if the patch can move on,  hypervisor_x2apic_available() related
-> declaration and define
-> could be dropped.
+If a vma with VM_NORESERVE allocate a new page for page cache, we should
+check whether this area is reserved or not. If this address is
+already reserved by other process(in case of chg == 0), we should
+decrement reserve count, because this allocated page will go into page
+cache and currently, there is no way to know that this page comes from
+reserved pool or not when releasing inode. This may introduce
+over-counting problem to reserved count. With following example code,
+you can easily reproduce this situation.
 
-Hi Yinghai,
+Assume 2MB, nr_hugepages = 100
 
-Sorry I do not know the document change but I also do not find the
-words/description/explanation that x2APIC physical mode also need interrupt
- remapping support when CPU < 256. Of course, X2APIC cluster mode must
-has interrupt remapping support. 
+        size = 20 * MB;
+        flag = MAP_SHARED;
+        p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+        if (p == MAP_FAILED) {
+                fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+                return -1;
+        }
 
-I have tested many machines, both old and most recent machines and from
-desktop to server, x2APIC physical mode works without interrupt
-remapping when CPU < 256.
+        flag = MAP_SHARED | MAP_NORESERVE;
+        q = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+        if (q == MAP_FAILED) {
+                fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+        }
+        q[0] = 'c';
 
-In theory and real test, I do not find any issue about the patch.
+After finish the program, run 'cat /proc/meminfo'.
+You can see below result.
 
-In order to make sure the patch without involving unexpected issues beyond
-I can understand, I will confirm with our expert about it.
+HugePages_Free:      100
+HugePages_Rsvd:        1
 
-so please pend the patch going to mainline. If the patch can move on, I
-think I will also provide other patch changing, like direct EOI.
+To fix this, we should check our mapping type and tracked region.
+If our mapping is VM_NORESERVE, VM_MAYSHARE and chg is 0, this imply
+that current allocated page will go into page cache which is already
+reserved region when mapping is created. In this case, we should decrease
+reserve count. As implementing above, this patch solve the problem.
 
-Thanks
--Youquan
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 4b1b043..b3b8252 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -443,10 +443,23 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ }
  
+ /* Returns true if the VMA has associated reserve pages */
+-static int vma_has_reserves(struct vm_area_struct *vma)
++static int vma_has_reserves(struct vm_area_struct *vma, long chg)
+ {
+-	if (vma->vm_flags & VM_NORESERVE)
+-		return 0;
++	if (vma->vm_flags & VM_NORESERVE) {
++		/*
++		 * This address is already reserved by other process(chg == 0),
++		 * so, we should decreament reserved count. Without
++		 * decreamenting, reserve count is remained after releasing
++		 * inode, because this allocated page will go into page cache
++		 * and is regarded as coming from reserved pool in releasing
++		 * step. Currently, we don't have any other solution to deal
++		 * with this situation properly, so add work-around here.
++		 */
++		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
++			return 1;
++		else
++			return 0;
++	}
+ 
+ 	/* Shared mappings always use reserves */
+ 	if (vma->vm_flags & VM_MAYSHARE)
+@@ -520,7 +533,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
+ 
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+-				unsigned long address, int avoid_reserve)
++				unsigned long address, int avoid_reserve,
++				long chg)
+ {
+ 	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+@@ -535,7 +549,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	 * have no page reserves. This check ensures that reservations are
+ 	 * not "stolen". The child may still get SIGKILLed
+ 	 */
+-	if (!vma_has_reserves(vma) &&
++	if (!vma_has_reserves(vma, chg) &&
+ 			h->free_huge_pages - h->resv_huge_pages == 0)
+ 		goto err;
+ 
+@@ -553,8 +567,12 @@ retry_cpuset:
+ 		if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
+ 			page = dequeue_huge_page_node(h, zone_to_nid(zone));
+ 			if (page) {
+-				if (!avoid_reserve && vma_has_reserves(vma))
+-					h->resv_huge_pages--;
++				if (avoid_reserve)
++					break;
++				if (!vma_has_reserves(vma, chg))
++					break;
++
++				h->resv_huge_pages--;
+ 				break;
+ 			}
+ 		}
+@@ -1138,7 +1156,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		return ERR_PTR(-ENOSPC);
+ 	}
+ 	spin_lock(&hugetlb_lock);
+-	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
++	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
+ 	if (!page) {
+ 		spin_unlock(&hugetlb_lock);
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+-- 
+1.7.9.5
+
