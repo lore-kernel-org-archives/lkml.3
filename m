@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578Ab3G2Hse (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:48:34 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:58432 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3G2Hsd (ORCPT
+	id S1751741Ab3G2Hu2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:50:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:25130 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750821Ab3G2Hu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:48:33 -0400
+	Mon, 29 Jul 2013 03:50:26 -0400
+Date: Mon, 29 Jul 2013 10:49:28 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Dong Fang <yp.fangdong@gmail.com>
+Cc: mfasheh@suse.com, jlbec@evilplan.org, akpm@linux-foundation.org,
+        jeff.liu@oracle.com, viro@zeniv.linux.org.uk, sunil.mushran@gmail.com,
+        tim.gardner@canonical.com, xuejiufei@huawei.com,
+        shencanquan@huawei.com, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of
+ list_for_each()
+Message-ID: <20130729074928.GB5053@mwanda>
+References: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
-References: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
-Date: Mon, 29 Jul 2013 11:48:32 +0400
-Message-ID: <CAG5DWoi_BQvHYcPySZBLQpB3wbYeqvYj_CE1RvEBSB8xibtrDw@mail.gmail.com>
-Subject: Re: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
-From: Azat Khuzhin <a3at.mail@gmail.com>
-To: linux-btrfs@vger.kernel.org
-Cc: chris.mason@fusionio.com, Azat Khuzhin <a3at.mail@gmail.com>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 27, 2013 at 2:12 PM, Azat Khuzhin <a3at.mail@gmail.com> wrote:
-> Replace list_for_each_entry() by list_for_each_entry_safe() in
-> __btrfs_close_devices()
->
-> There is another place that delete items lock_stripe_add(), but there we
-> don't need safe version, because after deleting we exit from loop.
->
-> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+On Sat, Jul 27, 2013 at 09:23:49AM -0400, Dong Fang wrote:
+> 
+> Signed-off-by: Dong Fang <yp.fangdong@gmail.com>
 > ---
->  fs/btrfs/volumes.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-> index 78b8717..1d1b595 100644
-> --- a/fs/btrfs/volumes.c
-> +++ b/fs/btrfs/volumes.c
-> @@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
->
->  static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
->  {
-> -       struct btrfs_device *device;
-> +       struct btrfs_device *device, *next;
->
->         if (--fs_devices->opened > 0)
->                 return 0;
->
->         mutex_lock(&fs_devices->device_list_mutex);
-> -       list_for_each_entry(device, &fs_devices->devices, dev_list) {
-> +       list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
->                 struct btrfs_device *new_device;
->                 struct rcu_string *name;
 
-There is "kfree(device);" at the end of loop, maybe there must "goto
-again;" after it?
-(instead of this patch)
+Put a note here what changed between v1 and v2.  Also no one replied
+to the v1 patch to say that it was obsolete.  I will take care of it
+this time but please handle it yourself in the future.
 
->
-> --
-> 1.7.10.4
->
+Anyway, please reply to let us know what changed between v1 and v2.
 
 
+>  fs/ocfs2/cluster/heartbeat.c |   14 +++++---------
+>  fs/ocfs2/dlm/dlmast.c        |    8 +++-----
+>  fs/ocfs2/dlm/dlmcommon.h     |    4 +---
+>  fs/ocfs2/dlm/dlmconvert.c    |   11 +++--------
+>  fs/ocfs2/dlm/dlmdebug.c      |   15 ++++-----------
+>  fs/ocfs2/dlm/dlmdomain.c     |   20 +++++---------------
+>  fs/ocfs2/dlm/dlmlock.c       |    9 ++-------
+>  fs/ocfs2/dlm/dlmmaster.c     |   17 ++++-------------
+>  fs/ocfs2/dlm/dlmthread.c     |   19 +++++--------------
+>  fs/ocfs2/dlm/dlmunlock.c     |    4 +---
+>  10 files changed, 33 insertions(+), 88 deletions(-)
+> 
 
--- 
-Respectfully
-Azat Khuzhin
+regards,
+dan carpenter
+
