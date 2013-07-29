@@ -1,120 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab3G2TTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:19:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64071 "EHLO mx1.redhat.com"
+	id S1753534Ab3G2TTo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:19:44 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39280 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab3G2TTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:19:33 -0400
-Date: Mon, 29 Jul 2013 15:19:15 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375125555-yuwxqz39-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
- <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
-Subject: Re: [PATCH 15/18] mm, hugetlb: move up anon_vma_prepare()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-References: <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1753103Ab3G2TTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:19:42 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH v2 0/5] Add rbtree postorder iteration functions, runtime tests, and update zswap to use
+Date: Mon, 29 Jul 2013 12:19:25 -0700
+Message-Id: <1375125570-9401-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.3.4
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072919-5806-0000-0000-0000223A17D7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:05:37PM -0400, Naoya Horiguchi wrote:
-> On Mon, Jul 29, 2013 at 02:32:06PM +0900, Joonsoo Kim wrote:
-> > If we fail with a allocated hugepage, it is hard to recover properly.
-> > One such example is reserve count. We don't have any method to recover
-> > reserve count. Although, I will introduce a function to recover reserve
-> > count in following patch, it is better not to allocate a hugepage
-> > as much as possible. So move up anon_vma_prepare() which can be failed
-> > in OOM situation.
-> > 
-> > Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Postorder iteration yields all of a node's children prior to yielding the node
+itself, and this particular implementation also avoids examining the leaf links
+in a node after that node has been yielded.
 
-Sorry, let me suspend this Reviewed for a question.
-If alloc_huge_page failed after we succeeded anon_vma_parepare,
-the allocated anon_vma_chain and/or anon_vma are safely freed?
-Or don't we have to free them?
+In what I expect will be its most common usage, postorder iteration allows the
+deletion of every node in an rbtree without modifying the rbtree nodes (no
+_requirement_ that they be nulled) while avoiding referencing child nodes after
+they have been "deleted" (most commonly, freed).
 
-Thanks,
-Naoya Horiguchi
+I have only updated zswap to use this functionality at this point, but numerous
+bits of code (most notably in the filesystem drivers) use a hand rolled
+postorder iteration that NULLs child links as it traverses the tree. Each of
+those instances could be replaced with this common implementation.
 
-> > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> > index 683fd38..bb8a45f 100644
-> > --- a/mm/hugetlb.c
-> > +++ b/mm/hugetlb.c
-> > @@ -2536,6 +2536,15 @@ retry_avoidcopy:
-> >  	/* Drop page_table_lock as buddy allocator may be called */
-> >  	spin_unlock(&mm->page_table_lock);
-> >  
-> > +	/*
-> > +	 * When the original hugepage is shared one, it does not have
-> > +	 * anon_vma prepared.
-> > +	 */
-> > +	if (unlikely(anon_vma_prepare(vma))) {
-> > +		ret = VM_FAULT_OOM;
-> > +		goto out_old_page;
-> > +	}
-> > +
-> >  	use_reserve = vma_has_reserves(h, vma, address);
-> >  	if (use_reserve == -ENOMEM) {
-> >  		ret = VM_FAULT_OOM;
-> > @@ -2590,15 +2599,6 @@ retry_avoidcopy:
-> >  		goto out_lock;
-> >  	}
-> >  
-> > -	/*
-> > -	 * When the original hugepage is shared one, it does not have
-> > -	 * anon_vma prepared.
-> > -	 */
-> > -	if (unlikely(anon_vma_prepare(vma))) {
-> > -		ret = VM_FAULT_OOM;
-> > -		goto out_new_page;
-> > -	}
-> > -
-> >  	copy_user_huge_page(new_page, old_page, address, vma,
-> >  			    pages_per_huge_page(h));
-> >  	__SetPageUptodate(new_page);
-> > @@ -2625,7 +2625,6 @@ retry_avoidcopy:
-> >  	spin_unlock(&mm->page_table_lock);
-> >  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-> >  
-> > -out_new_page:
-> >  	page_cache_release(new_page);
-> >  out_old_page:
-> >  	page_cache_release(old_page);
-> > -- 
-> > 1.7.9.5
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> >
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+1 & 2 add rbtree postorder iteration functions.
+3 adds testing of the iteration to the rbtree runtime tests
+4 allows building the rbtree runtime tests as builtins
+5 updates zswap.
+
+--
+since v1:
+	- spacing
+	- s/it's/its/
+	- remove now unused var in zswap code.
+	- Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+
+
+Cody P Schafer (5):
+  rbtree: add postorder iteration functions
+  rbtree: add rbtree_postorder_for_each_entry_safe() helper
+  rbtree_test: add test for postorder iteration
+  rbtree: allow tests to run as builtin
+  mm/zswap: use postorder iteration when destroying rbtree
+
+ include/linux/rbtree.h | 22 ++++++++++++++++++++++
+ lib/Kconfig.debug      |  2 +-
+ lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
+ lib/rbtree_test.c      | 12 ++++++++++++
+ mm/zswap.c             | 16 ++--------------
+ 5 files changed, 77 insertions(+), 15 deletions(-)
+
+-- 
+1.8.3.4
+
