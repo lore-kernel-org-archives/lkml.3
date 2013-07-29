@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756235Ab3G2RKi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:10:38 -0400
-Received: from mail-gh0-f175.google.com ([209.85.160.175]:53639 "EHLO
-	mail-gh0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753524Ab3G2RKg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:10:36 -0400
-Date: Mon, 29 Jul 2013 13:10:25 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        akpm@linux-foundation.org, trenn@suse.de, yinghai@kernel.org,
-        jiang.liu@huawei.com, wency@cn.fujitsu.com, laijs@cn.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        mgorman@suse.de, minchan@kernel.org, mina86@mina86.com,
-        gong.chen@linux.intel.com, vasilis.liaskovitis@profitbricks.com,
-        lwoodman@redhat.com, riel@redhat.com, jweiner@redhat.com,
-        prarit@redhat.com, zhangyanfei@cn.fujitsu.com, yanghy@cn.fujitsu.com,
-        x86@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH 14/21] x86, acpi, numa: Reserve hotpluggable memory at
- early time.
-Message-ID: <20130729171025.GH22605@mtj.dyndns.org>
-References: <1374220774-29974-1-git-send-email-tangchen@cn.fujitsu.com>
- <1374220774-29974-15-git-send-email-tangchen@cn.fujitsu.com>
- <20130723205557.GS21100@mtj.dyndns.org>
- <20130723213212.GA21100@mtj.dyndns.org>
- <51F089C1.4010402@cn.fujitsu.com>
- <20130725151719.GE26107@mtj.dyndns.org>
- <51F1F0E0.7040800@cn.fujitsu.com>
- <20130726102609.GB30786@mtj.dyndns.org>
- <51F5CF98.1080101@cn.fujitsu.com>
+	id S1756938Ab3G2RO3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:14:29 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:6703 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752681Ab3G2RO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 13:14:27 -0400
+X-IronPort-AV: E=Sophos;i="4.89,771,1367971200"; 
+   d="scan'208";a="38040613"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        Richard L Maliszewski <richard.l.maliszewski@intel.com>,
+        Gang Wei <gang.wei@intel.com>, Shane Wang <shane.wang@intel.com>,
+        Bob Moore <robert.moore@intel.com>,
+        <tboot-devel@lists.sourceforge.net>
+Subject: [PATCH v7 0/3] Xen/ACPI: support sleep state entering on hardware reduced systems
+Date: Mon, 29 Jul 2013 13:14:12 -0400
+Message-ID: <1375118055-15942-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F5CF98.1080101@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Tang.
+In version 3.4 acpi_os_prepare_sleep() got introduced in parallel with
+reduced hardware sleep support, and the two changes didn't get
+synchronized: The new code doesn't call the hook function (if so
+requested). Fix this, requiring a new callback to be added to acpica
+to be called back during this reduced hardware sleep.
 
-On Mon, Jul 29, 2013 at 10:12:40AM +0800, Tang Chen wrote:
-> So the point is, how to mark the hotpluggable regions and at the
-> same time, make
-> ACPI and memblock parts independent, right ?
+This requires adjusting TXT, but the adjustments only go as far as
+failing the extended mode call (since, looking at the TXT interface,
+there doesn't even appear to be precautions to deal with that
+alternative interface).
 
-No, not at all.  My point is that the roles need to be divided
-clearly.  The firmware (be that ACPI or whatever) knows memory areas
-are hotpluggable but it shouldn't be making policy decisions like not
-dispending hotpluggable memory through memblock allocator because that
-part of logic has *nothing* to do with ACPI.  That is the generic
-kernel memory management policy which will apply regardless of what
-type of firmware the machine happens to be running on top of.
+The xen hypervisor change underlying this is commit 62d1a69 ("ACPI: support
+v5 (reduced HW) sleep interface") on the master branch of
+git://xenbits.xen.org/xen.git.
 
-So, please make ACPI inform memblock of the hotpluggable regions and
-implement the allocation policies inside memblock proper.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: Richard L Maliszewski <richard.l.maliszewski@intel.com>
+Cc: Gang Wei <gang.wei@intel.com>
+Cc: Shane Wang <shane.wang@intel.com>
+Cc: Bob Moore <robert.moore@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org
+Cc: tboot-devel@lists.sourceforge.net 
 
-> So are you saying mark the hotpluggable regions in memblock.memory, but not
-> reserve them in memblock.reserved, and make the default allocate
-> function avoid
-> the hotpluggable regions in memblock.memory ?
->
-> This way will be convenient when we put the node_data on local node
-> (don't need
-> to free regions from memblock.reserved, as you mentioned before), right?
+v2: Extend description to include reference to hypervisor side change
+v3: Split into multiple patches, separating subsystems
+    Remove bool parameters, in favor of u8
+v4: Remove linux/acpi.h dependencies
+    Further patch split to break out acpica from OSL
+    More bool vs u8 fixes
+v5: Fix build of consumers of acpi_os_prepare_sleep() interface change,
+    so intermediate builds of partial patch series will not fail.
+v6: Rebased to linux-pm linux-next branch
+    Added warning in tboot early return code
+    Added Reviewed-by lines
+v7: Add separate acpi_os_prepare_extended_sleep() interface
+    Remove OSL acpica changes introduced in v4
 
-I don't care too much about the specifics and it's likely that you'll
-find out which way (flag in memblock.memory, separate region array or
-whatever) is better as implementation progresses, but let's please put
-things where they belong; otherwise, we end up with weird mess, and,
-later on, have to do things like freeing part of reserved hotpluggable
-memory for node data from firmware side as you said above, which
-basically moves part of memory allocation logic into ACPI, which is
-just horrible.
+Ben Guthro (3):
+  x86/acpi: Introduce acpi_os_prepare_extended_sleep callback for
+    extended sleep path
+  x86/tboot: Fail extended mode reduced hardware sleep
+  xen/acpi: notify xen when reduced hardware sleep is available
 
-Thanks.
+ arch/x86/kernel/tboot.c          |   12 +++++++++++
+ drivers/acpi/acpica/hwesleep.c   |    9 +++++++++
+ drivers/acpi/osl.c               |   24 ++++++++++++++++++++++
+ drivers/xen/acpi.c               |   41 ++++++++++++++++++++++++++------------
+ include/linux/acpi.h             |    7 +++++++
+ include/xen/acpi.h               |    8 ++++++--
+ include/xen/interface/platform.h |    7 ++++---
+ 7 files changed, 90 insertions(+), 18 deletions(-)
 
 -- 
-tejun
+1.7.9.5
+
