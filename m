@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516Ab3G2QRM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:17:12 -0400
-Received: from mail-ob0-f194.google.com ([209.85.214.194]:43197 "EHLO
-	mail-ob0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab3G2QRG (ORCPT
+	id S1756793Ab3G2QUP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:20:15 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:60562 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab3G2QUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:17:06 -0400
+	Mon, 29 Jul 2013 12:20:13 -0400
 MIME-Version: 1.0
-In-Reply-To: <CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
-References: <CAAWiN8oSfH9fZVvnMtfehaY+D-9qhtqu4fwedVOv5Q-uB0WNYw@mail.gmail.com>
-	<CA+xJJ1_kT+jW-R+CVT_Z=Ek-2j87dhqK21=NOsLf+Wqo=M55bA@mail.gmail.com>
-Date: Mon, 29 Jul 2013 21:47:05 +0530
-Message-ID: <CAAWiN8pMzOc1A+HZJ9eYbS38bRb0WocNodcepTkuY0GQod3H4Q@mail.gmail.com>
-Subject: Re: Why Linux OS Desktop is not popular?
-From: Amit C <amit.linux.os.desktop@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1374618312-19001-8-git-send-email-maxime.ripard@free-electrons.com>
+References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+	<1374618312-19001-8-git-send-email-maxime.ripard@free-electrons.com>
+Date: Mon, 29 Jul 2013 18:20:13 +0200
+Message-ID: <CACRpkdZ1RhsLMC0xWDDr9Hmy78i+uU-9x0-2Y+_NvRZ-yefmVw@mail.gmail.com>
+Subject: Re: [PATCH 07/10] pinctrl: sunxi: Add Allwinner A31 pins set
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Olof Johansson <olof@lixom.net>,
+        Albert ARIBAUD <albert.u.boot@aribaud.net>,
+        Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
+        sunny@allwinnertech.com, shuge@allwinnertech.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi@googlegroups.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 24, 2013 at 12:25 AM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
+
+> The Allwinner A31 SoC uses the same IP than the one found in the
+> A10/A13, with only different pins. Add the pins and the associated
+> functions found in the A31.
 >
-> It is very hard to discuss any solutions without those RFC patches,
-> since no one knows whether the idea will work or exactly what the idea
-> consists of. So it's unlikely you'll get much constructive response
-> until you've tested the solution yourself and sent out patches for
-> comments so others might test it. Just keep it as small as possible
-> while still proving the idea.
->
-> I look forward to your patches, so I can better understand what you
-> want to accomplish.
->
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-My patches are there in the linux kernel. I am also the author of
-http://www.tldp.org/HOWTO/html_single/Implement-Sys-Call-Linux-2.6-i386/.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-BUT I LEFT CONTRIBUTING TO LINUX KERNEL IN LATE 2007 - EARLY 2008
-BECAUSE OF HIGH HANDEDNESS OF OTHER LINUX KERNEL DEVELOPERS. IT IS
-JUST CODE (IF, THEN, ELSE, WHILE LOOP, FOR, ETC.), DEVELOPING LINUX
-KERNEL CODE """""IS NOT A BIG DEAL"""""" AND THERE ARE MANY SMART
-PEOPLE AROUND WHO ARE SMARTER THAN CURRENT KERNEL DEVELOPERS.
+Will you carry this through ARM SoC or do you want me to merge
+this into the pinctrl tree? It seems pretty independent.
 
-I DIDN'T CHECK REPLY TO MY MAIL FOR A LONG TIME BECAUSE I KNEW NO ONE
-IS GOING TO LISTEN. BUT ANYWAYS, I DO NOT CARE. I WROTE WHAT I THOUGHT
-IS RIGHT.
-
-BUT ONE THING LINUX KERNEL DEVELOPERS HAVE TO FIX: THEY SHOULD STOP
-THINKING THAT THEY ARE THE SMARTEST PEOPLE AROUND. """STEVE WOZNIAK"""
-IS A VERY SMART PERSON AND HE WAS NOT A LINUX KERNEL DEVELOPER.
-
-I HAVE CONTRIBUTED MORE TO LINUX BY WRITING THE "HOW TO" AS I USED TO
-GET EMAILS FROM THE UNIVERSITIES AROUND THE WORLD ABOUT IT AND AT MANY
-PLACES IT HAD BECOME AN ASSIGNMENT IN OS CLASS.
-
-BUT I DO NOT LIKE THE HIGH HANDEDNESS OF LINUX KERNEL DEVELOPERS: WHAT
-THEY DO IS THIS:
-
-1. Implement some_code with interrupts enabled (any programmer who
-knows multi-threading can do this).
-2. Implement some_code with interrupts disabled (any application
-programmer can do this).
-
-"""""""""""""A HUMBLE REQUEST TO ALL LINUX KERNEL DEVELOPERS, PLEASE
-DROP YOUR HIGH HANDEDNESS BECAUSE THERE ARE MANY PEOPLE IN THIS WORLD
-WHO ARE MUCH SMARTER THAN YOU PEOPLE AND THEY ARE NOT LINUX KERNEL
-DEVELOPERS.""""""""""
-
-Amit
+Yours,
+Linus Walleij
