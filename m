@@ -1,53 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab3G2Jtl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:49:41 -0400
-Received: from gate.crashing.org ([63.228.1.57]:58836 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab3G2Jtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:49:40 -0400
-Message-ID: <1375090382.3859.38.camel@pasglop>
-Subject: Re: [PATCH] of: provide of_platform_unpopulate()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        George Cherian <george.cherian@ti.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
-        Roger Quadros <rogerq@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Date: Mon, 29 Jul 2013 19:33:02 +1000
-In-Reply-To: <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
-References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>
-	 <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com>
-	 <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752532Ab3G2JuX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:50:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56477 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab3G2JuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:50:22 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
+   d="scan'208";a="8057067"
+Message-ID: <51F639FB.304@cn.fujitsu.com>
+Date: Mon, 29 Jul 2013 17:46:35 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
+        libo.chen@huawei.com
+Subject: Re: [PATCH 2/9] syslog_ns: add syslog_ns into user_namespace
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:48:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:48:11,
+	Serialize complete at 2013/07/29 17:48:11
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-22 at 00:44 +0100, Grant Likely wrote:
-> > BTW, it looks like Grant has attempted this already:
+Hi Rui,
+
+On 07/29/2013 10:31 AM, Rui Xiang wrote:
+
+> Add a syslog_ns pointer to user_namespace, and make
+> syslog_ns per user_namespace, not global.
 > 
-> Yup, things broke badly. Unfortunately the of_platform_device and
-> platform_device history doesn't treat resources in the same way. I
-> would like to merge the code, but I haven't been able to figure out a
-> clean way to do it. Looks like we do need the unpopulate function.
+> Since syslog_ns is assigned to user_ns, we can have
+> full capabilities in new user_ns to create a new syslog_ns.
+> 
+> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+> ---
+>  include/linux/syslog.h         | 5 +++++
+>  include/linux/user_namespace.h | 1 +
+>  2 files changed, 6 insertions(+)
+> 
+> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+> index 425fafe..62ce47f 100644
+> --- a/include/linux/syslog.h
+> +++ b/include/linux/syslog.h
+> @@ -90,6 +90,11 @@ struct syslog_namespace {
+>  	size_t syslog_partial;
+>  
+>  	int dmesg_restrict;
+> +
+> +	/*
+> +	 * user namespace which owns this syslog ns.
+> +	 */
+> +	struct user_namespace *owner;
+>  };
+>  
+>  static inline struct syslog_namespace *get_syslog_ns(
+> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+> index b6b215f..ce2de5b 100644
+> --- a/include/linux/user_namespace.h
+> +++ b/include/linux/user_namespace.h
+> @@ -28,6 +28,7 @@ struct user_namespace {
+>  	unsigned int		proc_inum;
+>  	bool			may_mount_sysfs;
+>  	bool			may_mount_proc;
+> +	struct syslog_namespace *syslog_ns;
 
-What is the exact problem Grant ? Care to give me an example ?
+As we add a syslog_ns pointer to user_namespace to make
+syslog_ns per user_namespace and the caps check.
+But why also add a point to syslog_namespace in
+user_namespace? Am I missing something?:)
 
-Cheers,
-Ben.
+Thanks,
+Gu
+
+>  };
+>  
+>  extern struct user_namespace init_user_ns;
 
 
