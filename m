@@ -1,92 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774Ab3G2Mh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:37:56 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:57734 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab3G2Mhz (ORCPT
+	id S1755600Ab3G2Mli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:41:38 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:43858 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755342Ab3G2Mlf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:37:55 -0400
-Message-ID: <51F66206.1010504@huawei.com>
-Date: Mon, 29 Jul 2013 20:37:26 +0800
-From: Rui Xiang <rui.xiang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 08:41:35 -0400
+Message-ID: <51F6630D.5010603@arm.com>
+Date: Mon, 29 Jul 2013 13:41:49 +0100
+From: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Gao feng <gaofeng@cn.fujitsu.com>
-CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <libo.chen@huawei.com>
-Subject: Re: [PATCH 9/9] netfilter: use ns_printk in iptable context
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-10-git-send-email-rui.xiang@huawei.com> <51F63A88.4090405@cn.fujitsu.com>
-In-Reply-To: <51F63A88.4090405@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sudeep.KarkadaNagesha@arm.com
+Subject: Re: [PATCH 1/4] ARM: dove: add cpu device tree node
+References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375100946-28521-2-git-send-email-sebastian.hesselbarth@gmail.com>
+In-Reply-To: <1375100946-28521-2-git-send-email-sebastian.hesselbarth@gmail.com>
+X-OriginalArrivalTime: 29 Jul 2013 12:41:32.0494 (UTC) FILETIME=[F45B06E0:01CE8C58]
+X-MC-Unique: 113072913413301001
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/7/29 17:48, Gao feng wrote:
-> On 07/29/2013 10:31 AM, Rui Xiang wrote:
->> To containerise iptables log, use ns_printk
->> to report individual logs to container as
->> getting syslog_ns from skb->dev->nd_net->user_ns.
->>
->> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
->> ---
->>  include/net/netfilter/xt_log.h | 6 +++++-
->>  net/netfilter/xt_LOG.c         | 4 ++--
->>  2 files changed, 7 insertions(+), 3 deletions(-)
->>
->> diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
->> index 9d9756c..5222cba 100644
->> --- a/include/net/netfilter/xt_log.h
->> +++ b/include/net/netfilter/xt_log.h
->> @@ -39,10 +39,14 @@ static struct sbuff *sb_open(void)
->>  	return m;
->>  }
->>  
->> -static void sb_close(struct sbuff *m)
->> +static void sb_close(struct sbuff *m, struct sk_buff *skb)
->>  {
->>  	m->buf[m->count] = 0;
->> +#ifdef CONFIG_NET_NS
->> +	ns_printk(skb->dev->nd_net->user_ns->syslog_ns, "%s\n", m->buf);
->> +#else
->>  	printk("%s\n", m->buf);
->> +#endif
->>  
->>  	if (likely(m != &emergency))
->>  		kfree(m);
->> diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
->> index 5ab2484..f2cd2fa3 100644
->> --- a/net/netfilter/xt_LOG.c
->> +++ b/net/netfilter/xt_LOG.c
->> @@ -493,7 +493,7 @@ ipt_log_packet(struct net *net,
->>  
->>  	dump_ipv4_packet(m, loginfo, skb, 0);
->>  
->> -	sb_close(m);
->> +	sb_close(m, skb);
+On 29/07/13 13:29, Sebastian Hesselbarth wrote:
+> This adds a node for the Marvell Sheeva PJ4A CPU found on Dove SoCs.
+> While at it, also move the l2-cache node out of internal registers and
+> consistently name different nodes.
 > 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Jason Cooper <jason@lakedaemon.net>
+> Cc: Andrew Lunn <andrew@lunn.ch>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: devicetree@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/boot/dts/dove.dtsi |   52 ++++++++++++++++++++++++++-----------------
+>  1 file changed, 32 insertions(+), 20 deletions(-)
 > 
-> why don't you pass net directly to sb_close here?
-> 
-> un init net namespace will not trigger any system log through ipt_LOG/ip6t_LOG.
-> You can check the FIXME in ipt_log_packet.
-> 
-> BTW,for this patch,you should cc netfilter-devel@vger.kernel.org too.
-> 
-Hi Gao,
+> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
+> index 8d5be1e8..09d9710 100644
+> --- a/arch/arm/boot/dts/dove.dtsi
+> +++ b/arch/arm/boot/dts/dove.dtsi
+> @@ -10,6 +10,23 @@
+>  		gpio2 = &gpio2;
+>  	};
+>  
+> +	cpus {
+> +		#address-cells = <1>;
+> +		#size-cells = <0>;
+> +
+> +		cpu0: cpu@0 {
+> +			compatible = "marvell,pj4a", "marvell,sheeva-v7";
+> +			device_type = "cpu";
+> +			next-level-cache = <&l2>;
+> +			reg = <0>;
+> +		};
+> +	};
+> +
+> +	l2: l2-cache {
+> +		compatible = "marvell,tauros2-cache";
+> +		marvell,tauros2-cache-features = <0>;
+> +	};
+Hi Sebastian,
 
-Thanks for your attention.
+This is not entirely related to the patch but thought of checking with
+you. I was trying to get info on L2 cache controller on Marvell SoCs,
+mainly structure or way/set size. Is that something we can get
+dynamically ? Some specification I referred said its integrated and some
+said its separate(not unified). Basically I need information around
+various L2 cache implementations(Tauros2/Feroceon) from Marvell.
 
-Yes, you are right. In the 1st version, there was no net parameter in ipt_log_packet
-function. Here I didn't do any amendment. And I will alter it in next version.
+Any pointers or contacts to get this information will be helpful.
 
-
-
-Thanks.
+Regards,
+Sudeep
 
 
