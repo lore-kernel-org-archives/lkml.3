@@ -1,103 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab3G2TF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:05:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24353 "EHLO mx1.redhat.com"
+	id S1753567Ab3G2TGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:06:06 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38962 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab3G2TF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:05:57 -0400
-Date: Mon, 29 Jul 2013 15:05:37 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375124737-9w10y4c4-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 15/18] mm, hugetlb: move up anon_vma_prepare()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1752643Ab3G2TGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:06:01 -0400
+Date: Mon, 29 Jul 2013 21:04:31 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>, tj@kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>
+Subject: Re: [PATCH] ATA: sata_mv: Remove uneeded CONFIG_HAVE_CLK ifdefs
+Message-ID: <20130729190431.GJ24782@lunn.ch>
+References: <1375111282-22624-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1375111282-22624-2-git-send-email-ezequiel.garcia@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <1375075929-6119-16-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <1375111282-22624-2-git-send-email-ezequiel.garcia@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:32:06PM +0900, Joonsoo Kim wrote:
-> If we fail with a allocated hugepage, it is hard to recover properly.
-> One such example is reserve count. We don't have any method to recover
-> reserve count. Although, I will introduce a function to recover reserve
-> count in following patch, it is better not to allocate a hugepage
-> as much as possible. So move up anon_vma_prepare() which can be failed
-> in OOM situation.
+On Mon, Jul 29, 2013 at 12:21:22PM -0300, Ezequiel Garcia wrote:
+> If CONFIG_HAVE_CLK is not selected, then all the clk API turn out
+> into stubs, so there's no need to have the ifdefs.
+> The only side-effect of this patch is the extra tiny kmalloc,
+> but that's not enough reason to have such ugly ifdefs all around
+> the code.
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Hi Ezequiel
 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 683fd38..bb8a45f 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2536,6 +2536,15 @@ retry_avoidcopy:
->  	/* Drop page_table_lock as buddy allocator may be called */
->  	spin_unlock(&mm->page_table_lock);
+What architectures did you compile this for? PowerPC and x86 as well
+as ARM? I _think_ this driver is also used there, and i _think_
+without some #ifdef, it failed to build. But maybe since then, the
+common clock is now available on all architectures?
+
+       Andrew
+
+
+> ---
+>  drivers/ata/sata_mv.c | 14 --------------
+>  1 file changed, 14 deletions(-)
+> 
+> diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+> index 10ea99a..3519987 100644
+> --- a/drivers/ata/sata_mv.c
+> +++ b/drivers/ata/sata_mv.c
+> @@ -553,10 +553,8 @@ struct mv_host_priv {
+>  	u32			irq_mask_offset;
+>  	u32			unmask_all_irqs;
 >  
-> +	/*
-> +	 * When the original hugepage is shared one, it does not have
-> +	 * anon_vma prepared.
-> +	 */
-> +	if (unlikely(anon_vma_prepare(vma))) {
-> +		ret = VM_FAULT_OOM;
-> +		goto out_old_page;
-> +	}
-> +
->  	use_reserve = vma_has_reserves(h, vma, address);
->  	if (use_reserve == -ENOMEM) {
->  		ret = VM_FAULT_OOM;
-> @@ -2590,15 +2599,6 @@ retry_avoidcopy:
->  		goto out_lock;
+> -#if defined(CONFIG_HAVE_CLK)
+>  	struct clk		*clk;
+>  	struct clk              **port_clks;
+> -#endif
+>  	/*
+>  	 * These consistent DMA memory pools give us guaranteed
+>  	 * alignment for hardware-accessed data structures,
+> @@ -4032,9 +4030,7 @@ static int mv_platform_probe(struct platform_device *pdev)
+>  	struct resource *res;
+>  	int n_ports = 0, irq = 0;
+>  	int rc;
+> -#if defined(CONFIG_HAVE_CLK)
+>  	int port;
+> -#endif
+>  
+>  	ata_print_version_once(&pdev->dev, DRV_VERSION);
+>  
+> @@ -4068,13 +4064,11 @@ static int mv_platform_probe(struct platform_device *pdev)
+>  
+>  	if (!host || !hpriv)
+>  		return -ENOMEM;
+> -#if defined(CONFIG_HAVE_CLK)
+>  	hpriv->port_clks = devm_kzalloc(&pdev->dev,
+>  					sizeof(struct clk *) * n_ports,
+>  					GFP_KERNEL);
+>  	if (!hpriv->port_clks)
+>  		return -ENOMEM;
+> -#endif
+>  	host->private_data = hpriv;
+>  	hpriv->n_ports = n_ports;
+>  	hpriv->board_idx = chip_soc;
+> @@ -4084,7 +4078,6 @@ static int mv_platform_probe(struct platform_device *pdev)
+>  				   resource_size(res));
+>  	hpriv->base -= SATAHC0_REG_BASE;
+>  
+> -#if defined(CONFIG_HAVE_CLK)
+>  	hpriv->clk = clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(hpriv->clk))
+>  		dev_notice(&pdev->dev, "cannot get optional clkdev\n");
+> @@ -4098,7 +4091,6 @@ static int mv_platform_probe(struct platform_device *pdev)
+>  		if (!IS_ERR(hpriv->port_clks[port]))
+>  			clk_prepare_enable(hpriv->port_clks[port]);
 >  	}
+> -#endif
 >  
-> -	/*
-> -	 * When the original hugepage is shared one, it does not have
-> -	 * anon_vma prepared.
-> -	 */
-> -	if (unlikely(anon_vma_prepare(vma))) {
-> -		ret = VM_FAULT_OOM;
-> -		goto out_new_page;
-> -	}
-> -
->  	copy_user_huge_page(new_page, old_page, address, vma,
->  			    pages_per_huge_page(h));
->  	__SetPageUptodate(new_page);
-> @@ -2625,7 +2625,6 @@ retry_avoidcopy:
->  	spin_unlock(&mm->page_table_lock);
->  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+>  	/*
+>  	 * (Re-)program MBUS remapping windows if we are asked to.
+> @@ -4124,7 +4116,6 @@ static int mv_platform_probe(struct platform_device *pdev)
+>  		return 0;
 >  
-> -out_new_page:
->  	page_cache_release(new_page);
->  out_old_page:
->  	page_cache_release(old_page);
+>  err:
+> -#if defined(CONFIG_HAVE_CLK)
+>  	if (!IS_ERR(hpriv->clk)) {
+>  		clk_disable_unprepare(hpriv->clk);
+>  		clk_put(hpriv->clk);
+> @@ -4135,7 +4126,6 @@ err:
+>  			clk_put(hpriv->port_clks[port]);
+>  		}
+>  	}
+> -#endif
+>  
+>  	return rc;
+>  }
+> @@ -4151,13 +4141,10 @@ err:
+>  static int mv_platform_remove(struct platform_device *pdev)
+>  {
+>  	struct ata_host *host = platform_get_drvdata(pdev);
+> -#if defined(CONFIG_HAVE_CLK)
+>  	struct mv_host_priv *hpriv = host->private_data;
+>  	int port;
+> -#endif
+>  	ata_host_detach(host);
+>  
+> -#if defined(CONFIG_HAVE_CLK)
+>  	if (!IS_ERR(hpriv->clk)) {
+>  		clk_disable_unprepare(hpriv->clk);
+>  		clk_put(hpriv->clk);
+> @@ -4168,7 +4155,6 @@ static int mv_platform_remove(struct platform_device *pdev)
+>  			clk_put(hpriv->port_clks[port]);
+>  		}
+>  	}
+> -#endif
+>  	return 0;
+>  }
+>  
 > -- 
-> 1.7.9.5
+> 1.8.1.5
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
