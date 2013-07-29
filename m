@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab3G2KSQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:18:16 -0400
-Received: from www.linutronix.de ([62.245.132.108]:45474 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab3G2KSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:18:15 -0400
-Date: Mon, 29 Jul 2013 12:18:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "ethan.zhao" <ethan.kernel@gmail.com>
-cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        johlstei@codeaurora.org, yinghai@kernel.org, joe.jin@oracle.com,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer 
-In-Reply-To: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
-Message-ID: <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
+	id S1754319Ab3G2KUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:20:32 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58844 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753320Ab3G2KUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:20:31 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367971200"; 
+   d="scan'208";a="39882042"
+Date: Mon, 29 Jul 2013 11:20:21 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [GIT PULL] Xen ARM fix for 3.11
+Message-ID: <alpine.DEB.2.02.1307291056000.4893@kaball.uk.xensource.com>
 User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 27 Jul 2013, ethan.kernel@gmail.com wrote:
+Linus,
+I have one fix for Xen on ARM for 3.11 (also appended for your
+convenience):
 
-> commit 968320b hrtimer: Fix extra wakeups from __remove_hrtimer()
-> introduced a significant scheduler performance regression,
-> following is the test:
 
-This is not a commit in Linus tree. Which kernel version are you
-talking about?
+The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
 
-> We found the performance has 1.87775S(average value) down introduced
-> by commit 968320b hrtimer: Fix extra wakeups from
-> __remove_hrtimer().  That is more than -35% !
+  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
 
-The test case does not involve anything hrtimer related. Do you have
-CONFIG_SCHED_HRTICK enabled?
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git xen-arm-3.11-rc2-warn-tag
 
-> So reprogramming in remove_hrtimer() is not necessary-----If I am
-> wrong, just point out.
+Stefano Stabellini (1):
+      xen/arm,arm64: update xen_restart after ff701306cd49 and 7b6d864b48d9
 
-The reason why we want to do that is: 
+ arch/arm/xen/enlighten.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    timer      expiry time
-    A	        100us -> programmed hardware event
-    B	       2000us
-
-Restart timer A with an expiry time of 3000us without reprogramming:
-
-    timer      expiry time
-    NONE       100us -> programmed hardware event
-    B	       2000us
-    A	       3000us
-
-We take an extra wakeup for reprogramming the hardware, which is
-counterproductive for power saving. So disabling it blindly will cause
-a regresssion for other people. We need to be smarter than that.
-
-First of all we want to know, which particular hrtimer is causing that
-issue. If it is the hrtick one, then I really have to ask why you want
-to use it at all in such a high performance scenario.
 
 Thanks,
 
-	tglx
+Stefano
 
 
 
+
+commit 2451ade070ef9b0a0f118ac41896da856e72b5a1
+Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Date:   Sun Jul 21 15:17:54 2013 +0000
+
+    xen/arm,arm64: update xen_restart after ff701306cd49 and 7b6d864b48d9
+    
+    Commit 7b6d864b48d9 (reboot: arm: change reboot_mode to use enum
+    reboot_mode) and ff701306cd49 (arm64: use common reboot infrastructure)
+    change the prototype of arm_pm_restart on arm and arm64.
+    Update xen_restart accordingly.
+    
+    Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
+index f71c37e..c9770ba 100644
+--- a/arch/arm/xen/enlighten.c
++++ b/arch/arm/xen/enlighten.c
+@@ -172,7 +172,7 @@ static void __init xen_percpu_init(void *unused)
+ 	enable_percpu_irq(xen_events_irq, 0);
+ }
+ 
+-static void xen_restart(char str, const char *cmd)
++static void xen_restart(enum reboot_mode reboot_mode, const char *cmd)
+ {
+ 	struct sched_shutdown r = { .reason = SHUTDOWN_reboot };
+ 	int rc;
