@@ -1,147 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab3G2TrW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:47:22 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:50121 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab3G2TrS (ORCPT
+	id S1754022Ab3G2TtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:49:09 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:49339 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3G2TtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:47:18 -0400
-Message-ID: <51F6C6E5.9020200@gmail.com>
-Date: Mon, 29 Jul 2013 15:47:49 -0400
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 15:49:07 -0400
+Date: Mon, 29 Jul 2013 20:48:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Dave Martin <Dave.Martin@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Message-ID: <20130729194829.GG9858@sirena.org.uk>
+References: <2469263.vMN09Q7Tzi@flatron>
+ <20130729150124.GS29916@titan.lakedaemon.net>
+ <20130729164905.GB2280@localhost.localdomain>
+ <20130729172339.GT29916@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>, David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 5/6] mm: memcg: enable memcg OOM killer only for user
- faults
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org> <1374791138-15665-6-git-send-email-hannes@cmpxchg.org> <51F6C00C.5050702@gmail.com> <20130729194452.GA4793@cmpxchg.org>
-In-Reply-To: <20130729194452.GA4793@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Ux295LQi5R3PD/XN"
+Content-Disposition: inline
+In-Reply-To: <20130729172339.GT29916@titan.lakedaemon.net>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 94.175.92.69
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:57:07 +0000)
+X-SA-Exim-Scanned: Yes (on cassiel.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(7/29/13 3:44 PM), Johannes Weiner wrote:
-> On Mon, Jul 29, 2013 at 03:18:36PM -0400, KOSAKI Motohiro wrote:
->> (7/25/13 6:25 PM), Johannes Weiner wrote:
->>> System calls and kernel faults (uaccess, gup) can handle an out of
->>> memory situation gracefully and just return -ENOMEM.
->>>
->>> Enable the memcg OOM killer only for user faults, where it's really
->>> the only option available.
->>>
->>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
->>> ---
->>>    include/linux/memcontrol.h | 23 +++++++++++++++++++++++
->>>    include/linux/sched.h      |  3 +++
->>>    mm/filemap.c               | 11 ++++++++++-
->>>    mm/memcontrol.c            |  2 +-
->>>    mm/memory.c                | 40 ++++++++++++++++++++++++++++++----------
->>>    5 files changed, 67 insertions(+), 12 deletions(-)
->>>
->>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->>> index 7b4d9d7..9bb5eeb 100644
->>> --- a/include/linux/memcontrol.h
->>> +++ b/include/linux/memcontrol.h
->>> @@ -125,6 +125,24 @@ extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
->>>    extern void mem_cgroup_replace_page_cache(struct page *oldpage,
->>>    					struct page *newpage);
->>>
->>> +/**
->>> + * mem_cgroup_xchg_may_oom - toggle the memcg OOM killer for a task
->>> + * @p: task
->>> + * @new: true to enable, false to disable
->>> + *
->>> + * Toggle whether a failed memcg charge should invoke the OOM killer
->>> + * or just return -ENOMEM.  Returns the previous toggle state.
->>> + */
->>> +static inline bool mem_cgroup_xchg_may_oom(struct task_struct *p, bool new)
->>> +{
->>> +	bool old;
->>> +
->>> +	old = p->memcg_oom.may_oom;
->>> +	p->memcg_oom.may_oom = new;
->>> +
->>> +	return old;
->>> +}
->>
->> The name of xchg strongly suggest the function use compare-swap op. So, it seems
->> misleading name. I suggest just use "set_*" or something else. In linux kernel,
->> many setter functions already return old value. Don't mind.
->
-> I renamed it to bool mem_cgroup_toggle_oom(bool onoff) when I
-> incorporated Michal's feedback, would you be okay with that?
 
-Yes, thank you.
+--Ux295LQi5R3PD/XN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->
->>> diff --git a/include/linux/sched.h b/include/linux/sched.h
->>> index fc09d21..4b3effc 100644
->>> --- a/include/linux/sched.h
->>> +++ b/include/linux/sched.h
->>> @@ -1398,6 +1398,9 @@ struct task_struct {
->>>    		unsigned long memsw_nr_pages; /* uncharged mem+swap usage */
->>>    	} memcg_batch;
->>>    	unsigned int memcg_kmem_skip_account;
->>> +	struct memcg_oom_info {
->>> +		unsigned int may_oom:1;
->>> +	} memcg_oom;
->>
->> This ":1" makes slower but doesn't diet any memory space, right? I suggest
->> to use bool. If anybody need to diet in future, he may change it to bit field.
->> That's ok, let's stop too early and questionable micro optimization.
->
-> It should sit in the same word as the memcg_kmem_skip_account, plus
-> I'm adding another bit in the next patch (in_memcg_oom), so we save
-> space.  It's also the OOM path, so anything but performance critical.
+On Mon, Jul 29, 2013 at 01:23:39PM -0400, Jason Cooper wrote:
 
-Oh, if you added another bit too, it's ok, of course.
+> true, the answer to this problem may be to create a depgraph of the
+> nodes based on phandles and child status, then init.  However, if the
+> goal is to accelerate boot times, then that should not be calculated
+> during each boot, especially since it doesn't likely change from boot to
+> boot.
 
->>> diff --git a/mm/filemap.c b/mm/filemap.c
->>> index a6981fe..2932810 100644
->>> --- a/mm/filemap.c
->>> +++ b/mm/filemap.c
->>> @@ -1617,6 +1617,7 @@ int filemap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
->>>    	struct file_ra_state *ra = &file->f_ra;
->>>    	struct inode *inode = mapping->host;
->>>    	pgoff_t offset = vmf->pgoff;
->>> +	unsigned int may_oom;
->>
->> Why don't you use bool? your mem_cgroup_xchg_may_oom() uses bool and it seems cleaner more.
->
-> Yup, forgot to convert it with the interface, I changed it to bool.
+FWIW this is broadly speaking what deferred probing is supposed to do -
+it seemed too complex and fragile to make the graph for board files so
+Grant came up with the idea of deferred probing which aims to sidestep
+the problem and work it out dynamically, also providing a fallback in
+case something that has actually optimised the ordering misses some case
+(cleaning up after the effects of parallel probes for example).
 
-thx.
+--Ux295LQi5R3PD/XN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
->>> +	/*
->>> +	 * Enable the memcg OOM handling for faults triggered in user
->>> +	 * space.  Kernel faults are handled more gracefully.
->>> +	 */
->>> +	if (flags & FAULT_FLAG_USER)
->>> +		WARN_ON(mem_cgroup_xchg_may_oom(current, true) == true);
->>
->> Please don't assume WARN_ON never erase any code. I'm not surprised if embedded
->> guys replace WARN_ON with nop in future.
->
-> That would be really messed up.
->
-> But at the same time, the WARN_ON() obfuscates what's going on a
-> little bit, so putting it separately should make the code more
-> readable.  I'll change it.
->
-> Thanks for your input!
+iQIcBAEBAgAGBQJR9scJAAoJELSic+t+oim9CUAP/2OU00gUAC1PDqf6SbbOVFPi
+ryYzHYnowCGHXAONfYUDBg2YHmNBMqxP8qTbxY+ryuxK4q9keXy8x8g/3T1bsNhZ
+yngIeioeUDI5BLH3dxAEHvu2CpQnryM//sWCk69ghqIxK/3kNgeOzLzTzj0BNMJW
+aQwtKuYZf7MfB1Qf20JWpmIWS30UhkcwcyNDevL6wU+DBAynEg9ba5cLC6AEIVmy
+Ksl9bSZrvjqKL+PePaXSswVTuSRUicpsiFkY7WrPmtBCWPjSz8N+KHNu2eJCc9Yk
+CZvBbjxcjSJyQyH7yb3dxhCczQVI3PzoFoS5mXuyCooKhGdx9FXztkhAMgbOcyXE
+YkslCvQuMwkW7h6s6xRpcEHMbm1LJj/+h4LqOV5JVODqN6fZTPjcY+5K4rd9L390
+rRedBp2eqH3t2l7PcetLhFuwEcvoF3wn9znzmyFYoBcT95QQzqi4LMAPblcMSxb0
+ock2C1rIA2V15wQli4TZY7F8fgE39NaoijWg3COawBsmWkc7q/vxBeD0Pvg5NPdi
+wpfd4KaTIzPSjDr377/DeMrLhfwQQ4qcx8C9P2i6HCuUPwVrpJb+nhQMZ+qnIsZ5
+gUThuQ+dDHU2C+0MJ0UYzcuUqwnkilDS6PBez1TRSXM48jzGELXTUQYDorKpc66k
+ndpTsyHRi4E5cXcQuGTH
+=Rq3Q
+-----END PGP SIGNATURE-----
 
-No problem. :)
-
-
-
+--Ux295LQi5R3PD/XN--
