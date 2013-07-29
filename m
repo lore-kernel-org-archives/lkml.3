@@ -1,117 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab3G2Pwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:52:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45913 "EHLO mx2.suse.de"
+	id S1754960Ab3G2P5c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:57:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:1780 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab3G2Pwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:52:47 -0400
-Date: Mon, 29 Jul 2013 17:52:43 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/6] mm: memcg: do not trap chargers with full callstack
- on OOM
-Message-ID: <20130729155243.GI4678@dhcp22.suse.cz>
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
- <1374791138-15665-7-git-send-email-hannes@cmpxchg.org>
- <20130726144310.GH17761@dhcp22.suse.cz>
- <20130726212808.GD17975@cmpxchg.org>
- <20130729141250.GF4678@dhcp22.suse.cz>
- <20130729145529.GW715@cmpxchg.org>
+	id S1752242Ab3G2P5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:57:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,770,1367996400"; 
+   d="scan'208";a="378375737"
+Date: Mon, 29 Jul 2013 17:57:27 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
+Message-ID: <20130729155727.GA11830@zurbaran>
+References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
+ <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
+ <20130725080443.GB3403@laptop>
+ <20130725080800.GC3403@laptop>
+ <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
+ <20130729154614.GA7704@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729145529.GW715@cmpxchg.org>
+In-Reply-To: <20130729154614.GA7704@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 29-07-13 10:55:29, Johannes Weiner wrote:
-> On Mon, Jul 29, 2013 at 04:12:50PM +0200, Michal Hocko wrote:
-> > On Fri 26-07-13 17:28:09, Johannes Weiner wrote:
-> > > On Fri, Jul 26, 2013 at 04:43:10PM +0200, Michal Hocko wrote:
-> > > > On Thu 25-07-13 18:25:38, Johannes Weiner wrote:
-> > > > > @@ -2189,31 +2191,20 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
-> > > > >  }
-> > > > >  
-> > > > >  /*
-> > > > > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
-> > > > > + * try to call OOM killer
-> > > > >   */
-> > > > > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
-> > > > > -				  int order)
-> > > > > +static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
-> > > > >  {
-> > > > > -	struct oom_wait_info owait;
-> > > > > -	bool locked, need_to_kill;
-> > > > > +	bool locked, need_to_kill = true;
-> > > > >  
-> > > > > -	owait.memcg = memcg;
-> > > > > -	owait.wait.flags = 0;
-> > > > > -	owait.wait.func = memcg_oom_wake_function;
-> > > > > -	owait.wait.private = current;
-> > > > > -	INIT_LIST_HEAD(&owait.wait.task_list);
-> > > > > -	need_to_kill = true;
-> > > > > -	mem_cgroup_mark_under_oom(memcg);
+Hi Lee,
+
+On Mon, Jul 29, 2013 at 04:46:14PM +0100, Lee Jones wrote:
+> > > > > Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+> > > > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > > > > ---
+> > > > >  drivers/mfd/Kconfig                  |   12 +
+> > > > >  drivers/mfd/Makefile                 |    3 +
+> > > > >  drivers/mfd/da9063-core.c            |  177 ++++++
+> > > > >  drivers/mfd/da9063-i2c.c             |  197 ++++++
+> > > > >  drivers/mfd/da9063-irq.c             |  193 ++++++
+> > > > >  include/linux/mfd/da9063/core.h      |  110 ++++
+> > > > >  include/linux/mfd/da9063/pdata.h     |  114 ++++
+> > > > >  include/linux/mfd/da9063/registers.h | 1090 ++++++++++++++++++++++++++++++++++
+> > > > >  8 files changed, 1896 insertions(+)
 > > > > 
-> > > > You are marking memcg under_oom only for the sleepers. So if we have
-> > > > no sleepers then the memcg will never report it is under oom which
-> > > > is a behavior change. On the other hand who-ever relies on under_oom
-> > > > under such conditions (it would basically mean a busy loop reading
-> > > > memory.oom_control) would be racy anyway so it is questionable it
-> > > > matters at all. At least now when we do not have any active notification
-> > > > that under_oom has changed.
-> > > > 
-> > > > Anyway, this shouldn't be a part of this patch so if you want it because
-> > > > it saves a pointless hierarchy traversal then make it a separate patch
-> > > > with explanation why the new behavior is still OK.
-> > > 
-> > > This made me think again about how the locking and waking in there
-> > > works and I found a bug in this patch.
-> > > 
-> > > Basically, we have an open-coded sleeping lock in there and it's all
-> > > obfuscated by having way too much stuffed into the memcg_oom_lock
-> > > section.
-> > > 
-> > > Removing all the clutter, it becomes clear that I can't remove that
-> > > (undocumented) final wakeup at the end of the function.  As with any
-> > > lock, a contender has to be woken up after unlock.  We can't rely on
-> > > the lock holder's OOM kill to trigger uncharges and wakeups, because a
-> > > contender for the OOM lock could show up after the OOM kill but before
-> > > the lock is released.  If there weren't any more wakeups, the
-> > > contender would sleep indefinitely.
+> > > > Whoah!! Who's going to want to review a 2k line patch?
 > > 
-> > I have checked that path again and I still do not see how wakeup_oom
-> > helps here. What prevents us from the following race then?
+> > Well, most of those lines consist of the register and bit(field)
+> > definitions and the assignment of those to regmap and regmap-irq.
 > > 
-> > spin_lock(&memcg_oom_lock)
-> > locked = mem_cgroup_oom_lock(memcg) # true
-> > spin_unlock(&memcg_oom_lock)
+> > I could split this into (core+i2c) and (irq) parts if you insist.
 > 
->                                                 prepare_to_wait()
+> I won't insist on it, 
+I would. Smaller patches are easier to review, track and bisect.
+So if you can logically split this patch into smaller pieces,, then
+please do so.
 
-For some reason that one disappeared from my screen ;)
-
-> > 						spin_lock(&memcg_oom_lock)
-> > 						locked = mem_cgroup_oom_lock(memcg) # false
-> > 						spin_unlock(&memcg_oom_lock)
-> > 						<resched>
-> > mem_cgroup_out_of_memory()
-> > 			<uncharge & memcg_oom_recover>
-> > spin_lock(&memcg_oom_lock)
-> > mem_cgroup_oom_unlock(memcg)
-> > memcg_wakeup_oom(memcg)
-> > 						schedule()
-> > spin_unlock(&memcg_oom_lock)
-> > mem_cgroup_unmark_under_oom(memcg)
+Cheers,
+Samuel.
 
 -- 
-Michal Hocko
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
