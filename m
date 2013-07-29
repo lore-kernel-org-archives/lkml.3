@@ -1,68 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752450Ab3G2JI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:08:29 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49820 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab3G2JI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:08:27 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18bmkCUlCflmRpTxBrwAM8j
-Date: Mon, 29 Jul 2013 02:08:22 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Grygorii Strashko <grygorii.strashko@ti.com>, linus.walleij@linaro.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-Message-ID: <20130729090822.GZ7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
- <20130716090536.5541.36289.stgit@localhost>
- <51E70B5D.6030802@wwwdotorg.org>
- <20130718073638.GP7656@atomide.com>
- <51E84180.6080902@wwwdotorg.org>
- <20130719073957.GZ7656@atomide.com>
- <51E91516.2040301@ti.com>
- <51E98D89.9050407@wwwdotorg.org>
+	id S1752635Ab3G2JKU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:10:20 -0400
+Received: from ozlabs.org ([203.10.76.45]:59147 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab3G2JKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:10:19 -0400
+Date: Mon, 29 Jul 2013 17:28:23 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH 17/18] mm, hugetlb: retry if we fail to allocate a
+ hugepage with use_reserve
+Message-ID: <20130729072823.GD29970@voom.fritz.box>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-18-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hoZxPH4CaxYzWscb"
 Content-Disposition: inline
-In-Reply-To: <51E98D89.9050407@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1375075929-6119-18-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [130719 12:10]:
-> On 07/19/2013 04:29 AM, Grygorii Strashko wrote:
-> > 
-> > First of all, I'd like to mention that these patches do *not* connect
-> > pinctrl to PM runtime, so until driver will call pinctrl_select_state()
-> > or pinctrl_pm_select_*() there will be no pins state changes.
-> 
-> Isn't the whole point of the pinctrl_pm_select*() APIs to eventually be
-> called automatically by the runtime PM core, so that we don't need to
-> write code to do this in every single driver, just like we moved the
-> call to pinctrl_select_state(default) into the device core so that we
-> didn't have to make every device do that manually?
 
-Yes I think we can make it all automatic. So far it seems that the
-last missing piece was Linus' suggestion of making it mostly happen
-using irqchip with calls to pinctrl so consumer drivers may not need
-to do anything.
- 
-> > (As result, i2c-mux is not good example, seems:))
-> 
-> As such, I think all situations are good examples, because a generic
-> feature has to work in all cases.
+--hoZxPH4CaxYzWscb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes we need to support both runtime PM, and more complex cases of
-sharing pins between devices for example that are not runtime PM
-related.
+On Mon, Jul 29, 2013 at 02:32:08PM +0900, Joonsoo Kim wrote:
+> If parallel fault occur, we can fail to allocate a hugepage,
+> because many threads dequeue a hugepage to handle a fault of same address.
+> This makes reserved pool shortage just for a little while and this cause
+> faulting thread who is ensured to have enough reserved hugepages
+> to get a SIGBUS signal.
 
-Regards,
+It's not just about reserved pages.  The same race can happen
+perfectly well when you're really, truly allocating the last hugepage
+in the system.
 
-Tony
+>=20
+> To solve this problem, we already have a nice solution, that is,
+> a hugetlb_instantiation_mutex. This blocks other threads to dive into
+> a fault handler. This solve the problem clearly, but it introduce
+> performance degradation, because it serialize all fault handling.
+>=20
+> Now, I try to remove a hugetlb_instantiation_mutex to get rid of
+> performance degradation. A prerequisite is that other thread should
+> not get a SIGBUS if they are ensured to have enough reserved pages.
+>=20
+> For this purpose, if we fail to allocate a new hugepage with use_reserve,
+> we return just 0, instead of VM_FAULT_SIGBUS. use_reserve
+> represent that this user is legimate one who are ensured to have enough
+> reserved pages. This prevent these thread not to get a SIGBUS signal and
+> make these thread retrying fault handling.
+
+Not sufficient, since it can happen without reserved pages.
+
+Also, I think there are edge cases where even reserved mappings can
+run out, in particular with the interaction between MAP_PRIVATE,
+fork() and reservations.  In this case, when you have a genuine out of
+memory condition, you will spin forever on the fault.
+
+>=20
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>=20
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 6a9ec69..909075b 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2623,7 +2623,10 @@ retry_avoidcopy:
+>  			WARN_ON_ONCE(1);
+>  		}
+> =20
+> -		ret =3D VM_FAULT_SIGBUS;
+> +		if (use_reserve)
+> +			ret =3D 0;
+> +		else
+> +			ret =3D VM_FAULT_SIGBUS;
+>  		goto out_lock;
+>  	}
+> =20
+> @@ -2741,7 +2744,10 @@ retry:
+> =20
+>  		page =3D alloc_huge_page(vma, address, use_reserve);
+>  		if (IS_ERR(page)) {
+> -			ret =3D VM_FAULT_SIGBUS;
+> +			if (use_reserve)
+> +				ret =3D 0;
+> +			else
+> +				ret =3D VM_FAULT_SIGBUS;
+>  			goto out;
+>  		}
+>  		clear_huge_page(page, address, pages_per_huge_page(h));
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--hoZxPH4CaxYzWscb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlH2GZcACgkQaILKxv3ab8a9ywCfdDhZEMfPlPQByygWhPMGPX02
+qzwAn1LBvtlxZWcs/sMGCCAYu4OBoLkh
+=p8Wa
+-----END PGP SIGNATURE-----
+
+--hoZxPH4CaxYzWscb--
