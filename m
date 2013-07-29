@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab3G2Sjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:39:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35061 "EHLO mx1.redhat.com"
+	id S1754197Ab3G2Sk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:40:58 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:41013 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751435Ab3G2Sjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:39:52 -0400
-Date: Mon, 29 Jul 2013 14:39:30 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375123170-v27s5zvu-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 11/18] mm, hugetlb: move down outside_reserve check
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1750834Ab3G2Sk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:40:56 -0400
+Date: Mon, 29 Jul 2013 12:40:48 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+Message-ID: <20130729184048.GE15861@obsidianresearch.com>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726045433.GB4100@netboy>
+ <20130726171524.GB28895@obsidianresearch.com>
+ <20130727084825.GA4707@netboy>
+ <20130729175400.GB15861@obsidianresearch.com>
+ <20130729181607.GM24642@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <1375075929-6119-12-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130729181607.GM24642@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:32:02PM +0900, Joonsoo Kim wrote:
-> Just move down outsider_reserve check.
-> This makes code more readable.
-> 
-> There is no functional change.
+On Mon, Jul 29, 2013 at 07:16:07PM +0100, Russell King - ARM Linux wrote:
 
-Why don't you do this in 10/18?
+> What does it take?  Good practice, care, thought and planning.  All
+> the qualities which should already be present for kernel _engineers_.
+> Not an "lets create something for me, I don't care about anyone else"
+> attitude.
 
-Thanks,
-Naoya Horiguchi
+I agree with what you've written, but we are looking at this from
+different ends of the problem.
 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 5f31ca5..94173e0 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2530,20 +2530,6 @@ retry_avoidcopy:
->  		return 0;
->  	}
->  
-> -	/*
-> -	 * If the process that created a MAP_PRIVATE mapping is about to
-> -	 * perform a COW due to a shared page count, attempt to satisfy
-> -	 * the allocation without using the existing reserves. The pagecache
-> -	 * page is used to determine if the reserve at this address was
-> -	 * consumed or not. If reserves were used, a partial faulted mapping
-> -	 * at the time of fork() could consume its reserves on COW instead
-> -	 * of the full address range.
-> -	 */
-> -	if (!(vma->vm_flags & VM_MAYSHARE) &&
-> -			is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
-> -			old_page != pagecache_page)
-> -		outside_reserve = 1;
-> -
->  	page_cache_get(old_page);
->  
->  	/* Drop page_table_lock as buddy allocator may be called */
-> @@ -2557,6 +2543,20 @@ retry_avoidcopy:
->  		spin_lock(&mm->page_table_lock);
->  		return VM_FAULT_OOM;
->  	}
-> +
-> +	/*
-> +	 * If the process that created a MAP_PRIVATE mapping is about to
-> +	 * perform a COW due to a shared page count, attempt to satisfy
-> +	 * the allocation without using the existing reserves. The pagecache
-> +	 * page is used to determine if the reserve at this address was
-> +	 * consumed or not. If reserves were used, a partial faulted mapping
-> +	 * at the time of fork() could consume its reserves on COW instead
-> +	 * of the full address range.
-> +	 */
-> +	if (!(vma->vm_flags & VM_MAYSHARE) &&
-> +			is_vma_resv_set(vma, HPAGE_RESV_OWNER) &&
-> +			old_page != pagecache_page)
-> +		outside_reserve = 1;
->  	use_reserve = use_reserve && !outside_reserve;
->  
->  	new_page = alloc_huge_page(vma, address, use_reserve);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+I fully agree you can create a main line kernel GIT tree that has a
+stable DT ABI.
+
+However, I as an ODM, with time pressure, cannot wait for the kernel
+folks to finish this work. So from my perspective the DT will not be
+stable, as I will put whatever interm stuff I choose to have a
+shippable product.
+
+Thus I have to design my systems for an unstable DT, and the message
+from the kernel community to people in my posistion should be:
+
+  When you ship early with non-mainlined DT schema, design your boot
+  system around an unstable DT. Plan to migrate your DT to upstream
+  once it becomes finalized.
+
+Here is the rub: Once I design for an unstable DT I simply don't
+derive value from the kernel communities work to create a stable DT.
+
+So who is getting the benefit of this work, and is it worth the cost?
+
+Jason
