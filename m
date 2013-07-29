@@ -1,39 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab3G2SrK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:47:10 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:38814 "EHLO vps0.lunn.ch"
+	id S1751570Ab3G2Su4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:50:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750882Ab3G2SrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:47:08 -0400
-Date: Mon, 29 Jul 2013 20:45:20 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: dove: add initial DT file for Globalscale D2Plug
-Message-ID: <20130729184520.GI24782@lunn.ch>
-References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1375100946-28521-5-git-send-email-sebastian.hesselbarth@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1751074Ab3G2Suz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:50:55 -0400
+Date: Mon, 29 Jul 2013 14:50:36 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Hillf Danton <dhillf@gmail.com>
+Message-ID: <1375123836-3qms0tvi-mutt-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: Re: [PATCH 13/18] mm, hugetlb: grab a page_table_lock after
+ page_cache_release
+Mime-Version: 1.0
+Content-Type: text/plain;
+ charset=iso-2022-jp
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1375100946-28521-5-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mutt-References: <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mutt-Fcc: ~/Maildir/sent/
+User-Agent: Mutt 1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:29:06PM +0200, Sebastian Hesselbarth wrote:
-> This adds an initial DT file for the Globalscale D2Plug with Dove SoC.
-> Currently, one LED is missing and I have not been able to get SD8787 driver
-> working. Those will be taken care of later.
+On Mon, Jul 29, 2013 at 02:32:04PM +0900, Joonsoo Kim wrote:
+> We don't need to grab a page_table_lock when we try to release a page.
+> So, defer to grab a page_table_lock.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Hi Sebastion
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-I took a hard look at SDIO and failed to get it working when doing
-DMA. Polled IO does however work. I guess we need some help from
-Marvell engineers before we get stable SDIO with DMA.
-
-	Andrew
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 35ccdad..255bd9e 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2630,10 +2630,11 @@ retry_avoidcopy:
+>  	}
+>  	spin_unlock(&mm->page_table_lock);
+>  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
+> -	/* Caller expects lock to be held */
+> -	spin_lock(&mm->page_table_lock);
+>  	page_cache_release(new_page);
+>  	page_cache_release(old_page);
+> +
+> +	/* Caller expects lock to be held */
+> +	spin_lock(&mm->page_table_lock);
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
