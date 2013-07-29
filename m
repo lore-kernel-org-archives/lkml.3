@@ -1,164 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756165Ab3G2W2g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:28:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:47934 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3G2W2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:28:34 -0400
-From: Abhimanyu Kapur <abhimany@codeaurora.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sboyd@codeaurora.org
-Subject: [PATCH] drivers: power: reset: add msm restart support
-Date: Mon, 29 Jul 2013 15:28:26 -0700
-Message-Id: <1375136906-22501-1-git-send-email-abhimany@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	id S1756192Ab3G2Wae (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:30:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:52560 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753113Ab3G2Wab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 18:30:31 -0400
+Date: Tue, 30 Jul 2013 08:20:39 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130729222039.GE29970@voom.fritz.box>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F39FD8.6080808@broadcom.com>
+ <20130727183059.GD4813@netboy>
+ <1441731.8CGUI1tUxh@flatron>
+ <20130729180513.GB1884@obsidianresearch.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wTWi5aaYRw9ix9vO"
+Content-Disposition: inline
+In-Reply-To: <20130729180513.GB1884@obsidianresearch.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for restart and poweroff functionality present on MSM
-chipsets with the MPM2 ps-hold hardware.
 
-Signed-off-by: Abhimanyu Kapur <abhimany@codeaurora.org>
----
- .../bindings/power_supply/msm-poweroff.txt         | 17 +++++
- drivers/power/reset/Kconfig                        |  6 ++
- drivers/power/reset/Makefile                       |  1 +
- drivers/power/reset/msm-poweroff.c                 | 73 ++++++++++++++++++++++
- 4 files changed, 97 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
- create mode 100644 drivers/power/reset/msm-poweroff.c
+--wTWi5aaYRw9ix9vO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt b/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
-new file mode 100644
-index 0000000..de08480
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/msm-poweroff.txt
-@@ -0,0 +1,17 @@
-+MSM Poweroff Driver
-+
-+A power supply hold (ps-hold) bit is set to power the msm chipsets.
-+Clearing that bit enables us to restart/poweroff. The difference
-+between poweroff and restart is determined by unique power manager IC
-+settings.
-+
-+Required Properties:
-+-compatible: "qcom,pshold"
-+-reg: Specifies the physical address of the ps-hold register
-+
-+Example:
-+
-+	restart@800820 {
-+		compatible = "qcom,pshold";
-+		reg = <0x00800820 0x4>;
-+	};
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index 349e9ae..fa6178f 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -37,3 +37,9 @@ config POWER_RESET_VEXPRESS
- 	help
- 	  Power off and reset support for the ARM Ltd. Versatile
- 	  Express boards.
-+
-+config POWER_RESET_MSM
-+	bool "Qualcomm MSM power-off driver"
-+	depends on POWER_RESET && ARCH_MSM
-+	help
-+	  Power off and restart support for Qualcomm boards.
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index 372807f..b82288e 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
-+obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
- obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
-diff --git a/drivers/power/reset/msm-poweroff.c b/drivers/power/reset/msm-poweroff.c
-new file mode 100644
-index 0000000..0d33d18
---- /dev/null
-+++ b/drivers/power/reset/msm-poweroff.c
-@@ -0,0 +1,73 @@
-+/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+
-+#include <asm/system_misc.h>
-+
-+static void __iomem *msm_ps_hold;
-+
-+static void do_msm_restart(char mode, const char *cmd)
-+{
-+	writel(0, msm_ps_hold);
-+	mdelay(10000);
-+}
-+
-+static void do_msm_poweroff(void)
-+{
-+	/* TODO: Add poweroff capability */
-+
-+	do_msm_restart('p', NULL);
-+}
-+
-+static int msm_restart_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct resource *mem;
-+
-+	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	msm_ps_hold = devm_ioremap_resource(dev, mem);
-+	if (IS_ERR(msm_ps_hold))
-+		return PTR_ERR(msm_ps_hold);
-+
-+	pm_power_off = do_msm_poweroff;
-+	arm_pm_restart = do_msm_restart;
-+	return 0;
-+}
-+
-+static const struct of_device_id of_msm_restart_match[] = {
-+	{ .compatible = "qcom,pshold", },
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, of_msm_restart_match);
-+
-+static struct platform_driver msm_restart_driver = {
-+	.probe = msm_restart_probe,
-+	.driver = {
-+		.name = "msm-restart",
-+		.of_match_table = of_match_ptr(of_msm_restart_match),
-+	},
-+};
-+
-+static int __init msm_restart_init(void)
-+{
-+	return platform_driver_register(&msm_restart_driver);
-+}
-+device_initcall(msm_restart_init);
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+On Mon, Jul 29, 2013 at 12:05:13PM -0600, Jason Gunthorpe wrote:
+> On Sat, Jul 27, 2013 at 11:51:06AM -0700, Tomasz Figa wrote:
+>=20
+> > Well, it depends on how we use the DT. There are (at least) two possibl=
+e=20
+> > usage scenarios:
+> >=20
+> >  a) using DT as direct replacement for board files - this means that yo=
+u=20
+> >     are free to say that DTSes are strictly coupled with kernel version=
+=20
+> >     and you are free to modify the bindings - see the analogy to board=
+=20
+> >     files, where you could modify the platform data structures and coul=
+d=20
+> >     not directly copy board file from one kernel version to another,
+> >=20
+> >  b) using DT as an ABI - this is the original way, i.e. define stable=
+=20
+> >     bindings and make sure that anu DTB built for older kernel will wor=
+k,
+> >     with equal or greater set of functionality on newer kernels.
+> >=20
+> > Now I believe in this thread the point whether we should use a) or b) o=
+r a=20
+> > combination of both has been raised.
+>=20
+> Right, and I think it is very important to consider that different
+> systems can legitimately fall into those categories.
+>=20
+> Clearly general purpose systems (eg servers, workstations, etc) with
+> *full featured firmware* fall into category b. Linux already basically
+> has stable DT for those systems - but the firmware is expected to do
+> lots of work and hide all the low level details from the
+> kernel.  Basically, the DT should stick to approximately ePAR and
+> everything else is hidden by the firmware.
 
+No.  With the exception of the hypervisor/virtualization extensions,
+ePAPR describes (for now) an entirely passive firmware interface.
+That is, once the handover to the OS has happened, there is *no*
+further firmware interaction.  It is not capable of hiding any details
+=66rom the OS, except those which can be done by one-time
+initialization.
+
+In fact, a guiding principle of ePAPR's design was that except in
+cases where it's *much* easier for the firmware to do things, the OS
+should be expected to do it, because the OS is usually easier to fix
+than the firmware.
+
+> This is essentially how x86
+> works and achieves its compatibility.
+>=20
+> Systems that have minimalist firmware, where firmware functions are
+> pushed into the kernel and the DT is now required to describe
+> intricate and unique SOC specific functions are clearly very
+> different, and I think it makes sense to encourage those environments
+> to be case 'a'.
+>=20
+> Basically, minimalist firmware should have a boot process design that
+> *can* couple the DT and kernel, while full featured firmware should
+> keep them seperate. IMHO that should be the clear message to people
+> implementing this stuff.
+>=20
+> After enough time the DT for 'a' should become stable and churn free,
+> but expecting/demanding that from day 0 is not helping anyone, IMHO.
+>=20
+> Jason
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--wTWi5aaYRw9ix9vO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlH26rcACgkQaILKxv3ab8aNZwCfV7pFtZ7Ujdd8tokTqGcU3Wo+
+nRwAn28QPjRkqJyZ16WbiXApZZ3HOKoJ
+=zTKv
+-----END PGP SIGNATURE-----
+
+--wTWi5aaYRw9ix9vO--
