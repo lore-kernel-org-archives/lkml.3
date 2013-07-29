@@ -1,124 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab3G2Tgj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:36:39 -0400
-Received: from blu0-omc1-s28.blu0.hotmail.com ([65.55.116.39]:14521 "EHLO
-	blu0-omc1-s28.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751821Ab3G2Tgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:36:38 -0400
-X-EIP: [SMWIfXm3CJVSN+KLHNnwFKJsO9Sh6St4]
-X-Originating-Email: [miaousami@hotmail.com]
-Message-ID: <BLU0-SMTP272CC1C4BE207873BCD0CFFA6550@phx.gbl>
-Date: Mon, 29 Jul 2013 21:36:31 +0200
-From: =?UTF-8?B?KiBTQU3DjSAq?= <miaousami@hotmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753929Ab3G2Tmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:42:45 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:54949 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751410Ab3G2Tmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:42:43 -0400
+Date: Mon, 29 Jul 2013 14:42:51 -0500
+From: Alex Thorlton <athorlton@sgi.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Galbraith <bitbucket@online.de>, Robin Holt <holt@sgi.com>,
+        Li Zefan <lizefan@huawei.com>, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        linux-doc@vger.kernel.org, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>,
+        Alex Thorlton <athorlton@sgi.com>
+Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
+Message-ID: <20130729194250.GC26476@sgi.com>
+References: <1370967244-5610-1-git-send-email-athorlton@sgi.com>
+ <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
+ <20130618164537.GJ16067@sgi.com>
+ <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
+ <20130619093212.GX3658@sgi.com>
+ <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
+ <20130620022739.GF3658@sgi.com>
+ <alpine.DEB.2.02.1306191939250.24151@chino.kir.corp.google.com>
+ <1371697844.5739.29.camel@marge.simpson.net>
+ <alpine.DEB.2.02.1306201334460.24145@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Jani Nikula <jani.nikula@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl> <2024506.rXjN91yI0W@vostro.rjw.lan> <877ggeyg1p.fsf@intel.com> <5730704.o2aLKRMvVz@vostro.rjw.lan>
-In-Reply-To: <5730704.o2aLKRMvVz@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jul 2013 19:36:34.0909 (UTC) FILETIME=[EF5A00D0:01CE8C92]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1306201334460.24145@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+We've re-evaluated the need for a patch to support some sort of finer
+grained control over thp, and, based on some tests performed by our 
+benchmarking team, we're seeing that we'd definitely still like to
+implement some method to support this.  Here's an e-mail from John 
+Baron (jbaron@sgi.com), on our benchmarking team,  containing some data
+which shows a decrease in performance for some SPEC OMP benchmarks when
+thp is enabled:
 
+> Here are results for SPEC OMP benchmarks on UV2 using 512 threads / 64
+> sockets.  These show the performance ratio for jobs run with THP
+> disabled versus THP enabled (so > 1.0 means THP disabled is faster).  
+> One possible reason for lower performance with THP enabled is that the 
+> larger page granularity can result in more remote data accesses.
+> 
+> 
+> SPEC OMP2012:
+> 
+> 350.md          1.0
+> 351.bwaves      1.3
+> 352.nab         1.0
+> 357.bt331       0.9
+> 358.botsalgn    1.0
+> 359.botsspar    1.1
+> 360.ilbdc       1.8
+> 362.fma3d       1.0
+> 363.swim        1.4
+> 367.imagick     0.9
+> 370.mgrid331    1.1
+> 371.applu331    0.9
+> 372.smithwa     1.0
+> 376.kdtree      1.0
+> 
+> SPEC OMPL2001:
+> 
+> 311.wupwise_l   1.1
+> 313.swim_l      1.5
+> 315.mgrid_l     1.0
+> 317.applu_l     1.1
+> 321.equake_l    5.8
+> 325.apsi_l      1.5
+> 327.gafort_l    1.0
+> 329.fma3d_l     1.0
+> 331.art_l       0.8
+> 
+> One could argue that real-world applications could be modified to avoid
+> these kinds of effects, but (a) it is not always possible to modify code
+> (e.g. in benchmark situations) and (b) even if it is possible to do so,
+> it is not necessarily easy to do so (e.g. for customers with large
+> legacy Fortran codes).
+> 
+> We have also observed on Intel Sandy Bridge processors that, as
+> counter-intuitive as it may seem, local memory bandwidth is actually
+> slightly lower with THP enabled (1-2%), even with unit stride data
+> accesses.  This may not seem like much of a performance hit but
+> it is important for HPC workloads.  No code modification will help here.
 
-did you commit a full revert?
-Because I am experiencing quite weird things in rc3.
-Do we have a bug opened to discuss about it?
+In light of the previous issues discussed in this thread, and some
+suggestions from David Rientjes:
 
-Here is what I can observe:
-1) During boot, probably when loading the driver, backlight gets off (or 
-to a level low enough to make me feel it is off)
-2) When I am playing with my Fn+x keys, I am getting a completely full / 
-completely low brightness with no intermediate steps
-3) When I am playing with my Fn+x keys while gnome brightness settings 
-panel is open, I am recovering intermediate steps but the Fn+x keys 
-behavior is inverted (the key supposed to lower the brightness make it 
-increase and vice-versa. Note that the gnome brightness indicator also 
-gets inverted).
-4) Playing with the mouse on gnome brightness settings is working, 
-except that on the minimum level, backlight gets off
-5) Writing to /sys/class/backlight/intel_backlight/brightness works
+> why not make it per-process so users don't have to configure
+> cpusets to control it?
 
+Robin and I have come up with a proposal for a way to replicate behavior
+similar to what this patch introduced, only on a per-process level
+instead of at the cpuset level.
 
-Regards
+Our idea would be to add a flag somewhere in the task_struct to keep
+track of whether or not thp is enabled for each task.  The flag would be
+controlled by an additional option included in prctl(), allowing
+programmers to set/unset this flag via the prctl() syscall.  We would 
+also introduce some code into the clone() syscall to ensure that this 
+flag is copied down from parent to child tasks when necessary.  The flag
+would be checked in the same place the the per-cpuset flag was checked
+in my original patch, thereby allowing the same behavior to be
+replicated on a per-process level.
 
-On 07/25/2013 02:57 PM, Rafael J. Wysocki wrote:
-> On Thursday, July 25, 2013 03:34:10 PM Jani Nikula wrote:
->> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>> On Thursday, July 25, 2013 11:09:27 AM Jani Nikula wrote:
->>>> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>>>> Well, I wonder what about the appended (untested) patch?
->>>> Rafael, before going there, I've been trying to wrap my (poor, rusty
->>>> after vacation) head around
->>>>
->>>> commit 8c5bd7adb2ce47e6aa39d17b2375f69b0c0aa255
->>>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>> Date:   Thu Jul 18 02:08:06 2013 +0200
->>>>
->>>>      ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
->>>>
->>>> and I can't see how it could work.
->>> Well, if it didn't work, people wouldn't see either improvement or breakage
->>> from it, but they do see that, so it evidently works. :-)
->> I didn't claim it didn't work, just that *I* didn't see how it could. ;)
->>
->>>> First, the ACPI_VIDEO_SKIP_BACKLIGHT flag seems to be checked before
->>>> it's actually set anywhere.
->>> Are you sure about that?
->>>
->>> acpi_video_bus_add() is the .add() callback routine for acpi_video_bus which
->>> in fact is an ACPI driver (the naming sucks, but I didn't invent it).  This
->>> means that acpi_video_bus_add() can only be called *after* acpi_video_bus
->>> has been registered with the ACPI subsystem (and the driver core).  That
->>> is done by acpi_bus_register_driver() and, guess what?, this happens in
->>> __acpi_video_register().  So clearly, acpi_video_bus_add() *cannot* run before
->>> __acpi_video_register().
->> Right. I totally missed the call within the ternary operator. Thanks for
->> the explanation, and apologies for the noise.
->>
->>>> Second, with i915 that has opregion support, __acpi_video_register()
->>>> should only ever get called once. Which means the acpi_walk_namespace()
->>>> with video_unregister_backlight() should never get called in register.
->>>>
->>>> Please enlighten me.
->>> Actually, that's correct, so we don't need the whole
->>> video_unregister_backlight() thing, calling acpi_video_backlight_quirks() would
->>> be sufficient.
->>>
->>> Ah, one more reason to do a full revert.  I'm thinking, though, that I'll leave
->>> acpi_video_backlight_quirks() as is so that it can be used by
->>> acpi_video_bus_(start)|(stop)_devices(), because that doesn't seem to cause
->>> problems to happen.
->> I observe that for the regular non-quirk acpi_video_register() call,
->> acpi_video_backlight_quirks() won't be called during register, but it
->> will get called later. This might have subtle effects later on, don't
->> you think?
-> Yes, it might, but after dropping ACPI_VIDEO_SKIP_BACKLIGHT it should be OK.
->
->> As to the original problem, and your patch in this thread, what do you
->> think about having another value in acpi_backlight kernel parameter for
->> it? Having an i915 module parameter to tell acpi to use or not use
->> quirks seems odd, since the i915 is not really taking over
->> anything. It's just passing the info on to acpi.
-> I agree, I'm going to send a full revert in a while and we'll think what to
-> do about all that later.
->
-> Thanks,
-> Rafael
->
->
+In this way, we will also be able to get static binaries to behave
+appropriately by setting this flag in a userland program, and then
+having that program exec the static binary for which we need to disable
+thp.
 
+This solution allows us to incorporate the behavior that we're looking
+for into the kernel, without abusing cpusets for the purpose of
+containerization.
+
+Please let me know if anyone has any objections to this approach, or if
+you have any suggestions as to how we could improve upon this idea.
+
+Thanks!
+
+- Alex
