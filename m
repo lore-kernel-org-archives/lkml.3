@@ -1,211 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab3G2L5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 07:57:15 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39607 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3G2L5N (ORCPT
+	id S1753446Ab3G2L52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 07:57:28 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:50570 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753284Ab3G2L50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 07:57:13 -0400
-Date: Mon, 29 Jul 2013 13:57:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "ethan.zhao" <ethan.kernel@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, johlstei@codeaurora.org,
-        yinghai@kernel.org, joe.jin@oracle.com
-Subject: Re: [PATCH V3]hrtimer: Fix a performance regression by disable
- reprogramming in remove_hrtimer
-Message-ID: <20130729115701.GD3008@twins.programming.kicks-ass.net>
-References: <1374955447-5051-1-git-send-email-ethan.kernel@gmail.com>
- <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
+	Mon, 29 Jul 2013 07:57:26 -0400
+X-Originating-IP: 60.228.202.203
+Message-ID: <51F658A2.2010007@roeck-us.net>
+Date: Mon, 29 Jul 2013 04:57:22 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1307291146060.4089@ionos.tec.linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Jonas Jensen <jonas.jensen@gmail.com>
+CC: linux-watchdog@vger.kernel.org, wim@iguana.be,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org, arnd@arndb.de
+Subject: Re: [PATCH v6] watchdog: Add MOXA ART watchdog driver
+References: <1375093215-7136-1-git-send-email-jonas.jensen@gmail.com> <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
+In-Reply-To: <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 12:18:11PM +0200, Thomas Gleixner wrote:
+On 07/29/2013 04:41 AM, Jonas Jensen wrote:
+> Add watchdog driver for MOXA ART SoCs.
+>
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+>
+> Notes:
+>      Changes since v5:
+>
+>      1. replace "moxart_wdt->dev.timeout" with "wdt_dev->timeout"
+>
+>      Applies to next-20130729
+>
+>   .../bindings/watchdog/moxa,moxart-watchdog.txt     |  15 ++
+>   drivers/watchdog/Kconfig                           |  10 ++
+>   drivers/watchdog/Makefile                          |   1 +
+>   drivers/watchdog/moxart_wdt.c                      | 165 +++++++++++++++++++++
+>   4 files changed, 191 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+>   create mode 100644 drivers/watchdog/moxart_wdt.c
+>
+> diff --git a/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+> new file mode 100644
+> index 0000000..1169857
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+> @@ -0,0 +1,15 @@
+> +MOXA ART Watchdog timer
+> +
+> +Required properties:
+> +
+> +- compatible : Must be "moxa,moxart-watchdog"
+> +- reg : Should contain registers location and length
+> +- clocks : Should contain phandle for the clock that drives the counter
+> +
+> +Example:
+> +
+> +	watchdog: watchdog@98500000 {
+> +		compatible = "moxa,moxart-watchdog";
+> +		reg = <0x98500000 0x10>;
+> +		clocks = <&coreclk>;
+> +	};
+> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+> index 362085d..6883aab 100644
+> --- a/drivers/watchdog/Kconfig
+> +++ b/drivers/watchdog/Kconfig
+> @@ -382,6 +382,16 @@ config RETU_WATCHDOG
+>   	  To compile this driver as a module, choose M here: the
+>   	  module will be called retu_wdt.
+>
+> +config MOXART_WDT
+> +	tristate "MOXART watchdog"
+> +	depends on ARCH_MOXART
+> +	help
+> +	  Say Y here to include Watchdog timer support for the watchdog
+> +	  existing on the MOXA ART SoC series platforms.
+> +
+> +	  To compile this driver as a module, choose M here: the
+> +	  module will be called moxart_wdt.
+> +
+>   # AVR32 Architecture
+>
+>   config AT32AP700X_WDT
+> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+> index 2f26a0b..7cab53a 100644
+> --- a/drivers/watchdog/Makefile
+> +++ b/drivers/watchdog/Makefile
+> @@ -54,6 +54,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+>   obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+>   obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+>   obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+> +obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+>
+>   # AVR32 Architecture
+>   obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+> diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+> new file mode 100644
+> index 0000000..70b5806
+> --- /dev/null
+> +++ b/drivers/watchdog/moxart_wdt.c
+> @@ -0,0 +1,165 @@
+> +/*
+> + * MOXA ART SoCs watchdog driver.
+> + *
+> + * Copyright (C) 2013 Jonas Jensen
+> + *
+> + * Jonas Jensen <jonas.jensen@gmail.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/err.h>
+> +#include <linux/kernel.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/watchdog.h>
+> +#include <linux/moduleparam.h>
+> +
+> +#define REG_COUNT			0x4
+> +#define REG_MODE			0x8
+> +#define REG_ENABLE			0xC
+> +
+> +struct moxart_wdt_dev {
+> +	struct watchdog_device dev;
+> +	void __iomem *base;
+> +	unsigned int clock_frequency;
+> +};
+> +
+> +static int heartbeat;
+> +
+> +static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
+> +{
+> +	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
+> +
+> +	writel(0, moxart_wdt->base + REG_ENABLE);
+> +
+> +	return 0;
+> +}
+> +
+> +static int moxart_wdt_start(struct watchdog_device *wdt_dev)
+> +{
+> +	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
+> +
+> +	writel(moxart_wdt->clock_frequency * wdt_dev->timeout,
+> +	       moxart_wdt->base + REG_COUNT);
+> +	writel(0x5ab9, moxart_wdt->base + REG_MODE);
+> +	writel(0x03, moxart_wdt->base + REG_ENABLE);
+> +
+> +	return 0;
+> +}
+> +
+> +static int moxart_wdt_set_timeout(struct watchdog_device *wdt_dev,
+> +				  unsigned int timeout)
+> +{
+> +	wdt_dev->timeout = timeout;
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct watchdog_info moxart_wdt_info = {
+> +	.identity       = "moxart-wdt",
+> +	.options        = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
+> +			  WDIOF_MAGICCLOSE,
+> +};
+> +
+> +static const struct watchdog_ops moxart_wdt_ops = {
+> +	.owner          = THIS_MODULE,
+> +	.start          = moxart_wdt_start,
+> +	.stop           = moxart_wdt_stop,
+> +	.set_timeout    = moxart_wdt_set_timeout,
+> +};
+> +
+> +static int moxart_wdt_probe(struct platform_device *pdev)
+> +{
+> +	struct moxart_wdt_dev *moxart_wdt;
+> +	struct device *dev = &pdev->dev;
 
-> The reason why we want to do that is: 
-> 
->     timer      expiry time
->     A	        100us -> programmed hardware event
->     B	       2000us
-> 
-> Restart timer A with an expiry time of 3000us without reprogramming:
-> 
->     timer      expiry time
->     NONE       100us -> programmed hardware event
->     B	       2000us
->     A	       3000us
-> 
-> We take an extra wakeup for reprogramming the hardware, which is
-> counterproductive for power saving. So disabling it blindly will cause
-> a regresssion for other people. We need to be smarter than that.
+I have my nitpicking day ;). Even though you declare dev = &pdev->dev,
+you use &pdev->dev several times below.
 
-So aside from the complete mess posted; how about something like this?
+Assuming you change this, feel free to add
 
-*completely untested etc..*
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
 
----
- include/linux/hrtimer.h |  5 +++++
- kernel/hrtimer.c        | 60 +++++++++++++++++++++++--------------------------
- 2 files changed, 33 insertions(+), 32 deletions(-)
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index d19a5c2..f2bcb9c 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -185,6 +185,7 @@ struct hrtimer_cpu_base {
- 	ktime_t				expires_next;
- 	int				hres_active;
- 	int				hang_detected;
-+	int				timers_removed;
- 	unsigned long			nr_events;
- 	unsigned long			nr_retries;
- 	unsigned long			nr_hangs;
-@@ -261,6 +262,8 @@ static inline ktime_t hrtimer_expires_remaining(const struct hrtimer *timer)
- #ifdef CONFIG_HIGH_RES_TIMERS
- struct clock_event_device;
- 
-+extern void hrtimer_enter_idle(void);
-+
- extern void hrtimer_interrupt(struct clock_event_device *dev);
- 
- /*
-@@ -296,6 +299,8 @@ extern void clock_was_set_delayed(void);
- # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
- # define KTIME_MONOTONIC_RES	KTIME_LOW_RES
- 
-+static inline void hrtimer_enter_idle(void) { }
-+
- static inline void hrtimer_peek_ahead_timers(void) { }
- 
- /*
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index f0f4fe2..ffb16d3 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -673,6 +673,27 @@ static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
- 	return ktime_get_update_offsets(offs_real, offs_boot, offs_tai);
- }
- 
-+static void __hrtimer_reprogram_all(struct hrtimer_cpu_base *base)
-+{
-+	if (!hrtimer_hres_active())
-+		return;
-+
-+	raw_spin_lock(&base->lock);
-+	hrtimer_update_base(base);
-+	hrtimer_force_reprogram(base, 0);
-+	raw_spin_unlock(&base->lock);
-+}
-+
-+void hrtimer_enter_idle(void)
-+{
-+	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
-+
-+	if (base->timers_removed) {
-+		base->timers_removed = 0;
-+		__hrtimer_reprogramm_all(base);
-+	}
-+}
-+
- /*
-  * Retrigger next event is called after clock was set
-  *
-@@ -682,13 +703,7 @@ static void retrigger_next_event(void *arg)
- {
- 	struct hrtimer_cpu_base *base = &__get_cpu_var(hrtimer_bases);
- 
--	if (!hrtimer_hres_active())
--		return;
--
--	raw_spin_lock(&base->lock);
--	hrtimer_update_base(base);
--	hrtimer_force_reprogram(base, 0);
--	raw_spin_unlock(&base->lock);
-+	__hrtimer_reprogram_all(base);
- }
- 
- /*
-@@ -907,7 +922,7 @@ static int enqueue_hrtimer(struct hrtimer *timer,
-  */
- static void __remove_hrtimer(struct hrtimer *timer,
- 			     struct hrtimer_clock_base *base,
--			     unsigned long newstate, int reprogram)
-+			     unsigned long newstate)
- {
- 	struct timerqueue_node *next_timer;
- 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
-@@ -915,19 +930,10 @@ static void __remove_hrtimer(struct hrtimer *timer,
- 
- 	next_timer = timerqueue_getnext(&base->active);
- 	timerqueue_del(&base->active, &timer->node);
--	if (&timer->node == next_timer) {
- #ifdef CONFIG_HIGH_RES_TIMERS
--		/* Reprogram the clock event device. if enabled */
--		if (reprogram && hrtimer_hres_active()) {
--			ktime_t expires;
--
--			expires = ktime_sub(hrtimer_get_expires(timer),
--					    base->offset);
--			if (base->cpu_base->expires_next.tv64 == expires.tv64)
--				hrtimer_force_reprogram(base->cpu_base, 1);
--		}
-+	if (hrtimer_hres_active() && &timer->node == next_timer)
-+		base->cpu_base->timers_removed++;
- #endif
--	}
- 	if (!timerqueue_getnext(&base->active))
- 		base->cpu_base->active_bases &= ~(1 << base->index);
- out:
-@@ -942,26 +948,16 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
- {
- 	if (hrtimer_is_queued(timer)) {
- 		unsigned long state;
--		int reprogram;
- 
--		/*
--		 * Remove the timer and force reprogramming when high
--		 * resolution mode is active and the timer is on the current
--		 * CPU. If we remove a timer on another CPU, reprogramming is
--		 * skipped. The interrupt event on this CPU is fired and
--		 * reprogramming happens in the interrupt handler. This is a
--		 * rare case and less expensive than a smp call.
--		 */
- 		debug_deactivate(timer);
- 		timer_stats_hrtimer_clear_start_info(timer);
--		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
- 		/*
- 		 * We must preserve the CALLBACK state flag here,
- 		 * otherwise we could move the timer base in
- 		 * switch_hrtimer_base.
- 		 */
- 		state = timer->state & HRTIMER_STATE_CALLBACK;
--		__remove_hrtimer(timer, base, state, reprogram);
-+		__remove_hrtimer(timer, base, state);
- 		return 1;
- 	}
- 	return 0;
-@@ -1243,7 +1239,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
- 	WARN_ON(!irqs_disabled());
- 
- 	debug_deactivate(timer);
--	__remove_hrtimer(timer, base, HRTIMER_STATE_CALLBACK, 0);
-+	__remove_hrtimer(timer, base, HRTIMER_STATE_CALLBACK);
- 	timer_stats_account_hrtimer(timer);
- 	fn = timer->function;
- 
-@@ -1690,7 +1686,7 @@ static void migrate_hrtimer_list(struct hrtimer_clock_base *old_base,
- 		 * timer could be seen as !active and just vanish away
- 		 * under us on another CPU
- 		 */
--		__remove_hrtimer(timer, old_base, HRTIMER_STATE_MIGRATE, 0);
-+		__remove_hrtimer(timer, old_base, HRTIMER_STATE_MIGRATE);
- 		timer->base = new_base;
- 		/*
- 		 * Enqueue the timers on the new cpu. This does not
+> +	struct device_node *node = dev->of_node;
+> +	struct resource *res;
+> +	struct clk *clk;
+> +	int err;
+> +	unsigned int max_timeout;
+> +	bool nowayout = WATCHDOG_NOWAYOUT;
+> +
+> +	moxart_wdt = devm_kzalloc(&pdev->dev, sizeof(*moxart_wdt), GFP_KERNEL);
+> +	if (!moxart_wdt)
+> +		return -ENOMEM;
+> +
+> +	platform_set_drvdata(pdev, moxart_wdt);
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	moxart_wdt->base = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR(moxart_wdt->base))
+> +		return PTR_ERR(moxart_wdt->base);
+> +
+> +	clk = of_clk_get(node, 0);
+> +	if (IS_ERR(clk)) {
+> +		pr_err("%s: of_clk_get failed\n", __func__);
+> +		return PTR_ERR(clk);
+> +	}
+> +
+> +	moxart_wdt->clock_frequency = clk_get_rate(clk);
+> +	if (moxart_wdt->clock_frequency == 0) {
+> +		pr_err("%s: incorrect clock frequency\n", __func__);
+> +		return -EINVAL;
+> +	}
+> +
+> +	max_timeout = UINT_MAX / moxart_wdt->clock_frequency;
+> +
+> +	moxart_wdt->dev.info = &moxart_wdt_info;
+> +	moxart_wdt->dev.ops = &moxart_wdt_ops;
+> +	moxart_wdt->dev.timeout = max_timeout;
+> +	moxart_wdt->dev.min_timeout = 1;
+> +	moxart_wdt->dev.max_timeout = max_timeout;
+> +	moxart_wdt->dev.parent = &pdev->dev;
+> +
+> +	watchdog_init_timeout(&moxart_wdt->dev, heartbeat, &pdev->dev);
+> +	watchdog_set_nowayout(&moxart_wdt->dev, nowayout);
+> +
+> +	watchdog_set_drvdata(&moxart_wdt->dev, moxart_wdt);
+> +
+> +	err = watchdog_register_device(&moxart_wdt->dev);
+> +	if (unlikely(err))
+> +		return err;
+> +
+> +	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
+> +		moxart_wdt->dev.timeout, nowayout);
+> +
+> +	return 0;
+> +}
+> +
+> +static int moxart_wdt_remove(struct platform_device *pdev)
+> +{
+> +	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
+> +
+> +	moxart_wdt_stop(&moxart_wdt->dev);
+> +	watchdog_unregister_device(&moxart_wdt->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id moxart_watchdog_match[] = {
+> +	{ .compatible = "moxa,moxart-watchdog" },
+> +	{ },
+> +};
+> +
+> +static struct platform_driver moxart_wdt_driver = {
+> +	.probe      = moxart_wdt_probe,
+> +	.remove     = moxart_wdt_remove,
+> +	.driver     = {
+> +		.name		= "moxart-watchdog",
+> +		.owner		= THIS_MODULE,
+> +		.of_match_table	= moxart_watchdog_match,
+> +	},
+> +};
+> +module_platform_driver(moxart_wdt_driver);
+> +
+> +module_param(heartbeat, int, 0);
+> +MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds");
+> +
+> +MODULE_DESCRIPTION("MOXART watchdog driver");
+> +MODULE_LICENSE("GPL");
+> +MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
+>
+
