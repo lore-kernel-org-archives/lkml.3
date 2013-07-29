@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab3G2J5l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:57:41 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:52431 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab3G2J5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:57:40 -0400
-Message-ID: <51F63C74.6070503@ti.com>
-Date: Mon, 29 Jul 2013 15:27:08 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1755072Ab3G2KA1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:00:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56746 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752071Ab3G2KA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:00:26 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
+   d="scan'208";a="8057169"
+Message-ID: <51F63C4B.2090907@cn.fujitsu.com>
+Date: Mon, 29 Jul 2013 17:56:27 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-To: Nishanth Menon <nm@ti.com>
-CC: =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <benoit.cousson@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        J Keerthy <j-keerthy@ti.com>
-Subject: Re: [PATCH 0/9] ARM: dts: omap5-uevm: fixup wrong regulator configuration
-References: <1374079538-19548-1-git-send-email-nm@ti.com>
-In-Reply-To: <1374079538-19548-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: Rui Xiang <rui.xiang@huawei.com>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, serge.hallyn@ubuntu.com,
+        ebiederm@xmission.com, akpm@linux-foundation.org, libo.chen@huawei.com
+Subject: Re: [PATCH 2/9] syslog_ns: add syslog_ns into user_namespace
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-3-git-send-email-rui.xiang@huawei.com> <51F639FB.304@cn.fujitsu.com> <51F63BD2.6090902@cn.fujitsu.com>
+In-Reply-To: <51F63BD2.6090902@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:58:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:58:03,
+	Serialize complete at 2013/07/29 17:58:03
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nishanth,
+On 07/29/2013 05:54 PM, Gao feng wrote:
 
-On Wednesday 17 July 2013 10:15 PM, Nishanth Menon wrote:
-> Due to wrong older revision of documentation used as reference, we
-> seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
-> series is based power tree on production board 750-2628-XXX platform.
-> Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
-> supply hardware blocks at voltages that are out of specification.
+> On 07/29/2013 05:46 PM, Gu Zheng wrote:
+>> Hi Rui,
+>>
+>> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+>>
+>>> Add a syslog_ns pointer to user_namespace, and make
+>>> syslog_ns per user_namespace, not global.
+>>>
+>>> Since syslog_ns is assigned to user_ns, we can have
+>>> full capabilities in new user_ns to create a new syslog_ns.
+>>>
+>>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>>> ---
+>>>  include/linux/syslog.h         | 5 +++++
+>>>  include/linux/user_namespace.h | 1 +
+>>>  2 files changed, 6 insertions(+)
+>>>
+>>> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+>>> index 425fafe..62ce47f 100644
+>>> --- a/include/linux/syslog.h
+>>> +++ b/include/linux/syslog.h
+>>> @@ -90,6 +90,11 @@ struct syslog_namespace {
+>>>  	size_t syslog_partial;
+>>>  
+>>>  	int dmesg_restrict;
+>>> +
+>>> +	/*
+>>> +	 * user namespace which owns this syslog ns.
+>>> +	 */
+>>> +	struct user_namespace *owner;
+>>>  };
+>>>  
+>>>  static inline struct syslog_namespace *get_syslog_ns(
+>>> diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+>>> index b6b215f..ce2de5b 100644
+>>> --- a/include/linux/user_namespace.h
+>>> +++ b/include/linux/user_namespace.h
+>>> @@ -28,6 +28,7 @@ struct user_namespace {
+>>>  	unsigned int		proc_inum;
+>>>  	bool			may_mount_sysfs;
+>>>  	bool			may_mount_proc;
+>>> +	struct syslog_namespace *syslog_ns;
+>>
+>> As we add a syslog_ns pointer to user_namespace to make
+>> syslog_ns per user_namespace and the caps check.
+>> But why also add a point to syslog_namespace in
+>> user_namespace? Am I missing something?:)
+>>
+> 
+> yep,with this we can make sure all the other types of namespace such as mount, net, pid
+> can access syslog_ns through user namespace.
 
-This series looks good to me.
+Got it.:)
 
-Acked-by:  J Keerthy <j-keerthy@ti.com>
-> Also available at:
-> based on v3.11-rc1 tag
-> http link: https://github.com/nmenon/linux-2.6-playground/commits/push/omap5-palmas-fixes
-> git link: git://github.com/nmenon/linux-2.6-playground.git
-> branch: push/omap5-palmas-fixes
->
-> Tested with https://patchwork.kernel.org/patch/2545061/
->   + https://git.kernel.org/cgit/linux/kernel/git/ssantosh/linux.git/log/?h=for_3.11/out_of_tree/omap5_clk_data
-> Test result: http://pastebin.com/YqASYkXG
->
-> Relevant documentation:
-> - OMAP5 uEVM documentation: https://www.svtronics.com/omap/omap54xx?product_id=33
-> - OMAP5432 Data Manual: http://www.ti.com/product/OMAP5432
-> - TWL6037 / OTP information: Currently available only under NDA
->
-> Nishanth Menon (9):
->    ARM: dts: omap5-uevm: document regulator signals used on the actual
->      board
->    ARM: dts: omap5-uevm: update SMPS9 settings
->    ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
->    ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
->    ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
->    ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
->    ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
->    ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
->    ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
->
->   arch/arm/boot/dts/omap5-uevm.dts |   78 ++++++++++++++++++++++++--------------
->   1 file changed, 49 insertions(+), 29 deletions(-)
->
-Regards,
-Keerthy
+Thanks,
+Gu
+
+> 
+> 
+
+
