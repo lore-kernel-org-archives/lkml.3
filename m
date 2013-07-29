@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665Ab3G2Q7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:59:51 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:42682 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3G2Q7u (ORCPT
+	id S1758021Ab3G2RAz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:00:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58120 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab3G2RAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:59:50 -0400
-Date: Mon, 29 Jul 2013 18:59:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
- kthreads onto timekeeping CPU
-Message-ID: <20130729165943.GA15686@somewhere>
-References: <20130726231848.GA12967@linux.vnet.ibm.com>
- <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <51F5E325.4000607@cn.fujitsu.com>
- <20130729165253.GP26694@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729165253.GP26694@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Jul 2013 13:00:54 -0400
+From: Philipp Zabel <p.zabel@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
+Subject: [PATCH v3 0/6] Add Dialog DA9063 core and regulator drivers
+Date: Mon, 29 Jul 2013 19:00:41 +0200
+Message-Id: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
+X-Mailer: git-send-email 1.8.3.2
+X-SA-Exim-Connect-IP: 10.1.0.7
+X-SA-Exim-Mail-From: p.zabel@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 09:52:53AM -0700, Paul E. McKenney wrote:
-> On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
-> However, on small systems, rcu_sysidle_check_cpu() can be called from
-> the timekeeping CPU.  I suppose that this could potentially happen
-> before the first grace period starts, and in that case, we could
-> potentially see a spurious warning.  I could imagine a number of ways
-> to fix this:
-> 
-> 1.	Bind the kthread when it is created.
-> 
-> 2.	Bind the kthread when it first starts running, rather than just
-> 	after the grace period starts.
-> 
-> 3.	Suppress the warning when there is no grace period in progress.
-> 
-> 4.	Suppress the warning prior to the first grace period starting.
-> 
-> Seems like #3 is the most straightforward approach.  I just change it to:
-> 
-> 	if (rcu_gp_in_progress(rdp->rsp))
-> 		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> 
-> This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
-> but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
-> probability of complaining should some bug creep in.
+Hi,
 
-It doesn't move for now but keep in mind that it will probably be able
-to move in the future. If we have several non full-dynticks CPUs, balancing
-the timekeeping duty between them, depending which one runs at a given time,
-may improve power savings even better.
+here is the third round of the DA9063 mfd core and regulator patches, with the
+following changes since v2:
+ - Split DA9063 core driver patch into three more digestible parts
+   (register definitions, core mfd/i2c driver, regmap irqchip support)
+ - Removed 32k clock output from the regulator driver
+ - Added device tree binding documentation
+ - Added 32k clock output to mfd driver using clock API
 
-But you can ignore that for now. Your patchset is entertaining enough that
-we don't need to add more complications yet ;)
+The regmap irq patch depends on regmap changes available at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-irq-ack-mask
+
+regards
+Philipp
+
+ .../devicetree/bindings/mfd/da9063-i2c.txt         |   68 ++
+ drivers/mfd/Kconfig                                |   12 +
+ drivers/mfd/Makefile                               |    3 +
+ drivers/mfd/da9063-core.c                          |  261 +++++
+ drivers/mfd/da9063-i2c.c                           |  182 ++++
+ drivers/mfd/da9063-irq.c                           |  193 ++++
+ drivers/regulator/Kconfig                          |   10 +
+ drivers/regulator/Makefile                         |    1 +
+ drivers/regulator/da9063-regulator.c               |  941 ++++++++++++++++++
+ include/linux/mfd/da9063/core.h                    |   93 ++
+ include/linux/mfd/da9063/pdata.h                   |  111 +++
+ include/linux/mfd/da9063/registers.h               | 1028 ++++++++++++++++++++
+ 12 files changed, 2903 insertions(+)
+
+
