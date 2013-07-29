@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab3G2Fhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:37:31 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51757 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab3G2F2Z (ORCPT
+	id S1754763Ab3G2Fis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:38:48 -0400
+Received: from chicago.guarana.org ([192.210.136.102]:50963 "EHLO
+	chicago.guarana.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754585Ab3G2Fir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:28:25 -0400
-X-AuditID: 9c930179-b7c49ae000000e68-af-51f5fd77d028
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH v3 2/9] mm, hugetlb: trivial commenting fix
-Date: Mon, 29 Jul 2013 14:28:14 +0900
-Message-Id: <1375075701-5998-3-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 29 Jul 2013 01:38:47 -0400
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 01:38:47 EDT
+Message-ID: <20130729153035.18805zox54aoyubf@chicago.guarana.org>
+Date: Mon, 29 Jul 2013 15:30:35 +1000
+From: caf@guarana.org
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, davem@davemloft.net,
+        arnd@arndb.de, mingo@kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH jiffies] Avoid undefined behavior from signed overflow
+References: <20130727225828.GA11864@linux.vnet.ibm.com>
+In-Reply-To: <20130727225828.GA11864@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The name of the mutex written in comment is wrong.
-Fix it.
+Quoting "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>:
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: Hillf Danton <dhillf@gmail.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> According to the C standard 3.4.3p3, overflow of a signed integer results
+> in undefined behavior.  This commit therefore changes the definitions
+> of time_after() and time_after_eq() to avoid this undefined behavior.
+> The trick is that the subtraction is done using unsigned arithmetic,
+> which according to 6.2.5p9 cannot overflow because it is defined as
+> modulo arithmetic.  This has the added (though admittedly quite small)
+> benefit of shortening two lines of code by four characters each.
+>
+> Note that the C standard considers the cast from signed to
+> unsigned to be implementation-defined, see 6.3.1.3p3.  However, on a
+> two-complement system, an implementation that defines anything other
+> than a reinterpretation of the bits is free come to me, and I will be
+> happy to act as a witness for its being committed to an insane asylum.
+> (Although I have nothing against saturating arithmetic or signals in
+> some cases, these things really should not be the default.)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index fc4988c..51564a8 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -135,9 +135,9 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
-  *                    across the pages in a mapping.
-  *
-  * The region data structures are protected by a combination of the mmap_sem
-- * and the hugetlb_instantion_mutex.  To access or modify a region the caller
-+ * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
-  * must either hold the mmap_sem for write, or the mmap_sem for read and
-- * the hugetlb_instantiation mutex:
-+ * the hugetlb_instantiation_mutex:
-  *
-  *	down_write(&mm->mmap_sem);
-  * or
--- 
-1.7.9.5
+Don't worry, the case from signed to unsigned is actually well-defined -
+the relevant part is 6.3.1.3p2 (in C99):
+
+> Otherwise, if the new type is unsigned, the value is converted by
+> repeatedly adding or subtracting one more than the maximum value that
+> can be represented in the new type until the value is in the range of
+> the new type.
+
+...which ends up just being reinterpretation of the bits on a two's
+complement system, as you'd hope (after sign-extension to the width of
+the target unsigned type, that is).  This actually means if you were
+mad enough to implement C on a sign-magnitude system, you'd be forced to
+do a non-trivial conversion in this case.
+
+     - Kevin
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
 
