@@ -1,99 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab3G2Rxl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:53:41 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:33927 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab3G2Rxj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:53:39 -0400
-Date: Mon, 29 Jul 2013 10:53:13 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
- kthreads onto timekeeping CPU
-Message-ID: <20130729175313.GR26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130726231848.GA12967@linux.vnet.ibm.com>
- <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <51F5E325.4000607@cn.fujitsu.com>
- <20130729165253.GP26694@linux.vnet.ibm.com>
- <20130729165943.GA15686@somewhere>
+	id S1758533Ab3G2RyO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:54:14 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:55239 "EHLO quartz.orcorp.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751195Ab3G2RyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 13:54:12 -0400
+Date: Mon, 29 Jul 2013 11:54:00 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Ian Campbell <ian.campbell@citrix.com>
+Subject: Re: DT bindings as ABI [was: Do we have people interested in device
+ tree janitoring / cleanup?]
+Message-ID: <20130729175400.GB15861@obsidianresearch.com>
+References: <CAOesGMhJ+je8FZqeFxhAcYwU0CHYer+aGP6DA_8x3azrzfA2sw@mail.gmail.com>
+ <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F168FC.9070906@wwwdotorg.org>
+ <20130725182920.GA24955@e106331-lin.cambridge.arm.com>
+ <20130725184834.GA8296@netboy>
+ <20130725213753.GC17616@obsidianresearch.com>
+ <20130726045433.GB4100@netboy>
+ <20130726171524.GB28895@obsidianresearch.com>
+ <20130727084825.GA4707@netboy>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130729165943.GA15686@somewhere>
+In-Reply-To: <20130727084825.GA4707@netboy>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072917-7606-0000-0000-00000DC66E9F
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 06:59:46PM +0200, Frederic Weisbecker wrote:
-> On Mon, Jul 29, 2013 at 09:52:53AM -0700, Paul E. McKenney wrote:
-> > On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
-> > However, on small systems, rcu_sysidle_check_cpu() can be called from
-> > the timekeeping CPU.  I suppose that this could potentially happen
-> > before the first grace period starts, and in that case, we could
-> > potentially see a spurious warning.  I could imagine a number of ways
-> > to fix this:
-> > 
-> > 1.	Bind the kthread when it is created.
-> > 
-> > 2.	Bind the kthread when it first starts running, rather than just
-> > 	after the grace period starts.
-> > 
-> > 3.	Suppress the warning when there is no grace period in progress.
-> > 
-> > 4.	Suppress the warning prior to the first grace period starting.
-> > 
-> > Seems like #3 is the most straightforward approach.  I just change it to:
-> > 
-> > 	if (rcu_gp_in_progress(rdp->rsp))
-> > 		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> > 
-> > This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
-> > but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
-> > probability of complaining should some bug creep in.
+On Sat, Jul 27, 2013 at 10:48:26AM +0200, Richard Cochran wrote:
+
+> > Of course all this could have been done in C, but it wasn't/hasn't been..
 > 
-> It doesn't move for now but keep in mind that it will probably be able
-> to move in the future. If we have several non full-dynticks CPUs, balancing
-> the timekeeping duty between them, depending which one runs at a given time,
-> may improve power savings even better.
+> You have identified the real issue: poor quality of the ARM board
+> support process within the kernel. Churn is still churn, whether in DT
+> or in platform devices, but the DT people promised to end the churn.
+
+Actually my experience in this area was mainly from PPC, and granted
+it spanned the PPC32/PPC64 merge.
+
+> [ I disagree about the "more thought" part. The current discussion,
+>   coming years too late after the introduction of DT to ARM Linux, is
+>   contrary evidence enough. ]
+
+The current discussion has little to do with the quality of the
+bindings, look at the new kirkwood bindings - they have had much more
+thought put into them than the old board.c stuff they are replacing.
+
+> > I can't delay shipping while upstream sorts this out - so I know
+> > *absolutely* that the DT schema will change. This has been planned for
+> > and designed into the boot system and won't be a problem.
+> > 
+> > Why would anyone do embedded any other way?
 > 
-> But you can ignore that for now. Your patchset is entertaining enough that
-> we don't need to add more complications yet ;)
+> Yep, that is the embedded way: ship it!
+> 
+> We can do better than that.
 
-Yeah, we will need some sort of handshake for that.  Might be a simple
-as setting a flag that suppresses the warning, which I clear the next
-time I bind the kthread.  Well, it would need to deal with closely-spaced
-moves of the timekeeping duty, wouldn't it?  Plus it would need to deal
-with the fact that sampling the variable referencing the timekeeping CPU,
-sampling the current CPU, and binding the kthread cannot be done as one
-big atomic operation.  Which means that their would need to be two calls
-in the handshake, one to prepare to move the timekeeping CPU and another
-to announce that it had in fact been moved.
+I think you missed the point.
 
-Which is not too hard -- I use an irq-disable lock to guard setting and
-clearing an internal-to-RCU flag noting the upcoming change.  The
-check and WARN_ON_ONCE() are done while holding this same lock.  The
-flag is cleared only after the kthread-bind operation that follows the
-last "it has in fact been moved" handshake.  So the flag has three states,
-idle, ready to move, and moved.  The possibility of closely spaced moves
-of the timekeeping kthread are dealt with by transitioning from "moved"
-to "ready to move".  The state goes back to "idle" only after completion
-of a kthread-bind operation in the "moved" state.
+There is no way I can possibly ship a product with a DT that is
+finished. I can't tie my company's product release cycles to the whims
+of the kernel community.
 
-So agreed, let's defer this one.  ;-)
+So embedded people are going to ship with unfinished DT and upgrade
+later. They have to. There is no choice. Stable DT doesn't change
+anything unless you can create perfect stable bindings for a new SOC
+instantaneously.
 
-							Thanx, Paul
+This is where I see the whole disconnect in this
+discussion. General-purpose and embedded are *DIFFERENT* users, and
+they have different use-cases and different needs.
 
+Jason
