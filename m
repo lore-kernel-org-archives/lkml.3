@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753612Ab3G2T2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:28:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58654 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab3G2T2i (ORCPT
+	id S1753880Ab3G2Tbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:31:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:38546 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab3G2Tbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:28:38 -0400
-Date: Mon, 29 Jul 2013 12:28:37 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Jonathan Kim <jonathankim@gctsemi.com>, Dean ahn <deanahn@gctsemi.com>
-Subject: Re: linux-next: Tree for Jul 29 (staging/gdm724x)
-Message-ID: <20130729192837.GB9191@kroah.com>
-References: <20130729163906.7ba07f7c024ad364b2feb513@canb.auug.org.au>
- <51F6A0A9.5040702@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F6A0A9.5040702@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Jul 2013 15:31:44 -0400
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
+        Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>
+Subject: [PATCH v2 4/5] rbtree: allow tests to run as builtin
+Date: Mon, 29 Jul 2013 12:19:29 -0700
+Message-Id: <1375125570-9401-5-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1375125570-9401-1-git-send-email-cody@linux.vnet.ibm.com>
+References: <1375125570-9401-1-git-send-email-cody@linux.vnet.ibm.com>
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072919-3620-0000-0000-000003B91504
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 10:04:41AM -0700, Randy Dunlap wrote:
-> On 07/28/13 23:39, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20130726:
-> > 
-> 
-> on i386:
-> # CONFIG_TTY is not set
+No reason require rbtree test code to be a module, allow it to be
+builtin (streamlines my development process)
 
-Thanks, now fixed.
+Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
+Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ lib/Kconfig.debug | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-greg k-h
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 1501aa5..606e3c8 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1442,7 +1442,7 @@ config BACKTRACE_SELF_TEST
+ 
+ config RBTREE_TEST
+ 	tristate "Red-Black tree test"
+-	depends on m && DEBUG_KERNEL
++	depends on DEBUG_KERNEL
+ 	help
+ 	  A benchmark measuring the performance of the rbtree library.
+ 	  Also includes rbtree invariant checks.
+-- 
+1.8.3.4
+
