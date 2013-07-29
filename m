@@ -1,145 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755977Ab3G2VyJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:54:09 -0400
-Received: from blu0-omc1-s2.blu0.hotmail.com ([65.55.116.13]:62609 "EHLO
-	blu0-omc1-s2.blu0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754600Ab3G2VyH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:54:07 -0400
-X-EIP: [MqC4yQTW7WacKrs5aqfpLFadBMbLo6GO]
-X-Originating-Email: [miaousami@hotmail.com]
-Message-ID: <BLU0-SMTP140D7F45ED3DD21F0C0ECE3A6550@phx.gbl>
-Date: Mon, 29 Jul 2013 23:53:59 +0200
-From: =?UTF-8?B?KiBTQU3DjSAq?= <miaousami@hotmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Jani Nikula <jani.nikula@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Aaron Lu <aaron.lu@intel.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl> <5730704.o2aLKRMvVz@vostro.rjw.lan> <BLU0-SMTP272CC1C4BE207873BCD0CFFA6550@phx.gbl> <1472278.oeeviaMfXH@vostro.rjw.lan>
-In-Reply-To: <1472278.oeeviaMfXH@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	id S1756073Ab3G2Vy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:54:28 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46106 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755470Ab3G2Vy0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 17:54:26 -0400
+Subject: Re: [PATCH] hwspinlock/msm: Add support for Qualcomm MSM HW Mutex block
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@codeaurora.org>
+In-Reply-To: <20130729214035.GC8868@codeaurora.org>
+Date: Mon, 29 Jul 2013 16:54:24 -0500
+Cc: ohad@wizery.com,
+        "linux-kernel@vger.kernel.org list" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, devicetree@vger.kernel.org,
+        Jeffrey Hugo <jhugo@codeaurora.org>,
+        Eric Holmberg <eholmber@codeaurora.org>
 Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 29 Jul 2013 21:54:03.0129 (UTC) FILETIME=[23AC7E90:01CE8CA6]
+Message-Id: <9EB1A821-7137-4812-B58A-20F669BCA7DD@codeaurora.org>
+References: <1375128719-23642-1-git-send-email-galak@codeaurora.org> <E9700EA7-7154-46C5-9258-03F030DF69F6@codeaurora.org> <20130729214035.GC8868@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I make acpi_video_backlight_quirks() return false:
-- the Fn+x keys are not working anymore (remember that they didn't work 
-in 3.10 nor 3.9)
-- At least the backlight remains on at boot.
-- Gnome brightness settings do not work anymore. Neither do xbacklight.
-- Writing to /sys/class/backlight/intel_backlight/brightness works
 
-Regards,
-Sam
+On Jul 29, 2013, at 4:40 PM, Stephen Boyd wrote:
 
-On 07/29/2013 10:03 PM, Rafael J. Wysocki wrote:
-> On Monday, July 29, 2013 09:36:31 PM * SAMÍ * wrote:
->> Hi Rafael,
->>
->>
->> did you commit a full revert?
-> Yes, but I left acpi_video_backlight_quirks() (in drivers/acpi/video_detect.c)
-> that is used to decide what to do with _DOS.
->
-> Can you please check if making that function always return 'false' makes any
-> difference?
->
-> Rafael
->
->
->> Because I am experiencing quite weird things in rc3.
->> Do we have a bug opened to discuss about it?
->>
->> Here is what I can observe:
->> 1) During boot, probably when loading the driver, backlight gets off (or
->> to a level low enough to make me feel it is off)
->> 2) When I am playing with my Fn+x keys, I am getting a completely full /
->> completely low brightness with no intermediate steps
->> 3) When I am playing with my Fn+x keys while gnome brightness settings
->> panel is open, I am recovering intermediate steps but the Fn+x keys
->> behavior is inverted (the key supposed to lower the brightness make it
->> increase and vice-versa. Note that the gnome brightness indicator also
->> gets inverted).
->> 4) Playing with the mouse on gnome brightness settings is working,
->> except that on the minimum level, backlight gets off
->> 5) Writing to /sys/class/backlight/intel_backlight/brightness works
->>
->>
->> Regards
->>
->> On 07/25/2013 02:57 PM, Rafael J. Wysocki wrote:
->>> On Thursday, July 25, 2013 03:34:10 PM Jani Nikula wrote:
->>>> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>>>> On Thursday, July 25, 2013 11:09:27 AM Jani Nikula wrote:
->>>>>> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>>>>>> Well, I wonder what about the appended (untested) patch?
->>>>>> Rafael, before going there, I've been trying to wrap my (poor, rusty
->>>>>> after vacation) head around
->>>>>>
->>>>>> commit 8c5bd7adb2ce47e6aa39d17b2375f69b0c0aa255
->>>>>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>>>> Date:   Thu Jul 18 02:08:06 2013 +0200
->>>>>>
->>>>>>       ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
->>>>>>
->>>>>> and I can't see how it could work.
->>>>> Well, if it didn't work, people wouldn't see either improvement or breakage
->>>>> from it, but they do see that, so it evidently works. :-)
->>>> I didn't claim it didn't work, just that *I* didn't see how it could. ;)
->>>>
->>>>>> First, the ACPI_VIDEO_SKIP_BACKLIGHT flag seems to be checked before
->>>>>> it's actually set anywhere.
->>>>> Are you sure about that?
->>>>>
->>>>> acpi_video_bus_add() is the .add() callback routine for acpi_video_bus which
->>>>> in fact is an ACPI driver (the naming sucks, but I didn't invent it).  This
->>>>> means that acpi_video_bus_add() can only be called *after* acpi_video_bus
->>>>> has been registered with the ACPI subsystem (and the driver core).  That
->>>>> is done by acpi_bus_register_driver() and, guess what?, this happens in
->>>>> __acpi_video_register().  So clearly, acpi_video_bus_add() *cannot* run before
->>>>> __acpi_video_register().
->>>> Right. I totally missed the call within the ternary operator. Thanks for
->>>> the explanation, and apologies for the noise.
->>>>
->>>>>> Second, with i915 that has opregion support, __acpi_video_register()
->>>>>> should only ever get called once. Which means the acpi_walk_namespace()
->>>>>> with video_unregister_backlight() should never get called in register.
->>>>>>
->>>>>> Please enlighten me.
->>>>> Actually, that's correct, so we don't need the whole
->>>>> video_unregister_backlight() thing, calling acpi_video_backlight_quirks() would
->>>>> be sufficient.
->>>>>
->>>>> Ah, one more reason to do a full revert.  I'm thinking, though, that I'll leave
->>>>> acpi_video_backlight_quirks() as is so that it can be used by
->>>>> acpi_video_bus_(start)|(stop)_devices(), because that doesn't seem to cause
->>>>> problems to happen.
->>>> I observe that for the regular non-quirk acpi_video_register() call,
->>>> acpi_video_backlight_quirks() won't be called during register, but it
->>>> will get called later. This might have subtle effects later on, don't
->>>> you think?
->>> Yes, it might, but after dropping ACPI_VIDEO_SKIP_BACKLIGHT it should be OK.
->>>
->>>> As to the original problem, and your patch in this thread, what do you
->>>> think about having another value in acpi_backlight kernel parameter for
->>>> it? Having an i915 module parameter to tell acpi to use or not use
->>>> quirks seems odd, since the i915 is not really taking over
->>>> anything. It's just passing the info on to acpi.
->>> I agree, I'm going to send a full revert in a while and we'll think what to
->>> do about all that later.
->>>
->>> Thanks,
->>> Rafael
->>>
->>>
+> On 07/29, Kumar Gala wrote:
+>>> diff --git a/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+>>> new file mode 100644
+>>> index 0000000..ddd6889
+>>> --- /dev/null
+>>> +++ b/Documentation/devicetree/bindings/arm/msm/tcsr-mutex.txt
+> 
+> Maybe this should go under a new hwspinlock directory?
+
+Will look for Ohad to comment on this.
+
+> 
+>>> @@ -0,0 +1,20 @@
+>>> +Qualcomm MSM Hardware Mutex Block:
+>>> +
+>>> +The hardware block provides mutexes utilized between different processors
+>>> +on the SoC as part of the communication protocol used by these processors.
+>>> +
+>>> +Required properties:
+>>> +- compatible: should be "qcom,tcsr-mutex"
+>>> +- reg: Should contain registers location and length of mutex registers
+>>> +- reg-names:
+>>> +	"mutex-base"  - string to identify mutex registers
+>>> +- qcom,num-locks: the number of locks/mutexes supported
+>>> +
+>>> +Example:
+>>> +
+>>> +	qcom,tcsr-mutex@fd484000 {
+> 
+> Maybe it should be hw-mutex@fd484000?
+
+again, will look for Ohad to make some comment on this.
+
+>>> +		compatible = "qcom,tcsr-mutex";
+>>> +		reg = <0xfd484000 0x1000>;
+>>> +		reg-names = "mutex-base";
+>>> +		qcom,num-locks = <32>;
+>>> +	};
+>>> diff --git a/drivers/hwspinlock/msm_hwspinlock.c b/drivers/hwspinlock/msm_hwspinlock.c
+>>> new file mode 100644
+>>> index 0000000..c7d80c5
+>>> --- /dev/null
+>>> +++ b/drivers/hwspinlock/msm_hwspinlock.c
+>>> @@ -0,0 +1,150 @@
+>>> +/*
+>>> + * Copyright (c) 2013, The Linux Foundation. All rights reserved.
+>>> + *
+>>> + * This software is licensed under the terms of the GNU General Public
+>>> + * License version 2, as published by the Free Software Foundation, and
+>>> + * may be copied, distributed, and modified under those terms.
+>>> + *
+>>> + * This program is distributed in the hope that it will be useful,
+>>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>>> + * GNU General Public License for more details.
+>>> + */
+>>> +
+>>> +#include <linux/err.h>
+>>> +#include <linux/kernel.h>
+>>> +#include <linux/slab.h>
+>>> +#include <linux/device.h>
+>>> +#include <linux/module.h>
+>>> +#include <linux/platform_device.h>
+>>> +#include <linux/of.h>
+>>> +#include <linux/of_address.h>
+>>> +#include <linux/of_device.h>
+>>> +#include <linux/hwspinlock.h>
+>>> +
+>>> +#include <asm/io.h>
+> 
+> <linux/io.h> please.
+
+will change, I choice <asm/io.h> since *_relaxed are arm specific.
+
+>>> +
+>>> +#include "hwspinlock_internal.h"
+>>> +
+>>> +#define SPINLOCK_ID_APPS_PROC	1
+>>> +#define BASE_ID			0
+>>> +
+>>> +static int msm_hwspinlock_trylock(struct hwspinlock *lock)
+>>> +{
+>>> +	void __iomem *lock_addr = lock->priv;
+>>> +
+>>> +	writel_relaxed(SPINLOCK_ID_APPS_PROC, lock_addr);
+>>> +	smp_mb();
+> 
+> Are you sure you don't want mb() instead? What is this barrier
+> for? Comment please.
+
+Hopefully, Eric or Jeff can comment.
+
+>>> +	return readl_relaxed(lock_addr) == SPINLOCK_ID_APPS_PROC;
+>>> +}
+>>> +
+>>> +static void msm_hwspinlock_unlock(struct hwspinlock *lock)
+>>> +{
+>>> +	int lock_owner;
+>>> +	void __iomem *lock_addr = lock->priv;
+>>> +
+>>> +	lock_owner = readl_relaxed(lock_addr);
+>>> +	if (lock_owner != SPINLOCK_ID_APPS_PROC) {
+>>> +		pr_err("%s: spinlock not owned by Apps (actual owner is %d)\n",
+>>> +				__func__, lock_owner);
+>>> +	}
+>>> +
+>>> +	writel_relaxed(0, lock_addr);
+>>> +	smp_mb();
+> 
+> Same here. What is smp_mb() for?
+
+Hopefully, Eric or Jeff can comment.
+
+> 
+>>> +}
+>>> +
+>>> +static const struct hwspinlock_ops msm_hwspinlock_ops = {
+>>> +	.trylock	= msm_hwspinlock_trylock,
+>>> +	.unlock		= msm_hwspinlock_unlock,
+>>> +};
+>>> +
+>>> +static struct of_device_id msm_hwspinlock_of_match[];
+> 
+> Why not just put the match table here then? Also, can it be
+> const?
+
+Will change and make const
+
+> 
+>>> +static int msm_hwspinlock_probe(struct platform_device *pdev)
+>>> +{
+>>> +	int ret, i, stride;
+>>> +	u32 num_locks;
+>>> +	struct hwspinlock_device *bank;
+>>> +	struct hwspinlock *hwlock;
+>>> +	struct resource *res;
+>>> +	void __iomem *iobase;
+>>> +	struct device_node *node = pdev->dev.of_node;
+>>> +	const struct of_device_id *match;
+>>> +
+>>> +	match = of_match_device(msm_hwspinlock_of_match, &pdev->dev);
+>>> +	if (!match)
+>>> +		return -EINVAL;
+>>> +
+>>> +	ret = of_property_read_u32(node, "qcom,num-locks", &num_locks);
+>>> +	if (ret || (num_locks == 0))
+> 
+> Drop useless ().
+
+done
+
+> 
+>>> +		return -ENODEV;
+>>> +
+>>> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "mutex-base");
+>>> +	iobase = devm_ioremap_resource(&pdev->dev, res);
+>>> +	if (IS_ERR(iobase))
+>>> +		return PTR_ERR(iobase);
+>>> +
+>>> +	bank = devm_kzalloc(&pdev->dev,
+>>> +		 sizeof(*bank) + num_locks * sizeof(*hwlock), GFP_KERNEL);
+>>> +	if (!bank)
+>>> +		return -ENOMEM;
+>>> +
+> 
+> Style Nit: Maybe we could grow a local variable to get this to be
+> one line.
+> 
+> 	size_t array_size;
+> 
+> 	array_size = num_lock * sizeof(*hwlock);
+> 	bank = devm_kzalloc(&pdev->dev, sizeof(*bank) + array_size, GFP_KERNEL);
+
+done
+
+- k
+
+> 
+> -- 
+> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum, hosted by The Linux Foundation
 
