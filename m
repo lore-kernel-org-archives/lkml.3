@@ -1,91 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab3G2C7H (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:59:07 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:49800 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab3G2C7E (ORCPT
+	id S1754508Ab3G2DGk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 23:06:40 -0400
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:61254 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3G2DGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:59:04 -0400
-Date: Mon, 29 Jul 2013 12:58:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20130729125851.a4b10b1fe06303772afd74b0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Jul_2013_12_58_51_+1000_mayw1nBnNXU.r=Yc"
+	Sun, 28 Jul 2013 23:06:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <1895563.95T8SxMegu@vostro.rjw.lan>
+References: <10433383.dueoNg39qi@vostro.rjw.lan>
+	<1895563.95T8SxMegu@vostro.rjw.lan>
+Date: Mon, 29 Jul 2013 11:06:36 +0800
+Message-ID: <CAOLK0pyBsD8vR0a2mcSucnD8zFTz8ZB72OPE0R9Z67SxH9VHRw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power()
+ print device names
+From: Lan Tianyu <lantianyu1986@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Jul_2013_12_58_51_+1000_mayw1nBnNXU.r=Yc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2013/7/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>
+> Modify acpi_device_set_power() so that diagnostic messages printed by
+> it to the kernel log always contain the name of the device concerned
+> to make it possible to identify the device that triggered the message
+> if need be.
+>
+> Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
+> function.
+>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  drivers/acpi/device_pm.c |   22 ++++++++++------------
+>  1 file changed, 10 insertions(+), 12 deletions(-)
+>
+> Index: linux-pm/drivers/acpi/device_pm.c
+> ===================================================================
+> --- linux-pm.orig/drivers/acpi/device_pm.c
+> +++ linux-pm/drivers/acpi/device_pm.c
+> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
+>         /* Make sure this is a valid target state */
+>
+>         if (state == device->power.state) {
+> -               ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
+> +               ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+Missing "is" or it should be omitted?
 
-Hi Dave,
+> +                                 device->pnp.bus_id,
+>                                   acpi_power_state_string(state)));
+>                 return 0;
+>         }
+>
+>         if (!device->power.states[state].flags.valid) {
+> -               printk(KERN_WARNING PREFIX "Device does not support %s\n",
+> -                      acpi_power_state_string(state));
+> +               dev_warn(&device->dev, "Power state %s not supported\n",
+> +                        acpi_power_state_string(state));
+>                 return -ENODEV;
+>         }
+>         if (device->parent && (state < device->parent->power.state)) {
+> -               printk(KERN_WARNING PREFIX
+> -                             "Cannot set device to a higher-powered"
+> -                             " state than parent\n");
+> +               dev_warn(&device->dev, "Cannot transition to a higher-powered "
+> +                        "state than parent\n");
+>                 return -ENODEV;
+>         }
+>
+> @@ -192,8 +192,8 @@ int acpi_device_set_power(struct acpi_de
+>
+>         if (state < device->power.state && state != ACPI_STATE_D0
+>             && device->power.state >= ACPI_STATE_D3_HOT) {
+> -               printk(KERN_WARNING PREFIX
+> -                       "Cannot transition to non-D0 state from D3\n");
+> +               dev_warn(&device->dev,
+> +                        "Cannot transition to non-D0 state from D3\n");
+>                 return -ENODEV;
+>         }
+>
+> @@ -220,10 +220,8 @@ int acpi_device_set_power(struct acpi_de
+>
+>   end:
+>         if (result) {
+> -               printk(KERN_WARNING PREFIX
+> -                             "Device [%s] failed to transition to %s\n",
+> -                             device->pnp.bus_id,
+> -                             acpi_power_state_string(state));
+> +               dev_warn(&device->dev, "Failed to change power state to %s\n",
+> +                        acpi_power_state_string(state));
+>         } else {
+>                 device->power.state = state;
+>                 ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/qxl/qxl_release.c between commit 8002db6336dd ("qxl:
-convert qxl driver to proper use for reservations") from Linus' tree and
-commit 72525b3f333d ("drm/ttm: convert to unified vma offset manager")
-from the drm tree.
 
-I fixed it up (I think - see below) and can carry the fix as necessary
-(no action is required).
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/gpu/drm/qxl/qxl_release.c
-index b61449e,1a648e1..0000000
---- a/drivers/gpu/drm/qxl/qxl_release.c
-+++ b/drivers/gpu/drm/qxl/qxl_release.c
-@@@ -85,13 -85,12 +85,13 @@@ qxl_release_free(struct qxl_device *qde
-  	if (release->surface_release_id)
-  		qxl_surface_id_dealloc(qdev, release->surface_release_id);
- =20
- -	for (i =3D 0 ; i < release->bo_count; ++i) {
- +	list_for_each_entry_safe(entry, tmp, &release->bos, tv.head) {
- +		struct qxl_bo *bo =3D to_qxl_bo(entry->tv.bo);
-  		QXL_INFO(qdev, "release %llx\n",
-- 			entry->tv.bo->addr_space_offset
- -			drm_vma_node_offset_addr(&release->bos[i]->tbo.vma_node)
-++			drm_vma_node_offset_addr(&entry->tv.bo->vma_node)
-  						- DRM_FILE_OFFSET);
- -		qxl_fence_remove_release(&release->bos[i]->fence, release->id);
- -		qxl_bo_unref(&release->bos[i]);
- +		qxl_fence_remove_release(&bo->fence, release->id);
- +		qxl_bo_unref(&bo);
-  	}
-  	spin_lock(&qdev->release_idr_lock);
-  	idr_remove(&qdev->release_idr, release->id);
-
---Signature=_Mon__29_Jul_2013_12_58_51_+1000_mayw1nBnNXU.r=Yc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR9dpxAAoJEECxmPOUX5FEXUAP/1q9evideNJZyokVNY6Ztg5r
-wsnJEBmG48GqziJYiC67NUtHvOp4Q0GMhAV1PwUeFofxCBPpWXLknXhVorvm7SJA
-i0o7y12l0wrLGvOKR582KCyto2IQU8u8umgKYg+XWJfIkUkKOb7Io0ML4rq9ix1g
-MikmUlmC1jEu0XTvUBzHNWgmGXrMtsTJBMcwegXc6MNbcRT06wRIROXip2OPXres
-zDkwy2heLarLWWAIb+YbwX0DWq37Fs8gKO6dOqKcqRvbklhIa+UY0SNfh02I3UdG
-TBrTLuX/B6DnNss77EBFT0DPy6x6xwRyuqZzJpeRxh0rFS0UnQM15U5yamfb+W5B
-HPzOYVa3uKtYY/sqUodhdHrd4171o2hqLHD2/vJmZGLg9IYGbbUNg3tYaLKavG2N
-OqNlZZB5Hofhj8h85waWF5TV7+TS0wuH2m+gy8n9Hj7p6E95j/KbtvdgO5elemLK
-TlTMGM11c1fzRcrZNoSZzMY9KxK1bduKjUyXcKnzK5ll6YBq873Wdm14VK3R7pNv
-L9h81DD6SC+WPo1W+ihSu1c5Ybi2w2VXT1YeMGvSo2+qdDuB8zB5ZezQ6OEh8D84
-4KyBhCsrY2T9+r8VE0RHwTnpyc+I2+uSdEOGOY66HhSbMiZSuAi3WM8rWctOODq6
-QCYvIAixsP1TJrpwNwGM
-=mDlg
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Jul_2013_12_58_51_+1000_mayw1nBnNXU.r=Yc--
+-- 
+Best regards
+Tianyu Lan
