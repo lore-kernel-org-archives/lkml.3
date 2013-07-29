@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3G2UJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:09:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58991 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754257Ab3G2UJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:09:15 -0400
-Date: Mon, 29 Jul 2013 13:09:14 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
-Message-ID: <20130729200914.GA6146@kroah.com>
-References: <20130727214911.GK1754@pengutronix.de>
- <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754560Ab3G2UKP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:10:15 -0400
+Received: from perches-mx.perches.com ([206.117.179.246]:34332 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753875Ab3G2UKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:10:13 -0400
+Message-ID: <1375128613.2075.56.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: enforce sane perl version
+From: Joe Perches <joe@perches.com>
+To: Dave Hansen <dave@sr71.net>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org
+Date: Mon, 29 Jul 2013 13:10:13 -0700
+In-Reply-To: <20130729200606.2651EE1E@viggo.jf.intel.com>
+References: <20130729200606.2651EE1E@viggo.jf.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
-> This makes it possible to let gdb access mappings of the process that is
-> being debugged.
+On Mon, 2013-07-29 at 13:06 -0700, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
 > 
-> uio_mmap_logical was moved and uio_vm_ops renamed to group related code
-> and differentiate to new stuff.
+> I got a bug report from a couple of users who said
+> checkpatch.pl was broken for them.  It was erroring out on
+> fairly random lines most commonly with messages like:
 > 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
-> Changes since v1:
->     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
->     - fix all users of renamed struct
+> 	Nested quantifiers in regex; marked by <--HERE in m/(\((?:[^\(\)]++ <-- HERE |(?-1))*\))/ at ./checkpatch.pl line 340.
+> 
+> The bug reporter was running a version of perl 5.8 which was
+> end-of-lifed in 2008: http://www.cpan.org/src/.  Versions of perl
+> this old are at _best_ quite untested.  At worst, they are crusty
+> and known to be completely broken.
+> 
+> If folks have a system _that_ old, then we should have mercy on
+> them and give them a half-decent error message rather than fail
+> with nutty error messages.
+> 
+> This patch enforces that checkpatch.pl is run with perl 5.10,
+> which was end-of-lifed in 2009.  The new --ignore-perl-version
+> command-line switch will let folks override this if they want.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-I still get a build error with this patch:
+Other than Andrew Morton's (continuing?) use of perl 5.8
+I'm fine with this.
 
-  MODPOST 384 modules
-ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
+Andrew?  Time to update your perl version?
 
-So something isn't quite right.
 
-greg k-h
