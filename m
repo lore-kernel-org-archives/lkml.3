@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab3G2RV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:21:28 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51937 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab3G2RV0 (ORCPT
+	id S1758244Ab3G2RW7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:22:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49361 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab3G2RW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:21:26 -0400
-From: "santosh.anbu" <asantoshking@gmail.com>
-To: ericvh@gmail.com
-Cc: asantosh.king@gmail.com, linux-kernel@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net
-Subject: [PATCH] Events: 9p.h: Fixed few brace coding style issues
-Date: Mon, 29 Jul 2013 22:51:08 +0530
-Message-Id: <1375118468-3349-1-git-send-email-asantosh.king@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
+	Mon, 29 Jul 2013 13:22:58 -0400
+Message-ID: <51F6A4B4.3020100@infradead.org>
+Date: Mon, 29 Jul 2013 10:21:56 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Robin Gong <b38343@freescale.com>
+CC: lgirdwood@gmail.com, broonie@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator:pfuze100: add MODULE_LICENSE() in pfuze100
+ driver
+References: <1375069211-32069-1-git-send-email-b38343@freescale.com>
+In-Reply-To: <1375069211-32069-1-git-send-email-b38343@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "santosh.anbu" <asantosh.king@gmail.com>
+On 07/28/13 20:40, Robin Gong wrote:
+> Fix building error on x86_64 and i386:
+> WARNING: modpost: missing MODULE_LICENSE() in
+> drivers/regulator/pfuze100-regulator.o
+> 
+> Signed-off-by: Robin Gong <b38343@freescale.com>
 
-Kill all the whitespaces conforming to standards
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Signed-off-by: santosh.anbu <asantosh.king@gmail.com>
----
- include/trace/events/9p.h | 26 +++++++++++++-------------
- 1 file changed, 13 insertions(+), 13 deletions(-)
+Thanks.
 
-diff --git a/include/trace/events/9p.h b/include/trace/events/9p.h
-index a066636..c91a015 100644
---- a/include/trace/events/9p.h
-+++ b/include/trace/events/9p.h
-@@ -83,9 +83,9 @@ TRACE_EVENT(9p_client_req,
- 	    TP_ARGS(clnt, type, tag),
- 
- 	    TP_STRUCT__entry(
--		    __field(    void *,		clnt			     )
--		    __field(	__u8,		type			     )
--		    __field(	__u32,		tag			     )
-+		    __field(void *, clnt)
-+		    __field(__u8, type)
-+		    __field(__u32, tag)
- 		    ),
- 
- 	    TP_fast_assign(
-@@ -97,7 +97,7 @@ TRACE_EVENT(9p_client_req,
- 	    TP_printk("client %lu request %s tag  %d",
- 		    (long)__entry->clnt, show_9p_op(__entry->type),
- 		    __entry->tag)
-- );
-+);
- 
- TRACE_EVENT(9p_client_res,
- 	    TP_PROTO(struct p9_client *clnt, int8_t type, int tag, int err),
-@@ -105,10 +105,10 @@ TRACE_EVENT(9p_client_res,
- 	    TP_ARGS(clnt, type, tag, err),
- 
- 	    TP_STRUCT__entry(
--		    __field(    void *,		clnt			     )
--		    __field(	__u8,		type			     )
--		    __field(	__u32,		tag			     )
--		    __field(	__u32,		err			     )
-+		    __field(void *, clnt)
-+		    __field(__u8, type)
-+		    __field(__u32, tag)
-+		    __field(__u32, err)
- 		    ),
- 
- 	    TP_fast_assign(
-@@ -131,10 +131,10 @@ TRACE_EVENT(9p_protocol_dump,
- 	    TP_ARGS(clnt, pdu),
- 
- 	    TP_STRUCT__entry(
--		    __field(	void *,		clnt				)
--		    __field(	__u8,		type				)
--		    __field(	__u16,		tag				)
--		    __array(	unsigned char,	line,	P9_PROTO_DUMP_SZ	)
-+		    __field(void *, clnt)
-+		    __field(__u8, type)
-+		    __field(__u16, tag)
-+		    __array(unsigned char, line, P9_PROTO_DUMP_SZ)
- 		    ),
- 
- 	    TP_fast_assign(
-@@ -146,7 +146,7 @@ TRACE_EVENT(9p_protocol_dump,
- 	    TP_printk("clnt %lu %s(tag = %d)\n%.3x: %16ph\n%.3x: %16ph\n",
- 		      (unsigned long)__entry->clnt, show_9p_op(__entry->type),
- 		      __entry->tag, 0, __entry->line, 16, __entry->line + 16)
-- );
-+);
- 
- #endif /* _TRACE_9P_H */
- 
+> ---
+>  drivers/regulator/pfuze100-regulator.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
+> index e2f9dcf..2dadc31 100644
+> --- a/drivers/regulator/pfuze100-regulator.c
+> +++ b/drivers/regulator/pfuze100-regulator.c
+> @@ -451,4 +451,5 @@ module_i2c_driver(pfuze_driver);
+>  
+>  MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
+>  MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100 PMIC");
+> +MODULE_LICENSE("GPL v2");
+>  MODULE_ALIAS("pfuze100-regulator");
+> 
+
+
 -- 
-1.8.1.2
-
+~Randy
