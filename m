@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab3G2KpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:45:19 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:60526 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753481Ab3G2KpR (ORCPT
+	id S1751936Ab3G2Kt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:49:27 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:10859
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751018Ab3G2KtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:45:17 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Kent Overstreet <kmo@daterainc.com>
-Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH] bcache: Correct printf()-style format length modifier
-Date: Mon, 29 Jul 2013 12:45:05 +0200
-Message-Id: <1375094705-27302-1-git-send-email-geert@linux-m68k.org>
+	Mon, 29 Jul 2013 06:49:25 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1155h)
+From: <hongbo.zhang@freescale.com>
+To: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
+        <scottwood@freescale.com>, <linuxppc-dev@lists.ozlabs.org>
+CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hongbo Zhang <hongbo.zhang@freescale.com>
+Subject: [PATCH v7 0/3] DMA: Freescale: Add support for 8-channel DMA engine
+Date: Mon, 29 Jul 2013 18:49:01 +0800
+Message-ID: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>
 X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/md/bcache/btree.c: In function ‘bch_btree_node_read’:
-drivers/md/bcache/btree.c:259: warning: format ‘%lu’ expects type ‘long unsigned int’, but argument 3 has type ‘size_t’
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- drivers/md/bcache/btree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Vinod, Dan, Scott and Leo, please have a look at these V7 patches.
 
-diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
-index ee37288..60908de 100644
---- a/drivers/md/bcache/btree.c
-+++ b/drivers/md/bcache/btree.c
-@@ -255,7 +255,7 @@ void bch_btree_node_read(struct btree *b)
- 
- 	return;
- err:
--	bch_cache_set_error(b->c, "io error reading bucket %lu",
-+	bch_cache_set_error(b->c, "io error reading bucket %zu",
- 			    PTR_BUCKET_NR(b->c, &b->key, 0));
- }
- 
+Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this patch set
+adds support this DMA engine.
+
+V6->V7 changes:
+- only remove unnecessary "CHIP-dma" explanations in [1/3]
+
+V5->V6 changes:
+- minor updates of descriptions in binding document and Kconfig
+- remove [4/4], that should be another patch in future
+
+V4->V5 changes:
+- update description in the dt binding document, to make it more resonable
+- add new patch [4/4] to eliminate a compiling warning which already exists
+  for a long time
+
+V3->V4 changes:
+- introduce new patch [1/3] to revise the legacy dma binding document
+- and then add new paragraph to describe new dt node binding in [2/3]
+- rebase to latest kernel v3.11-rc1
+
+V2->V3 changes:
+- edit Documentation/devicetree/bindings/powerpc/fsl/dma.txt
+- edit text string in Kconfig and the driver files, using "elo series" to
+  mention all the current "elo*"
+
+V1->V2 changes:
+- removed the codes handling the register dgsr1, since it isn't used currently
+- renamed the DMA DT compatible to "fsl,elo3-dma"
+- renamed the new dts files to "elo3-dma-<n>.dtsi"
+
+Hongbo Zhang (3):
+  DMA: Freescale: revise device tree binding document
+  DMA: Freescale: Add new 8-channel DMA engine device tree nodes
+  DMA: Freescale: update driver to support 8-channel DMA engine
+
+ .../devicetree/bindings/powerpc/fsl/dma.txt        |  114 +++++++++++++++-----
+ arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
+ arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81 ++++++++++++++
+ arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81 ++++++++++++++
+ arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
+ drivers/dma/Kconfig                                |    9 +-
+ drivers/dma/fsldma.c                               |    9 +-
+ drivers/dma/fsldma.h                               |    2 +-
+ 8 files changed, 264 insertions(+), 40 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
+ create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+
 -- 
 1.7.9.5
+
+
 
