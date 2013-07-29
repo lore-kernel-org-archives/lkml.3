@@ -1,83 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab3G2Pcg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:32:36 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:51327 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751155Ab3G2Pce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:32:34 -0400
-Message-ID: <1375111953.2075.42.camel@joe-AO722>
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-From: Joe Perches <joe@perches.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Bjorn Helgaas <bhelgaas@google.com>,
-        "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@suse.de>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Kees Cook <keescook@chromium.org>, Tony Luck <tony.luck@intel.com>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Date: Mon, 29 Jul 2013 08:32:33 -0700
-In-Reply-To: <20130729152230.GG6634@pd.tnic>
-References: <1374526866-6813-1-git-send-email-bp@alien8.de>
-	 <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
-	 <1374686598.18818.18.camel@joe-AO722> <51F10AA8.2050901@linux.vnet.ibm.com>
-	 <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
-	 <20130729135812.GD6634@pd.tnic>
-	 <CAErSpo6fbMmicX95j_wYkJRnQeJEZ_jQSm76j9ZN4sHP0C2Yhg@mail.gmail.com>
-	 <20130729144046.GE6634@pd.tnic>
-	 <CAErSpo69wNc1h6PyJhFfhdFzz0GOiM=SCCfrm-WO5XDFTFzcHw@mail.gmail.com>
-	 <20130729152230.GG6634@pd.tnic>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1753311Ab3G2Pf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:35:26 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:36071 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab3G2PfY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:35:24 -0400
+Date: Mon, 29 Jul 2013 08:35:19 -0700
+From: Stephen Hemminger <stephen@networkplumber.org>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: A call to revise sockets behaviour
+Message-ID: <20130729083519.5d574f16@nehalam.linuxnetplumber.net>
+In-Reply-To: <2066879158.39771.1375110634453.JavaMail.mail@webmail09>
+References: <2066879158.39771.1375110634453.JavaMail.mail@webmail09>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 17:22 +0200, Borislav Petkov wrote:
-[]
-> Right, I'll make it be a hex "0x" in both stall-functions and leave it
-> to someone more ACPI-knowledgeable to decide what goes in there - my
-> patch is a simple cleanup anyway.
-[]
-> From: Borislav Petkov <bp@suse.de>
-[]
-> diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-[]
-> @@ -39,7 +39,8 @@
->  
->  #include "apei-internal.h"
->  
-> -#define ERST_PFX "ERST: "
-> +#undef pr_fmt
-> +#define pr_fmt(fmt) "ERST: " fmt
+On Mon, 29 Jul 2013 15:10:34 +0000 (UTC)
+"Artem S. Tashkinov" <t.artem@lycos.com> wrote:
 
-This reverses the order of some ERST/FW_WARN messages.
-I don't know if that matters to any log scrapers.
+> Hello,
+> 
+> Currently the Linux kernel disallows to start listening on a TCP/UDP socket if
+> there are open connections against the port, regardless connections status. So even
+> if _all_ you have is some stale (i.e. no longer active connections pending destruction)
+> the kernel will not allow to reuse this socket.
+> 
+> Stephen Hemminger argues that this behaviour is expected even though it's 100%
+> counter productive, it defies common sense and I cannot think of any security implications
+> should this feature be allowed.
+> 
+> Besides, when discussing this bug on Wine's bugzilla I have shown that this behavior not
+> only affect Windows applications running under Wine, but also native POSIX applications.
+> 
+> If nothing else is listening to incoming connections how can _old_ _stale_ connections
+> prevent an application from listening on the port? Windows has no qualms about allowing
+> that, why the Linux kernel works differently?
+> 
+> I want to hear how the current apparently _broken_ behaviour, "The current socket API
+> behavior is unlikely to be changed because so many applications expect it", can be expected.
+> 
+> Also I'd like to know which applications depend on this "feature".
+> 
+> Imagine a situation,
+> 
+> You have an apache server serving connections on port 80. For some reasons a crash in
+> one of its modules causes the daemon crash but during the crash Apache had some open
+> connections on this port.
+> 
+> According to Stephen Hemminger I cannot relaunch Apache until the kernel waits arbitrary
+> time in order to clean stale connections for its networking pool.
+> 
+> I fail to see how this behaviour can be "expected".
+> 
+> More on it here:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=45571
+> http://bugs.winehq.org/show_bug.cgi?id=26031
 
+I understand your problem, people have been having to deal with it for 30 years.
+The attitude in your response makes it seem like you just discovered fire,
+read a book like Steven's network programming if you need more info.
 
-> @@ -109,8 +110,7 @@ static inline int erst_errno(int command_status)
->  static int erst_timedout(u64 *t, u64 spin_unit)
->  {
->  	if ((s64)*t < spin_unit) {
-> -		pr_warning(FW_WARN ERST_PFX
-> -			   "Firmware does not respond in time\n");
-> +		pr_warn(FW_WARN "Firmware does not respond in time\n");
+If you don't use SO_REUSEADDR then yes application has to wait for time wait
+period.
 
-etc...
-
-> @@ -271,8 +271,7 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
->  
->  	/* ioremap does not work in interrupt context */
->  	if (in_interrupt()) {
-> -		pr_warning(ERST_PFX
-> -			   "MOVE_DATA can not be used in interrupt context");
-> +		pr_warn("MOVE_DATA can not be used in interrupt context");
-
-missing newline
-
+If you do enable SO_REUSEADDR then it is possible to bind to a port with existing
+stale connections.
 
 
