@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab3G2Lq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 07:46:59 -0400
-Received: from mail-qe0-f41.google.com ([209.85.128.41]:37019 "EHLO
-	mail-qe0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab3G2Lq5 (ORCPT
+	id S1753463Ab3G2Lrn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 07:47:43 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40422 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab3G2Lrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 07:46:57 -0400
-Date: Mon, 29 Jul 2013 07:46:53 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130729114653.GB20951@mtj.dyndns.org>
-References: <1374215660.7397.1041.camel@haakon3.risingtidesystems.com>
- <1374248000.2266.20.camel@dabdike>
- <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
- <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
- <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
- <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
- <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
- <20130726020928.GL29296@kernel.dk>
- <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
+	Mon, 29 Jul 2013 07:47:41 -0400
+Message-ID: <51F65636.6080505@huawei.com>
+Date: Mon, 29 Jul 2013 19:47:02 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
+        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
+        <libo.chen@huawei.com>
+Subject: Re: [PATCH 1/9] syslog_ns: add syslog_namespace and put/get_syslog_ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-2-git-send-email-rui.xiang@huawei.com> <51F6388B.8000308@cn.fujitsu.com>
+In-Reply-To: <51F6388B.8000308@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, Jul 26, 2013 at 02:14:36PM -0700, Nicholas A. Bellinger wrote:
-> So I don't think (completely) getting rid of ata_port->qcmds[] will be
-> possible, and just converting the ata_scsi_queuecmd() path to use the
-> extra SHT->cmd_size pre-allocation for *ata_queued_cmd might end up
-> being more trouble that it's worth.  Still undecided on that part..
+On 2013/7/29 17:40, Gu Zheng wrote:
+> Hi Rui,
+> 	Refer to inline:).
 > 
-> Tejun, do you have any thoughts + input here..?
+Hi Gu,
 
-libata exception handling which includes probing doesn't go through
-SCSI at all.  It all works inside libata proper using ata_queuecmds
-and only the result is exposed to SCSI.  Most of those SCSI semantics
-need to be emulated anyway, so this makes things a lot easier than
-going through SCSI for each command.  As it currently stands, it'd be
-a lot of effort to try to embed ata_qc's into higher layer construct.
-Given how it's used, I don't think it's a high priority task.
+Thanks for your attention.
 
-One thing which would probably be worthwhile tho is getting rid of the
-bitmap based qc tag allocator in libata.  That one is just borderline
-stupid to keep around on any setup which is supposed to be scalable.
+> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+> 
+>> Add a struct syslog_namespace which contains the necessary
+>> members for hanlding syslog and realize get_syslog_ns and
+>> put_syslog_ns API.
+>>
+>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>> ---
+>>  include/linux/syslog.h | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>  kernel/printk.c        |  7 ------
+>>  2 files changed, 68 insertions(+), 7 deletions(-)
+>>
+
+...
+
+>> +
+>> +static inline void free_syslog_ns(struct kref *kref)
+>> +{
+>> +	struct syslog_namespace *ns;
+>> +	ns = container_of(kref, struct syslog_namespace, kref);
+>> +
+>> +	kfree(ns->log_buf);
+>> +	kfree(ns);
+>> +}
+> 
+> This interface seems a bit ugly, why not use the format like put_syslog_ns()?
+> 
+> static inline void free_syslog_ns(struct syslog_namespace *ns)
+> 
+
+Free_syslog_ns is used in put_syslog_ns. And the kref_put function uses kref as
+a parameter for its relase funtion. You can see that from 
+static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)).
 
 Thanks.
 
--- 
-tejun
+>> +
+>> +static inline void put_syslog_ns(struct syslog_namespace *ns)
+>> +{
+>> +	if (ns)
+>> +		kref_put(&ns->kref, free_syslog_ns);
+>> +}
+>> +
+>> 
+
