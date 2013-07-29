@@ -1,131 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab3G2R4i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:56:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9179 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753259Ab3G2R4h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:56:37 -0400
-Date: Mon, 29 Jul 2013 19:50:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/1] tracing: trace_remove_event_call() should fail if
-	call/file is in use
-Message-ID: <20130729175033.GB26284@redhat.com>
-References: <20130729175008.GA26284@redhat.com>
+	id S1756540Ab3G2SCT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:02:19 -0400
+Received: from smtprelay0114.b.hostedemail.com ([64.98.42.114]:54591 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751999Ab3G2SCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:02:17 -0400
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Panda: scanned!
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,t.artem@lycos.com,:::::::,RULES_HIT:152:355:379:582:599:967:973:988:989:1152:1260:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1540:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:2560:2563:2682:2685:2859:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3870:3872:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4321:5007:6261:6691:8599:9025:10004:10400:10848:11232:11658:11914:12043:12296:12517:12519:12555:12698:12737:12740:12926:13025:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: duck84_883a6507eba24
+X-Filterd-Recvd-Size: 1833
+Date: Mon, 29 Jul 2013 18:02:16 +0000 (UTC)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: eric.dumazet@gmail.com
+Cc: stephen@networkplumber.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Message-ID: <2134648871.43175.1375120936132.JavaMail.mail@webmail09>
+References: <2066879158.39771.1375110634453.JavaMail.mail@webmail09>
+ <20130729083519.5d574f16@nehalam.linuxnetplumber.net>
+ <2063167407.40450.1375112877907.JavaMail.mail@webmail09><1375119778.10515.20.camel@edumazet-glaptop>
+Subject: Re: A call to revise sockets behaviour
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729175008.GA26284@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.146.189.148]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change trace_remove_event_call(call) to return the error if this
-call is active. This is what the callers assume but can't verify
-outside of the tracing locks. Both trace_kprobe.c/trace_uprobe.c
-need the additional changes, unregister_trace_probe() should abort
-if trace_remove_event_call() fails.
+Jul 29, 2013 11:43:00 PM, Eric wrote:
+On Mon, 2013-07-29 at 15:47 +0000, Artem S. Tashkinov wrote:
+>
+>> A wine developer clearly showed that this option simply doesn't work. 
+>> 
+>> http://bugs.winehq.org/show_bug.cgi?id=26031#c21
+>> 
+>> Output of strace:
+>> getsockopt(24, SOL_SOCKET, SO_REUSEADDR, [0], [4]) = 0
+>> setsockopt(24, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+>> bind(24, {sa_family=AF_INET, sin_port=htons(43012), sin_addr=inet_addr("0.     
+>> 0.0.0")}, 16) = -1 EADDRINUSE (Address already in use)
+>
+>Its clear that some other socket did not use SO_REUSADDR
+>
+>All sockets using a given port _must_ have use SO_REUSADDR to allow this
+>port being reused.
+>
 
-The caller is going to free this call/file so we must ensure that
-nobody can use them after trace_remove_event_call() succeeds.
-debugfs should be fine after the previous changes and event_remove()
-does TRACE_REG_UNREGISTER, but still there are 2 reasons why we need
-the additional checks:
-
-- There could be a perf_event(s) attached to this tp_event, so the
-  patch checks ->perf_refcount.
-
-- TRACE_REG_UNREGISTER can be suppressed by FTRACE_EVENT_FL_SOFT_MODE,
-  so we simply check FTRACE_EVENT_FL_ENABLED protected by event_mutex.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/ftrace_event.h |    2 +-
- kernel/trace/trace_events.c  |   35 +++++++++++++++++++++++++++++++++--
- 2 files changed, 34 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 4372658..f98ab06 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -332,7 +332,7 @@ extern int trace_define_field(struct ftrace_event_call *call, const char *type,
- 			      const char *name, int offset, int size,
- 			      int is_signed, int filter_type);
- extern int trace_add_event_call(struct ftrace_event_call *call);
--extern void trace_remove_event_call(struct ftrace_event_call *call);
-+extern int trace_remove_event_call(struct ftrace_event_call *call);
- 
- #define is_signed_type(type)	(((type)(-1)) < (type)1)
- 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 79a2743..3450496 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1709,16 +1709,47 @@ static void __trace_remove_event_call(struct ftrace_event_call *call)
- 	destroy_preds(call);
- }
- 
-+static int probe_remove_event_call(struct ftrace_event_call *call)
-+{
-+	struct trace_array *tr;
-+	struct ftrace_event_file *file;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	if (call->perf_refcount)
-+		return -EBUSY;
-+#endif
-+	do_for_each_event_file(tr, file) {
-+		if (file->event_call != call)
-+			continue;
-+		/*
-+		 * We can't rely on ftrace_event_enable_disable(enable => 0)
-+		 * we are going to do, FTRACE_EVENT_FL_SOFT_MODE can suppress
-+		 * TRACE_REG_UNREGISTER.
-+		 */
-+		if (file->flags & FTRACE_EVENT_FL_ENABLED)
-+			return -EBUSY;
-+		break;
-+	} while_for_each_event_file();
-+
-+	__trace_remove_event_call(call);
-+
-+	return 0;
-+}
-+
- /* Remove an event_call */
--void trace_remove_event_call(struct ftrace_event_call *call)
-+int trace_remove_event_call(struct ftrace_event_call *call)
- {
-+	int ret;
-+
- 	mutex_lock(&trace_types_lock);
- 	mutex_lock(&event_mutex);
- 	down_write(&trace_event_sem);
--	__trace_remove_event_call(call);
-+	ret = probe_remove_event_call(call);
- 	up_write(&trace_event_sem);
- 	mutex_unlock(&event_mutex);
- 	mutex_unlock(&trace_types_lock);
-+
-+	return ret;
- }
- 
- #define for_each_event(event, start, end)			\
--- 
-1.5.5.1
-
-
+It's exactly what's been tried. A program running with SO_REUSADDR, once no longer
+running consequently fails to regain the rights for the port.
