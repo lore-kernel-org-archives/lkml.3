@@ -1,156 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667Ab3G2Jn2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:43:28 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50206 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074Ab3G2JnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:43:13 -0400
+	id S1753954Ab3G2JoP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:44:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:20604 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751330Ab3G2JoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:44:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
+   d="scan'208";a="8057011"
+Message-ID: <51F6388B.8000308@cn.fujitsu.com>
+Date: Mon, 29 Jul 2013 17:40:27 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <1375075701-5998-10-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375075701-5998-10-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Mon, 29 Jul 2013 17:43:13 +0800
-Message-ID: <CAJd=RBAAt6a-pSd-dkgyC9F0ao6+p-9Pe=C9ZeFinzhgHz3bvQ@mail.gmail.com>
-Subject: Re: [PATCH v3 9/9] mm, hugetlb: decrement reserve count if
- VM_NORESERVE alloc page cache
-From: Hillf Danton <dhillf@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
+        libo.chen@huawei.com
+Subject: Re: [PATCH 1/9] syslog_ns: add syslog_namespace and put/get_syslog_ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-2-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375065080-26740-2-git-send-email-rui.xiang@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:42:03,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 17:42:03,
+	Serialize complete at 2013/07/29 17:42:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> If a vma with VM_NORESERVE allocate a new page for page cache, we should
-> check whether this area is reserved or not. If this address is
-> already reserved by other process(in case of chg == 0), we should
-> decrement reserve count, because this allocated page will go into page
-> cache and currently, there is no way to know that this page comes from
-> reserved pool or not when releasing inode. This may introduce
-> over-counting problem to reserved count. With following example code,
-> you can easily reproduce this situation.
->
-> Assume 2MB, nr_hugepages = 100
->
->         size = 20 * MB;
->         flag = MAP_SHARED;
->         p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
->         if (p == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->                 return -1;
->         }
->
->         flag = MAP_SHARED | MAP_NORESERVE;
->         q = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
->         if (q == MAP_FAILED) {
->                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
->         }
->         q[0] = 'c';
->
-> After finish the program, run 'cat /proc/meminfo'.
-> You can see below result.
->
-> HugePages_Free:      100
-> HugePages_Rsvd:        1
->
-> To fix this, we should check our mapping type and tracked region.
-> If our mapping is VM_NORESERVE, VM_MAYSHARE and chg is 0, this imply
-> that current allocated page will go into page cache which is already
-> reserved region when mapping is created. In this case, we should decrease
-> reserve count. As implementing above, this patch solve the problem.
->
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-Acked-by: Hillf Danton <dhillf@gmail.com>
+Hi Rui,
+	Refer to inline:).
 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 4b1b043..b3b8252 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -443,10 +443,23 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  }
->
->  /* Returns true if the VMA has associated reserve pages */
-> -static int vma_has_reserves(struct vm_area_struct *vma)
-> +static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  {
-> -       if (vma->vm_flags & VM_NORESERVE)
-> -               return 0;
-> +       if (vma->vm_flags & VM_NORESERVE) {
-> +               /*
-> +                * This address is already reserved by other process(chg == 0),
-> +                * so, we should decreament reserved count. Without
-> +                * decreamenting, reserve count is remained after releasing
-> +                * inode, because this allocated page will go into page cache
-> +                * and is regarded as coming from reserved pool in releasing
-> +                * step. Currently, we don't have any other solution to deal
-> +                * with this situation properly, so add work-around here.
-> +                */
-> +               if (vma->vm_flags & VM_MAYSHARE && chg == 0)
-> +                       return 1;
-> +               else
-> +                       return 0;
-> +       }
->
->         /* Shared mappings always use reserves */
->         if (vma->vm_flags & VM_MAYSHARE)
-> @@ -520,7 +533,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
->
->  static struct page *dequeue_huge_page_vma(struct hstate *h,
->                                 struct vm_area_struct *vma,
-> -                               unsigned long address, int avoid_reserve)
-> +                               unsigned long address, int avoid_reserve,
-> +                               long chg)
->  {
->         struct page *page = NULL;
->         struct mempolicy *mpol;
-> @@ -535,7 +549,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->          * have no page reserves. This check ensures that reservations are
->          * not "stolen". The child may still get SIGKILLed
->          */
-> -       if (!vma_has_reserves(vma) &&
-> +       if (!vma_has_reserves(vma, chg) &&
->                         h->free_huge_pages - h->resv_huge_pages == 0)
->                 goto err;
->
-> @@ -553,8 +567,12 @@ retry_cpuset:
->                 if (cpuset_zone_allowed_softwall(zone, htlb_alloc_mask)) {
->                         page = dequeue_huge_page_node(h, zone_to_nid(zone));
->                         if (page) {
-> -                               if (!avoid_reserve && vma_has_reserves(vma))
-> -                                       h->resv_huge_pages--;
-> +                               if (avoid_reserve)
-> +                                       break;
-> +                               if (!vma_has_reserves(vma, chg))
-> +                                       break;
+On 07/29/2013 10:31 AM, Rui Xiang wrote:
+
+> Add a struct syslog_namespace which contains the necessary
+> members for hanlding syslog and realize get_syslog_ns and
+> put_syslog_ns API.
+> 
+> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+> ---
+>  include/linux/syslog.h | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  kernel/printk.c        |  7 ------
+>  2 files changed, 68 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+> index 98a3153..425fafe 100644
+> --- a/include/linux/syslog.h
+> +++ b/include/linux/syslog.h
+> @@ -21,6 +21,9 @@
+>  #ifndef _LINUX_SYSLOG_H
+>  #define _LINUX_SYSLOG_H
+>  
+> +#include <linux/slab.h>
+> +#include <linux/kref.h>
 > +
-> +                               h->resv_huge_pages--;
->                                 break;
->                         }
->                 }
-> @@ -1138,7 +1156,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->                 return ERR_PTR(-ENOSPC);
->         }
->         spin_lock(&hugetlb_lock);
-> -       page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
-> +       page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
->         if (!page) {
->                 spin_unlock(&hugetlb_lock);
->                 page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> --
-> 1.7.9.5
->
+>  /* Close the log.  Currently a NOP. */
+>  #define SYSLOG_ACTION_CLOSE          0
+>  /* Open the log. Currently a NOP. */
+> @@ -47,6 +50,71 @@
+>  #define SYSLOG_FROM_READER           0
+>  #define SYSLOG_FROM_PROC             1
+>  
+> +enum log_flags {
+> +	LOG_NOCONS      = 1,    /* already flushed, do not print to console */
+> +	LOG_NEWLINE     = 2,    /* text ended with a newline */
+> +	LOG_PREFIX      = 4,    /* text started with a prefix */
+> +	LOG_CONT        = 8,    /* text is a fragment of a continuation line */
+> +};
+> +
+> +struct syslog_namespace {
+> +	struct kref kref;	/* syslog_ns reference count & control */
+> +
+> +	raw_spinlock_t logbuf_lock; /* access conflict locker */
+> +	/* cpu currently holding logbuf_lock of ns */
+> +	unsigned int logbuf_cpu;
+> +
+> +	/* index and sequence number of the first record stored in the buffer */
+> +	u64 log_first_seq;
+> +	u32 log_first_idx;
+> +
+> +	/* index and sequence number of the next record stored in the buffer */
+> +	u64 log_next_seq;
+> +	u32 log_next_idx;
+> +
+> +	/* the next printk record to read after the last 'clear' command */
+> +	u64 clear_seq;
+> +	u32 clear_idx;
+> +
+> +	char *log_buf;
+> +	u32 log_buf_len;
+> +
+> +	/* the next printk record to write to the console */
+> +	u64 console_seq;
+> +	u32 console_idx;
+> +
+> +	/* the next printk record to read by syslog(READ) or /proc/kmsg */
+> +	u64 syslog_seq;
+> +	u32 syslog_idx;
+> +	enum log_flags syslog_prev;
+> +	size_t syslog_partial;
+> +
+> +	int dmesg_restrict;
+> +};
+> +
+> +static inline struct syslog_namespace *get_syslog_ns(
+> +				struct syslog_namespace *ns)
+> +{
+> +	if (ns)
+> +		kref_get(&ns->kref);
+> +	return ns;
+> +}
+> +
+> +static inline void free_syslog_ns(struct kref *kref)
+> +{
+> +	struct syslog_namespace *ns;
+> +	ns = container_of(kref, struct syslog_namespace, kref);
+> +
+> +	kfree(ns->log_buf);
+> +	kfree(ns);
+> +}
+
+This interface seems a bit ugly, why not use the format like put_syslog_ns()?
+
+static inline void free_syslog_ns(struct syslog_namespace *ns)
+
+> +
+> +static inline void put_syslog_ns(struct syslog_namespace *ns)
+> +{
+> +	if (ns)
+> +		kref_put(&ns->kref, free_syslog_ns);
+> +}
+> +
+>  int do_syslog(int type, char __user *buf, int count, bool from_file);
+>  
+>  #endif /* _LINUX_SYSLOG_H */
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index d37d45c..7e544bf 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -193,13 +193,6 @@ static int console_may_schedule;
+>   * separated by ',', and find the message after the ';' character.
+>   */
+>  
+> -enum log_flags {
+> -	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
+> -	LOG_NEWLINE	= 2,	/* text ended with a newline */
+> -	LOG_PREFIX	= 4,	/* text started with a prefix */
+> -	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
+> -};
+> -
+>  struct log {
+>  	u64 ts_nsec;		/* timestamp in nanoseconds */
+>  	u16 len;		/* length of entire record */
+
+
