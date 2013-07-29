@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab3G2JXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:23:50 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:41984 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754206Ab3G2JXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:23:47 -0400
+	id S1754306Ab3G2JYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:24:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45853 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754276Ab3G2JYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:24:03 -0400
+Message-ID: <51F63487.7040003@zytor.com>
+Date: Mon, 29 Jul 2013 02:23:19 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130723094832.GV27075@twins.programming.kicks-ass.net>
-References: <CABPqkBSCzjjUU9i8NmscDsH+kuSQ4Cw1atahfwUBRpW-4BuaFw@mail.gmail.com>
-	<20130723094832.GV27075@twins.programming.kicks-ass.net>
-Date: Mon, 29 Jul 2013 11:23:46 +0200
-Message-ID: <CABPqkBTeQeR3n_KDWffWmz0AxL8+ynfvv0tCSjPP8aCh81dgPg@mail.gmail.com>
-Subject: Re: perf: question about event scheduler
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
+        rostedt@goodmis.org, tglx@linutronix.de, fengguang.wu@intel.com,
+        tip-bot for Jiri Kosina <tipbot@zytor.com>,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] kprobes/x86: Call out into INT3 handler directly
+ instead of using notifier
+References: <alpine.LNX.2.00.1307231007490.14024@pobox.suse.cz> <tip-17f41571bb2c4a398785452ac2718a6c5d77180e@git.kernel.org> <51EFE5A8.1060109@linux.intel.com> <alpine.LNX.2.00.1307291106260.18809@pobox.suse.cz> <51F6327A.9090609@zytor.com> <alpine.LNX.2.00.1307291116560.18809@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1307291116560.18809@pobox.suse.cz>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 23, 2013 at 11:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> On Tue, Jul 23, 2013 at 10:13:33AM +0200, Stephane Eranian wrote:
-> > Hi,
-> >
-> > I am looking at ctx_pinned_sched_in() and
-> > ctx_flexible_sched_in() and I am trying to
-> > understand the difference of treatment in
-> > case of errors for the two classes of events
-> > (pinned vs. flexible).
-> >
-> > For pinned events, when a group fails to
-> > schedule in, the code goes on to the next
-> > group and therefore walks the entire list
-> > for each scheduler invocation.
-> >
-> > For flexible events, when a group fails,
-> > the loop aborts and no subsequent group
-> > is tried.
-> >
-> > I am trying to understand the motivation for
-> > this difference here.
-> >
-> > If I recall, the abort is here to limit malicious
-> > DoS where a malicious user would provide
-> > an arbitrary long list of events, hogging the kernel.
-> > But in the case of pinned events, this is ignored
-> > because to create such events one needs to be
-> > root in the first place.
-> >
-> > Am I getting this right?
->
-> Whee, long time ago. I think the biggest reason is that pinned events
-> should always be scheduled. Not being able to schedule a pinned event is
-> an error. But yes, that and the fact that they're root only.
->
->
-Ok, that's what I thought then.
-Thanks,
+On 07/29/2013 02:18 AM, Jiri Kosina wrote:
+> On Mon, 29 Jul 2013, H. Peter Anvin wrote:
+> 
+>>>> Please note that putting this patch in perf/core means x86/jumplabel is
+>>>> completely nonfunctional by itself.
+>>>
+>>> I'd like to point out that this is still the case ... TIA,
+>>
+>> What is?
+> 
+> 17f41571bb2c4a is only in perf/core, x86/jumplabel is missing it. I am not 
+> sure about the tip workflow, but as it is now, x86/jumplabel is buggy, so 
+> it should be either fixed (by pulling 17f41571bb2c4a from perf/core) or 
+> removed, or somehow marked as broken ... ?
+> 
+> Not a big deal for me as long as perf/core is fine, but as you were 
+> mentioning it ...
+> 
+
+Yes, we know.  In effect, x86/jumplabel not really a working standalone
+topic branch at the moment.  It is probably not worth fixing it for this
+kernel cycle, as the number of patches involved is relatively small, but
+it is perhaps a bit unfortunate.
+
+	-hpa
+
+
