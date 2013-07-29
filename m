@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab3G2UHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:07:47 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46405 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab3G2UHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:07:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-Date: Mon, 29 Jul 2013 22:17:54 +0200
-Message-ID: <7981076.SojlpLkL71@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+	id S1754624Ab3G2UJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:09:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58991 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754257Ab3G2UJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:09:15 -0400
+Date: Mon, 29 Jul 2013 13:09:14 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Subject: Re: [PATCH v2 1/2] uio: provide vm access to UIO_MEM_PHYS maps
+Message-ID: <20130729200914.GA6146@kroah.com>
+References: <20130727214911.GK1754@pengutronix.de>
+ <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1374962978-1860-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 02:20:58 PM Felipe Contreras wrote:
-> Since v3.7 the acpi backlight driver doesn't work at all on this machine
-> because presumably the ACPI code contains stub code when Windows 8 OSI is
-> reported.
+On Sun, Jul 28, 2013 at 12:09:37AM +0200, Uwe Kleine-König wrote:
+> This makes it possible to let gdb access mappings of the process that is
+> being debugged.
 > 
-> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
-> backlight driver, however, on this machine it turns the backlight completely
-> off when it reaches level 0%, after which the user might have a lot trouble
-> trying to bring it back.
+> uio_mmap_logical was moved and uio_vm_ops renamed to group related code
+> and differentiate to new stuff.
 > 
-> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
-> to v3.6 behavior, and it should remain that way until the intel backlight
-> driver is fixed.
-
-Well, it really is a workaround, so perhaps it would be fair to call it this
-way?
-
-> Since v3.7, users have been forced to fix the initial regression by modifying
-> the boot arguments [1].
-> 
-> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
-> 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-
-I don't really feel this is the right approach, but then I don't care enough
-to fight with you. :-)
-
-I'll queue up this patch for 3.12.
-
-Thanks,
-Rafael
-
-
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 > ---
->  drivers/acpi/blacklist.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
-> 
-> diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
-> index cb96296..a404127 100644
-> --- a/drivers/acpi/blacklist.c
-> +++ b/drivers/acpi/blacklist.c
-> @@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
->  	acpi_osi_setup("!Windows 2009");
->  	return 0;
->  }
-> +static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
-> +{
-> +	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
-> +	acpi_osi_setup("!Windows 2012");
-> +	return 0;
-> +}
->  
->  static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->  	{
-> @@ -267,6 +273,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
->  		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
->  		},
->  	},
-> +	{
-> +	.callback = dmi_disable_osi_win8,
-> +	.ident = "ASUS Zenbook Prime UX31A",
-> +	.matches = {
-> +		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-> +		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
-> +		},
-> +	},
->  
->  	/*
->  	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Changes since v1:
+>     - only use generic_access_phys ifdef CONFIG_HAVE_IOREMAP_PROT
+>     - fix all users of renamed struct
+
+I still get a build error with this patch:
+
+  MODPOST 384 modules
+ERROR: "generic_access_phys" [drivers/uio/uio.ko] undefined!
+
+So something isn't quite right.
+
+greg k-h
