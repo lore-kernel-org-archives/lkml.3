@@ -1,280 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758503Ab3G2RxS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:53:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab3G2RxR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:53:17 -0400
-Date: Mon, 29 Jul 2013 13:52:52 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375120372-yje05ifc-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 06/18] mm, hugetlb: remove vma_need_reservation()
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1758528Ab3G2Rxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:53:41 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33927 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab3G2Rxj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 13:53:39 -0400
+Date: Mon, 29 Jul 2013 10:53:13 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
+ kthreads onto timekeeping CPU
+Message-ID: <20130729175313.GR26694@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130726231848.GA12967@linux.vnet.ibm.com>
+ <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <51F5E325.4000607@cn.fujitsu.com>
+ <20130729165253.GP26694@linux.vnet.ibm.com>
+ <20130729165943.GA15686@somewhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <1375075929-6119-7-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130729165943.GA15686@somewhere>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072917-7606-0000-0000-00000DC66E9F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
-
-On Mon, Jul 29, 2013 at 02:31:57PM +0900, Joonsoo Kim wrote:
-> vma_need_reservation() can be substituted by vma_has_reserves()
-> with minor change. These function do almost same thing,
-> so unifying them is better to maintain.
-
-I think it could, but not with minor changes.
-vma_has_reserves is mostly the negation of the vma_needs_reservation,
-but not exactly (consider that vma(VM_NORESERVE) does not have nor
-need any reservation.)
-
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Mon, Jul 29, 2013 at 06:59:46PM +0200, Frederic Weisbecker wrote:
+> On Mon, Jul 29, 2013 at 09:52:53AM -0700, Paul E. McKenney wrote:
+> > On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
+> > However, on small systems, rcu_sysidle_check_cpu() can be called from
+> > the timekeeping CPU.  I suppose that this could potentially happen
+> > before the first grace period starts, and in that case, we could
+> > potentially see a spurious warning.  I could imagine a number of ways
+> > to fix this:
+> > 
+> > 1.	Bind the kthread when it is created.
+> > 
+> > 2.	Bind the kthread when it first starts running, rather than just
+> > 	after the grace period starts.
+> > 
+> > 3.	Suppress the warning when there is no grace period in progress.
+> > 
+> > 4.	Suppress the warning prior to the first grace period starting.
+> > 
+> > Seems like #3 is the most straightforward approach.  I just change it to:
+> > 
+> > 	if (rcu_gp_in_progress(rdp->rsp))
+> > 		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> > 
+> > This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
+> > but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
+> > probability of complaining should some bug creep in.
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index bf2ee11..ff46a2c 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -451,8 +451,18 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  		vma->vm_private_data = (void *)0;
->  }
->  
-> -/* Returns true if the VMA has associated reserve pages */
-> -static int vma_has_reserves(struct vm_area_struct *vma, long chg)
-> +/*
-> + * Determine if the huge page at addr within the vma has an associated
-> + * reservation.  Where it does not we will need to logically increase
-> + * reservation and actually increase subpool usage before an allocation
-> + * can occur.  Where any new reservation would be required the
-> + * reservation change is prepared, but not committed.  Once the page
-> + * has been allocated from the subpool and instantiated the change should
-> + * be committed via vma_commit_reservation.  No action is required on
-> + * failure.
-> + */
-> +static int vma_has_reserves(struct hstate *h,
-> +			struct vm_area_struct *vma, unsigned long addr)
->  {
->  	if (vma->vm_flags & VM_NORESERVE) {
->  		/*
+> It doesn't move for now but keep in mind that it will probably be able
+> to move in the future. If we have several non full-dynticks CPUs, balancing
+> the timekeeping duty between them, depending which one runs at a given time,
+> may improve power savings even better.
+> 
+> But you can ignore that for now. Your patchset is entertaining enough that
+> we don't need to add more complications yet ;)
 
-Could you add more detailed comment on top of the function for better
-maintenability? What is the expected behavior, or what is the returned
-values for each case with what reasons?
-And this function is not a simple reserve checker any more, but it can
-change reservation maps, so it would be nice to give more suitable name,
-though I don't have any good suggestions.
+Yeah, we will need some sort of handshake for that.  Might be a simple
+as setting a flag that suppresses the warning, which I clear the next
+time I bind the kthread.  Well, it would need to deal with closely-spaced
+moves of the timekeeping duty, wouldn't it?  Plus it would need to deal
+with the fact that sampling the variable referencing the timekeeping CPU,
+sampling the current CPU, and binding the kthread cannot be done as one
+big atomic operation.  Which means that their would need to be two calls
+in the handshake, one to prepare to move the timekeeping CPU and another
+to announce that it had in fact been moved.
 
-> @@ -464,10 +474,22 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  		 * step. Currently, we don't have any other solution to deal
->  		 * with this situation properly, so add work-around here.
->  		 */
-> -		if (vma->vm_flags & VM_MAYSHARE && chg == 0)
-> -			return 1;
-> -		else
-> -			return 0;
-> +		if (vma->vm_flags & VM_MAYSHARE) {
-> +			struct address_space *mapping = vma->vm_file->f_mapping;
-> +			struct inode *inode = mapping->host;
-> +			pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> +			struct resv_map *resv = inode->i_mapping->private_data;
+Which is not too hard -- I use an irq-disable lock to guard setting and
+clearing an internal-to-RCU flag noting the upcoming change.  The
+check and WARN_ON_ONCE() are done while holding this same lock.  The
+flag is cleared only after the kthread-bind operation that follows the
+last "it has in fact been moved" handshake.  So the flag has three states,
+idle, ready to move, and moved.  The possibility of closely spaced moves
+of the timekeeping kthread are dealt with by transitioning from "moved"
+to "ready to move".  The state goes back to "idle" only after completion
+of a kthread-bind operation in the "moved" state.
 
-It would be nice if we can get resv_map from vma in a single function for
-VM_MAYSHARE, so can you add it on vma_resv_map?
+So agreed, let's defer this one.  ;-)
 
-> +			long chg;
-> +
-> +			chg = region_chg(resv, idx, idx + 1);
-> +			if (chg < 0)
-> +				return -ENOMEM;
-> +
-> +			if (chg == 0)
-> +				return 1;
-> +		}
-> +
-> +		return 0;
->  	}
->  
->  	/* Shared mappings always use reserves */
-> @@ -478,8 +500,16 @@ static int vma_has_reserves(struct vm_area_struct *vma, long chg)
->  	 * Only the process that called mmap() has reserves for
->  	 * private mappings.
->  	 */
-> -	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
-> +	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> +		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> +		struct resv_map *resv = vma_resv_map(vma);
-> +
-> +		/* Just for allocating region structure */
-> +		if (region_chg(resv, idx, idx + 1) < 0)
-> +			return -ENOMEM;
-> +
->  		return 1;
-> +	}
->  
->  	return 0;
->  }
-> @@ -542,8 +572,7 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
->  
->  static struct page *dequeue_huge_page_vma(struct hstate *h,
->  				struct vm_area_struct *vma,
-> -				unsigned long address, int avoid_reserve,
-> -				long chg)
-> +				unsigned long address, int avoid_reserve)
->  {
->  	struct page *page = NULL;
->  	struct mempolicy *mpol;
-> @@ -558,7 +587,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  	 * have no page reserves. This check ensures that reservations are
->  	 * not "stolen". The child may still get SIGKILLed
->  	 */
-> -	if (!vma_has_reserves(vma, chg) &&
-> +	if (!vma_has_reserves(h, vma, address) &&
->  			h->free_huge_pages - h->resv_huge_pages == 0)
->  		return NULL;
->  
-> @@ -578,7 +607,7 @@ retry_cpuset:
->  			if (page) {
->  				if (avoid_reserve)
->  					break;
-> -				if (!vma_has_reserves(vma, chg))
-> +				if (!vma_has_reserves(h, vma, address))
->  					break;
->  
->  				h->resv_huge_pages--;
-> @@ -1077,42 +1106,6 @@ static void return_unused_surplus_pages(struct hstate *h,
->  	}
->  }
->  
-> -/*
-> - * Determine if the huge page at addr within the vma has an associated
-> - * reservation.  Where it does not we will need to logically increase
-> - * reservation and actually increase subpool usage before an allocation
-> - * can occur.  Where any new reservation would be required the
-> - * reservation change is prepared, but not committed.  Once the page
-> - * has been allocated from the subpool and instantiated the change should
-> - * be committed via vma_commit_reservation.  No action is required on
-> - * failure.
-> - */
-> -static long vma_needs_reservation(struct hstate *h,
-> -			struct vm_area_struct *vma, unsigned long addr)
-> -{
-> -	struct address_space *mapping = vma->vm_file->f_mapping;
-> -	struct inode *inode = mapping->host;
-> -
-> -	if (vma->vm_flags & VM_MAYSHARE) {
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *resv = inode->i_mapping->private_data;
-> -
-> -		return region_chg(resv, idx, idx + 1);
-> -
-> -	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
-> -		return 1;
-> -
-> -	} else  {
-> -		long err;
-> -		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *resv = vma_resv_map(vma);
-> -
-> -		err = region_chg(resv, idx, idx + 1);
-> -		if (err < 0)
-> -			return err;
-> -		return 0;
-> -	}
-> -}
->  static void vma_commit_reservation(struct hstate *h,
->  			struct vm_area_struct *vma, unsigned long addr)
->  {
-> @@ -1140,8 +1133,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	struct hugepage_subpool *spool = subpool_vma(vma);
->  	struct hstate *h = hstate_vma(vma);
->  	struct page *page;
-> -	long chg;
-> -	int ret, idx;
-> +	int ret, idx, has_reserve;
->  	struct hugetlb_cgroup *h_cg;
->  
->  	idx = hstate_index(h);
-> @@ -1153,20 +1145,21 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  	 * need pages and subpool limit allocated allocated if no reserve
->  	 * mapping overlaps.
->  	 */
-> -	chg = vma_needs_reservation(h, vma, addr);
-> -	if (chg < 0)
-> +	has_reserve = vma_has_reserves(h, vma, addr);
-> +	if (has_reserve < 0)
->  		return ERR_PTR(-ENOMEM);
-> -	if (chg)
-> -		if (hugepage_subpool_get_pages(spool, chg))
-> +
-> +	if (!has_reserve && (hugepage_subpool_get_pages(spool, 1) < 0))
->  			return ERR_PTR(-ENOSPC);
->  	ret = hugetlb_cgroup_charge_cgroup(idx, pages_per_huge_page(h), &h_cg);
->  	if (ret) {
-> -		hugepage_subpool_put_pages(spool, chg);
-> +		if (!has_reserve)
-> +			hugepage_subpool_put_pages(spool, 1);
+							Thanx, Paul
 
-It seems that this fixes the subpool accounting, so worth separating to
-another patch or writing on the description.
-
-Thanks,
-Naoya Horiguchi
-
->  		return ERR_PTR(-ENOSPC);
->  	}
->  	spin_lock(&hugetlb_lock);
-> -	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve, chg);
-> +	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
->  	if (!page) {
->  		spin_unlock(&hugetlb_lock);
->  		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
-> @@ -1174,7 +1167,8 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
->  			hugetlb_cgroup_uncharge_cgroup(idx,
->  						       pages_per_huge_page(h),
->  						       h_cg);
-> -			hugepage_subpool_put_pages(spool, chg);
-> +			if (!has_reserve)
-> +				hugepage_subpool_put_pages(spool, 1);
->  			return ERR_PTR(-ENOSPC);
->  		}
->  		spin_lock(&hugetlb_lock);
-> @@ -2769,7 +2763,7 @@ retry:
->  	 * the spinlock.
->  	 */
->  	if ((flags & FAULT_FLAG_WRITE) && !(vma->vm_flags & VM_SHARED))
-> -		if (vma_needs_reservation(h, vma, address) < 0) {
-> +		if (vma_has_reserves(h, vma, address) < 0) {
->  			ret = VM_FAULT_OOM;
->  			goto backout_unlocked;
->  		}
-> @@ -2860,7 +2854,7 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
->  	 * consumed.
->  	 */
->  	if ((flags & FAULT_FLAG_WRITE) && !huge_pte_write(entry)) {
-> -		if (vma_needs_reservation(h, vma, address) < 0) {
-> +		if (vma_has_reserves(h, vma, address) < 0) {
->  			ret = VM_FAULT_OOM;
->  			goto out_mutex;
->  		}
-> -- 
-> 1.7.9.5
->
