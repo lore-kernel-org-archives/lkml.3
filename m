@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331Ab3G2S7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:59:51 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:45028 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab3G2S7u (ORCPT
+	id S1752805Ab3G2TAU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:00:20 -0400
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:35841 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab3G2TAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:59:50 -0400
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: balbi@ti.com
-Cc: Illia Smyrnov <illia.smyrnov@ti.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for keypad.
-Date: Mon, 29 Jul 2013 11:59:45 -0700
-Message-ID: <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com>
-User-Agent: KMail/4.10.5 (Linux/3.9.9-201.fc18.x86_64; KDE/4.10.5; x86_64; ; )
-In-Reply-To: <20130729180441.GF4964@radagast>
-References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com> <1375116311-13999-2-git-send-email-illia.smyrnov@ti.com> <20130729180441.GF4964@radagast>
+	Mon, 29 Jul 2013 15:00:12 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <2134648871.43175.1375120936132.JavaMail.mail@webmail09>
+References: <2066879158.39771.1375110634453.JavaMail.mail@webmail09>
+	<20130729083519.5d574f16@nehalam.linuxnetplumber.net>
+	<2063167407.40450.1375112877907.JavaMail.mail@webmail09>
+	<1375119778.10515.20.camel@edumazet-glaptop>
+	<2134648871.43175.1375120936132.JavaMail.mail@webmail09>
+Date: Mon, 29 Jul 2013 15:00:11 -0400
+Message-ID: <CABrhC0=TgBwdW1SaDgZRaYWYpqKvTY-c96JfGdMpSD0-e1+YKw@mail.gmail.com>
+Subject: Re: A call to revise sockets behaviour
+From: John Heffner <johnwheffner@gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, stephen@networkplumber.org,
+        LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 09:04:41 PM Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Jul 29, 2013 at 07:45:09PM +0300, Illia Smyrnov wrote:
-> > Enable/disable IRQ wake in suspend/resume handlers
-> > to make the keypad wakeup capable.
-> > 
-> > Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
-> > ---
-> > 
-> >  drivers/input/keyboard/omap4-keypad.c |   43
-> >  +++++++++++++++++++++++++++++++++ 1 file changed, 43 insertions(+)
-> > 
-> > diff --git a/drivers/input/keyboard/omap4-keypad.c
-> > b/drivers/input/keyboard/omap4-keypad.c index 0244262..feab00f 100644
-> > --- a/drivers/input/keyboard/omap4-keypad.c
-> > +++ b/drivers/input/keyboard/omap4-keypad.c
-> > @@ -74,6 +74,7 @@ struct omap4_keypad {
-> > 
-> >  	struct input_dev *input;
-> >  	
-> >  	void __iomem *base;
-> > 
-> > +	bool irq_wake_enabled;
-> 
-> this flag is a bit weird... but I can't find a better way to handle this
-> situation. In one way, you shouldn't prevent system suspend, so you can
-> error out in case enable_irq_wake() fails, otoh if enable_irq_wake()
-> fails and you return 0, on resume disable_irq_wake() will throw
-> unbalanced calls warning. Maybe someone else has a better idea.
-> 
-> > @@ -439,12 +444,50 @@ static const struct of_device_id
-> > omap_keypad_dt_match[] = {> 
-> >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
-> >  #endif
-> > 
-> > +#ifdef CONFIG_PM_SLEEP
-> > +static int omap4_keypad_suspend(struct device *dev)
-> > +{
-> > +	struct platform_device *pdev = to_platform_device(dev);
-> 
-> you don't need to access the platform_device...
-> 
-> > +	struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
-> 
-> ... since this can become:
-> 
-> 	struct omap4_keypad *keypad_data = dev_get_drvdata(dev);
+On Mon, Jul 29, 2013 at 2:02 PM, Artem S. Tashkinov <t.artem@lycos.com> wrote:
+> Jul 29, 2013 11:43:00 PM, Eric wrote:
+> On Mon, 2013-07-29 at 15:47 +0000, Artem S. Tashkinov wrote:
+>>
+>>> A wine developer clearly showed that this option simply doesn't work.
+>>>
+>>> http://bugs.winehq.org/show_bug.cgi?id=26031#c21
+>>>
+>>> Output of strace:
+>>> getsockopt(24, SOL_SOCKET, SO_REUSEADDR, [0], [4]) = 0
+>>> setsockopt(24, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+>>> bind(24, {sa_family=AF_INET, sin_port=htons(43012), sin_addr=inet_addr("0.
+>>> 0.0.0")}, 16) = -1 EADDRINUSE (Address already in use)
+>>
+>>Its clear that some other socket did not use SO_REUSADDR
+>>
+>>All sockets using a given port _must_ have use SO_REUSADDR to allow this
+>>port being reused.
+>>
+>
+> It's exactly what's been tried. A program running with SO_REUSADDR, once no longer
+> running consequently fails to regain the rights for the port.
 
-No, please use correct accessors for the objects. Platform drivers deal
-with platform devices and I prefer using platform_get_drvdata() on them.
+To reiterate what Eric said, it seems likely that the listen socket on
+which the currently-open sockets were created did not have
+SO_REUSEADDR set.  If you follow the sequence:
 
-Thanks.
+a = socket()
+bind(a, 0.0.0.0, P)
+listen(a)
+accept(a)
+close(a)
 
--- 
-Dmitry
+b = socket()
+setsockopt(b, SOL_SOCKET, SO_REUSEADDR, 1)
+bind(b, 0.0.0.0, P)
+
+this last bind() will fail.  If you insert setsocket(a, SOL_SOCKET,
+SO_REUSEADDR, 1) before the first bind, (assuming all existing sockets
+on port P have timed out and entered the CLOSED state), this program
+will succeed.
+
+Put another way, when creating a listen socket, the creator has
+control over whether it's willing to allow any address reuse.  This is
+strict -- if any existing connections exist, its bind will fail, and
+if any of its future connections exist, binds at that time will fail
+(regardless of whether that future socket has SO_REUSEADDR set).
+
+  -John
