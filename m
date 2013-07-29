@@ -1,85 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527Ab3G2Mgy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:36:54 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:44121 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750820Ab3G2Mgx (ORCPT
+	id S1754774Ab3G2Mh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:37:56 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:57734 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab3G2Mhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:36:53 -0400
-Message-ID: <51F661DE.1070106@gmail.com>
-Date: Mon, 29 Jul 2013 14:36:46 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Mon, 29 Jul 2013 08:37:55 -0400
+Message-ID: <51F66206.1010504@huawei.com>
+Date: Mon, 29 Jul 2013 20:37:26 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/5] ARM: dove: add MBus DT node
-References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375101114-28858-4-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1375101114-28858-4-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Gao feng <gaofeng@cn.fujitsu.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
+        <akpm@linux-foundation.org>, <libo.chen@huawei.com>
+Subject: Re: [PATCH 9/9] netfilter: use ns_printk in iptable context
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-10-git-send-email-rui.xiang@huawei.com> <51F63A88.4090405@cn.fujitsu.com>
+In-Reply-To: <51F63A88.4090405@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 02:31 PM, Sebastian Hesselbarth wrote:
-> This adds a MBus node including ranges and pcie apertures required later.
->
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
->   arch/arm/boot/dts/dove.dtsi |   19 +++++++++++++++++++
->   1 file changed, 19 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-> index 397674c..bdda016 100644
-> --- a/arch/arm/boot/dts/dove.dtsi
-> +++ b/arch/arm/boot/dts/dove.dtsi
-> @@ -29,6 +29,20 @@
->   		marvell,tauros2-cache-features = <0>;
->   	};
->
-> +	mbus {
-> +		compatible = "marvell,dove-mbus", "marvell,mbus", "simple-bus";
-> +		#address-cells = <2>;
-> +		#size-cells = <1>;
-> +		pcie-mem-aperture = <0xe0000000 0x10000000>; /* 256M MEM space */
-> +		pcie-io-aperture  = <0xf2000000 0x00200000>; /*   2M I/O space */
+On 2013/7/29 17:48, Gao feng wrote:
+> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+>> To containerise iptables log, use ns_printk
+>> to report individual logs to container as
+>> getting syslog_ns from skb->dev->nd_net->user_ns.
+>>
+>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>> ---
+>>  include/net/netfilter/xt_log.h | 6 +++++-
+>>  net/netfilter/xt_LOG.c         | 4 ++--
+>>  2 files changed, 7 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
+>> index 9d9756c..5222cba 100644
+>> --- a/include/net/netfilter/xt_log.h
+>> +++ b/include/net/netfilter/xt_log.h
+>> @@ -39,10 +39,14 @@ static struct sbuff *sb_open(void)
+>>  	return m;
+>>  }
+>>  
+>> -static void sb_close(struct sbuff *m)
+>> +static void sb_close(struct sbuff *m, struct sk_buff *skb)
+>>  {
+>>  	m->buf[m->count] = 0;
+>> +#ifdef CONFIG_NET_NS
+>> +	ns_printk(skb->dev->nd_net->user_ns->syslog_ns, "%s\n", m->buf);
+>> +#else
+>>  	printk("%s\n", m->buf);
+>> +#endif
+>>  
+>>  	if (likely(m != &emergency))
+>>  		kfree(m);
+>> diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
+>> index 5ab2484..f2cd2fa3 100644
+>> --- a/net/netfilter/xt_LOG.c
+>> +++ b/net/netfilter/xt_LOG.c
+>> @@ -493,7 +493,7 @@ ipt_log_packet(struct net *net,
+>>  
+>>  	dump_ipv4_packet(m, loginfo, skb, 0);
+>>  
+>> -	sb_close(m);
+>> +	sb_close(m, skb);
+> 
+> 
+> why don't you pass net directly to sb_close here?
+> 
+> un init net namespace will not trigger any system log through ipt_LOG/ip6t_LOG.
+> You can check the FIXME in ipt_log_packet.
+> 
+> BTW,for this patch,you should cc netfilter-devel@vger.kernel.org too.
+> 
+Hi Gao,
 
-Actually, current v9 of the mbus patch set still requires "controller"
-property to match the corresponding controller node. I had a short
-discussion with Ezequiel to possibly just use of_find_compatible_node
-and blindly assumed post-v8 will already use it.
+Thanks for your attention.
 
-I will re-post the final patch set anyway on what mbus binding will be
-merged for v3.12.
+Yes, you are right. In the 1st version, there was no net parameter in ipt_log_packet
+function. Here I didn't do any amendment. And I will alter it in next version.
 
-Sebastian
 
-> +		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x0100000   /* MBUS regs  1M */
-> +			  MBUS_ID(0xf0, 0x02) 0 0xf1800000 0x1000000   /* AXI  regs 16M */
-> +			  MBUS_ID(0x01, 0xfd) 0 0xf8000000 0x8000000   /* BootROM  128M */
-> +			  MBUS_ID(0x03, 0x01) 0 0xc8000000 0x0100000   /* CESA SRAM  1M */
-> +			  MBUS_ID(0x0d, 0x00) 0 0xf0000000 0x0100000>; /* PMU  SRAM  1M */
-> +	};
-> +
->   	soc@f1000000 {
->   		compatible = "simple-bus";
->   		#address-cells = <1>;
-> @@ -44,6 +58,11 @@
->   		          0xf2100000 0xf2100000 0x0100000   /* PCIe0 I/O   1M */
->   		          0xf8000000 0xf8000000 0x8000000>; /* BootROM   128M */
->
-> +		mbusc: mbus-ctrl@20000 {
-> +			compatible = "marvell,mbus-controller";
-> +			reg = <0x20000 0x80>, <0x800100 0x8>;
-> +		};
-> +
->   		timer: timer@20300 {
->   			compatible = "marvell,orion-timer";
->   			reg = <0x20300 0x20>;
->
+
+Thanks.
+
 
