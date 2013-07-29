@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751570Ab3G2Su4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:50:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10761 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab3G2Suz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:50:55 -0400
-Date: Mon, 29 Jul 2013 14:50:36 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375123836-3qms0tvi-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 13/18] mm, hugetlb: grab a page_table_lock after
- page_cache_release
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
+	id S1751814Ab3G2SvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:51:20 -0400
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:65045 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3G2SvR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:51:17 -0400
+Date: Mon, 29 Jul 2013 20:51:02 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>, Arend van Spriel <arend@broadcom.com>,
+        Olof Johansson <olof@lixom.net>, Mark Brown <broonie@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130729185100.GC4209@netboy>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <1441731.8CGUI1tUxh@flatron>
+ <20130728085650.GA4683@netboy>
+ <1416484.XDfk5G56BI@flatron>
+ <20130728131901.GA8864@netboy>
+ <20130729073123.GB1441@lukather>
+ <20130729183851.GB4209@netboy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-References: <1375075929-6119-14-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+In-Reply-To: <20130729183851.GB4209@netboy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:32:04PM +0900, Joonsoo Kim wrote:
-> We don't need to grab a page_table_lock when we try to release a page.
-> So, defer to grab a page_table_lock.
+On Mon, Jul 29, 2013 at 08:38:52PM +0200, Richard Cochran wrote:
 > 
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Right, we can and should do better. I got the beaglebone Ethernet
+> working in mainline (not by writing the driver, but by complaining
+> over and over again). I except that it will continue to work and not
+                          ^^^^^^
+expect
 
-Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> fall victim to some random DT change.
 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 35ccdad..255bd9e 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -2630,10 +2630,11 @@ retry_avoidcopy:
->  	}
->  	spin_unlock(&mm->page_table_lock);
->  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
-> -	/* Caller expects lock to be held */
-> -	spin_lock(&mm->page_table_lock);
->  	page_cache_release(new_page);
->  	page_cache_release(old_page);
-> +
-> +	/* Caller expects lock to be held */
-> +	spin_lock(&mm->page_table_lock);
->  	return 0;
->  }
->  
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+Thanks,
+Richard
