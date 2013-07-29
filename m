@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757384Ab3G2QGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:06:14 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:63767 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106Ab3G2QGN (ORCPT
+	id S1757409Ab3G2QJx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:09:53 -0400
+Received: from g6t0187.atlanta.hp.com ([15.193.32.64]:36268 "EHLO
+	g6t0187.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab3G2QJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:06:13 -0400
-From: Julien Grall <julien.grall@linaro.org>
-To: stefano.stabellini@eu.citrix.com
-Cc: ian.campbell@citrix.com, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xen.org, Julien Grall <julien.grall@linaro.org>
-Subject: [PATCH] xen/arm: missing put_cpu in xen_percpu_init
-Date: Mon, 29 Jul 2013 17:06:05 +0100
-Message-Id: <1375113966-2859-1-git-send-email-julien.grall@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 29 Jul 2013 12:09:51 -0400
+Message-ID: <51F63F12.6070300@hp.com>
+Date: Mon, 29 Jul 2013 10:08:18 +0000
+From: Thavatchai Makphaibulchoke <thavatchai.makpahibulchoke@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: "Theodore Ts'o" <tytso@mit.edu>, T Makphaibulchoke <tmac@hp.com>,
+        viro@zeniv.linux.org.uk, adilger.kernel@dilger.ca,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, tmakph@gmail.com, aswin@hp.com
+Subject: Re: [PATCH 0/2] ext4: increase mbcache scalability
+References: <1374108910-50444-1-git-send-email-tmac@hp.com> <20130718163024.GA12727@thunk.org> <20130718163301.GB12727@thunk.org>
+In-Reply-To: <20130718163301.GB12727@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When CONFIG_PREEMPT is enabled, Linux will not be able to boot and warn:
-[    4.127825] ------------[ cut here ]------------
-[    4.133376] WARNING: at init/main.c:699 do_one_initcall+0x150/0x158()
-[    4.140738] initcall xen_init_events+0x0/0x10c returned with preemption imbalance
+On 07/18/2013 04:33 PM, Theodore Ts'o wrote:
+> On Thu, Jul 18, 2013 at 12:30:24PM -0400, Theodore Ts'o wrote:
+>> On Wed, Jul 17, 2013 at 06:55:10PM -0600, T Makphaibulchoke wrote:
+>>> This patch intends to improve the scalability of an ext4 filesystem by
+>>> introducing higher degree of parallelism to the usages of its mb_cache and
+>>> mb_cache_entries.
+>>>
+>>> ...
+>>>
+>>>  fs/ext4/ext4.h          |   1 +
+>>>  fs/ext4/super.c         |   8 ++
+>>>  fs/ext4/xattr.c         |  41 +++++---
+>>>  fs/ext4/xattr.h         |   3 +
+>>>  fs/mbcache.c            | 432 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------
+>>>  include/linux/mbcache.h |   5 +
+>>>  6 files changed, 385 insertions(+), 105 deletions(-)
+>>>
+>>
+>> I see the diff stats, but there was no patch attached to your message.
+>> Could you please resend the patch to the linux-ext4 list?
+> 
+> Never mind, I see them now.  I didn't notice this was a 0/2 message,
+> and since you are apparently using an old versio of git which doesn't
+> enable --thread by default (or you have a git config setting which
+> disables the use of mail threading), I didn't see the patches chained
+> to the message.
+> 
+> Sorry for being confused,
+> 
+> 						- Ted
+> 
+Hi Ted,
 
-This is because xen_percpu_init uses get_cpu but doesn't have the corresponding
-put_cpu.
+Could you please let me know if you have comment, suggestion or feedback for the patch.  Thanks in advance.
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
----
- arch/arm/xen/enlighten.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index f71c37e..dc9f284 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -170,6 +170,7 @@ static void __init xen_percpu_init(void *unused)
- 	per_cpu(xen_vcpu, cpu) = vcpup;
- 
- 	enable_percpu_irq(xen_events_irq, 0);
-+	put_cpu();
- }
- 
- static void xen_restart(char str, const char *cmd)
--- 
-1.7.10.4
+Thanks,
+Mak.
 
