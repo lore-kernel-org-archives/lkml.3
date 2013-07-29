@@ -1,89 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab3G2Swe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:52:34 -0400
-Received: from out03.mta.xmission.com ([166.70.13.233]:49766 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab3G2Swc (ORCPT
+	id S1752076Ab3G2SxL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:53:11 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:31667 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3G2SxJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:52:32 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>
-References: <20130723174711.GE21100@mtj.dyndns.org>
-	<8761vui4cr.fsf@xmission.com> <20130729075939.GA4678@dhcp22.suse.cz>
-	<87ehahg312.fsf@xmission.com> <20130729095109.GB4678@dhcp22.suse.cz>
-	<20130729161026.GD22605@mtj.dyndns.org> <87r4eh70yg.fsf@xmission.com>
-	<20130729181354.GX715@cmpxchg.org>
-Date: Mon, 29 Jul 2013 11:52:11 -0700
-In-Reply-To: <20130729181354.GX715@cmpxchg.org> (Johannes Weiner's message of
-	"Mon, 29 Jul 2013 14:13:54 -0400")
-Message-ID: <87a9l5w65g.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/jF9K3BQDUJDgCrb1jZllrbV0iKR+QCnI=
-X-SA-Exim-Connect-IP: 98.207.154.105
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0066]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Johannes Weiner <hannes@cmpxchg.org>
-X-Spam-Relay-Country: 
-Subject: Re: memcg creates an unkillable task in 3.2-rc2
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Mon, 29 Jul 2013 14:53:09 -0400
+Message-ID: <1375123985.2089.5.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
+ introduced resv_map lock
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Date: Mon, 29 Jul 2013 11:53:05 -0700
+In-Reply-To: <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+	 <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner <hannes@cmpxchg.org> writes:
+On Mon, 2013-07-29 at 14:31 +0900, Joonsoo Kim wrote:
+> There is a race condition if we map a same file on different processes.
+> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
+> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
+> grab a mmap_sem. This doesn't prevent other process to modify region
+> structure, so it can be modified by two processes concurrently.
+> 
+> To solve this, I introduce a lock to resv_map and make region manipulation
+> function grab a lock before they do actual work. This makes region
+> tracking safe.
 
-> On Mon, Jul 29, 2013 at 10:03:35AM -0700, Eric W. Biederman wrote:
->> Yes.  From the looks of the looks of it the cgroup implementation is
->> rather badly borked right now, and definitely not up to the standards of
->> the other core pieces of the kernel.  One of the reasons I was rather
->> apalled when systemd started using them.  Until the code actually works
->> reliably and the races are removed most people's systems would be much
->> better off with cgroups compiled out.
->> 
->> A single unified hierarchy is a really nasty idea for the same set of
->> reasons. You have to recompile to disable a controller to see if it that
->> controller's bugs are what are causing problems on your production
->> system.  Compiles or even just a reboot is a very heavy hammer to ask
->> people to use when they are triaging a problem.
->
-> That's not how it works.  You can always select which controllers you
-> want to mount during runtime.  Unified hierarchy only means that there
-> is one cgroup tree for all mounted controllers, rather than every
-> controller having its own separate cgroup tree.
->
-> If you are like most users and currently mount all controllers in the
-> same directory so that their cgroup trees overlap and appear to be a
-> single tree, nothing changes for you.
+I think we can use a rwsem here instead of a spinlock, similar to my
+previous 1/2 approach.
 
-My practical need is that I need the ability modify which controllers I
-am using on a per group basis.  So that I can make corrall new processes
-in a different set of controllers than currently existing processes.
+> 
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> 
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 2677c07..e29e28f 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -26,6 +26,7 @@ struct hugepage_subpool {
+>  
+>  struct resv_map {
+>  	struct kref refs;
+> +	spinlock_t lock;
+>  	struct list_head regions;
+>  };
+>  extern struct resv_map *resv_map_alloc(void);
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 24c0111..bf2ee11 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -134,15 +134,8 @@ static inline struct hugepage_subpool *subpool_vma(struct vm_area_struct *vma)
+>   * Region tracking -- allows tracking of reservations and instantiated pages
+>   *                    across the pages in a mapping.
+>   *
+> - * The region data structures are protected by a combination of the mmap_sem
+> - * and the hugetlb_instantiation_mutex.  To access or modify a region the caller
+> - * must either hold the mmap_sem for write, or the mmap_sem for read and
+> - * the hugetlb_instantiation_mutex:
+> - *
+> - *	down_write(&mm->mmap_sem);
+> - * or
+> - *	down_read(&mm->mmap_sem);
+> - *	mutex_lock(&hugetlb_instantiation_mutex);
+> + * The region data structures are embedded into a resv_map and
+> + * protected by a resv_map's lock
+>   */
+>  struct file_region {
+>  	struct list_head link;
+> @@ -155,6 +148,7 @@ static long region_add(struct resv_map *resv, long f, long t)
+>  	struct list_head *head = &resv->regions;
+>  	struct file_region *rg, *nrg, *trg;
+>  
+> +	spin_lock(&resv->lock);
+>  	/* Locate the region we are either in or before. */
+>  	list_for_each_entry(rg, head, link)
+>  		if (f <= rg->to)
+> @@ -184,6 +178,7 @@ static long region_add(struct resv_map *resv, long f, long t)
+>  	}
+>  	nrg->from = f;
+>  	nrg->to = t;
+> +	spin_unlock(&resv->lock);
+>  	return 0;
+>  }
+>  
+> @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>  	struct file_region *rg, *nrg;
+>  	long chg = 0;
+>  
+> +	spin_lock(&resv->lock);
+>  	/* Locate the region we are before or in. */
+>  	list_for_each_entry(rg, head, link)
+>  		if (f <= rg->to)
+> @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>  	 * size such that we can guarantee to record the reservation. */
+>  	if (&rg->link == head || t < rg->from) {
+>  		nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+> -		if (!nrg)
+> -			return -ENOMEM;
+> +		if (!nrg) {
+> +			chg = -ENOMEM;
+> +			goto out;
+> +		}
+> +
+>  		nrg->from = f;
+>  		nrg->to   = f;
+>  		INIT_LIST_HEAD(&nrg->link);
+>  		list_add(&nrg->link, rg->link.prev);
+>  
+> -		return t - f;
+> +		chg = t - f;
+> +		goto out;
+>  	}
+>  
+>  	/* Round our left edge to the current segment if it encloses us. */
+> @@ -223,7 +223,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>  		if (&rg->link == head)
+>  			break;
+>  		if (rg->from > t)
+> -			return chg;
+> +			goto out;
+>  
+>  		/* We overlap with this area, if it extends further than
+>  		 * us then we must extend ourselves.  Account for its
+> @@ -234,6 +234,9 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>  		}
+>  		chg -= rg->to - rg->from;
+>  	}
+> +
+> +out:
+> +	spin_unlock(&resv->lock);
+>  	return chg;
+>  }
+>  
+> @@ -243,12 +246,13 @@ static long region_truncate(struct resv_map *resv, long end)
+>  	struct file_region *rg, *trg;
+>  	long chg = 0;
+>  
+> +	spin_lock(&resv->lock);
+>  	/* Locate the region we are either in or before. */
+>  	list_for_each_entry(rg, head, link)
+>  		if (end <= rg->to)
+>  			break;
+>  	if (&rg->link == head)
+> -		return 0;
+> +		goto out;
+>  
+>  	/* If we are in the middle of a region then adjust it. */
+>  	if (end > rg->from) {
+> @@ -265,6 +269,9 @@ static long region_truncate(struct resv_map *resv, long end)
+>  		list_del(&rg->link);
+>  		kfree(rg);
+>  	}
+> +
+> +out:
+> +	spin_unlock(&resv->lock);
+>  	return chg;
+>  }
+>  
+> @@ -274,6 +281,7 @@ static long region_count(struct resv_map *resv, long f, long t)
+>  	struct file_region *rg;
+>  	long chg = 0;
+>  
+> +	spin_lock(&resv->lock);
+>  	/* Locate each segment we overlap with, and count that overlap. */
+>  	list_for_each_entry(rg, head, link) {
+>  		long seg_from;
+> @@ -289,6 +297,7 @@ static long region_count(struct resv_map *resv, long f, long t)
+>  
+>  		chg += seg_to - seg_from;
+>  	}
+> +	spin_unlock(&resv->lock);
+>  
+>  	return chg;
+>  }
+> @@ -386,6 +395,7 @@ struct resv_map *resv_map_alloc(void)
+>  		return NULL;
+>  
+>  	kref_init(&resv_map->refs);
+> +	spin_lock_init(&resv_map->lock);
+>  	INIT_LIST_HEAD(&resv_map->regions);
+>  
+>  	return resv_map;
 
-I might just be missing something but I don't see how to do that with
-all of the controllers mounted to the same filesystem.
 
-So while I currently have a single mount of cgroupfs, and don't yet see
-a need for orthogonal classification of processes.  To keep bugs and
-craziness under control I expect I will be implementing a mount of
-cgroupfs per controller within a month.
-
-But except for the need to limit the scope of bugs this is all getting
-rather badly off topic.
-
-Eric
