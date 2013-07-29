@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754105Ab3G2I67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:58:59 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:44098 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751769Ab3G2I65 (ORCPT
+	id S1752068Ab3G2JF3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:05:29 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:28836 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751652Ab3G2JF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:58:57 -0400
+	Mon, 29 Jul 2013 05:05:27 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+kYImXcZ8YKmhodPVD8ash
+Date: Mon, 29 Jul 2013 02:05:24 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130729090524.GY7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <51E70953.1000601@wwwdotorg.org>
+ <20130718072034.GO7656@atomide.com>
+ <51E8401E.8040705@wwwdotorg.org>
+ <20130719072927.GY7656@atomide.com>
+ <51E98AEC.5000802@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
-	<1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
-Date: Mon, 29 Jul 2013 16:58:57 +0800
-Message-ID: <CAJd=RBD6ySxfeX0ebzJ1jsTWnOfvwSm4iyQ8Zr2W05x2LVWE2Q@mail.gmail.com>
-Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
- introduced resv_map lock
-From: Hillf Danton <dhillf@gmail.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E98AEC.5000802@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> There is a race condition if we map a same file on different processes.
-> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
-> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
-> grab a mmap_sem. This doesn't prevent other process to modify region
-> structure, so it can be modified by two processes concurrently.
->
-> To solve this, I introduce a lock to resv_map and make region manipulation
-> function grab a lock before they do actual work. This makes region
-> tracking safe.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
->
-> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> index 2677c07..e29e28f 100644
-> --- a/include/linux/hugetlb.h
-> +++ b/include/linux/hugetlb.h
-> @@ -26,6 +26,7 @@ struct hugepage_subpool {
->
->  struct resv_map {
->         struct kref refs;
-> +       spinlock_t lock;
->         struct list_head regions;
->  };
->  extern struct resv_map *resv_map_alloc(void);
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index 24c0111..bf2ee11 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-[...]
-> @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
->         struct file_region *rg, *nrg;
->         long chg = 0;
->
-> +       spin_lock(&resv->lock);
->         /* Locate the region we are before or in. */
->         list_for_each_entry(rg, head, link)
->                 if (f <= rg->to)
-> @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
->          * size such that we can guarantee to record the reservation. */
->         if (&rg->link == head || t < rg->from) {
->                 nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
+* Stephen Warren <swarren@wwwdotorg.org> [130719 11:59]:
+> On 07/19/2013 01:29 AM, Tony Lindgren wrote:
+> > 
+> > I'd vote for keeping the existing behaviour with pinctrl_select_state()
+> > when no active state is defined.
+> 
+> Yes, I think that will work, since the active state cannot exist before
+> this new scheme is in place.
 
-Hm, you are allocating a piece of memory with spin lock held.
-How about replacing that spin lock with a mutex?
+Right.
+ 
+> But, this needs to be very clearly spell out in the DT binding
+> documentation: If you have states default/idle/sleep, they're complete
+> alternatives, whereas if you have states default/active/idle/sleep, the
+> latter 3 are alternatives that build on top of the first. I foresee mass
+> confusion, but perhaps I'm being pessimistic.
 
-> -               if (!nrg)
-> -                       return -ENOMEM;
-> +               if (!nrg) {
-> +                       chg = -ENOMEM;
-> +                       goto out;
-> +               }
-> +
+I'm hoping we can automate the runtime PM handling with default/active/idle
+completely from the consumer driver point of view. And then when that's
+working, we can probably deprecate any runtime PM related handling using
+pinctr_select_state() and print warnings. And we can also improve the
+documentation so no new users will use the default/idle/sleep for runtime
+PM unless they really want to.
+
+Regards,
+
+Tony
+
