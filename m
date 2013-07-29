@@ -1,134 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3G2N0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 09:26:32 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46006 "EHLO hydra.sisk.pl"
+	id S1752603Ab3G2N13 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 09:27:29 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40777 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab3G2N0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 09:26:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Joe Perches <joe@perches.com>, Lan Tianyu <lantianyu1986@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power() print device names
-Date: Mon, 29 Jul 2013 15:36:38 +0200
-Message-ID: <8023117.JJXk2RBLtn@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51F65D1F.9050402@cogentembedded.com>
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1782275.A7JEhQIj8Q@vostro.rjw.lan> <51F65D1F.9050402@cogentembedded.com>
+	id S1750891Ab3G2N11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 09:27:27 -0400
+Message-ID: <51F66D94.9060706@ti.com>
+Date: Mon, 29 Jul 2013 09:26:44 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Chris Ball <cjb@laptop.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH 0/5] mm: ARM nobootmem and few dma_mask fixes
+References: <1373665694-7580-1-git-send-email-santosh.shilimkar@ti.com> <20130726151021.GU24642@n2100.arm.linux.org.uk> <51F2A3AA.4060801@ti.com> <20130729111503.GG24642@n2100.arm.linux.org.uk>
+In-Reply-To: <20130729111503.GG24642@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 04:16:31 PM Sergei Shtylyov wrote:
-> Hello.
+On Monday 29 July 2013 07:15 AM, Russell King - ARM Linux wrote:
+> On Fri, Jul 26, 2013 at 12:28:26PM -0400, Santosh Shilimkar wrote:
+>> On Friday 26 July 2013 11:10 AM, Russell King - ARM Linux wrote:
+>>> On Fri, Jul 12, 2013 at 05:48:09PM -0400, Santosh Shilimkar wrote:
+>>>> The series is an attempt to move ARM port to NO_BOOTMEM. As discussed
+>>>> on list NO_BOOTMEM move needed updates to max*pfn meaning to be maximum
+>>>> PFNs but that breaks the dma_mask for few block layer drivers since
+>>>> ARM start of physical memory is not PFN0 unlike most of the architectures.
+>>>> Some more read on it is here:
+>>>> 	http://lwn.net/Articles/543408/
+>>>> 	http://lwn.net/Articles/543424/
+>>>>
+>>>> To address this issue, we introduce generic dma_max_pfn() helper which
+>>>> can be overridden from the architectures.
+>>>> 	
+>>>> Another intention behind move to nobootmem is also to convert ARM to
+>>>> switch to memblock and getting rid of bootmem allocator dependency which
+>>>> don't work for LPAE machines which has physical memory starting beyond
+>>>> 4 GB boundary. It needs changes to core kernel and also a new memblock
+>>>> API. More on this can be found here:
+>>>> 	https://lkml.org/lkml/2013/6/29/77
+>>>>
+>>>> I have been trying to cook up these patches with kind help from Russell
+>>>> and we know series don't solve all the dma_mask bad assumptions. But at
+>>>> least I am hoping that it can get the ball rolling.	
+>>>>
+>>>> Comments/testing help is welcome !!
+>>>
+>>> As this is related to some of the cleanup of dma_mask which I've been
+>>> doing, I think it may make sense to roll this into one tree.  Any
+>>> objection to that?
+>>>
+>>> Can we get any acks on this stuff from Jens and Jejb etc - especially
+>>> for the bits which touch block/ and for the scsi bits as these are
+>>> touching other subsystems.  (oddly, linux-scsi wasn't on the original
+>>> mail for this series summary.)
+>>>
+>> Sorry I missed the scsi lists on the summary patch.
+>>
+>> While browsing the code I found another spot in mmc layer which
+>> needs fixing. The patch is at the end of the email with Chris
+>> and linux-mmc cc'ed here.
 > 
-> On 29-07-2013 16:17, Rafael J. Wysocki wrote:
+> Would you mind putting them all in the patch system, I can add the acks
+> should anyone supply them later, and I'll repost them along with my set
+> of dma-mask patches.  Thanks.
 > 
-> [...]
-> 
-> >>>> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
-> >> []
-> >>>>          if (device->parent && (state < device->parent->power.state)) {
-> >>>> -               printk(KERN_WARNING PREFIX
-> >>>> -                             "Cannot set device to a higher-powered"
-> >>>> -                             " state than parent\n");
-> >>>> +               dev_warn(&device->dev, "Cannot transition to a higher-powered "
-> >>>> +                        "state than parent\n");
-> 
-> >> coalesce format please.
-> 
-> > I can, but then it'll cross the 80 columns boundary.
-> 
->    It's not a problem with checkpatch.pl anymore. Contrariwise, it whines 
-> about the broken up string literals, AFAIR.
+Done.
+7794/1, 7795/1, 7796/1, 7797/1, 7798/1, 7799/1
 
-Oh, at last.
+Didn't know how to get XXXX/1,2,3,4... pushed into the tracker.
+BTW, I have also pushed the patched on my git tree branch [1] just
+in case you or some one needs it.
 
-Updated patch follows.
-
-Thanks,
-Rafael
-
-
----
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Subject: ACPI / PM: Make messages in acpi_device_set_power() print device names
-
-Modify acpi_device_set_power() so that diagnostic messages printed by
-it to the kernel log always contain the name of the device concerned
-to make it possible to identify the device that triggered the message
-if need be.
-
-Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
-function.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/device_pm.c |   22 ++++++++++------------
- 1 file changed, 10 insertions(+), 12 deletions(-)
-
-Index: linux-pm/drivers/acpi/device_pm.c
-===================================================================
---- linux-pm.orig/drivers/acpi/device_pm.c
-+++ linux-pm/drivers/acpi/device_pm.c
-@@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
- 	/* Make sure this is a valid target state */
- 
- 	if (state == device->power.state) {
--		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
-+		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
-+				  device->pnp.bus_id,
- 				  acpi_power_state_string(state)));
- 		return 0;
- 	}
- 
- 	if (!device->power.states[state].flags.valid) {
--		printk(KERN_WARNING PREFIX "Device does not support %s\n",
--		       acpi_power_state_string(state));
-+		dev_warn(&device->dev, "Power state %s not supported\n",
-+			 acpi_power_state_string(state));
- 		return -ENODEV;
- 	}
- 	if (device->parent && (state < device->parent->power.state)) {
--		printk(KERN_WARNING PREFIX
--			      "Cannot set device to a higher-powered"
--			      " state than parent\n");
-+		dev_warn(&device->dev,
-+			 "Cannot transition to a higher-powered state than parent\n");
- 		return -ENODEV;
- 	}
- 
-@@ -192,8 +192,8 @@ int acpi_device_set_power(struct acpi_de
- 
- 	if (state < device->power.state && state != ACPI_STATE_D0
- 	    && device->power.state >= ACPI_STATE_D3_HOT) {
--		printk(KERN_WARNING PREFIX
--			"Cannot transition to non-D0 state from D3\n");
-+		dev_warn(&device->dev,
-+			 "Cannot transition to non-D0 state from D3\n");
- 		return -ENODEV;
- 	}
- 
-@@ -220,10 +220,8 @@ int acpi_device_set_power(struct acpi_de
- 
-  end:
- 	if (result) {
--		printk(KERN_WARNING PREFIX
--			      "Device [%s] failed to transition to %s\n",
--			      device->pnp.bus_id,
--			      acpi_power_state_string(state));
-+		dev_warn(&device->dev, "Failed to change power state to %s\n",
-+			 acpi_power_state_string(state));
- 	} else {
- 		device->power.state = state;
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+Regards,
+Santosh
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/ssantosh/linux-keystone.git
+3.12/nobootmem_n_dma-mask
 
