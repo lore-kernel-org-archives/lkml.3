@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab3G2JT0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:19:26 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4194 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752808Ab3G2JTY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:19:24 -0400
-X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
-Message-ID: <51F6338E.8020101@broadcom.com>
-Date: Mon, 29 Jul 2013 11:19:10 +0200
-From: "Arend van Spriel" <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623
- Thunderbird/17.0.7
+	id S1754122Ab3G2JUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:20:41 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:46778 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab3G2JUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:20:40 -0400
 MIME-Version: 1.0
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-cc: "Grant Likely" <grant.likely@secretlab.ca>,
-        "Tomasz Figa" <tomasz.figa@gmail.com>,
-        "Richard Cochran" <richardcochran@gmail.com>,
-        "Olof Johansson" <olof@lixom.net>, "Mark Brown" <broonie@kernel.org>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "Ian Campbell" <ian.campbell@citrix.com>,
-        "Pawel Moll" <Pawel.Moll@arm.com>,
-        "Stephen Warren" <swarren@wwwdotorg.org>,
-        "Domenico Andreoli" <cavokz@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jason Gunthorpe" <jgunthorpe@obsidianresearch.com>,
-        "Dave P Martin" <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
- people interested in device tree janitoring / cleanup?]
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
- <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com>
- <2460092.aLmjrOVh1g@flatron> <51F3A82E.2000907@broadcom.com>
- <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com>
- <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com>
-In-Reply-To: <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com>
-X-WSS-ID: 7DE8ED2431W62858550-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1375075701-5998-4-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075701-5998-4-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Mon, 29 Jul 2013 17:20:39 +0800
+Message-ID: <CAJd=RBA7iFOHvX6aOP517tyrWReSsLfC4zmV8PvVfE8px1WEMg@mail.gmail.com>
+Subject: Re: [PATCH v3 3/9] mm, hugetlb: clean-up alloc_huge_page()
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 10:01 PM, jonsmirl@gmail.com wrote:
-> On Sat, Jul 27, 2013 at 3:45 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> On Sat, Jul 27, 2013 at 4:59 AM, Arend van Spriel <arend@broadcom.com> wrote:
->>> Let's see how many people go and scream if I say this: Too bad .dts files
->>> are not done using XML format as DT bindings could be described using XML
->>> Schema.
->>
->> Draft an example and show us how it would look!  :-)  There is
->> absolutely nothing preventing us from expressing a DT in XML format,
->> or even using XSLT to define DT schema while still using our current
->> .dts syntax. It would be trivial to do lossless translation between
->> .dts syntax and xml.
->>
->> The problem that I have with XML and XSLT is that it is very verbose
->> and not entirely friendly to mere-mortals. However, I'm more than
->> willing to be proved wrong on this point.
+On Mon, Jul 29, 2013 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> This patch unifies successful allocation paths to make the code more
+> readable. There are no functional changes.
 >
-> I considered this approach a while ago and discarded it. It would work
-> but it is just too much of a Frankenstein monster.
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Ah, but he is so cute. At least I do not think it is more monstrous as 
-the bindings files. I just browsed through a couple of arm binding files 
-as I felt challenged to come up with an example. I did not get the 
-impression that there is some kind of template in place to get consitent 
-bindings descriptions.
-
-> Much cleaner to modify dtc to take a schema as part of the compilation
-> process. The schema language itself has no requirement to look like
-> DTS syntax. Whoever wrote dtc probably has a favorite language that
-> would be good for writing schemas in.
-
-Not sure if I can follow here. I guess you mean the dts compilation, 
-right? There are tools freely available to validate XML files against 
-XSD specification files. As an example libxml2 has support for it. I 
-suspect it is not desired to have a dependency for DTC with an 
-out-of-tree library, but it could be incorporated and have DTC spew the 
-validation results.
-
-Regards,
-Arend
-
-
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 51564a8..31d78c5 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1149,12 +1149,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>         }
+>         spin_lock(&hugetlb_lock);
+>         page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
+> -       if (page) {
+> -               /* update page cgroup details */
+> -               hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h),
+> -                                            h_cg, page);
+> -               spin_unlock(&hugetlb_lock);
+> -       } else {
+> +       if (!page) {
+>                 spin_unlock(&hugetlb_lock);
+>                 page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
+>                 if (!page) {
+> @@ -1165,11 +1160,11 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+>                         return ERR_PTR(-ENOSPC);
+>                 }
+>                 spin_lock(&hugetlb_lock);
+> -               hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h),
+> -                                            h_cg, page);
+>                 list_move(&page->lru, &h->hugepage_activelist);
+> -               spin_unlock(&hugetlb_lock);
+> +               /* Fall through */
+>         }
+> +       hugetlb_cgroup_commit_charge(idx, pages_per_huge_page(h), h_cg, page);
+> +       spin_unlock(&hugetlb_lock);
+>
+>         set_page_private(page, (unsigned long)spool);
+>
+> --
+> 1.7.9.5
+>
