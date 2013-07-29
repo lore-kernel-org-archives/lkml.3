@@ -1,237 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab3G2Msa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:48:30 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:40080 "EHLO mail.df.lth.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab3G2Ms2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:48:28 -0400
-X-Greylist: delayed 724 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 08:48:27 EDT
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Alexander Holler <holler@ahsoftware.de>
-Cc: Linux-OMAP <linux-omap@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>, devicetree@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Subject: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-Date: Mon, 29 Jul 2013 14:36:08 +0200
-Message-Id: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.7.2.5
+	id S1753238Ab3G2Mvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:51:51 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:48185 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab3G2Mvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 08:51:50 -0400
+Message-ID: <51F66565.7010600@linaro.org>
+Date: Mon, 29 Jul 2013 14:51:49 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+MIME-Version: 1.0
+To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
+CC: Stephen Boyd <sboyd@codeaurora.org>, John Stultz <john.stultz@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stuart Menefy <stuart.menefy@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: Enable arm_global_timer for Zynq brakes boot
+References: <20130717210417.GP13667@xsjandreislx> <51E72DCA.9070500@codeaurora.org> <f5b76049-7e5b-4dd0-9863-19cfd1d599b9@TX2EHSMHS006.ehs.local> <51E7435B.3060605@codeaurora.org> <ff4d40be-7177-4a55-ab2f-dff11fa18642@DB9EHSMHS009.ehs.local> <51ED8DF2.60600@codeaurora.org> <20130722201348.GI453@xsjandreislx> <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local>
+In-Reply-To: <0735ab8c-0f80-4b64-b2b2-8d4553482c2a@CO9EHSMHS013.ehs.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NOTE: THIS PATCH IS UNFINISHED AND UNTESTED AND THE ONLY
-INTENTION IS TO SHOWCASE MY DESIRED APPROACH, IT WILL NOT
-TRAVERSE THE DT INTERRUPTS PROPERLY AS OF NOW. PLEASE LET US
-JUST DISCUSS THIS APPROACH.
+On 07/23/2013 12:41 AM, Sören Brinkmann wrote:
+> Hi,
+> 
+> adding LKML and LAKML (which I forgot on the original email, sorry)
+> 
+> On Mon, Jul 22, 2013 at 01:13:48PM -0700, Sören Brinkmann wrote:
+>> On Mon, Jul 22, 2013 at 12:54:26PM -0700, Stephen Boyd wrote:
+>>> On 07/22/13 11:25, Sören Brinkmann wrote:
+>>>> On Wed, Jul 17, 2013 at 06:22:35PM -0700, Stephen Boyd wrote:
+>>>>> On 07/17/13 17:59, Sören Brinkmann wrote:
+>>>>>> Hi Stephen,
+>>>>>>
+>>>>>> On Wed, Jul 17, 2013 at 04:50:34PM -0700, Stephen Boyd wrote:
+>>>>>>> On 07/17/13 14:04, Sören Brinkmann wrote:
+>>>>>>>> Hi all,
+>>>>>>>>
+>>>>>>>> I'm trying to enable the arm_global_timer on Zynq platforms with the
+>>>>>>>> attached patch. Unfortunately that patch breaks booting up. It hangs
+>>>>>>>> when handing over to init/early userspace (see attached boot.log).
+>>>>>>>>
+>>>>>>>> The funny thing is, if I remove either the global timer or the
+>>>>>>>> arm,cortex-a9-twd-timer node from my dts, it works. So, it looks like
+>>>>>>>> the two timer (drivers) interfere somehow. Does anybody have an idea of
+>>>>>>>> what is going on and probably even how to resolve it?
+>>>>>>>>
+>>>>>>>> The patch is based on commit c0d15cc in Linus' tree.
+>>>>>>> If you boot with one CPU does it hang? It looks like secondary CPUs
+>>>>>>> aren't getting interrupts but I'm not sure why. Maybe you can try this
+>>>>>>> patch and/or put some prints in the timer interrupt handler to see if
+>>>>>>> interrupts are firing on secondary CPUs.
+>>>>>> Your proposed patch does not seem to make a difference, but adding
+>>>>>> 'maxcpus=1' to the kernel command line makes the system boot.
+>>>>> Hmm I guess that doesn't really confirm much because TWD doesn't
+>>>>> register itself on maxcpus=1 systems, so it's the same as removing the
+>>>>> node from DT. Probably easier to put a printk in the interrupt handler
+>>>>> and confirm that you're receiving interrupts on secondary CPUs.
+>>>> Turns out it does work when I disable Zynq's cpuidle driver. I think I
+>>>> can blame that driver.
+>>>>
+>>>
+>>> Hmm.. Perhaps the arm_global_timer driver also needs FEAT_C3_STOP added
+>>> to it. Do you know if that timer is reset during low power modes?
+>>
+>> Our cpudidle driver is not powering off anything, AFAIK. I think it just
+>> executes 'wfi' on the CPU. I don't know how the timer core handles it,
+>> but I'd expect the CPU should find the timer just a it was left before
+>> entering idle (well, the timer continues to run I assume, but other than
+>> that).
+>> I'll do some debugging and see if I can find out what exactly causes the
+>> hang.
+> 
+> So, what I found:
+> The Zynq cpuidle driver provides two idle states, which are both
+> basically just ARM wfi states. But the second one set's these flags:
+> 	.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TIMER_STOP,
+> 
+> I don't know what these flags cause in detail. But the
+> CPUIDLE_FLAG_TIMER_STOP seemed suspicious, since wfi does not have any
+> effect on the timer. So, I removed that one and things are working.
+> 
+> I also tried the other approach: Leaving cpuidle as is and adding the
+> C3STOP flag to the global timer. That solves it too.
+> 
+> Does anybody know what the correct solution is?
+> In case the C3STOP flag is considered to be corret for the timer, I
+> could prepare a patch for that and bundle it with the one to enable the
+> timer for Zynq?
 
-Currently the kernel are ambigously treating GPIOs and interrupts
-from a GPIO controller: GPIOs and interrupts are treated as
-orthogonal. This unfortunately makes it unclear how to actually
-retrieve and request a GPIO line or interrupt from a GPIO
-controller in the device tree probe path.
+Hi Soren,
 
-In the non-DT probe path it is clear that the GPIO number has to
-be passed to the consuming device, and if it is to be used as
-an interrupt, the consumer shall performa a gpio_to_irq() mapping
-and request the resulting IRQ number.
+the CPUIDLE_FLAG_TIMER_STOP flag tells the cpuidle framework the local
+timer will be stopped when entering to the idle state. In this case, the
+cpuidle framework will call clockevents_notify(ENTER) and switches to a
+broadcast timer and will call clockevents_notify(EXIT) when exiting the
+idle state, switching the local timer back in use.
 
-In the DT boot path consumers may have been given one or more
-interrupts from the interrupt-controller side of the GPIO chip
-in an abstract way, such that the driver is not aware of the
-fact that a GPIO chip is backing this interrupt, and the GPIO
-side of the same line is never requested with gpio_request().
-A typical case for this is ethernet chips which just take some
-interrupt line which may be a "hard" interrupt line (such as an
-external interrupt line from an SoC) or a cascaded interrupt
-connected to a GPIO line.
+The C3STOP flag has a similar semantic than the CPUIDLE_FLAG_TIMER_STOP,
+that is the timer can be shutdown with a specific idle state. This flag
+is used by the tick broadcast code.
 
-This has the following undesired effects:
+If the C3STOP flag is not set for a local timer, the
+CPUIDLE_FLAG_TIMER_STOP does not make sense because it will be ignored
+by the tick-broadcast code.
 
-- The GPIOlib subsystem is not aware that the line is in use
-  and willingly lets some other consumer perform gpio_request()
-  on it, leading to a complex resource conflict if it occurs.
+If the local timer could be shutdown at idle time, you *must* specify
+this flag.
 
-- The GPIO debugfs file claims this GPIO line is "free".
+If the idle state shutdowns the cpu with its local timer, you *must*
+specify the CPUIDLE_FLAG_TIMER_STOP flag for this specific state.
 
-- The line direction of the interrupt GPIO line is not
-  explicitly set as input, even though it is obvious that such
-  a line need to be set up in this way, often making the system
-  depend on boot-on defaults for this kind of settings.
+At the first glance, the idle state #2 is aimed to do DDR self refresh
+and to switch to WFI, so no power gating, then no local timer down. The
+CPUIDLE_FLAG_TIMER_STOP shouldn't be used here.
 
-To solve this dilemma, perform an interrupt consistency check
-when adding a GPIO chip: if the chip is both gpio-controller and
-interrupt-controller, walk all children of the device tree,
-check if these in turn reference the interrupt-controller, and
-if they do, loop over the interrupts used by that child and
-perform gpio_reques() and gpio_direction_input() on these,
-making them unreachable from the GPIO side.
+IIUC, the global timer does not belong to the CPU and the cluster power
+domains, so it can't be shutdown: the C3STOP shouldn't be used.
 
-Cc: devicetree@vger.kernel.org
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Enric Balletbo i Serra <eballetbo@gmail.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Balaji T K <balajitk@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Jon Hunter <jgchunter@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/gpio/gpiolib-of.c | 110 ++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 110 insertions(+)
+I hope that helps.
 
-diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index 665f953..129f0e7 100644
---- a/drivers/gpio/gpiolib-of.c
-+++ b/drivers/gpio/gpiolib-of.c
-@@ -19,6 +19,7 @@
- #include <linux/of.h>
- #include <linux/of_address.h>
- #include <linux/of_gpio.h>
-+#include <linux/of_irq.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/slab.h>
- 
-@@ -127,6 +128,112 @@ int of_gpio_simple_xlate(struct gpio_chip *gc,
- EXPORT_SYMBOL(of_gpio_simple_xlate);
- 
- /**
-+ * of_gpiochip_interrupt_consistency_check - check IRQ consistency
-+ * @np:		device node of the GPIO chip
-+ * @gc:		GPIO chip instantiated from same node
-+ *
-+ * This function is called after instantiating a GPIO chip from a device
-+ * tree node to assert that all interrupts derived from the chip are
-+ * consistently requested as GPIO lines, if the GPIO chip is BOTH a
-+ * gpio-controller AND an interrupt-controller.
-+ *
-+ * If another node in the device tree is referencing the interrupt-controller
-+ * portions of the GPIO chip, such that it is using a GPIO line as some
-+ * arbitrary interrupt source, the following holds:
-+ *
-+ * - That line must NOT be used anywhere else in the device tree as a
-+ *   <&gpio N> reference, or GPIO and interrupt usage may conflict.
-+ *
-+ * Conversely, if a node is using a line as a direct reference to a GPIO line,
-+ * no node in the tree may use that line as an interrupt.
-+ *
-+ * If another node is referencing a GPIO line, and also want to use that line
-+ * as an interrupt source, it is necessary for this driver to use the
-+ * gpio_to_irq() kernel interface.
-+ */
-+static void of_gpiochip_interrupt_consistency_check(struct device_node *np,
-+						    struct gpio_chip *gc)
-+{
-+	struct device_node *root, *child;
-+	struct device_node *irq_parent;
-+
-+	/*
-+	 * If this chip is not tagged as interrupt-controller, there is
-+	 * no problem so we just exit.
-+	 */
-+	if (!of_property_read_bool(np, "interrupt-controller"))
-+	    return;
-+
-+	/*
-+	 * Proceed to check the consistency of all references to this
-+	 * GPIO chip.
-+	 */
-+	root = of_find_node_by_path("/");
-+	if (!root)
-+		return;
-+
-+	for_each_child_of_node(root, child) {
-+		const __be32 *intspec;
-+		u32 intlen;
-+		u32 offset;
-+		int ret;
-+		int num_irq;
-+		int i;
-+
-+		/* Check if we have an IRQ parent, else continue */
-+		irq_parent = of_irq_find_parent(child);
-+		if (!irq_parent)
-+			continue;
-+
-+		/* Is it so that this very GPIO chip is the parent? */
-+		if (irq_parent != np) {
-+			of_node_put(irq_parent);
-+			continue;
-+		}
-+		of_node_put(irq_parent);
-+
-+		pr_debug("gpiochip OF: node reference GPIO interrupt lines\n");
-+
-+		/* Get the interrupts property */
-+		intspec = of_get_property(child, "interrupts", &intlen);
-+		if (intspec == NULL)
-+			continue;
-+		intlen /= sizeof(*intspec);
-+
-+		num_irq = of_irq_count(np);
-+		for (i = 0; i < num_irq; i++) {
-+			/*
-+			 * The first cell is always the local IRQ number, and
-+			 * this corresponds to the GPIO line offset for a GPIO
-+			 * chip.
-+			 *
-+			 * FIXME: take interrupt-cells into account here.
-+			 */
-+			offset = of_read_number(intspec + i, 1);
-+			pr_debug("gpiochip: OF node references offset=%d\n",
-+				 offset);
-+
-+			/*
-+			 * This child is making a reference to this chip
-+			 * through the interrupts property, so reserve these
-+			 * GPIO lines and set them as input.
-+			 */
-+			ret = gpio_request(gc->base + offset, "OF IRQ");
-+			if (ret)
-+				pr_err("gpiolib OF: could not request IRQ GPIO %d (%d)\n",
-+				       gc->base + offset, offset);
-+			ret = gpio_direction_input(gc->base + offset);
-+			if (ret)
-+				pr_err("gpiolib OF: could not set IRQ GPIO %d (%d) as input\n",
-+				       gc->base + offset, offset);
-+		}
-+
-+	}
-+
-+	of_node_put(root);
-+}
-+
-+/**
-  * of_mm_gpiochip_add - Add memory mapped GPIO chip (bank)
-  * @np:		device node of the GPIO chip
-  * @mm_gc:	pointer to the of_mm_gpio_chip allocated structure
-@@ -170,6 +277,8 @@ int of_mm_gpiochip_add(struct device_node *np,
- 	if (ret)
- 		goto err2;
- 
-+	of_gpiochip_interrupt_consistency_check(np, gc);
-+
- 	return 0;
- err2:
- 	iounmap(mm_gc->regs);
-@@ -231,6 +340,7 @@ void of_gpiochip_add(struct gpio_chip *chip)
- 		chip->of_xlate = of_gpio_simple_xlate;
- 	}
- 
-+	of_gpiochip_interrupt_consistency_check(chip->of_node, chip);
- 	of_gpiochip_add_pin_range(chip);
- 	of_node_get(chip->of_node);
- }
+  -- Daniel
+
+
+> @Michal: What do we do about the cpuidle driver? If you asked me, we
+> should rip out the second state completely. We have it as disabled
+> placeholder in our vendor tree and it seems to break things having it
+> enabled in mainline.
+> 
+> 
+> 	Sören
+> 
+> 
+
+
 -- 
-1.8.1.4
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
