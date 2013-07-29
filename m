@@ -1,136 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab3G2HvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:51:18 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:40160 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751984Ab3G2HvP (ORCPT
+	id S1752171Ab3G2H51 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:57:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:42404 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab3G2H5Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:51:15 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtkUAIwd9lF5LPxH/2dsb2JhbABbgwY1qh4CjlSFMoETF3SCJAEBBAEnExwjBQsIAxUDCQwZDwUlAyETiAoFDbdcFo0Ygk8HCoMObwOXXooihyuBW4FLKg
-Date: Mon, 29 Jul 2013 17:51:09 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-fsdevel@vger.kernel.org,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
-        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH review 05/16] xfs: Update xfs_ioctl_setattr to handle
- projids in any user namespace
-Message-ID: <20130729075109.GF13468@dastard>
-References: <87txpaph4n.fsf@xmission.com>
- <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
- <1361149870-27732-5-git-send-email-ebiederm@xmission.com>
- <20130219015550.GJ26694@dastard>
- <51F616F2.5040906@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <51F616F2.5040906@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Jul 2013 03:57:24 -0400
+X-AuditID: cbfee691-b7fef6d000002d62-86-51f620624a3a
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: "'Sachin Kamat'" <sachin.kamat@linaro.org>
+Cc: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
+        "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
+        "'Linux Kernel'" <linux-kernel@vger.kernel.org>,
+        "'Linux Samsung SOC'" <linux-samsung-soc@vger.kernel.org>,
+        "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
+        "'Joerg Roedel'" <joro@8bytes.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Prathyush'" <prathyush.k@samsung.com>,
+        "'Rahul Sharma'" <rahul.sharma@samsung.com>,
+        "'Subash Patel'" <supash.ramaswamy@linaro.org>,
+        "'Keyyoung Park'" <keyyoung.park@samsung.com>,
+        "'Grant Grundler'" <grundler@chromium.org>,
+        "'Antonios Motakis'" <a.motakis@virtualopensystems.com>,
+        kvmarm@lists.cs.columbia.edu
+References: <003c01ce89f3$3abc4bc0$b034e340$@samsung.com>
+ <CAK9yfHy2btp1W+5-GiVQnkffDnJ-CgqXuAjGktkiKYyf7kKQbQ@mail.gmail.com>
+In-reply-to: 
+Subject: RE: [PATCH v8 06/12] ARM: dts: Add description of System MMU of Exynos
+ SoCs
+Date: Mon, 29 Jul 2013 16:57:22 +0900
+Message-id: <003e01ce8c31$41d0c450$c5724cf0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Content-language: ko
+Thread-index: AQJ8iaVttThmxHyrdfHNT5d6MXLI1gKK1rNQmArt9KCAAAm2sA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t8zA90khW+BBtP2mFncuXuO1eLVkR9M
+	Fgv2W1t0zt7AbrH54DoWi94FV9ksGu9NYLP4eOo4u8Wmx9dYLS7vmsNmMeP8PiaLCys2sltM
+	WXSY1eLkn15Gi5brvUwO/B5PDs5j8pjdcJHF4861PWwe5zetYfbYvKTeY/KN5YwefVtWMXp8
+	3iTnceXoGaYAzigum5TUnMyy1CJ9uwSujNZ/7awFm7gqTk96xNbA+Ja9i5GTQ0LARGLJ1sNs
+	ELaYxIV764FsLg4hgWWMEv0fj8IVda3YxAyRmM4o8W7fRSYI5y+jRPvCk4wgVWwCWhKr5x4H
+	s0UEdCRW7FoLVsQs0MMq8fvnHKi5DYwSK2cdA1vIKcAjse5PJzOILSwQJrH3xnqwOIuAqsTh
+	OX1gcV4BS4mPC1cyQdiCEj8m32MBsZmBtq3feZwJwpaX2LzmLTPErQoSO86+ZoSIi0jse/EO
+	6iIniQcbjjCCHCEhcIBDon/WO3aIZQIS3yYfAhrKAZSQldh0AGqOpMTBFTdYJjBKzEKyehaS
+	1bOQrJ6FZN0CRpZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmbGCGJY+IOxvsHrA8xJgOtn8gs
+	JZqcD0w8eSXxhsZmRhamJqbGRuaWZqQJK4nzqrdYBwoJpCeWpGanphakFsUXleakFh9iZOLg
+	lGpgvLDWrEZR+ua1NVVBM37Vypxy6p98f8HUzw0KksurXtTc5hS591vOXSg1JlBvlfzJ8oBV
+	8wy1i9O/b+LO1GQPNZ9UHFjOrnfq4abgekbpiU+u3grmzHEKeFM3OyroMJ9c5Te7Kyv35Enr
+	Cn/lZK07r7BxRm4i15LOjtsMZvo7c3lZxcyf/RVXYinOSDTUYi4qTgQAeNv5DzIDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDKsWRmVeSWpSXmKPExsVy+t9jQd0khW+BBlu+GFjcuXuO1eLVkR9M
+	Fgv2W1t0zt7AbrH54DoWi94FV9ksGu9NYLP4eOo4u8Wmx9dYLS7vmsNmMeP8PiaLCys2sltM
+	WXSY1eLkn15Gi5brvUwO/B5PDs5j8pjdcJHF4861PWwe5zetYfbYvKTeY/KN5YwefVtWMXp8
+	3iTnceXoGaYAzqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUX
+	nwBdt8wcoA+UFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBmt/9pZCzZx
+	VZye9IitgfEtexcjJ4eEgIlE14pNzBC2mMSFe+vZuhi5OIQEpjNKvNt3kQnC+cso0b7wJCNI
+	FZuAlsTqucfBbBEBHYkVu9aCFTEL9LBK/P45B6q9gVFi5axjbCBVnAI8Euv+dILtEBYIk9h7
+	Yz1YnEVAVeLwnD6wOK+ApcTHhSuZIGxBiR+T77GA2MxA29bvPM4EYctLbF7zFupWBYkdZ18z
+	QsRFJPa9eAd1kZPEgw1HGCcwCs1CMmoWklGzkIyahaR9ASPLKkbR1ILkguKk9FwjveLE3OLS
+	vHS95PzcTYzgtPRMegfjqgaLQ4wCHIxKPLwPnL4ECrEmlhVX5h5ilOBgVhLh5TD6GijEm5JY
+	WZValB9fVJqTWnyIMRno04nMUqLJ+cCUmVcSb2hsYmZkaWRmYWRibk6asJI478FW60AhgfTE
+	ktTs1NSC1CKYLUwcnFINjLNevFfb9Ob4tfBt/77UOS1+cZJpgsG+xjkz8yU5a6PsVrx3b171
+	5ObHR4EcpmeWMFj/ae47r2A7a1b/i+sP13faXT4V9Ftlu9UN9aTFptKTih0WTX1nFJSznkU+
+	XdPsFe8L+1n79B1qnyp/2yO1X3TxF4ZKhdhTLCyepX43ZivF3Hzk0VH2rEOJpTgj0VCLuag4
+	EQCmLnKgjwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ cc xfs list ]
-
-On Mon, Jul 29, 2013 at 03:17:06PM +0800, Gao feng wrote:
-> On 02/19/2013 09:55 AM, Dave Chinner wrote:
-> > On Sun, Feb 17, 2013 at 05:10:58PM -0800, Eric W. Biederman wrote:
-> >> From: "Eric W. Biederman" <ebiederm@xmission.com>
-> >>
-> >> - Convert the userspace value in fa->fsx_projid into a kprojid and
-> >>   store it in the variable projid.
-> >> - Verify that xfs can store the projid after it is converted into
-> >>   xfs's user namespace.
-> >> - Replace uses of fa->fsx_projid with projid throughout
-> >>   xfs_ioctl_setattr.
-> >>
-> >> Cc: Ben Myers <bpm@sgi.com>
-> >> Cc: Alex Elder <elder@kernel.org>
-> >> Cc: Dave Chinner <david@fromorbit.com>
-> >> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-> >> ---
-> >>  fs/xfs/xfs_ioctl.c |   26 ++++++++++++++++++--------
-> >>  1 files changed, 18 insertions(+), 8 deletions(-)
-> >>
-> >> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-> >> index 016624b..4a55f50 100644
-> >> --- a/fs/xfs/xfs_ioctl.c
-> >> +++ b/fs/xfs/xfs_ioctl.c
-> >> @@ -925,6 +925,7 @@ xfs_ioctl_setattr(
-> >>  	struct xfs_dquot	*gdqp = NULL;
-> >>  	struct xfs_dquot	*olddquot = NULL;
-> >>  	int			code;
-> >> +	kprojid_t		projid = INVALID_PROJID;
-> >>  
-> >>  	trace_xfs_ioctl_setattr(ip);
-> >>  
-> >> @@ -934,11 +935,20 @@ xfs_ioctl_setattr(
-> >>  		return XFS_ERROR(EIO);
-> >>  
-> >>  	/*
-> >> -	 * Disallow 32bit project ids when projid32bit feature is not enabled.
-> >> +	 * Verify the specifid project id is valid.
-> >>  	 */
-> >> -	if ((mask & FSX_PROJID) && (fa->fsx_projid > (__uint16_t)-1) &&
-> >> -			!xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
-> >> -		return XFS_ERROR(EINVAL);
-> >> +	if (mask & FSX_PROJID) {
-> >> +		projid = make_kprojid(current_user_ns(), fa->fsx_projid);
-> >> +		if (!projid_valid(projid))
-> >> +			return XFS_ERROR(EINVAL);
-> >> +
-> >> +		/*
-> >> +		 * Disallow 32bit project ids when projid32bit feature is not enabled.
-> >> +		 */
-> >> +		if ((from_kprojid(&init_user_ns, projid) > (__uint16_t)-1) &&
-> >> +		    !xfs_sb_version_hasprojid32bit(&ip->i_mount->m_sb))
-> >> +			return XFS_ERROR(EINVAL);
-> >> +	}
-> > 
-> > That looks busted. Why does one use current_user_ns() and the other
-> > &init_user_ns()?
-> > 
+> -----Original Message-----
+> From: Cho KyongHo [mailto:pullip.cho@samsung.com]
+> Sent: Monday, July 29, 2013 4:20 PM
 > 
-> hmm, through this thread had been stopped discussing for a long time, but I'm working on converting
-> ids to kids for xfs now, and I want to remove the finial dependenciy for user namespace.
+> > -----Original Message-----
+> > From: Sachin Kamat [mailto:sachin.kamat@linaro.org]
+> > Sent: Monday, July 29, 2013 3:38 PM
+> >
+> > Hi KyongHo,
+> >
+> > On 26 July 2013 16:58, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> > > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > > ---
+> > >  .../bindings/iommu/samsung,exynos4210-sysmmu.txt   |  103 +++++++
+> > >  arch/arm/boot/dts/exynos4.dtsi                     |  122 ++++++++
+> > >  arch/arm/boot/dts/exynos4210.dtsi                  |   25 ++
+> > >  arch/arm/boot/dts/exynos4x12.dtsi                  |   76 +++++
+> > >  arch/arm/boot/dts/exynos5250.dtsi                  |  291 ++++++++++++++++++++
+> > >  5 files changed, 617 insertions(+), 0 deletions(-)
+> > >  create mode 100644 Documentation/devicetree/bindings/iommu/samsung,exynos4210-sysmmu.txt
+> >
+> > This patch does not apply on the mainline Linus' tree (3.11-rc2). Please rebase.
+> >
+> 
+> OK. I will rebase the next patches on that.
 
-You're duplicating work that is already going on - we've been
-talking about this stuff on the XFS list and reviewing patches for
-the last 3-4 weeks for this.
+I don't get any conflict both on the latest of Linus's tree (3.11-rc3)
+and for-next branch  of Samsung git.
+Can you show me the diff?
 
-http://oss.sgi.com/pipermail/xfs/2013-July/028467.html
+> 
+> Thank you.
+> 
+> Cho KyongHo.
+> > --
+> > With warm regards,
+> > Sachin
 
-Basically, the discussion we are currently having is whether project
-IDs should be exposed to user namespaces at all. e.g:
-
-http://oss.sgi.com/pipermail/xfs/2013-July/028497.html
-http://oss.sgi.com/pipermail/xfs/2013-July/028551.html
-
-"Basically, until we have worked out *if* project quotas can be used
-safely within user namespaces, we need to reject any attempt to use
-them from within a user namespace container."
-
-i.e. the whole "project IDs are part of user namespaces because of
-quotas" looks like a bad decision to have been made. Project IDs are
-independent of users and groups and can be used to account for usage
-across discontiguous directory and permission heirarchies, so trying
-to contain them to a "user namespace" really matches their
-functionality.
-
-> I think maybe just modifying from_kprojid(&init_user_ns, projid) to projid.val here is easier
-> to understand.
-
-The problem is not a question of how to implement mappings - it's a
-question of how to deal with fundamental impedence mismatch of
-user namespaces and project IDs....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
