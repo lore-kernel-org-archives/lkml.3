@@ -1,21 +1,20 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab3G1HsT (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 28 Jul 2013 03:48:19 -0400
-Received: from 18.196.214.218.sta.commander.net.au ([218.214.196.18]:33846
-	"EHLO www1.auslin.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753215Ab3G1HsR (ORCPT
+	id S1756831Ab3G2OsI (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 29 Jul 2013 10:48:08 -0400
+Received: from mail.bellwovenbd.com ([114.130.32.109]:33372 "EHLO
+	mail.bellwovenbd.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab3G2OsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 03:48:17 -0400
-X-Greylist: delayed 157168 seconds by postgrey-1.27 at vger.kernel.org; Sun, 28 Jul 2013 03:48:16 EDT
-Message-ID: <62671.82.157.208.79.1374997201.squirrel@webmail.auslin.com.au>
-Date: Sun, 28 Jul 2013 07:40:01 -0000 (Europe/Dublin)
-Subject: YOU HAVE WON!
-From: "Postcodesloterij.nl" <Postinfo@luckymail.com>
-Reply-To: Postinfo@luckymail.com
-User-Agent: SquirrelMail/1.4.9
+	Mon, 29 Jul 2013 10:48:06 -0400
+Message-ID: <38419.41.203.67.53.1375070914.squirrel@mail.bellwovenbd.com>
+Date: Mon, 29 Jul 2013 05:08:34 +0100 (BST)
+Subject: Loan offer at 3% interest rate .... Apply now.
+From: "FAIRHAVEN INTERNATIONAL LTD." <info@webadicta.org>
+Reply-To: fairhaven_int.ltd@webadicta.org
+User-Agent: SquirrelMail/1.4.8-21.el5.centos
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 X-Priority: 3 (Normal)
 Importance: Normal
 To: undisclosed-recipients:;
@@ -26,14 +25,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
--- 
-We are please to inform you of our summer promotion award program held
-25th 2013,have pronounce your email-address as the lucky winner of atotal
-sum:of €250,000.
-CONTACT:
-The claim office/Email:Postinfo@luckymail.com,with your winning
-Serial-No:LE0031#442550PSNL.
- __  __  __  __  __
-Postcodesloterij.nl
+Good day,
+
+    We are a company FAIRHAVEN INTERNATIONAL LTD. giving out loans by mail
+advert. We provide various types of loans (soft loans for home,
+personal loans, etc..) by 3% interest rate, the repayment period can
+be for anything from 3 to 25 years. If you are interested in more
+information, please complete the form below and return it to our email
+address: fairhaven_int.ltd@webadicta.org.
+
+Please fill in:
+
+Name and surname:
+
+Address:
+
+Age:
+
+Gender:
+
+Contact-Phone:
+
+Occupation:
+
+Monthly income:
+
+The required amount of loan:
+
+Duration of loan:
+
+The purpose of the loan:
+
+Country:
+
+ZIP code:
+
+FAIRHAVEN INTERNATIONAL LTD. is an appointed representative of FISA
+(Finance Industry Standards Association) authorized and regulated by the
+Financial Service Authority (FSA).
+
+
+"We show you a better way to your financial freedom"
+
+With kind regards,
+Mrs. Catharine Anderson.
 
 
