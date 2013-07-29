@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab3G2WSX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:18:23 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57041 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754822Ab3G2WSR (ORCPT
+	id S1756019Ab3G2WTS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:19:18 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:65040 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754183Ab3G2WTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:18:17 -0400
-X-Originating-IP: 60.228.202.203
-Message-ID: <51F6EA25.6090105@roeck-us.net>
-Date: Mon, 29 Jul 2013 15:18:13 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 18:19:16 -0400
+Message-ID: <51F6EA60.7020208@gmail.com>
+Date: Mon, 29 Jul 2013 16:19:12 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Jonas Jensen <jonas.jensen@gmail.com>
-CC: linux-watchdog@vger.kernel.org, wim@iguana.be,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v7] watchdog: Add MOXA ART watchdog driver
-References: <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com> <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1375101228-10930-1-git-send-email-jonas.jensen@gmail.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH V8 04/15] perf tools: change machine__findnew_thread()
+ to set thread pid
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com> <1374144177-24762-5-git-send-email-adrian.hunter@intel.com> <51F29DAC.7000803@gmail.com> <51F4F5D4.8080405@intel.com>
+In-Reply-To: <51F4F5D4.8080405@intel.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 05:33 AM, Jonas Jensen wrote:
-> Add watchdog driver for MOXA ART SoCs.
+On 7/28/13 4:43 AM, Adrian Hunter wrote:
+
+>>> - thread = machine__findnew_thread(machine, event->ip.pid);
+>>> + thread = machine__findnew_thread(machine, event->ip.pid,
+>>> event->ip.pid);
+>>
+>> event->ip.tid? at a minimum current functionality is retained with
+>> machine__findnew_thread(machine, 0, event->ip.pid)
 >
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> perf tools records mmap information against the process's main thread
+> for which pid == tid.  So the correct values are being passed here.
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Yes. It's a case by case -- if you want syms use pid, otherwise use tid. 
+It would be less confusing if the API was improved - always take pid and 
+tid along with an arg that says 'want syms' or a separate function name. 
+But I digress.
 
+Looking at your patch does maintain the tid element so it should be 
+fine. I ran a few tests with perf-script and the output is the same 
+after the patch, so..
+
+Acked-by: David Ahern <dsahern@gmail.com>
