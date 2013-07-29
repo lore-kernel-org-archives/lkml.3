@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3G2Cec (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:34:32 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5513 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab3G2Ce1 (ORCPT
+	id S1754244Ab3G2CeS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:34:18 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:36017 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754200Ab3G2CeN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:34:27 -0400
+	Sun, 28 Jul 2013 22:34:13 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
 To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
         <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
         <libo.chen@huawei.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 8/9] syslog_ns: implement ns_printk for specific syslog_ns
-Date: Mon, 29 Jul 2013 10:31:19 +0800
-Message-ID: <1375065080-26740-9-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH 3/9] syslog_ns: add init syslog_ns for global syslog
+Date: Mon, 29 Jul 2013 10:31:14 +0800
+Message-ID: <1375065080-26740-4-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
 References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
@@ -26,123 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new interface named ns_printk, and assign an
-patamater ns. Log which belong to a container can
-be printed by ns_printk.
+Add init_syslog_ns to manage host log buffer, and
+initilize its fileds as the global variables.
+
+Printk by default in kernel will continue to be
+targeted at init_syslog_ns. So the buf of init
+ns is just the same as the original global buf.
 
 Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 ---
- include/linux/printk.h |  4 ++++
- kernel/printk.c        | 53 ++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 53 insertions(+), 4 deletions(-)
+ include/linux/syslog.h         |  1 +
+ include/linux/user_namespace.h |  1 +
+ kernel/printk.c                | 18 ++++++++++++++++++
+ kernel/user.c                  |  3 +++
+ kernel/user_namespace.c        |  4 ++++
+ 5 files changed, 27 insertions(+)
 
-diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 29e3f85..bf83ad9 100644
---- a/include/linux/printk.h
-+++ b/include/linux/printk.h
-@@ -6,6 +6,7 @@
- #include <linux/kern_levels.h>
- #include <linux/linkage.h>
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 62ce47f..363bc56 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -122,4 +122,5 @@ static inline void put_syslog_ns(struct syslog_namespace *ns)
  
-+struct syslog_namespace;
- extern const char linux_banner[];
- extern const char linux_proc_banner[];
+ int do_syslog(int type, char __user *buf, int count, bool from_file);
  
-@@ -123,6 +124,9 @@ asmlinkage int printk_emit(int facility, int level,
- asmlinkage __printf(1, 2) __cold
- int printk(const char *fmt, ...);
++extern struct syslog_namespace init_syslog_ns;
+ #endif /* _LINUX_SYSLOG_H */
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index ce2de5b..4b5e190 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -32,6 +32,7 @@ struct user_namespace {
+ };
  
-+asmlinkage __printf(2, 3) __cold
-+int ns_printk(struct syslog_namespace *ns, const char *fmt, ...);
-+
- /*
-  * Special printk facility for scheduler use only, _DO_NOT_USE_ !
-  */
+ extern struct user_namespace init_user_ns;
++extern struct syslog_namespace init_syslog_ns;
+ 
+ #ifdef CONFIG_USER_NS
+ 
 diff --git a/kernel/printk.c b/kernel/printk.c
-index 6b561db..56a8b27 100644
+index 7e544bf..fd83ec1 100644
 --- a/kernel/printk.c
 +++ b/kernel/printk.c
-@@ -1554,9 +1554,10 @@ static size_t cont_print_text(char *text, size_t size)
- 	return textlen;
- }
+@@ -45,6 +45,8 @@
+ #include <linux/poll.h>
+ #include <linux/irq_work.h>
+ #include <linux/utsname.h>
++#include <linux/cred.h>
++#include <linux/user_namespace.h>
  
--asmlinkage int vprintk_emit(int facility, int level,
--			    const char *dict, size_t dictlen,
--			    const char *fmt, va_list args)
-+static int ns_vprintk_emit(int facility, int level,
-+			const char *dict, size_t dictlen,
-+			const char *fmt, va_list args,
-+			struct syslog_namespace *ns)
- {
- 	static int recursion_bug;
- 	static char textbuf[LOG_LINE_MAX];
-@@ -1566,7 +1567,6 @@ asmlinkage int vprintk_emit(int facility, int level,
- 	unsigned long flags;
- 	int this_cpu;
- 	int printed_len = 0;
--	struct syslog_namespace *ns = &init_syslog_ns;
+ #include <asm/uaccess.h>
  
- 	boot_delay_msec(level);
- 	printk_delay();
-@@ -1697,6 +1697,14 @@ out_restore_irqs:
+@@ -251,6 +253,22 @@ static u32 log_buf_len = __LOG_BUF_LEN;
+ /* cpu currently holding logbuf_lock */
+ static volatile unsigned int logbuf_cpu = UINT_MAX;
  
- 	return printed_len;
- }
-+
-+asmlinkage int vprintk_emit(int facility, int level,
-+				const char *dict, size_t dictlen,
-+				const char *fmt, va_list args)
-+{
-+	return ns_vprintk_emit(facility, level, dict, dictlen, fmt, args,
-+				&init_syslog_ns);
-+}
- EXPORT_SYMBOL(vprintk_emit);
- 
- asmlinkage int vprintk(const char *fmt, va_list args)
-@@ -1762,6 +1770,43 @@ asmlinkage int printk(const char *fmt, ...)
- }
- EXPORT_SYMBOL(printk);
- 
-+/**
-+ * ns_printk - print a kernel message in syslog_ns
-+ * @ns: syslog namespace
-+ * @fmt: format string
-+ *
-+ * This is ns_printk().
-+ * It can be called from container context. We add a param
-+ * ns to record current syslog namespace, because we need to
-+ * print some log which are not generated by host, but contaner.
-+ *
-+ * See the vsnprintf() documentation for format string extensions over C99.
-+ **/
-+asmlinkage int ns_printk(struct syslog_namespace *ns,
-+					const char *fmt, ...)
-+{
-+	va_list args;
-+	int r;
-+
-+	if (!ns)
-+		ns = current_user_ns()->syslog_ns;
-+
-+#ifdef CONFIG_KGDB_KDB
-+	if (unlikely(kdb_trap_printk)) {
-+		va_start(args, fmt);
-+		r = vkdb_printf(fmt, args);
-+		va_end(args);
-+		return r;
-+	}
++struct syslog_namespace init_syslog_ns = {
++	.kref = {
++		.refcount = ATOMIC_INIT(2),
++	},
++	.logbuf_lock = __RAW_SPIN_LOCK_UNLOCKED(init_syslog_ns.logbuf_lock),
++	.logbuf_cpu = UINT_MAX,
++	.log_buf_len = __LOG_BUF_LEN,
++	.log_buf = __log_buf,
++	.owner = &init_user_ns,
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
++	.dmesg_restrict = 1,
++#else
++	.dmesg_restrict = 0,
 +#endif
-+	va_start(args, fmt);
-+	r = ns_vprintk_emit(0, -1, NULL, 0, fmt, args, ns);
-+	va_end(args);
++};
 +
-+	return r;
-+}
-+EXPORT_SYMBOL(ns_printk);
-+
- #else /* CONFIG_PRINTK */
+ /* human readable text of the record */
+ static char *log_text(const struct log *msg)
+ {
+diff --git a/kernel/user.c b/kernel/user.c
+index 69b4c3d..0bbd4f7 100644
+--- a/kernel/user.c
++++ b/kernel/user.c
+@@ -18,6 +18,8 @@
+ #include <linux/user_namespace.h>
+ #include <linux/proc_ns.h>
  
- #define LOG_LINE_MAX		0
++struct syslog_namespace;
++
+ /*
+  * userns count is 1 for root user, 1 for init_uts_ns,
+  * and 1 for... ?
+@@ -53,6 +55,7 @@ struct user_namespace init_user_ns = {
+ 	.proc_inum = PROC_USER_INIT_INO,
+ 	.may_mount_sysfs = true,
+ 	.may_mount_proc = true,
++	.syslog_ns = &init_syslog_ns,
+ };
+ EXPORT_SYMBOL_GPL(init_user_ns);
+ 
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index d8c30db..20f402f 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -22,6 +22,7 @@
+ #include <linux/ctype.h>
+ #include <linux/projid.h>
+ #include <linux/fs_struct.h>
++#include <linux/syslog.h>
+ 
+ static struct kmem_cache *user_ns_cachep __read_mostly;
+ 
+@@ -95,6 +96,8 @@ int create_user_ns(struct cred *new)
+ 	ns->owner = owner;
+ 	ns->group = group;
+ 
++	ns->syslog_ns = get_syslog_ns(parent_ns->syslog_ns);
++
+ 	set_cred_user_ns(new, ns);
+ 
+ 	update_mnt_policy(ns);
+@@ -122,6 +125,7 @@ void free_user_ns(struct user_namespace *ns)
+ 	struct user_namespace *parent;
+ 
+ 	do {
++		put_syslog_ns(ns->syslog_ns);
+ 		parent = ns->parent;
+ 		proc_free_inum(ns->proc_inum);
+ 		kmem_cache_free(user_ns_cachep, ns);
 -- 
 1.8.2.2
 
