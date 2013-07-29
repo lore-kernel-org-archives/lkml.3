@@ -1,59 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab3G2MQh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:16:37 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:51743 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754246Ab3G2MQf (ORCPT
+	id S1754412Ab3G2MSd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:18:33 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:62912 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751989Ab3G2MSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:16:35 -0400
-Message-ID: <51F65D1F.9050402@cogentembedded.com>
-Date: Mon, 29 Jul 2013 16:16:31 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 08:18:31 -0400
+Message-ID: <51F65D6F.40104@huawei.com>
+Date: Mon, 29 Jul 2013 20:17:51 +0800
+From: Rui Xiang <rui.xiang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Joe Perches <joe@perches.com>, Lan Tianyu <lantianyu1986@gmail.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org
-Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power()
- print device names
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <CAOLK0pyBsD8vR0a2mcSucnD8zFTz8ZB72OPE0R9Z67SxH9VHRw@mail.gmail.com> <1375067513.2075.27.camel@joe-AO722> <1782275.A7JEhQIj8Q@vostro.rjw.lan>
-In-Reply-To: <1782275.A7JEhQIj8Q@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Gu Zheng <guz.fnst@cn.fujitsu.com>
+CC: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
+        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
+        <libo.chen@huawei.com>
+Subject: Re: [PATCH 8/9] syslog_ns: implement ns_printk for specific syslog_ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-9-git-send-email-rui.xiang@huawei.com> <51F645E4.9070507@cn.fujitsu.com>
+In-Reply-To: <51F645E4.9070507@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.72.188]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 2013/7/29 18:37, Gu Zheng wrote:
+> Hi Rui,
+> 
+> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+> 
+>> Add a new interface named ns_printk, and assign an
+>> patamater ns. Log which belong to a container can
+>> be printed by ns_printk.
+> 
+> One question, with the syslog_ns used, do the log we print by *printk* in the
+> host contains the log in each syslog_ns(print out with ns_printk) or not?
+> 
 
-On 29-07-2013 16:17, Rafael J. Wysocki wrote:
-
-[...]
-
->>>> @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
->> []
->>>>          if (device->parent && (state < device->parent->power.state)) {
->>>> -               printk(KERN_WARNING PREFIX
->>>> -                             "Cannot set device to a higher-powered"
->>>> -                             " state than parent\n");
->>>> +               dev_warn(&device->dev, "Cannot transition to a higher-powered "
->>>> +                        "state than parent\n");
-
->> coalesce format please.
-
-> I can, but then it'll cross the 80 columns boundary.
-
-   It's not a problem with checkpatch.pl anymore. Contrariwise, it whines 
-about the broken up string literals, AFAIR.
+No. While using ns_printk, a parameter ns shouled be passed to identify syslog_ns.
+If this ns has been created, it has a own log_buf to store logs. Otherwise this ns
+comes from current->user_ns. When it is inis_syslog_ns the logs will be printed 
+out in host.
 
 > Thanks,
-> Rafael
+> Gu
+> 
+>>
+>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>> ---
+>>  include/linux/printk.h |  4 ++++
+>>  kernel/printk.c        | 53 ++++++++++++++++++++++++++++++++++++++++++++++----
+>>  2 files changed, 53 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/include/linux/printk.h b/include/linux/printk.h
+>> index 29e3f85..bf83ad9 100644
+>> --- a/include/linux/printk.h
+>> +++ b/include/linux/printk.h
+>> @@ -6,6 +6,7 @@
+>>  #include <linux/kern_levels.h>
+>>  #include <linux/linkage.h>
+>>  
+>> +struct syslog_namespace;
+>>  extern const char linux_banner[];
+>>  extern const char linux_proc_banner[];
+>>  
+>> @@ -123,6 +124,9 @@ asmlinkage int printk_emit(int facility, int level,
+>>  asmlinkage __printf(1, 2) __cold
+>>  int printk(const char *fmt, ...);
+>>  
+>> +asmlinkage __printf(2, 3) __cold
+>> +int ns_printk(struct syslog_namespace *ns, const char *fmt, ...);
+>> +
+>>  /*
+>>   * Special printk facility for scheduler use only, _DO_NOT_USE_ !
+>>   */
+>> diff --git a/kernel/printk.c b/kernel/printk.c
+>> index 6b561db..56a8b27 100644
+>> --- a/kernel/printk.c
+>> +++ b/kernel/printk.c
+>> @@ -1554,9 +1554,10 @@ static size_t cont_print_text(char *text, size_t size)
+>>  	return textlen;
+>>  }
+>>  
+>> -asmlinkage int vprintk_emit(int facility, int level,
+>> -			    const char *dict, size_t dictlen,
+>> -			    const char *fmt, va_list args)
+>> +static int ns_vprintk_emit(int facility, int level,
+>> +			const char *dict, size_t dictlen,
+>> +			const char *fmt, va_list args,
+>> +			struct syslog_namespace *ns)
+>>  {
+>>  	static int recursion_bug;
+>>  	static char textbuf[LOG_LINE_MAX];
+>> @@ -1566,7 +1567,6 @@ asmlinkage int vprintk_emit(int facility, int level,
+>>  	unsigned long flags;
+>>  	int this_cpu;
+>>  	int printed_len = 0;
+>> -	struct syslog_namespace *ns = &init_syslog_ns;
+>>  
+>>  	boot_delay_msec(level);
+>>  	printk_delay();
+>> @@ -1697,6 +1697,14 @@ out_restore_irqs:
+>>  
+>>  	return printed_len;
+>>  }
+>> +
+>> +asmlinkage int vprintk_emit(int facility, int level,
+>> +				const char *dict, size_t dictlen,
+>> +				const char *fmt, va_list args)
+>> +{
+>> +	return ns_vprintk_emit(facility, level, dict, dictlen, fmt, args,
+>> +				&init_syslog_ns);
+>> +}
+>>  EXPORT_SYMBOL(vprintk_emit);
+>>  
+>>  asmlinkage int vprintk(const char *fmt, va_list args)
+>> @@ -1762,6 +1770,43 @@ asmlinkage int printk(const char *fmt, ...)
+>>  }
+>>  EXPORT_SYMBOL(printk);
+>>  
+>> +/**
+>> + * ns_printk - print a kernel message in syslog_ns
+>> + * @ns: syslog namespace
+>> + * @fmt: format string
+>> + *
+>> + * This is ns_printk().
+>> + * It can be called from container context. We add a param
+>> + * ns to record current syslog namespace, because we need to
+>> + * print some log which are not generated by host, but contaner.
+>> + *
+>> + * See the vsnprintf() documentation for format string extensions over C99.
+>> + **/
+>> +asmlinkage int ns_printk(struct syslog_namespace *ns,
+>> +					const char *fmt, ...)
+>> +{
+>> +	va_list args;
+>> +	int r;
+>> +
+>> +	if (!ns)
+>> +		ns = current_user_ns()->syslog_ns;
+>> +
+>> +#ifdef CONFIG_KGDB_KDB
+>> +	if (unlikely(kdb_trap_printk)) {
+>> +		va_start(args, fmt);
+>> +		r = vkdb_printf(fmt, args);
+>> +		va_end(args);
+>> +		return r;
+>> +	}
+>> +#endif
+>> +	va_start(args, fmt);
+>> +	r = ns_vprintk_emit(0, -1, NULL, 0, fmt, args, ns);
+>> +	va_end(args);
+>> +
+>> +	return r;
+>> +}
+>> +EXPORT_SYMBOL(ns_printk);
+>> +
+> 
+> Here can we do some clean up to printk using ns_printk?
+> 
 
-WBR, Sergei
+ok, I will have a try to do it.:)
+
+Thanks.
+
 
