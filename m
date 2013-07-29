@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430Ab3G2CgN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:36:13 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:5061 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab3G2CeL (ORCPT
+	id S1754292Ab3G2CqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:46:10 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:12425 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752371Ab3G2CqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:34:11 -0400
-From: Rui Xiang <rui.xiang@huawei.com>
-To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
-CC: <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
-        <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
-        <libo.chen@huawei.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 2/9] syslog_ns: add syslog_ns into user_namespace
-Date: Mon, 29 Jul 2013 10:31:13 +0800
-Message-ID: <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
-X-Mailer: git-send-email 1.8.1.msysgit.1
-In-Reply-To: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
+	Sun, 28 Jul 2013 22:46:07 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqcGAAXX9VF5LPxH/2dsb2JhbABbgwa5JoUygRQXdIIkAQEFOhwjEAgDGAklDwUlAyETiA+3RBaOOoEtB4MWbwOXXpFNgyYqgS0
+Date: Mon, 29 Jul 2013 12:45:46 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Zhi Yong Wu <zwu.kernel@gmail.com>
+Cc: xfstests <xfs@oss.sgi.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] xfs: introduce object readahead to log recovery
+Message-ID: <20130729024546.GD13468@dastard>
+References: <1374740619-29797-1-git-send-email-zwu.kernel@gmail.com>
+ <20130726025009.GE21982@dastard>
+ <CAEH94Lh-UCCEs7hQi_t5v+X+ER1DH9dCtjr6e9GVNX5KJ-f1hQ@mail.gmail.com>
+ <20130726113521.GM13468@dastard>
+ <CAEH94Ljpih875VOEdCY9Z9CdMF_1DesW7dsz_k7Zm=xt165w5A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.135.72.188]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAEH94Ljpih875VOEdCY9Z9CdMF_1DesW7dsz_k7Zm=xt165w5A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a syslog_ns pointer to user_namespace, and make
-syslog_ns per user_namespace, not global.
+On Mon, Jul 29, 2013 at 09:38:11AM +0800, Zhi Yong Wu wrote:
+> By the way, how do you try the workload which has nothing but dirty
+> dquote objects?
 
-Since syslog_ns is assigned to user_ns, we can have
-full capabilities in new user_ns to create a new syslog_ns.
+Create quota limits for non-existent users. That will allocate the
+dquots and dirty them.
 
-Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
----
- include/linux/syslog.h         | 5 +++++
- include/linux/user_namespace.h | 1 +
- 2 files changed, 6 insertions(+)
+Or if you already have a few hundred thousand dquots, just change
+the limits on them all to get them logged and dirty...
 
-diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-index 425fafe..62ce47f 100644
---- a/include/linux/syslog.h
-+++ b/include/linux/syslog.h
-@@ -90,6 +90,11 @@ struct syslog_namespace {
- 	size_t syslog_partial;
- 
- 	int dmesg_restrict;
-+
-+	/*
-+	 * user namespace which owns this syslog ns.
-+	 */
-+	struct user_namespace *owner;
- };
- 
- static inline struct syslog_namespace *get_syslog_ns(
-diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
-index b6b215f..ce2de5b 100644
---- a/include/linux/user_namespace.h
-+++ b/include/linux/user_namespace.h
-@@ -28,6 +28,7 @@ struct user_namespace {
- 	unsigned int		proc_inum;
- 	bool			may_mount_sysfs;
- 	bool			may_mount_proc;
-+	struct syslog_namespace *syslog_ns;
- };
- 
- extern struct user_namespace init_user_ns;
+Cheers,
+
+Dave.
 -- 
-1.8.2.2
-
-
+Dave Chinner
+david@fromorbit.com
