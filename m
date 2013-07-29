@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755888Ab3G2Vsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:48:32 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:59303 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754397Ab3G2Vsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:48:31 -0400
-Message-ID: <1375134511.2075.76.camel@joe-AO722>
-Subject: Re: Checkpatch error on trace events macros
-From: Joe Perches <joe@perches.com>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Mon, 29 Jul 2013 14:48:31 -0700
-In-Reply-To: <20130729212328.GD14883@xanatos>
-References: <20130729195201.GC14883@xanatos>
-	 <1375128164.2075.53.camel@joe-AO722> <20130729212328.GD14883@xanatos>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1755921Ab3G2VtX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:49:23 -0400
+Received: from mail-bn1lp0154.outbound.protection.outlook.com ([207.46.163.154]:40176
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754397Ab3G2VtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 17:49:22 -0400
+X-Greylist: delayed 904 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 17:49:22 EDT
+Message-ID: <51F6DF65.9050301@caviumnetworks.com>
+Date: Mon, 29 Jul 2013 14:32:21 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: <ralf@linux-mips.org>, Linus Walleij <linus.walleij@linaro.org>
+CC: David Daney <ddaney.cavm@gmail.com>, <linux-gpio@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2 0/2] OCTEON GPIO support.
+References: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.195]
+X-Forefront-PRVS: 09222B39F5
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(377454003)(479174003)(51704005)(24454002)(199002)(189002)(74366001)(79102001)(16406001)(74662001)(23756003)(51856001)(74876001)(65806001)(76796001)(76786001)(65956001)(69226001)(80976001)(80022001)(63696002)(66066001)(64126003)(81542001)(47776003)(81342001)(83072001)(53416003)(31966008)(74706001)(74502001)(47446002)(56776001)(76482001)(33656001)(49866001)(80316001)(50986001)(4396001)(59766001)(47736001)(47976001)(77982001)(50466002)(19580405001)(54356001)(36756003)(53806001)(83322001)(56816003)(19580395003)(46102001)(59896001)(54316002)(77096001)(217873001);DIR:OUT;SFP:;SCL:1;SRVR:SN2PR07MB032;H:BN1PRD0712HT002.namprd07.prod.outlook.com;CLIP:64.2.3.195;RD:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: DuplicateDomain-a3ec847f-e37f-4d9a-9900-9d9d96f75f58.caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 14:23 -0700, Sarah Sharp wrote:
-> On Mon, Jul 29, 2013 at 01:02:44PM -0700, Joe Perches wrote:
-> > On Mon, 2013-07-29 at 12:52 -0700, Sarah Sharp wrote:
-[]
-> > > sarah@xanatos:~/git/kernels/xhci$ git am -s ~/Maildir.fetchmail/.to-apply
-> > > Applying: xhci: add traces for debug messages in xhci_address_device()
-> > > ERROR: Macros with complex values should be enclosed in parenthesis
-> > > #86: FILE: drivers/usb/host/xhci-trace.h:15:
-> > > +#define TRACE_SYSTEM xhci-hcd
-> > 
-> > <shrug>
-> > 
-> > I think these are suboptimal as the files should use
-> > underscores rather than dashes.
+On 07/29/2013 02:29 PM, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
+>
+> The Cavium, OCTEON is a MIPS based SoC.  Here we add support for its
+> on-chip GPIO lines.
+>
+> Changes from v1: Cleaned up variable names, messages and added some
+> comments as suggested by Linus Walleij.
+>
+> The second patch depends on the first, but is in code maintained by
+> Ralf.  It may be best to mrege both of these together, perhaps from
+> the GPIO tree, with Ralf's Acked-by.
 
-It's ~3:2 in favor of _ in the tree.
+Really I meant to say that the first patch is in the MIPS tree, and 
+should be Acked-by Ralf, if that wasn't clear.
 
-$ git ls-files | awk -F"/" '{print $NF;}' | grep "-" | wc -l
-8078
-$ git ls-files | awk -F"/" '{print $NF;}' | grep "_" | wc -l
-12577
+David Daney
 
-closer to 1:1 if you include all the directory names too.
 
-$ git ls-files | grep "-" | wc -l
-11821
-$ git ls-files | grep "_" | wc -l
-13005
-
-> The norm in the USB subsystem is to use dashes in filenames.
-
-Not really.
-
-$ git ls-files drivers/usb | awk -F"/" '{print $NF;}' | grep "-" | wc -l
-168
-$ git ls-files drivers/usb | awk -F"/" '{print $NF;}' | grep "_" | wc -l
-177
-
-> there is no "should" here, just opinions.
-
-Given the "I think", we agree!
+>
+> David Daney (2):
+>    MIPS: OCTEON: Select ARCH_REQUIRE_GPIOLIB
+>    gpio MIPS/OCTEON: Add a driver for OCTEON's on-chip GPIO pins.
+>
+>   arch/mips/Kconfig                               |   1 +
+>   arch/mips/include/asm/mach-cavium-octeon/gpio.h |  21 ++++
+>   drivers/gpio/Kconfig                            |   8 ++
+>   drivers/gpio/Makefile                           |   1 +
+>   drivers/gpio/gpio-octeon.c                      | 157 ++++++++++++++++++++++++
+>   5 files changed, 188 insertions(+)
+>   create mode 100644 arch/mips/include/asm/mach-cavium-octeon/gpio.h
+>   create mode 100644 drivers/gpio/gpio-octeon.c
+>
 
