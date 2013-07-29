@@ -1,59 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074Ab3G2JyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:54:11 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:33979 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755019Ab3G2JyH (ORCPT
+	id S1755216Ab3G2Jzh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:55:37 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:54949 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab3G2Jzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:54:07 -0400
-Date: Mon, 29 Jul 2013 10:54:01 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Patch Tracking <patches@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Al Stone <al.stone@linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>, lorenzo.pieralisi@arm.com
-Subject: Re: [RFC][PATCH 1/2] ARM64: add cpu topology definition
-Message-ID: <20130729095400.GB32383@mudshark.cambridge.arm.com>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
- <CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com>
+	Mon, 29 Jul 2013 05:55:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374144177-24762-11-git-send-email-adrian.hunter@intel.com>
+References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com>
+	<1374144177-24762-11-git-send-email-adrian.hunter@intel.com>
+Date: Mon, 29 Jul 2013 11:55:34 +0200
+Message-ID: <CABPqkBQeE07FZ2TfAhcFFt6r23Fs_Ph3eTHy1JMu6QuVsRFb6A@mail.gmail.com>
+Subject: Re: [PATCH V8 10/15] perf: make events stream always parsable
+From: Stephane Eranian <eranian@google.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@gmail.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 10:46:06AM +0100, Vincent Guittot wrote:
-> On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > Power aware scheduling needs the cpu topology information to improve the
-> > cpu scheduler decision making.
-> 
-> It's not only power aware scheduling. The scheduler already uses
-> topology and cache sharing when  CONFIG_SCHED_MC and/or
-> CONFIG_SCHED_SMT are enable. So you should also add these configs for
-> arm64 so the scheduler can use it
+On Thu, Jul 18, 2013 at 12:42 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> The event stream is not always parsable because the format of a sample
+> is dependent on the sample_type of the selected event.  When there
+> is more than one selected event and the sample_types are not the
+> same then parsing becomes problematic.  A sample can be matched to its
+> selected event using the ID that is allocated when the event is opened.
+> Unfortunately, to get the ID from the sample means first parsing it.
+>
+> This patch adds a new sample format bit PERF_SAMPLE_IDENTIFER that puts
+> the ID at a fixed position so that the ID can be retrieved without
+> parsing the sample.  For sample events, that is the first position
+> immediately after the header.  For non-sample events, that is the last
+> position.
+>
 
-... except that the architecture doesn't define what the AFF fields in MPIDR
-really represent. Using them to make key scheduling decisions relating to
-cache proximity seems pretty risky to me, especially given the track record
-we've seen already on AArch32 silicon. It's a convenient register if it
-contains the data we want it to contain, but we need to force ourselves to
-come to terms with reality here and simply use it as an identifier for a
-CPU.
+I think you should add to your description a paragraph explaining that
+the reason
+this solves the problem is because you always get the event description BEFORE
+you get any sample records. Otherwise, how would you know you're dealing with
+a perf.data file that is using PERF_SAMPLE_IDENTIFIER? And that holds for
+both file and pipe modes.
 
-Can't we just use the device-tree to represent this topological data for
-arm64? Lorenzo has been working on bindings in this area.
 
-Will
+> Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+> ---
+>  include/uapi/linux/perf_event.h | 27 ++++++++++++++++++++-------
+>  kernel/events/core.c            | 11 ++++++++++-
+>  2 files changed, 30 insertions(+), 8 deletions(-)
+>
+> diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+> index 876a18c..71f1ad3 100644
+> --- a/include/uapi/linux/perf_event.h
+> +++ b/include/uapi/linux/perf_event.h
+> @@ -134,8 +134,9 @@ enum perf_event_sample_format {
+>         PERF_SAMPLE_STACK_USER                  = 1U << 13,
+>         PERF_SAMPLE_WEIGHT                      = 1U << 14,
+>         PERF_SAMPLE_DATA_SRC                    = 1U << 15,
+> +       PERF_SAMPLE_IDENTIFIER                  = 1U << 16,
+>
+> -       PERF_SAMPLE_MAX = 1U << 16,             /* non-ABI */
+> +       PERF_SAMPLE_MAX = 1U << 17,             /* non-ABI */
+>  };
+>
+>  /*
+> @@ -471,12 +472,12 @@ enum perf_event_type {
+>         /*
+>          * If perf_event_attr.sample_id_all is set then all event types will
+>          * have the sample_type selected fields related to where/when
+> -        * (identity) an event took place (TID, TIME, ID, CPU, STREAM_ID)
+> -        * described in PERF_RECORD_SAMPLE below, it will be stashed just after
+> -        * the perf_event_header and the fields already present for the existing
+> -        * fields, i.e. at the end of the payload. That way a newer perf.data
+> -        * file will be supported by older perf tools, with these new optional
+> -        * fields being ignored.
+> +        * (identity) an event took place (TID, TIME, ID, STREAM_ID, CPU,
+> +        * IDENTIFIER) described in PERF_RECORD_SAMPLE below, it will be stashed
+> +        * just after the perf_event_header and the fields already present for
+> +        * the existing fields, i.e. at the end of the payload. That way a newer
+> +        * perf.data file will be supported by older perf tools, with these new
+> +        * optional fields being ignored.
+>          *
+>          * struct sample_id {
+>          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
+> @@ -484,7 +485,12 @@ enum perf_event_type {
+>          *      { u64                   id;       } && PERF_SAMPLE_ID
+>          *      { u64                   stream_id;} && PERF_SAMPLE_STREAM_ID
+>          *      { u32                   cpu, res; } && PERF_SAMPLE_CPU
+> +        *      { u64                   id;       } && PERF_SAMPLE_IDENTIFIER
+>          * } && perf_event_attr.sample_id_all
+> +        *
+> +        * Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.  The
+> +        * advantage of PERF_SAMPLE_IDENTIFIER is that its position is fixed
+> +        * relative to header.size.
+>          */
+>
+>         /*
+> @@ -574,6 +580,13 @@ enum perf_event_type {
+>          * struct {
+>          *      struct perf_event_header        header;
+>          *
+> +        *      #
+> +        *      # Note that PERF_SAMPLE_IDENTIFIER duplicates PERF_SAMPLE_ID.
+> +        *      # The advantage of PERF_SAMPLE_IDENTIFIER is that its position
+> +        *      # is fixed relative to header.
+> +        *      #
+> +        *
+> +        *      { u64                   id;       } && PERF_SAMPLE_IDENTIFIER
+>          *      { u64                   ip;       } && PERF_SAMPLE_IP
+>          *      { u32                   pid, tid; } && PERF_SAMPLE_TID
+>          *      { u64                   time;     } && PERF_SAMPLE_TIME
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index c9ef899..91c241d 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -1216,6 +1216,9 @@ static void perf_event__id_header_size(struct perf_event *event)
+>         if (sample_type & PERF_SAMPLE_TIME)
+>                 size += sizeof(data->time);
+>
+> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
+> +               size += sizeof(data->id);
+> +
+>         if (sample_type & PERF_SAMPLE_ID)
+>                 size += sizeof(data->id);
+>
+> @@ -4251,7 +4254,7 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
+>         if (sample_type & PERF_SAMPLE_TIME)
+>                 data->time = perf_clock();
+>
+> -       if (sample_type & PERF_SAMPLE_ID)
+> +       if (sample_type & (PERF_SAMPLE_ID | PERF_SAMPLE_IDENTIFIER))
+>                 data->id = primary_event_id(event);
+>
+>         if (sample_type & PERF_SAMPLE_STREAM_ID)
+> @@ -4290,6 +4293,9 @@ static void __perf_event__output_id_sample(struct perf_output_handle *handle,
+>
+>         if (sample_type & PERF_SAMPLE_CPU)
+>                 perf_output_put(handle, data->cpu_entry);
+> +
+> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
+> +               perf_output_put(handle, data->id);
+>  }
+>
+>  void perf_event__output_id_sample(struct perf_event *event,
+> @@ -4402,6 +4408,9 @@ void perf_output_sample(struct perf_output_handle *handle,
+>
+>         perf_output_put(handle, *header);
+>
+> +       if (sample_type & PERF_SAMPLE_IDENTIFIER)
+> +               perf_output_put(handle, data->id);
+> +
+>         if (sample_type & PERF_SAMPLE_IP)
+>                 perf_output_put(handle, data->ip);
+>
+> --
+> 1.7.11.7
+>
