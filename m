@@ -1,174 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab3G2QxJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:53:09 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46510 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757631Ab3G2QxG (ORCPT
+	id S1756945Ab3G2Qxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:53:31 -0400
+Received: from www.linutronix.de ([62.245.132.108]:48026 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437Ab3G2Qxa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:53:06 -0400
-Date: Mon, 29 Jul 2013 09:52:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
-        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
-        sbw@mit.edu
-Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
- kthreads onto timekeeping CPU
-Message-ID: <20130729165253.GP26694@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130726231848.GA12967@linux.vnet.ibm.com>
- <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com>
- <51F5E325.4000607@cn.fujitsu.com>
+	Mon, 29 Jul 2013 12:53:30 -0400
+Date: Mon, 29 Jul 2013 18:53:29 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Bin Liu <binmlist@gmail.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back
+ after removal
+Message-ID: <20130729165329.GA5773@linutronix.de>
+References: <CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
+ <20130726163101.GB29819@linutronix.de>
+ <CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
+ <CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
+ <51F2BE6F.3010008@linutronix.de>
+ <CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
+ <51F2D427.7050106@linutronix.de>
+ <CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
+ <51F2DD90.2030405@linutronix.de>
+ <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <51F5E325.4000607@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072916-7282-0000-0000-000019C1B2DE
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
-> On 07/27/2013 07:19 AM, Paul E. McKenney wrote:
-> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > 
-> > Because RCU's quiescent-state-forcing mechanism is used to drive the
-> > full-system-idle state machine, and because this mechanism is executed
-> > by RCU's grace-period kthreads, this commit forces these kthreads to
-> > run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
-> > mean that the RCU grace-period kthreads would force the system into
-> > non-idle state every time they drove the state machine, which would
-> > be just a bit on the futile side.
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> > Cc: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  kernel/rcutree.c        |  1 +
-> >  kernel/rcutree.h        |  1 +
-> >  kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
-> >  3 files changed, 21 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index aa6d96e..fe83085 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -1286,6 +1286,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
-> >  	struct rcu_data *rdp;
-> >  	struct rcu_node *rnp = rcu_get_root(rsp);
-> >  
-> > +	rcu_bind_gp_kthread();
-> >  	raw_spin_lock_irq(&rnp->lock);
-> >  	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
-> 
-> bind the gp thread when RCU_GP_FLAG_INIT ...
-> 
-> >  
-> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> > index e0de5dc..49dac99 100644
-> > --- a/kernel/rcutree.h
-> > +++ b/kernel/rcutree.h
-> > @@ -560,6 +560,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
-> >  static bool is_sysidle_rcu_state(struct rcu_state *rsp);
-> >  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
-> >  				  unsigned long maxj);
-> > +static void rcu_bind_gp_kthread(void);
-> >  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
-> >  
-> >  #endif /* #ifndef RCU_TREE_NONCORE */
-> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> > index ff84bed..f65d9c2 100644
-> > --- a/kernel/rcutree_plugin.h
-> > +++ b/kernel/rcutree_plugin.h
-> > @@ -2544,7 +2544,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
-> >  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
-> >  	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
-> >  		return;
-> > -	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
-> > +	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-> 
-> 
-> but call rcu_sysidle_check_cpu() when RCU_GP_FLAG_FQS.
+* Bin Liu | 2013-07-26 22:07:14 [-0500]:
 
-Yep!  But we don't call rcu_gp_fqs() until the grace period is started,
-by which time the kthread will be bound.  Any setting of RCU_GP_FLAG_FQS
-while there is no grace period in progress is ignored.
+>Sebastian,
+Hi Bin,
 
-> In this time, the thread may not be bound to tick_do_timer_cpu,
-> the WARN_ON_ONCE() may be wrong.
-> 
-> Does any other code ensure the gp thread bound on tick_do_timer_cpu
-> which I missed?
+>I have not tested it yet, but I believe I found why host mode works on
+>TI 3.2 kernel but not on mainline. Please look at Line 786 in 3.2
+>kernel musb_core.c [1].
+>
+>773         if ((int_usb & MUSB_INTR_DISCONNECT) && !musb->ignore_disconnect) {
+>......
+>785                                 if (musb->a_wait_bcon != 0 &&
+>786                                                 is_otg_enabled(musb))
+>787                                         musb_platform_try_idle(musb, jiffies
+>788                                         +
+>msecs_to_jiffies(musb->a_wait_bcon));
+>
+>So when the device is unplugged, *_try_idle() is not called in host
+>mode, then the SESSION bit will stay set. But in mainline kernel,
+>*_try_idle() will be called regardless.
+>
+>Please let me know your thoughts.
 
-However, on small systems, rcu_sysidle_check_cpu() can be called from
-the timekeeping CPU.  I suppose that this could potentially happen
-before the first grace period starts, and in that case, we could
-potentially see a spurious warning.  I could imagine a number of ways
-to fix this:
+I am not too familiar with what should happen. The is_otg_enabled() part
+is gone since v3.7-rc1 via:
+|commit 032ec49f5351e9cb242b1a1c367d14415043ab95
+|Author: Felipe Balbi <balbi@ti.com>
+|Date:   Thu Nov 24 15:46:26 2011 +0200
+|
+|    usb: musb: drop useless board_mode usage
+|    
+|    we are compiling the driver always with full OTG
+|    capabilities, so that board_mode trick becomes
+|    useless.
+|    
+|    Signed-off-by: Felipe Balbi <balbi@ti.com>
 
-1.	Bind the kthread when it is created.
+So you say, am335x-evm is not able to run OTG mode and may only run in
+host mode and as a consequence it must not call musb_platform_try_idle()
+because it throws that one bit away and there is no way to bring it back?
 
-2.	Bind the kthread when it first starts running, rather than just
-	after the grace period starts.
+However, if I look at the tree you reference, I see in
+arch/arm/mach-omap2/board-am335xevm.c:
+| static struct omap_musb_board_data musb_board_data = {
+|         .interface_type = MUSB_INTERFACE_ULPI,
+|         .mode           = MUSB_OTG,
+|         .power          = 500,
+|         .instances      = 1,
+| };
+…
+| static void __init am335x_evm_init(void)
+…
+|   usb_musb_init(&musb_board_data);
 
-3.	Suppress the warning when there is no grace period in progress.
+and it creates a "ti81xx-usbss" device.
 
-4.	Suppress the warning prior to the first grace period starting.
+So it creates a musb device with mode MUSB_OTG no matter what.
+I agree that without that try_idle part things keep working but it
+seems, that it is also called in the other tree.
 
-Seems like #3 is the most straightforward approach.  I just change it to:
+>
+>Regards,
+>-Bin.
 
-	if (rcu_gp_in_progress(rdp->rsp))
-		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
-
-This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
-but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
-probability of complaining should some bug creep in.
-
-Sound reasonable?
-
-							Thanx, Paul
-
-> >  	/* Pick up current idle and NMI-nesting counter and check. */
-> >  	cur = atomic_read(&rdtp->dynticks_idle);
-> > @@ -2570,6 +2570,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
-> >  }
-> >  
-> >  /*
-> > + * Bind the grace-period kthread for the sysidle flavor of RCU to the
-> > + * timekeeping CPU.
-> > + */
-> > +static void rcu_bind_gp_kthread(void)
-> > +{
-> > +	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
-> > +
-> > +	if (cpu < 0 || cpu >= nr_cpu_ids)
-> > +		return;
-> > +	if (raw_smp_processor_id() != cpu)
-> > +		set_cpus_allowed_ptr(current, cpumask_of(cpu));
-> > +}
-> > +
-> > +/*
-> >   * Return a delay in jiffies based on the number of CPUs, rcu_node
-> >   * leaf fanout, and jiffies tick rate.  The idea is to allow larger
-> >   * systems more time to transition to full-idle state in order to
-> > @@ -2767,6 +2781,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
-> >  	return false;
-> >  }
-> >  
-> > +static void rcu_bind_gp_kthread(void)
-> > +{
-> > +}
-> > +
-> >  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
-> >  				  unsigned long maxj)
-> >  {
-> 
-
+Sebastian
