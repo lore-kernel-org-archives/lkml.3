@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab3G2Cev (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:34:51 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:36670 "EHLO
+	id S1754404Ab3G2CfR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:35:17 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:38447 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754283Ab3G2Ce3 (ORCPT
+	with ESMTP id S1754379Ab3G2CfP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:34:29 -0400
+	Sun, 28 Jul 2013 22:35:15 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
 To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
         <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
         <libo.chen@huawei.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 9/9] netfilter: use ns_printk in iptable context
-Date: Mon, 29 Jul 2013 10:31:20 +0800
-Message-ID: <1375065080-26740-10-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH 5/9] syslog_ns: make permisiion check per user namespace
+Date: Mon, 29 Jul 2013 10:31:16 +0800
+Message-ID: <1375065080-26740-6-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
 References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
@@ -26,58 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To containerise iptables log, use ns_printk
-to report individual logs to container as
-getting syslog_ns from skb->dev->nd_net->user_ns.
+Use ns_capable to check capability in user ns,
+instead of capable function. The user ns is the
+owner of current syslog ns.
 
 Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 ---
- include/net/netfilter/xt_log.h | 6 +++++-
- net/netfilter/xt_LOG.c         | 4 ++--
- 2 files changed, 7 insertions(+), 3 deletions(-)
+ kernel/printk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
-index 9d9756c..5222cba 100644
---- a/include/net/netfilter/xt_log.h
-+++ b/include/net/netfilter/xt_log.h
-@@ -39,10 +39,14 @@ static struct sbuff *sb_open(void)
- 	return m;
- }
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 846fef5..c5c65a8 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -380,13 +380,13 @@ static int check_syslog_permissions(int type, bool from_file,
+ 		return 0;
  
--static void sb_close(struct sbuff *m)
-+static void sb_close(struct sbuff *m, struct sk_buff *skb)
- {
- 	m->buf[m->count] = 0;
-+#ifdef CONFIG_NET_NS
-+	ns_printk(skb->dev->nd_net->user_ns->syslog_ns, "%s\n", m->buf);
-+#else
- 	printk("%s\n", m->buf);
-+#endif
- 
- 	if (likely(m != &emergency))
- 		kfree(m);
-diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-index 5ab2484..f2cd2fa3 100644
---- a/net/netfilter/xt_LOG.c
-+++ b/net/netfilter/xt_LOG.c
-@@ -493,7 +493,7 @@ ipt_log_packet(struct net *net,
- 
- 	dump_ipv4_packet(m, loginfo, skb, 0);
- 
--	sb_close(m);
-+	sb_close(m, skb);
- }
- 
- #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
-@@ -824,7 +824,7 @@ ip6t_log_packet(struct net *net,
- 
- 	dump_ipv6_packet(m, loginfo, skb, skb_network_offset(skb), 1);
- 
--	sb_close(m);
-+	sb_close(m, skb);
- }
- #endif
- 
+ 	if (syslog_action_restricted(type, ns)) {
+-		if (capable(CAP_SYSLOG))
++		if (ns_capable(ns->owner, CAP_SYSLOG))
+ 			return 0;
+ 		/*
+ 		 * For historical reasons, accept CAP_SYS_ADMIN too, with
+ 		 * a warning.
+ 		 */
+-		if (capable(CAP_SYS_ADMIN)) {
++		if (ns_capable(ns->owner, CAP_SYS_ADMIN)) {
+ 			pr_warn_once("%s (%d): Attempt to access syslog with "
+ 				     "CAP_SYS_ADMIN but no CAP_SYSLOG "
+ 				     "(deprecated).\n",
 -- 
 1.8.2.2
 
