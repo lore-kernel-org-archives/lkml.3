@@ -1,142 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755527Ab3G2HGj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:06:39 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:60880 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755321Ab3G2HFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:05:35 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Subject: [PATCH v2 5/6] usb: phy: msm: Fix WARNING: quoted string split across lines
-Date: Mon, 29 Jul 2013 10:04:23 +0300
-Message-Id: <1375081464-14206-6-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
-References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+	id S1755552Ab3G2HGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:06:52 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:53354 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755321Ab3G2HGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 03:06:49 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: At4HAAYT9lF5LPxH/2dsb2JhbABbgwa5KYUygRMXdIIkAQEEATocIxAIAxgJJQ8FJQMhE4gKBbdtFo9nB4QHA5dekU2DJio
+Date: Mon, 29 Jul 2013 17:06:43 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk, hch@lst.de,
+        jack@suse.cz, curtw@google.com, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH RFC fs] v2 Make sync() satisfy many requests with one
+ invocation
+Message-ID: <20130729070643.GH21982@dastard>
+References: <20130726232852.GA15147@linux.vnet.ibm.com>
+ <20130727025703.GF21982@dastard>
+ <20130727040524.GC26694@linux.vnet.ibm.com>
+ <20130727062101.GG21982@dastard>
+ <20130727112628.GE26694@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130727112628.GE26694@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Sat, Jul 27, 2013 at 04:26:28AM -0700, Paul E. McKenney wrote:
+> On Sat, Jul 27, 2013 at 04:21:01PM +1000, Dave Chinner wrote:
+> > On Fri, Jul 26, 2013 at 09:05:24PM -0700, Paul E. McKenney wrote:
+> > > Could you please send your patches over to Dave Jones right now?  I am
+> > > getting quite tired of getting RCU CPU stall warning complaints from
+> > > him that turn out to be due to highly contended sync() system calls.
+> > 
+> > Then ignore them until the code is ready - it'll be 3.12 before the
+> > fixes are merged, anyway, because the lock contention fix requires
+> > infrastructure that is currently in mmotm that is queued for 3.12
+> > (i.e. the per-node list infrastructure) to fix a whole bunch of
+> > other, more critical VFS lock contention problems. Seeing as a new
+> > mmotm went out last week, I should have the patches ready for review
+> > early next week.
+> > 
+> > FWIW, we (as in XFS filesystem testers) regularly run tests that
+> > have hundreds of concurrent sys_sync() calls running at the same
+> > time. e.g. xfstests::xfs/297 runs a 1000 fsstress processes while
+> > freezing and unfreezing the filesystem, and that usually shows
+> > hundreds of threads running sys_sync concurrently after a short
+> > amount of runtime. So it's pretty clear that what Dave is seeing
+> > is not necessarily representative of what happens when there ar lots
+> > of sys_sync() calls run concurrently.
+> 
+> So Dave might be finding an additional problem.  ;-)
 
-This fixes checkpatch.pl warnings.
+Dave will always find problems. If you want something broken, give
+it to Dave and he'll hand it back in pieces. :)
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/phy/phy-msm-usb.c |   33 +++++++++++----------------------
- 1 file changed, 11 insertions(+), 22 deletions(-)
+> > BTW, concurrent syncfs() calls are going to have exactly the same
+> > problem as concurrent sync() calls, as is any other operation that
+> > results in a walk of the per-superblock inodes list.
+> 
+> Yep!  Your upcoming patch addresses these as well?
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 0e93dbc..118bd0a 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -67,8 +67,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
- 				USB_PHY_VDD_DIG_VOL_MIN,
- 				USB_PHY_VDD_DIG_VOL_MAX);
- 		if (ret) {
--			dev_err(motg->phy.dev, "unable to set the voltage "
--					"for hsusb vddcx\n");
-+			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
- 			return ret;
- 		}
- 
-@@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
- 		ret = regulator_set_voltage(motg->vddcx, 0,
- 			USB_PHY_VDD_DIG_VOL_MAX);
- 		if (ret)
--			dev_err(motg->phy.dev, "unable to set the voltage "
--					"for hsusb vddcx\n");
-+			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
- 		ret = regulator_disable(motg->vddcx);
- 		if (ret)
- 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
-@@ -97,8 +95,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
- 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
- 				USB_PHY_3P3_VOL_MAX);
- 		if (rc) {
--			dev_err(motg->phy.dev, "unable to set voltage level "
--					"for hsusb 3p3\n");
-+			dev_err(motg->phy.dev, "Cannot set v3p3 voltage\n");
- 			goto exit;
- 		}
- 		rc = regulator_enable(motg->v3p3);
-@@ -109,8 +106,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
- 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
- 				USB_PHY_1P8_VOL_MAX);
- 		if (rc) {
--			dev_err(motg->phy.dev, "unable to set voltage level "
--					"for hsusb 1p8\n");
-+			dev_err(motg->phy.dev, "Cannot set v1p8 voltage\n");
- 			goto disable_3p3;
- 		}
- 		rc = regulator_enable(motg->v1p8);
-@@ -144,8 +140,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
- 
- 	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
- 	if (ret) {
--		pr_err("%s: unable to set the voltage for regulator "
--			"HSUSB_VDDCX\n", __func__);
-+		dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
- 		return ret;
- 	}
- 
-@@ -163,15 +158,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_HPM_LOAD);
- 		if (ret < 0) {
--			pr_err("%s: Unable to set HPM of the regulator "
--				"HSUSB_1p8\n", __func__);
-+			pr_err("Could not set HPM for v1p8\n");
- 			return ret;
- 		}
- 		ret = regulator_set_optimum_mode(motg->v3p3,
- 				USB_PHY_3P3_HPM_LOAD);
- 		if (ret < 0) {
--			pr_err("%s: Unable to set HPM of the regulator "
--				"HSUSB_3p3\n", __func__);
-+			pr_err("Could not set HPM for v3p3\n");
- 			regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_LPM_LOAD);
- 			return ret;
-@@ -180,13 +173,11 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_LPM_LOAD);
- 		if (ret < 0)
--			pr_err("%s: Unable to set LPM of the regulator "
--				"HSUSB_1p8\n", __func__);
-+			pr_err("Could not set LPM for v1p8\n");
- 		ret = regulator_set_optimum_mode(motg->v3p3,
- 				USB_PHY_3P3_LPM_LOAD);
- 		if (ret < 0)
--			pr_err("%s: Unable to set LPM of the regulator "
--				"HSUSB_3p3\n", __func__);
-+			pr_err("Could not set LPM for v3p3\n");
- 	}
- 
- 	pr_debug("reg (%s)\n", on ? "HPM" : "LPM");
-@@ -519,8 +510,7 @@ static int msm_otg_resume(struct msm_otg *motg)
- 		 * PHY. USB state can not be restored. Re-insertion
- 		 * of USB cable is the only way to get USB working.
- 		 */
--		dev_err(phy->dev, "Unable to resume USB."
--				"Re-plugin the cable\n");
-+		dev_err(phy->dev, "Unable to resume USB. Re-plugin the cable\n");
- 		msm_otg_reset(phy);
- 	}
- 
-@@ -1508,8 +1498,7 @@ static int __init msm_otg_probe(struct platform_device *pdev)
- 			motg->pdata->otg_control == OTG_USER_CONTROL) {
- 		ret = msm_otg_debugfs_init(motg);
- 		if (ret)
--			dev_dbg(&pdev->dev, "mode debugfs file is"
--					"not available\n");
-+			dev_dbg(&pdev->dev, "Can not create mode change file\n");
- 	}
- 
- 	pm_runtime_set_active(&pdev->dev);
+Yes, it does.
+
+Cheers,
+
+Dave.
 -- 
-1.7.9.5
-
+Dave Chinner
+david@fromorbit.com
