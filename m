@@ -1,57 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab3G2Eo0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 00:44:26 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:35515
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750903Ab3G2EoZ (ORCPT
+	id S1754601Ab3G2Ep5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 00:45:57 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:57420 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab3G2Ep4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 00:44:25 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
-Date: Mon, 29 Jul 2013 12:48:59 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] regulator: pfuze100: Fix module alias prefix
-Message-ID: <20130729044858.GA32141@Robin-OptiPlex-780>
-References: <1375071569.4147.1.camel@phoenix>
+	Mon, 29 Jul 2013 00:45:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1375071569.4147.1.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <CA+55aFxb3NT3_04ZLKiCFrtTXSdi4bfQFf0HJviRRYPTW4ymXA@mail.gmail.com>
+References: <CA+55aFxb3NT3_04ZLKiCFrtTXSdi4bfQFf0HJviRRYPTW4ymXA@mail.gmail.com>
+Date: Sun, 28 Jul 2013 21:45:55 -0700
+X-Google-Sender-Auth: S4dNbPQxc8y0karcdyfxrIFh9dw
+Message-ID: <CA+55aFzHSCbQ2x+w6NVTKekW5botr1yByt0Cp7Zm3Bk-nSxC9Q@mail.gmail.com>
+Subject: Re: Linux 3.11-rc3
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Axel for the quick founding. The patch set is ok for me.
-On Mon, Jul 29, 2013 at 12:19:29PM +0800, Axel Lin wrote:
-> i2c drivers use "i2c:" prefix for module alias.
-> 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-> ---
->  drivers/regulator/pfuze100-regulator.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/regulator/pfuze100-regulator.c b/drivers/regulator/pfuze100-regulator.c
-> index cd136ff..e9e8ae3 100644
-> --- a/drivers/regulator/pfuze100-regulator.c
-> +++ b/drivers/regulator/pfuze100-regulator.c
-> @@ -451,4 +451,4 @@ module_i2c_driver(pfuze_driver);
->  
->  MODULE_AUTHOR("Robin Gong <b38343@freescale.com>");
->  MODULE_DESCRIPTION("Regulator Driver for Freescale PFUZE100 PMIC");
-> -MODULE_ALIAS("pfuze100-regulator");
-> +MODULE_ALIAS("i2c:pfuze100-regulator");
-> -- 
-> 1.8.1.2
-> 
-> 
-> 
-> 
+On Sun, Jul 28, 2013 at 9:42 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Full shortlog since rc2 appended. It's big enough that I debated doing
+> just a merge-window style "mergelog" overview, but hey, maybe people
+> enjoy this kind of detail?
 
+Just for comparison, here's the "mergelog" that just talks about the
+things I merged and the people I pulled from, rather than the shortlog
+of every commit. Maybe that gives a better "overview" picture of what
+happened. You tell me..
+
+               Linus
+
+---
+
+   Ben Herrenschmidt: (1)
+       powerpc fixes
+
+   Ben Myers: (1)
+       xfs fix
+
+   Bruce Fields: (1)
+       nfsd fix
+
+   Catalin Marinas: (1)
+       arm64 fixes
+
+   Dave Airlie: (3)
+       drm fixes
+       qxl drm fixes
+       drm fixes
+
+   Grant Likely: (1)
+       device tree bug fixes and maintainership updates
+
+   Greg KH: (4)
+       USB fixes
+       tty/serial fixes
+       staging fixes
+       char/misc patches
+
+   Herbert Xu: (1)
+       crypto fixes
+
+   James Bottomley: (1)
+       SCSI fixes
+
+   Jens Axboe: (1)
+       block IO driver bits
+
+   Linus Walleij: (2)
+       pin control fixes
+       gpio fixes
+
+   Matt Turner: (1)
+       alpha architecture fixes
+
+   Michael Tsirkin: (1)
+       vhost fixes
+
+   Miklos Szeredi: (1)
+       fuse bugfixes
+
+   Neil Brown: (1)
+       md fixes
+
+   Olof Johansson: (1)
+       ARM SoC fixes
+
+   Rafael Wysocki: (1)
+       ACPI and power management fixes
+
+   Steven Rostedt: (2)
+       tracing fixes
+       tracing fixes and cleanups
+
+   Takashi Iwai: (1)
+       sound fixes
+
+   Tejun Heo: (2)
+       libata fixes
+       cgroup changes
+
+   Tony Luck: (1)
+       EDAC fix
+
+   Zhang Rui: (1)
+       thermal management fixes
