@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718Ab3G2Ocs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:32:48 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48355 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753437Ab3G2Ocr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:32:47 -0400
-Date: Mon, 29 Jul 2013 11:32:23 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] ARM: dove: switch to DT MBus
-Message-ID: <20130729143222.GB2417@localhost>
-References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	id S1755978Ab3G2OfE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:35:04 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:39293 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751757Ab3G2OfC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:35:02 -0400
+Message-ID: <51F67D7D.9070003@ti.com>
+Date: Mon, 29 Jul 2013 09:34:37 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <benoit.cousson@gmail.com>
+CC: =?ISO-8859-1?Q?Beno=EEt_Cousson?= <benoit.cousson@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH 0/9] ARM: dts: omap5-uevm: fixup wrong regulator configuration
+References: <1374079538-19548-1-git-send-email-nm@ti.com> <51F63C74.6070503@ti.com> <51F66B65.4030702@ti.com> <51F670AF.9080808@gmail.com> <51F67875.9020602@ti.com> <CADz42=M8LQ=i2q30=JJU+F-Qx89D1PwU7pW3DH7F1iYiC8-pFA@mail.gmail.com>
+In-Reply-To: <CADz42=M8LQ=i2q30=JJU+F-Qx89D1PwU7pW3DH7F1iYiC8-pFA@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sebastian,
+On 07/29/2013 09:19 AM, Benoit Cousson wrote:
+> 2013/7/29 Nishanth Menon <nm@ti.com <mailto:nm@ti.com>>
+>
+> Well you're lucky I'm now in an area with Wifi and 3G access... last
+> week it whould have been impossible to receive it :-)
+hehe :)
 
-On Mon, Jul 29, 2013 at 02:31:49PM +0200, Sebastian Hesselbarth wrote:
-> This patch set converts DT based Dove boards to DT probed MBus to be
-> introduced with v3.12.
-> 
-> The first two patches prepare Dove DT nodes for MBus ID remapping by using
-> preprocessor includes and adding the MBUS_ID macro. The third patch adds a
-> MBus DT node to Dove SoC dtsi with required ranges for internal MBus and
-> AXI registers, and PCIe mem and I/O apertures. The forth patch relocates
-> the nodes for the internal devices to the new MBus node. Also, internal-regs
-> ranges are updated to allow proper translation of MBus children's reg
-> properties. Finally, legacy MBus init is replaced by DT based MBus init
-> for DT based Dove.
-> 
-> The patch set depends on the MBus device tree patches that should appear
-> in v3.12. Currently, it is based on v3.11-rc2 with Dove DT cleanup patches
-> and MBus patch set v8 applied.
-> 
-> The patch set is _not_ sent to devicetree mainling list, because the MBus
-> binding will be discussed there on the MBus patches itself.
-> 
-> Sebastian Hesselbarth (5):
->   ARM: dove: use preprocessor on device tree files
->   ARM: dove: add MBUS_ID macro to Dove DT
->   ARM: dove: add MBus DT node
->   ARM: dove: relocate internal registers device nodes
+>
+>> All the "fixes" are sharing more than 50% of the changelog
+>> content with
+>> only 2 changes in the code, so you'd better squash them into one
+>> patch
+>> to avoid repeating the same thing again and again.
+>
+>> Reason for keeping them separate was to allow any future git bisect
+>> to narrow down to precise patch.
+>>     <--->
+> Mmm, why? Do you expect some settings to not work or generate crash?
 
-Great, thanks for doing this. I just have a minor suggestion
-on the patch 4/5 "ARM: dove: relocate internal registers device nodes".
+It has worked with a backport to full fledged OS on top and I do not 
+expect it to fail, however, I am never sure about how the future issues 
+look like :)
 
-Regards,
+>       ARM: dts: omap5-uevm: update SMPS9 settings
+>        ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
+>        ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
+>        ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
+>        ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
+>        ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
+>        ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
+>        ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
+>     <---->
+>
+>     Would you have suggestions on what to squash up?
+>
+>
+>
+> I guess one patch for all the mandatory fixes, and another one with the
+> improvements should be good enough.
+>
+> Does that sounds OK to you?
+
+patch #1 ARM: dts: omap5-uevm: document regulator signals used on the 
+actual board
+   -> as is, since it is a documentation patch
+Patch #2: ARM: dts: omap5-uevm: fix regulator configurations mandatory 
+for SoC
+squash of:
+-> ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
+-> ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
+-> ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
+-> ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
+-> ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
+-> ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
+
+Patch #3: ARM: dts: omap5-uevm: update optional regulator configurations
+squash of:
+  -> ARM: dts: omap5-uevm: update SMPS9 settings
+  -> ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
+
+Does that sound fine?
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Regards,
+Nishanth Menon
