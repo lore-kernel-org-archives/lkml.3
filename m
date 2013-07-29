@@ -1,133 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab3G2UTg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:19:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20707 "EHLO mx1.redhat.com"
+	id S1755008Ab3G2UTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:19:41 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46461 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753875Ab3G2UTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:19:34 -0400
-Date: Mon, 29 Jul 2013 16:19:10 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Hillf Danton <dhillf@gmail.com>
-Message-ID: <1375129150-ksnu6mr9-mutt-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1375075929-6119-17-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1375075929-6119-17-git-send-email-iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 16/18] mm, hugetlb: return a reserved page to a reserved
- pool if failed
-Mime-Version: 1.0
-Content-Type: text/plain;
- charset=iso-2022-jp
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-X-Mutt-Fcc: ~/Maildir/sent/
-User-Agent: Mutt 1.5.21 (2010-09-15)
+	id S1754889Ab3G2UTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:19:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Ben Guthro <Benjamin.Guthro@citrix.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, xen-devel@lists.xen.org,
+        tboot-devel@lists.sourceforge.net, Gang Wei <gang.wei@intel.com>
+Subject: Re: [PATCH v7 2/3] x86/tboot: Fail extended mode reduced hardware sleep
+Date: Mon, 29 Jul 2013 22:29:48 +0200
+Message-ID: <1982892.4uOzLBL3Sx@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51F6CE0E.3080807@citrix.com>
+References: <1375118055-15942-1-git-send-email-benjamin.guthro@citrix.com> <8791139.q8n07ejQ71@vostro.rjw.lan> <51F6CE0E.3080807@citrix.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:32:07PM +0900, Joonsoo Kim wrote:
-> If we fail with a reserved page, just calling put_page() is not sufficient,
-> because put_page() invoke free_huge_page() at last step and it doesn't
-> know whether a page comes from a reserved pool or not. So it doesn't do
-> anything related to reserved count. This makes reserve count lower
-> than how we need, because reserve count already decrease in
-> dequeue_huge_page_vma(). This patch fix this situation.
-
-I think we could use a page flag (for example PG_reserve) on a hugepage
-in order to record that the hugepage comes from the reserved pool.
-Furthermore, the reserve flag would be set when dequeueing a free hugepage,
-and cleared when hugepage_fault returns, whether it fails or not.
-I think it's simpler than put_page variant approach, but doesn't it work
-to solve your problem?
-
-Thanks,
-Naoya Horiguchi
-
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+On Monday, July 29, 2013 04:18:22 PM Ben Guthro wrote:
 > 
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index bb8a45f..6a9ec69 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -649,6 +649,34 @@ struct hstate *size_to_hstate(unsigned long size)
->  	return NULL;
->  }
->  
-> +static void put_huge_page(struct page *page, int use_reserve)
-> +{
-> +	struct hstate *h = page_hstate(page);
-> +	struct hugepage_subpool *spool =
-> +		(struct hugepage_subpool *)page_private(page);
-> +
-> +	if (!use_reserve) {
-> +		put_page(page);
-> +		return;
-> +	}
-> +
-> +	if (!put_page_testzero(page))
-> +		return;
-> +
-> +	set_page_private(page, 0);
-> +	page->mapping = NULL;
-> +	BUG_ON(page_count(page));
-> +	BUG_ON(page_mapcount(page));
-> +
-> +	spin_lock(&hugetlb_lock);
-> +	hugetlb_cgroup_uncharge_page(hstate_index(h),
-> +				     pages_per_huge_page(h), page);
-> +	enqueue_huge_page(h, page);
-> +	h->resv_huge_pages++;
-> +	spin_unlock(&hugetlb_lock);
-> +	hugepage_subpool_put_pages(spool, 1);
-> +}
-> +
->  static void free_huge_page(struct page *page)
->  {
->  	/*
-> @@ -2625,7 +2653,7 @@ retry_avoidcopy:
->  	spin_unlock(&mm->page_table_lock);
->  	mmu_notifier_invalidate_range_end(mm, mmun_start, mmun_end);
->  
-> -	page_cache_release(new_page);
-> +	put_huge_page(new_page, use_reserve);
->  out_old_page:
->  	page_cache_release(old_page);
->  out_lock:
-> @@ -2725,7 +2753,7 @@ retry:
->  
->  			err = add_to_page_cache(page, mapping, idx, GFP_KERNEL);
->  			if (err) {
-> -				put_page(page);
-> +				put_huge_page(page, use_reserve);
->  				if (err == -EEXIST)
->  					goto retry;
->  				goto out;
-> @@ -2798,7 +2826,7 @@ backout:
->  	spin_unlock(&mm->page_table_lock);
->  backout_unlocked:
->  	unlock_page(page);
-> -	put_page(page);
-> +	put_huge_page(page, use_reserve);
->  	goto out;
->  }
->  
-> -- 
-> 1.7.9.5
+> On 07/29/2013 04:21 PM, Rafael J. Wysocki wrote:
+> > On Monday, July 29, 2013 01:14:14 PM Ben Guthro wrote:
+> >> Register for the extended sleep callback from acpi.
+> >> As tboot currently does not support the reduced hardware sleep
+> >> interface, fail this extended call.
+> >>
+> >> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> >> Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+> >> Cc: tboot-devel@lists.sourceforge.net
+> >> Cc: Gang Wei <gang.wei@intel.com>
+> >> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >> ---
+> >>  arch/x86/kernel/tboot.c |   12 ++++++++++++
+> >>  1 file changed, 12 insertions(+)
+> >>
+> >> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> >> index addf7b5..760f431 100644
+> >> --- a/arch/x86/kernel/tboot.c
+> >> +++ b/arch/x86/kernel/tboot.c
+> >> @@ -301,6 +301,17 @@ static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+> >>  	return 0;
+> >>  }
+> >>  
+> >> +static int tboot_extended_sleep(u8 sleep_state, u32 val_a, u32 val_b)
+> >> +{
+> >> +	if (!tboot_enabled())
+> >> +		return 0;
+> >> +
+> >> +	pr_warning("tboot is not able to suspend on platforms with"
+> >> +		   " reduced hardware sleep (ACPIv5). Please contact"
+> >> +		   " tboot-devel@lists.sourceforge.net mailing list.");
+> >> +	return -1;
+> > 
+> > Please use a meaningful error code here.  For example -ENODEV.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
+> Would AE_NOT_IMPLEMENTED be more appropriate?
+> 
+> include/acpi/acexcep.h:
+> #define AE_NOT_IMPLEMENTED              EXCEP_ENV (0x000E)
+
+This is not an ACPI error. :-)
+
+Rafael
+
