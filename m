@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab3G2FgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:36:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55542 "EHLO
+	id S1755491Ab3G2FgQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:36:16 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58282 "EHLO
 	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755114Ab3G2FcW (ORCPT
+	with ESMTP id S1755120Ab3G2FcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Jul 2013 01:32:22 -0400
-X-AuditID: 9c930197-b7bfbae000000e88-0c-51f5fe63c015
+X-AuditID: 9c930197-b7bfbae000000e88-11-51f5fe644ff9
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
@@ -21,9 +21,9 @@ Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
         Wanpeng Li <liwanp@linux.vnet.ibm.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
         Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH 03/18] mm, hugetlb: unify region structure handling
-Date: Mon, 29 Jul 2013 14:31:54 +0900
-Message-Id: <1375075929-6119-4-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH 07/18] mm, hugetlb: pass has_reserve to dequeue_huge_page_vma()
+Date: Mon, 29 Jul 2013 14:31:58 +0900
+Message-Id: <1375075929-6119-8-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
 References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
@@ -32,179 +32,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, to track a reserved and allocated region, we use two different
-ways for MAP_SHARED and MAP_PRIVATE. For MAP_SHARED, we use
-address_mapping's private_list and, for MAP_PRIVATE, we use a resv_map.
-Now, we are preparing to change a coarse grained lock which protect
-a region structure to fine grained lock, and this difference hinder it.
-So, before changing it, unify region structure handling.
+We don't have to call vma_has_reserve() each time we need information.
+Passing has_reserve unburden this effort.
 
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
-index a3f868a..a1ae3ada 100644
---- a/fs/hugetlbfs/inode.c
-+++ b/fs/hugetlbfs/inode.c
-@@ -366,7 +366,12 @@ static void truncate_hugepages(struct inode *inode, loff_t lstart)
- 
- static void hugetlbfs_evict_inode(struct inode *inode)
- {
-+	struct resv_map *resv_map;
-+
- 	truncate_hugepages(inode, 0);
-+	resv_map = (struct resv_map *)inode->i_mapping->private_data;
-+	if (resv_map)
-+		kref_put(&resv_map->refs, resv_map_release);
- 	clear_inode(inode);
- }
- 
-@@ -468,6 +473,11 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 					umode_t mode, dev_t dev)
- {
- 	struct inode *inode;
-+	struct resv_map *resv_map;
-+
-+	resv_map = resv_map_alloc();
-+	if (!resv_map)
-+		return NULL;
- 
- 	inode = new_inode(sb);
- 	if (inode) {
-@@ -477,7 +487,7 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb,
- 		inode->i_mapping->a_ops = &hugetlbfs_aops;
- 		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
- 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
--		INIT_LIST_HEAD(&inode->i_mapping->private_list);
-+		inode->i_mapping->private_data = resv_map;
- 		info = HUGETLBFS_I(inode);
- 		/*
- 		 * The policy is initialized here even if we are creating a
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 6b4890f..2677c07 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -5,6 +5,8 @@
- #include <linux/fs.h>
- #include <linux/hugetlb_inline.h>
- #include <linux/cgroup.h>
-+#include <linux/list.h>
-+#include <linux/kref.h>
- 
- struct ctl_table;
- struct user_struct;
-@@ -22,6 +24,13 @@ struct hugepage_subpool {
- 	long max_hpages, used_hpages;
- };
- 
-+struct resv_map {
-+	struct kref refs;
-+	struct list_head regions;
-+};
-+extern struct resv_map *resv_map_alloc(void);
-+void resv_map_release(struct kref *ref);
-+
- extern spinlock_t hugetlb_lock;
- extern int hugetlb_max_hstate __read_mostly;
- #define for_each_hstate(h) \
 diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 12b6581..35f6b12 100644
+index ff46a2c..1426c03 100644
 --- a/mm/hugetlb.c
 +++ b/mm/hugetlb.c
-@@ -375,12 +375,7 @@ static void set_vma_private_data(struct vm_area_struct *vma,
- 	vma->vm_private_data = (void *)value;
- }
+@@ -572,7 +572,8 @@ static struct page *dequeue_huge_page_node(struct hstate *h, int nid)
  
--struct resv_map {
--	struct kref refs;
--	struct list_head regions;
--};
--
--static struct resv_map *resv_map_alloc(void)
-+struct resv_map *resv_map_alloc(void)
+ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 				struct vm_area_struct *vma,
+-				unsigned long address, int avoid_reserve)
++				unsigned long address,
++				int has_reserve, int avoid_reserve)
  {
- 	struct resv_map *resv_map = kmalloc(sizeof(*resv_map), GFP_KERNEL);
- 	if (!resv_map)
-@@ -392,7 +387,7 @@ static struct resv_map *resv_map_alloc(void)
- 	return resv_map;
- }
- 
--static void resv_map_release(struct kref *ref)
-+void resv_map_release(struct kref *ref)
- {
- 	struct resv_map *resv_map = container_of(ref, struct resv_map, refs);
- 
-@@ -1086,8 +1081,9 @@ static long vma_needs_reservation(struct hstate *h,
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		return region_chg(&inode->i_mapping->private_list,
--							idx, idx + 1);
-+		struct resv_map *resv = inode->i_mapping->private_data;
-+
-+		return region_chg(&resv->regions, idx, idx + 1);
- 
- 	} else if (!is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		return 1;
-@@ -1111,7 +1107,9 @@ static void vma_commit_reservation(struct hstate *h,
- 
- 	if (vma->vm_flags & VM_MAYSHARE) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
--		region_add(&inode->i_mapping->private_list, idx, idx + 1);
-+		struct resv_map *resv = inode->i_mapping->private_data;
-+
-+		region_add(&resv->regions, idx, idx + 1);
- 
- 	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
- 		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-@@ -3061,6 +3059,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	long ret, chg;
- 	struct hstate *h = hstate_inode(inode);
- 	struct hugepage_subpool *spool = subpool_inode(inode);
-+	struct resv_map *resv_map;
- 
- 	/*
- 	 * Only apply hugepage reservation if asked. At fault time, an
-@@ -3076,10 +3075,13 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * to reserve the full area even if read-only as mprotect() may be
- 	 * called to make the mapping read-write. Assume !vma is a shm mapping
+ 	struct page *page = NULL;
+ 	struct mempolicy *mpol;
+@@ -587,8 +588,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+ 	 * have no page reserves. This check ensures that reservations are
+ 	 * not "stolen". The child may still get SIGKILLed
  	 */
--	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		chg = region_chg(&inode->i_mapping->private_list, from, to);
--	else {
--		struct resv_map *resv_map = resv_map_alloc();
-+	if (!vma || vma->vm_flags & VM_MAYSHARE) {
-+		resv_map = inode->i_mapping->private_data;
-+
-+		chg = region_chg(&resv_map->regions, from, to);
-+
-+	} else {
-+		resv_map = resv_map_alloc();
- 		if (!resv_map)
- 			return -ENOMEM;
+-	if (!vma_has_reserves(h, vma, address) &&
+-			h->free_huge_pages - h->resv_huge_pages == 0)
++	if (!has_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+ 		return NULL;
  
-@@ -3122,7 +3124,7 @@ int hugetlb_reserve_pages(struct inode *inode,
- 	 * else has to be done for private mappings here
- 	 */
- 	if (!vma || vma->vm_flags & VM_MAYSHARE)
--		region_add(&inode->i_mapping->private_list, from, to);
-+		region_add(&resv_map->regions, from, to);
- 	return 0;
- out_err:
- 	if (vma)
-@@ -3133,9 +3135,12 @@ out_err:
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
- {
- 	struct hstate *h = hstate_inode(inode);
--	long chg = region_truncate(&inode->i_mapping->private_list, offset);
-+	struct resv_map *resv_map = inode->i_mapping->private_data;
-+	long chg = 0;
- 	struct hugepage_subpool *spool = subpool_inode(inode);
+ 	/* If reserves cannot be used, ensure enough pages are in the pool */
+@@ -607,7 +607,7 @@ retry_cpuset:
+ 			if (page) {
+ 				if (avoid_reserve)
+ 					break;
+-				if (!vma_has_reserves(h, vma, address))
++				if (!has_reserve)
+ 					break;
  
-+	if (resv_map)
-+		chg = region_truncate(&resv_map->regions, offset);
- 	spin_lock(&inode->i_lock);
- 	inode->i_blocks -= (blocks_per_huge_page(h) * freed);
- 	spin_unlock(&inode->i_lock);
+ 				h->resv_huge_pages--;
+@@ -1159,7 +1159,7 @@ static struct page *alloc_huge_page(struct vm_area_struct *vma,
+ 		return ERR_PTR(-ENOSPC);
+ 	}
+ 	spin_lock(&hugetlb_lock);
+-	page = dequeue_huge_page_vma(h, vma, addr, avoid_reserve);
++	page = dequeue_huge_page_vma(h, vma, addr, has_reserve, avoid_reserve);
+ 	if (!page) {
+ 		spin_unlock(&hugetlb_lock);
+ 		page = alloc_buddy_huge_page(h, NUMA_NO_NODE);
 -- 
 1.7.9.5
 
