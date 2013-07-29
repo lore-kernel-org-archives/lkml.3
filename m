@@ -1,544 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab3G2TYK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:24:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23717 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab3G2TXh (ORCPT
+	id S1754033Ab3G2TY1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:24:27 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:51401 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753118Ab3G2TYY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:23:37 -0400
-X-Authority-Analysis: v=2.0 cv=e9yEuNV/ c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=owlkKKalaeMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=bSb_DKbMhY8A:10 a=nw0sZWKgi6e3wLWiyaoA:9 a=jeBq3FmKZ4MA:10 a=f_CI9f_8UUHXaNW0:21 a=ZyQ2NbyHIl4DDKQI:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130729192334.096450345@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 29 Jul 2013 15:21:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 2/4] rcu: Add const annotation to char * for RCU tracepoints and
- functions
-References: <20130729192133.143455334@goodmis.org>
-Content-Disposition: inline; filename=0002-rcu-Add-const-annotation-to-char-for-RCU-tracepoints.patch
+	Mon, 29 Jul 2013 15:24:24 -0400
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+Date: Mon, 29 Jul 2013 14:20:58 -0500
+Message-Id: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.8.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Since v3.7 the acpi backlight driver doesn't work at all on this machine
+because presumably the ACPI code contains stub code when Windows 8 OSI is
+reported.
 
-All the RCU tracepoints and functions that reference char pointers do
-so with just 'char *' even though they do not modify the contents of
-the string itself. This will cause warnings if a const char * is used
-in one of these functions.
+The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+backlight driver, however, on this machine it turns the backlight completely
+off when it reaches level 0%, after which the user might have a lot trouble
+trying to bring it back.
 
-The RCU tracepoints store the pointer to the string to refer back to them
-when the trace output is displayed. As this can be minutes, hours or
-even days later, those strings had better be constant.
+This patch fixes both regressions by blacklisting the win8 OSI, so we are back
+to v3.6 behavior, and it should remain that way until the intel backlight
+driver is fixed.
 
-This change also opens the door to allow the RCU tracepoint strings and
-their addresses to be exported so that userspace tracing tools can
-translate the contents of the pointers of the RCU tracepoints.
+Since v3.7, users have been forced to fix the initial regression by modifying
+the boot arguments [1].
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+[1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
+
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 ---
- include/linux/rcupdate.h   |    4 +--
- include/trace/events/rcu.h |   82 ++++++++++++++++++++++----------------------
- kernel/rcu.h               |    2 +-
- kernel/rcupdate.c          |    2 +-
- kernel/rcutiny.c           |    2 +-
- kernel/rcutiny_plugin.h    |    2 +-
- kernel/rcutorture.c        |    8 ++---
- kernel/rcutree.c           |    4 +--
- kernel/rcutree.h           |    2 +-
- kernel/rcutree_plugin.h    |    6 ++--
- 10 files changed, 57 insertions(+), 57 deletions(-)
+ drivers/acpi/blacklist.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 4b14bdc..0c38abb 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -52,7 +52,7 @@ extern int rcutorture_runnable; /* for sysctl */
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
- extern void rcutorture_record_test_transition(void);
- extern void rcutorture_record_progress(unsigned long vernum);
--extern void do_trace_rcu_torture_read(char *rcutorturename,
-+extern void do_trace_rcu_torture_read(const char *rcutorturename,
- 				      struct rcu_head *rhp,
- 				      unsigned long secs,
- 				      unsigned long c_old,
-@@ -65,7 +65,7 @@ static inline void rcutorture_record_progress(unsigned long vernum)
- {
- }
- #ifdef CONFIG_RCU_TRACE
--extern void do_trace_rcu_torture_read(char *rcutorturename,
-+extern void do_trace_rcu_torture_read(const char *rcutorturename,
- 				      struct rcu_head *rhp,
- 				      unsigned long secs,
- 				      unsigned long c_old,
-diff --git a/include/trace/events/rcu.h b/include/trace/events/rcu.h
-index 59ebcc8..ee2376c 100644
---- a/include/trace/events/rcu.h
-+++ b/include/trace/events/rcu.h
-@@ -19,12 +19,12 @@
-  */
- TRACE_EVENT(rcu_utilization,
- 
--	TP_PROTO(char *s),
-+	TP_PROTO(const char *s),
- 
- 	TP_ARGS(s),
- 
- 	TP_STRUCT__entry(
--		__field(char *, s)
-+		__field(const char *, s)
- 	),
- 
- 	TP_fast_assign(
-@@ -51,14 +51,14 @@ TRACE_EVENT(rcu_utilization,
-  */
- TRACE_EVENT(rcu_grace_period,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, char *gpevent),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, const char *gpevent),
- 
- 	TP_ARGS(rcuname, gpnum, gpevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
--		__field(char *, gpevent)
-+		__field(const char *, gpevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -89,21 +89,21 @@ TRACE_EVENT(rcu_grace_period,
-  */
- TRACE_EVENT(rcu_future_grace_period,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, unsigned long completed,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, unsigned long completed,
- 		 unsigned long c, u8 level, int grplo, int grphi,
--		 char *gpevent),
-+		 const char *gpevent),
- 
- 	TP_ARGS(rcuname, gpnum, completed, c, level, grplo, grphi, gpevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(unsigned long, completed)
- 		__field(unsigned long, c)
- 		__field(u8, level)
- 		__field(int, grplo)
- 		__field(int, grphi)
--		__field(char *, gpevent)
-+		__field(const char *, gpevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -132,13 +132,13 @@ TRACE_EVENT(rcu_future_grace_period,
-  */
- TRACE_EVENT(rcu_grace_period_init,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, u8 level,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, u8 level,
- 		 int grplo, int grphi, unsigned long qsmask),
- 
- 	TP_ARGS(rcuname, gpnum, level, grplo, grphi, qsmask),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(u8, level)
- 		__field(int, grplo)
-@@ -168,12 +168,12 @@ TRACE_EVENT(rcu_grace_period_init,
-  */
- TRACE_EVENT(rcu_preempt_task,
- 
--	TP_PROTO(char *rcuname, int pid, unsigned long gpnum),
-+	TP_PROTO(const char *rcuname, int pid, unsigned long gpnum),
- 
- 	TP_ARGS(rcuname, pid, gpnum),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, pid)
- 	),
-@@ -195,12 +195,12 @@ TRACE_EVENT(rcu_preempt_task,
-  */
- TRACE_EVENT(rcu_unlock_preempted_task,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, int pid),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, int pid),
- 
- 	TP_ARGS(rcuname, gpnum, pid),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, pid)
- 	),
-@@ -224,14 +224,14 @@ TRACE_EVENT(rcu_unlock_preempted_task,
-  */
- TRACE_EVENT(rcu_quiescent_state_report,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum,
-+	TP_PROTO(const char *rcuname, unsigned long gpnum,
- 		 unsigned long mask, unsigned long qsmask,
- 		 u8 level, int grplo, int grphi, int gp_tasks),
- 
- 	TP_ARGS(rcuname, gpnum, mask, qsmask, level, grplo, grphi, gp_tasks),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(unsigned long, mask)
- 		__field(unsigned long, qsmask)
-@@ -268,15 +268,15 @@ TRACE_EVENT(rcu_quiescent_state_report,
-  */
- TRACE_EVENT(rcu_fqs,
- 
--	TP_PROTO(char *rcuname, unsigned long gpnum, int cpu, char *qsevent),
-+	TP_PROTO(const char *rcuname, unsigned long gpnum, int cpu, const char *qsevent),
- 
- 	TP_ARGS(rcuname, gpnum, cpu, qsevent),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(unsigned long, gpnum)
- 		__field(int, cpu)
--		__field(char *, qsevent)
-+		__field(const char *, qsevent)
- 	),
- 
- 	TP_fast_assign(
-@@ -308,12 +308,12 @@ TRACE_EVENT(rcu_fqs,
-  */
- TRACE_EVENT(rcu_dyntick,
- 
--	TP_PROTO(char *polarity, long long oldnesting, long long newnesting),
-+	TP_PROTO(const char *polarity, long long oldnesting, long long newnesting),
- 
- 	TP_ARGS(polarity, oldnesting, newnesting),
- 
- 	TP_STRUCT__entry(
--		__field(char *, polarity)
-+		__field(const char *, polarity)
- 		__field(long long, oldnesting)
- 		__field(long long, newnesting)
- 	),
-@@ -352,12 +352,12 @@ TRACE_EVENT(rcu_dyntick,
-  */
- TRACE_EVENT(rcu_prep_idle,
- 
--	TP_PROTO(char *reason),
-+	TP_PROTO(const char *reason),
- 
- 	TP_ARGS(reason),
- 
- 	TP_STRUCT__entry(
--		__field(char *, reason)
-+		__field(const char *, reason)
- 	),
- 
- 	TP_fast_assign(
-@@ -376,13 +376,13 @@ TRACE_EVENT(rcu_prep_idle,
-  */
- TRACE_EVENT(rcu_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, long qlen_lazy,
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, long qlen_lazy,
- 		 long qlen),
- 
- 	TP_ARGS(rcuname, rhp, qlen_lazy, qlen),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(void *, func)
- 		__field(long, qlen_lazy)
-@@ -412,13 +412,13 @@ TRACE_EVENT(rcu_callback,
-  */
- TRACE_EVENT(rcu_kfree_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset,
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset,
- 		 long qlen_lazy, long qlen),
- 
- 	TP_ARGS(rcuname, rhp, offset, qlen_lazy, qlen),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(unsigned long, offset)
- 		__field(long, qlen_lazy)
-@@ -447,12 +447,12 @@ TRACE_EVENT(rcu_kfree_callback,
-  */
- TRACE_EVENT(rcu_batch_start,
- 
--	TP_PROTO(char *rcuname, long qlen_lazy, long qlen, long blimit),
-+	TP_PROTO(const char *rcuname, long qlen_lazy, long qlen, long blimit),
- 
- 	TP_ARGS(rcuname, qlen_lazy, qlen, blimit),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(long, qlen_lazy)
- 		__field(long, qlen)
- 		__field(long, blimit)
-@@ -477,12 +477,12 @@ TRACE_EVENT(rcu_batch_start,
-  */
- TRACE_EVENT(rcu_invoke_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp),
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp),
- 
- 	TP_ARGS(rcuname, rhp),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(void *, func)
- 	),
-@@ -506,12 +506,12 @@ TRACE_EVENT(rcu_invoke_callback,
-  */
- TRACE_EVENT(rcu_invoke_kfree_callback,
- 
--	TP_PROTO(char *rcuname, struct rcu_head *rhp, unsigned long offset),
-+	TP_PROTO(const char *rcuname, struct rcu_head *rhp, unsigned long offset),
- 
- 	TP_ARGS(rcuname, rhp, offset),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(void *, rhp)
- 		__field(unsigned long, offset)
- 	),
-@@ -539,13 +539,13 @@ TRACE_EVENT(rcu_invoke_kfree_callback,
-  */
- TRACE_EVENT(rcu_batch_end,
- 
--	TP_PROTO(char *rcuname, int callbacks_invoked,
-+	TP_PROTO(const char *rcuname, int callbacks_invoked,
- 		 bool cb, bool nr, bool iit, bool risk),
- 
- 	TP_ARGS(rcuname, callbacks_invoked, cb, nr, iit, risk),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
-+		__field(const char *, rcuname)
- 		__field(int, callbacks_invoked)
- 		__field(bool, cb)
- 		__field(bool, nr)
-@@ -577,13 +577,13 @@ TRACE_EVENT(rcu_batch_end,
-  */
- TRACE_EVENT(rcu_torture_read,
- 
--	TP_PROTO(char *rcutorturename, struct rcu_head *rhp,
-+	TP_PROTO(const char *rcutorturename, struct rcu_head *rhp,
- 		 unsigned long secs, unsigned long c_old, unsigned long c),
- 
- 	TP_ARGS(rcutorturename, rhp, secs, c_old, c),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcutorturename)
-+		__field(const char *, rcutorturename)
- 		__field(struct rcu_head *, rhp)
- 		__field(unsigned long, secs)
- 		__field(unsigned long, c_old)
-@@ -623,13 +623,13 @@ TRACE_EVENT(rcu_torture_read,
-  */
- TRACE_EVENT(rcu_barrier,
- 
--	TP_PROTO(char *rcuname, char *s, int cpu, int cnt, unsigned long done),
-+	TP_PROTO(const char *rcuname, const char *s, int cpu, int cnt, unsigned long done),
- 
- 	TP_ARGS(rcuname, s, cpu, cnt, done),
- 
- 	TP_STRUCT__entry(
--		__field(char *, rcuname)
--		__field(char *, s)
-+		__field(const char *, rcuname)
-+		__field(const char *, s)
- 		__field(int, cpu)
- 		__field(int, cnt)
- 		__field(unsigned long, done)
-diff --git a/kernel/rcu.h b/kernel/rcu.h
-index 7f8e759..0a90ccc 100644
---- a/kernel/rcu.h
-+++ b/kernel/rcu.h
-@@ -94,7 +94,7 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
- 
- extern void kfree(const void *);
- 
--static inline bool __rcu_reclaim(char *rn, struct rcu_head *head)
-+static inline bool __rcu_reclaim(const char *rn, struct rcu_head *head)
- {
- 	unsigned long offset = (unsigned long)head->func;
- 
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index cce6ba8..14994d4 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -377,7 +377,7 @@ EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
- #endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
- 
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) || defined(CONFIG_RCU_TRACE)
--void do_trace_rcu_torture_read(char *rcutorturename, struct rcu_head *rhp,
-+void do_trace_rcu_torture_read(const char *rcutorturename, struct rcu_head *rhp,
- 			       unsigned long secs,
- 			       unsigned long c_old, unsigned long c)
- {
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index aa34411..9ed6075 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -264,7 +264,7 @@ void rcu_check_callbacks(int cpu, int user)
-  */
- static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
- {
--	char *rn = NULL;
-+	const char *rn = NULL;
- 	struct rcu_head *next, *list;
- 	unsigned long flags;
- 	RCU_TRACE(int cb_count = 0);
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-index 0cd385a..280d06c 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/kernel/rcutiny_plugin.h
-@@ -36,7 +36,7 @@ struct rcu_ctrlblk {
- 	RCU_TRACE(unsigned long gp_start); /* Start time for stalls. */
- 	RCU_TRACE(unsigned long ticks_this_gp); /* Statistic for stalls. */
- 	RCU_TRACE(unsigned long jiffies_stall); /* Jiffies at next stall. */
--	RCU_TRACE(char *name);		/* Name of RCU type. */
-+	RCU_TRACE(const char *name);	/* Name of RCU type. */
- };
- 
- /* Definition for rcupdate control block. */
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index f4871e5..3d936f0f 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -267,7 +267,7 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
-  * Absorb kthreads into a kernel function that won't return, so that
-  * they won't ever access module text or data again.
-  */
--static void rcutorture_shutdown_absorb(char *title)
-+static void rcutorture_shutdown_absorb(const char *title)
- {
- 	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
- 		pr_notice(
-@@ -337,7 +337,7 @@ rcu_random(struct rcu_random_state *rrsp)
- }
- 
- static void
--rcu_stutter_wait(char *title)
-+rcu_stutter_wait(const char *title)
- {
- 	while (stutter_pause_test || !rcutorture_runnable) {
- 		if (rcutorture_runnable)
-@@ -366,7 +366,7 @@ struct rcu_torture_ops {
- 	int (*stats)(char *page);
- 	int irq_capable;
- 	int can_boost;
--	char *name;
-+	const char *name;
- };
- 
- static struct rcu_torture_ops *cur_ops;
-@@ -1364,7 +1364,7 @@ rcu_torture_stutter(void *arg)
- }
- 
- static inline void
--rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
-+rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, const char *tag)
- {
- 	pr_alert("%s" TORTURE_FLAG
- 		 "--- %s: nreaders=%d nfakewriters=%d "
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 068de3a..3020149 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -1032,7 +1032,7 @@ static unsigned long rcu_cbs_completed(struct rcu_state *rsp,
-  * rcu_nocb_wait_gp().
-  */
- static void trace_rcu_future_gp(struct rcu_node *rnp, struct rcu_data *rdp,
--				unsigned long c, char *s)
-+				unsigned long c, const char *s)
- {
- 	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
- 				      rnp->completed, c, rnp->level,
-@@ -2720,7 +2720,7 @@ static int rcu_cpu_has_callbacks(int cpu, bool *all_lazy)
-  * Helper function for _rcu_barrier() tracing.  If tracing is disabled,
-  * the compiler is expected to optimize this away.
-  */
--static void _rcu_barrier_trace(struct rcu_state *rsp, char *s,
-+static void _rcu_barrier_trace(struct rcu_state *rsp, const char *s,
- 			       int cpu, unsigned long done)
- {
- 	trace_rcu_barrier(rsp->name, s, cpu,
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index b383258..cbdeac6 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -445,7 +445,7 @@ struct rcu_state {
- 						/*  for CPU stalls. */
- 	unsigned long gp_max;			/* Maximum GP duration in */
- 						/*  jiffies. */
--	char *name;				/* Name of structure. */
-+	const char *name;			/* Name of structure. */
- 	char abbr;				/* Abbreviated name. */
- 	struct list_head flavors;		/* List of RCU flavors. */
- 	struct irq_work wakeup_work;		/* Postponed wakeups */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 769e12e..6b721ff 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1884,7 +1884,7 @@ early_initcall(rcu_register_oom_notifier);
- 
- #ifdef CONFIG_RCU_FAST_NO_HZ
- 
--static void print_cpu_stall_fast_no_hz(char *cp, int cpu)
-+static void print_cpu_stall_fast_no_hz(const char *cp, int cpu)
- {
- 	struct rcu_dynticks *rdtp = &per_cpu(rcu_dynticks, cpu);
- 	unsigned long nlpd = rdtp->nonlazy_posted - rdtp->nonlazy_posted_snap;
-@@ -2020,7 +2020,7 @@ static void increment_cpu_stall_ticks(void)
- 
- 
- /* Parse the boot-time rcu_nocb_mask CPU list from the kernel parameters. */
--static int __init rcu_nocb_setup(char *str)
-+static int __init rcu_nocb_setup(const char *str)
- {
- 	alloc_bootmem_cpumask_var(&rcu_nocb_mask);
- 	have_rcu_nocb_mask = true;
-@@ -2029,7 +2029,7 @@ static int __init rcu_nocb_setup(char *str)
- }
- __setup("rcu_nocbs=", rcu_nocb_setup);
- 
--static int __init parse_rcu_nocb_poll(char *arg)
-+static int __init parse_rcu_nocb_poll(const char *arg)
- {
- 	rcu_nocb_poll = 1;
+diff --git a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c
+index cb96296..a404127 100644
+--- a/drivers/acpi/blacklist.c
++++ b/drivers/acpi/blacklist.c
+@@ -192,6 +192,12 @@ static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
+ 	acpi_osi_setup("!Windows 2009");
  	return 0;
+ }
++static int __init dmi_disable_osi_win8(const struct dmi_system_id *d)
++{
++	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
++	acpi_osi_setup("!Windows 2012");
++	return 0;
++}
+ 
+ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 	{
+@@ -267,6 +273,14 @@ static struct dmi_system_id acpi_osi_dmi_table[] __initdata = {
+ 		     DMI_MATCH(DMI_PRODUCT_NAME, "Satellite P305D"),
+ 		},
+ 	},
++	{
++	.callback = dmi_disable_osi_win8,
++	.ident = "ASUS Zenbook Prime UX31A",
++	.matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "UX31A"),
++		},
++	},
+ 
+ 	/*
+ 	 * BIOS invocation of _OSI(Linux) is almost always a BIOS bug.
 -- 
-1.7.10.4
-
+1.8.3.4
 
