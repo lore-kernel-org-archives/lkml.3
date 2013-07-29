@@ -1,160 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab3G2JoP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:44:15 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:20604 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751330Ab3G2JoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:44:14 -0400
-X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
-   d="scan'208";a="8057011"
-Message-ID: <51F6388B.8000308@cn.fujitsu.com>
-Date: Mon, 29 Jul 2013 17:40:27 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
-        libo.chen@huawei.com
-Subject: Re: [PATCH 1/9] syslog_ns: add syslog_namespace and put/get_syslog_ns
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-2-git-send-email-rui.xiang@huawei.com>
-In-Reply-To: <1375065080-26740-2-git-send-email-rui.xiang@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:42:03,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:42:03,
-	Serialize complete at 2013/07/29 17:42:03
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754612Ab3G2Joo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:44:44 -0400
+Received: from mail-la0-f47.google.com ([209.85.215.47]:43978 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab3G2Jon (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:44:43 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, arm@kernel.org, mturquette@linaro.org,
+        mark.rutland@arm.com, tomasz.figa@gmail.com,
+        Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v6] clk: add MOXA ART SoCs clock driver
+Date: Mon, 29 Jul 2013 11:44:22 +0200
+Message-Id: <1375091062-3773-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
+References: <1374221837-23773-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
-	Refer to inline:).
+This patch adds MOXA ART SoCs clock driver support.
 
-On 07/29/2013 10:31 AM, Rui Xiang wrote:
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-> Add a struct syslog_namespace which contains the necessary
-> members for hanlding syslog and realize get_syslog_ns and
-> put_syslog_ns API.
-> 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  include/linux/syslog.h | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/printk.c        |  7 ------
->  2 files changed, 68 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
-> index 98a3153..425fafe 100644
-> --- a/include/linux/syslog.h
-> +++ b/include/linux/syslog.h
-> @@ -21,6 +21,9 @@
->  #ifndef _LINUX_SYSLOG_H
->  #define _LINUX_SYSLOG_H
->  
-> +#include <linux/slab.h>
-> +#include <linux/kref.h>
-> +
->  /* Close the log.  Currently a NOP. */
->  #define SYSLOG_ACTION_CLOSE          0
->  /* Open the log. Currently a NOP. */
-> @@ -47,6 +50,71 @@
->  #define SYSLOG_FROM_READER           0
->  #define SYSLOG_FROM_PROC             1
->  
-> +enum log_flags {
-> +	LOG_NOCONS      = 1,    /* already flushed, do not print to console */
-> +	LOG_NEWLINE     = 2,    /* text ended with a newline */
-> +	LOG_PREFIX      = 4,    /* text started with a prefix */
-> +	LOG_CONT        = 8,    /* text is a fragment of a continuation line */
-> +};
-> +
-> +struct syslog_namespace {
-> +	struct kref kref;	/* syslog_ns reference count & control */
-> +
-> +	raw_spinlock_t logbuf_lock; /* access conflict locker */
-> +	/* cpu currently holding logbuf_lock of ns */
-> +	unsigned int logbuf_cpu;
-> +
-> +	/* index and sequence number of the first record stored in the buffer */
-> +	u64 log_first_seq;
-> +	u32 log_first_idx;
-> +
-> +	/* index and sequence number of the next record stored in the buffer */
-> +	u64 log_next_seq;
-> +	u32 log_next_idx;
-> +
-> +	/* the next printk record to read after the last 'clear' command */
-> +	u64 clear_seq;
-> +	u32 clear_idx;
-> +
-> +	char *log_buf;
-> +	u32 log_buf_len;
-> +
-> +	/* the next printk record to write to the console */
-> +	u64 console_seq;
-> +	u32 console_idx;
-> +
-> +	/* the next printk record to read by syslog(READ) or /proc/kmsg */
-> +	u64 syslog_seq;
-> +	u32 syslog_idx;
-> +	enum log_flags syslog_prev;
-> +	size_t syslog_partial;
-> +
-> +	int dmesg_restrict;
-> +};
-> +
-> +static inline struct syslog_namespace *get_syslog_ns(
-> +				struct syslog_namespace *ns)
-> +{
-> +	if (ns)
-> +		kref_get(&ns->kref);
-> +	return ns;
-> +}
-> +
-> +static inline void free_syslog_ns(struct kref *kref)
-> +{
-> +	struct syslog_namespace *ns;
-> +	ns = container_of(kref, struct syslog_namespace, kref);
-> +
-> +	kfree(ns->log_buf);
-> +	kfree(ns);
-> +}
+Notes:
+    Changes since v5:
+    
+    1. corrected of_iomap return value check
+    2. don't panic, print the error and return
+    
+    Applies to next-20130729
 
-This interface seems a bit ugly, why not use the format like put_syslog_ns()?
+ .../bindings/clock/moxa,moxart-core-clock.txt      | 23 +++++++
+ drivers/clk/Makefile                               |  1 +
+ drivers/clk/clk-moxart.c                           | 71 ++++++++++++++++++++++
+ 3 files changed, 95 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+ create mode 100644 drivers/clk/clk-moxart.c
 
-static inline void free_syslog_ns(struct syslog_namespace *ns)
-
-> +
-> +static inline void put_syslog_ns(struct syslog_namespace *ns)
-> +{
-> +	if (ns)
-> +		kref_put(&ns->kref, free_syslog_ns);
-> +}
-> +
->  int do_syslog(int type, char __user *buf, int count, bool from_file);
->  
->  #endif /* _LINUX_SYSLOG_H */
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index d37d45c..7e544bf 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -193,13 +193,6 @@ static int console_may_schedule;
->   * separated by ',', and find the message after the ';' character.
->   */
->  
-> -enum log_flags {
-> -	LOG_NOCONS	= 1,	/* already flushed, do not print to console */
-> -	LOG_NEWLINE	= 2,	/* text ended with a newline */
-> -	LOG_PREFIX	= 4,	/* text started with a prefix */
-> -	LOG_CONT	= 8,	/* text is a fragment of a continuation line */
-> -};
-> -
->  struct log {
->  	u64 ts_nsec;		/* timestamp in nanoseconds */
->  	u16 len;		/* length of entire record */
-
+diff --git a/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+new file mode 100644
+index 0000000..379ae79
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/moxa,moxart-core-clock.txt
+@@ -0,0 +1,23 @@
++Device Tree Clock bindings for arch-moxart
++
++This binding uses the common clock binding[1].
++
++[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
++
++MOXA ART SoCs allow to determine core clock frequencies by reading
++a register.
++
++Required properties:
++- compatible : Must be "moxa,moxart-core-clock"
++- #clock-cells : Should be 0
++- reg : Should contain registers location and length
++- clock-output-names : Should be "coreclk"
++
++For example:
++
++	coreclk: core-clock@98100000 {
++		compatible = "moxa,moxart-core-clock";
++		#clock-cells = <0>;
++		reg = <0x98100000 0x34>;
++		clock-output-names = "coreclk";
++	};
+diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+index 4038c2b..933622f 100644
+--- a/drivers/clk/Makefile
++++ b/drivers/clk/Makefile
+@@ -11,6 +11,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+ 
+ # SoCs specific
+ obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
++obj-$(CONFIG_ARCH_MOXART)	+= clk-moxart.o
+ obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+ obj-$(CONFIG_ARCH_HIGHBANK)	+= clk-highbank.o
+ obj-$(CONFIG_ARCH_NSPIRE)	+= clk-nspire.o
+diff --git a/drivers/clk/clk-moxart.c b/drivers/clk/clk-moxart.c
+new file mode 100644
+index 0000000..14d5b26
+--- /dev/null
++++ b/drivers/clk/clk-moxart.c
+@@ -0,0 +1,71 @@
++/*
++ * MOXA ART SoCs clock driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk-provider.h>
++#include <linux/io.h>
++#include <linux/of_address.h>
++#include <linux/clkdev.h>
++
++void __init moxart_of_clk_init(struct device_node *node)
++{
++	static void __iomem *base;
++	struct clk *clk;
++	unsigned long rate;
++	unsigned int mul, val, div;
++	const char *name;
++
++	base = of_iomap(node, 0);
++	if (!base) {
++		pr_err("%s: of_iomap failed\n", node->full_name);
++		return;
++	}
++
++	mul = (readl(base + 0x30) >> 3) & 0x1ff;
++	val = (readl(base + 0x0c) >> 4) & 0x7;
++
++	switch (val) {
++	case 1:
++		div = 3;
++		break;
++	case 2:
++		div = 4;
++		break;
++	case 3:
++		div = 6;
++		break;
++	case 4:
++		div = 8;
++		break;
++	default:
++		div = 2;
++		break;
++	}
++
++	/*
++	 * the rate calculation below is only tested and proven
++	 * to be true for UC-7112-LX
++	 *
++	 * UC-7112-LX: mul=80 val=0
++	 *
++	 * to support other moxart SoC hardware, this may need
++	 * a change, though it's possible it works there too
++	 */
++	rate = (mul * 1200000 / div);
++
++	of_property_read_string(node, "clock-output-names", &name);
++	clk = clk_register_fixed_rate(NULL, name, NULL, CLK_IS_ROOT, rate);
++	clk_register_clkdev(clk, NULL, name);
++	of_clk_add_provider(node, of_clk_src_simple_get, clk);
++
++	iounmap(base);
++}
++CLK_OF_DECLARE(moxart_core_clock, "moxa,moxart-core-clock", moxart_of_clk_init);
+-- 
+1.8.2.1
 
