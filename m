@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757670Ab3G2Ql0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:41:26 -0400
-Received: from mga02.intel.com ([134.134.136.20]:34416 "EHLO mga02.intel.com"
+	id S1757692Ab3G2Qlc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:41:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42561 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678Ab3G2QlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:41:23 -0400
+	id S1756120Ab3G2Ql3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 12:41:29 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,771,1367996400"; 
-   d="scan'208";a="372977180"
+   d="scan'208";a="353690557"
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 To: rostedt@goodmis.org
 Cc: masami.hiramatsu.pt@hitachi.com, linux-kernel@vger.kernel.org,
         Tom Zanussi <tom.zanussi@linux.intel.com>
-Subject: [PATCH v4 05/11] tracing: add 'stacktrace' event trigger command
-Date: Mon, 29 Jul 2013 11:41:01 -0500
-Message-Id: <cf88bee30c852194d10b4b662ad2baf8254c604e.1375111640.git.tom.zanussi@linux.intel.com>
+Subject: [PATCH v4 10/11] tracing: make register/unregister_ftrace_command __init
+Date: Mon, 29 Jul 2013 11:41:06 -0500
+Message-Id: <e3178cf29c58286daf60f9bff85e2279805c476b.1375111640.git.tom.zanussi@linux.intel.com>
 X-Mailer: git-send-email 1.7.11.4
 In-Reply-To: <cover.1375111640.git.tom.zanussi@linux.intel.com>
 References: <cover.1375111640.git.tom.zanussi@linux.intel.com>
@@ -25,153 +25,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add 'stacktrace' ftrace_func_command.  stacktrace event triggers are
-added by the user via this command in a similar way and using
-practically the same syntax as the analogous 'stacktrace' ftrace
-function command, but instead of writing to the set_ftrace_filter
-file, the stacktrace event trigger is written to the per-event
-'trigger' files:
+register/unregister_ftrace_command() are only ever called from __init
+functions, so can themselves be made __init.
 
-    echo 'stacktrace' > .../tracing/events/somesys/someevent/trigger
-
-The above command will turn on stacktraces for someevent i.e. whenever
-someevent is hit, a stacktrace will be logged.
-
-This also adds a 'count' version that limits the number of times the
-command will be invoked:
-
-    echo 'stacktrace:N' > .../tracing/events/somesys/someevent/trigger
-
-Where N is the number of times the command will be invoked.
-
-The above command will log N stacktraces for someevent i.e. whenever
-someevent is hit N times, a stacktrace will be logged.
+Also make register_snapshot_cmd() __init for the same reason.
 
 Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
 ---
- include/linux/ftrace_event.h        |  1 +
- kernel/trace/trace_events_trigger.c | 90 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 91 insertions(+)
+ include/linux/ftrace.h |  4 ++--
+ kernel/trace/ftrace.c  | 12 ++++++++++--
+ kernel/trace/trace.c   |  4 ++--
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index a25daf3..51c141e 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -318,6 +318,7 @@ enum trigger_mode {
- 	TM_NONE			= (0),
- 	TM_TRACE_ONOFF		= (1 << 0),
- 	TM_SNAPSHOT		= (1 << 1),
-+	TM_STACKTRACE		= (1 << 2),
- };
- 
- extern void destroy_preds(struct ftrace_event_call *call);
-diff --git a/kernel/trace/trace_events_trigger.c b/kernel/trace/trace_events_trigger.c
-index cff5b58..03e81e9 100644
---- a/kernel/trace/trace_events_trigger.c
-+++ b/kernel/trace/trace_events_trigger.c
-@@ -773,6 +773,85 @@ static struct event_command trigger_snapshot_cmd = {
- 	.get_trigger_ops	= snapshot_get_trigger_ops,
- };
- 
-+/*
-+ * Skip 4:
-+ *   ftrace_stacktrace()
-+ *   function_trace_probe_call()
-+ *   ftrace_ops_list_func()
-+ *   ftrace_call()
-+ */
-+#define STACK_SKIP 4
-+
-+static void
-+stacktrace_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	trace_dump_stack(STACK_SKIP);
-+}
-+
-+static void
-+stacktrace_count_trigger(void **_data)
-+{
-+	struct event_trigger_data **p = (struct event_trigger_data **)_data;
-+	struct event_trigger_data *data = *p;
-+
-+	if (!data)
-+		return;
-+
-+	if (!data->count)
-+		return;
-+
-+	if (data->count != -1)
-+		(data->count)--;
-+
-+	stacktrace_trigger(_data);
-+}
-+
-+static int
-+stacktrace_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
-+			 void *_data)
-+{
-+	struct event_trigger_data *data = _data;
-+
-+	return event_trigger_print("stacktrace", m, (void *)data->count,
-+				   data->filter_str);
-+}
-+
-+static struct event_trigger_ops stacktrace_trigger_ops = {
-+	.func			= stacktrace_trigger,
-+	.print			= stacktrace_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops stacktrace_count_trigger_ops = {
-+	.func			= stacktrace_count_trigger,
-+	.print			= stacktrace_trigger_print,
-+	.init			= event_trigger_init,
-+	.free			= event_trigger_free,
-+};
-+
-+static struct event_trigger_ops *
-+stacktrace_get_trigger_ops(char *cmd, char *param)
-+{
-+	return param ? &stacktrace_count_trigger_ops : &stacktrace_trigger_ops;
-+}
-+
-+static struct event_command trigger_stacktrace_cmd = {
-+	.name			= "stacktrace",
-+	.trigger_mode		= TM_STACKTRACE,
-+	.post_trigger		= true,
-+	.func			= event_trigger_callback,
-+	.reg			= register_trigger,
-+	.unreg			= unregister_trigger,
-+	.get_trigger_ops	= stacktrace_get_trigger_ops,
-+};
-+
- static __init void unregister_trigger_traceon_traceoff_cmds(void)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9f15c00..6062491 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -533,11 +533,11 @@ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
+-static inline int register_ftrace_command(struct ftrace_func_command *cmd)
++static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
  {
- 	unregister_event_command(&trigger_traceon_cmd,
-@@ -817,5 +896,16 @@ __init int register_trigger_cmds(void)
- 		return ret;
- 	}
- 
-+	ret = register_event_command(&trigger_stacktrace_cmd,
-+				      &trigger_commands,
-+				      &trigger_cmd_mutex);
-+	if (WARN_ON(ret < 0)) {
-+		unregister_trigger_traceon_traceoff_cmds();
-+		unregister_event_command(&trigger_snapshot_cmd,
-+					 &trigger_commands,
-+					 &trigger_cmd_mutex);
-+		return ret;
-+	}
-+
- 	return 0;
+ 	return -EINVAL;
  }
+-static inline int unregister_ftrace_command(char *cmd_name)
++static inline __init int unregister_ftrace_command(char *cmd_name)
+ {
+ 	return -EINVAL;
+ }
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 8ce9eef..b7e76cd 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -3239,7 +3239,11 @@ void unregister_ftrace_function_probe_all(char *glob)
+ static LIST_HEAD(ftrace_commands);
+ static DEFINE_MUTEX(ftrace_cmd_mutex);
+ 
+-int register_ftrace_command(struct ftrace_func_command *cmd)
++/*
++ * Currently we only register ftrace commands from __init, so mark this
++ * __init too.
++ */
++__init int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	struct ftrace_func_command *p;
+ 	int ret = 0;
+@@ -3258,7 +3262,11 @@ int register_ftrace_command(struct ftrace_func_command *cmd)
+ 	return ret;
+ }
+ 
+-int unregister_ftrace_command(struct ftrace_func_command *cmd)
++/*
++ * Currently we only unregister ftrace commands from __init, so mark
++ * this __init too.
++ */
++__init int unregister_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	struct ftrace_func_command *p, *n;
+ 	int ret = -ENODEV;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index df12811..1c32ca5 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -5457,12 +5457,12 @@ static struct ftrace_func_command ftrace_snapshot_cmd = {
+ 	.func			= ftrace_trace_snapshot_callback,
+ };
+ 
+-static int register_snapshot_cmd(void)
++static __init int register_snapshot_cmd(void)
+ {
+ 	return register_ftrace_command(&ftrace_snapshot_cmd);
+ }
+ #else
+-static inline int register_snapshot_cmd(void) { return 0; }
++static inline __init int register_snapshot_cmd(void) { return 0; }
+ #endif /* defined(CONFIG_TRACER_SNAPSHOT) && defined(CONFIG_DYNAMIC_FTRACE) */
+ 
+ struct dentry *tracing_init_dentry_tr(struct trace_array *tr)
 -- 
 1.7.11.4
 
