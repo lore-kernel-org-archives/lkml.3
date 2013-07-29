@@ -1,83 +1,1642 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab3G2Xic (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 19:38:32 -0400
-Received: from ks3293202.kimsufi.com ([5.135.186.141]:49140 "EHLO
-	jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750946Ab3G2Xia (ORCPT
+	id S1751662Ab3G2XjV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:39:21 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:34414 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138Ab3G2XjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 19:38:30 -0400
-X-Greylist: delayed 1346 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 19:38:29 EDT
-Date: Tue, 30 Jul 2013 08:15:39 +0900
-From: Mike Hommey <glandium@mozilla.com>
-To: =?iso-8859-15?Q?J=F6rn?= Engel <joern@logfs.org>
-Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, Dhaval Giani <dgiani@mozilla.com>,
-        Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org,
-        tytso@mit.edu, vdjeric@mozilla.com, glandium@mozilla.com,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
-Message-ID: <20130729231539.GA28383@glandium.org>
-References: <1374699833.7083.2.camel@localhost>
- <20130724233628.GD3641@logfs.org>
- <51F14136.30409@mozilla.com>
- <51F1556A.20909@mozilla.com>
- <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
- <51F17005.7030309@mozilla.com>
- <1374825683.3671.35.camel@slavad-ubuntu>
- <20130726132034.GB21977@logfs.org>
+	Mon, 29 Jul 2013 19:39:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130726132034.GB21977@logfs.org>
-X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org>
+References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org>
+Date: Mon, 29 Jul 2013 15:39:17 -0800
+Message-ID: <CAJAp7OjbJwaH8SFdSwDU4VLwTAY1PfDWy1S+yF05=oPuUApvNA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
+From: Bjorn Andersson <bjorn@kryo.se>
+To: Hanumant Singh <hanumant@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 09:20:34AM -0400, Jörn Engel wrote:
-> On Fri, 26 July 2013 12:01:23 +0400, Vyacheslav Dubeyko wrote:
-> > 
-> > We are discussing not about good or bad idea. We need to elaborate a
-> > right solution. I think that suggested idea is not clear. Do you
-> > want to support compression in ext4? Or do you want to add some new
-> > compression feature (likewise file-oriented compression)? If we are
-> > talking about compression in ext4 then it needs to use e2compr patch
-> > set. Otherwise, if we are talking about file compression then it is
-> > not question of concrete filesystem. And we need to make
-> > implementation on VFS level. It is only architectural point of view.
-> 
-> I don't think the e2compr patches are strictly necessary.  They are a
-> good option, but not the only one.
-> 
-> One trick to simplify the problem is to make Dhaval's compressed files
-> strictly read-only.  It will require some dance to load the compressed
-> content, flip the switch, then uncompress data on the fly and disallow
-> writes.  Not the most pleasing of interfaces, but yet another option.
-> 
-> > Why do you try to implement likewise concept on kernel level? It
-> > looks like you try to move some user-space concept in kernel-space.
-> 
-> The kernel controls the page cache.  Once the page cache is filled
-> with uncompressed file content, you can do mmap, regular file io, etc.
-> Putting uncompression code into the kernel makes sense to me.  Whether
-> a solution different from e2compr makes sense is yet to be seen.
-> 
-> Whatever you do, it will require support from the on-disk format and
-> the userspace ABI.  Setting the compression bit on a file has the
-> clear advantage that it is an established interface and also supported
-> by other filesystems.  Introducing yet another interface requires a
-> fairly strong case to be made.  But who knows, maybe Dhaval can pull
-> it off.
+On Wed, Jul 24, 2013 at 1:41 PM, Hanumant Singh <hanumant@codeaurora.org> wrote:
+> Add a new device tree enabled pinctrl driver for
+> Qualcomm MSM SoC's. This driver provides an extensible
+> framework to interface all MSM's that use a TLMM pinmux,
+> with the pinctrl subsytem.
 
-Come to think of it, the whole thing could be handled entirely in user
-space through fuse. While this is probably a workable solution on
-desktop/server environments, it doesn't pan out on Android: /dev/fuse is
-rarely available, and even if it were, fusermount needs to be there and
-be a setuid program (or have the right capabilities). So, another angle
-could be to allow some things to happen without privileges, such as
-mounting filesystems in a private namespace. That wouldn't solve the
-lack of /dev/fuse, though.
+Thanks! I was about to write an implementation for v2 myself when I
+found your patch. I hacked a little bit on it and got it to work on my
+8960 based board.
 
-Mike
+>
+> This driver is split into two parts: the pinctrl interface
+> and the TLMM version specific implementation. The pinctrl
+> interface parses the device tree and registers with the pinctrl
+> subsytem. The TLMM version specific implementation supports
+> pin configuration/register programming for the different
+> pin types present on a given TLMM pinmux version.
+>
+> Add support only for TLMM version 3 pinmux right now,
+> as well as, only two of the different pin types present on the
+> TLMM v3 pinmux.
+> Pintype 1: General purpose pins.
+> Pintype 2: SDC pins.
+
+It seems that the gp pins of TLMM v3 have the same layout and offsets
+as the once in v2. Unless I'm missing something I think this patch
+should be structured (and have appropriate naming) in a way that we
+can support both of them.
+
+As a general note on the patch, the pins and pin groups are defined by
+the soc, I'm therefore not convinced that these should be configured
+from the devicetree. It's at least not how it's done in other
+platforms.
+
+
+After talking to Linus a little bit I concluded that the way the
+design idea behind pinmux is that you have pins and you have
+functions;
+* pins are your 117 gp-pins and with some imagination your sd pins, so
+that's fine.
+* the function is some functionality provided by the hard
+Then you can set up muxes between these two. Therefore I think your
+use of the word "function" in the patch is what normally is called a
+mux. It might be worth sorting this out, to make it easier to maintain
+this code down the road.
+
+@Linus, can you please confirm my understanding of the design?
+
+>
+> Change-Id: I065d874cd2c6fd002d5b3cb4b355445bb6912bf4
+> ---
+>  .../devicetree/bindings/pinctrl/msm-pinctrl.txt    | 184 ++++++
+>  drivers/pinctrl/Kconfig                            |  10 +
+>  drivers/pinctrl/Makefile                           |   2 +
+>  drivers/pinctrl/pinctrl-msm-tlmm-v3.c              | 330 ++++++++++
+>  drivers/pinctrl/pinctrl-msm.c                      | 724 +++++++++++++++++++++
+>  drivers/pinctrl/pinctrl-msm.h                      |  97 +++
+>  6 files changed, 1347 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
+>  create mode 100644 drivers/pinctrl/pinctrl-msm-tlmm-v3.c
+>  create mode 100644 drivers/pinctrl/pinctrl-msm.c
+>  create mode 100644 drivers/pinctrl/pinctrl-msm.h
+>
+> diff --git a/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
+> new file mode 100644
+> index 0000000..0f17a94
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
+> @@ -0,0 +1,184 @@
+> +MSM TLMM pinmux controller
+> +
+> +Qualcomm MSM integrates a GPIO and Pin mux/config hardware, (TOP Level Mode
+> +Multiplexper in short TLMM). It controls the input/output settings on the
+> +available pads/pins and also provides ability to multiplex and configure the
+> +output of various on-chip controllers onto these pads. The pins are also of
+> +different types, encapsulating different functions and having differing register
+> +semantics.
+> +
+> +Required Properties:
+> +- compatible: should be one of the following.
+> +  - "qcom,msm-tlmm-v3": for MSM with TLMM version 3.
+> +
+> +- reg: Base address of the pin controller hardware module and length of
+> +  the address space it occupies.
+> +
+> +- Pin types as child nodes: Pin types supported by a particular controller
+> +  instance are represented as child nodes of the controller node. Each
+> +  pin type node must contain following properties:
+> +
+> +Required Properties
+> +  - qcom,pin-type-*: identifies the pin type. Pin types supported are
+> +                       qcom,pin-type-gp (General purpose)
+> +                       qcom,pin-type-sdc (SDC)
+> +  - qcom,pin-cells: number of cells in the pin type specifier.
+> +  - qcom,num-pins: number of pins of given type present on the MSM.
+> +
+> +- Pin groups as child nodes: The pin mux (selecting pin function
+> +  mode) and pin config (pull up/down, driver strength, direction) settings are
+> +  represented as child nodes of the pin-controller node. There is no limit on
+> +  the count of these child nodes.
+> +
+> +  Required Properties
+> +    -qcom,pins: phandle specifying pin type and a pin number.
+> +    -qcom,num-grp-pins: number of pins in the group.
+> +    -label: name to to identify the pin group.
+> +
+> +  Optional Properties
+> +    -qcom,pin-func: function setting for the pin group.
+> +
+> +  The child node should contain a list of pin(s) on which a particular pin
+> +  function selection or pin configuration (or both) have to applied. This
+> +  list of pins is specified using the property name "qcom,pins". There
+> +  should be atleast one pin specfied for this property and there is no upper
+> +  limit on the count of pins that can be specified. The pins are specified
+> +  using the pintype phandle and the pin number within that pintype.
+> +
+> +  The pin function selection that should be applied on the pins listed in the
+> +  child node is specified using the "qcom,pin-func" property. The value
+> +  of this property that should be applied to each of the pins listed in the
+> +  "qcom,pins" property, should be picked from the hardware manual of the SoC.
+> +  This property is optional in the child node if no specific function
+> +  selection is desired for the pins listed in the child node or if the pin is
+> +  to be used for bit bang.
+> +
+> +  The pin group node must additionally have a pin configuration node as its own
+> +  child node. There can be more then one such configuration node for a pin group
+> +  node. There can be one or more configurations within the configuration
+> +  node. These configurations are applied to all pins mentoned above using the
+> +  "qcom,pins" property. These configurations are specific to the pintype of the
+> +  pins.
+> +  For the pin configuration properties supported by general purpose pins as well
+> +  as SDC pins lookup Documentation/devicetree/bindings/pinctrl-bindings.txt
+> +
+> +  The values specified by these config properties should be derived from the
+> +  hardware manual and these values are programmed as-is into the pin config
+> +  register of the pin-controller.
+> +
+> +  NOTE: A pin group node should be formed for all pins that are going to have
+> +  the same function and configuration settings. If a subset of pins to be used
+> +  by a client require different function or configuration settings or both
+> +  then they should be modelled as a separate pin group node to be used by
+> +  the client.
+> +
+> +  The client nodes that require a particular pin function selection and/or
+> +  pin configuration should use the bindings listed in the "pinctrl-bindings txt"
+> +  file.
+> +
+> +Example 1: A pin-controller node with pin types
+> +
+> +       pinctrl@fd5110000 {
+> +               compatible = "qcom,msm-tlmm-v3";
+> +               reg = <0xfd5110000 0x4000>;
+> +
+> +               /* General purpose pin type */
+> +               gp: gp {
+> +                       qcom,pin-type-gp;
+> +                       qcom,num-pins = <117>;
+> +                       #qcom,pin-cells = <1>;
+> +               };
+> +       };
+> +
+> +Example 2: Spi pin entries within the pincontroller node
+> +       pinctrl@fd511000 {
+> +               ....
+> +               ..
+> +               pmx-spi-bus {
+> +                       /*
+> +                        * MOSI, MISO and CLK lines
+> +                        * all sharing same function and config
+> +                        * settings for each configuration node.
+> +                        */
+> +                       qcom,pins = <&gp 0>, <&gp 1>, <&gp 3>;
+> +                       qcom,num-grp-pins = <3>;
+
+qcom,num-grp-pins is not used by the code, please remove it.
+
+> +                       qcom,pin-func = <1>;
+> +                       label = "spi-bus";
+> +
+> +                       /* Active configuration of bus pins */
+> +                       spi-bus-active: spi-bus-active {
+> +                               /*
+> +                                * Property names as specified in
+> +                                * pinctrl-bindings.txt
+> +                                */
+> +                               drive-strength = <8>; /* 8 MA */
+> +                               bias-disable; /* No PULL */
+> +                       };
+> +                       /* Sleep configuration of bus pins */
+> +                       spi-bus-sleep: spi-bus-sleep {
+> +                               /*
+> +                                * Property values as specified in HW
+> +                                * manual.
+> +                                */
+> +                               drive-strength = <2>; /* 2 MA */
+> +                               bias-disable;
+> +                       };
+> +               };
+> +
+> +               pmx-spi-cs {
+> +                       /*
+> +                        * Chip select for SPI
+> +                        * different config
+> +                        * settings as compared to bus pins.
+> +                        */
+> +                       qcom,pins = <&Gp 2>;
+
+Make Gp lower case.
+
+> +                       qcom,num-grp-pins = <1>;
+> +                       qcom,pin-func = <1>;
+> +                       label = "spi-cs"
+> +
+> +                       /* Active configuration of cs pin */
+> +                       spi-cs-active: spi-cs-active {
+> +                               /*
+> +                                * Property names as specified in
+> +                                * pinctrl-bindings.txt
+> +                                */
+> +                               drive-strength = <4>; /* 4 MA */
+> +                               bias-disable; /* No PULL */
+> +                       };
+> +                       /* Sleep configuration of cs pin */
+> +                       spi-bus-sleep: spi-bus-sleep {
+> +                               /*
+> +                                * Property values as specified in HW
+> +                                * manual.
+> +                                */
+> +                               drive-strength = <2>; /* 2 MA */
+> +                               bias-disable = <0>; /* No PULL */
+> +                       };
+> +               };
+> +       };
+> +
+> +Example 3: A SPI client node that supports 'active' and 'sleep' states.
+> +
+> +       spi_0: spi@f9923000 { /* BLSP1 QUP1 */
+> +                       compatible = "qcom,spi-qup-v2";
+> +                       #address-cells = <1>;
+> +                       #size-cells = <0>;
+> +                       reg-names = "spi_physical", "spi_bam_physical";
+> +                       reg = <0xf9923000 0x1000>,
+> +                       <0xf9904000 0xF000>;
+> +                       interrupt-names = "spi_irq", "spi_bam_irq";
+> +                       interrupts = <0 95 0>, <0 238 0>;
+> +                       spi-max-frequency = <19200000>;
+> +
+> +                       /* pins used by spi controllers */
+> +                       pinctrl-names = "default", "sleep";
+> +                       pinctrl-0 = <&spi-bus-active &spi-cs-active>;
+> +                       pinctrl-1 = <&spi-bus-sleep &spi-cs-sleep>;
+> +
+> +                       qcom,infinite-mode = <0>;
+> +                       qcom,use-bam;
+> +                       qcom,ver-reg-exists;
+> +               qcom,bam-consumer-pipe-index = <12>;
+> +               qcom,bam-producer-pipe-index = <13>;
+
+Please fix the indentation here.
+
+> +                };
+> +
+> diff --git a/drivers/pinctrl/Kconfig b/drivers/pinctrl/Kconfig
+> index 34f51d2..480cb26 100644
+> --- a/drivers/pinctrl/Kconfig
+> +++ b/drivers/pinctrl/Kconfig
+> @@ -133,6 +133,16 @@ config PINCTRL_IMX28
+>         bool
+>         select PINCTRL_MXS
+>
+> +config PINCTRL_MSM
+> +       depends on OF
+> +       bool
+> +       select PINMUX
+> +       select GENERIC_PINCONF
+> +
+> +config PINCTRL_MSM_TLMM_V3
+> +       bool
+> +       select PINCTRL_MSM
+
+PINCTRL_MSM does selects only to compile the "common" parts, but this
+does not build. Adding e.g MSM_TLMM_V2 here as well (as I did first)
+just made me have to select 2 things to make one thing compile.
+
+My suggestion is that you remove the V3 config and just put it all
+under PINCTRL_MSM
+
+> +
+>  config PINCTRL_NOMADIK
+>         bool "Nomadik pin controller driver"
+>         depends on ARCH_U8500 || ARCH_NOMADIK
+> diff --git a/drivers/pinctrl/Makefile b/drivers/pinctrl/Makefile
+> index f82cc5b..3cf8fba 100644
+> --- a/drivers/pinctrl/Makefile
+> +++ b/drivers/pinctrl/Makefile
+> @@ -27,6 +27,8 @@ obj-$(CONFIG_PINCTRL_MMP2)    += pinctrl-mmp2.o
+>  obj-$(CONFIG_PINCTRL_MXS)      += pinctrl-mxs.o
+>  obj-$(CONFIG_PINCTRL_IMX23)    += pinctrl-imx23.o
+>  obj-$(CONFIG_PINCTRL_IMX28)    += pinctrl-imx28.o
+> +obj-$(CONFIG_PINCTRL_MSM)      += pinctrl-msm.o
+> +obj-$(CONFIG_PINCTRL_MSM_TLMM_V3)      += pinctrl-msm-tlmm-v3.o
+>  obj-$(CONFIG_PINCTRL_NOMADIK)  += pinctrl-nomadik.o
+>  obj-$(CONFIG_PINCTRL_STN8815)  += pinctrl-nomadik-stn8815.o
+>  obj-$(CONFIG_PINCTRL_DB8500)   += pinctrl-nomadik-db8500.o
+> diff --git a/drivers/pinctrl/pinctrl-msm-tlmm-v3.c b/drivers/pinctrl/pinctrl-msm-tlmm-v3.c
+> new file mode 100644
+> index 0000000..47b50f8
+> --- /dev/null
+> +++ b/drivers/pinctrl/pinctrl-msm-tlmm-v3.c
+> @@ -0,0 +1,330 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#include <linux/bitops.h>
+> +#include <linux/err.h>
+> +#include <linux/io.h>
+> +#include <linux/pinctrl/pinconf-generic.h>
+> +#include "pinctrl-msm.h"
+> +
+> +/* config translations */
+> +#define drv_str_to_rval(drv)   ((drv >> 1) - 1)
+> +#define rval_to_drv_str(val)   ((val + 1) << 1)
+> +#define dir_to_inout_val(dir)  (dir << 1)
+> +#define inout_val_to_dir(val)  (val >> 1)
+> +#define rval_to_pull(val)      ((val > 2) ? 1 : val)
+> +#define TLMMV3_NO_PULL         0
+> +#define TLMMV3_PULL_DOWN       1
+> +#define TLMMV3_PULL_UP         3
+> +/* GP PIN TYPE REG MASKS */
+> +#define TLMMV3_GP_DRV_SHFT             6
+> +#define TLMMV3_GP_DRV_MASK             0x7
+> +#define TLMMV3_GP_PULL_SHFT            0
+> +#define TLMMV3_GP_PULL_MASK            0x3
+> +#define TLMMV3_GP_DIR_SHFT             9
+> +#define TLMMV3_GP_DIR_MASK             1
+> +#define TLMMV3_GP_FUNC_SHFT            2
+> +#define TLMMV3_GP_FUNC_MASK            0xF
+> +/* SDC1 PIN TYPE REG MASKS */
+> +#define TLMMV3_SDC1_CLK_DRV_SHFT       6
+> +#define TLMMV3_SDC1_CLK_DRV_MASK       0x7
+> +#define TLMMV3_SDC1_DATA_DRV_SHFT      0
+> +#define TLMMV3_SDC1_DATA_DRV_MASK      0x7
+> +#define TLMMV3_SDC1_CMD_DRV_SHFT       3
+> +#define TLMMV3_SDC1_CMD_DRV_MASK       0x7
+> +#define TLMMV3_SDC1_CLK_PULL_SHFT      13
+> +#define TLMMV3_SDC1_CLK_PULL_MASK      0x3
+> +#define TLMMV3_SDC1_DATA_PULL_SHFT     9
+> +#define TLMMV3_SDC1_DATA_PULL_MASK     0x3
+> +#define TLMMV3_SDC1_CMD_PULL_SHFT      11
+> +#define TLMMV3_SDC1_CMD_PULL_MASK      0x3
+> +/* SDC2 PIN TYPE REG MASKS */
+> +#define TLMMV3_SDC2_CLK_DRV_SHFT       6
+> +#define TLMMV3_SDC2_CLK_DRV_MASK       0x7
+> +#define TLMMV3_SDC2_DATA_DRV_SHFT      0
+> +#define TLMMV3_SDC2_DATA_DRV_MASK      0x7
+> +#define TLMMV3_SDC2_CMD_DRV_SHFT       3
+> +#define TLMMV3_SDC2_CMD_DRV_MASK       0x7
+> +#define TLMMV3_SDC2_CLK_PULL_SHFT      14
+> +#define TLMMV3_SDC2_CLK_PULL_MASK      0x3
+> +#define TLMMV3_SDC2_DATA_PULL_SHFT     9
+> +#define TLMMV3_SDC2_DATA_PULL_MASK     0x3
+> +#define TLMMV3_SDC2_CMD_PULL_SHFT      11
+> +#define TLMMV3_SDC2_CMD_PULL_MASK      0x3
+> +
+> +#define TLMMV3_GP_INOUT_BIT            1
+> +#define TLMMV3_GP_OUT                  BIT(TLMMV3_GP_INOUT_BIT)
+> +#define TLMMV3_GP_IN                   0
+
+These three defines are not used.
+
+> +
+> +/* SDC Pin type register offsets */
+> +#define TLMMV3_SDC_OFFSET              0x2044
+> +#define TLMMV3_SDC1_CFG(base)          (base)
+> +#define TLMMV3_SDC2_CFG(base)          (TLMMV3_SDC1_CFG(base) + 0x4)
+> +
+> +/* GP pin type register offsets */
+> +#define TLMMV3_GP_CFG(base, pin)       (base + 0x1000 + 0x10 * (pin))
+> +#define TLMMV3_GP_INOUT(base, pin)     (base + 0x1004 + 0x10 * (pin))
+> +
+> +struct msm_sdc_regs {
+> +       unsigned int offset;
+> +       unsigned long pull_mask;
+> +       unsigned long pull_shft;
+> +       unsigned long drv_mask;
+> +       unsigned long drv_shft;
+> +};
+> +
+> +static struct msm_sdc_regs sdc_regs[] = {
+> +       /* SDC1 CLK */
+> +       {
+> +               .offset = 0,
+> +               .pull_mask = TLMMV3_SDC1_CLK_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC1_CLK_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC1_CLK_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC1_CLK_DRV_SHFT,
+> +       },
+> +       /* SDC1 CMD */
+> +       {
+> +               .offset = 0,
+> +               .pull_mask = TLMMV3_SDC1_CMD_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC1_CMD_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC1_CMD_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC1_CMD_DRV_SHFT,
+> +       },
+> +       /* SDC1 DATA */
+> +       {
+> +               .offset = 0,
+> +               .pull_mask = TLMMV3_SDC1_DATA_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC1_DATA_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC1_DATA_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC1_DATA_DRV_SHFT,
+> +       },
+> +       /* SDC2 CLK */
+> +       {
+> +               .offset = 0x4,
+> +               .pull_mask = TLMMV3_SDC2_CLK_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC2_CLK_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC2_CLK_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC2_CLK_DRV_SHFT,
+> +       },
+> +       /* SDC2 CMD */
+> +       {
+> +               .offset = 0x4,
+> +               .pull_mask = TLMMV3_SDC2_CMD_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC2_CMD_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC2_CMD_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC2_CMD_DRV_SHFT,
+> +       },
+> +       /* SDC2 DATA */
+> +       {
+> +               .offset = 0x4,
+> +               .pull_mask = TLMMV3_SDC2_DATA_PULL_MASK,
+> +               .pull_shft = TLMMV3_SDC2_DATA_PULL_SHFT,
+> +               .drv_mask = TLMMV3_SDC2_DATA_DRV_MASK,
+> +               .drv_shft = TLMMV3_SDC2_DATA_DRV_SHFT,
+> +       },
+> +};
+> +
+> +static int msm_tlmm_v3_sdc_cfg(uint pin_no, unsigned long *config,
+> +                                               void __iomem *reg_base,
+> +                                               bool write)
+
+I strongly recommend you split this function into a get_config and
+set_config. It took me plenty of time to get my head around what
+you're doing here.
+
+I would also suggest that you do:
+
+val = readl()
+switch () {
+  fix val in various ways
+}
+writel(val)
+
+Instead of maintaining mask and shift throughout the function.
+
+> +{
+> +       unsigned int val, id, data;
+> +       u32 mask, shft;
+> +       void __iomem *cfg_reg;
+> +
+> +       cfg_reg = reg_base + sdc_regs[pin_no].offset;
+> +       id = pinconf_to_config_param(*config);
+> +       val = readl_relaxed(cfg_reg);
+> +       /* Get mask and shft values for this config type */
+> +       switch (id) {
+> +       case PIN_CONFIG_BIAS_DISABLE:
+> +               mask = sdc_regs[pin_no].pull_mask;
+> +               shft = sdc_regs[pin_no].pull_shft;
+> +               data = TLMMV3_NO_PULL;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_DOWN:
+> +               mask = sdc_regs[pin_no].pull_mask;
+> +               shft = sdc_regs[pin_no].pull_shft;
+> +               data = TLMMV3_PULL_DOWN;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_UP:
+> +               mask = sdc_regs[pin_no].pull_mask;
+> +               shft = sdc_regs[pin_no].pull_shft;
+> +               data = TLMMV3_PULL_UP;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_DRIVE_STRENGTH:
+> +               mask = sdc_regs[pin_no].drv_mask;
+> +               shft = sdc_regs[pin_no].drv_shft;
+> +               if (write) {
+> +                       data = pinconf_to_config_argument(*config);
+> +                       data = drv_str_to_rval(data);
+> +               } else {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_drv_str(val);
+> +               }
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       };
+> +
+> +       if (write) {
+> +               val &= ~(mask << shft);
+> +               val |= (data << shft);
+> +               writel_relaxed(val, cfg_reg);
+> +       } else
+> +               *config = pinconf_to_config_packed(id, data);
+> +       return 0;
+> +}
+> +
+> +static void msm_tlmm_v3_sdc_set_reg_base(void __iomem **ptype_base,
+> +                                                       void __iomem *tlmm_base)
+> +{
+> +       *ptype_base = tlmm_base + TLMMV3_SDC_OFFSET;
+> +}
+
+This function is used to do "pin type based base offset shifting", if
+you instead moved the calculation into the msm_sdc_regs above you
+could just skip it from your interface and pass the blocks reg_base to
+allt these functions.
+
+> +
+> +static int msm_tlmm_v3_gp_cfg(uint pin_no, unsigned long *config,
+> +                                               void *reg_base, bool write)
+
+As with the sdc config function I think this is cluttered. Better
+duplicate some of it to make two nice functions that one can easily
+follow.
+
+> +{
+> +       unsigned int val, id, data, inout_val;
+> +       u32 mask = 0, shft = 0;
+> +       void __iomem *inout_reg = NULL;
+> +       void __iomem *cfg_reg = TLMMV3_GP_CFG(reg_base, pin_no);
+> +
+> +       id = pinconf_to_config_param(*config);
+> +       val = readl_relaxed(cfg_reg);
+> +       /* Get mask and shft values for this config type */
+> +       switch (id) {
+> +       case PIN_CONFIG_BIAS_DISABLE:
+> +               mask = TLMMV3_GP_PULL_MASK;
+> +               shft = TLMMV3_GP_PULL_SHFT;
+> +               data = TLMMV3_NO_PULL;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+
+I assume this should return a "boolean" whether or not this mode is
+selected; if so you should return 1 here iff (val & 0x3) == 3. I
+assume the same goes for the sdc config function?
+
+@Linus, could you please confirm this interpretation of the get_config
+for pull config.
+
+> +               }
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_DOWN:
+> +               mask = TLMMV3_GP_PULL_MASK;
+> +               shft = TLMMV3_GP_PULL_SHFT;
+> +               data = TLMMV3_PULL_DOWN;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_BIAS_PULL_UP:
+> +               mask = TLMMV3_GP_PULL_MASK;
+> +               shft = TLMMV3_GP_PULL_SHFT;
+> +               data = TLMMV3_PULL_UP;
+> +               if (!write) {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_pull(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_DRIVE_STRENGTH:
+> +               mask = TLMMV3_GP_DRV_MASK;
+> +               shft = TLMMV3_GP_DRV_SHFT;
+> +               if (write) {
+> +                       data = pinconf_to_config_argument(*config);
+> +                       data = drv_str_to_rval(data);
+> +               } else {
+> +                       val >>= shft;
+> +                       val &= mask;
+> +                       data = rval_to_drv_str(val);
+> +               }
+> +               break;
+> +       case PIN_CONFIG_OUTPUT:
+> +               mask = TLMMV3_GP_DIR_MASK;
+> +               shft = TLMMV3_GP_DIR_SHFT;
+> +               inout_reg = TLMMV3_GP_INOUT(reg_base, pin_no);
+> +               if (write) {
+> +                       data = pinconf_to_config_argument(*config);
+> +                       inout_val = dir_to_inout_val(data);
+> +                       writel_relaxed(inout_val, inout_reg);
+> +                       data = (mask << shft);
+> +               } else {
+> +                       inout_val = readl_relaxed(inout_reg);
+> +                       data = inout_val_to_dir(inout_val);
+> +               }
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       };
+> +
+> +       if (write) {
+> +               val &= ~(mask << shft);
+> +               val |= (data << shft);
+> +               writel_relaxed(val, cfg_reg);
+> +       } else
+> +               *config = pinconf_to_config_packed(id, data);
+> +       return 0;
+> +}
+> +
+> +static void msm_tlmm_v3_gp_fn(uint pin_no, u32 func, void *reg_base,
+> +                                                               bool enable)
+> +{
+> +       unsigned int val;
+> +       void __iomem *cfg_reg = TLMMV3_GP_CFG(reg_base, pin_no);
+> +       val = readl_relaxed(cfg_reg);
+> +       val &= ~(TLMMV3_GP_FUNC_MASK << TLMMV3_GP_FUNC_SHFT);
+> +       if (enable)
+> +               val |= (func << TLMMV3_GP_FUNC_SHFT);
+> +       writel_relaxed(val, cfg_reg);
+> +}
+> +
+> +static void msm_tlmm_v3_gp_set_reg_base(void __iomem **ptype_base,
+> +                                               void __iomem *tlmm_base)
+> +{
+> +       *ptype_base = tlmm_base;
+> +}
+> +
+> +static struct msm_pintype_info tlmm_v3_pininfo[] = {
+> +       {
+> +               .prg_cfg = msm_tlmm_v3_gp_cfg,
+> +               .prg_func = msm_tlmm_v3_gp_fn,
+
+Please add a separate function for getting the config, as it would
+simplify both sides of the interface.
+Please rename these functions ".get_config", ".set_config" and ".set_function".
+
+> +               .set_reg_base = msm_tlmm_v3_gp_set_reg_base,
+
+Please remove this from the interface, better let the sdc definition
+include the offset needed.
+
+> +               .reg_data = NULL,
+
+By removing the set_reg_base, you don't need a per pin-type definition
+of the register base.
+
+> +               .prop_name = "qcom,pin-type-gp",
+> +               .name = "gp",
+> +       },
+> +       {
+> +               .prg_cfg = msm_tlmm_v3_sdc_cfg,
+> +               .set_reg_base = msm_tlmm_v3_sdc_set_reg_base,
+> +               .reg_data = NULL,
+> +               .prop_name = "qcom,pin-type-sdc",
+> +               .name = "sdc",
+> +       }
+> +};
+> +
+> +struct msm_tlmm tlmm_v3_pintypes = {
+> +       .num_entries = ARRAY_SIZE(tlmm_v3_pininfo),
+> +       .pintype_info = tlmm_v3_pininfo,
+> +};
+> +
+> diff --git a/drivers/pinctrl/pinctrl-msm.c b/drivers/pinctrl/pinctrl-msm.c
+> new file mode 100644
+> index 0000000..11671b49
+> --- /dev/null
+> +++ b/drivers/pinctrl/pinctrl-msm.c
+> @@ -0,0 +1,724 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/err.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/io.h>
+> +#include <linux/module.h>
+> +#include <linux/of.h>
+> +#include <linux/pinctrl/pinctrl.h>
+> +#include <linux/pinctrl/pinmux.h>
+> +#include <linux/pinctrl/machine.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include "core.h"
+> +#include "pinconf.h"
+> +#include "pinctrl-msm.h"
+> +
+> +/**
+> + * struct msm_pinctrl_dd: represents the pinctrol driver data.
+> + * @base: virtual base of TLMM.
+> + * @irq: interrupt number for TLMM summary interrupt.
+> + * @num_pins: Number of total pins present on TLMM.
+> + * @msm_pindesc: list of descriptors for each pin.
+> + * @num_pintypes: number of pintypes on TLMM.
+> + * @msm_pintype: points to the representation of all pin types supported.
+> + * @pctl: pin controller instance managed by the driver.
+> + * @pctl_dev: pin controller descriptor registered with the pinctrl subsystem.
+> + * @pin_grps: list of pin groups available to the driver.
+> + * @num_grps: number of groups.
+> + * @pmx_funcs:list of pin functions available to the driver
+> + * @num_funcs: number of functions.
+> + * @dev: pin contol device.
+> + */
+> +struct msm_pinctrl_dd {
+> +       void __iomem *base;
+> +       int     irq;
+> +       unsigned int num_pins;
+> +       struct msm_pindesc *msm_pindesc;
+> +       unsigned int num_pintypes;
+> +       struct msm_pintype_info *msm_pintype;
+> +       struct pinctrl_desc pctl;
+> +       struct pinctrl_dev *pctl_dev;
+> +       struct msm_pin_grps *pin_grps;
+> +       unsigned int num_grps;
+> +       struct  msm_pmx_funcs *pmx_funcs;
+> +       unsigned int num_funcs;
+> +       struct device *dev;
+> +};
+> +
+> +static int msm_pmx_functions_count(struct pinctrl_dev *pctldev)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       return dd->num_funcs;
+> +}
+> +
+> +static const char *msm_pmx_get_fname(struct pinctrl_dev *pctldev,
+> +                                               unsigned selector)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       return dd->pmx_funcs[selector].name;
+> +}
+> +
+> +static int msm_pmx_get_groups(struct pinctrl_dev *pctldev,
+> +               unsigned selector, const char * const **groups,
+> +               unsigned * const num_groups)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       *groups = dd->pmx_funcs[selector].gps;
+> +       *num_groups = dd->pmx_funcs[selector].num_grps;
+> +       return 0;
+> +}
+> +
+> +static void msm_pmx_prg_fn(struct pinctrl_dev *pctldev, unsigned selector,
+> +                                       unsigned group, bool enable)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       const unsigned int *pins;
+> +       struct msm_pindesc *pindesc;
+> +       struct msm_pintype_info *pintype;
+> +       unsigned int pin, cnt, func;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       pins = dd->pin_grps[group].pins;
+> +       pindesc = dd->msm_pindesc;
+> +
+> +       /*
+> +        * for each pin in the pin group selected, program the correspoding
+> +        * pin function number in the config register.
+> +        */
+> +       for (cnt = 0; cnt < dd->pin_grps[group].num_pins; cnt++) {
+> +               pin = pins[cnt];
+> +               /* Obtain the pin type for given pin */
+> +               pintype = pindesc[pin].pin_info;
+> +               /* Obtain the pin number within the pin type */
+> +               pin = pin - pintype->pin_start;
+> +               func = dd->pin_grps[group].func;
+> +               /* program the function value for the given pin type */
+> +               pintype->prg_func(pin, func, pintype->reg_data, enable);
+> +       }
+> +}
+> +
+> +static int msm_pmx_enable(struct pinctrl_dev *pctldev, unsigned selector,
+> +                                       unsigned group)
+> +{
+> +       msm_pmx_prg_fn(pctldev, selector, group, true);
+> +       return 0;
+> +}
+> +
+> +static void msm_pmx_disable(struct pinctrl_dev *pctldev,
+> +                                       unsigned selector, unsigned group)
+> +{
+> +       msm_pmx_prg_fn(pctldev, selector, group, false);
+> +}
+> +
+> +static struct pinmux_ops msm_pmxops = {
+> +       .get_functions_count    = msm_pmx_functions_count,
+> +       .get_function_name      = msm_pmx_get_fname,
+> +       .get_function_groups    = msm_pmx_get_groups,
+> +       .enable                 = msm_pmx_enable,
+> +       .disable                = msm_pmx_disable,
+> +};
+> +
+> +static int msm_pconf_prg(struct pinctrl_dev *pctldev, unsigned int pin,
+> +                               unsigned long *config, bool rw)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       struct msm_pindesc *pindesc;
+> +       struct msm_pintype_info *pintype;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       pindesc = dd->msm_pindesc;
+> +       /* Get pin type for given pin */
+> +       pintype = pindesc[pin].pin_info;
+> +       /* Get pin offset from the pintype start pin number */
+> +       pin = pin - pintype->pin_start;
+> +       /* Program the config value for pin type */
+> +       return pintype->prg_cfg(pin, config, pintype->reg_data, rw);
+> +}
+> +
+> +static int msm_pconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
+> +                               unsigned long config)
+> +{
+> +       return msm_pconf_prg(pctldev, pin, &config, true);
+> +}
+> +
+> +static int msm_pconf_get(struct pinctrl_dev *pctldev, unsigned int pin,
+> +                                       unsigned long *config)
+> +{
+> +       return msm_pconf_prg(pctldev, pin, config, false);
+> +}
+> +
+> +static int msm_pconf_group_set(struct pinctrl_dev *pctldev,
+> +                       unsigned group, unsigned long config)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       const unsigned int *pins;
+> +       unsigned int cnt;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       pins = dd->pin_grps[group].pins;
+> +
+> +       for (cnt = 0; cnt < dd->pin_grps[group].num_pins; cnt++)
+> +               msm_pconf_set(pctldev, pins[cnt], config);
+> +
+> +       return 0;
+> +}
+> +
+> +static int msm_pconf_group_get(struct pinctrl_dev *pctldev,
+> +                               unsigned int group, unsigned long *config)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       const unsigned int *pins;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       pins = dd->pin_grps[group].pins;
+> +       msm_pconf_get(pctldev, pins[0], config);
+> +       return 0;
+> +}
+> +
+> +static struct pinconf_ops msm_pconfops = {
+> +       .pin_config_get         = msm_pconf_get,
+> +       .pin_config_set         = msm_pconf_set,
+> +       .pin_config_group_get   = msm_pconf_group_get,
+> +       .pin_config_group_set   = msm_pconf_group_set,
+> +};
+> +
+> +static int msm_get_grps_count(struct pinctrl_dev *pctldev)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       return dd->num_grps;
+> +}
+> +
+> +static const char *msm_get_grps_name(struct pinctrl_dev *pctldev,
+> +                                               unsigned selector)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       return dd->pin_grps[selector].name;
+> +}
+> +
+> +static int msm_get_grps_pins(struct pinctrl_dev *pctldev,
+> +               unsigned selector, const unsigned **pins, unsigned *num_pins)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       *pins = dd->pin_grps[selector].pins;
+> +       *num_pins = dd->pin_grps[selector].num_pins;
+> +       return 0;
+> +}
+> +
+> +static struct msm_pintype_info *msm_pgrp_to_pintype(struct device_node *nd,
+> +                                               struct msm_pinctrl_dd *dd)
+> +{
+> +       struct device_node *ptype_nd;
+> +       struct msm_pintype_info *pinfo = NULL;
+> +       int idx = 0;
+> +
+> +       /*Extract pin type node from parent node */
+> +       ptype_nd = of_parse_phandle(nd, "qcom,pins", 0);
+> +       /* find the pin type info for this pin type node */
+> +       for (idx = 0; idx < dd->num_pintypes; idx++) {
+> +               pinfo = &dd->msm_pintype[idx];
+> +               if (ptype_nd == pinfo->node) {
+> +                       of_node_put(ptype_nd);
+> +                       break;
+> +               }
+> +       }
+> +       return pinfo;
+> +}
+> +
+> +/* create pinctrl_map entries by parsing device tree nodes */
+> +static int msm_dt_node_to_map(struct pinctrl_dev *pctldev,
+> +                       struct device_node *cfg_np, struct pinctrl_map **maps,
+> +                       unsigned *nmaps)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       struct device_node *parent;
+> +       struct msm_pindesc *pindesc;
+> +       struct msm_pintype_info *pinfo;
+> +       struct pinctrl_map *map;
+> +       const char *grp_name;
+> +       char *fn_name;
+> +       u32 val;
+> +       unsigned long *cfg;
+> +       int cfg_cnt = 0, map_cnt = 0, func_cnt = 0, ret = 0;
+> +
+> +       dd = pinctrl_dev_get_drvdata(pctldev);
+> +       pindesc = dd->msm_pindesc;
+> +       /* get parent node of config node */
+> +       parent = of_get_parent(cfg_np);
+> +       /*
+> +        * parent node contains pin grouping
+> +        * get pin type from pin grouping
+> +        */
+> +       pinfo = msm_pgrp_to_pintype(parent, dd);
+> +       /* check if there is a function associated with the parent pin group */
+> +       if (of_find_property(parent, "qcom,pin-func", NULL))
+> +               func_cnt++;
+> +       /* get pin configs */
+> +       ret = pinconf_generic_parse_dt_config(cfg_np, &cfg, &cfg_cnt);
+> +       if (ret) {
+> +               dev_err(dd->dev, "properties incorrect\n");
+> +               return ret;
+> +       }
+> +
+> +       map_cnt = cfg_cnt + func_cnt;
+> +
+> +       /* Allocate memory for pin-map entries */
+> +       map = kzalloc(sizeof(*map) * map_cnt, GFP_KERNEL);
+> +       if (!map)
+> +               return -ENOMEM;
+> +       *nmaps = 0;
+> +
+> +       /* Get group name from node */
+> +       of_property_read_string(parent, "label", &grp_name);
+> +       /* create the config map entry */
+> +       map[*nmaps].data.configs.group_or_pin = grp_name;
+> +       map[*nmaps].data.configs.configs = cfg;
+> +       map[*nmaps].data.configs.num_configs = cfg_cnt;
+> +       map[*nmaps].type = PIN_MAP_TYPE_CONFIGS_GROUP;
+> +       *nmaps += 1;
+> +
+> +       /* If there is no function specified in device tree return */
+> +       if (func_cnt == 0) {
+> +               *maps = map;
+> +               goto no_func;
+> +       }
+> +       /* Get function mapping */
+> +       of_property_read_u32(parent, "qcom,pin-func", &val);
+> +       fn_name = kzalloc(strlen(grp_name) + strlen("-func"),
+> +                                               GFP_KERNEL);
+> +       if (!fn_name) {
+> +               ret = -ENOMEM;
+> +               goto func_err;
+> +       }
+> +       snprintf(fn_name, strlen(grp_name) + strlen("-func") + 1, "%s%s",
+> +                                               grp_name, "-func");
+
+Store the size of this in a variable to be used both in the allocation
+and in the snprintf. That way you don't have to line wrap here.
+Also make sure you allocate room for the nul byte (that you have in
+your snprintf).
+
+And move the "-func" into the format string ("%s-func").
+
+> +       map[*nmaps].data.mux.group = grp_name;
+> +       map[*nmaps].data.mux.function = fn_name;
+> +       map[*nmaps].type = PIN_MAP_TYPE_MUX_GROUP;
+> +       *nmaps += 1;
+> +       *maps = map;
+> +       of_node_put(parent);
+> +       return 0;
+> +
+> +func_err:
+> +       kfree(cfg);
+> +       kfree(map);
+> +no_func:
+> +       of_node_put(parent);
+> +       return ret;
+> +}
+> +
+> +/* free the memory allocated to hold the pin-map table */
+> +static void msm_dt_free_map(struct pinctrl_dev *pctldev,
+> +                            struct pinctrl_map *map, unsigned num_maps)
+> +{
+> +       int idx;
+> +
+> +       for (idx = 0; idx < num_maps; idx++) {
+> +               if (map[idx].type == PIN_MAP_TYPE_CONFIGS_GROUP)
+> +                       kfree(map[idx].data.configs.configs);
+> +               else if (map->type == PIN_MAP_TYPE_MUX_GROUP)
+> +                       kfree(map[idx].data.mux.function);
+> +       };
+> +
+> +       kfree(map);
+> +}
+> +
+> +static struct pinctrl_ops msm_pctrlops = {
+> +       .get_groups_count       = msm_get_grps_count,
+> +       .get_group_name         = msm_get_grps_name,
+> +       .get_group_pins         = msm_get_grps_pins,
+> +       .dt_node_to_map         = msm_dt_node_to_map,
+> +       .dt_free_map            = msm_dt_free_map,
+> +};
+> +
+> +static int msm_of_get_pin(struct device_node *np, int index,
+> +                               struct msm_pinctrl_dd *dd, uint *pin)
+> +{
+> +       struct of_phandle_args pargs;
+> +       struct msm_pintype_info *pinfo;
+> +       int num_pintypes;
+> +       int ret, i;
+> +
+> +       ret = of_parse_phandle_with_args(np, "qcom,pins", "#qcom,pin-cells",
+> +                                                               index, &pargs);
+> +       if (ret)
+> +               return ret;
+> +       pinfo = dd->msm_pintype;
+> +       num_pintypes = dd->num_pintypes;
+> +       for (i = 0; i < num_pintypes; i++)  {
+> +               /* Find the matching pin type node */
+> +               if (pargs.np != pinfo->node)
+> +                       continue;
+> +               /* Check if arg specified is in valid range for pin type */
+> +               if (pargs.args[0] > pinfo->num_pins) {
+> +                       ret = -EINVAL;
+> +                       dev_err(dd->dev, "Invalid pin number for type %s\n",
+> +                                                               pinfo->name);
+> +                       goto out;
+> +               }
+> +               /*
+> +                * Pin number = index within pin type + start of pin numbers
+> +                * for this pin type
+> +                */
+> +               *pin = pargs.args[0] + pinfo->pin_start;
+> +       }
+> +out:
+> +       of_node_put(pargs.np);
+> +       return ret;
+> +}
+> +
+> +static int msm_pinctrl_dt_parse_pins(struct device_node *dev_node,
+> +                                               struct msm_pinctrl_dd *dd)
+> +{
+> +       struct device *dev;
+> +       struct device_node *pgrp_np;
+> +       struct msm_pin_grps *pin_grps, *curr_grp;
+> +       struct msm_pmx_funcs *pmx_funcs, *curr_func;
+> +       char *func_name;
+> +       const char *grp_name;
+> +       int ret, i, grp_index = 0, func_index = 0;
+> +       uint pin = 0, *pins, num_grps = 0, num_pins = 0, len = 0;
+> +       uint num_funcs = 0;
+> +       u32 func = 0;
+> +
+> +       dev = dd->dev;
+> +       for_each_child_of_node(dev_node, pgrp_np) {
+> +               if (!of_find_property(pgrp_np, "qcom,pins", NULL))
+> +                       continue;
+> +               if (of_find_property(pgrp_np, "qcom,pin-func", NULL))
+> +                       num_funcs++;
+> +               num_grps++;
+> +       }
+> +
+> +       pin_grps = (struct msm_pin_grps *)devm_kzalloc(dd->dev,
+> +                                               sizeof(*pin_grps) * num_grps,
+> +                                               GFP_KERNEL);
+> +       if (!pin_grps) {
+> +               dev_err(dev, "Failed to allocate grp desc\n");
+> +               return -ENOMEM;
+> +       }
+> +       pmx_funcs = (struct msm_pmx_funcs *)devm_kzalloc(dd->dev,
+> +                                               sizeof(*pmx_funcs) * num_funcs,
+> +                                               GFP_KERNEL);
+> +       if (!pmx_funcs) {
+> +               dev_err(dev, "Failed to allocate grp desc\n");
+> +               return -ENOMEM;
+> +       }
+> +       /*
+> +        * Iterate over all child nodes, and for nodes containing pin lists
+> +        * populate corresponding pin group, and if provided, corresponding
+> +        * function
+> +        */
+> +       for_each_child_of_node(dev_node, pgrp_np) {
+> +               if (!of_find_property(pgrp_np, "qcom,pins", NULL))
+> +                       continue;
+> +               curr_grp = pin_grps + grp_index;
+> +               /* Get group name from label*/
+> +               ret = of_property_read_string(pgrp_np, "label", &grp_name);
+> +               if (ret) {
+> +                       dev_err(dev, "Unable to allocate group name\n");
+> +                       return ret;
+> +               }
+> +               num_pins = of_count_phandle_with_args(pgrp_np,
+> +                                                       "qcom,pins",
+> +                                                       "qcom,pin-cells");
+
+This doesn't work, the last parameter needs to be "#qcom,pin-cells"
+based on your example device tree.
+
+> +               if (IS_ERR_VALUE(num_pins)) {
+> +                       dev_err(dev, "pin count not specified for groups %s\n",
+> +                                                               grp_name);
+> +                       return ret;
+> +               }
+> +               pins = devm_kzalloc(dd->dev, sizeof(unsigned int) * num_pins,
+> +                                               GFP_KERNEL);
+> +               if (!pins) {
+> +                       dev_err(dev, "Unable to allocte pins for %s\n",
+> +                                                               grp_name);
+> +                       return -ENOMEM;
+> +               }
+> +               for (i = 0; i < num_pins; i++) {
+> +                       ret = msm_of_get_pin(pgrp_np, i, dd, &pin);
+> +                       if (ret) {
+> +                               dev_err(dev, "Pin grp %s does not have pins\n",
+> +                                                               grp_name);
+> +                               return ret;
+> +                       }
+> +                       pins[i] = pin;
+> +               }
+> +               curr_grp->pins = pins;
+> +               curr_grp->num_pins = num_pins;
+> +               curr_grp->name = grp_name;
+> +               grp_index++;
+> +               /* Check if func specified */
+> +               if (!of_find_property(pgrp_np, "qcom,pin-func", NULL))
+> +                       continue;
+> +               curr_func = pmx_funcs + func_index;
+> +               len = strlen(grp_name) + strlen("-func") + 1;
+> +               func_name = devm_kzalloc(dev, len, GFP_KERNEL);
+> +               if (!func_name) {
+> +                       dev_err(dev, "Cannot allocate func name for grp %s",
+> +                                                               grp_name);
+> +                       return -ENOMEM;
+> +               }
+> +               snprintf(func_name, len, "%s%s", grp_name, "-func");
+
+Move "-func" into the format.
+
+> +               curr_func->name = func_name;
+> +               curr_func->gps = devm_kzalloc(dev, sizeof(char *), GFP_KERNEL);
+> +               if (!curr_func->gps) {
+> +                       dev_err(dev, "failed to alloc memory for group list ");
+> +                       return -ENOMEM;
+> +               }
+> +               of_property_read_u32(pgrp_np, "qcom,pin-func", &func);
+> +               curr_grp->func = func;
+> +               curr_func->gps[0] = grp_name;
+> +               curr_func->num_grps = 1;
+
+This is the only place you store something in gps and the only place
+you read the value is in msm_pmux_get_groups(). As you're in control
+of the msm_pmx_funcs struct I suggest that you remove this allocation
+and just store the group_name in a char * pointer and drops the
+num_grps. Then in msm_pmux_get_groups you assign
+
+*groups = &dd->pmx_funcs[selector].gps;
+*num_groups = 1;
+
+And preferably you rename gps to group_name, or something else that's readable.
+
+> +               func_index++;
+> +       }
+> +       dd->pin_grps = pin_grps;
+> +       dd->num_grps = num_grps;
+> +       dd->pmx_funcs = pmx_funcs;
+> +       dd->num_funcs = num_funcs;
+> +       return 0;
+> +}
+> +
+> +static void msm_populate_pindesc(struct msm_pintype_info *pinfo,
+> +                                       struct msm_pindesc *msm_pindesc)
+> +{
+> +       int i;
+> +       struct msm_pindesc *pindesc;
+> +
+> +       for (i = 0; i < pinfo->num_pins; i++) {
+> +               pindesc = &msm_pindesc[i + pinfo->pin_start];
+> +               pindesc->pin_info = pinfo;
+> +               snprintf(pindesc->name, sizeof(pindesc->name),
+> +                                       "%s-%d", pinfo->name, i);
+> +       }
+> +}
+> +
+> +static int msm_pinctrl_dt_parse_pintype(struct device_node *dev_node,
+> +                                               struct msm_pinctrl_dd *dd)
+> +{
+> +       struct device_node *pt_node;
+> +       struct msm_pindesc *msm_pindesc;
+> +       struct msm_pintype_info *pintype, *pinfo;
+> +       void __iomem **ptype_base;
+> +       u32 num_pins, pinfo_entries, curr_pins;
+> +       int i, ret;
+> +       uint total_pins = 0;
+> +
+> +       pinfo = dd->msm_pintype;
+> +       pinfo_entries = dd->num_pintypes;
+> +       curr_pins = 0;
+> +
+> +       for_each_child_of_node(dev_node, pt_node) {
+> +               for (i = 0; i < pinfo_entries; i++) {
+> +                       pintype = &pinfo[i];
+> +                       /* Check if node is pintype node */
+> +                       if (!of_find_property(pt_node, pinfo->prop_name, NULL))
+> +                               continue;
+> +                       of_node_get(pt_node);
+> +                       pintype->node = pt_node;
+> +                       /* determine number of pins of given pin type */
+> +                       ret = of_property_read_u32(pt_node, "qcom,num-pins",
+> +                                                               &num_pins);
+> +                       if (ret) {
+
+The alloc_fail at the bottom is taking care of putting any of_nodes
+you got here, in the event of an allocation failure below. But here
+you simply return. Please roll back your of_node_gets.
+
+> +                               dev_err(dd->dev, "num pins not specified\n");
+> +                               return ret;
+> +                       }
+> +                       /* determine pin number range for given pin type */
+> +                       pintype->num_pins = num_pins;
+> +                       pintype->pin_start = curr_pins;
+> +                       pintype->pin_end = curr_pins + num_pins;
+
+How does this work with having multiple pin types defined at the same time.
+
+As far as I can see the order of the definition of the pin types
+matters because of this.
+It also gives an idea that you could have multiple gp/sdc groups, but
+then the addressing will be way confusing.
+
+Compare what actual pin <&gp 0> refers to in these two cases:
+
+gp: gp { qcom,num-pins = <10>; }
+sdc: sdc { qcom,num-pins = <10>; }
+
+sdc: sdc { qcom,num-pins = <10>; }
+gp: gp { qcom,num-pins = <10>; }
+
+
+I suggest that you drop the pin_start and only store num_pins in the
+pintype struct.
+
+> +                       ptype_base = &pintype->reg_data;
+> +                       pintype->set_reg_base(ptype_base, dd->base);
+
+Please refer to my comment on this in the v3.c file regarding this object model.
+
+> +                       total_pins += num_pins;
+> +                       curr_pins += num_pins;
+> +               }
+> +       }
+> +       dd->msm_pindesc = devm_kzalloc(dd->dev,
+> +                                               sizeof(struct msm_pindesc) *
+> +                                               total_pins, GFP_KERNEL);
+> +       if (!dd->msm_pindesc) {
+> +               dev_err(dd->dev, "Unable to allocate msm pindesc");
+> +               goto alloc_fail;
+> +       }
+> +
+> +       dd->num_pins = total_pins;
+> +       msm_pindesc = dd->msm_pindesc;
+> +       /*
+> +        * Populate pin descriptor based on each pin type present in Device
+> +        * tree and supported by the driver
+> +        */
+> +       for (i = 0; i < pinfo_entries; i++) {
+> +               pintype = &pinfo[i];
+> +               /* If entry not in device tree, skip */
+> +               if (!pintype->node)
+> +                       continue;
+> +               msm_populate_pindesc(pintype, msm_pindesc);
+> +       }
+> +       return 0;
+> +alloc_fail:
+> +       for (i = 0; i < pinfo_entries; i++) {
+> +               pintype = &pinfo[i];
+> +               if (pintype->node)
+> +                       of_node_put(pintype->node);
+> +       }
+> +       return -ENOMEM;
+> +}
+> +
+> +static const struct of_device_id msm_pinctrl_dt_match[] = {
+> +       { .compatible = "qcom,msm-tlmm-v3",
+> +               .data = &tlmm_v3_pintypes, },
+> +       {},
+> +};
+> +MODULE_DEVICE_TABLE(of, msm_pinctrl_dt_match);
+> +
+> +static void msm_pinctrl_cleanup_dd(struct msm_pinctrl_dd *dd)
+> +{
+> +       int i;
+> +       struct msm_pintype_info *pintype;
+> +
+> +       pintype = dd->msm_pintype;
+> +       for (i = 0; i < dd->num_pintypes; i++) {
+> +               if (pintype->node)
+> +                       of_node_put(dd->msm_pintype[i].node);
+> +       }
+> +}
+> +
+> +static int msm_pinctrl_get_drvdata(struct msm_pinctrl_dd *dd,
+> +                                               struct platform_device *pdev)
+> +{
+> +       const struct of_device_id *match;
+> +       const struct msm_tlmm *tlmm_info;
+> +       int ret;
+> +       struct device_node *node = pdev->dev.of_node;
+> +
+> +       match = of_match_node(msm_pinctrl_dt_match, node);
+> +       if (IS_ERR(match))
+> +               return PTR_ERR(match);
+> +       tlmm_info = match->data;
+> +       dd->msm_pintype = tlmm_info->pintype_info;
+> +       dd->num_pintypes = tlmm_info->num_entries;
+> +       ret = msm_pinctrl_dt_parse_pintype(node, dd);
+> +       if (ret)
+> +               goto out;
+> +
+> +       ret = msm_pinctrl_dt_parse_pins(node, dd);
+> +       if (ret)
+> +               msm_pinctrl_cleanup_dd(dd);
+> +out:
+> +       return ret;
+> +}
+> +
+> +static int msm_register_pinctrl(struct msm_pinctrl_dd *dd)
+> +{
+> +       int i;
+> +       struct pinctrl_pin_desc *pindesc;
+> +       struct pinctrl_desc *ctrl_desc = &dd->pctl;
+> +
+> +       ctrl_desc->name = "msm-pinctrl";
+> +       ctrl_desc->owner = THIS_MODULE;
+> +       ctrl_desc->pmxops = &msm_pmxops;
+> +       ctrl_desc->confops = &msm_pconfops;
+> +       ctrl_desc->pctlops = &msm_pctrlops;
+> +
+> +       pindesc = devm_kzalloc(dd->dev, sizeof(*pindesc) * dd->num_pins,
+> +                                                        GFP_KERNEL);
+> +       if (!pindesc) {
+> +               dev_err(dd->dev, "Failed to allocate pinctrl pin desc\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       for (i = 0; i < dd->num_pins; i++) {
+> +               pindesc[i].number = i;
+> +               pindesc[i].name = dd->msm_pindesc[i].name;
+> +       }
+> +       ctrl_desc->pins = pindesc;
+> +       ctrl_desc->npins = dd->num_pins;
+> +       dd->pctl_dev = pinctrl_register(ctrl_desc, dd->dev, dd);
+> +       if (!dd->pctl_dev) {
+> +               dev_err(dd->dev, "could not register pinctrl driver\n");
+> +               return -EINVAL;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static int msm_pinctrl_probe(struct platform_device *pdev)
+> +{
+> +       struct msm_pinctrl_dd *dd;
+> +       struct device *dev = &pdev->dev;
+> +       struct resource *res;
+> +       int ret;
+> +
+> +       dd = devm_kzalloc(dev, sizeof(*dd), GFP_KERNEL);
+> +       if (!dd) {
+> +               dev_err(dev, "Alloction failed for driver data\n");
+> +               return -ENOMEM;
+> +       }
+> +
+> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +       dd->base = devm_ioremap_resource(&pdev->dev, res);
+> +       if (IS_ERR(dd->base))
+> +               return PTR_ERR(dd->base);
+> +       res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> +       if (res)
+> +               dd->irq = res->start;
+> +       dd->dev = dev;
+> +       ret = msm_pinctrl_get_drvdata(dd, pdev);
+> +       if (ret) {
+> +               dev_err(&pdev->dev, "driver data not available\n");
+> +               return ret;
+> +       }
+> +       ret = msm_register_pinctrl(dd);
+> +       if (ret) {
+> +               msm_pinctrl_cleanup_dd(dd);
+> +               return ret;
+> +       }
+> +       platform_set_drvdata(pdev, dd);
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver msm_pinctrl_driver = {
+> +       .probe          = msm_pinctrl_probe,
+> +       .driver = {
+> +               .name   = "msm-pinctrl",
+> +               .owner  = THIS_MODULE,
+> +               .of_match_table = of_match_ptr(msm_pinctrl_dt_match),
+> +       },
+> +};
+> +
+> +static int __init msm_pinctrl_drv_register(void)
+> +{
+> +       return platform_driver_register(&msm_pinctrl_driver);
+> +}
+> +postcore_initcall(msm_pinctrl_drv_register);
+> +
+> +static void __exit msm_pinctrl_drv_unregister(void)
+> +{
+> +       platform_driver_unregister(&msm_pinctrl_driver);
+> +}
+> +module_exit(msm_pinctrl_drv_unregister);
+> +
+> +MODULE_AUTHOR("Hanumant Singh <hanumant@codeaurora.org>");
+> +MODULE_LICENSE("GPL v2");
+> +
+> diff --git a/drivers/pinctrl/pinctrl-msm.h b/drivers/pinctrl/pinctrl-msm.h
+> new file mode 100644
+> index 0000000..fee159d
+> --- /dev/null
+> +++ b/drivers/pinctrl/pinctrl-msm.h
+> @@ -0,0 +1,97 @@
+> +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +#ifndef __PINCTRL_MSM_H__
+> +#define __PINCTRL_MSM_H__
+> +
+> +#include <linux/pinctrl/pinctrl.h>
+> +#include <linux/pinctrl/pinmux.h>
+> +#include <linux/pinctrl/pinconf.h>
+> +#include <linux/pinctrl/machine.h>
+> +
+> +/**
+> + * struct msm_pin_group: group of pins having the same pinmux function.
+> + * @name: name of the pin group.
+> + * @pins: the pins included in this group.
+> + * @num_pins: number of pins included in this group.
+> + * @func: the function number to be programmed when selected.
+> + */
+> +struct msm_pin_grps {
+
+I prefer the name you use in the comment; msm_pin_group over the
+shortened version.
+
+> +       const char *name;
+> +       unsigned int *pins;
+> +       unsigned num_pins;
+> +       u32 func;
+> +};
+> +
+> +/**
+> + * struct msm_pmx_funcs: represent a pin function.
+> + * @name: name of the pin function.
+> + * @gps: one or more names of pin groups that provide this function.
+> + * @num_grps: number of groups included in @groups.
+> + */
+> +struct msm_pmx_funcs {
+> +       const char *name;
+> +       const char **gps;
+> +       unsigned num_grps;
+
+Please spell this out as "groups" and "num_groups". Also, as argued
+before, with the current implementation there's no need for ** and
+numb_groups. Because they are always 1 element in an array and 1.
+
+> +};
+> +
+> +/**
+> + * struct msm_pintype_info: represent a pin type supported by the TLMM.
+> + * @prg_cfg: helper to program a given config for a pintype.
+> + * @prg_func: helper to program a given func for a pintype.
+> + * @set_reg_base: helper to set the register base address for a pintype.
+> + * @reg_data: register base for a pintype.
+> + * @prop_name: DT property name for a pintype.
+> + * @name: name of pintype.
+> + * @num_pins: number of pins of given pintype.
+> + * @pin_start: starting pin number for the given pintype within pinctroller.
+> + * @pin_end: ending pin number for the given pintype within pinctroller.
+> + * @node: device node for the pintype.
+> + */
+> +struct msm_pintype_info {
+> +       int (*prg_cfg)(uint pin_no, unsigned long *config, void *reg_data,
+> +                                                               bool rw);
+
+Please split this and name it get_config and set_config.
+
+> +       void (*prg_func)(uint pin_no, u32 func, void *reg_data, bool enable);
+
+Please rename this set_function.
+
+> +       void (*set_reg_base)(void __iomem **ptype_base,
+> +                                               void __iomem *tlmm_base);
+
+Please remove this.
+
+> +       void __iomem *reg_data;
+
+Please just reference the reg_base of the msm_pinctrl_dd.
+
+> +       const char *prop_name;
+> +       const char *name;
+> +       u32 num_pins;
+> +       int pin_start;
+> +       int pin_end;
+
+If pin_start ever is anything else than 0 I think things will be
+mighty confusing. Please see my comment on this above.
+
+> +       struct device_node *node;
+> +};
+> +
+> +/**
+> + * struct msm_tlmm: represents all the TLMM pintypes for a given TLMM version.
+> + * @num_entries: number of pintypes.
+> + * @pintype_info: descriptor for the pintypes. One for each present.
+> + */
+> +struct msm_tlmm {
+> +       const uint num_entries;
+> +       struct msm_pintype_info *pintype_info;
+> +};
+> +
+> +/**
+> + * struct msm_pindesc: descriptor for all pins maintained by pinctrl driver
+> + * @pin_info: pintype for a given pin.
+> + * @name: name of the pin.
+> + */
+> +struct msm_pindesc {
+> +       struct msm_pintype_info *pin_info;
+> +       char name[20];
+> +};
+> +
+> +/* TLMM version specific data */
+> +extern struct msm_tlmm tlmm_v3_pintypes;
+> +#endif
+> +
+>
+> --
+> Sent by an employee of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+And again, thanks for writing this driver. I look forward to have it
+mainlined! (with support for my 8960 board ;))
+
+Regards,
+Bjorn
