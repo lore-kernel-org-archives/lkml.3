@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204Ab3G2GR7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 02:17:59 -0400
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:36440 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306Ab3G2GR6 (ORCPT
+	id S1755242Ab3G2GSX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 02:18:23 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49668 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab3G2GSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 02:17:58 -0400
-Message-ID: <51F6090F.3080002@monstr.eu>
-Date: Mon, 29 Jul 2013 08:17:51 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Mon, 29 Jul 2013 02:18:21 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-ce-51f6092cd9ca
+Date: Mon, 29 Jul 2013 15:18:20 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "AneeshKumarK.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Eric B Munson <emunson@mgebm.net>, Anton Blanchard <anton@samba.org>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] hugepage: optimize page fault path locking
+Message-ID: <20130729061820.GA4784@lge.com>
+References: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: monstr@monstr.eu, Rich Felker <dalias@aerifal.cx>,
-        Michal Simek <michal.simek@xilinx.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>, dholsgrove@xilinx.com,
-        Al Viro <viro@ZenIV.linux.org.uk>, microblaze-uclinux@itee.uq.edu.au,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [microblaze-linux] [RESEND PATCH] microblaze: Fix clone syscall
-References: <080727f78ba62f457320b766234f27eff248fa67.1374644031.git.michal.simek@xilinx.com> <20130724055518.GQ3249@brightrain.aerifal.cx> <51EF78BB.8000503@monstr.eu> <20130726160853.81f244ba08368e8cecab0c3b@linux-foundation.org>
-In-Reply-To: <20130726160853.81f244ba08368e8cecab0c3b@linux-foundation.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="bi2CfGbvfltkF3JeI3suo37OsjRP1bCNm"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374848845-1429-1-git-send-email-davidlohr.bueso@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---bi2CfGbvfltkF3JeI3suo37OsjRP1bCNm
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jul 26, 2013 at 07:27:23AM -0700, Davidlohr Bueso wrote:
+> This patchset attempts to reduce the amount of contention we impose
+> on the hugetlb_instantiation_mutex by replacing the global mutex with
+> a table of mutexes, selected based on a hash. The original discussion can 
+> be found here: http://lkml.org/lkml/2013/7/12/428
 
-Hi Andrew,
+Hello, Davidlohr.
 
-On 07/27/2013 01:08 AM, Andrew Morton wrote:
-> On Wed, 24 Jul 2013 08:48:27 +0200 Michal Simek <monstr@monstr.eu> wrot=
-e:
->=20
->> On 07/24/2013 07:55 AM, Rich Felker wrote:
->>> On Wed, Jul 24, 2013 at 07:34:07AM +0200, Michal Simek wrote:
->>>> Microblaze was assign to CLONE_BACKWARDS type where
->>>> parent tid was passed via 3rd argument.
->>>> Microblaze glibc is using 4th argument for it.
->>>>
->>>> Create new CLONE_BACKWARDS3 type where stack_size is passed
->>>> via 3rd argument, parent thread id pointer via 4th,
->>>> child thread id pointer via 5th and tls value as 6th
->>>> argument
->>>
->>> I believe this also affects us in musl. What is the motivation for
->>> making a configure option that results in there being two incompatibl=
-e
->>> syscall ABIs for the same arch?
->>> This sounds like a really bad idea...
->>
->> This patch fixes bug which was introduced by Al's patch where he moved=
+I recently sent a patchset which remove the hugetlb_instantiation_mutex
+entirely ('mm, hugetlb: remove a hugetlb_instantiation_mutex').
+This patchset can be found here: https://lkml.org/lkml/2013/7/29/54
 
->> clone implementation from microblaze folder to generic location.
->=20
-> That's important information which was omitted from the changelog.=20
->=20
-> Please identify the patch which casused this regression (SHA hash and
-> title), thanks.
+If possible, could you review it and test it whether your problem is
+disappered with it or not?
 
-Title is here and no problem to add it to the patch.
-"microblaze: switch to generic fork/vfork/clone"
-(sha1: f3268edbe6fe0ce56e62c6d6b14640aeb04864b7)
-I will do v2 patch.
-I see you have added v1 patch to your repo. What's the reason for that?
-I expect just not to forget it, right?
+Thanks.
 
-Not sure if Al is on his vacation or not but will be helpful if you
-can give me your ACK on that v2 patch and will send pull request directly=
-
-to Linus.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---bi2CfGbvfltkF3JeI3suo37OsjRP1bCNm
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlH2CRMACgkQykllyylKDCG4FgCeNK7qtbv74iHzmasUqp/vxstv
-TksAn39l+2Jc+ZIHwDWWMnLoePD28NgJ
-=5zTl
------END PGP SIGNATURE-----
-
---bi2CfGbvfltkF3JeI3suo37OsjRP1bCNm--
+> 
+> Patch 1: Allows the file region tracking list to be serialized by its own rwsem.
+> This is necessary because the next patch allows concurrent hugepage fault paths,
+> getting rid of the hugetlb_instantiation_mutex - which protects chains of struct 
+> file_regionin inode->i_mapping->private_list (VM_MAYSHARE) or vma_resv_map(vma)->regions 
+> (!VM_MAYSHARE).
+> 
+> Patch 2: From David Gibson, for some reason never made it into the kernel. 
+> Further cleanups and enhancements from Anton Blanchard and myself.
+> Details of how the hash key is selected is in the patch.
+> 
+> Davidlohr Bueso (2):
+>   hugepage: protect file regions with rwsem
+>   hugepage: allow parallelization of the hugepage fault path
+> 
+>  mm/hugetlb.c | 134 ++++++++++++++++++++++++++++++++++++++++++++++-------------
+>  1 file changed, 106 insertions(+), 28 deletions(-)
+> 
+> -- 
+> 1.7.11.7
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
