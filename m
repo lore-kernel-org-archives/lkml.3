@@ -1,285 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3G2L52 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 07:57:28 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:50570 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753284Ab3G2L50 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 07:57:26 -0400
-X-Originating-IP: 60.228.202.203
-Message-ID: <51F658A2.2010007@roeck-us.net>
-Date: Mon, 29 Jul 2013 04:57:22 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1753555Ab3G2MBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:01:00 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:45917 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751599Ab3G2MA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 08:00:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Lan Tianyu <lantianyu1986@gmail.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Aaron Lu <aaron.lu@intel.com>, Tejun Heo <tj@kernel.org>,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power() print device names
+Date: Mon, 29 Jul 2013 14:11:04 +0200
+Message-ID: <57324148.csaJoe9IZd@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAOLK0pyBsD8vR0a2mcSucnD8zFTz8ZB72OPE0R9Z67SxH9VHRw@mail.gmail.com>
+References: <10433383.dueoNg39qi@vostro.rjw.lan> <1895563.95T8SxMegu@vostro.rjw.lan> <CAOLK0pyBsD8vR0a2mcSucnD8zFTz8ZB72OPE0R9Z67SxH9VHRw@mail.gmail.com>
 MIME-Version: 1.0
-To: Jonas Jensen <jonas.jensen@gmail.com>
-CC: linux-watchdog@vger.kernel.org, wim@iguana.be,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arm@kernel.org, arnd@arndb.de
-Subject: Re: [PATCH v6] watchdog: Add MOXA ART watchdog driver
-References: <1375093215-7136-1-git-send-email-jonas.jensen@gmail.com> <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
-In-Reply-To: <1375098093-8975-1-git-send-email-jonas.jensen@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 04:41 AM, Jonas Jensen wrote:
-> Add watchdog driver for MOXA ART SoCs.
->
-> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
-> ---
->
-> Notes:
->      Changes since v5:
->
->      1. replace "moxart_wdt->dev.timeout" with "wdt_dev->timeout"
->
->      Applies to next-20130729
->
->   .../bindings/watchdog/moxa,moxart-watchdog.txt     |  15 ++
->   drivers/watchdog/Kconfig                           |  10 ++
->   drivers/watchdog/Makefile                          |   1 +
->   drivers/watchdog/moxart_wdt.c                      | 165 +++++++++++++++++++++
->   4 files changed, 191 insertions(+)
->   create mode 100644 Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
->   create mode 100644 drivers/watchdog/moxart_wdt.c
->
-> diff --git a/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
-> new file mode 100644
-> index 0000000..1169857
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
-> @@ -0,0 +1,15 @@
-> +MOXA ART Watchdog timer
-> +
-> +Required properties:
-> +
-> +- compatible : Must be "moxa,moxart-watchdog"
-> +- reg : Should contain registers location and length
-> +- clocks : Should contain phandle for the clock that drives the counter
-> +
-> +Example:
-> +
-> +	watchdog: watchdog@98500000 {
-> +		compatible = "moxa,moxart-watchdog";
-> +		reg = <0x98500000 0x10>;
-> +		clocks = <&coreclk>;
-> +	};
-> diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-> index 362085d..6883aab 100644
-> --- a/drivers/watchdog/Kconfig
-> +++ b/drivers/watchdog/Kconfig
-> @@ -382,6 +382,16 @@ config RETU_WATCHDOG
->   	  To compile this driver as a module, choose M here: the
->   	  module will be called retu_wdt.
->
-> +config MOXART_WDT
-> +	tristate "MOXART watchdog"
-> +	depends on ARCH_MOXART
-> +	help
-> +	  Say Y here to include Watchdog timer support for the watchdog
-> +	  existing on the MOXA ART SoC series platforms.
-> +
-> +	  To compile this driver as a module, choose M here: the
-> +	  module will be called moxart_wdt.
-> +
->   # AVR32 Architecture
->
->   config AT32AP700X_WDT
-> diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
-> index 2f26a0b..7cab53a 100644
-> --- a/drivers/watchdog/Makefile
-> +++ b/drivers/watchdog/Makefile
-> @@ -54,6 +54,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
->   obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
->   obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
->   obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
-> +obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
->
->   # AVR32 Architecture
->   obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
-> diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
-> new file mode 100644
-> index 0000000..70b5806
-> --- /dev/null
-> +++ b/drivers/watchdog/moxart_wdt.c
-> @@ -0,0 +1,165 @@
-> +/*
-> + * MOXA ART SoCs watchdog driver.
-> + *
-> + * Copyright (C) 2013 Jonas Jensen
-> + *
-> + * Jonas Jensen <jonas.jensen@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/err.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/watchdog.h>
-> +#include <linux/moduleparam.h>
-> +
-> +#define REG_COUNT			0x4
-> +#define REG_MODE			0x8
-> +#define REG_ENABLE			0xC
-> +
-> +struct moxart_wdt_dev {
-> +	struct watchdog_device dev;
-> +	void __iomem *base;
-> +	unsigned int clock_frequency;
-> +};
-> +
-> +static int heartbeat;
-> +
-> +static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
-> +{
-> +	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
-> +
-> +	writel(0, moxart_wdt->base + REG_ENABLE);
-> +
-> +	return 0;
-> +}
-> +
-> +static int moxart_wdt_start(struct watchdog_device *wdt_dev)
-> +{
-> +	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
-> +
-> +	writel(moxart_wdt->clock_frequency * wdt_dev->timeout,
-> +	       moxart_wdt->base + REG_COUNT);
-> +	writel(0x5ab9, moxart_wdt->base + REG_MODE);
-> +	writel(0x03, moxart_wdt->base + REG_ENABLE);
-> +
-> +	return 0;
-> +}
-> +
-> +static int moxart_wdt_set_timeout(struct watchdog_device *wdt_dev,
-> +				  unsigned int timeout)
-> +{
-> +	wdt_dev->timeout = timeout;
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct watchdog_info moxart_wdt_info = {
-> +	.identity       = "moxart-wdt",
-> +	.options        = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
-> +			  WDIOF_MAGICCLOSE,
-> +};
-> +
-> +static const struct watchdog_ops moxart_wdt_ops = {
-> +	.owner          = THIS_MODULE,
-> +	.start          = moxart_wdt_start,
-> +	.stop           = moxart_wdt_stop,
-> +	.set_timeout    = moxart_wdt_set_timeout,
-> +};
-> +
-> +static int moxart_wdt_probe(struct platform_device *pdev)
-> +{
-> +	struct moxart_wdt_dev *moxart_wdt;
-> +	struct device *dev = &pdev->dev;
+On Monday, July 29, 2013 11:06:36 AM Lan Tianyu wrote:
+> 2013/7/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > Modify acpi_device_set_power() so that diagnostic messages printed by
+> > it to the kernel log always contain the name of the device concerned
+> > to make it possible to identify the device that triggered the message
+> > if need be.
+> >
+> > Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
+> > function.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/device_pm.c |   22 ++++++++++------------
+> >  1 file changed, 10 insertions(+), 12 deletions(-)
+> >
+> > Index: linux-pm/drivers/acpi/device_pm.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/device_pm.c
+> > +++ linux-pm/drivers/acpi/device_pm.c
+> > @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
+> >         /* Make sure this is a valid target state */
+> >
+> >         if (state == device->power.state) {
+> > -               ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
+> > +               ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
+> ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+> Missing "is" or it should be omitted?
 
-I have my nitpicking day ;). Even though you declare dev = &pdev->dev,
-you use &pdev->dev several times below.
+The "is" is not necessary here (in my opinion).
 
-Assuming you change this, feel free to add
+Kind of in analogy with "This has been done already" and "Already done".
 
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Thanks,
+Rafael
 
 
-> +	struct device_node *node = dev->of_node;
-> +	struct resource *res;
-> +	struct clk *clk;
-> +	int err;
-> +	unsigned int max_timeout;
-> +	bool nowayout = WATCHDOG_NOWAYOUT;
-> +
-> +	moxart_wdt = devm_kzalloc(&pdev->dev, sizeof(*moxart_wdt), GFP_KERNEL);
-> +	if (!moxart_wdt)
-> +		return -ENOMEM;
-> +
-> +	platform_set_drvdata(pdev, moxart_wdt);
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	moxart_wdt->base = devm_ioremap_resource(dev, res);
-> +	if (IS_ERR(moxart_wdt->base))
-> +		return PTR_ERR(moxart_wdt->base);
-> +
-> +	clk = of_clk_get(node, 0);
-> +	if (IS_ERR(clk)) {
-> +		pr_err("%s: of_clk_get failed\n", __func__);
-> +		return PTR_ERR(clk);
-> +	}
-> +
-> +	moxart_wdt->clock_frequency = clk_get_rate(clk);
-> +	if (moxart_wdt->clock_frequency == 0) {
-> +		pr_err("%s: incorrect clock frequency\n", __func__);
-> +		return -EINVAL;
-> +	}
-> +
-> +	max_timeout = UINT_MAX / moxart_wdt->clock_frequency;
-> +
-> +	moxart_wdt->dev.info = &moxart_wdt_info;
-> +	moxart_wdt->dev.ops = &moxart_wdt_ops;
-> +	moxart_wdt->dev.timeout = max_timeout;
-> +	moxart_wdt->dev.min_timeout = 1;
-> +	moxart_wdt->dev.max_timeout = max_timeout;
-> +	moxart_wdt->dev.parent = &pdev->dev;
-> +
-> +	watchdog_init_timeout(&moxart_wdt->dev, heartbeat, &pdev->dev);
-> +	watchdog_set_nowayout(&moxart_wdt->dev, nowayout);
-> +
-> +	watchdog_set_drvdata(&moxart_wdt->dev, moxart_wdt);
-> +
-> +	err = watchdog_register_device(&moxart_wdt->dev);
-> +	if (unlikely(err))
-> +		return err;
-> +
-> +	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
-> +		moxart_wdt->dev.timeout, nowayout);
-> +
-> +	return 0;
-> +}
-> +
-> +static int moxart_wdt_remove(struct platform_device *pdev)
-> +{
-> +	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
-> +
-> +	moxart_wdt_stop(&moxart_wdt->dev);
-> +	watchdog_unregister_device(&moxart_wdt->dev);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct of_device_id moxart_watchdog_match[] = {
-> +	{ .compatible = "moxa,moxart-watchdog" },
-> +	{ },
-> +};
-> +
-> +static struct platform_driver moxart_wdt_driver = {
-> +	.probe      = moxart_wdt_probe,
-> +	.remove     = moxart_wdt_remove,
-> +	.driver     = {
-> +		.name		= "moxart-watchdog",
-> +		.owner		= THIS_MODULE,
-> +		.of_match_table	= moxart_watchdog_match,
-> +	},
-> +};
-> +module_platform_driver(moxart_wdt_driver);
-> +
-> +module_param(heartbeat, int, 0);
-> +MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds");
-> +
-> +MODULE_DESCRIPTION("MOXART watchdog driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
->
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
