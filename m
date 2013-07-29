@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753136Ab3G2TDD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:03:03 -0400
-Received: from ns.mm-sol.com ([212.124.72.66]:58420 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab3G2TDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:03:00 -0400
-Subject: Re: [PATCH v2 1/6] usb: phy: msm: Move mach depndend code to
- platform data
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Brown <davidb@codeaurora.org>,
-        Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20130729122344.GH24801@radagast>
-References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
-	 <1375081464-14206-2-git-send-email-iivanov@mm-sol.com>
-	 <20130729122344.GH24801@radagast>
+	id S1753053Ab3G2TFR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:05:17 -0400
+Received: from mail.linux-iscsi.org ([67.23.28.174]:35421 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171Ab3G2TFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:05:14 -0400
+Message-ID: <1375125066.5171.10.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Mon, 29 Jul 2013 12:11:06 -0700
+In-Reply-To: <20130729115011.GC20951@mtj.dyndns.org>
+References: <1374248000.2266.20.camel@dabdike>
+	 <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
+	 <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
+	 <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
+	 <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
+	 <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
+	 <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
+	 <20130726020928.GL29296@kernel.dk>
+	 <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
+	 <1374885793.7397.1537.camel@haakon3.risingtidesystems.com>
+	 <20130729115011.GC20951@mtj.dyndns.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 29 Jul 2013 22:02:58 +0300
-Message-ID: <1375124578.5444.2.camel@localhost>
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
-
-> > Cc: Bryan Huntsman <bryanh@codeaurora.org>
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: linux-usb@vger.kernel.org
+On Mon, 2013-07-29 at 07:50 -0400, Tejun Heo wrote:
+> Yo,
+> 
+> On Fri, Jul 26, 2013 at 05:43:13PM -0700, Nicholas A. Bellinger wrote:
+> > Considering there can be more than a single ata_device hanging off each
+> > ata_port, the '*sdev = ap->link.device[0].sdev' in __ata_qc_from_tag()
+> > is definitely bogus, but I'm not sure how else to correlate
+> > blk-mq/scsi-mq per device descriptors to existing code expecting
+> > ata_port->qcmd[] descriptors to be shared across multiple devices..
 > > 
-> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > ---
-> >  arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
-> >  arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++
+> > Tejun..?
 > 
-> I need acks for these.
+> I have no idea.  Let's please just do simpler conversion and worry
+> about embedding qc's into scsi_cmnds later.  libata isn't a normal
+> SCSI driver and has a rather its own thick midlayer doing the
+> impedance matching inbetween && I really don't think there is too much
+> benefit to be reaped from embedding qc's into scsi_cmnds.
 > 
-> >  drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------------
-> >  include/linux/usb/msm_hsusb.h     |    3 ++
-> >  4 files changed, 87 insertions(+), 41 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
-> > index db3d8c0..6b35953 100644
-> > --- a/arch/arm/mach-msm/board-msm7x30.c
-> > +++ b/arch/arm/mach-msm/board-msm7x30.c
-> > @@ -31,6 +31,7 @@
-> >  #include <asm/setup.h>
-> >  
-> >  #include <mach/board.h>
-> > +#include <mach/clk.h>
-> >  #include <mach/msm_iomap.h>
-> >  #include <mach/dma.h>
-> >  
-> > @@ -61,10 +62,44 @@ static int hsusb_phy_init_seq[] = {
-> >  	-1
-> >  };
-> >  
-> > +static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
-> 
-> looks like you should be using the reset controller framework ?
-> (drivers/reset)
 
-Probably, but there still nothing in place in the msm,
-which provide this functionality. I am looking it to
-right now.
+That is essentially the same conclusion that I came to, but wanted to at
+least give you a chance to comment here.  ;)
 
-Regards,
-Ivan
+So that said, I'll include a simple conversion for libata into the
+scsi-mq WIP branch, and folks who are interested in more detailed
+conversions can pursue them as separate items.
 
-
+--nab 
 
