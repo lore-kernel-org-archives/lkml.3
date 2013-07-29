@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752334Ab3G2JHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:07:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56141 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751652Ab3G2JG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:06:59 -0400
-Date: Mon, 29 Jul 2013 11:06:53 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
-        tglx@linutronix.de, fengguang.wu@intel.com,
-        tip-bot for Jiri Kosina <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] kprobes/x86: Call out into INT3 handler directly
- instead of using notifier
-In-Reply-To: <51EFE5A8.1060109@linux.intel.com>
-Message-ID: <alpine.LNX.2.00.1307291106260.18809@pobox.suse.cz>
-References: <alpine.LNX.2.00.1307231007490.14024@pobox.suse.cz> <tip-17f41571bb2c4a398785452ac2718a6c5d77180e@git.kernel.org> <51EFE5A8.1060109@linux.intel.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752450Ab3G2JI3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:08:29 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:49820 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751032Ab3G2JI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:08:27 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18bmkCUlCflmRpTxBrwAM8j
+Date: Mon, 29 Jul 2013 02:08:22 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>, linus.walleij@linaro.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130729090822.GZ7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <51E70B5D.6030802@wwwdotorg.org>
+ <20130718073638.GP7656@atomide.com>
+ <51E84180.6080902@wwwdotorg.org>
+ <20130719073957.GZ7656@atomide.com>
+ <51E91516.2040301@ti.com>
+ <51E98D89.9050407@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E98D89.9050407@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 24 Jul 2013, H. Peter Anvin wrote:
-
-> > Commit-ID:  17f41571bb2c4a398785452ac2718a6c5d77180e
-> > Gitweb:     http://git.kernel.org/tip/17f41571bb2c4a398785452ac2718a6c5d77180e
-> > Author:     Jiri Kosina <jkosina@suse.cz>
-> > AuthorDate: Tue, 23 Jul 2013 10:09:28 +0200
-> > Committer:  Ingo Molnar <mingo@kernel.org>
-> > CommitDate: Tue, 23 Jul 2013 10:12:57 +0200
+* Stephen Warren <swarren@wwwdotorg.org> [130719 12:10]:
+> On 07/19/2013 04:29 AM, Grygorii Strashko wrote:
 > > 
-> > kprobes/x86: Call out into INT3 handler directly instead of using notifier
-> > 
-> > In fd4363fff3d96 ("x86: Introduce int3 (breakpoint)-based
-> > instruction patching"), the mechanism that was introduced for
-> > notifying alternatives code from int3 exception handler that and
-> > exception occured was die_notifier.
-> > 
-> > This is however problematic, as early code might be using jump
-> > labels even before the notifier registration has been performed,
-> > which will then lead to an oops due to unhandled exception. One
-> > of such occurences has been encountered by Fengguang:
-> > 
+> > First of all, I'd like to mention that these patches do *not* connect
+> > pinctrl to PM runtime, so until driver will call pinctrl_select_state()
+> > or pinctrl_pm_select_*() there will be no pins state changes.
 > 
-> Please note that putting this patch in perf/core means x86/jumplabel is
-> completely nonfunctional by itself.
+> Isn't the whole point of the pinctrl_pm_select*() APIs to eventually be
+> called automatically by the runtime PM core, so that we don't need to
+> write code to do this in every single driver, just like we moved the
+> call to pinctrl_select_state(default) into the device core so that we
+> didn't have to make every device do that manually?
 
-I'd like to point out that this is still the case ... TIA,
+Yes I think we can make it all automatic. So far it seems that the
+last missing piece was Linus' suggestion of making it mostly happen
+using irqchip with calls to pinctrl so consumer drivers may not need
+to do anything.
+ 
+> > (As result, i2c-mux is not good example, seems:))
+> 
+> As such, I think all situations are good examples, because a generic
+> feature has to work in all cases.
 
--- 
-Jiri Kosina
-SUSE Labs
+Yes we need to support both runtime PM, and more complex cases of
+sharing pins between devices for example that are not runtime PM
+related.
+
+Regards,
+
+Tony
