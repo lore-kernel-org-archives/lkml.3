@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab3G2T4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:56:52 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:46389 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab3G2T4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:56:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, Len Brown <lenb@kernel.org>,
-        Pantelis Antoniou <pantelis.antoniou@gmail.com>,
-        Vitaly Bordug <vbordug@ru.mvista.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Samuel Ortiz <samuel@sortiz.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2/3] include: Convert ethernet mac address declarations to use ETH_ALEN
-Date: Mon, 29 Jul 2013 22:06:58 +0200
-Message-ID: <4497056.HfyZknBA2p@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1375126464.2075.46.camel@joe-AO722>
-References: <cover.1375075325.git.joe@perches.com> <2929374.frUlkyTFNL@vostro.rjw.lan> <1375126464.2075.46.camel@joe-AO722>
+	id S1754510Ab3G2T72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:59:28 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:56924 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751551Ab3G2T71 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:59:27 -0400
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: balbi@ti.com
+Cc: Illia Smyrnov <illia.smyrnov@ti.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for keypad.
+Date: Mon, 29 Jul 2013 12:59:23 -0700
+Message-ID: <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
+User-Agent: KMail/4.10.5 (Linux/3.9.9-201.fc18.x86_64; KDE/4.10.5; x86_64; ; )
+In-Reply-To: <20130729191324.GA5767@radagast>
+References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com> <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com> <20130729191324.GA5767@radagast>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 12:34:24 PM Joe Perches wrote:
-> On Mon, 2013-07-29 at 13:59 +0200, Rafael J. Wysocki wrote:
-> > On Sunday, July 28, 2013 10:29:04 PM Joe Perches wrote:
-> > > It's convenient to have ethernet mac addresses use
-> > > ETH_ALEN to be able to grep for them a bit easier and
-> > > also to ensure that the addresses are __aligned(2).
-> []
-> > > diff --git a/include/acpi/actbl2.h b/include/acpi/actbl2.h
-> []
-> > > @@ -44,6 +44,8 @@
-> []
-> > > +#include <linux/if_ether.h>
-> > > +
-> []
-> > > @@ -605,7 +607,7 @@ struct acpi_ibft_nic {
-> []
-> > > -	u8 mac_address[6];
-> > > +	u8 mac_address[ETH_ALEN];
+On Monday, July 29, 2013 10:13:24 PM Felipe Balbi wrote:
+> Hi,
 > 
-> > Please don't touch this file.
+> On Mon, Jul 29, 2013 at 11:59:45AM -0700, Dmitry Torokhov wrote:
+> > > > @@ -439,12 +444,50 @@ static const struct of_device_id
+> > > > omap_keypad_dt_match[] = {>
+> > > > 
+> > > >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+> > > >  #endif
+> > > > 
+> > > > +#ifdef CONFIG_PM_SLEEP
+> > > > +static int omap4_keypad_suspend(struct device *dev)
+> > > > +{
+> > > > +	struct platform_device *pdev = to_platform_device(dev);
+> > > 
+> > > you don't need to access the platform_device...
+> > > 
+> > > > +	struct omap4_keypad *keypad_data = platform_get_drvdata(pdev);
+> > > 
+> > > ... since this can become:
+> > > 	struct omap4_keypad *keypad_data = dev_get_drvdata(dev);
 > > 
-> > It comes from a code base outside of the kernel and should be kept in sync with
-> > the upstream.
+> > No, please use correct accessors for the objects. Platform drivers deal
+> > with platform devices and I prefer using platform_get_drvdata() on them.
 > 
-> Which files in include/acpi have this characteristic?
+> The argument to this function is a struct device, you prefer to do some
+> pointer math to find the containing pdev, then deref that back to dev,
+> then to struct device_private and further to driver_data ?
+> 
+> Sounds like a waste of time IMHO. You already have the device pointer
+> anyway, why would you go through the trouble of calculating the
+> offsets for the containing struct platform_device ?
 
-Generally, all whose names start with "ac" except for acpi_bus.h,
-acpi_drivers.h and acpi_numa.h.
+This assumes knowledge of dev_get_drvdata() implementation and assumption
+that it will stay the same. Unless I hear from device core guys that
+<bus>_{get|set}_drvdata() methods are obsolete and will be eventually
+removed I will require proper accessors being used.
 
-> Perhaps an include/acpi/README is appropriate.
-
-Yes, we can add one.
-
-Thanks,
-Rafael
-
+Thanks!
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Dmitry
