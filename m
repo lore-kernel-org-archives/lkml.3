@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab3G2A1A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 20:27:00 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:57735 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab3G2A0w (ORCPT
+	id S1752709Ab3G2Aig (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 20:38:36 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37099 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab3G2Aie (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 20:26:52 -0400
-Date: Mon, 29 Jul 2013 10:26:42 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: problem fetching the drm-intel-fixes tree
-Message-Id: <20130729102642.4f1bf9d49a95f5c3dee87b37@canb.auug.org.au>
-In-Reply-To: <CAPM=9txKODStMCnLRjFKh4y7v8wijDsyMEHZvgdjjZoc7HQOug@mail.gmail.com>
-References: <20130729100843.8d129b9953ed39e55e1d5a31@canb.auug.org.au>
-	<CAPM=9txKODStMCnLRjFKh4y7v8wijDsyMEHZvgdjjZoc7HQOug@mail.gmail.com>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N"
+	Sun, 28 Jul 2013 20:38:34 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <51F5B966.9080405@jp.fujitsu.com>
+Date: Mon, 29 Jul 2013 09:37:58 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: bhelgaas@google.com
+CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
+        ishii.hironobu@jp.fujitsu.com, ddutile@redhat.com, bill.sumner@hp.com,
+        alex.williamson@redhat.com, vgoyal@redhat.com, hbabu@us.ibm.com
+Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
+References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com> <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com> <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com> <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com> <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+In-Reply-To: <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(2013/07/26 2:00), Bjorn Helgaas wrote:
+> On Wed, Jul 24, 2013 at 12:29 AM, Takao Indoh
+> <indou.takao@jp.fujitsu.com> wrote:
+>> Sorry for letting this discussion slide, I was busy on other works:-(
+>> Anyway, the summary of previous discussion is:
+>> - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
+>>    boot. This expects PCI enumeration is done before IOMMU
+>>    initialization as follows.
+>>      (1) PCI enumeration
+>>      (2) fs_initcall ---> device reset
+>>      (3) IOMMU initialization
+>> - This works on x86, but does not work on other architecture because
+>>    IOMMU is initialized before PCI enumeration on some architectures. So,
+>>    device reset should be done where IOMMU is initialized instead of
+>>    initcall.
+>> - Or, as another idea, we can reset devices in first kernel(panic kernel)
+>>
+>> Resetting devices in panic kernel is against kdump policy and seems not to
+>> be good idea. So I think adding reset code into iommu initialization is
+>> better. I'll post patches for that.
+> 
+> Of course nobody *wants* to do anything in the panic kernel.  But
+> simply saying "it's against kdump policy and seems not to be a good
+> idea" is not a technical argument.  There are things that are
+> impractical to do in the kdump kernel, so they have to be done in the
+> panic kernel even though we know the kernel is unreliable and the
+> attempt may fail.
 
-Hi Dave,
+Accessing kernel data in panic kernel causes panic again, so
+- Don't touch kernel data in panic situation
+- Jump to kdump kernel as quickly as possible, and do things in safe
+  kernel
+These are basic "kdump policy". Of course if there are any works which
+we cannot do in kdump kernel and can do only in panic kernel, for
+example saving registers or stopping cpus, we should do them in panic
+kernel.
 
-On Mon, 29 Jul 2013 10:15:50 +1000 Dave Airlie <airlied@gmail.com> wrote:
->
-> > Trying to fetch the drm-intel-fixes tree
-> > (git://people.freedesktop.org/~danvet/drm-intel#drm-intel-fixes) this
-> > morning produced this error:
->=20
-> There is some issue with personal fdo repos at the moment and anon git,
->=20
-> I'll ask admin to look into it.
+Resetting devices in panic kernel is worth considering if we can safely
+find pci_dev and reset it, but I have no idea how to do that because
+for example struct pci_dev may be borken.
 
-Thanks.  In the mean time, I will use what I fetched on Friday.
+> 
+> My point about IOMMU and PCI initialization order doesn't go away just
+> because it doesn't fit "kdump policy."  Having system initialization
+> occur in a logical order is far more important than making kdump work.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+My next plan is as follows. I think this is matched to logical order
+on boot.
 
---Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N
-Content-Type: application/pgp-signature
+drivers/pci/pci.c
+- Add function to reset bus, for example, pci_reset_bus(struct pci_bus *bus)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
+drivers/iommu/intel-iommu.c
+- On initialization, if IOMMU is already enabled, call this bus reset
+  function before disabling and re-enabling IOMMU.
 
-iQIcBAEBCAAGBQJR9bbJAAoJEECxmPOUX5FEVmQP/16N/8hKJL4H8cI10H8VLZ33
-kO2hOefgDYkUcV1pc8unK7Rn4bef0W5FGfWzLx7aLlCtIqLLODZhBgHte5Iemm5h
-3VlBXcRn6hZuMNyZIVFcVkL1P0vvmNwRsvDfkzRiGRl9dHFz/2vrQWMpw25HYjlB
-Zdqnd0DO/fd14w9XhefYjl4lsPDTbXBhOqZbDhHjLRRmC07WONoQvOIhW5nZ2v1N
-6Ui4k2eJIUEutwGXWktbCaRBST/xK4x6/DEPvg1uO/7N6LMHso15j6pllUAUmfqe
-NrTL5h4eVYiqUx98p/EOy7+j6hRAg4g+QvBk9iVuarQz/5g9F5yBHzHU2JI2TSP4
-tMa5xdhTlUTzHTdVHORn4N3LhXAJizn0MbrXlFnFV0ISLimMY7xM5elJRLsb37hQ
-6sxLrZkJVdhug6CsVR8ZcXXndpiABXlW7q9BUQzWiimvr8scgzfhFwp7aXxOaj+d
-RUhVu1ESqeqo9tr3C9CV0lHEaXitoftvhpm4ptfL5ZGehngkudGtKamUL+OvKazQ
-lbH+8Wu2omLlvlRuNNYG2dlIDKg+ONVCJp0EHf1qlKSKVoC5c/scus0uaPfLszeS
-w2KLTJX26fGmRhRoQ1NXaHppbNzKWJTUTsI3tfdpbd1Eq4FiRbntaCptGGLDNWtQ
-Oc4nClR/x3d2dcQ3e5Jt
-=kuV6
------END PGP SIGNATURE-----
+Thanks,
+Takao Indoh
 
---Signature=_Mon__29_Jul_2013_10_26_42_+1000_3Plo.flWVrPYw83N--
