@@ -1,108 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab3G2Ozq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:55:46 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51261 "EHLO zene.cmpxchg.org"
+	id S1757048Ab3G2Ozy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:55:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47357 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755265Ab3G2Ozo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:55:44 -0400
-Date: Mon, 29 Jul 2013 10:55:29 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/6] mm: memcg: do not trap chargers with full callstack
- on OOM
-Message-ID: <20130729145529.GW715@cmpxchg.org>
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
- <1374791138-15665-7-git-send-email-hannes@cmpxchg.org>
- <20130726144310.GH17761@dhcp22.suse.cz>
- <20130726212808.GD17975@cmpxchg.org>
- <20130729141250.GF4678@dhcp22.suse.cz>
+	id S1757024Ab3G2Ozv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:55:51 -0400
+From: Luciano Coelho <coelho@ti.com>
+To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>
+CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
+        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>, <linux-arm@vger.kernel.org>,
+        <tony@atomide.com>, <nm@ti.com>, <laurent.pinchart@ideasonboard.com>
+Subject: [PATCH v2] Documentation: dt: bindings: TI WiLink modules
+Date: Mon, 29 Jul 2013 17:55:28 +0300
+Message-ID: <1375109728-5931-1-git-send-email-coelho@ti.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729141250.GF4678@dhcp22.suse.cz>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 04:12:50PM +0200, Michal Hocko wrote:
-> On Fri 26-07-13 17:28:09, Johannes Weiner wrote:
-> > On Fri, Jul 26, 2013 at 04:43:10PM +0200, Michal Hocko wrote:
-> > > On Thu 25-07-13 18:25:38, Johannes Weiner wrote:
-> > > > @@ -2189,31 +2191,20 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
-> > > >  }
-> > > >  
-> > > >  /*
-> > > > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
-> > > > + * try to call OOM killer
-> > > >   */
-> > > > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
-> > > > -				  int order)
-> > > > +static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
-> > > >  {
-> > > > -	struct oom_wait_info owait;
-> > > > -	bool locked, need_to_kill;
-> > > > +	bool locked, need_to_kill = true;
-> > > >  
-> > > > -	owait.memcg = memcg;
-> > > > -	owait.wait.flags = 0;
-> > > > -	owait.wait.func = memcg_oom_wake_function;
-> > > > -	owait.wait.private = current;
-> > > > -	INIT_LIST_HEAD(&owait.wait.task_list);
-> > > > -	need_to_kill = true;
-> > > > -	mem_cgroup_mark_under_oom(memcg);
-> > > 
-> > > You are marking memcg under_oom only for the sleepers. So if we have
-> > > no sleepers then the memcg will never report it is under oom which
-> > > is a behavior change. On the other hand who-ever relies on under_oom
-> > > under such conditions (it would basically mean a busy loop reading
-> > > memory.oom_control) would be racy anyway so it is questionable it
-> > > matters at all. At least now when we do not have any active notification
-> > > that under_oom has changed.
-> > > 
-> > > Anyway, this shouldn't be a part of this patch so if you want it because
-> > > it saves a pointless hierarchy traversal then make it a separate patch
-> > > with explanation why the new behavior is still OK.
-> > 
-> > This made me think again about how the locking and waking in there
-> > works and I found a bug in this patch.
-> > 
-> > Basically, we have an open-coded sleeping lock in there and it's all
-> > obfuscated by having way too much stuffed into the memcg_oom_lock
-> > section.
-> > 
-> > Removing all the clutter, it becomes clear that I can't remove that
-> > (undocumented) final wakeup at the end of the function.  As with any
-> > lock, a contender has to be woken up after unlock.  We can't rely on
-> > the lock holder's OOM kill to trigger uncharges and wakeups, because a
-> > contender for the OOM lock could show up after the OOM kill but before
-> > the lock is released.  If there weren't any more wakeups, the
-> > contender would sleep indefinitely.
-> 
-> I have checked that path again and I still do not see how wakeup_oom
-> helps here. What prevents us from the following race then?
-> 
-> spin_lock(&memcg_oom_lock)
-> locked = mem_cgroup_oom_lock(memcg) # true
-> spin_unlock(&memcg_oom_lock)
+Add device tree bindings documentation for the TI WiLink modules.
+Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
+modules is supported.
 
-                                                prepare_to_wait()
+Signed-off-by: Luciano Coelho <coelho@ti.com>
+---
 
-> 						spin_lock(&memcg_oom_lock)
-> 						locked = mem_cgroup_oom_lock(memcg) # false
-> 						spin_unlock(&memcg_oom_lock)
-> 						<resched>
-> mem_cgroup_out_of_memory()
-> 			<uncharge & memcg_oom_recover>
-> spin_lock(&memcg_oom_lock)
-> mem_cgroup_oom_unlock(memcg)
-> memcg_wakeup_oom(memcg)
-> 						schedule()
-> spin_unlock(&memcg_oom_lock)
-> mem_cgroup_unmark_under_oom(memcg)
+Changes in v2:
+
+Use generic clock definitions to get the clock data instead of passing
+the frequencies directly.  Also added definition for "internal"
+ti,wilink-clock.
+
+Please review.
+
+Luca.
+
+ .../devicetree/bindings/net/wireless/ti-wilink.txt | 68 ++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+
+diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+new file mode 100644
+index 0000000..5fd27dc
+--- /dev/null
++++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
+@@ -0,0 +1,68 @@
++TI WiLink Wireless Modules Device Tree Bindings
++===============================================
++
++The WiLink modules provide wireless connectivity, such as WLAN,
++Bluetooth, FM and NFC.
++
++There are several different modules available, which can be grouped by
++their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
++currently supported with device tree.
++
++Currently, only the WLAN portion of the modules is supported with
++device tree.
++
++Required properties:
++--------------------
++
++- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
++- interrupt-parent: the interrupt controller
++- interrupts: out-of-band WLAN interrupt
++	See the interrupt controller's bindings documentation for
++	detailed definition.
++
++Optional properties:
++--------------------
++
++- clocks: list of clocks needed by the chip as follows:
++
++  refclock: the internal WLAN reference clock frequency (required for
++	WiLink6 and WiLink7; not used for WiLink8).
++
++  tcxoclock: the internal WLAN TCXO clock frequency (required for
++	WiLink7 not used for WiLink6 and WiLink8).
++
++  The clocks must be defined and named accordingly.  For example:
++
++  clocks = <&refclock>
++  clock-names = "refclock";
++
++  refclock: refclock {
++		     compatible = "ti,wilink-clock";
++		     #clock-cells = <0>;
++		     clock-frequency = <38400000>;
++	};
++
++  Some modules that contain the WiLink chip provide clocks in the
++  module itself.  In this case, we define a "ti,wilink-clock" as shown
++  above.  But any other clock could in theory be used, so the proper
++  clock definition should be used.
++
++
++Example:
++--------
++
++Example definition that can be used in OMAP4 Panda:
++
++wlan {
++	compatible = "ti,wilink6";
++	interrupt-parent = <&gpio2>;
++	interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
++	clocks = <&refclock>;
++	clock-names = "refclock";
++
++	refclock: refclock {
++		compatible = "ti,wilink-clock";
++		#clock-cells = <0>;
++		clock-frequency = <38400000>;
++	};
++};
+-- 
+1.8.3.2
+
