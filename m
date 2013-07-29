@@ -1,123 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab3G2Ozy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:55:54 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47357 "EHLO bear.ext.ti.com"
+	id S1757091Ab3G2O6o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:58:44 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40891 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757024Ab3G2Ozv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:55:51 -0400
-From: Luciano Coelho <coelho@ti.com>
-To: <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>
-CC: <mturquette@linaro.org>, <mark.rutland@arm.com>, <balbi@ti.com>,
-        <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>, <linux-arm@vger.kernel.org>,
-        <tony@atomide.com>, <nm@ti.com>, <laurent.pinchart@ideasonboard.com>
-Subject: [PATCH v2] Documentation: dt: bindings: TI WiLink modules
-Date: Mon, 29 Jul 2013 17:55:28 +0300
-Message-ID: <1375109728-5931-1-git-send-email-coelho@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751901Ab3G2O6m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:58:42 -0400
+From: Oleksandr Kravchenko <x0199363@ti.com>
+To: <linux-iio@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>, <rob@landley.net>,
+        <jic23@cam.ac.uk>, <pmeerw@pmeerw.net>, <holler@ahsoftware.de>,
+        <srinivas.pandruvada@intel.com>, <devicetree-discuss@lists.ozlabs.org>,
+        Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
+Subject: [PATCH 1/2] ARM: OMAP4: Tablet: Add BMA180 sensor
+Date: Mon, 29 Jul 2013 17:58:12 +0300
+Message-ID: <1375109893-7917-1-git-send-email-x0199363@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree bindings documentation for the TI WiLink modules.
-Currently only the WLAN part of the WiLink6, WiLink7 and WiLink8
-modules is supported.
+From: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 
-Signed-off-by: Luciano Coelho <coelho@ti.com>
+Add Bosch BMA180 acceleration sensor devicetree
+
+Signed-off-by: Oleksandr Kravchenko <o.v.kravchenko@globallogic.com>
 ---
+ arch/arm/boot/dts/omap4-sdp.dts |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-Changes in v2:
-
-Use generic clock definitions to get the clock data instead of passing
-the frequencies directly.  Also added definition for "internal"
-ti,wilink-clock.
-
-Please review.
-
-Luca.
-
- .../devicetree/bindings/net/wireless/ti-wilink.txt | 68 ++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
-
-diff --git a/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
-new file mode 100644
-index 0000000..5fd27dc
---- /dev/null
-+++ b/Documentation/devicetree/bindings/net/wireless/ti-wilink.txt
-@@ -0,0 +1,68 @@
-+TI WiLink Wireless Modules Device Tree Bindings
-+===============================================
+diff --git a/arch/arm/boot/dts/omap4-sdp.dts b/arch/arm/boot/dts/omap4-sdp.dts
+index c9022df..13d8279 100644
+--- a/arch/arm/boot/dts/omap4-sdp.dts
++++ b/arch/arm/boot/dts/omap4-sdp.dts
+@@ -170,6 +170,7 @@
+ 			&dss_hdmi_pins
+ 			&tpd12s015_pins
+ 			&apds9300_pins
++			&bma180_pins
+ 	>;
+ 
+ 	uart2_pins: pinmux_uart2_pins {
+@@ -305,6 +306,12 @@
+ 			0x50 (PIN_INPUT | MUX_MODE3)		/* gpmc_nbe1.gpio_61 */
+ 		>;
+ 	};
 +
-+The WiLink modules provide wireless connectivity, such as WLAN,
-+Bluetooth, FM and NFC.
-+
-+There are several different modules available, which can be grouped by
-+their generation: WiLink6, WiLink7 and WiLink8.  WiLink4 is not
-+currently supported with device tree.
-+
-+Currently, only the WLAN portion of the modules is supported with
-+device tree.
-+
-+Required properties:
-+--------------------
-+
-+- compatible: should be "ti,wilink6", "ti,wilink7" or "ti,wilink8"
-+- interrupt-parent: the interrupt controller
-+- interrupts: out-of-band WLAN interrupt
-+	See the interrupt controller's bindings documentation for
-+	detailed definition.
-+
-+Optional properties:
-+--------------------
-+
-+- clocks: list of clocks needed by the chip as follows:
-+
-+  refclock: the internal WLAN reference clock frequency (required for
-+	WiLink6 and WiLink7; not used for WiLink8).
-+
-+  tcxoclock: the internal WLAN TCXO clock frequency (required for
-+	WiLink7 not used for WiLink6 and WiLink8).
-+
-+  The clocks must be defined and named accordingly.  For example:
-+
-+  clocks = <&refclock>
-+  clock-names = "refclock";
-+
-+  refclock: refclock {
-+		     compatible = "ti,wilink-clock";
-+		     #clock-cells = <0>;
-+		     clock-frequency = <38400000>;
++	bma180_pins: pinmux_bma180_pins {
++		pinctrl-single,pins = <
++		0x156 (PIN_INPUT_PULLUP | MUX_MODE3)	/* gpmc_nbe1.gpio_178 */
++		>;
 +	};
+ };
+ 
+ &i2c1 {
+@@ -405,6 +412,17 @@
+ 		interrupt-parent = <&gpio2>;
+ 		interrupts = <29 8>; /* gpio line 61, low triggered */
+ 	};
 +
-+  Some modules that contain the WiLink chip provide clocks in the
-+  module itself.  In this case, we define a "ti,wilink-clock" as shown
-+  above.  But any other clock could in theory be used, so the proper
-+  clock definition should be used.
-+
-+
-+Example:
-+--------
-+
-+Example definition that can be used in OMAP4 Panda:
-+
-+wlan {
-+	compatible = "ti,wilink6";
-+	interrupt-parent = <&gpio2>;
-+	interrupts = <21 0x4>;	/* gpio line 53, high level triggered */
-+	clocks = <&refclock>;
-+	clock-names = "refclock";
-+
-+	refclock: refclock {
-+		compatible = "ti,wilink-clock";
-+		#clock-cells = <0>;
-+		clock-frequency = <38400000>;
++	bma180@40 {
++		compatible = "bosch,bma180";
++		reg = <0x40>;
++		interrupt-parent = <&gpio6>;
++		interrupts = <18 (IRQ_TYPE_LEVEL_HIGH | IRQ_TYPE_EDGE_RISING)>;
++		range = <2>;
++		bw = <5>;
++		mode_config = <1>;
++		fuzz = <555>;
 +	};
-+};
+ };
+ 
+ &mcspi1 {
 -- 
-1.8.3.2
+1.7.9.5
 
