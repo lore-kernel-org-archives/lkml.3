@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab3G2Idh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:33:37 -0400
-Received: from etezian.org ([198.101.225.253]:59153 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab3G2Idf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:33:35 -0400
-Date: Mon, 29 Jul 2013 10:33:25 +0200
-From: Andi Shyti <andi@etezian.org>
-To: Steve French <smfrench@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Andi Shyti <andi@etezian.org>, mikko.rapeli@iki.fi
-Subject: Re: [PATCH 2/2] cifs: file: initialize oparms.reconnect before using
- it
-Message-ID: <20130729083325.GA1948@jack.whiskey>
-References: <CAH2r5msP8+qZnb38Rj5WMWmqWFtopmoe671G6TNTB=61BvYEnA@mail.gmail.com>
+	id S1753913Ab3G2IeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 04:34:01 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:50814 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab3G2Id7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 04:33:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAH2r5msP8+qZnb38Rj5WMWmqWFtopmoe671G6TNTB=61BvYEnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130726113717.GN13468@dastard>
+References: <1374759524-10061-1-git-send-email-zwu.kernel@gmail.com>
+	<20130726020318.GD21982@dastard>
+	<CAEH94LiXtG=DD+Qn4kbNT_Y_Qn65wVYrpYvHKXOob6wru3SeDw@mail.gmail.com>
+	<20130726113717.GN13468@dastard>
+Date: Mon, 29 Jul 2013 16:33:58 +0800
+Message-ID: <CAEH94Lj27DCzCiWxwerEgwsExtdtviB_+S4bDbxg-wwq445rSA@mail.gmail.com>
+Subject: Re: [PATCH] xfs: fix an assertion failure
+From: Zhi Yong Wu <zwu.kernel@gmail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfstests <xfs@oss.sgi.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        linux-kernel mlist <linux-kernel@vger.kernel.org>,
+        Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Fri, Jul 26, 2013 at 7:37 PM, Dave Chinner <david@fromorbit.com> wrote:
+> On Fri, Jul 26, 2013 at 02:01:23PM +0800, Zhi Yong Wu wrote:
+>> No, it still raised the same assertion as below:
+>>
+>> [  521.715103] XFS: Assertion failed: !(bip->bli_item.li_flags &
+>> XFS_LI_IN_AIL), file: fs/xfs/xfs_buf_item.c, line: 940
+>
+> How are you reproducing it?
+>
+> Can you take an event trace with trace-cmd and attach the output of
+> the report?
+After kernel base is switched to Linux 3.11-rc3, when i try to take
+event trace with trace-cmd, that issue doesn't appear any more in my
+environment. :)
 
-> Your patch looks reasonable.   Would you repost the patch to
-> linux-cifs mailing list (and add any additional reviewers or testers
-> if you would like if you got feedback)?
+>
+> Cheers,
+>
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-Thanks for your mail,
 
-Actually linux-cifs is on CC and this is the output of
-get_maintainer:
 
-Steve French <sfrench@samba.org> (supporter:COMMON INTERNET F...)
-linux-cifs@vger.kernel.org (open list:COMMON INTERNET F...)
-samba-technical@lists.samba.org (moderated list:COMMON INTERNET F...)
-linux-kernel@vger.kernel.org (open list)
+-- 
+Regards,
 
-All are on CC. get_maintainers, indeed sometimes is not very
-precise since gets the CC list by doing a git blame on the file
-and adding the ones who previously modified the specific lines.
-
-If this patch got lost I could enrich my To/Cc list by looking at
-git shortlog and more carefully at git blame.
-
-Thanks,
-Andi
+Zhi Yong Wu
