@@ -1,148 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab3G2TGG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:06:06 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:38962 "EHLO vps0.lunn.ch"
+	id S1752613Ab3G2TNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:13:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56201 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643Ab3G2TGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:06:01 -0400
-Date: Mon, 29 Jul 2013 21:04:31 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, tj@kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>
-Subject: Re: [PATCH] ATA: sata_mv: Remove uneeded CONFIG_HAVE_CLK ifdefs
-Message-ID: <20130729190431.GJ24782@lunn.ch>
-References: <1375111282-22624-1-git-send-email-ezequiel.garcia@free-electrons.com>
- <1375111282-22624-2-git-send-email-ezequiel.garcia@free-electrons.com>
+	id S1751735Ab3G2TNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:13:35 -0400
+Date: Mon, 29 Jul 2013 22:13:24 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <balbi@ti.com>, Illia Smyrnov <illia.smyrnov@ti.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for
+ keypad.
+Message-ID: <20130729191324.GA5767@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
+ <1375116311-13999-2-git-send-email-illia.smyrnov@ti.com>
+ <20130729180441.GF4964@radagast>
+ <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="sdtB3X0nJg68CQEu"
 Content-Disposition: inline
-In-Reply-To: <1375111282-22624-2-git-send-email-ezequiel.garcia@free-electrons.com>
+In-Reply-To: <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 12:21:22PM -0300, Ezequiel Garcia wrote:
-> If CONFIG_HAVE_CLK is not selected, then all the clk API turn out
-> into stubs, so there's no need to have the ifdefs.
-> The only side-effect of this patch is the extra tiny kmalloc,
-> but that's not enough reason to have such ugly ifdefs all around
-> the code.
-> 
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+--sdtB3X0nJg68CQEu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hi Ezequiel
+Hi,
 
-What architectures did you compile this for? PowerPC and x86 as well
-as ARM? I _think_ this driver is also used there, and i _think_
-without some #ifdef, it failed to build. But maybe since then, the
-common clock is now available on all architectures?
+On Mon, Jul 29, 2013 at 11:59:45AM -0700, Dmitry Torokhov wrote:
+> > > @@ -439,12 +444,50 @@ static const struct of_device_id
+> > > omap_keypad_dt_match[] =3D {>=20
+> > >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+> > >  #endif
+> > >=20
+> > > +#ifdef CONFIG_PM_SLEEP
+> > > +static int omap4_keypad_suspend(struct device *dev)
+> > > +{
+> > > +	struct platform_device *pdev =3D to_platform_device(dev);
+> >=20
+> > you don't need to access the platform_device...
+> >=20
+> > > +	struct omap4_keypad *keypad_data =3D platform_get_drvdata(pdev);
+> >=20
+> > ... since this can become:
+> >=20
+> > 	struct omap4_keypad *keypad_data =3D dev_get_drvdata(dev);
+>=20
+> No, please use correct accessors for the objects. Platform drivers deal
+> with platform devices and I prefer using platform_get_drvdata() on them.
 
-       Andrew
+The argument to this function is a struct device, you prefer to do some
+pointer math to find the containing pdev, then deref that back to dev,
+then to struct device_private and further to driver_data ?
 
+Sounds like a waste of time IMHO. You already have the device pointer
+anyway, why would you go through the trouble of calculating the
+offsets for the containing struct platform_device ?
 
-> ---
->  drivers/ata/sata_mv.c | 14 --------------
->  1 file changed, 14 deletions(-)
-> 
-> diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
-> index 10ea99a..3519987 100644
-> --- a/drivers/ata/sata_mv.c
-> +++ b/drivers/ata/sata_mv.c
-> @@ -553,10 +553,8 @@ struct mv_host_priv {
->  	u32			irq_mask_offset;
->  	u32			unmask_all_irqs;
->  
-> -#if defined(CONFIG_HAVE_CLK)
->  	struct clk		*clk;
->  	struct clk              **port_clks;
-> -#endif
->  	/*
->  	 * These consistent DMA memory pools give us guaranteed
->  	 * alignment for hardware-accessed data structures,
-> @@ -4032,9 +4030,7 @@ static int mv_platform_probe(struct platform_device *pdev)
->  	struct resource *res;
->  	int n_ports = 0, irq = 0;
->  	int rc;
-> -#if defined(CONFIG_HAVE_CLK)
->  	int port;
-> -#endif
->  
->  	ata_print_version_once(&pdev->dev, DRV_VERSION);
->  
-> @@ -4068,13 +4064,11 @@ static int mv_platform_probe(struct platform_device *pdev)
->  
->  	if (!host || !hpriv)
->  		return -ENOMEM;
-> -#if defined(CONFIG_HAVE_CLK)
->  	hpriv->port_clks = devm_kzalloc(&pdev->dev,
->  					sizeof(struct clk *) * n_ports,
->  					GFP_KERNEL);
->  	if (!hpriv->port_clks)
->  		return -ENOMEM;
-> -#endif
->  	host->private_data = hpriv;
->  	hpriv->n_ports = n_ports;
->  	hpriv->board_idx = chip_soc;
-> @@ -4084,7 +4078,6 @@ static int mv_platform_probe(struct platform_device *pdev)
->  				   resource_size(res));
->  	hpriv->base -= SATAHC0_REG_BASE;
->  
-> -#if defined(CONFIG_HAVE_CLK)
->  	hpriv->clk = clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(hpriv->clk))
->  		dev_notice(&pdev->dev, "cannot get optional clkdev\n");
-> @@ -4098,7 +4091,6 @@ static int mv_platform_probe(struct platform_device *pdev)
->  		if (!IS_ERR(hpriv->port_clks[port]))
->  			clk_prepare_enable(hpriv->port_clks[port]);
->  	}
-> -#endif
->  
->  	/*
->  	 * (Re-)program MBUS remapping windows if we are asked to.
-> @@ -4124,7 +4116,6 @@ static int mv_platform_probe(struct platform_device *pdev)
->  		return 0;
->  
->  err:
-> -#if defined(CONFIG_HAVE_CLK)
->  	if (!IS_ERR(hpriv->clk)) {
->  		clk_disable_unprepare(hpriv->clk);
->  		clk_put(hpriv->clk);
-> @@ -4135,7 +4126,6 @@ err:
->  			clk_put(hpriv->port_clks[port]);
->  		}
->  	}
-> -#endif
->  
->  	return rc;
->  }
-> @@ -4151,13 +4141,10 @@ err:
->  static int mv_platform_remove(struct platform_device *pdev)
->  {
->  	struct ata_host *host = platform_get_drvdata(pdev);
-> -#if defined(CONFIG_HAVE_CLK)
->  	struct mv_host_priv *hpriv = host->private_data;
->  	int port;
-> -#endif
->  	ata_host_detach(host);
->  
-> -#if defined(CONFIG_HAVE_CLK)
->  	if (!IS_ERR(hpriv->clk)) {
->  		clk_disable_unprepare(hpriv->clk);
->  		clk_put(hpriv->clk);
-> @@ -4168,7 +4155,6 @@ static int mv_platform_remove(struct platform_device *pdev)
->  			clk_put(hpriv->port_clks[port]);
->  		}
->  	}
-> -#endif
->  	return 0;
->  }
->  
-> -- 
-> 1.8.1.5
-> 
+--=20
+balbi
+
+--sdtB3X0nJg68CQEu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJR9r7UAAoJEIaOsuA1yqREkggP/iiERtPLwunMhErndHzQqrNu
+CIp+cZBCCn/2Iabixd++HZZFnvkevY+pOe87LOgX6a7sw2OpURQgIYxogZwglUpF
+XkS0R8RQnc2+AZVxUPIG0POlahNh7oOOAWnms5k0yifVa350GckrFMiNbjuLwbdr
+HdZiYttMqdTPAnbn8MzeoSaFfMixnOqQIY+0WDWEafLVLFYrFikWmzRWJN2ZnB1h
+tr/bqCbvyxUVxFpxRegA4Y9MLB17J9Le1vlywuzHiiCEzytwRMROq16MxiBCNTdJ
+7ZP5scAxzkSIrGxDEA66NarKWXS5MJJeFz+gDd7qeVxgeAcCGEo9sU0ilPasF/Mt
+CTQFRuDzE5KkVAsYrupXgqPmSxXZmaVViFdXnVcGHoit/zMeTXk94XyRLsLjiBr6
+CfOVtYvj8bjRS0mXlbFJiqHf79fC73B4Wau7hO1gWhnJ5Qj/fnUuOjOsyvguqPzT
+Rk4lO1JVqSA6mBmeJj618UoQAWdsushSa8seTdlmlTUr7ZKc+S75fIZKWTcVFdlz
+ZcXp9IDmob4ZWNTaCmQR2LDjV/Dgv65ZIzwxkjuP2ASoFHe9t6gI3jRVTzz4EPcP
+AiQQJwMHsHaaXnyrW/NlStayDnREZ8/7aEDugWsQoZ/5x5Y0qQMcn2OOvUy5rPi1
+nFV3N59npJklwg95kYNL
+=VlHl
+-----END PGP SIGNATURE-----
+
+--sdtB3X0nJg68CQEu--
