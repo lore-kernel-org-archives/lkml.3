@@ -1,101 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758294Ab3G2R0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:26:21 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:34076 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab3G2R0U convert rfc822-to-8bit (ORCPT
+	id S1755622Ab3G2R1C (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:27:02 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:5996 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751062Ab3G2R1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:26:20 -0400
+	Mon, 29 Jul 2013 13:27:00 -0400
+Message-ID: <51F6A5E2.5050100@hp.com>
+Date: Mon, 29 Jul 2013 10:26:58 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20130729165329.GA5773@linutronix.de>
-References: <CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
-	<20130726163101.GB29819@linutronix.de>
-	<CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
-	<CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
-	<51F2BE6F.3010008@linutronix.de>
-	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
-	<51F2D427.7050106@linutronix.de>
-	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
-	<51F2DD90.2030405@linutronix.de>
-	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
-	<20130729165329.GA5773@linutronix.de>
-Date: Mon, 29 Jul 2013 12:26:19 -0500
-Message-ID: <CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
-Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
-From: Bin Liu <binmlist@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
-        george.cherian@ti.com
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+CC: stephen@networkplumber.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: A call to revise sockets behaviour
+References: <2066879158.39771.1375110634453.JavaMail.mail@webmail09><20130729083519.5d574f16@nehalam.linuxnetplumber.net> <2063167407.40450.1375112877907.JavaMail.mail@webmail09>
+In-Reply-To: <2063167407.40450.1375112877907.JavaMail.mail@webmail09>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
 
-On Mon, Jul 29, 2013 at 11:53 AM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> So you say, am335x-evm is not able to run OTG mode and may only run in
-> host mode and as a consequence it must not call musb_platform_try_idle()
-> because it throws that one bit away and there is no way to bring it back?
-
-I did not say AM335xEVM is not able to run OTG mode. The problem is in
-OTG mode the SESSION bit will be cleared once the device is unplugged,
-then there is no way the SESSION bit will come back in the current
-mainline kernel.
-
-The TI 3.2 kernel works around this OTG issue by toggling the SESSION
-bit in b_idle handling in otg_timer(). The workaround makes most users
-happy but it causes VBUS voltage pulsing. That is why I said I don't
-know an ideal solution without a ID pin interrupt support.
-
+> A wine developer clearly showed that this option simply doesn't work.
 >
-> However, if I look at the tree you reference, I see in
-> arch/arm/mach-omap2/board-am335xevm.c:
-> | static struct omap_musb_board_data musb_board_data = {
-> |         .interface_type = MUSB_INTERFACE_ULPI,
-> |         .mode           = MUSB_OTG,
-> |         .power          = 500,
-> |         .instances      = 1,
-> | };
-> …
-> | static void __init am335x_evm_init(void)
-> …
-> |   usb_musb_init(&musb_board_data);
+> http://bugs.winehq.org/show_bug.cgi?id=26031#c21
 >
-> and it creates a "ti81xx-usbss" device.
->
-> So it creates a musb device with mode MUSB_OTG no matter what.
+> Output of strace:
+> getsockopt(24, SOL_SOCKET, SO_REUSEADDR, [0], [4]) = 0
+> setsockopt(24, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
+> bind(24, {sa_family=AF_INET, sin_port=htons(43012), sin_addr=inet_addr("0.
+> 0.0.0")}, 16) = -1 EADDRINUSE (Address already in use)
 
-I think you looked at a wrong file, maybe a wrong branch. Please check
-[1], which defines
+The output of netstat -an didn't by any chance happen to still show an 
+endpoint in the LISTEN state for that port number did it?
 
-2644          * mode[0:3] = USB0PORT's mode
-2645          * mode[4:7] = USB1PORT's mode
-2646          * AM335X beta EVM has USB0 in OTG mode and USB1 in host mode.
-2647          */
-2648         .mode           = (MUSB_HOST << 4) | MUSB_OTG,
+rick jones
 
-> I agree that without that try_idle part things keep working but it
-> seems, that it is also called in the other tree.
->
-
-Then because AM335xEVM USB1 port does not call *try_idle() in this 3.2
-kernel, its SESSION bit is always set.
-
-But I don't have a clear idea how to solve this in the mainline kernel
-since is_otg_enabled() has been cleaned.
-
->>
->>Regards,
->>-Bin.
->
-> Sebastian
-
-
-Regards,
--Bin.
-
-[1]: http://arago-project.org/git/projects/?p=linux-am33x.git;a=blob;f=arch/arm/mach-omap2/board-am335xevm.c;h=aec37f371342455e06626c47e0e92beb51930ed2;hb=refs/heads/v3.2-staging
