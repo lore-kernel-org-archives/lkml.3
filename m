@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab3G2UXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:23:00 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:61316 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab3G2UW6 (ORCPT
+	id S1754942Ab3G2UYz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:24:55 -0400
+Received: from mail-gh0-f181.google.com ([209.85.160.181]:46951 "EHLO
+	mail-gh0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab3G2UYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:22:58 -0400
+	Mon, 29 Jul 2013 16:24:54 -0400
+Date: Mon, 29 Jul 2013 17:24:47 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: David Ahern <dsahern@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tool: Fix symbol offset computation for some dsos
+Message-ID: <20130729202447.GB1983@ghostprotocols.net>
+References: <1375026512-45826-1-git-send-email-dsahern@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <7981076.SojlpLkL71@vostro.rjw.lan>
-References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com>
-	<7981076.SojlpLkL71@vostro.rjw.lan>
-Date: Mon, 29 Jul 2013 15:22:56 -0500
-Message-ID: <CAMP44s1=VfRLPVxwuu1Qhim-nyCHe1gKzQDfiffWw3DDpK0Apg@mail.gmail.com>
-Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375026512-45826-1-git-send-email-dsahern@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 3:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Monday, July 29, 2013 02:20:58 PM Felipe Contreras wrote:
->> Since v3.7 the acpi backlight driver doesn't work at all on this machine
->> because presumably the ACPI code contains stub code when Windows 8 OSI is
->> reported.
->>
->> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
->> backlight driver, however, on this machine it turns the backlight completely
->> off when it reaches level 0%, after which the user might have a lot trouble
->> trying to bring it back.
->>
->> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
->> to v3.6 behavior, and it should remain that way until the intel backlight
->> driver is fixed.
->
-> Well, it really is a workaround, so perhaps it would be fair to call it this
-> way?
+Em Sun, Jul 28, 2013 at 09:48:32AM -0600, David Ahern escreveu:
+> For some dsos (e.g., libc, libpthread, kernel modules) the symbol offset
+> is huge. e.g.,
+> 
+> qemu-kvm 17238/17242 [007] 762235.640311:
+>     ffffffff816288a1 __schedule+0x451 ([kernel.kallsyms])
+>     ffffffff81629609 schedule+0x29 ([kernel.kallsyms])
+>     ffffffffa00a6ded kvm_vcpu_block+0xffffffffa00a106d (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+>     ffffffffa00bae6b kvm_arch_vcpu_ioctl_run+0xffffffffa00a118b (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+>     ffffffffa00a4d7a kvm_vcpu_ioctl+0xffffffffa00a141a (/lib/modules/3.11.0-rc1+/kernel/arch/x86/kvm/kvm.ko)
+>     ffffffff811a7bdb do_vfs_ioctl+0x8b ([kernel.kallsyms])
+>     ffffffff811a80c1 sys_ioctl+0x91 ([kernel.kallsyms])
+>     ffffffff81633182 system_call+0x72 ([kernel.kallsyms])
+>         7f882a97af27 __GI___ioctl+0x7f882a891007 (/lib64/libc-2.14.90.so)
+>            100000002 [unknown] ([unknown])
+> 
+> It seems to be maps with a non-0 start. Taking that into account the
+> offsets are correct:
 
-Maybe, but to me, and to most users, the important thing is that it
-fixes a regression.
+Humm, first reaction is that this should be solved by using one of the
+->map/->unmap methods, no?
 
->> Since v3.7, users have been forced to fix the initial regression by modifying
->> the boot arguments [1].
->>
->> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
->>
->> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
->
-> I don't really feel this is the right approach, but then I don't care enough
-> to fight with you. :-)
-
-It's not the right approach, I don't think I (or anybody) argued
-otherwise, but unless the Intel driver is fixed before 3.11, it's the
-only sane approach.
-
--- 
-Felipe Contreras
+- Arnaldo
