@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab3G2Jrb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:47:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49249 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066Ab3G2Jra (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:47:30 -0400
-X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
-   d="scan'208";a="8057041"
-Message-ID: <51F63A88.4090405@cn.fujitsu.com>
-Date: Mon, 29 Jul 2013 17:48:56 +0800
-From: Gao feng <gaofeng@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        akpm@linux-foundation.org, libo.chen@huawei.com
-Subject: Re: [PATCH 9/9] netfilter: use ns_printk in iptable context
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-10-git-send-email-rui.xiang@huawei.com>
-In-Reply-To: <1375065080-26740-10-git-send-email-rui.xiang@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:45:18,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 17:45:19,
-	Serialize complete at 2013/07/29 17:45:19
+	id S1754806Ab3G2Jtl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:49:41 -0400
+Received: from gate.crashing.org ([63.228.1.57]:58836 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750711Ab3G2Jtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:49:40 -0400
+Message-ID: <1375090382.3859.38.camel@pasglop>
+Subject: Re: [PATCH] of: provide of_platform_unpopulate()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        George Cherian <george.cherian@ti.com>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Felipe Balbi <balbi@ti.com>,
+        Roger Quadros <rogerq@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Date: Mon, 29 Jul 2013 19:33:02 +1000
+In-Reply-To: <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
+References: <1374257691-31981-1-git-send-email-bigeasy@linutronix.de>
+	 <51EBF33A.4050207@gmail.com> <51EC4908.4040504@gmail.com>
+	 <CACxGe6sqv2Wsp26MWqqs9W_eWO3tjs-+2z3z8fC=2fe-BjJvkA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 10:31 AM, Rui Xiang wrote:
-> To containerise iptables log, use ns_printk
-> to report individual logs to container as
-> getting syslog_ns from skb->dev->nd_net->user_ns.
+On Mon, 2013-07-22 at 00:44 +0100, Grant Likely wrote:
+> > BTW, it looks like Grant has attempted this already:
 > 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  include/net/netfilter/xt_log.h | 6 +++++-
->  net/netfilter/xt_LOG.c         | 4 ++--
->  2 files changed, 7 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/net/netfilter/xt_log.h b/include/net/netfilter/xt_log.h
-> index 9d9756c..5222cba 100644
-> --- a/include/net/netfilter/xt_log.h
-> +++ b/include/net/netfilter/xt_log.h
-> @@ -39,10 +39,14 @@ static struct sbuff *sb_open(void)
->  	return m;
->  }
->  
-> -static void sb_close(struct sbuff *m)
-> +static void sb_close(struct sbuff *m, struct sk_buff *skb)
->  {
->  	m->buf[m->count] = 0;
-> +#ifdef CONFIG_NET_NS
-> +	ns_printk(skb->dev->nd_net->user_ns->syslog_ns, "%s\n", m->buf);
-> +#else
->  	printk("%s\n", m->buf);
-> +#endif
->  
->  	if (likely(m != &emergency))
->  		kfree(m);
-> diff --git a/net/netfilter/xt_LOG.c b/net/netfilter/xt_LOG.c
-> index 5ab2484..f2cd2fa3 100644
-> --- a/net/netfilter/xt_LOG.c
-> +++ b/net/netfilter/xt_LOG.c
-> @@ -493,7 +493,7 @@ ipt_log_packet(struct net *net,
->  
->  	dump_ipv4_packet(m, loginfo, skb, 0);
->  
-> -	sb_close(m);
-> +	sb_close(m, skb);
+> Yup, things broke badly. Unfortunately the of_platform_device and
+> platform_device history doesn't treat resources in the same way. I
+> would like to merge the code, but I haven't been able to figure out a
+> clean way to do it. Looks like we do need the unpopulate function.
+
+What is the exact problem Grant ? Care to give me an example ?
+
+Cheers,
+Ben.
 
 
-why don't you pass net directly to sb_close here?
-
-un init net namespace will not trigger any system log through ipt_LOG/ip6t_LOG.
-You can check the FIXME in ipt_log_packet.
-
-BTW,for this patch,you should cc netfilter-devel@vger.kernel.org too.
