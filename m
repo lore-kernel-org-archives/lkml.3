@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab3G2WiI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:38:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:60477 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab3G2WiG (ORCPT
+	id S1755893Ab3G2WlD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:41:03 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:53942 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab3G2WlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:38:06 -0400
-Date: Mon, 29 Jul 2013 15:38:05 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Winkler, Tomas" <tomas.winkler@intel.com>
-Cc: "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ovsyanikov, Natalia" <natalia.ovsyanikov@intel.com>
-Subject: Re: [char-misc-next 2/3] mei: adding sysfs fw_status attribute
-Message-ID: <20130729223805.GA9677@kroah.com>
-References: <1374680517-30894-1-git-send-email-tomas.winkler@intel.com>
- <1374680517-30894-3-git-send-email-tomas.winkler@intel.com>
- <20130724160008.GA17083@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE738C0@HASMSX106.ger.corp.intel.com>
- <20130724162605.GA9700@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE73993@HASMSX106.ger.corp.intel.com>
- <20130724202957.GA14913@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE76B1B@HASMSX106.ger.corp.intel.com>
- <20130728153155.GA6781@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE77A4E@HASMSX106.ger.corp.intel.com>
+	Mon, 29 Jul 2013 18:41:01 -0400
+Message-ID: <51F6EF7A.4000209@gmail.com>
+Date: Mon, 29 Jul 2013 16:40:58 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5B8DA87D05A7694D9FA63FD143655C1B1AE77A4E@HASMSX106.ger.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jason Wessel <jason.wessel@windriver.com>, acme@ghostprotocols.net
+CC: a.p.zijlstra@chello.nl, paulus@samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Do not require /lib/modules/* on a guest
+References: <1373920073-4874-1-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1373920073-4874-1-git-send-email-jason.wessel@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 10:27:06PM +0000, Winkler, Tomas wrote:
-> 
-> > 
-> > > > >
-> > > > >
-> > > > > > >
-> > > > > > > Just to make sure, is this what you're suggesting ?
-> > > > > > >
-> > > > > > > device->groups = mei_attr_groups
-> > > > > > > mei_misc_device.parent = device; ret =
-> > > > > > > misc_register(&mei_misc_device);
-> > > > > >
-> > > > > > Yes, that should work.  If not, please let me know, the code
-> > > > > > underwent some changes in 3.11-rc2.
-> > > > >
-> > > > > I don' t see the file being created.
-> > > > > Not sure if the  misc_register setup the parent sysfs as well.
-> > > >
-> > > > Oops, wait, the parent is already registered, that's not going to
-> > > > work, you want to create the files for the device itself that you
-> > > > are creating, so set the -
-> > > > >groups field for that device.
-> > > >
-> > > > sorry about that.
-> > >
-> > > So is this okay to go as  is?
-> > 
-> > What is "this"?
-> 
-> The intentions was to create the sysfs  on a  parent pci device, and
-> these are already created .
+On 7/15/13 2:27 PM, Jason Wessel wrote:
+> For some types of work loads and special guest environments, you might
+> have a kernel that has no kernel modules.  The perf kvm record tool
+> fails instantiate vmlinux maps when the kernel modules directory
+> cannot be opened, even though the kallsyms has been properly
+> processed.  This leads to a perf kvm report that has no guest symbols
+> resolved.
 
-You can't create attributes on a device you do not "own", that will be
-racy and prone to cause big problems (your callback will not with the
-"right" device usually, as your parent might not "be" a pci device in
-the future...)
+Theoretically, use of modules is an option:
 
-> The only reason I wanted do it here as this is true for any parent pci
-> device we support currently that registers with mei.
-> 
-> Either this code ode is still confusing because  I'm  doing something
-> wrong here or  your mind Is set on fixing this particular user space
-> race issue.
+     if (symbol_conf.use_modules && machine__create_modules(machine) < 0) {
+...
+     }
 
-Probably both...
+But, the use_modules option was flipped from false to true by b32d133a 
+back in 2009. And the lack of complaints suggests this ominous warning 
+in perf-report, diff and annotate is moot:
 
-Either way, you can't create sysfs files in a racy way, I'm going
-through the whole kernel tree to clean them all up, I'm not going to add
-new race conditions today that I need to fix up tomorrow, my patch count
-is high enough as it is :)
+     OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
+             "load module symbols - WARNING: use only with -k and LIVE 
+kernel"),
 
-thanks,
+>
+> This patch changes the failure to locate kernel modules to be
+> non-fatal.
+>
+> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> ---
+>   tools/perf/util/machine.c |    5 ++++-
+>   1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index b2ecad6..eb9ebd6 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -808,7 +808,10 @@ static int machine__create_modules(struct machine *machine)
+>   	free(line);
+>   	fclose(file);
+>
+> -	return machine__set_modules_path(machine);
+> +	if (machine__set_modules_path(machine) < 0) {
+> +		pr_debug("Problems setting modules path maps, continuing anyway...\n");
+> +	}
+> +	return 0;
+>
+>   out_delete_line:
+>   	free(line);
 
-greg k-h
+Acked-by: David Ahern <dsahern@gmail.com>
+
