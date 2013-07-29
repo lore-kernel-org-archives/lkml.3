@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab3G2SEw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:04:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57820 "EHLO bear.ext.ti.com"
+	id S1758586Ab3G2SFZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:05:25 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:48569 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753929Ab3G2SEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:04:51 -0400
-Date: Mon, 29 Jul 2013 21:04:41 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Illia Smyrnov <illia.smyrnov@ti.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for
- keypad.
-Message-ID: <20130729180441.GF4964@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
- <1375116311-13999-2-git-send-email-illia.smyrnov@ti.com>
+	id S1753725Ab3G2SFW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:05:22 -0400
+Date: Mon, 29 Jul 2013 12:05:13 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Arend van Spriel <arend@broadcom.com>, Olof Johansson <olof@lixom.net>,
+        Mark Brown <broonie@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have
+ people interested in device tree janitoring / cleanup?]
+Message-ID: <20130729180513.GB1884@obsidianresearch.com>
+References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com>
+ <51F39FD8.6080808@broadcom.com>
+ <20130727183059.GD4813@netboy>
+ <1441731.8CGUI1tUxh@flatron>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DNUSDXU7R7AVVM8C"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1375116311-13999-2-git-send-email-illia.smyrnov@ti.com>
+In-Reply-To: <1441731.8CGUI1tUxh@flatron>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.195
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DNUSDXU7R7AVVM8C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Jul 27, 2013 at 11:51:06AM -0700, Tomasz Figa wrote:
 
-Hi,
+> Well, it depends on how we use the DT. There are (at least) two possible 
+> usage scenarios:
+> 
+>  a) using DT as direct replacement for board files - this means that you 
+>     are free to say that DTSes are strictly coupled with kernel version 
+>     and you are free to modify the bindings - see the analogy to board 
+>     files, where you could modify the platform data structures and could 
+>     not directly copy board file from one kernel version to another,
+> 
+>  b) using DT as an ABI - this is the original way, i.e. define stable 
+>     bindings and make sure that anu DTB built for older kernel will work,
+>     with equal or greater set of functionality on newer kernels.
+> 
+> Now I believe in this thread the point whether we should use a) or b) or a 
+> combination of both has been raised.
 
-On Mon, Jul 29, 2013 at 07:45:09PM +0300, Illia Smyrnov wrote:
-> Enable/disable IRQ wake in suspend/resume handlers
-> to make the keypad wakeup capable.
->=20
-> Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
-> ---
->  drivers/input/keyboard/omap4-keypad.c |   43 +++++++++++++++++++++++++++=
-++++++
->  1 file changed, 43 insertions(+)
->=20
-> diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboa=
-rd/omap4-keypad.c
-> index 0244262..feab00f 100644
-> --- a/drivers/input/keyboard/omap4-keypad.c
-> +++ b/drivers/input/keyboard/omap4-keypad.c
-> @@ -74,6 +74,7 @@ struct omap4_keypad {
->  	struct input_dev *input;
-> =20
->  	void __iomem *base;
-> +	bool irq_wake_enabled;
+Right, and I think it is very important to consider that different
+systems can legitimately fall into those categories.
 
-this flag is a bit weird... but I can't find a better way to handle this
-situation. In one way, you shouldn't prevent system suspend, so you can
-error out in case enable_irq_wake() fails, otoh if enable_irq_wake()
-fails and you return 0, on resume disable_irq_wake() will throw
-unbalanced calls warning. Maybe someone else has a better idea.
+Clearly general purpose systems (eg servers, workstations, etc) with
+*full featured firmware* fall into category b. Linux already basically
+has stable DT for those systems - but the firmware is expected to do
+lots of work and hide all the low level details from the
+kernel. Basically, the DT should stick to approximately ePAR and
+everything else is hidden by the firmware. This is essentially how x86
+works and achieves its compatibility.
 
-> @@ -439,12 +444,50 @@ static const struct of_device_id omap_keypad_dt_mat=
-ch[] =3D {
->  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
->  #endif
-> =20
-> +#ifdef CONFIG_PM_SLEEP
-> +static int omap4_keypad_suspend(struct device *dev)
-> +{
-> +	struct platform_device *pdev =3D to_platform_device(dev);
+Systems that have minimalist firmware, where firmware functions are
+pushed into the kernel and the DT is now required to describe
+intricate and unique SOC specific functions are clearly very
+different, and I think it makes sense to encourage those environments
+to be case 'a'.
 
-you don't need to access the platform_device...
+Basically, minimalist firmware should have a boot process design that
+*can* couple the DT and kernel, while full featured firmware should
+keep them seperate. IMHO that should be the clear message to people
+implementing this stuff.
 
-> +	struct omap4_keypad *keypad_data =3D platform_get_drvdata(pdev);
+After enough time the DT for 'a' should become stable and churn free,
+but expecting/demanding that from day 0 is not helping anyone, IMHO.
 
-=2E.. since this can become:
-
-	struct omap4_keypad *keypad_data =3D dev_get_drvdata(dev);
-
-> +	int error;
-> +
-> +	if (device_may_wakeup(&pdev->dev)) {
-> +		error =3D enable_irq_wake(keypad_data->irq);
-> +		if (!error)
-> +			keypad_data->irq_wake_enabled =3D true;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int omap4_keypad_resume(struct device *dev)
-> +{
-> +	struct platform_device *pdev =3D to_platform_device(dev);
-> +	struct omap4_keypad *keypad_data =3D platform_get_drvdata(pdev);
-
-ditto, use dev_get_drvdata() instead.
-
---=20
-balbi
-
---DNUSDXU7R7AVVM8C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR9q65AAoJEIaOsuA1yqREeHsQAItblV3kfd1BZpuKxbk6AJgP
-+kOEAXOjbAArm1HnXemOt2v+fo8IcrlTCuHfWpSVTAgChJkD3YwewNyeY5/FwscD
-lruGSyWOqp9DevdtLBf30SPQiHq/rMO87V8JJwL57ge7/L5m/5KFhK+jXNvFhJji
-5mdadiSMSADoJxFv/TwhZDdNLD5P5cbxT9JFxaNVA55OA/VAzF0C9Ec4UcZ6VeHr
-JRitvuCKKBoBNwrrnLZNM/zRhafBz2B7jpd/CS1RiQnFhbsUjDdfs4qXEsoEStXe
-Qs5XAX8AfjnM6VDZQ7uyiThCA814y4IXHOy59DmA35BMiTBIoYjnaYTvZ9zWHWhq
-5+vzlxsL81iIV8aqtZJLrJXQwyx8ZLgKb1ZvLTAHrwdfbcgqicNo6pyF1WFJ+Key
-0U8RjbvH1HcdmXkufP2/eakPVihK/dmDF3taVT97a1oTFtpJnzcIrasQESYiafwb
-aU6wsG25WSZAeCWDogUxxz3yNPRfte+f1xNMCXsz8KuPvOxsr5x+A7AQH7PrfylL
-4NLU6wbTC3VecpDSkny0A+klf8nXO7yE8s28fMWmQ5wjOszSG0uGpxF7IVlUptZr
-sGVvXo5ni1C/hi3Rs+hc1aUS1idpdnqwiNi9VpELelRQl2X6rZZ3sUIthHpzaDBp
-HciCukc3ilh7EZY/nDTg
-=F9E5
------END PGP SIGNATURE-----
-
---DNUSDXU7R7AVVM8C--
+Jason
