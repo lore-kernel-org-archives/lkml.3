@@ -1,89 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab3G2MJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:09:59 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:45941 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab3G2MJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:09:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Aaron Lu <aaron.lu@intel.com>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 2/3] ACPI / PM: Make messages in acpi_device_set_power() print device names
-Date: Mon, 29 Jul 2013 14:20:07 +0200
-Message-ID: <4285597.UpTJrMA8Fu@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <51F5D390.5040506@intel.com>
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1895563.95T8SxMegu@vostro.rjw.lan> <51F5D390.5040506@intel.com>
+	id S1754196Ab3G2MNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:13:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40423 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab3G2MNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 08:13:20 -0400
+Date: Mon, 29 Jul 2013 14:13:05 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Xie XiuQi <xiexiuqi@huawei.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hanjun Guo <guohanjun@huawei.com>, Li Zefan <lizefan@huawei.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] smp: kill unnecessary variable - csd_flags
+Message-ID: <20130729121305.GE3008@twins.programming.kicks-ass.net>
+References: <51F5D399.3050609@huawei.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F5D399.3050609@huawei.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 29, 2013 10:29:36 AM Aaron Lu wrote:
-> On 07/27/2013 09:11 PM, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > 
-> > Modify acpi_device_set_power() so that diagnostic messages printed by
-> > it to the kernel log always contain the name of the device concerned
-> > to make it possible to identify the device that triggered the message
-> > if need be.
-> > 
-> > Also replace printk(KERN_WARNING ) with dev_warn() everywhere in that
-> > function.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >  drivers/acpi/device_pm.c |   22 ++++++++++------------
-> >  1 file changed, 10 insertions(+), 12 deletions(-)
-> > 
-> > Index: linux-pm/drivers/acpi/device_pm.c
-> > ===================================================================
-> > --- linux-pm.orig/drivers/acpi/device_pm.c
-> > +++ linux-pm/drivers/acpi/device_pm.c
-> > @@ -166,20 +166,20 @@ int acpi_device_set_power(struct acpi_de
-> >  	/* Make sure this is a valid target state */
-> >  
-> >  	if (state == device->power.state) {
-> > -		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device is already at %s\n",
-> > +		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Device [%s] already in %s\n",
-> > +				  device->pnp.bus_id,
-> >  				  acpi_power_state_string(state)));
-> >  		return 0;
-> >  	}
-> >  
-> >  	if (!device->power.states[state].flags.valid) {
-> > -		printk(KERN_WARNING PREFIX "Device does not support %s\n",
-> > -		       acpi_power_state_string(state));
-> > +		dev_warn(&device->dev, "Power state %s not supported\n",
-> > +			 acpi_power_state_string(state));
-> >  		return -ENODEV;
-> >  	}
-> >  	if (device->parent && (state < device->parent->power.state)) {
-> > -		printk(KERN_WARNING PREFIX
-> > -			      "Cannot set device to a higher-powered"
-> > -			      " state than parent\n");
-> > +		dev_warn(&device->dev, "Cannot transition to a higher-powered "
-> > +			 "state than parent\n");
+On Mon, Jul 29, 2013 at 10:29:45AM +0800, Xie XiuQi wrote:
+> We used csd_flags formerly because we allocated csd_data by
+> kmalloc when "wait == 0". When fail to allocation, we will
+> fall back to on-stack allocation. "csd_data" might be invalid
+> after generic_exec_single return.
 > 
-> I think the state information would also be useful here:
+> But now we use per cpu data for single cpu ipi calls, and
+> csd_data can't fall back to on-stack allocation when "wait == 0".
 > 
-> 		dev_warn(&device->dev, "Cannot transition to a higher-powereed "
-> 		         "state %d than paeren's state %d\n", state,
-> 			 device->parent->power.state);
+> So csd_flags is unnecessary now. Remove it.
 
-This is not the scope of this patch, please send another one on top of it.
+The much simpler argument is that both callsites of
+generic_exec_single() do an unconditional csd_lock().
 
-Thanks,
-Rafael
+> Signed-off-by: Xie XiuQi <xiexiuqi@huawei.com>
+> ---
+>  kernel/smp.c |   11 +----------
+>  1 files changed, 1 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 4dba0f7..cac2b6e 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -186,25 +186,16 @@ void generic_smp_call_function_single_interrupt(void)
+> 
+>  	while (!list_empty(&list)) {
+>  		struct call_single_data *csd;
+> -		unsigned int csd_flags;
+> 
+>  		csd = list_entry(list.next, struct call_single_data, list);
+>  		list_del(&csd->list);
+> 
+> -		/*
+> -		 * 'csd' can be invalid after this call if flags == 0
+> -		 * (when called through generic_exec_single()),
+> -		 * so save them away before making the call:
+> -		 */
+> -		csd_flags = csd->flags;
+> -
+>  		csd->func(csd->info);
+> 
+>  		/*
+>  		 * Unlocked CSDs are valid through generic_exec_single():
+>  		 */
+> -		if (csd_flags & CSD_FLAG_LOCK)
+> -			csd_unlock(csd);
+> +		csd_unlock(csd);
 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+The comment is completely useless and confusing after this; why do you
+leave it in? 
