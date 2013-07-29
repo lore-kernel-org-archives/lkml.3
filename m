@@ -1,120 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab3G2Qhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:37:38 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:61996 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756135Ab3G2Qhg (ORCPT
+	id S1757623Ab3G2Qip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:38:45 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:37210 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab3G2Qio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:37:36 -0400
+	Mon, 29 Jul 2013 12:38:44 -0400
+Message-ID: <51F69A8F.2000802@wwwdotorg.org>
+Date: Mon, 29 Jul 2013 10:38:39 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-In-Reply-To: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org>
-References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org>
-Date: Mon, 29 Jul 2013 18:37:36 +0200
-Message-ID: <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Hanumant Singh <hanumant@codeaurora.org>,
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
+        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "Bird, Tim" <Tim.Bird@sonymobile.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        ext Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 1/2] pinctrl: pinconf_generic: add utility functions for
+ add map/configs
+References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-2-git-send-email-ldewangan@nvidia.com> <51F2B384.9050706@wwwdotorg.org> <51F39D98.1090008@nvidia.com>
+In-Reply-To: <51F39D98.1090008@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 11:41 PM, Hanumant Singh
-<hanumant@codeaurora.org> wrote:
+On 07/27/2013 04:14 AM, Laxman Dewangan wrote:
+> On Friday 26 July 2013 11:06 PM, Stephen Warren wrote:
+>> On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
+>>> Some of pincontrol driver needs the utility function to create map
+>>> list. The utility function needed for adding mux, configs etc.
+>> Which other drivers already contain this code? Are you planning on
+>> converting them over to use these new functions? The code looks
+>> familiar, so I assume it's just cut/paste from Tegra with some renames,
+>> so I didn't read it through in detail.
+> 
+> Yes, these functions are taken from the pinctrl-tegra driver. Other
+> drivers which have similar implementation are nomadik, tegra, abx500,
+> tz1090, tz1090-pdc.
+> So All can use these utility function to avoid duplication and reduce
+> code size.
+> Yes, I have plan to use this in Tegra atleast but once this patch get
+> accepted.
+> 
+> 
+>>
+>>>   drivers/pinctrl/pinconf-generic.c       |  105
+>>> +++++++++++++++++++++++++++++++
+>>>   include/linux/pinctrl/pinconf-generic.h |   52 +++++++++++++++
+>> I don't think those are the correct files for this code. Presumably
+>> there's no reason at all why a pinctrl driver that doesn't require
+>> CONFIG_GENERIC_PINCONF can't use these basic utility functions. Perhaps
+>> add a new pinctrl-utils file?
+> 
+> I thought generic implementation of parsing of dt is pinctrl-generic
+> file and as these newly added APIs are require for the parsing the DT
+> node, I added here.
+> I can move this to pinctrl-util.c/h also.
 
-> Add a new device tree enabled pinctrl driver for
-> Qualcomm MSM SoC's. This driver provides an extensible
-> framework to interface all MSM's that use a TLMM pinmux,
-> with the pinctrl subsytem.
->
-> This driver is split into two parts: the pinctrl interface
-> and the TLMM version specific implementation. The pinctrl
-> interface parses the device tree and registers with the pinctrl
-> subsytem. The TLMM version specific implementation supports
-> pin configuration/register programming for the different
-> pin types present on a given TLMM pinmux version.
->
-> Add support only for TLMM version 3 pinmux right now,
-> as well as, only two of the different pin types present on the
-> TLMM v3 pinmux.
-> Pintype 1: General purpose pins.
-> Pintype 2: SDC pins.
+pinctrl-generic isn't about DT, it's about defining generic options for
+pin configuration rather than SoC-/driver-specific options for pin
+configuration. (pin configuration being e.g. pull-up/down, bias
+direction/strength, slew rate, etc.)
 
-I guess this is the v4 patch set?
-
-Please include a small changelog so I can keep track of
-things...
-
-
-> Change-Id: I065d874cd2c6fd002d5b3cb4b355445bb6912bf4
-
-This thing is not interesting to the kernel community.
-
-> diff --git a/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
-> new file mode 100644
-> index 0000000..0f17a94
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
-
-This needs to be broken out and sent for separate review on
-the devicetree@vger.kernel.org mailing list.
-
-> +Required Properties
-> +  - qcom,pin-type-*: identifies the pin type. Pin types supported are
-> +                       qcom,pin-type-gp (General purpose)
-> +                       qcom,pin-type-sdc (SDC)
-
-I am wondering if it it would not be simpler to split this
-driver in two, one for the GP pins and one for the SDC pins.
-Having this tag on each and every pin seems *very*
-awkward.
-
-If you have two drivers and two device tree nodes, one for
-GP pins and one for SDC pins, just separated by different
-compatible strings and different memory regs, things will
-look simpler and be easier to maintain I think.
-
-Unless there is some strong cross-dependency between
-GP and SDC please explore this approach.
-
-> +- Pin groups as child nodes: The pin mux (selecting pin function
-> +  mode) and pin config (pull up/down, driver strength, direction) settings are
-> +  represented as child nodes of the pin-controller node. There is no limit on
-> +  the count of these child nodes.
-> +
-> +  Required Properties
-> +    -qcom,pins: phandle specifying pin type and a pin number.
-> +    -qcom,num-grp-pins: number of pins in the group.
-> +    -label: name to to identify the pin group.
-> +
-> +  Optional Properties
-> +    -qcom,pin-func: function setting for the pin group.
-
-After some scratching my head I realize that you are trying
-to reimplement parts of pinctrl-single.c.
-
-I.e. you try to put all the definitions of groups and functions
-into the devicetree instead of having this in the driver
-as tables.
-
-If this is what you want to do you should use pinctrl-single.c.
-It might be possible to use pinctrl-single.c only for the
-GP pins.
-
-But if there is something complex about the hardware that
-make pinctrl-single.c not fit the bill I advice you to encode
-the lists of groups and functions into the driver instead.
-
-Also, split this in a per-soc manner (compare the other
-drivers) so you can support plugging one file per SoC
-for the different MSM chips using this pin controller.
-
-Yours,
-Linus Walleij
