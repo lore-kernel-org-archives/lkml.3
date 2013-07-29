@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab3G2Hrt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 03:47:49 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41639 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab3G2Hrr (ORCPT
+	id S1751578Ab3G2Hse (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 03:48:34 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:58432 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3G2Hsd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 03:47:47 -0400
-Date: Mon, 29 Jul 2013 00:47:46 -0700 (PDT)
-Message-Id: <20130729.004746.91827990830866654.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tgraf@suug.ch
-Subject: Re: linux-next: build failure after merge of the final tree
- (netnext-tree related)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130729162544.574e4d7ffccf0f6bff5ba4c4@canb.auug.org.au>
-References: <20130729162544.574e4d7ffccf0f6bff5ba4c4@canb.auug.org.au>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Mon, 29 Jul 2013 00:47:47 -0700 (PDT)
+	Mon, 29 Jul 2013 03:48:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
+References: <1374919965-11690-1-git-send-email-a3at.mail@gmail.com>
+Date: Mon, 29 Jul 2013 11:48:32 +0400
+Message-ID: <CAG5DWoi_BQvHYcPySZBLQpB3wbYeqvYj_CE1RvEBSB8xibtrDw@mail.gmail.com>
+Subject: Re: [PATCH] btrfs: use list_for_each_entry_safe() when delete items
+From: Azat Khuzhin <a3at.mail@gmail.com>
+To: linux-btrfs@vger.kernel.org
+Cc: chris.mason@fusionio.com, Azat Khuzhin <a3at.mail@gmail.com>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 29 Jul 2013 16:25:44 +1000
+On Sat, Jul 27, 2013 at 2:12 PM, Azat Khuzhin <a3at.mail@gmail.com> wrote:
+> Replace list_for_each_entry() by list_for_each_entry_safe() in
+> __btrfs_close_devices()
+>
+> There is another place that delete items lock_stripe_add(), but there we
+> don't need safe version, because after deleting we exit from loop.
+>
+> Signed-off-by: Azat Khuzhin <a3at.mail@gmail.com>
+> ---
+>  fs/btrfs/volumes.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
+> index 78b8717..1d1b595 100644
+> --- a/fs/btrfs/volumes.c
+> +++ b/fs/btrfs/volumes.c
+> @@ -616,13 +616,13 @@ static void free_device(struct rcu_head *head)
+>
+>  static int __btrfs_close_devices(struct btrfs_fs_devices *fs_devices)
+>  {
+> -       struct btrfs_device *device;
+> +       struct btrfs_device *device, *next;
+>
+>         if (--fs_devices->opened > 0)
+>                 return 0;
+>
+>         mutex_lock(&fs_devices->device_list_mutex);
+> -       list_for_each_entry(device, &fs_devices->devices, dev_list) {
+> +       list_for_each_entry_safe(device, next, &fs_devices->devices, dev_list) {
+>                 struct btrfs_device *new_device;
+>                 struct rcu_string *name;
 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+There is "kfree(device);" at the end of loop, maybe there must "goto
+again;" after it?
+(instead of this patch)
 
-Sorry about that.
+>
+> --
+> 1.7.10.4
+>
 
-> I added this commit:
 
-Applied, thanks Stephen.
+
+-- 
+Respectfully
+Azat Khuzhin
