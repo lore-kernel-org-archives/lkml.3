@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab3G2KZQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:25:16 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27864 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab3G2KZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:25:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,768,1367996400"; 
-   d="scan'208";a="377717627"
-Date: Mon, 29 Jul 2013 15:15:57 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Dan Williams <djbw@fb.com>,
-        Tony Lindgren <tony@atomide.com>, "Nori, Sekhar" <nsekhar@ti.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        "Nayak, Rajendra" <rnayak@ti.com>,
-        "Vutla, Lokesh" <lokeshvutla@ti.com>,
-        "Krishnamoorthy, Balaji T" <balajitk@ti.com>,
-        Matt Porter <matt@ohporter.com>, Rob Herring <rob.herring@calxeda.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Koen Kooi <koen@beagleboard.org>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] dma: edma: add device_slave_caps() support
-Message-ID: <20130729094557.GG29095@intel.com>
-References: <1374597804-3961-1-git-send-email-joelf@ti.com>
- <51EF8A52.90902@metafoo.de>
- <51EF8C2B.2030409@ti.com>
- <51EF8F4E.8080806@metafoo.de>
- <FB20353E-4890-4462-A671-3587A3841B4A@ti.com>
- <51EF92F2.3030405@metafoo.de>
- <51F0231C.7000401@ti.com>
- <20130724183329.GH18642@intel.com>
- <51F02CBA.5060704@ti.com>
- <20130725072351.GJ18642@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130725072351.GJ18642@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755531Ab3G2KZo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:25:44 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:60864 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808Ab3G2KZm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:25:42 -0400
+X-AuditID: cbfee61b-b7efe6d000007b11-1f-51f64325b3b3
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, konrad.wilk@oracle.com,
+        crrodriguez@opensuse.org, p.sarna@partner.samsung.com,
+        linux-kernel@vger.kernel.org, mhocko@suse.cz, bob.liu@oracle.com,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com
+Subject: [PATCH resend] staging: zcache: fix "zcache=" kernel parameter
+Date: Mon, 29 Jul 2013 12:25:20 +0200
+Message-id: <1375093520-17071-1-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQV1V52+BBg2/2S02zljPatF1aiqL
+	xb1/05gs9pz5xW7RvHg9m8WyxU8ZLc42vWG3uLxrDpvFq+bvrBarFkU5cHnc23eYxWP/3DXs
+	HsdOvmT1+Pj0FovHwXd7mDz6tqxi9Diz4Ai7x+dNcgEcUVw2Kak5mWWpRfp2CVwZS09fZy9o
+	Ear4+7+kgbGTv4uRg0NCwERi+oqyLkZOIFNM4sK99WxdjFwcQgLTGSU+v1jIAuF0MUl8frWZ
+	BaSKTcBKYmL7KkYQW0RATuLJ7T/MIEXMAq8YJS5/WA1WJCzgLjF131kmEJtFQFVi2oRbbCA2
+	r4CHxPun51gg1slLPL3fxzaBkXsBI8MqRtHUguSC4qT0XCO94sTc4tK8dL3k/NxNjODweia9
+	g3FVg8UhRgEORiUe3gdOXwKFWBPLiitzDzFKcDArifByGH0NFOJNSaysSi3Kjy8qzUktPsQo
+	zcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDI9f01W/iK3UX7PDWWZXLbGfOFfn2tH7BM
+	ftEXg/tz5rg/udO6YXPdRtcuf8dNiZcluOZ0CNjfbZD59ccw7fsXt2XrKgKbHJrXzdHe9r4x
+	26TGdY5Hen5m99MO80D+J2YXtETuvDLZy2Dz7UxY9IXbV5unsZZc1/Ca/6S7jlGC6cLjh40L
+	5PmVWIozEg21mIuKEwENZTF6KwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 12:53:51PM +0530, Vinod Koul wrote:
-> On Wed, Jul 24, 2013 at 02:36:26PM -0500, Joel Fernandes wrote:
-> > > Also another point worth considering is the approach Russell suggested, I havent
-> > > gotten a chance to dig deeper but if I understood it correctly then programming
-> > > the device_dma_parameters should be the right thing to do. Again I need to look
-> > > deeper and esp wrt edma
-> > 
-> > OK. I have some patches sitting in my tree too that I'm working on. With
-> > that I don't need to know about maximum number of allowed segments and
-> > can send along any number of segment. I will rework them and post them.
-> > fwiw, I will also implement caps API incase like Lars did populating the
-> > other fields though these will not be unused.
-> > 
-> > For segment size, at this time I don't know any driver that uses it
-> > other than davinci-pcm. For this reason the calculations can be done as
-> > Lars suggested (for minimum of maximum). Do you know in advance if
-> > you're going to amend to drop segment size if we go with what Russell
-> > suggested, or are you going to leave the seg-size in the caps API anyway.
-> I am just back and havent really done my work on this. Let me check and as I
-> said if my understanding is right I would be inclined to remove these fields...
-Okay so the max sg_len should be done by setting the device_dma_parameters.
+From: Piotr Sarna <p.sarna@partner.samsung.com>
 
-See the example in MXS DMA and MMC drivers
+Commit 835f2f5 ("staging: zcache: enable zcache to be built/loaded as
+a module") introduced an incorrect handling of "zcache=" parameter.
 
-Now for second parameter why do you need that to be passed, I thought in edma the
-clients needs this value somehow to program the channel. It would be good that
-if we can delink from this and let edma derive. Also there should be no such
-thing as max_sg, the driver should be able to perform any size of sg_list.
-Internally it can be breaking the dma into multiple trasnactions.
+Inside zcache_comp_init() function, zcache_comp_name variable is
+checked for being empty. If not empty, the above variable is tested
+for being compatible with Crypto API. Unfortunately, after that
+function ends unconditionally (by the "goto out" directive) and returns:
+- non-zero value if verification succeeded, wrongly indicating an error
+- zero value if verification failed, falsely informing that function
+  zcache_comp_init() ended properly.
 
-~Vinod
+A solution to this problem is as following:
+1. Move the "goto out" directive inside the "if (!ret)" statement
+2. In case that crypto_has_comp() returned 0, change the value of ret
+   to non-zero before "goto out" to indicate an error.
+
+This patch replaces an earlier one from Michal Hocko (based on report
+from Cristian Rodriguez):
+
+	http://permalink.gmane.org/gmane.linux.kernel.mm/102484
+
+It also addressed the same issue but didn't fix the zcache_comp_init()
+for case when the compressor data passed to "zcache=" option was invalid
+or unsupported.
+
+Signed-off-by: Piotr Sarna <p.sarna@partner.samsung.com>
+[bzolnier: updated patch description]
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Cc: Cristian Rodriguez <crrodriguez@opensuse.org>
+Cc: Bob Liu <bob.liu@oracle.com>
+---
+ drivers/staging/zcache/zcache-main.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index dcceed2..81972fa 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -1811,10 +1811,12 @@ static int zcache_comp_init(void)
+ #else
+ 	if (*zcache_comp_name != '\0') {
+ 		ret = crypto_has_comp(zcache_comp_name, 0, 0);
+-		if (!ret)
++		if (!ret) {
+ 			pr_info("zcache: %s not supported\n",
+ 					zcache_comp_name);
+-		goto out;
++			ret = 1;
++			goto out;
++		}
+ 	}
+ 	if (!ret)
+ 		strcpy(zcache_comp_name, "lzo");
 -- 
+1.8.2.3
+
