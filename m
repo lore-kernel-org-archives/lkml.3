@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab3G2JYE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:24:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45853 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754276Ab3G2JYD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:24:03 -0400
-Message-ID: <51F63487.7040003@zytor.com>
-Date: Mon, 29 Jul 2013 02:23:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1754045Ab3G2JaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:30:20 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:43362 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab3G2JaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:30:18 -0400
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: "H. Peter Anvin" <hpa@linux.intel.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, tglx@linutronix.de, fengguang.wu@intel.com,
-        tip-bot for Jiri Kosina <tipbot@zytor.com>,
-        linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:perf/core] kprobes/x86: Call out into INT3 handler directly
- instead of using notifier
-References: <alpine.LNX.2.00.1307231007490.14024@pobox.suse.cz> <tip-17f41571bb2c4a398785452ac2718a6c5d77180e@git.kernel.org> <51EFE5A8.1060109@linux.intel.com> <alpine.LNX.2.00.1307291106260.18809@pobox.suse.cz> <51F6327A.9090609@zytor.com> <alpine.LNX.2.00.1307291116560.18809@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1307291116560.18809@pobox.suse.cz>
-X-Enigmail-Version: 1.5.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1375075701-5998-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075701-5998-6-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Mon, 29 Jul 2013 17:30:17 +0800
+Message-ID: <CAJd=RBC5XwDp9p1b48EgkfRAQ=zVj0=TG_qFQrQ325RsFM5zsQ@mail.gmail.com>
+Subject: Re: [PATCH v3 5/9] mm, hugetlb: remove redundant list_empty check in gather_surplus_pages()
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 02:18 AM, Jiri Kosina wrote:
-> On Mon, 29 Jul 2013, H. Peter Anvin wrote:
-> 
->>>> Please note that putting this patch in perf/core means x86/jumplabel is
->>>> completely nonfunctional by itself.
->>>
->>> I'd like to point out that this is still the case ... TIA,
->>
->> What is?
-> 
-> 17f41571bb2c4a is only in perf/core, x86/jumplabel is missing it. I am not 
-> sure about the tip workflow, but as it is now, x86/jumplabel is buggy, so 
-> it should be either fixed (by pulling 17f41571bb2c4a from perf/core) or 
-> removed, or somehow marked as broken ... ?
-> 
-> Not a big deal for me as long as perf/core is fine, but as you were 
-> mentioning it ...
-> 
+On Mon, Jul 29, 2013 at 1:28 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> If list is empty, list_for_each_entry_safe() doesn't do anything.
+> So, this check is redundant. Remove it.
+>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+Acked-by: Hillf Danton <dhillf@gmail.com>
 
-Yes, we know.  In effect, x86/jumplabel not really a working standalone
-topic branch at the moment.  It is probably not worth fixing it for this
-kernel cycle, as the number of patches involved is relatively small, but
-it is perhaps a bit unfortunate.
-
-	-hpa
-
-
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 87d7637..2e52afea 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -1020,11 +1020,8 @@ free:
+>         spin_unlock(&hugetlb_lock);
+>
+>         /* Free unnecessary surplus pages to the buddy allocator */
+> -       if (!list_empty(&surplus_list)) {
+> -               list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
+> -                       put_page(page);
+> -               }
+> -       }
+> +       list_for_each_entry_safe(page, tmp, &surplus_list, lru)
+> +               put_page(page);
+>         spin_lock(&hugetlb_lock);
+>
+>         return ret;
+> --
+> 1.7.9.5
+>
