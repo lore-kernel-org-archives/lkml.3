@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab3G2JUt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:20:49 -0400
-Received: from smtp1-1.goneo.de ([212.90.139.81]:44694 "EHLO smtp1-1.goneo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778Ab3G2JUr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:20:47 -0400
-X-Greylist: delayed 619 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 05:20:47 EDT
-X-Spam-Flag: NO
-X-Spam-Score: -2.891
-From: Lars Poeschel <poeschel@lemonage.de>
-To: "Daniel M. Weeks" <dan@danweeks.net>
-Subject: Re: gpio-mcp23s08: i2c: auto-select base if no DT match or platform data
-Date: Mon, 29 Jul 2013 11:10:19 +0200
-User-Agent: KMail/1.13.7 (Linux/3.9-1-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
-References: <20130719041952.GA29001@dev.danweeks.net>
-In-Reply-To: <20130719041952.GA29001@dev.danweeks.net>
+	id S1753147Ab3G2JVV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:21:21 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16521 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab3G2JVT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 05:21:19 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+YA/l71OLUCG2FDfA0QyDu
+Date: Mon, 29 Jul 2013 02:21:16 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
+Message-ID: <20130729092116.GA7656@atomide.com>
+References: <20130716090310.5541.36777.stgit@localhost>
+ <20130716090536.5541.36289.stgit@localhost>
+ <51E70B5D.6030802@wwwdotorg.org>
+ <20130718073638.GP7656@atomide.com>
+ <51E84180.6080902@wwwdotorg.org>
+ <20130719073957.GZ7656@atomide.com>
+ <51E98C71.5010709@wwwdotorg.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201307291110.19990.poeschel@lemonage.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51E98C71.5010709@wwwdotorg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 19 July 2013 at 06:19:58, Daniel M. Weeks wrote:
-> The call to gpiochip_add made by this driver is capable of
-> auto-selecting a base if one is not provided. However, it was not
-> called unless there was already a DT entry or platform data. This patch
-> calls it even if the base is not already known so that gpiochip_add can
-> attempt to find a usable base.
-
-Nitpick:
-You describe what your patch changes in the commit message. This is good, 
-but I can see the changes looking at the code. Can you please add a few 
-lines describing WHY your patch is needed ? (That'd be to be able to 
-instantiate a device from userspace with sysfs, right ?)
-
-The code is ok, so with a modified commit message feel free to add my
-
-Acked-by: Lars Poeschel <poeschel@lemonage.de>
-
-> Signed-off-by: Daniel M. Weeks <dan@danweeks.net>
+* Stephen Warren <swarren@wwwdotorg.org> [130719 12:05]:
+> On 07/19/2013 01:39 AM, Tony Lindgren wrote:
+> > 
+> > I think the only sane way to deal with this is to make the I2C controller
+> > to show up as two separate I2C controller instances. Then use runtime
+> > PM to save and restore the state for each instance, and locking between
+> > the two driver instances.
+> > 
+> > For the pin muxing part, I'd do this:
+> > 
+> > 			i2c1 instance	i2c2 instance	notes
+> > default_state		0 pins		0 pins		(or dedicated pins only)
+> > active_state		all pins	alls pins
+> > idle_state		safe mode	safe mode
+> > 
+> > Then when i2c1 instance is done, it's runtime PM suspend muxes the pins
+> > to safe mode, or some nop state. Then when i2c2 instance is woken, it's
+> > runtime PM resume muxes pins to i2c2.
 > 
-> ---
-> drivers/gpio/gpio-mcp23s08.c | 9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
+> I see two issues with that approach:
 > 
-> diff --git a/drivers/gpio/gpio-mcp23s08.c b/drivers/gpio/gpio-mcp23s08.c
-> index 6a4470b..87ed6bf 100644
-> --- a/drivers/gpio/gpio-mcp23s08.c
-> +++ b/drivers/gpio/gpio-mcp23s08.c
-> @@ -520,14 +520,13 @@ static int mcp230xx_probe(struct i2c_client
-> *client,
+> 1) Runtime PM doesn't always put a device into an idle state as soon as
+> its work is done. Sometimes (always?) there is a delay between when the
+> device is last used and when the HW is actually made idle so that if the
+> device is re-activated quickly, the kernel hasn't wasted time making it
+> idle then active again. You'd have to force that delay to complete when
+> switching between the two virtual controller devices.
+
+There is the autosuspend timeout for delayed transitions, but I think
+runtime PM already has calls for making the state change immediate also.
+ 
+> 2) This requires two separate device objects for the two I2C instances.
+> I guess you could have the driver for the one I2C mux node end up
+> instantiating two child devices for this purpose, and hence make that
+> happen without needing to change the DT ABI. However, that sure feels
+> complex...
+
+Yes but you will also automatically get quite a bit of sanity to your
+I2C driver code rather than trying to handle the two separate instances
+within the driver alone. Consider things like scanning the I2C buses for
+devices and just dev_dbg().
+ 
+> I wonder if it wouldn't be better to have active/idle/sleep as
+> "modifiers" to the state name rather than alternatives, so you end up
+> with states named:
 > 
->  	match = of_match_device(of_match_ptr(mcp23s08_i2c_of_match),
->  					&client->dev);
-> -	if (match) {
-> +	pdata = client->dev.platform_data;
-> +	if (match || !pdata) {
->  		base = -1;
->  		pullups = 0;
->  	} else {
-> -		pdata = client->dev.platform_data;
-> -		if (!pdata || !gpio_is_valid(pdata->base)) {
-> -			dev_dbg(&client->dev,
-> -					"invalid or missing platform data\n");
-> +		if (!gpio_is_valid(pdata->base)) {
-> +			dev_dbg(&client->dev, "invalid platform data\n");
->  			return -EINVAL;
->  		}
->  		base = pdata->base;
+> default
+> nobus:active
+> nobus:idle
+> nobus:sleep
+> bus0:active
+> bus0:idle
+> bus0:sleep
+> bus1:active
+> bus1:idle
+> bus1:sleep
+> 
+> Of course, if you continue on with that approach (i.e. you add more
+> sub-fields each separated by a colon), you end up with a huge
+> combinatorial mess of state names.
 
-Thanks,
-Lars
+Right :) Sooner or later we'll have some totally messed up piece of
+hardware pop up that multiplexes one controller across a large number
+number buses..
 
+Regards,
+
+Tony
