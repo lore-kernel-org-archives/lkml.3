@@ -1,71 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab3G2GlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 02:41:21 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:60921 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab3G2GlU (ORCPT
+	id S1754714Ab3G2GmU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 02:42:20 -0400
+Received: from haggis.pcug.org.au ([203.10.76.10]:49848 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab3G2GmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 02:41:20 -0400
-Date: Mon, 29 Jul 2013 02:41:08 -0400
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
-        Kees Cook <keescook@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>, dholsgrove@xilinx.com,
-        Al Viro <viro@ZenIV.linux.org.uk>, microblaze-uclinux@itee.uq.edu.au,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [microblaze-linux] [RESEND PATCH v2] microblaze: Fix clone
- syscall
-Message-ID: <20130729064108.GF4284@brightrain.aerifal.cx>
-References: <3fe61cc5f884f9367214b045da6b83f15c4101ec.1375078947.git.michal.simek@xilinx.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3fe61cc5f884f9367214b045da6b83f15c4101ec.1375078947.git.michal.simek@xilinx.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-From: Rich Felker <dalias@aerifal.cx>
+	Mon, 29 Jul 2013 02:42:18 -0400
+Date: Mon, 29 Jul 2013 16:42:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: problem fetching the drm-intel-fixes tree
+Message-Id: <20130729164215.9e8a10931138b29a38a7256e@canb.auug.org.au>
+In-Reply-To: <CAPM=9tyqWC4_YkB7dnFGCppZyeWn2AZLzkisUVQPO-36onpnFw@mail.gmail.com>
+References: <20130729100843.8d129b9953ed39e55e1d5a31@canb.auug.org.au>
+	<CAPM=9txKODStMCnLRjFKh4y7v8wijDsyMEHZvgdjjZoc7HQOug@mail.gmail.com>
+	<20130729102642.4f1bf9d49a95f5c3dee87b37@canb.auug.org.au>
+	<CAPM=9tyqWC4_YkB7dnFGCppZyeWn2AZLzkisUVQPO-36onpnFw@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__29_Jul_2013_16_42_15_+1000_VRUPIpp5LcRHtwsR"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 08:22:56AM +0200, Michal Simek wrote:
-> Microblaze was assign to CLONE_BACKWARDS type where
-> parent tid was passed via 3rd argument.
-> Microblaze glibc is using 4th argument for it.
-> 
-> Create new CLONE_BACKWARDS3 type where stack_size is passed
-> via 3rd argument, parent thread id pointer via 4th,
-> child thread id pointer via 5th and tls value as 6th
-> argument
-> 
-> Inconsistency was introduced by this patch:
-> "microblaze: switch to generic fork/vfork/clone"
-> (sha1: f3268edbe6fe0ce56e62c6d6b14640aeb04864b7)
+--Signature=_Mon__29_Jul_2013_16_42_15_+1000_VRUPIpp5LcRHtwsR
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I still don't think this is clear. I would suggest language like:
+Hi Dave,
 
-==
-Fix inadvertent breakage in the clone syscall ABI for Microblaze
-that was introduced in this patch:
+On Mon, 29 Jul 2013 16:29:04 +1000 Dave Airlie <airlied@gmail.com> wrote:
+>
+> Okay should all be back in place now.
 
-    "microblaze: switch to generic fork/vfork/clone"
-    (sha1: f3268edbe6fe0ce56e62c6d6b14640aeb04864b7)
+Excellent, thanks.
 
-The Microblaze syscall ABI for clone takes the parent tid address in
-the 4th argument; the third argument slot is used for the stack size.
-The incorrectly-used CLONE_BACKWARDS type assigned parent tid to the
-3rd slot.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This commit restores the original ABI so that existing userspace libc
-code will work correctly.
-==
+--Signature=_Mon__29_Jul_2013_16_42_15_+1000_VRUPIpp5LcRHtwsR
+Content-Type: application/pgp-signature
 
-And maybe add something about which versions were affected by the
-breakage.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.20 (GNU/Linux)
 
-Rich
+iQIcBAEBCAAGBQJR9g7HAAoJEECxmPOUX5FE3HQQAKiLDQSv40bTZ8k1v3/p0uYr
+kFWNv8zkg7wsJU/XMcVI0+x3AvODuaN0vc6fbXAq0WAqNhgt3NISXUNqWlv5y35c
+sMY1ssAERn5ulkxMVIwRci3L0Vtxt77PBuiyTsXt6aaQQ5+VJtdCpDESGF64K5Vd
+2ZqZDJeEYaHMfHHuTCEGbK5tOlbD46cOJ519e56/OBGDPP4vXJnbdlLPK8GEZLIu
+E1oQaRjGwlYG2RHqiDSzR6wDmBl4jKDm7B6L7KA4T9QFs+6GLKUKYS+t+xD/+PJn
+6wgTnUGD3mWf6KTrH4TmmfqNm181tpTeZ+aIDE0wZmpsRDxW3PzKVlpp4NPVtT9S
+YpkzCN7qBo9JGhbd6nW7JobOtxbV5aVAsntruwMHdwkfh+l31epIEEUVNnRhHB/2
+eiu8DYDyE88y1VD/u8oLUUk88yvpr/E2QC69elsAHtRvS9XqKCd8h5faM2gGIw2L
+93JcL9v80gAR9BoklQyphtIAvQsW0RmZQ6r+YaR5fi5Vd17eq141X/UlmgdPM7Ea
+MNifGKPgrLuV3DftFkC9CQWK44j/Spqfh0Wte7iEe4UhYATkkSKWesNsMal8Y3tR
+B8Him1TBMmM5xY15oGjbcK2DmEySpq4EN/49HYHQRqpGMmcygYtbr8xBHYJhH0gS
+FRS6tGdEn4G/AYgzOGlL
+=3MFD
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__29_Jul_2013_16_42_15_+1000_VRUPIpp5LcRHtwsR--
