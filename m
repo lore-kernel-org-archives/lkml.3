@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967Ab3G2MZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:25:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56039 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754897Ab3G2MZe (ORCPT
+	id S1754814Ab3G2M3W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:29:22 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:45887 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab3G2M3S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:25:34 -0400
-Date: Mon, 29 Jul 2013 15:25:22 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 3/6] usb: phy: msm: Migrate to Managed Device Resource
- allocation
-Message-ID: <20130729122522.GI24801@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
- <1375081464-14206-4-git-send-email-iivanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vs0rQTeTompTJjtd"
-Content-Disposition: inline
-In-Reply-To: <1375081464-14206-4-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Jul 2013 08:29:18 -0400
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] ARM: dove: add GPIO IR receiver node to SolidRun CuBox
+Date: Mon, 29 Jul 2013 14:29:05 +0200
+Message-Id: <1375100946-28521-4-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---vs0rQTeTompTJjtd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This adds a node for the IR receiver connected to a GPIO pin on the
+SolidRun CuBox.
 
-Hi,
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/dove-cubox.dts |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
-On Mon, Jul 29, 2013 at 10:04:21AM +0300, Ivan T. Ivanov wrote:
->  	motg->irq =3D platform_get_irq(pdev, 0);
-> -	if (!motg->irq) {
-> +	if (motg->irq < 0) {
+diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+index 525fb45..022646e 100644
+--- a/arch/arm/boot/dts/dove-cubox.dts
++++ b/arch/arm/boot/dts/dove-cubox.dts
+@@ -55,6 +55,13 @@
+ 			clock-frequency = <25000000>;
+ 		};
+ 	};
++
++	ir_recv: ir-receiver {
++		compatible = "gpio-ir-receiver";
++		gpios = <&gpio0 19 1>;
++		pinctrl-0 = <&pmx_gpio_19>;
++		pinctrl-names = "default";
++	};
+ };
+ 
+ &uart0 { status = "okay"; };
+-- 
+1.7.10.4
 
-looks like this particular hunk isn't part of $subject.
-
---=20
-balbi
-
---vs0rQTeTompTJjtd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR9l8yAAoJEIaOsuA1yqRExbwP/3oPHRbZqZqQDty/Z/HNkIk2
-4ym1XzRuFXEiSMBHKkucwh9l7nLf3VwTcy33fdrOA1HFZmg13JadUYjpTgCKaSVL
-cHXnYDmiF1Jmc5Ykc2BXFqJg1AjKhu6uLodRPMBEO4xaic4T7L8qUv50mIohdcxC
-82/HNCSM1mZlDdP6R74UdXFMZ+JQZoozy/8f/mbOum0Lhb1E3o91jsL3V4h39/hC
-mUaFewWjjmS8YCLq4fVdEl3o+NU13FU9JyLk+L7qGebUYy96HcX4c/9V+6pvEmjO
-v9BPF0LzYb1PhNRZn2BhFhZym17SAG1ZSlC1EbeAdvrKH996BzGvWiqpDlwrMv0O
-ra+cTjHcZqCFWsI5VAlmH/JTqJ/0XjSRvfh1Z4kbLdQWn4DcntbE8NmO/moqyiIg
-OuqGqHonwGaHfI2GAZ+zy6uagQ/YS5LXimzJ90c7lFOsupgIwHi4fj6ISBF3ktAq
-e9+0vIhpFku99KTRqWOlFEQXyOog85VGqmexnHyBUA/lUSI0wXVoi36/7mEvuE+k
-w1GcDhPWyfBnWJUCbTSLs2XgMkHWGxjflfnXe2FZfxQSufNW0JPWuu0EGlkvUnW7
-RYXJRPD9++T8oGdrwbyjQjmquwn3NTpo4EY0XBwJWcTaZR5P5+w2UirQqk1pxMrB
-T10QoPav/7ftkLVApHVh
-=oJhB
------END PGP SIGNATURE-----
-
---vs0rQTeTompTJjtd--
