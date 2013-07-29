@@ -1,80 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755902Ab3G2V3W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:29:22 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:47738 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab3G2V3U (ORCPT
+	id S1755823Ab3G2Vjr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:39:47 -0400
+Received: from mail-qc0-f181.google.com ([209.85.216.181]:45522 "EHLO
+	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752794Ab3G2Vjq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:29:20 -0400
-From: David Daney <ddaney.cavm@gmail.com>
-To: ralf@linux-mips.org, linux-gpio@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        David Daney <david.daney@cavium.com>
-Subject: [PATCH v2 1/2] MIPS: OCTEON: Select ARCH_REQUIRE_GPIOLIB
-Date: Mon, 29 Jul 2013 14:29:09 -0700
-Message-Id: <1375133350-18828-2-git-send-email-ddaney.cavm@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1375133350-18828-1-git-send-email-ddaney.cavm@gmail.com>
+	Mon, 29 Jul 2013 17:39:46 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375106520.4223.24.camel@pizza.hi.pengutronix.de>
+References: <201307291510.31679.heiko@sntech.de>
+	<201307291512.25126.heiko@sntech.de>
+	<1375106520.4223.24.camel@pizza.hi.pengutronix.de>
+Date: Mon, 29 Jul 2013 16:39:45 -0500
+Message-ID: <CAHCPf3vSQHtRkk-_cs3monHfrF-hVx3vTDt1ctcax_bspXDmsg@mail.gmail.com>
+Subject: Re: [PATCH v4 2/6] misc: sram: add ability to mark sram sections as reserved
+From: Matt Sealey <neko@bakuhatsu.net>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: =?ISO-8859-1?Q?Heiko_St=FCbner?= <heiko@sntech.de>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <david.daney@cavium.com>
+On Mon, Jul 29, 2013 at 9:02 AM, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> Hi Heiko,
+>
+> Am Montag, den 29.07.2013, 15:12 +0200 schrieb Heiko Stübner:
+>> Some SoCs need parts of their sram for special purposes. So while being part
+>> of the peripheral, it should not be part of the genpool controlling the sram.
+>>
+>> Therefore add an option mmio-sram-reserved to keep arbitrary portions of the
+>> sram from being part of the pool.
+>>
+>> Suggested-by: Rob Herring <robherring2@gmail.com>
+>> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+>> Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+>> ---
+>> Philipp: I didn't carry the ack, because the loop changed significantly again.
+>> So if it looks ok, could you re-ack it please?
+>
+> I'd prefer the first loop to contain the magic and produce a list of
+> useable chunks, instead of a list of reserved blocks. The second loop
+> could then iterate over the array and just call gen_pool_add_virt
+> repeatedly.
+>
+> regards
+> Philipp
 
-... and create asm/mach-cavium-octeon/gpio.h so that things continue
-to build.
+Agreed, however specifying chunks of memory should probably match the
+format of the standard memory@ node "available" property - mostly
+because it would be the same syntax and definition as defining any
+other chunk of memory, as OpenFirmware and device trees have been
+doing since the dark ages. In this case, why not re-use the
+"available" property name instead of creating a new one? Standard OF
+memory parsing code is then free for you to use to pull the chunks
+out.
 
-This allows us to use the existing I2C connected GPIO expanders.
-
-Signed-off-by: David Daney <david.daney@cavium.com>
----
- arch/mips/Kconfig                               |  1 +
- arch/mips/include/asm/mach-cavium-octeon/gpio.h | 21 +++++++++++++++++++++
- 2 files changed, 22 insertions(+)
- create mode 100644 arch/mips/include/asm/mach-cavium-octeon/gpio.h
-
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index c3abed3..9c2293a 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -731,6 +731,7 @@ config CAVIUM_OCTEON_SOC
- 	select USB_ARCH_HAS_OHCI
- 	select USB_ARCH_HAS_EHCI
- 	select HOLES_IN_ZONE
-+	select ARCH_REQUIRE_GPIOLIB
- 	help
- 	  This option supports all of the Octeon reference boards from Cavium
- 	  Networks. It builds a kernel that dynamically determines the Octeon
-diff --git a/arch/mips/include/asm/mach-cavium-octeon/gpio.h b/arch/mips/include/asm/mach-cavium-octeon/gpio.h
-new file mode 100644
-index 0000000..34e9f7a
---- /dev/null
-+++ b/arch/mips/include/asm/mach-cavium-octeon/gpio.h
-@@ -0,0 +1,21 @@
-+#ifndef __ASM_MACH_CAVIUM_OCTEON_GPIO_H
-+#define __ASM_MACH_CAVIUM_OCTEON_GPIO_H
-+
-+#ifdef CONFIG_GPIOLIB
-+#define gpio_get_value	__gpio_get_value
-+#define gpio_set_value	__gpio_set_value
-+#define gpio_cansleep	__gpio_cansleep
-+#else
-+int gpio_request(unsigned gpio, const char *label);
-+void gpio_free(unsigned gpio);
-+int gpio_direction_input(unsigned gpio);
-+int gpio_direction_output(unsigned gpio, int value);
-+int gpio_get_value(unsigned gpio);
-+void gpio_set_value(unsigned gpio, int value);
-+#endif
-+
-+#include <asm-generic/gpio.h>
-+
-+#define gpio_to_irq	__gpio_to_irq
-+
-+#endif /* __ASM_MACH_GENERIC_GPIO_H */
 -- 
-1.7.11.7
-
+Matt Sealey <mwsealey@gmail.com>
