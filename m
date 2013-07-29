@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab3G2E2y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 00:28:54 -0400
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:59342 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811Ab3G2E2x (ORCPT
+	id S1754131Ab3G2Ed1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 00:33:27 -0400
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:58984 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab3G2Ed0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 00:28:53 -0400
+	Mon, 29 Jul 2013 00:33:26 -0400
 MIME-Version: 1.0
-Date: Mon, 29 Jul 2013 12:28:51 +0800
-Message-ID: <CAPgLHd-VyRHaH0b-DvJO1zv68RWHKGc8F9cwZdJqRWD9HO1QVA@mail.gmail.com>
-Subject: [PATCH -next] staging: comedi: dt9812: remove duplicated include from dt9812.c
+Date: Mon, 29 Jul 2013 12:33:24 +0800
+Message-ID: <CAPgLHd8hRfrRpgLMJTmno49FBNEUO8_tkyLRmuBoBh9gssRtGA@mail.gmail.com>
+Subject: [PATCH -next] staging: gdm724x: remove duplicated include from gdm_lte.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        gregkh@linuxfoundation.org, hsweeten@visionengravers.com
+To: gregkh@linuxfoundation.org, wonkang@gctsemi.com, joe@perches.com,
+        sachin.kamat@linaro.org
 Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -27,19 +27,21 @@ Remove duplicated include.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- drivers/staging/comedi/drivers/dt9812.c | 1 -
- 1 file changed, 1 deletion(-)
+ drivers/staging/gdm724x/gdm_lte.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
-index ffb7572..b865367 100644
---- a/drivers/staging/comedi/drivers/dt9812.c
-+++ b/drivers/staging/comedi/drivers/dt9812.c
-@@ -42,7 +42,6 @@ for my needs.
- #include <linux/module.h>
- #include <linux/errno.h>
- #include <linux/init.h>
--#include <linux/module.h>
- #include <linux/uaccess.h>
- #include <linux/usb.h>
- 
+diff --git a/drivers/staging/gdm724x/gdm_lte.c b/drivers/staging/gdm724x/gdm_lte.c
+index 68ebc7d..7165d3a 100644
+--- a/drivers/staging/gdm724x/gdm_lte.c
++++ b/drivers/staging/gdm724x/gdm_lte.c
+@@ -21,9 +21,7 @@
+ #include <linux/if_arp.h>
+ #include <linux/if_ether.h>
+ #include <linux/if_vlan.h>
+-#include <linux/in.h>
+ #include <linux/in6.h>
+-#include <linux/udp.h>
+ #include <linux/tcp.h>
+ #include <linux/icmp.h>
+ #include <linux/icmpv6.h>
 
