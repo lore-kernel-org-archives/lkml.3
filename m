@@ -1,92 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab3G2OK1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:10:27 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:48390 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab3G2OKZ (ORCPT
+	id S1755878Ab3G2OK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:10:59 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24299 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab3G2OK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:10:25 -0400
-Message-ID: <51F677CB.4090100@gmail.com>
-Date: Mon, 29 Jul 2013 16:10:19 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130704 Icedove/17.0.7
+	Mon, 29 Jul 2013 10:10:57 -0400
+Date: Mon, 29 Jul 2013 10:10:36 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, alex@alex.org.uk, dcrisan@flexiant.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] xen/balloon: set a mapping for ballooned out pages
+Message-ID: <20130729141036.GB5848@phenom.dumpdata.com>
+References: <alpine.DEB.2.02.1307231820570.4893@kaball.uk.xensource.com>
+ <1374600466-3229-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <1374602409.6623.138.camel@hastur.hellion.org.uk>
+ <20130723190521.GA7073@phenom.dumpdata.com>
+ <alpine.DEB.2.02.1307241203240.4893@kaball.uk.xensource.com>
+ <20130724145838.GM2518@phenom.dumpdata.com>
+ <1374723067.32286.34.camel@hastur.hellion.org.uk>
 MIME-Version: 1.0
-To: Sudeep KarkadaNagesha <Sudeep.KarkadaNagesha@arm.com>
-CC: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Maen Suleiman <maen@marvell.com>, Lior Amsalem <alior@marvell.com>
-Subject: Re: [PATCH 1/4] ARM: dove: add cpu device tree node
-References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com> <1375100946-28521-2-git-send-email-sebastian.hesselbarth@gmail.com> <51F6630D.5010603@arm.com>
-In-Reply-To: <51F6630D.5010603@arm.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374723067.32286.34.camel@hastur.hellion.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 02:41 PM, Sudeep KarkadaNagesha wrote:
-> On 29/07/13 13:29, Sebastian Hesselbarth wrote:
->> This adds a node for the Marvell Sheeva PJ4A CPU found on Dove SoCs.
->> While at it, also move the l2-cache node out of internal registers and
->> consistently name different nodes.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: devicetree@vger.kernel.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   arch/arm/boot/dts/dove.dtsi |   52 ++++++++++++++++++++++++++-----------------
->>   1 file changed, 32 insertions(+), 20 deletions(-)
->>
->> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
->> index 8d5be1e8..09d9710 100644
->> --- a/arch/arm/boot/dts/dove.dtsi
->> +++ b/arch/arm/boot/dts/dove.dtsi
->> @@ -10,6 +10,23 @@
->>   		gpio2 = &gpio2;
->>   	};
->>
->> +	cpus {
->> +		#address-cells = <1>;
->> +		#size-cells = <0>;
->> +
->> +		cpu0: cpu@0 {
->> +			compatible = "marvell,pj4a", "marvell,sheeva-v7";
->> +			device_type = "cpu";
->> +			next-level-cache = <&l2>;
->> +			reg = <0>;
->> +		};
->> +	};
->> +
->> +	l2: l2-cache {
->> +		compatible = "marvell,tauros2-cache";
->> +		marvell,tauros2-cache-features = <0>;
->> +	};
-> Hi Sebastian,
->
-> This is not entirely related to the patch but thought of checking with
-> you. I was trying to get info on L2 cache controller on Marvell SoCs,
-> mainly structure or way/set size. Is that something we can get
-> dynamically ? Some specification I referred said its integrated and some
-> said its separate(not unified). Basically I need information around
-> various L2 cache implementations(Tauros2/Feroceon) from Marvell.
->
-> Any pointers or contacts to get this information will be helpful.
+On Thu, Jul 25, 2013 at 04:31:07AM +0100, Ian Campbell wrote:
+> On Wed, 2013-07-24 at 10:58 -0400, Konrad Rzeszutek Wilk wrote:
+> > On Wed, Jul 24, 2013 at 12:05:05PM +0100, Stefano Stabellini wrote:
+> > > On Tue, 23 Jul 2013, Konrad Rzeszutek Wilk wrote:
+> > > > On Tue, Jul 23, 2013 at 07:00:09PM +0100, Ian Campbell wrote:
+> > > > > On Tue, 2013-07-23 at 18:27 +0100, Stefano Stabellini wrote:
+> > > > > > +static int __cpuinit balloon_cpu_notify(struct notifier_block *self,
+> > > > > > +				    unsigned long action, void *hcpu)
+> > > > > > +{
+> > > > > > +	int cpu = (long)hcpu;
+> > > > > > +	switch (action) {
+> > > > > > +	case CPU_UP_PREPARE:
+> > > > > > +		if (per_cpu(balloon_scratch_page, cpu) != NULL)
+> > > > > > +			break;
+> > > > > 
+> > > > > Thinking about this a bit more -- do we know what happens to the per-cpu
+> > > > > area for a CPU which is unplugged and then reintroduced? Is it preserved
+> > > > > or is it reset?
+> > > > > 
+> > > > > If it is reset then this gets more complicated :-( We might be able to
+> > > > > use the core mm page reference count, so that when the last reference is
+> > > > > removed the page is automatically reclaimed. We can obviously take a
+> > > > > reference whenever we add a mapping of the trade page, but I'm not sure
+> > > > > we are always on the path which removes such mappings... Even then you
+> > > > > could waste pages for some potentially large amount of time each time
+> > > > > you replug a VCPU.
+> > > > > 
+> > > > > Urg, I really hope the per-cpu area is preserved!
+> > > > 
+> > > > It is. During bootup time you see this:
+> > > > 
+> > > > [    0.000000] smpboot: Allowing 128 CPUs, 96 hotplug CPU
+> > > > [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:128 nr_node_ids:1
+> > > > 
+> > > > which means that all of the per_CPU are shrunk down to 128 (from 
+> > > > CONFIG_NR_CPUS=512 was built with) and stays for the lifetime of the kernel.
+> > > > 
+> > > > You might have to clear it when the vCPU comes back up though - otherwise you
+> > > > will have garbage.
+> > > 
+> > > I don't see anything in the hotplug code that would modify the value of
+> > > the per_cpu area of offline cpus.
+> > 
+> > You might have never onlined the CPUs and the kernel is built with DEBUG options
+> > which poison the page.
+> > 
+> > Anyhow, doing a memset seems like a prudent thing to do? Perhaps when
+> > built with CONFG_DEBUG_XENFS you add poison values to it?
+> 
+> The point is that the patches need for the per-cpu areas to *not* be
+> reinitialised over a vcpu unplug+plug, otherwise we will leak the
+> original page when we allocate the new one on plug.
 
-Sudeep,
+OK.
+> 
+> We can't just free the page on vcpu unplug because it might still be in
+> use.
 
-I added Maen and Lior on Cc. Unfortunately, public Marvell SoC
-datasheets only refer some closed Marvell datasheets when it comes
-to CPU(s) used. Maybe they can help out.
+I am still worried about before-the-cpu-is-up-the-per-cpu-has-garbage case.
+We could add code in the boot-before-smp (so when there is only one CPU) to
+do:
 
-Sebastian
+for_each_possible(cpu)
+	memset(__per_cpu(some_memory),0,sizeof...);
 
+and then I think it satisfies your concerns and mine?
+> 
+> Ian.
+> 
