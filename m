@@ -1,115 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab3G2K3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:29:44 -0400
-Received: from mga14.intel.com ([143.182.124.37]:5505 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754504Ab3G2K3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:29:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,768,1367996400"; 
-   d="scan'208";a="274722370"
-Message-ID: <51F64411.9060506@intel.com>
-Date: Mon, 29 Jul 2013 13:29:37 +0300
-From: Adrian Hunter <adrian.hunter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1755663Ab3G2KiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:38:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:36426 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753440Ab3G2KiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:38:18 -0400
+X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
+   d="scan'208";a="8057519"
+Message-ID: <51F64670.9080109@cn.fujitsu.com>
+Date: Mon, 29 Jul 2013 18:39:44 +0800
+From: Gao feng <gaofeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: acme@ghostprotocols.net, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH] perf: sample after exit loses thread correlation
-References: <1374876254-44372-1-git-send-email-dsahern@gmail.com>
-In-Reply-To: <1374876254-44372-1-git-send-email-dsahern@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, libo.chen@huawei.com
+Subject: Re: [PATCH 7/9] syslog_ns: implement function for creating syslog
+ ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-8-git-send-email-rui.xiang@huawei.com>
+In-Reply-To: <1375065080-26740-8-git-send-email-rui.xiang@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 18:36:06,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/29 18:36:07,
+	Serialize complete at 2013/07/29 18:36:07
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/07/2013 1:04 a.m., David Ahern wrote:
-> Occassionally events (e.g., context-switch, sched tracepoints) are losing
-> the conversion of sample data associated with a thread. For example:
->
-> $ perf record -e sched:sched_switch -c 1 -a -- sleep 5
-> $ perf script
-> <selected events shown>
->      ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->      ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> :30482 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->
-> The last line lost the conversion from tid to comm. If you look at the events
-> (perf script -D) you see why - SAMPLE event is generated after the EXIT:
->
-> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
-> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
-> .... thread: :30482:30482
->
-> When perf processes the EXIT event the thread is moved to the dead_threads
-> list. When the SAMPLE event is processed no thread exists for the pid so a new
-> one is created by machine__findnew_thread.
-
-In the case of per-cpu recording, it is normal for sample events to 
-occur after the EXIT event simply because the EXIT event is recorded 
-while the task is still running (in kernel).  It is therefore a mistake 
-to move the thread to dead_threads just because of the EXIT event.
-
-Instead the thread should be marked as exiting and not moved to 
-dead_threads until another thread starts on the same CPU. i.e. a comm, 
-mmap, fork event with the same tid and same CPU, or any event with a 
-different tid and same CPU.
-
->
-> This patch addresses the problem by saving the exit time and checking the
-> dead_threads list for the requested tid. If the time passed into
-> machine_findnew_thread is non-0 the dead_threads list is walked looking for
-> the tid. If the thread struct associated with the tid exited within 1 msec
-> of the time passed in the thread is considered a match and returned.
->
-> If samples do not contain timestamps then sample->time will be 0 and the
-> dead_threads list will not be checked. -1 can be used to force always checking
-> the dead_threads list and returning a match.
->
-> With this patch we get the previous example shows:
->
-> ls 30482 [000] 1379727.583037: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> ls 30482 [000] 1379727.586339: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
-> ls 30482 [000] 1379727.589462: sched:sched_switch: prev_comm=ls prev_pid=30482 ...
->
-> and
->
-> 0 1379727589449774 0x1540b0 [0x38]: PERF_RECORD_EXIT(30482:30482):(30482:30482)
-> 0 1379727589462497 0x1540e8 [0x80]: PERF_RECORD_SAMPLE(IP, 1): 30482/30482: 0xffffffff816416f1 period: 1 addr: 0
-> .... thread: ls:30482
->
-> v2: Rebased to latest perf/core branch. Changed time comparison to use
->      a macro which explicitly shows the time basis
->
-> Signed-off-by: David Ahern<dsahern@gmail.com>
-> Cc: Frederic Weisbecker<fweisbec@gmail.com>
-> Cc: Ingo Molnar<mingo@kernel.org>
-> Cc: Jiri Olsa<jolsa@redhat.com>
-> Cc: Mike Galbraith<efault@gmx.de>
-> Cc: Namhyung Kim<namhyung@kernel.org>
-> Cc: Peter Zijlstra<peterz@infradead.org>
-> Cc: Stephane Eranian<eranian@google.com>
+On 07/29/2013 10:31 AM, Rui Xiang wrote:
+> Add create_syslog_ns function to create a new ns. We
+> must create a user_ns before create a new syslog ns.
+> And then tie the new syslog_ns to current user_ns
+> instead of original syslog_ns which comes from
+> parent user_ns.
+> 
+> Add a new syslog flag SYSLOG_ACTION_NEW_NS to implement
+> a new command(11) of __NR_syslog system call. Through
+> that command, we can create a new syslog ns in user
+> space.
+> 
+> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 > ---
->   tools/perf/builtin-inject.c   |    2 +-
->   tools/perf/builtin-kmem.c     |    3 +--
->   tools/perf/builtin-kvm.c      |    2 +-
->   tools/perf/builtin-lock.c     |    2 +-
->   tools/perf/builtin-sched.c    |   16 +++++++--------
->   tools/perf/builtin-script.c   |    2 +-
->   tools/perf/builtin-trace.c    |    6 +++---
->   tools/perf/perf.h             |    3 +++
->   tools/perf/tests/hists_link.c |    2 +-
->   tools/perf/util/build-id.c    |    9 ++++-----
->   tools/perf/util/event.c       |   10 ++++++++--
->   tools/perf/util/machine.c     |   44 ++++++++++++++++++++++++++++++-----------
->   tools/perf/util/machine.h     |    6 ++++--
->   tools/perf/util/session.c     |    2 +-
->   tools/perf/util/thread.h      |    2 +-
->   15 files changed, 71 insertions(+), 40 deletions(-)
+>  include/linux/syslog.h |  2 ++
+>  kernel/printk.c        | 52 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+)
+> 
+> diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+> index fbf0cb6..df57c21 100644
+> --- a/include/linux/syslog.h
+> +++ b/include/linux/syslog.h
+> @@ -46,6 +46,8 @@
+>  #define SYSLOG_ACTION_SIZE_UNREAD    9
+>  /* Return size of the log buffer */
+>  #define SYSLOG_ACTION_SIZE_BUFFER   10
+> +/* Create a new syslog ns */
+> +#define SYSLOG_ACTION_NEW_NS        11
+>  
+>  #define SYSLOG_FROM_READER           0
+>  #define SYSLOG_FROM_PROC             1
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index fd2d600..6b561db 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -384,6 +384,10 @@ static int check_syslog_permissions(int type, bool from_file,
+>  		|| type == SYSLOG_ACTION_CONSOLE_LEVEL)
+>  		ns = &init_syslog_ns;
+>  
+> +	/* create a new syslog ns */
+> +	if (type == SYSLOG_ACTION_NEW_NS)
+> +		return 0;
+> +
+>  	if (syslog_action_restricted(type, ns)) {
+>  		if (ns_capable(ns->owner, CAP_SYSLOG))
+>  			return 0;
+> @@ -1131,6 +1135,51 @@ static int syslog_print_all(char __user *buf, int size, bool clear,
+>  	return len;
+>  }
+>  
+> +static int create_syslog_ns(void)
+> +{
+> +	struct user_namespace *userns = current_user_ns();
+> +	struct syslog_namespace *oldns, *newns;
+> +	int err;
+> +
+> +	/*
+> +	 * syslog ns belongs to a user ns.  So you can only unshare your
+> +	 * user_ns if you share a user_ns with your parent userns
+> +	 */
+> +	if (userns == &init_user_ns ||
+> +		userns->syslog_ns != userns->parent->syslog_ns)
+> +		return -EINVAL;
+> +
+> +	if (!ns_capable(userns, CAP_SYSLOG))
+> +		return -EPERM;
+> +
+> +	err = -ENOMEM;
+> +	oldns = userns->syslog_ns;
+> +	newns = kzalloc(sizeof(*newns), GFP_ATOMIC);
+> +	if (!newns)
+> +		goto out;
+> +	newns->log_buf_len = __LOG_BUF_LEN;
+> +	newns->log_buf = kzalloc(newns->log_buf_len, GFP_ATOMIC);
+> +	if (!newns->log_buf)
+> +		goto out;
+> +
+> +	newns->owner = get_user_ns(userns);
+> +	raw_spin_lock_init(&(newns->logbuf_lock));
+> +	newns->logbuf_cpu = UINT_MAX;
+> +	newns->dmesg_restrict = oldns->dmesg_restrict;
+> +	put_syslog_ns(oldns);
+> +	kref_init(&newns->kref);
+> +	userns->syslog_ns = newns;
+
+seems like user namespace references the syslog_ns and syslog_ns references
+user namespace too? how do you deal with the release?
+
+> +	newns = NULL;
+> +
+> +	err = 0;
+> +out:
+> +	if (newns) {
+> +		kfree(newns->log_buf);
+> +		kfree(newns);
+> +	}
+> +	return err;
+> +}
+> +
+>  int do_syslog(int type, char __user *buf, int len, bool from_file,
+>  		struct syslog_namespace *ns)
+>  {
+> @@ -1254,6 +1303,9 @@ int do_syslog(int type, char __user *buf, int len, bool from_file,
+>  	case SYSLOG_ACTION_SIZE_BUFFER:
+>  		error = ns->log_buf_len;
+>  		break;
+> +	case SYSLOG_ACTION_NEW_NS:
+> +		error = create_syslog_ns();
+> +		break;
+>  	default:
+>  		error = -EINVAL;
+>  		break;
+> 
+
