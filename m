@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab3G2NNU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 09:13:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4421 "EHLO mga09.intel.com"
+	id S1755961Ab3G2NNg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 09:13:36 -0400
+Received: from gloria.sntech.de ([95.129.55.99]:41305 "EHLO gloria.sntech.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754744Ab3G2NNT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 09:13:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,769,1367996400"; 
-   d="scan'208";a="353570516"
-Message-ID: <51F66A5A.9060901@linux.intel.com>
-Date: Mon, 29 Jul 2013 06:12:58 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1754744Ab3G2NNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 09:13:35 -0400
+From: Heiko =?utf-8?q?St=C3=BCbner?= <heiko@sntech.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v4 4/6] ARM: rockchip: add sram dt nodes and documentation
+Date: Mon, 29 Jul 2013 15:13:50 +0200
+User-Agent: KMail/1.13.7 (Linux/3.2.0-2-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robherring2@gmail.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-kernel@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Ulrich Prinz <ulrich.prinz@googlemail.com>
+References: <201307291510.31679.heiko@sntech.de>
+In-Reply-To: <201307291510.31679.heiko@sntech.de>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: Rik van Riel <riel@redhat.com>, Jeremy Eder <jeder@redhat.com>,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
-        youquan.song@intel.com, paulmck@linux.vnet.ibm.com,
-        len.brown@intel.com, Vincent Guittot <vincent.guittot@linaro.org>
-Subject: Re: RFC:  revert request for cpuidle patches e11538d1 and 69a37bea
-References: <20130726173306.GB17985@jeder.rdu.redhat.com> <51F2BC31.7000407@redhat.com> <51F2BF8C.7010308@linux.intel.com> <51F2C014.90102@redhat.com> <51F37290.5050101@linaro.org>
-In-Reply-To: <51F37290.5050101@linaro.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201307291513.50507.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> The menu governor tries to deduce the next wakeup but based on events
-> per cpu. That means if a task with a specific behavior is migrated
-> across cpus, the statistics will be wrong.
+The Rockchip SoCs need a special part of their sram for bringup
+of additional cores. Therefore also add a reserved section when adding the
+mmio-sram node to keep the sram driver from using this space.
 
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+Tested-by: Ulrich Prinz <ulrich.prinz@googlemail.com>
+---
+ .../devicetree/bindings/arm/rockchip/smp-sram.txt  |   23 ++++++++++++++++++++
+ arch/arm/boot/dts/rk3066a.dtsi                     |    6 +++++
+ 2 files changed, 29 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
 
-btw this is largely a misunderstanding;
-tasks are not the issue; tasks use timers and those are perfectly predictable.
-It's interrupts that are not and the heuristics are for that.
-
-Now, if your hardware does the really-bad-for-power wake-all on any interrupt,
-then the menu governor logic is not good for you; rather than looking at the next
-timer on the current cpu you need to look at the earliest timer on the set of bundled
-cpus as the upper bound of the next wake event.
-And maybe even more special casing is needed... but I doubt it.
-
+diff --git a/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt b/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
+new file mode 100644
+index 0000000..80c878e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/arm/rockchip/smp-sram.txt
+@@ -0,0 +1,23 @@
++Rockchip SRAM for smp bringup:
++------------------------------
++
++Rockchip's smp-capable SoCs use the first part of the sram for the bringup
++of the cores. Once the core gets powered up it executes the code that is
++residing at the very beginning of the sram.
++
++Therefore a reserved section has to be added to the mmio-sram declaration.
++
++Required node properties:
++- compatible : should contain both "rockchip,rk3066-sram", "mmio-sram"
++  so that the smp code can select the correct sram node.
++
++The rest of the properties should follow the generic mmio-sram discription
++found in ../../misc/sram.txt
++
++Example:
++
++	sram: sram@10080000 {
++		compatible = "rockchip,rk3066-sram", "mmio-sram";
++		reg = <0x10080000 0x10000>;
++		mmio-sram-reserved = <0x0 0x50>;
++	};
+diff --git a/arch/arm/boot/dts/rk3066a.dtsi b/arch/arm/boot/dts/rk3066a.dtsi
+index 26c4311..24d1941 100644
+--- a/arch/arm/boot/dts/rk3066a.dtsi
++++ b/arch/arm/boot/dts/rk3066a.dtsi
+@@ -53,6 +53,12 @@
+ 			reg = <0x1013c000 0x100>;
+ 		};
+ 
++		sram: sram@10080000 {
++			compatible = "rockchip,rk3066-sram", "mmio-sram";
++			reg = <0x10080000 0x10000>;
++			mmio-sram-reserved = <0x0 0x50>;
++		};
++
+ 		gic: interrupt-controller@1013d000 {
+ 			compatible = "arm,cortex-a9-gic";
+ 			interrupt-controller;
+-- 
+1.7.10.4
 
