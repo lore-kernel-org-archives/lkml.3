@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab3G2OLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:11:44 -0400
-Received: from tex.lwn.net ([70.33.254.29]:52408 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494Ab3G2OLn convert rfc822-to-8bit (ORCPT
+	id S1755929Ab3G2OMa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:12:30 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38819 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751494Ab3G2OM3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:11:43 -0400
-Date: Mon, 29 Jul 2013 08:11:41 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jiri Kosina <jkosina@suse.cz>, Samuel Ortiz <sameo@linux.intel.com>,
-        ksummit-2013-discuss@lists.linuxfoundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development
- process
-Message-ID: <20130729081141.00818596@lwn.net>
-In-Reply-To: <7008541.g5m1pJPVp1@vostro.rjw.lan>
-References: <20130729102452.GA2682@zurbaran>
-	<alpine.LNX.2.00.1307291230270.18809@pobox.suse.cz>
-	<7008541.g5m1pJPVp1@vostro.rjw.lan>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Mon, 29 Jul 2013 10:12:29 -0400
+Date: Mon, 29 Jul 2013 15:11:54 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mike Turquette <mturquette@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "albert.u.boot@aribaud.net" <albert.u.boot@aribaud.net>,
+        Emilio Lopez <emilio@elopez.com.ar>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "shuge@allwinnertech.com" <shuge@allwinnertech.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        "kevin.z.m.zh@gmail.com" <kevin.z.m.zh@gmail.com>,
+        "sunny@allwinnertech.com" <sunny@allwinnertech.com>,
+        Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 05/10] ARM: sunxi: Add Allwinner A31 DTSI
+Message-ID: <20130729141154.GB25264@e106331-lin.cambridge.arm.com>
+References: <1374618312-19001-1-git-send-email-maxime.ripard@free-electrons.com>
+ <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374618312-19001-6-git-send-email-maxime.ripard@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Jul 2013 15:10:33 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Tue, Jul 23, 2013 at 11:25:07PM +0100, Maxime Ripard wrote:
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/Makefile       |   3 +-
+>  arch/arm/boot/dts/sun6i-a31.dtsi | 155 +++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 157 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/boot/dts/sun6i-a31.dtsi
 
-> That actually is simple enough.
-> 
-> Check out the Linus' master branch and do
-> 
-> $ git log --ancestry-path --merges <commit>..
+[...]
 
-So I picked a recent, single-signoff patch mostly at random:
+> +	soc@01c20000 {
+> +		compatible = "simple-bus";
+> +		#address-cells = <1>;
+> +		#size-cells = <1>;
+> +		reg = <0x01c20000 0x300000>;
 
-	8ade62857ef77bdf639185410fbcd811aa700cb2
+That's unnecessary, nothing should be using this for a simple-bus.
 
-That "git log" command gives me 156 intervening commits involving at least
-a dozen networking trees, along with virtio, parisc, blackfin, x86, ...
-Even if one stops looking at the first merge performed by Linus, that's 47
-to look at.  Did that patch really pass through all those peoples' hands?
+> +		ranges;
+> +
+> +		timer@01c20c00 {
+> +			compatible = "allwinner,sun4i-timer";
+> +			reg = <0x01c20c00 0xa0>;
+> +			interrupts = <
+> +					0 18 1
+> +					0 19 1
+> +					0 20 1
+> +					0 21 1
+> +					0 22 1
+> +					>;
 
-Plus, of course, this assumes there's no fast-forward merges in the mix.
+A cosmetic issue, but this would be nicer with each tuple bracketed:
 
->From your other message:
+			interrupts = <0 18 1>,
+				     <0 19 1>,
+				     <0 20 1>,
+				     <0 21 1>,
+				     <0 22 1>;
 
-> And what about trusting maintainers?  If Linus trusts them enough to pull from
-> them, why can't everybody else trust them enough to assume that they don't do
-> bad things on purpose?
+> +			clocks = <&osc>;
+> +		};
 
-I hope you're not reading such thoughts into what *I* wrote.  But most
-anybody who works on code occasionally does bad things by mistake, that's
-why we have a review process.
-
-jon
+Thanks,
+Mark.
