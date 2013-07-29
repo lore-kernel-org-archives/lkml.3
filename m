@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147Ab3G2JVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 05:21:21 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:16521 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002Ab3G2JVT (ORCPT
+	id S1753432Ab3G2JXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 05:23:39 -0400
+Received: from mail-db8lp0185.outbound.messaging.microsoft.com ([213.199.154.185]:32682
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750906Ab3G2JXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 05:21:19 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+YA/l71OLUCG2FDfA0QyDu
-Date: Mon, 29 Jul 2013 02:21:16 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: linus.walleij@linaro.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/4] pinctrl: Add support for additional dynamic states
-Message-ID: <20130729092116.GA7656@atomide.com>
-References: <20130716090310.5541.36777.stgit@localhost>
- <20130716090536.5541.36289.stgit@localhost>
- <51E70B5D.6030802@wwwdotorg.org>
- <20130718073638.GP7656@atomide.com>
- <51E84180.6080902@wwwdotorg.org>
- <20130719073957.GZ7656@atomide.com>
- <51E98C71.5010709@wwwdotorg.org>
+	Mon, 29 Jul 2013 05:23:38 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzbb2dI98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Mon, 29 Jul 2013 17:28:10 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: regulator: pfuze100: A few small questions
+Message-ID: <20130729092809.GA319@Robin-OptiPlex-780>
+References: <1375082774.7272.1.camel@phoenix>
+ <CAFRkauB35ERLgakua7=Q+xoRx-N83BTD4f_8HyvbGjAxhEZvUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <51E98C71.5010709@wwwdotorg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAFRkauB35ERLgakua7=Q+xoRx-N83BTD4f_8HyvbGjAxhEZvUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Warren <swarren@wwwdotorg.org> [130719 12:05]:
-> On 07/19/2013 01:39 AM, Tony Lindgren wrote:
-> > 
-> > I think the only sane way to deal with this is to make the I2C controller
-> > to show up as two separate I2C controller instances. Then use runtime
-> > PM to save and restore the state for each instance, and locking between
-> > the two driver instances.
-> > 
-> > For the pin muxing part, I'd do this:
-> > 
-> > 			i2c1 instance	i2c2 instance	notes
-> > default_state		0 pins		0 pins		(or dedicated pins only)
-> > active_state		all pins	alls pins
-> > idle_state		safe mode	safe mode
-> > 
-> > Then when i2c1 instance is done, it's runtime PM suspend muxes the pins
-> > to safe mode, or some nop state. Then when i2c2 instance is woken, it's
-> > runtime PM resume muxes pins to i2c2.
+On Mon, Jul 29, 2013 at 04:20:03PM +0800, Axel Lin wrote:
+> 2013/7/29 Axel Lin <axel.lin@ingics.com>:
+> > Hi Robin,
+> > 2 questions about the code in pfuze100 driver:
+> >
+> > 1)
+> > Both PFUZE100_REVID and PFUZE100_FABID are defined as 0x3.
+> > So I'm wondering if it's a typo in one of the register address?
+> > If they are actually the same register, we don't need to read the same
+> > register twice in pfuze_identify().
+Yes, It's a typo, I will correct it.
+> >
+> > 2)
+> > What is the the purpose of stby_reg and stby_mask?
+> > Seems current code does not use it?
+They are only kept place. These reg bits are used to set standby
+voltage, I will finish it in the future.
 > 
-> I see two issues with that approach:
 > 
-> 1) Runtime PM doesn't always put a device into an idle state as soon as
-> its work is done. Sometimes (always?) there is a delay between when the
-> device is last used and when the HW is actually made idle so that if the
-> device is re-activated quickly, the kernel hasn't wasted time making it
-> idle then active again. You'd have to force that delay to complete when
-> switching between the two virtual controller devices.
-
-There is the autosuspend timeout for delayed transitions, but I think
-runtime PM already has calls for making the state change immediate also.
- 
-> 2) This requires two separate device objects for the two I2C instances.
-> I guess you could have the driver for the one I2C mux node end up
-> instantiating two child devices for this purpose, and hence make that
-> happen without needing to change the DT ABI. However, that sure feels
-> complex...
-
-Yes but you will also automatically get quite a bit of sanity to your
-I2C driver code rather than trying to handle the two separate instances
-within the driver alone. Consider things like scanning the I2C buses for
-devices and just dev_dbg().
- 
-> I wonder if it wouldn't be better to have active/idle/sleep as
-> "modifiers" to the state name rather than alternatives, so you end up
-> with states named:
+> One more question:
 > 
-> default
-> nobus:active
-> nobus:idle
-> nobus:sleep
-> bus0:active
-> bus0:idle
-> bus0:sleep
-> bus1:active
-> bus1:idle
-> bus1:sleep
+> Current code adjust min_uV and uV_step when SW2~SW4 high bit is set.
+> I'm wondering if n_voltages is correct or not in this case because
+> the n_voltages is calculated by original equation (max-min/step + 1).
+> What is the max_uV when SW2~SW4 high bit is set?
 > 
-> Of course, if you continue on with that approach (i.e. you add more
-> sub-fields each separated by a colon), you end up with a huge
-> combinatorial mess of state names.
+If high bit set(bit6, bit0~5:vsel), min_uV/step will change from 0.4V/25mV to
+0.8V/50mV,but the n_voltages will kept the same.
+For example,SW2 will vary from 0.4V to 1.975V(0x0~0x3f),if bit6 set 0(high bit)
+SW2 will vary from 0.8V to 3.3V(0x40~0x72,0x72~0x7f:reversed).
+Please ignore bit7 or consider it as 0.
+> Regards,
+> Axel
+> 
 
-Right :) Sooner or later we'll have some totally messed up piece of
-hardware pop up that multiplexes one controller across a large number
-number buses..
-
-Regards,
-
-Tony
