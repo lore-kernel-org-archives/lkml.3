@@ -1,119 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab3G2OM6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:12:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41669 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab3G2OMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:12:55 -0400
-Date: Mon, 29 Jul 2013 16:12:50 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        azurIt <azurit@pobox.sk>, linux-mm@kvack.org, cgroups@vger.kernel.org,
-        x86@kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 6/6] mm: memcg: do not trap chargers with full callstack
- on OOM
-Message-ID: <20130729141250.GF4678@dhcp22.suse.cz>
-References: <1374791138-15665-1-git-send-email-hannes@cmpxchg.org>
- <1374791138-15665-7-git-send-email-hannes@cmpxchg.org>
- <20130726144310.GH17761@dhcp22.suse.cz>
- <20130726212808.GD17975@cmpxchg.org>
+	id S1756463Ab3G2ONf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:13:35 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35547 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882Ab3G2ONd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:13:33 -0400
+Message-ID: <51F67875.9020602@ti.com>
+Date: Mon, 29 Jul 2013 09:13:09 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130726212808.GD17975@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Benoit Cousson <benoit.cousson@gmail.com>
+CC: =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <benoit.cousson@linaro.org>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
+Subject: Re: [PATCH 0/9] ARM: dts: omap5-uevm: fixup wrong regulator configuration
+References: <1374079538-19548-1-git-send-email-nm@ti.com> <51F63C74.6070503@ti.com> <51F66B65.4030702@ti.com> <51F670AF.9080808@gmail.com>
+In-Reply-To: <51F670AF.9080808@gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 26-07-13 17:28:09, Johannes Weiner wrote:
-> On Fri, Jul 26, 2013 at 04:43:10PM +0200, Michal Hocko wrote:
-> > On Thu 25-07-13 18:25:38, Johannes Weiner wrote:
-> > > @@ -2189,31 +2191,20 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
-> > >  }
-> > >  
-> > >  /*
-> > > - * try to call OOM killer. returns false if we should exit memory-reclaim loop.
-> > > + * try to call OOM killer
-> > >   */
-> > > -static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask,
-> > > -				  int order)
-> > > +static void mem_cgroup_oom(struct mem_cgroup *memcg, gfp_t mask, int order)
-> > >  {
-> > > -	struct oom_wait_info owait;
-> > > -	bool locked, need_to_kill;
-> > > +	bool locked, need_to_kill = true;
-> > >  
-> > > -	owait.memcg = memcg;
-> > > -	owait.wait.flags = 0;
-> > > -	owait.wait.func = memcg_oom_wake_function;
-> > > -	owait.wait.private = current;
-> > > -	INIT_LIST_HEAD(&owait.wait.task_list);
-> > > -	need_to_kill = true;
-> > > -	mem_cgroup_mark_under_oom(memcg);
-> > 
-> > You are marking memcg under_oom only for the sleepers. So if we have
-> > no sleepers then the memcg will never report it is under oom which
-> > is a behavior change. On the other hand who-ever relies on under_oom
-> > under such conditions (it would basically mean a busy loop reading
-> > memory.oom_control) would be racy anyway so it is questionable it
-> > matters at all. At least now when we do not have any active notification
-> > that under_oom has changed.
-> > 
-> > Anyway, this shouldn't be a part of this patch so if you want it because
-> > it saves a pointless hierarchy traversal then make it a separate patch
-> > with explanation why the new behavior is still OK.
-> 
-> This made me think again about how the locking and waking in there
-> works and I found a bug in this patch.
-> 
-> Basically, we have an open-coded sleeping lock in there and it's all
-> obfuscated by having way too much stuffed into the memcg_oom_lock
-> section.
-> 
-> Removing all the clutter, it becomes clear that I can't remove that
-> (undocumented) final wakeup at the end of the function.  As with any
-> lock, a contender has to be woken up after unlock.  We can't rely on
-> the lock holder's OOM kill to trigger uncharges and wakeups, because a
-> contender for the OOM lock could show up after the OOM kill but before
-> the lock is released.  If there weren't any more wakeups, the
-> contender would sleep indefinitely.
+On 07/29/2013 08:39 AM, Benoit Cousson wrote:
+> Hi Nishanth,
+>
+> On 29/07/2013 15:17, Nishanth Menon wrote:
+>> On 07/29/2013 04:57 AM, Keerthy wrote:
+>>> Hi Nishanth,
+>>>
+>>> On Wednesday 17 July 2013 10:15 PM, Nishanth Menon wrote:
+>>>> Due to wrong older revision of documentation used as reference, we
+>>>> seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
+>>>> series is based power tree on production board 750-2628-XXX platform.
+>>>> Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
+>>>> supply hardware blocks at voltages that are out of specification.
+>>>
+>>> This series looks good to me.
+>>>
+>>> Acked-by:  J Keerthy <j-keerthy@ti.com>
+>>
+>> Tony, Benoit - this series could prevent OMAP5 from being damaged on
+>> uEVMs with current 3.11 rc - could you suggest what we need to do to
+>> get it in?
+>
+> I'm still on vacation with no way to pull any patch... but I can still
+> comment on the series quickly.
 
-I have checked that path again and I still do not see how wakeup_oom
-helps here. What prevents us from the following race then?
+Thanks for responding while on vacation.
 
-spin_lock(&memcg_oom_lock)
-locked = mem_cgroup_oom_lock(memcg) # true
-spin_unlock(&memcg_oom_lock)
-						spin_lock(&memcg_oom_lock)
-						locked = mem_cgroup_oom_lock(memcg) # false
-						spin_unlock(&memcg_oom_lock)
-						<resched>
-mem_cgroup_out_of_memory()
-			<uncharge & memcg_oom_recover>
-spin_lock(&memcg_oom_lock)
-mem_cgroup_oom_unlock(memcg)
-memcg_wakeup_oom(memcg)
-						schedule()
-spin_unlock(&memcg_oom_lock)
-mem_cgroup_unmark_under_oom(memcg)
+>
+> It seems to me that this series contains some real fixes that might
+> damage the board due to hihest voltage than expected and some which are
+> just improvement like for the SMPS9 or LDO[28]. In theory they should no
+> go necesseraly to -rc, but, I guess that's fine for that one.
+>
+> All the "fixes" are sharing more than 50% of the changelog content with
+> only 2 changes in the code, so you'd better squash them into one patch
+> to avoid repeating the same thing again and again.
+>
+Reason for keeping them separate was to allow any future git bisect to 
+narrow down to precise patch.
+<--->
+  ARM: dts: omap5-uevm: update SMPS9 settings
+   ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
+   ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
+   ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
+   ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
+   ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
+   ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
+   ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
+<---->
 
-> It also becomes clear that I can't remove the
-> mem_cgroup_mark_under_oom() like that because it is key in receiving
-> wakeups.  And as with any sleeping lock, we need to listen to wakeups
-> before attempting the trylock, or we might miss the wakeup from the
-> unlock.
-> 
-> It definitely became a separate patch, which cleans up this unholy
-> mess first before putting new things on top:
+Would you have suggestions on what to squash up?
 
-I will check the patch tomorrow with a clean head.
-[...]
+
 -- 
-Michal Hocko
-SUSE Labs
+Regards,
+Nishanth Menon
