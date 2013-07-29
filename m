@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab3G2WLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:11:05 -0400
-Received: from co1ehsobe004.messaging.microsoft.com ([216.32.180.187]:1177
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754212Ab3G2WLD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:11:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VS-4(zzbb2dI98dI9371I1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h8275bh1de097hz2dh2a8h668h839h944hd2bhf0ah1288h12a5h12a9h12bdh137ah139eh13b6h1441h1504h1537h162dh1631h16a6h1758h1898h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1e23h1155h)
-Date: Mon, 29 Jul 2013 17:10:52 -0500
-From: Scott Wood <scottwood@freescale.com>
-Subject: Re: [PATCH v7 2/3] DMA: Freescale: Add new 8-channel DMA engine
- device tree nodes
-To: <hongbo.zhang@freescale.com>
-CC: <vinod.koul@intel.com>, <djbw@fb.com>, <leoli@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-References: <1375094944-3343-1-git-send-email-hongbo.zhang@freescale.com>
-	<1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>
-In-Reply-To: <1375094944-3343-3-git-send-email-hongbo.zhang@freescale.com>
-	(from hongbo.zhang@freescale.com on Mon Jul 29 05:49:03 2013)
-X-Mailer: Balsa 2.4.12
-Message-ID: <1375135852.30721.60@snotra>
+	id S1756104Ab3G2WLW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:11:22 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46574 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755975Ab3G2WLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 18:11:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
+Subject: Re: [PATCH 1/3] ACPI / PM: Only set power states of devices that are power manageable
+Date: Tue, 30 Jul 2013 00:21:28 +0200
+Message-ID: <3386345.rYEkrXssx8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <51F677B1.9090502@intel.com>
+References: <10433383.dueoNg39qi@vostro.rjw.lan> <1657971.1utElu0Hzo@vostro.rjw.lan> <51F677B1.9090502@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"; delsp=Yes; format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 05:49:03 AM, hongbo.zhang@freescale.com wrote:
-> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+On Monday, July 29, 2013 10:09:53 PM Aaron Lu wrote:
+> On 07/27/2013 09:10 PM, Rafael J. Wysocki wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > 
+> > Make acpi_device_set_power() check if the given device is power
+> > manageable before checking if the given power state is valid for that
+> > device.  Otherwise it will print that "Device does not support" that
+> > power state into the kernel log, which may not make sense for some
+> > power states (D0 and D3cold are supported by all devices by
+> > definition).
 > 
-> Freescale QorIQ T4 and B4 introduce new 8-channel DMA engines, this  
-> patch adds
-> the device tree nodes for them.
+> It will not print "Device does not support" that power state if that
+> power state is D0 or D3cold since we have unconditionally set those two
+> power state's valid flag.
+
+So you didn't actually looked at acpi_bus_get_power_flags() that set the
+power.states[].flags.valid flag, because If you had looked at it, you would
+have seen that that's not the case.
+
+No, we don't set the valid flag for devices that aren't power manageable
+(i.e. have flags.power_manageable unset), which is the *whole* *point* of
+this change.
+
+> OTOH, what value should we return for a device node that is not power
+> manageable in acpi_device_set_power when the target state is D0 or D3
+> cold? The old behavior is to return 0, meanning success without taking
+> any actual action.
 > 
-> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-> ---
->  .../devicetree/bindings/powerpc/fsl/dma.txt        |   66  
-> ++++++++++++++++
->  arch/powerpc/boot/dts/fsl/b4si-post.dtsi           |    4 +-
->  arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi          |   81  
-> ++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi          |   81  
-> ++++++++++++++++++++
->  arch/powerpc/boot/dts/fsl/t4240si-post.dtsi        |    4 +-
->  5 files changed, 232 insertions(+), 4 deletions(-)
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-0.dtsi
->  create mode 100644 arch/powerpc/boot/dts/fsl/elo3-dma-1.dtsi
+> In acpi_bus_set_power, if the device is not power manageable, we will
+> return -ENODEV; in acpi_dev_pm_full/low_power, we will return 0 as in
+> the original acpi_device_set_power. So return -EINVAL here is correct?
 
-ACK
+No, the original acpi_device_set_power() will return -ENODEV then, but
+in my opinion returning -EINVAL is more accurate, because "power
+manageable" means "you can change power state of it".
 
--Scott
+Thanks,
+Rafael
+
+
+> > Tested-by: Yinghai Lu <yinghai@kernel.org>
+> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > ---
+> >  drivers/acpi/device_pm.c |    3 ++-
+> >  1 file changed, 2 insertions(+), 1 deletion(-)
+> > 
+> > Index: linux-pm/drivers/acpi/device_pm.c
+> > ===================================================================
+> > --- linux-pm.orig/drivers/acpi/device_pm.c
+> > +++ linux-pm/drivers/acpi/device_pm.c
+> > @@ -159,7 +159,8 @@ int acpi_device_set_power(struct acpi_de
+> >  	int result = 0;
+> >  	bool cut_power = false;
+> >  
+> > -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+> > +	if (!device || !device->flags.power_manageable
+> > +	    || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+> >  		return -EINVAL;
+> >  
+> >  	/* Make sure this is a valid target state */
+> > 
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
