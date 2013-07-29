@@ -1,93 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320Ab3G2VCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:02:47 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9793 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab3G2VCp (ORCPT
+	id S1755371Ab3G2VDO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:03:14 -0400
+Received: from mail-bk0-f52.google.com ([209.85.214.52]:49057 "EHLO
+	mail-bk0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab3G2VDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:02:45 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Yq4RUikR8ugA:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=areB5SWaTWoA:10 a=VwQbUJbxAAAA:8 a=DaSF7c8DtCHVZWdlttIA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375131763.6580.54.camel@gandalf.local.home>
-Subject: Re: [PATCH 0/4] [GIT PULL][RCU][3.12] tracing/rcu: Export strings
- to userspace
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Mon, 29 Jul 2013 17:02:43 -0400
-In-Reply-To: <20130729192133.143455334@goodmis.org>
-References: <20130729192133.143455334@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
+	Mon, 29 Jul 2013 17:03:12 -0400
+Message-ID: <51F6D88B.80202@gmail.com>
+Date: Mon, 29 Jul 2013 23:03:07 +0200
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
+MIME-Version: 1.0
+To: Julius Werner <jwerner@chromium.org>
+CC: Felipe Balbi <balbi@ti.com>, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, Tomasz Figa <t.figa@samsung.com>,
+        Vivek Gautam <gautam.vivek@samsung.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH] usb: phy-samsung-usb: Simplify PMU register handling
+References: <1375130839-5523-1-git-send-email-jwerner@chromium.org>
+In-Reply-To: <1375130839-5523-1-git-send-email-jwerner@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-07-29 at 15:21 -0400, Steven Rostedt wrote:
-> Paul,
-> 
-> As we talked about earlier, I set up a branch based off of v3.11-rc2 which
-> the first patch has my tracing patch I need for other updates, and
-> the other three are RCU specific patches that you should take.
-> 
-> You can either just pull this branch from my tree, or you can pull
-> just the first patch (to keep the same SHA1) and apply the other three
-> patches any way you want.
-> 
-> I tested all these patches through my standard tests, but I did not run
-> the RCU ones through any specific RCU tests (like rcutorture). They
-> shouldn't affect the process of RCU in anyway and only should touch
-> the way trace points export their strings. You may want to run them through
-> other tests just to make sure there isn't some strange side effect I
-> caused. :-)
-> 
-> -- Steve
-> 
-> Please pull the latest ftrace/rcu tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-> ftrace/rcu
-> 
-> Head SHA1: b7c2caaa81e8ce2643db611a661d1ef7f9fe6db8
-> SHA1 of first patch: 102c9323c35a83789ad5ebd3c45fa8fb389add88
-> 
-> Steven Rostedt (Red Hat) (4):
->       tracing: Add __tracepoint_string() to export string pointers
->       rcu: Add const annotation to char * for RCU tracepoints and functions
+Hi,
 
-Paul,
+On 07/29/2013 10:47 PM, Julius Werner wrote:
+> This patch simplifies the way the phy-samsung-usb code finds the correct
+> power management register to enable PHY clock gating. Previously, the
+> code would calculate the register address from a device tree supplied
+> base address and add an offset based on the PHY type.
+>
+> Since every PHY has its own device tree entry and needs only one
+> register, we can just encode the address itself in the device tree and
+> remove the diffentiation in the code. The bitmask needed to specify the
+> bit within that register stays in place, allowing support for platforms
+> like s3c64xx that use different bits within the same register. Due to
+> this simplification, the whole complication of a Samsung-specific USB
+> PHY type can be removed from the PHY driver.
+>
+> Change-Id: Id823f04bbf1942f307bd1d24ec9d8d55a69b0e56
+> Signed-off-by: Julius Werner<jwerner@chromium.org>
+> ---
+>   arch/arm/boot/dts/exynos5250.dtsi  |  4 ++--
+>   drivers/usb/phy/phy-samsung-usb.c  | 46 +++++++++-----------------------------
+>   drivers/usb/phy/phy-samsung-usb.h  | 34 +++++++---------------------
+>   drivers/usb/phy/phy-samsung-usb2.c | 34 ++++++++--------------------
+>   drivers/usb/phy/phy-samsung-usb3.c | 13 +++--------
+>   5 files changed, 32 insertions(+), 99 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
+> index ef57277..5a754d7 100644
+> --- a/arch/arm/boot/dts/exynos5250.dtsi
+> +++ b/arch/arm/boot/dts/exynos5250.dtsi
+> @@ -473,7 +473,7 @@
+>   		ranges;
+>
+>   		usbphy-sys {
+> -			reg =<0x10040704 0x8>;
+> +			reg =<0x10040704 0x4>;
+>   		};
+>   	};
+>
+> @@ -505,7 +505,7 @@
+>   		ranges;
+>
+>   		usbphy-sys {
+> -			reg =<0x10040704 0x8>,
+> +			reg =<0x10040708 0x4>,
+>   			<0x10050230 0x4>;
+>   		};
+>   	};
+> diff --git a/drivers/usb/phy/phy-samsung-usb.c b/drivers/usb/phy/phy-samsung-usb.c
+> index ac025ca..c142233 100644
+> --- a/drivers/usb/phy/phy-samsung-usb.c
+> +++ b/drivers/usb/phy/phy-samsung-usb.c
+> @@ -27,7 +27,6 @@
+>   #include<linux/io.h>
+>   #include<linux/of.h>
+>   #include<linux/of_address.h>
+> -#include<linux/usb/samsung_usb_phy.h>
+>
+>   #include "phy-samsung-usb.h"
+>
+> @@ -42,9 +41,9 @@ int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
+>   		return -ENODEV;
+>   	}
+>
+> -	sphy->pmuregs = of_iomap(usbphy_sys, 0);
+> +	sphy->pmureg = of_iomap(usbphy_sys, 0);
+>
+> -	if (sphy->pmuregs == NULL) {
+> +	if (sphy->pmureg == NULL) {
+>   		dev_err(sphy->dev, "Can't get usb-phy pmu control register\n");
+>   		goto err0;
+>   	}
+> @@ -75,35 +74,26 @@ EXPORT_SYMBOL_GPL(samsung_usbphy_parse_dt);
+>    */
+>   void samsung_usbphy_set_isolation_4210(struct samsung_usbphy *sphy, bool on)
+>   {
+> -	void __iomem *reg = NULL;
+>   	u32 reg_val;
+>   	u32 en_mask = 0;
+>
+> -	if (!sphy->pmuregs) {
+> +	if (!sphy->pmureg) {
+>   		dev_warn(sphy->dev, "Can't set pmu isolation\n");
+>   		return;
+>   	}
+>
+> -	if (sphy->phy_type == USB_PHY_TYPE_DEVICE) {
+> -		reg = sphy->pmuregs + sphy->drv_data->devphy_reg_offset;
+> -		en_mask = sphy->drv_data->devphy_en_mask;
+> -	} else if (sphy->phy_type == USB_PHY_TYPE_HOST) {
+> -		reg = sphy->pmuregs + sphy->drv_data->hostphy_reg_offset;
+> -		en_mask = sphy->drv_data->hostphy_en_mask;
+> -	}
 
-Hold off. Fengguang's tests found a few places that I was a bit
-overzealous with my const char *. Let me fix that and try again.
+How is en_mask supposed to get initialized, now when this code is removed ?
+It's always 0 now, isn't it ?
 
--- Steve
+> -
+> -	reg_val = readl(reg);
+> +	reg_val = readl(sphy->pmureg);
+>
+>   	if (on)
+>   		reg_val&= ~en_mask;
+>   	else
+>   		reg_val |= en_mask;
+>
+> -	writel(reg_val, reg);
+> +	writel(reg_val, sphy->pmureg);
 
->       rcu: Simplify RCU_STATE_INITIALIZER() macro
->       rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
-> 
-> ----
->  include/asm-generic/vmlinux.lds.h |    7 ++-
->  include/linux/ftrace_event.h      |   34 ++++++++++++
->  include/linux/rcupdate.h          |    4 +-
->  include/trace/events/rcu.h        |   82 ++++++++++++++---------------
->  kernel/rcu.h                      |    2 +-
->  kernel/rcupdate.c                 |    2 +-
->  kernel/rcutiny.c                  |    2 +-
->  kernel/rcutiny_plugin.h           |    2 +-
->  kernel/rcutorture.c               |    8 +--
->  kernel/rcutree.c                  |  105 +++++++++++++++++++++----------------
->  kernel/rcutree.h                  |    2 +-
->  kernel/rcutree_plugin.h           |   42 +++++++--------
->  kernel/trace/trace.h              |    3 ++
->  kernel/trace/trace_printk.c       |   19 +++++++
->  14 files changed, 195 insertions(+), 119 deletions(-)
-
-
+--
+Regards,
+Sylwester
