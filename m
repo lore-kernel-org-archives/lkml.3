@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab3G2WTS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:19:18 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:65040 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754183Ab3G2WTQ (ORCPT
+	id S1755366Ab3G2WUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:20:47 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:64039 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754181Ab3G2WUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:19:16 -0400
-Message-ID: <51F6EA60.7020208@gmail.com>
-Date: Mon, 29 Jul 2013 16:19:12 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 18:20:46 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: Jason Cooper <jason@lakedaemon.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ATTEND] DT, maintainership, development process
+Date: Tue, 30 Jul 2013 00:30:54 +0200
+Message-ID: <4053222.hWzinV5Hra@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <20130729181733.GB31172@tuxdriver.com>
+References: <20130729102452.GA2682@zurbaran> <3572404.Lna8dKdTsO@vostro.rjw.lan> <20130729181733.GB31172@tuxdriver.com>
 MIME-Version: 1.0
-To: Adrian Hunter <adrian.hunter@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Jiri Olsa <jolsa@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH V8 04/15] perf tools: change machine__findnew_thread()
- to set thread pid
-References: <1374144177-24762-1-git-send-email-adrian.hunter@intel.com> <1374144177-24762-5-git-send-email-adrian.hunter@intel.com> <51F29DAC.7000803@gmail.com> <51F4F5D4.8080405@intel.com>
-In-Reply-To: <51F4F5D4.8080405@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/28/13 4:43 AM, Adrian Hunter wrote:
+On Monday, July 29, 2013 02:17:34 PM John W. Linville wrote:
+> On Mon, Jul 29, 2013 at 03:27:44PM +0200, Rafael J. Wysocki wrote:
+> 
+> > That said we have the same issue with commits with just two SOB tags if
+> > a maintainer applies a patch that nobody has responded to.  Are they going to
+> > be regarded as "suspicious" too now?
+> > 
+> > And what about trusting maintainers?  If Linus trusts them enough to pull from
+> > them, why can't everybody else trust them enough to assume that they don't do
+> > bad things on purpose?
+> 
+> Not just Linus -- it's 'turtles all the way down' here.  As someone
+> else suggested, a Singed-off-by in the merge commit should suffice
+> here.  Although, I haven't always made a habit of adding S-o-b to
+> merge commits either...
 
->>> - thread = machine__findnew_thread(machine, event->ip.pid);
->>> + thread = machine__findnew_thread(machine, event->ip.pid,
->>> event->ip.pid);
->>
->> event->ip.tid? at a minimum current functionality is retained with
->> machine__findnew_thread(machine, 0, event->ip.pid)
->
-> perf tools records mmap information against the process's main thread
-> for which pid == tid.  So the correct values are being passed here.
+An SOB in the merge doesn't provide any additional information that can't
+be retrieved from git, unless you use a different e-mail address for the
+sign-off. :-)
 
-Yes. It's a case by case -- if you want syms use pid, otherwise use tid. 
-It would be less confusing if the API was improved - always take pid and 
-tid along with an arg that says 'want syms' or a separate function name. 
-But I digress.
+Rafael
 
-Looking at your patch does maintain the tid element so it should be 
-fine. I ran a few tests with perf-script and the output is the same 
-after the patch, so..
-
-Acked-by: David Ahern <dsahern@gmail.com>
