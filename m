@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab3G2Rcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:32:54 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:45155 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758378Ab3G2Rcw (ORCPT
+	id S1758411Ab3G2RdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:33:23 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47745 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab3G2RdV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:32:52 -0400
-Message-ID: <51F6A741.6070300@wwwdotorg.org>
-Date: Mon, 29 Jul 2013 11:32:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Mon, 29 Jul 2013 13:33:21 -0400
+Message-ID: <51F6A74B.1060008@linux.vnet.ibm.com>
+Date: Mon, 29 Jul 2013 10:32:59 -0700
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Hanumant Singh <hanumant@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        "Bird, Tim" <Tim.Bird@sonymobile.com>,
-        ext Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] pinctrl: msm: Add support for MSM TLMM pinmux
-References: <1374702089-2832-1-git-send-email-hanumant@codeaurora.org> <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com>
-In-Reply-To: <CACRpkdZLFD-KAvZdUUvQKje3vAH1D0EJMW9PSK8VSp3Xs4eiGA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>
+Subject: Re: [PATCH 1/5] rbtree: add postorder iteration functions
+References: <1374873223-25557-1-git-send-email-cody@linux.vnet.ibm.com> <1374873223-25557-2-git-send-email-cody@linux.vnet.ibm.com> <20130729150147.GA4381@variantweb.net>
+In-Reply-To: <20130729150147.GA4381@variantweb.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13072917-5406-0000-0000-00000AE04D37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 10:37 AM, Linus Walleij wrote:
-> On Wed, Jul 24, 2013 at 11:41 PM, Hanumant Singh
-> <hanumant@codeaurora.org> wrote:
-> 
->> Add a new device tree enabled pinctrl driver for
->> Qualcomm MSM SoC's. This driver provides an extensible
->> framework to interface all MSM's that use a TLMM pinmux,
->> with the pinctrl subsytem.
->>
->> This driver is split into two parts: the pinctrl interface
->> and the TLMM version specific implementation. The pinctrl
->> interface parses the device tree and registers with the pinctrl
->> subsytem. The TLMM version specific implementation supports
->> pin configuration/register programming for the different
->> pin types present on a given TLMM pinmux version.
->>
->> Add support only for TLMM version 3 pinmux right now,
->> as well as, only two of the different pin types present on the
->> TLMM v3 pinmux.
->> Pintype 1: General purpose pins.
->> Pintype 2: SDC pins.
-> 
-> I guess this is the v4 patch set?
-> 
-> Please include a small changelog so I can keep track of
-> things...
-> 
-> 
->> Change-Id: I065d874cd2c6fd002d5b3cb4b355445bb6912bf4
-> 
-> This thing is not interesting to the kernel community.
-> 
->> diff --git a/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
->> new file mode 100644
->> index 0000000..0f17a94
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/pinctrl/msm-pinctrl.txt
-> 
-> This needs to be broken out and sent for separate review on
-> the devicetree@vger.kernel.org mailing list.
+On 07/29/2013 08:01 AM, Seth Jennings wrote:
+> On Fri, Jul 26, 2013 at 02:13:39PM -0700, Cody P Schafer wrote:
+>> diff --git a/lib/rbtree.c b/lib/rbtree.c
+>> index c0e31fe..65f4eff 100644
+>> --- a/lib/rbtree.c
+>> +++ b/lib/rbtree.c
+>> @@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
+>>   	*new = *victim;
+>>   }
+>>   EXPORT_SYMBOL(rb_replace_node);
+>> +
+>> +static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
+>> +{
+>> +	for (;;) {
+>> +		if (node->rb_left)
+>> +			node = node->rb_left;
+>
+> Assigning to an argument passed as const seems weird to me.  I would
+> think it shouldn't compile but it does.  I guess my understanding of
+> const is incomplete.
+>
 
-It certainly should be reviewed there, although I don't think the
-binding .txt file needs to be a separate patch. At present, it's quite
-typical to include the binding doc with the first driver that implements
-it, although that may change in the future; we'll see.
+Ya, that is due to const's binding:
+	const struct rb_node *node1; // the thing pointed to is const
+	const struct rb_node node2;  // node is const
+	struct rb_node *const node3; // node is const
+	const struct rb_node *const node4; // both node and the thing
+					   // pointed too are const
+
+And so ends up being perfectly legal (I use the first case listed here).
+
+>> +		else if (node->rb_right)
+>> +			node = node->rb_right;
+>> +		else
+>> +			return (struct rb_node *)node;
+>> +	}
+>> +}
+>> +
+>> +struct rb_node *rb_next_postorder(const struct rb_node *node)
+>> +{
+>> +	const struct rb_node *parent;
+>> +	if (!node)
+>> +		return NULL;
+>> +	parent = rb_parent(node);
+>
+> Again here.
+>
+> Seth
+>
+
