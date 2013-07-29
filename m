@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab3G2RYD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:24:03 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38193 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751339Ab3G2RYA (ORCPT
+	id S1758294Ab3G2R0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:26:21 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:34076 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754181Ab3G2R0U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:24:00 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/L+1X6lP3NWEJ8D2xspzZbGf7hnw2JxQY=
-Date: Mon, 29 Jul 2013 13:23:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Dave Martin <Dave.Martin@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Tomasz Figa <tomasz.figa@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
-Message-ID: <20130729172339.GT29916@titan.lakedaemon.net>
-References: <2469263.vMN09Q7Tzi@flatron>
- <20130729150124.GS29916@titan.lakedaemon.net>
- <20130729164905.GB2280@localhost.localdomain>
+	Mon, 29 Jul 2013 13:26:20 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729164905.GB2280@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130729165329.GA5773@linutronix.de>
+References: <CADYTM3ZfvDDKY6NyAv9xGSZ0angGYVOGf8uUDR2vU1jDwCGmzA@mail.gmail.com>
+	<20130726163101.GB29819@linutronix.de>
+	<CADYTM3bfkxEYgvk5v_0=BJFMb8izULpgc1uZVPDPnSs29UpYeA@mail.gmail.com>
+	<CADYTM3b7-WHA73qMypUSd8VcTWuvooap_Ki65BcoJ7qKhejXZw@mail.gmail.com>
+	<51F2BE6F.3010008@linutronix.de>
+	<CADYTM3Y5p-ysgbcL4qZMWLiRVbcPgNQgtydpdhYQJLtd+r1hfw@mail.gmail.com>
+	<51F2D427.7050106@linutronix.de>
+	<CADYTM3ZAsBuFi2guX-j+0f837Uy4EkZ0_QEhKV+WWUOsaDfaDQ@mail.gmail.com>
+	<51F2DD90.2030405@linutronix.de>
+	<CADYTM3Y18yo7S6=k6rgFgpPdbZSH4-92q2FmEnWgjxmQ5g2jbA@mail.gmail.com>
+	<20130729165329.GA5773@linutronix.de>
+Date: Mon, 29 Jul 2013 12:26:19 -0500
+Message-ID: <CADYTM3b9MFPM4iDpe3H1uKC1ZCawrQCebqrZikXxS-s9VNDgpw@mail.gmail.com>
+Subject: Re: [PATCH 14/16] usb: musb: dsps: add MUSB_DEVCTL_SESSION back after removal
+From: Bin Liu <binmlist@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        george.cherian@ti.com
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 05:49:05PM +0100, Dave Martin wrote:
-> On Mon, Jul 29, 2013 at 11:01:24AM -0400, Jason Cooper wrote:
-> > On Mon, Jul 29, 2013 at 02:21:52AM +0200, Tomasz Figa wrote:
+Sebastian,
 
-> > > b) What information should be specified in schemas? What level of 
-> > >    granularity is required?
-> > 
-> > One item I don't see in this list is node ordering.  There's been some
-> > discussion lately on deferred probing (re boot times).  If we were to
-> > intentionally declare that DT are parsed in the order written, then a
-> > lot of deferred probes could be avoided by moving eg the pinctrl node to
-> > near the top of the tree.
-> > 
-> > This doesn't impact buses as much, since the nodes needing the bus are
-> > already children.  However, anything accessed via phandles: pins,
-> > clocks, regulators, etc could benefit from declaring and enforcing this.
-> > Eg having the dtc warn when a phandle is used before it's corresponding
-> > node is declared.
-> > 
-> > Not critical though, just a thought.
-> 
-> I don't think that siblings have any defined order in DT.  If reading a
-> device tree, there's no guarantee you get nodes or properties out in the
-> same order as the original .dts file.
+On Mon, Jul 29, 2013 at 11:53 AM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> So you say, am335x-evm is not able to run OTG mode and may only run in
+> host mode and as a consequence it must not call musb_platform_try_idle()
+> because it throws that one bit away and there is no way to bring it back?
 
-That's why I raised the point.  If people think encoding initialization
-order in the DT is a good idea, then we should change the dtc so it
-compiles/decompiles in the same order.
+I did not say AM335xEVM is not able to run OTG mode. The problem is in
+OTG mode the SESSION bit will be cleared once the device is unplugged,
+then there is no way the SESSION bit will come back in the current
+mainline kernel.
 
-> Provided child/parent relationships are maintained and the set of nodes
-> and values is the same, I think completely rearranging a .dts file does
-> not change its meaning.
-> 
-> "depends-on" relationships mostly have to come from the semantics of
-> the bindings themselves: for example, if a device is connected to some
-> clocks and regulators, the kernel may need to probe those first.
+The TI 3.2 kernel works around this OTG issue by toggling the SESSION
+bit in b_idle handling in otg_timer(). The workaround makes most users
+happy but it causes VBUS voltage pulsing. That is why I said I don't
+know an ideal solution without a ID pin interrupt support.
 
-true, the answer to this problem may be to create a depgraph of the
-nodes based on phandles and child status, then init.  However, if the
-goal is to accelerate boot times, then that should not be calculated
-during each boot, especially since it doesn't likely change from boot to
-boot.
+>
+> However, if I look at the tree you reference, I see in
+> arch/arm/mach-omap2/board-am335xevm.c:
+> | static struct omap_musb_board_data musb_board_data = {
+> |         .interface_type = MUSB_INTERFACE_ULPI,
+> |         .mode           = MUSB_OTG,
+> |         .power          = 500,
+> |         .instances      = 1,
+> | };
+> …
+> | static void __init am335x_evm_init(void)
+> …
+> |   usb_musb_init(&musb_board_data);
+>
+> and it creates a "ti81xx-usbss" device.
+>
+> So it creates a musb device with mode MUSB_OTG no matter what.
 
-Which means it would either go in the dtc (dts node ordering is
-irrelevant), or in the dts.  I'm inclined to say dtc should do it, but I
-like the aesthetics of things being in the proper order in something I
-can read.  After all, C requires functions to be declared before use,
-even though the compiler could figure it out.
+I think you looked at a wrong file, maybe a wrong branch. Please check
+[1], which defines
 
-thx,
+2644          * mode[0:3] = USB0PORT's mode
+2645          * mode[4:7] = USB1PORT's mode
+2646          * AM335X beta EVM has USB0 in OTG mode and USB1 in host mode.
+2647          */
+2648         .mode           = (MUSB_HOST << 4) | MUSB_OTG,
 
-Jason.
+> I agree that without that try_idle part things keep working but it
+> seems, that it is also called in the other tree.
+>
+
+Then because AM335xEVM USB1 port does not call *try_idle() in this 3.2
+kernel, its SESSION bit is always set.
+
+But I don't have a clear idea how to solve this in the mainline kernel
+since is_otg_enabled() has been cleaned.
+
+>>
+>>Regards,
+>>-Bin.
+>
+> Sebastian
+
+
+Regards,
+-Bin.
+
+[1]: http://arago-project.org/git/projects/?p=linux-am33x.git;a=blob;f=arch/arm/mach-omap2/board-am335xevm.c;h=aec37f371342455e06626c47e0e92beb51930ed2;hb=refs/heads/v3.2-staging
