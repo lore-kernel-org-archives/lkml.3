@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab3G2Qpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 12:45:42 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:51271 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab3G2Qph (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 12:45:37 -0400
-Message-ID: <51F69C2B.6020208@wwwdotorg.org>
-Date: Mon, 29 Jul 2013 10:45:31 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S932194Ab3G2QqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 12:46:16 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:47894 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757904Ab3G2QpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 12:45:16 -0400
+From: Illia Smyrnov <illia.smyrnov@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v3 2/3] Input: omap-keypad: errata i689: Correct debounce time
+Date: Mon, 29 Jul 2013 19:45:10 +0300
+Message-ID: <1375116311-13999-3-git-send-email-illia.smyrnov@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
+References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
 MIME-Version: 1.0
-To: Laxman Dewangan <ldewangan@nvidia.com>
-CC: "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        "kishon@ti.com" <kishon@ti.com>, Stephen Warren <swarren@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: [PATCH 2/2] pinctrl: palmas: add pincontrol driver
-References: <1374833754-19659-1-git-send-email-ldewangan@nvidia.com> <1374833754-19659-3-git-send-email-ldewangan@nvidia.com> <51F2C970.7000200@wwwdotorg.org> <51F3B8F7.4000809@nvidia.com>
-In-Reply-To: <51F3B8F7.4000809@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/27/2013 06:11 AM, Laxman Dewangan wrote:
-> Hi Stephen,
-> Thanks for detail review.
-> Agree on most of review. Some info/answer on some of query.
-> 
-> On Saturday 27 July 2013 12:39 AM, Stephen Warren wrote:
->> (Also CC'ing in the DT bindings maintainers, hence quoting all of the
->> binding.)
->>
->> On 07/26/2013 04:15 AM, Laxman Dewangan wrote:
+From: Axel Haslam <axelhaslam@ti.com>
 
->>> +     for (i = 0; i < ARRAY_SIZE(g->opt); i++) {
->>> +             if (g->opt[i]->mux_opt == function)
->>> +                     break;
->>> +     }
->>
->> So, when I create the Tegra bindings, I created the list of mux
->> functions by looking at the logical meaning of each register value
->> (0..3) for each pin, and then made the list of functions have a value
->> for each logical meaning. This requires a mapping table between the
->> pinctrl subsystem's mux function values and the HW mux function values,
->> which is what the loop above implements. Instead, if might be simpler to
->> just have functions named "0", "1", "2", ... and have all pins support
->> those functions. This simplifies the driver, and the DT bindings.
->> Whether doing so would make the DT bindings better probably depends on
->> exactly how the HW's documentation is written...
-> 
-> I am not sure I got it completely or not. Let me try out this and get
-> reviewed by you.
+Set debounce time value to 12ms to workaround the errata.
 
-Just to provide some more details, let's say we have two pins A/B/C/D,
-each with mux options 0, 1, 2, 3, with the following meaning:
+ERRATA DESCRIPTION:
+When a key is released for a time shorter than the debounce time,
+in-between 2 key press (KP1 and KP2), the keyboard state machine will go to
+idle mode and will never detect the key release (after KP1,and also after KP2),
+and thus will never generate a new IRQ indicating the key release.
+>From the operating system standpoint, only a key press as been detected,
+and the key will keep on being printed on the screen until another or
+the same key is pressed again.When the failing state has been reached,
+the KBD_STATEMACHINE register will show "idle state" and the KBD_FULLCODE
+register won't be empty, this is the signature of the bug.There is no impact
+on the power consumption of the system as the state machine goes to IDLE state.
 
-A 0=GPIO 1=SPI1 2=I2C1 3=xxx
-B 0=GPIO 1=SPI1 2=I2C1 3=yyy
-C 0=GPIO 1=SPI2 2=I2C2 3=yyy
-D 0=GPIO 1=SPI2 2=I2C2 3=zzz
+WORKAROUND:
+First thing is to program the debounce time correctly:
+If X (us) is the maximum time of bounces when a key is pressed or released,
+and Y (us) is the minimum time of a key release that is expected to be detected,
+then the debounce time should be set to a value inbetween X and Y.
 
-The four physical mux options are 0, 1, 2, 3. They will apply to any and
-all pins, irrespective of the meaning of those options. It may be
-reasonable to use 0/1/2/3 directly in the DT bindings as the mux
-options, since their meaning can be looked up in the SoC's data sheet.
+In case it is still possible to get shorter than debounce time key-release
+events, then the only solution is to implement a software workaround:
 
-The logical mux options are: GPIO, SPI1, SPI2, I2C1, I2C2, xxx, yyy,
-zzz. Those indicate which HW blocks are connected to the pins, i.e. the
-pins' logical use-cases. It may also be reaonsable to use those logical
-options in the DT rather than the physical options since it's more
-descriptive. However, the driver would need a table to map from the
-logical options to the physical options so that the register could be
-programmed. Equally, these logical options are slightly less a direct
-representation of HW.
+Before printing a second character on the screen, the software must check if
+the keyboard has hit the failing condition (cf signature of the bug above)
+or if the key is still really pressed and then take the appropriate actions.
 
-Different people may prefer a different answer to the question of which
-of those two options to use. The structure of the SoC documentation may
-provide a hint; it would probably be best to use whichever option makes
-matching the DT to the documentation easiest.
+Silicon revisions impacted: OMAP4430 ES 1.0,2.0,2.1,2.2,2.3
+                            OMAP4460 ES 1.0,1.1
+                            OMAP5430 ES 1.0
+
+Signed-off-by: Axel Haslam <axelhaslam@ti.com>
+Signed-off-by: Illia Smyrnov <illia.smyrnov@ti.com>
+---
+ Based on top of v3.11-rc3
+
+ Depends on:
+ Input: omap-keypad: Cleanup - use bitfiled instead of hardcoded values
+ https://patchwork.kernel.org/patch/2832913/
+
+ drivers/input/keyboard/omap4-keypad.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/keyboard/omap4-keypad.c b/drivers/input/keyboard/omap4-keypad.c
+index feab00f..e8bdc76 100644
+--- a/drivers/input/keyboard/omap4-keypad.c
++++ b/drivers/input/keyboard/omap4-keypad.c
+@@ -62,8 +62,10 @@
+ 
+ /* OMAP4 values */
+ #define OMAP4_VAL_IRQDISABLE		0x0
+-#define OMAP4_VAL_DEBOUNCINGTIME	0x7
+-#define OMAP4_VAL_PVT			0x7
++
++/* Errata i689: set debounce time value to 12ms */
++#define OMAP4_VAL_DEBOUNCINGTIME	0x2
++#define OMAP4_VAL_PVT			0x6
+ 
+ enum {
+ 	KBD_REVISION_OMAP4 = 0,
+-- 
+1.7.9.5
+
