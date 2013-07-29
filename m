@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095Ab3G2CBk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:01:40 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:19030 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752097Ab3G2CBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:01:37 -0400
-X-IronPort-AV: E=Sophos;i="4.89,766,1367942400"; 
-   d="scan'208";a="8051749"
-Message-ID: <51F5CC1E.8070901@cn.fujitsu.com>
-Date: Mon, 29 Jul 2013 09:57:50 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1754112Ab3G2CDS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:03:18 -0400
+Received: from ozlabs.org ([203.10.76.45]:50458 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752097Ab3G2CDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 28 Jul 2013 22:03:17 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Sudeep Dutt <sudeep.dutt@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Rob Landley <rob@landley.net>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, linux-doc@vger.kernel.org
+Cc: Nikhil Rao <nikhil.rao@intel.com>,
+        Ashutosh Dixit <ashutosh.dixit@intel.com>,
+        Caz Yokoyama <Caz.Yokoyama@intel.com>,
+        Dasaratharaman Chandramouli 
+	<dasaratharaman.chandramouli@intel.com>,
+        Harshavardhan R Kharche <harshavardhan.r.kharche@intel.com>,
+        "Yaozu \(Eddie\) Dong" <eddie.dong@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Sudeep Dutt <sudeep.dutt@intel.com>
+Subject: Re: [PATCH 4/5] Intel MIC Card Driver Changes for Virtio Devices.
+In-Reply-To: <ff721c257100467e8f78421ba9055b97e447551e.1374717252.git.sudeep.dutt@intel.com>
+References: <cover.1374717252.git.sudeep.dutt@intel.com> <ff721c257100467e8f78421ba9055b97e447551e.1374717252.git.sudeep.dutt@intel.com>
+User-Agent: Notmuch/0.15.2+81~gd2c8818 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 29 Jul 2013 11:28:58 +0930
+Message-ID: <87txje6s9p.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] f2fs: move bio_private allocation out of f2fs_bio_alloc()
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 09:59:26,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 09:59:27,
-	Serialize complete at 2013/07/29 09:59:27
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bio->bi_private is not always needed. As in the reading data path,
-end_read_io does not need bio_private for further using, so moving
-bio_private allocation out of f2fs_bio_alloc(). Alloc it in the
-submit_write_page(), and ignore it in the f2fs_readpage().
+Sudeep Dutt <sudeep.dutt@intel.com> writes:
+> From: Ashutosh Dixit <ashutosh.dixit@intel.com>
+>
+> This patch introduces the card "Virtio over PCIe" interface for
+> Intel MIC. It allows virtio drivers on the card to communicate with their
+> user space backends on the host via a device page. Ring 3 apps on the host
+> can add, remove and configure virtio devices. A thin MIC specific
+> virtio_config_ops is implemented which is borrowed heavily from previous
+> similar implementations in lguest and s390 @
+> drivers/lguest/lguest_device.c
+> drivers/s390/kvm/kvm_virtio.c
 
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/data.c    |    1 -
- fs/f2fs/segment.c |   19 +++++++++++--------
- 2 files changed, 11 insertions(+), 9 deletions(-)
+Wow, this is pretty cool!
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index c73c394..19cd7c6 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -365,7 +365,6 @@ static void read_end_io(struct bio *bio, int err)
- 		}
- 		unlock_page(page);
- 	} while (bvec >= bio->bi_io_vec);
--	kfree(bio->bi_private);
- 	bio_put(bio);
- }
- 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index a86d125..9b74ae2 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -611,18 +611,12 @@ static void f2fs_end_io_write(struct bio *bio, int err)
- struct bio *f2fs_bio_alloc(struct block_device *bdev, int npages)
- {
- 	struct bio *bio;
--	struct bio_private *priv;
--retry:
--	priv = kmalloc(sizeof(struct bio_private), GFP_NOFS);
--	if (!priv) {
--		cond_resched();
--		goto retry;
--	}
- 
- 	/* No failure on bio allocation */
- 	bio = bio_alloc(GFP_NOIO, npages);
- 	bio->bi_bdev = bdev;
--	bio->bi_private = priv;
-+	bio->bi_private = NULL;
-+
- 	return bio;
- }
- 
-@@ -681,8 +675,17 @@ static void submit_write_page(struct f2fs_sb_info *sbi, struct page *page,
- 		do_submit_bio(sbi, type, false);
- alloc_new:
- 	if (sbi->bio[type] == NULL) {
-+		struct bio_private *priv;
-+retry:
-+		priv = kmalloc(sizeof(struct bio_private), GFP_NOFS);
-+		if (!priv) {
-+			cond_resched();
-+			goto retry;
-+		}
-+
- 		sbi->bio[type] = f2fs_bio_alloc(bdev, max_hw_blocks(sbi));
- 		sbi->bio[type]->bi_sector = SECTOR_FROM_BLOCK(sbi, blk_addr);
-+		sbi->bio[type]->bi_private = priv;
- 		/*
- 		 * The end_io will be assigned at the sumbission phase.
- 		 * Until then, let bio_add_page() merge consecutive IOs as much
--- 
-1.7.7
+Note that the lguest implementation is a bit limited, but lguest doesn't
+have a real ABI, so we can simply change it if we wanted to.  I assume
+you don't have that luxury.
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+In particular, you may want to get rid of the historical align constant,
+and have explicit avail and used addresses.
 
+Cheers,
+Rusty.
