@@ -1,116 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755095Ab3G2UgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:36:18 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57981 "EHLO arroyo.ext.ti.com"
+	id S1755063Ab3G2UhT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:37:19 -0400
+Received: from hydra.sisk.pl ([212.160.235.94]:46476 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683Ab3G2UgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:36:16 -0400
-Date: Mon, 29 Jul 2013 23:36:05 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: <balbi@ti.com>, Illia Smyrnov <illia.smyrnov@ti.com>,
-        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for
- keypad.
-Message-ID: <20130729203605.GB6547@radagast>
-Reply-To: <balbi@ti.com>
-References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
- <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com>
- <20130729191324.GA5767@radagast>
- <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
+	id S1752015Ab3G2UhR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:37:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Len Brown <lenb@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [REGRESSION/PATCH] acpi: blacklist win8 OSI for ASUS Zenbok Prime UX31A
+Date: Mon, 29 Jul 2013 22:47:26 +0200
+Message-ID: <1481385.FnXPIp62HH@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAMP44s1=VfRLPVxwuu1Qhim-nyCHe1gKzQDfiffWw3DDpK0Apg@mail.gmail.com>
+References: <1375125658-1223-1-git-send-email-felipe.contreras@gmail.com> <7981076.SojlpLkL71@vostro.rjw.lan> <CAMP44s1=VfRLPVxwuu1Qhim-nyCHe1gKzQDfiffWw3DDpK0Apg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="OwLcNYc0lM97+oe1"
-Content-Disposition: inline
-In-Reply-To: <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---OwLcNYc0lM97+oe1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Monday, July 29, 2013 03:22:56 PM Felipe Contreras wrote:
+> On Mon, Jul 29, 2013 at 3:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Monday, July 29, 2013 02:20:58 PM Felipe Contreras wrote:
+> >> Since v3.7 the acpi backlight driver doesn't work at all on this machine
+> >> because presumably the ACPI code contains stub code when Windows 8 OSI is
+> >> reported.
+> >>
+> >> The commit ea45ea7 (in v3.11-rc2) tried to fix this problem by using the intel
+> >> backlight driver, however, on this machine it turns the backlight completely
+> >> off when it reaches level 0%, after which the user might have a lot trouble
+> >> trying to bring it back.
+> >>
+> >> This patch fixes both regressions by blacklisting the win8 OSI, so we are back
+> >> to v3.6 behavior, and it should remain that way until the intel backlight
+> >> driver is fixed.
+> >
+> > Well, it really is a workaround, so perhaps it would be fair to call it this
+> > way?
+> 
+> Maybe, but to me, and to most users, the important thing is that it
+> fixes a regression.
+> 
+> >> Since v3.7, users have been forced to fix the initial regression by modifying
+> >> the boot arguments [1].
+> >>
+> >> [1] https://wiki.archlinux.org/index.php/ASUS_Zenbook_Prime_UX31A
+> >>
+> >> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> >
+> > I don't really feel this is the right approach, but then I don't care enough
+> > to fight with you. :-)
+> 
+> It's not the right approach, I don't think I (or anybody) argued
+> otherwise, but unless the Intel driver is fixed before 3.11, it's the
+> only sane approach.
 
-Hi,
+Oh, you're *so* sure about that ...
 
-On Mon, Jul 29, 2013 at 12:59:23PM -0700, Dmitry Torokhov wrote:
-> > > > > @@ -439,12 +444,50 @@ static const struct of_device_id
-> > > > > omap_keypad_dt_match[] =3D {>
-> > > > >=20
-> > > > >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
-> > > > >  #endif
-> > > > >=20
-> > > > > +#ifdef CONFIG_PM_SLEEP
-> > > > > +static int omap4_keypad_suspend(struct device *dev)
-> > > > > +{
-> > > > > +	struct platform_device *pdev =3D to_platform_device(dev);
-> > > >=20
-> > > > you don't need to access the platform_device...
-> > > >=20
-> > > > > +	struct omap4_keypad *keypad_data =3D platform_get_drvdata(pdev);
-> > > >=20
-> > > > ... since this can become:
-> > > > 	struct omap4_keypad *keypad_data =3D dev_get_drvdata(dev);
-> > >=20
-> > > No, please use correct accessors for the objects. Platform drivers de=
-al
-> > > with platform devices and I prefer using platform_get_drvdata() on th=
-em.
-> >=20
-> > The argument to this function is a struct device, you prefer to do some
-> > pointer math to find the containing pdev, then deref that back to dev,
-> > then to struct device_private and further to driver_data ?
-> >=20
-> > Sounds like a waste of time IMHO. You already have the device pointer
-> > anyway, why would you go through the trouble of calculating the
-> > offsets for the containing struct platform_device ?
->=20
-> This assumes knowledge of dev_get_drvdata() implementation and assumption
-> that it will stay the same. Unless I hear from device core guys that
-> <bus>_{get|set}_drvdata() methods are obsolete and will be eventually
-> removed I will require proper accessors being used.
+What I'm actually thinking is that applying this workaround will reduce the
+incentive to fix intel_backlight for the users in question, so it's not like
+there are no drawbacks.
 
-they're not obsolete and will never be removed. They're nothing but
-helpers though. Instead of calling:
+But as I said, I'm not going to fight over this.
 
-	dev_set_drvdata(&pdev->dev);
+Thanks,
+Rafael
 
-you call:
 
-	platform_set_drvdata(pdev);
-
-same is valid for every single bus, but in the end they all just wrap a
-call dev_{set,get}_drvdata() internally. If you already have a struct
-device pointer as argument, why waste cycles doing pointer math just to
-go back to the same struct device pointer on the next call ?
-
---=20
-balbi
-
---OwLcNYc0lM97+oe1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJR9tI1AAoJEIaOsuA1yqREDyMQAJlThkNzLee8vWcWwgQ7QX4m
-r7qwOXCUQQHOKIdgeT6u9TRAezKwWo+Rf38f+XtLOjeetBZBRxe9yYME8kdoMxWS
-wvbcyzt1dTG//tl+NNZqiUDS3z2kqDpCdRe5Ku/yeKwTXGEgNnbCbcXdlDf2zCOr
-Dp5VObyW0g4HdicN0OCWDWDU7Y/6ZN7Bi1hr5lNYSCZHRJJBHlZwevLzGJRfnEXX
-z3l76nEU35KN2vIqreTtCfV0D7Aqsrv3bZIV5ToDnwyF7x8LT06ur2hb/CQKbUZv
-TNAd0pK1IZb2+f3YVOxQpieOzoE0CN5g9kHpe2SFeQlLWg5FawkDQoBaoMBcHsyx
-fRatLx3VIw3GD87gUhMUwSxEJMXSngBfY2b+VpIiZ+CY6BrgmYmbEUkuQ8E/+G+0
-p/Uu6f0cWKDuj8guYz17iajXFWMoQdxCaHDLs4V+AJAxJGj2Ai86UTpi6ylNMGRs
-K4efB/mH0iSXRoNLoJslMFwvoEnPTt/qMLcGEzu3VpLrh6Xpsj4XH3s2hcOvHXb2
-PMNca6e0pBlK372APpz65rJzlYdsTVg2qGyFduFujVvm5AEojezwjvXj4x3BAkuA
-IBo8WA3t2fUYxp4L9tvE6nmayzTU8WluzDpEvw4z+erXJfhjKDLVxhyUly10Rzu5
-z0RssZwcBUv+PxaR6G5p
-=qM/g
------END PGP SIGNATURE-----
-
---OwLcNYc0lM97+oe1--
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
