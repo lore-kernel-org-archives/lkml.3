@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab3G2E15 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 00:27:57 -0400
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:56850 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab3G2E1y (ORCPT
+	id S1752473Ab3G2E2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 00:28:54 -0400
+Received: from mail-bk0-f47.google.com ([209.85.214.47]:59342 "EHLO
+	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3G2E2x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 00:27:54 -0400
+	Mon, 29 Jul 2013 00:28:53 -0400
 MIME-Version: 1.0
-Date: Mon, 29 Jul 2013 12:27:52 +0800
-Message-ID: <CAPgLHd_SnM4M-OZ5hX-vRpvjcm4=i-LiNgTTvwQmHhmOdsaPeg@mail.gmail.com>
-Subject: [PATCH -next] x86: ce4100: remove duplicated include from ce4100.c
+Date: Mon, 29 Jul 2013 12:28:51 +0800
+Message-ID: <CAPgLHd-VyRHaH0b-DvJO1zv68RWHKGc8F9cwZdJqRWD9HO1QVA@mail.gmail.com>
+Subject: [PATCH -next] staging: comedi: dt9812: remove duplicated include from dt9812.c
 From: Wei Yongjun <weiyj.lk@gmail.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, ffainelli@freebox.fr,
-        bigeasy@linutronix.de, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org
-Cc: yongjun_wei@trendmicro.com.cn, x86@kernel.org,
+To: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        gregkh@linuxfoundation.org, hsweeten@visionengravers.com
+Cc: yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,19 +27,19 @@ Remove duplicated include.
 
 Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 ---
- arch/x86/platform/ce4100/ce4100.c | 1 -
+ drivers/staging/comedi/drivers/dt9812.c | 1 -
  1 file changed, 1 deletion(-)
 
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index 8244f5e..d62e74d 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -15,7 +15,6 @@
- #include <linux/reboot.h>
- #include <linux/serial_reg.h>
- #include <linux/serial_8250.h>
--#include <linux/reboot.h>
+diff --git a/drivers/staging/comedi/drivers/dt9812.c b/drivers/staging/comedi/drivers/dt9812.c
+index ffb7572..b865367 100644
+--- a/drivers/staging/comedi/drivers/dt9812.c
++++ b/drivers/staging/comedi/drivers/dt9812.c
+@@ -42,7 +42,6 @@ for my needs.
+ #include <linux/module.h>
+ #include <linux/errno.h>
+ #include <linux/init.h>
+-#include <linux/module.h>
+ #include <linux/uaccess.h>
+ #include <linux/usb.h>
  
- #include <asm/ce4100.h>
- #include <asm/prom.h>
 
