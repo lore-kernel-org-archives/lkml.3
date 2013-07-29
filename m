@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab3G2I5A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:57:00 -0400
-Received: from etezian.org ([198.101.225.253]:59219 "EHLO mail.etezian.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab3G2I47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:56:59 -0400
-From: Andi Shyti <andi@etezian.org>
-To: smfrench@gmail.com
-Cc: linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mikko.rapeli@iki.fi, jlayton@redhat.com, pshilovsky@samba.org
-Subject: [PATCH RESEND] cifs: file: initialize oparms.reconnect before using it
-Date: Mon, 29 Jul 2013 10:58:13 +0200
-Message-Id: <1375088293-14110-1-git-send-email-andi@etezian.org>
-X-Mailer: git-send-email 1.8.3.2
+	id S1754105Ab3G2I67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 04:58:59 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:44098 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab3G2I65 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 04:58:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<1375075929-6119-6-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Mon, 29 Jul 2013 16:58:57 +0800
+Message-ID: <CAJd=RBD6ySxfeX0ebzJ1jsTWnOfvwSm4iyQ8Zr2W05x2LVWE2Q@mail.gmail.com>
+Subject: Re: [PATCH 05/18] mm, hugetlb: protect region tracking via newly
+ introduced resv_map lock
+From: Hillf Danton <dhillf@gmail.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the cifs_reopen_file function, if the following statement is
-asserted:
+On Mon, Jul 29, 2013 at 1:31 PM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> There is a race condition if we map a same file on different processes.
+> Region tracking is protected by mmap_sem and hugetlb_instantiation_mutex.
+> When we do mmap, we don't grab a hugetlb_instantiation_mutex, but,
+> grab a mmap_sem. This doesn't prevent other process to modify region
+> structure, so it can be modified by two processes concurrently.
+>
+> To solve this, I introduce a lock to resv_map and make region manipulation
+> function grab a lock before they do actual work. This makes region
+> tracking safe.
+>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 2677c07..e29e28f 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -26,6 +26,7 @@ struct hugepage_subpool {
+>
+>  struct resv_map {
+>         struct kref refs;
+> +       spinlock_t lock;
+>         struct list_head regions;
+>  };
+>  extern struct resv_map *resv_map_alloc(void);
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 24c0111..bf2ee11 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+[...]
+> @@ -193,6 +188,7 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>         struct file_region *rg, *nrg;
+>         long chg = 0;
+>
+> +       spin_lock(&resv->lock);
+>         /* Locate the region we are before or in. */
+>         list_for_each_entry(rg, head, link)
+>                 if (f <= rg->to)
+> @@ -203,14 +199,18 @@ static long region_chg(struct resv_map *resv, long f, long t)
+>          * size such that we can guarantee to record the reservation. */
+>         if (&rg->link == head || t < rg->from) {
+>                 nrg = kmalloc(sizeof(*nrg), GFP_KERNEL);
 
-(tcon->unix_ext && cap_unix(tcon->ses) &&
-		(CIFS_UNIX_POSIX_PATH_OPS_CAP &
-		(tcon->fsUnixInfo.Capability)))
+Hm, you are allocating a piece of memory with spin lock held.
+How about replacing that spin lock with a mutex?
 
-and we succeed to open with cifs_posix_open, the function jumps
-to the label reopen_success and checks for oparms.reconnect
-which is not initialized.
-
-To avoid this the oparms structure initialization is anticipated
-before the if statement.
-
-This issue has been reported by scan.coverity.com
-
-Signed-off-by: Andi Shyti <andi@etezian.org>
----
- fs/cifs/file.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 1e57f36..fbeaf45 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -632,6 +632,15 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 	else
- 		oplock = 0;
- 
-+	oparms.tcon = tcon;
-+	oparms.cifs_sb = cifs_sb;
-+	oparms.desired_access = desired_access;
-+	oparms.create_options = create_options;
-+	oparms.disposition = disposition;
-+	oparms.path = full_path;
-+	oparms.fid = &cfile->fid;
-+	oparms.reconnect = true;
-+
- 	if (tcon->unix_ext && cap_unix(tcon->ses) &&
- 	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
- 				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
-@@ -663,15 +672,6 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
- 	if (server->ops->get_lease_key)
- 		server->ops->get_lease_key(inode, &cfile->fid);
- 
--	oparms.tcon = tcon;
--	oparms.cifs_sb = cifs_sb;
--	oparms.desired_access = desired_access;
--	oparms.create_options = create_options;
--	oparms.disposition = disposition;
--	oparms.path = full_path;
--	oparms.fid = &cfile->fid;
--	oparms.reconnect = true;
--
- 	/*
- 	 * Can not refresh inode by passing in file_info buf to be returned by
- 	 * CIFSSMBOpen and then calling get_inode_info with returned buf since
--- 
-1.8.3.2
-
+> -               if (!nrg)
+> -                       return -ENOMEM;
+> +               if (!nrg) {
+> +                       chg = -ENOMEM;
+> +                       goto out;
+> +               }
+> +
