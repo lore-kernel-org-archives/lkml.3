@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab3G2FBo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:01:44 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:42670 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab3G2FBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:01:42 -0400
-Date: Mon, 29 Jul 2013 15:01:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: linux-next: manual merge of the char-misc tree with Linus' tree
-Message-Id: <20130729150129.76a9fab4023ee22c940b7920@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__29_Jul_2013_15_01_29_+1000_+A8He6yoynWsVV0n"
+	id S1754669Ab3G2FEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:04:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:37322 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751402Ab3G2FEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:04:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,766,1367996400"; 
+   d="scan'208";a="338265687"
+Date: Mon, 29 Jul 2013 12:48:17 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        hpa@linux.intel.com, yinghai@kernel.org, tglx@linutronix.de
+Subject: Re: [PATCH] x86, apic: Enable x2APIC physical when cpu < 256 native
+Message-ID: <20130729164817.GA30371@linux-youquan.bj.intel.com>
+References: <1373592159-459-1-git-send-email-youquan.song@intel.com> <20130723091729.GA19786@gmail.com> <20130724140440.GA13987@linux-youquan.bj.intel.com> <20130725220122.GH18254@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725220122.GH18254@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__29_Jul_2013_15_01_29_+1000_+A8He6yoynWsVV0n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > Thanks Ingo!
+> > The machines will be affected: CPU support x2APIC and CPU number < 256,
+> > chipset does not support VT-d2 or VT-d is disabled in BIOS. 
+> 
+> I mean, can you guess what rough percentage of new systems 
+> shipping (or significant number of older systems already 
+> shipped) will be affected by this?
+> 
+> My feeling is that this should be relatively rare (only 
+> when a user reconfigures the BIOS, etc.), but I might be 
+> wrong.
 
-Hi all,
+Sorry. I do not know what percentage of system shipped be affected.
+I have encountered one affected machine which CPU support x2APIC but its
+BIOS not support VT-d (BIOS also has no item to enable it). After apply
+the patch, it works with X2APIC physical mode.
 
-Today's linux-next merge of the char-misc tree got a conflict in
-drivers/misc/mei/init.c between commit 99f22c4ef24c ("mei: don't have to
-clean the state on power up") from Linus' tree and commit b950ac1dabfc
-("mei: don't get stuck in select during reset") from the char-misc tree.
+Of course, most of machine affected are in the case of disable VT-d in BIOS
+ by option or add intremap=off kernel option. 
 
-(Unrelated white space changes are a pest :-()
+>From what I understand, the x2APIC physical mode should be compatiable
+with legacy mode when CPU < 256 without support interrupt remapping.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+I have tested many machines, both old and most recent machines and from desktop
+ to server, x2APIC physical mode works without interrupt remapping when CPU < 256. 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/misc/mei/init.c
-index e6f16f8,557eed2..0000000
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@@ -148,8 -148,8 +148,9 @@@ void mei_reset(struct mei_device *dev,=20
- =20
-  	dev->hbm_state =3D MEI_HBM_IDLE;
- =20
- -	if (dev->dev_state !=3D MEI_DEV_INITIALIZING) {
- +	if (dev->dev_state !=3D MEI_DEV_INITIALIZING &&
- +	    dev->dev_state !=3D MEI_DEV_POWER_UP) {
-+=20
-  		if (dev->dev_state !=3D MEI_DEV_DISABLED &&
-  		    dev->dev_state !=3D MEI_DEV_POWER_DOWN)
-  			dev->dev_state =3D MEI_DEV_RESETTING;
-
---Signature=_Mon__29_Jul_2013_15_01_29_+1000_+A8He6yoynWsVV0n
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR9fctAAoJEECxmPOUX5FE8REP/iDnz7kVzm3MQL676aATMay3
-mzEdcfM41nYPbtLeN/fly6WL2Q2JJb4VBrmoFtMth8dB7Xt/3OLSfOe2qi+ptgnz
-LzitsCdw6sn94IS6XiBgwLjwZNhAdzii7wdC4PBd6sv/IskwchBRxwrWd2vvrEaJ
-6Djhvz3ac0Xwwx6JXLHcRTQHoc75+Cr7rUDFWHBSy8xtmq6+ex1EibWNDTtScuN7
-geZBCQbvw6X1eeGUuq9XMAqKZe+NU4t+OEHAbCaT8kjjB2h2M5sR/pJUWJKQqn7M
-OIc4lfkbOLTbN94mqOnd6BpkvmH3+CULFFfvXl2Akihxx1kRtxFWt0HYM0eMrPlc
-hfYuOWYr4N8oFJPJjrvA/gd9wfJgqDrgaloJ3rQGZqyjBuJwsCHOWBjnYi3WwGvA
-QKiYcnktbAoHttNI+tLu/0TezxxC644TqWN/aWm67/O9BL0MkQa1089Q4HrISkh7
-kbiWATyPW68cRcQ/uY7SQ6JOqxjdsJwpHLUI4LHSqNORX8m6+eVJkfj73fNemASq
-JhNrVpT85g8irl0hNzNySQOeH8AmcF+KGDVsG9ZfaXj89S/I9olCojkIvG9Odvag
-knlGp/E+Hm8qguHq8uvOeAbNkZfL9yzygJc3bqjRrLLyAoImm8g5OkwL6zNPRNKu
-1B/FGRqIE4wuRVV0xfLO
-=vb/Z
------END PGP SIGNATURE-----
-
---Signature=_Mon__29_Jul_2013_15_01_29_+1000_+A8He6yoynWsVV0n--
+Thanks
+-Youquan
+ 
