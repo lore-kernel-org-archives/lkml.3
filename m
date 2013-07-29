@@ -1,167 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab3G2KlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:41:12 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51338 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753611Ab3G2KlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:41:11 -0400
-X-IronPort-AV: E=Sophos;i="4.89,768,1367942400"; 
-   d="scan'208";a="8057535"
-Message-ID: <51F645E4.9070507@cn.fujitsu.com>
-Date: Mon, 29 Jul 2013 18:37:24 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1755745Ab3G2KpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:45:19 -0400
+Received: from juliette.telenet-ops.be ([195.130.137.74]:60526 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab3G2KpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:45:17 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Kent Overstreet <kmo@daterainc.com>
+Cc: linux-bcache@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] bcache: Correct printf()-style format length modifier
+Date: Mon, 29 Jul 2013 12:45:05 +0200
+Message-Id: <1375094705-27302-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Rui Xiang <rui.xiang@huawei.com>
-CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
-        libo.chen@huawei.com
-Subject: Re: [PATCH 8/9] syslog_ns: implement ns_printk for specific syslog_ns
-References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-9-git-send-email-rui.xiang@huawei.com>
-In-Reply-To: <1375065080-26740-9-git-send-email-rui.xiang@huawei.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 18:39:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/29 18:39:00,
-	Serialize complete at 2013/07/29 18:39:00
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rui,
+drivers/md/bcache/btree.c: In function ‘bch_btree_node_read’:
+drivers/md/bcache/btree.c:259: warning: format ‘%lu’ expects type ‘long unsigned int’, but argument 3 has type ‘size_t’
 
-On 07/29/2013 10:31 AM, Rui Xiang wrote:
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ drivers/md/bcache/btree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Add a new interface named ns_printk, and assign an
-> patamater ns. Log which belong to a container can
-> be printed by ns_printk.
-
-One question, with the syslog_ns used, do the log we print by *printk* in the
-host contains the log in each syslog_ns(print out with ns_printk) or not?
-
-Thanks,
-Gu
-
-> 
-> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
-> ---
->  include/linux/printk.h |  4 ++++
->  kernel/printk.c        | 53 ++++++++++++++++++++++++++++++++++++++++++++++----
->  2 files changed, 53 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index 29e3f85..bf83ad9 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -6,6 +6,7 @@
->  #include <linux/kern_levels.h>
->  #include <linux/linkage.h>
->  
-> +struct syslog_namespace;
->  extern const char linux_banner[];
->  extern const char linux_proc_banner[];
->  
-> @@ -123,6 +124,9 @@ asmlinkage int printk_emit(int facility, int level,
->  asmlinkage __printf(1, 2) __cold
->  int printk(const char *fmt, ...);
->  
-> +asmlinkage __printf(2, 3) __cold
-> +int ns_printk(struct syslog_namespace *ns, const char *fmt, ...);
-> +
->  /*
->   * Special printk facility for scheduler use only, _DO_NOT_USE_ !
->   */
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 6b561db..56a8b27 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -1554,9 +1554,10 @@ static size_t cont_print_text(char *text, size_t size)
->  	return textlen;
->  }
->  
-> -asmlinkage int vprintk_emit(int facility, int level,
-> -			    const char *dict, size_t dictlen,
-> -			    const char *fmt, va_list args)
-> +static int ns_vprintk_emit(int facility, int level,
-> +			const char *dict, size_t dictlen,
-> +			const char *fmt, va_list args,
-> +			struct syslog_namespace *ns)
->  {
->  	static int recursion_bug;
->  	static char textbuf[LOG_LINE_MAX];
-> @@ -1566,7 +1567,6 @@ asmlinkage int vprintk_emit(int facility, int level,
->  	unsigned long flags;
->  	int this_cpu;
->  	int printed_len = 0;
-> -	struct syslog_namespace *ns = &init_syslog_ns;
->  
->  	boot_delay_msec(level);
->  	printk_delay();
-> @@ -1697,6 +1697,14 @@ out_restore_irqs:
->  
->  	return printed_len;
->  }
-> +
-> +asmlinkage int vprintk_emit(int facility, int level,
-> +				const char *dict, size_t dictlen,
-> +				const char *fmt, va_list args)
-> +{
-> +	return ns_vprintk_emit(facility, level, dict, dictlen, fmt, args,
-> +				&init_syslog_ns);
-> +}
->  EXPORT_SYMBOL(vprintk_emit);
->  
->  asmlinkage int vprintk(const char *fmt, va_list args)
-> @@ -1762,6 +1770,43 @@ asmlinkage int printk(const char *fmt, ...)
->  }
->  EXPORT_SYMBOL(printk);
->  
-> +/**
-> + * ns_printk - print a kernel message in syslog_ns
-> + * @ns: syslog namespace
-> + * @fmt: format string
-> + *
-> + * This is ns_printk().
-> + * It can be called from container context. We add a param
-> + * ns to record current syslog namespace, because we need to
-> + * print some log which are not generated by host, but contaner.
-> + *
-> + * See the vsnprintf() documentation for format string extensions over C99.
-> + **/
-> +asmlinkage int ns_printk(struct syslog_namespace *ns,
-> +					const char *fmt, ...)
-> +{
-> +	va_list args;
-> +	int r;
-> +
-> +	if (!ns)
-> +		ns = current_user_ns()->syslog_ns;
-> +
-> +#ifdef CONFIG_KGDB_KDB
-> +	if (unlikely(kdb_trap_printk)) {
-> +		va_start(args, fmt);
-> +		r = vkdb_printf(fmt, args);
-> +		va_end(args);
-> +		return r;
-> +	}
-> +#endif
-> +	va_start(args, fmt);
-> +	r = ns_vprintk_emit(0, -1, NULL, 0, fmt, args, ns);
-> +	va_end(args);
-> +
-> +	return r;
-> +}
-> +EXPORT_SYMBOL(ns_printk);
-> +
-
-Here can we do some clean up to printk using ns_printk?
-
->  #else /* CONFIG_PRINTK */
->  
->  #define LOG_LINE_MAX		0
-
+diff --git a/drivers/md/bcache/btree.c b/drivers/md/bcache/btree.c
+index ee37288..60908de 100644
+--- a/drivers/md/bcache/btree.c
++++ b/drivers/md/bcache/btree.c
+@@ -255,7 +255,7 @@ void bch_btree_node_read(struct btree *b)
+ 
+ 	return;
+ err:
+-	bch_cache_set_error(b->c, "io error reading bucket %lu",
++	bch_cache_set_error(b->c, "io error reading bucket %zu",
+ 			    PTR_BUCKET_NR(b->c, &b->key, 0));
+ }
+ 
+-- 
+1.7.9.5
 
