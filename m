@@ -1,75 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab3G2WlD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 18:41:03 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:53942 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3G2WlB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 18:41:01 -0400
-Message-ID: <51F6EF7A.4000209@gmail.com>
-Date: Mon, 29 Jul 2013 16:40:58 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1756171Ab3G2WnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 18:43:16 -0400
+Received: from ozlabs.org ([203.10.76.45]:36514 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755090Ab3G2WnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 18:43:15 -0400
+Date: Tue, 30 Jul 2013 08:37:08 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>
+Subject: Re: [PATCH v3 6/9] mm, hugetlb: do not use a page in page cache for
+ cow optimization
+Message-ID: <20130729223708.GG29970@voom.fritz.box>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+ <1375075701-5998-7-git-send-email-iamjoonsoo.kim@lge.com>
 MIME-Version: 1.0
-To: Jason Wessel <jason.wessel@windriver.com>, acme@ghostprotocols.net
-CC: a.p.zijlstra@chello.nl, paulus@samba.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf: Do not require /lib/modules/* on a guest
-References: <1373920073-4874-1-git-send-email-jason.wessel@windriver.com>
-In-Reply-To: <1373920073-4874-1-git-send-email-jason.wessel@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0z5c7mBtSy1wdr4F"
+Content-Disposition: inline
+In-Reply-To: <1375075701-5998-7-git-send-email-iamjoonsoo.kim@lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/15/13 2:27 PM, Jason Wessel wrote:
-> For some types of work loads and special guest environments, you might
-> have a kernel that has no kernel modules.  The perf kvm record tool
-> fails instantiate vmlinux maps when the kernel modules directory
-> cannot be opened, even though the kallsyms has been properly
-> processed.  This leads to a perf kvm report that has no guest symbols
-> resolved.
 
-Theoretically, use of modules is an option:
+--0z5c7mBtSy1wdr4F
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-     if (symbol_conf.use_modules && machine__create_modules(machine) < 0) {
-...
-     }
+On Mon, Jul 29, 2013 at 02:28:18PM +0900, Joonsoo Kim wrote:
+> Currently, we use a page with mapped count 1 in page cache for cow
+> optimization. If we find this condition, we don't allocate a new
+> page and copy contents. Instead, we map this page directly.
+> This may introduce a problem that writting to private mapping overwrite
+> hugetlb file directly. You can find this situation with following code.
+>=20
+>         size =3D 20 * MB;
+>         flag =3D MAP_SHARED;
+>         p =3D mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (p =3D=3D MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>                 return -1;
+>         }
+>         p[0] =3D 's';
+>         fprintf(stdout, "BEFORE STEAL PRIVATE WRITE: %c\n", p[0]);
+>         munmap(p, size);
+>=20
+>         flag =3D MAP_PRIVATE;
+>         p =3D mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (p =3D=3D MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>         }
+>         p[0] =3D 'c';
+>         munmap(p, size);
+>=20
+>         flag =3D MAP_SHARED;
+>         p =3D mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+>         if (p =3D=3D MAP_FAILED) {
+>                 fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+>                 return -1;
+>         }
+>         fprintf(stdout, "AFTER STEAL PRIVATE WRITE: %c\n", p[0]);
+>         munmap(p, size);
+>=20
+> We can see that "AFTER STEAL PRIVATE WRITE: c", not "AFTER STEAL
+> PRIVATE WRITE: s". If we turn off this optimization to a page
+> in page cache, the problem is disappeared.
 
-But, the use_modules option was flipped from false to true by b32d133a 
-back in 2009. And the lack of complaints suggests this ominous warning 
-in perf-report, diff and annotate is moot:
+Please add this testcase to libhugetlbfs as well.
 
-     OPT_BOOLEAN('m', "modules", &symbol_conf.use_modules,
-             "load module symbols - WARNING: use only with -k and LIVE 
-kernel"),
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
 
->
-> This patch changes the failure to locate kernel modules to be
-> non-fatal.
->
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> ---
->   tools/perf/util/machine.c |    5 ++++-
->   1 file changed, 4 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-> index b2ecad6..eb9ebd6 100644
-> --- a/tools/perf/util/machine.c
-> +++ b/tools/perf/util/machine.c
-> @@ -808,7 +808,10 @@ static int machine__create_modules(struct machine *machine)
->   	free(line);
->   	fclose(file);
->
-> -	return machine__set_modules_path(machine);
-> +	if (machine__set_modules_path(machine) < 0) {
-> +		pr_debug("Problems setting modules path maps, continuing anyway...\n");
-> +	}
-> +	return 0;
->
->   out_delete_line:
->   	free(line);
+--0z5c7mBtSy1wdr4F
+Content-Type: application/pgp-signature
 
-Acked-by: David Ahern <dsahern@gmail.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
 
+iEYEARECAAYFAlH27pQACgkQaILKxv3ab8Y1zQCeMhkqmAnW5YhDMt3vvNevhCEy
+q1kAoIYN9xQpksF2BiXooGEd2dubypLC
+=qB8Y
+-----END PGP SIGNATURE-----
+
+--0z5c7mBtSy1wdr4F--
