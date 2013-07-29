@@ -1,52 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab3G2UUg (ORCPT <rfc822;w@1wt.eu>);
+	id S1755117Ab3G2UUr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:20:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36131 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842Ab3G2UUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Jul 2013 16:20:36 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43369 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069Ab3G2UUe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:20:34 -0400
-Date: Mon, 29 Jul 2013 13:20:31 -0700
-From: David Brown <davidb@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH v2 6/9] ARM: msm: Move mach/board.h contents to common.h
-Message-ID: <20130729202031.GA20694@codeaurora.org>
-References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
- <1374699274-18388-7-git-send-email-sboyd@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1374699274-18388-7-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Mon, 29 Jul 2013 16:20:16 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Andi Shyti <andi@etezian.org>
+Cc: smfrench@gmail.com, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mikko.rapeli@iki.fi,
+        pshilovsky@samba.org
+Subject: Re: [PATCH v2] cifs: file: initialize oparms.reconnect before using
+ it
+Message-ID: <20130729162016.3299ead3@tlielax.poochiereds.net>
+In-Reply-To: <1375121075-11239-1-git-send-email-andi@etezian.org>
+References: <20130729093241.437315e1@corrin.poochiereds.net>
+	<1375121075-11239-1-git-send-email-andi@etezian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 24, 2013 at 01:54:31PM -0700, Stephen Boyd wrote:
->The contents of mach/board.h are only used by files within
->mach-msm so there is no need to export this file outside of the
->mach-msm directory. Move the contents of the file to common.h to
->allow us to compile MSM in the multi-platform kernel.
->
->Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
->Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->---
-> drivers/video/msm/msm_fb.c             |  1 -
+On Mon, 29 Jul 2013 20:04:35 +0200
+Andi Shyti <andi@etezian.org> wrote:
 
-It'd be nice to get a framebuffer Ack from this part.
+> In the cifs_reopen_file function, if the following statement is
+> asserted:
+> 
+> (tcon->unix_ext && cap_unix(tcon->ses) &&
+>             (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+>             (tcon->fsUnixInfo.Capability)))
+> 
+> and we succeed to open with cifs_posix_open, the function jumps
+> to the label reopen_success and checks for oparms.reconnect
+> which is not initialized.
+> 
+> This issue has been reported by scan.coverity.com
+> 
+> Signed-off-by: Andi Shyti <andi@etezian.org>
+> ---
+>  fs/cifs/file.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 1e57f36..7e36ae3 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -647,6 +647,7 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+>  				     oflags, &oplock, &cfile->fid.netfid, xid);
+>  		if (rc == 0) {
+>  			cifs_dbg(FYI, "posix reopen succeeded\n");
+> +			oparms.reconnect = true;
+>  			goto reopen_success;
+>  		}
+>  		/*
 
-original patch:
-  https://patchwork.kernel.org/patch/2833029/
+Still doesn't do much to improve this code, but that fix shouldn't
+break anything.
 
-David
-
--- 
-sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
