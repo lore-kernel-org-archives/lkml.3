@@ -1,89 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab3G2Ov1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:51:27 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:48492 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756919Ab3G2Ov0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:51:26 -0400
-Date: Mon, 29 Jul 2013 11:51:30 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH 3/5] ARM: dove: add MBus DT node
-Message-ID: <20130729145129.GD2417@localhost>
-References: <1375101114-28858-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1375101114-28858-4-git-send-email-sebastian.hesselbarth@gmail.com>
- <51F661DE.1070106@gmail.com>
- <20130729135227.GA2417@localhost>
- <51F67AD8.1070904@gmail.com>
+	id S1756949Ab3G2OxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:53:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43244 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755042Ab3G2OxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 10:53:11 -0400
+Date: Mon, 29 Jul 2013 16:53:08 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Minchan Kim <minchan@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: hugepage related lockdep trace.
+Message-ID: <20130729145308.GG4678@dhcp22.suse.cz>
+References: <20130717153223.GD27731@redhat.com>
+ <20130718000901.GA31972@blaptop>
+ <87hafrdatb.fsf@linux.vnet.ibm.com>
+ <20130719001303.GB23354@blaptop>
+ <20130723140120.GG8677@dhcp22.suse.cz>
+ <20130724024428.GA14795@bbox>
+ <20130725133040.GI12818@dhcp22.suse.cz>
+ <20130729082453.GB29129@bbox>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <51F67AD8.1070904@gmail.com>
+In-Reply-To: <20130729082453.GB29129@bbox>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 04:23:20PM +0200, Sebastian Hesselbarth wrote:
-> On 07/29/2013 03:52 PM, Ezequiel Garcia wrote:
-> > Hi Sebastian,
-> >
-> > (Ccing devicetree ML)
-> >
-> > On Mon, Jul 29, 2013 at 02:36:46PM +0200, Sebastian Hesselbarth wrote:
-> >> On 07/29/2013 02:31 PM, Sebastian Hesselbarth wrote:
-> >>> This adds a MBus node including ranges and pcie apertures required later.
-> >>>
-> >>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> >>> ---
-> >>>    arch/arm/boot/dts/dove.dtsi |   19 +++++++++++++++++++
-> >>>    1 file changed, 19 insertions(+)
-> >>>
-> >>> diff --git a/arch/arm/boot/dts/dove.dtsi b/arch/arm/boot/dts/dove.dtsi
-> >>> index 397674c..bdda016 100644
-> >>> --- a/arch/arm/boot/dts/dove.dtsi
-> >>> +++ b/arch/arm/boot/dts/dove.dtsi
-> >>> @@ -29,6 +29,20 @@
-> >>>    		marvell,tauros2-cache-features = <0>;
-> >>>    	};
-> >>>
-> >>> +	mbus {
-> >>> +		compatible = "marvell,dove-mbus", "marvell,mbus", "simple-bus";
-> >>> +		#address-cells = <2>;
-> >>> +		#size-cells = <1>;
-> >>> +		pcie-mem-aperture = <0xe0000000 0x10000000>; /* 256M MEM space */
-> >>> +		pcie-io-aperture  = <0xf2000000 0x00200000>; /*   2M I/O space */
-> >>
-> >> Actually, current v9 of the mbus patch set still requires "controller"
-> >> property to match the corresponding controller node. I had a short
-> >> discussion with Ezequiel to possibly just use of_find_compatible_node
-> >> and blindly assumed post-v8 will already use it.
-> >
-> > Ah, regarding this: despite your good arguin against the 'controller' property approach,
-> > I still feel a bit inclined for it, as I like the way it tightly-binds the two nodes.
+On Mon 29-07-13 17:24:53, Minchan Kim wrote:
+> Hi Michal,
 > 
-> I understand that the phandle property *shows* you that both are
-> related. But with DT you should always ask for every property, if
-> (a) it is really required to do the job and (b) does it really
-> describe the HW or just your SW needs/wishes.
+> On Thu, Jul 25, 2013 at 03:30:40PM +0200, Michal Hocko wrote:
+> > On Wed 24-07-13 11:44:28, Minchan Kim wrote:
+> > > On Tue, Jul 23, 2013 at 04:01:20PM +0200, Michal Hocko wrote:
+> > > > On Fri 19-07-13 09:13:03, Minchan Kim wrote:
+> > > > > On Thu, Jul 18, 2013 at 11:12:24PM +0530, Aneesh Kumar K.V wrote:
+> > > > [...]
+> > > > > > diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> > > > > > index 83aff0a..2cb1be3 100644
+> > > > > > --- a/mm/hugetlb.c
+> > > > > > +++ b/mm/hugetlb.c
+> > > > > > @@ -3266,8 +3266,8 @@ pte_t *huge_pmd_share(struct mm_struct *mm, unsigned long addr, pud_t *pud)
+> > > > > >  		put_page(virt_to_page(spte));
+> > > > > >  	spin_unlock(&mm->page_table_lock);
+> > > > > >  out:
+> > > > > > -	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> > > > > >  	mutex_unlock(&mapping->i_mmap_mutex);
+> > > > > > +	pte = (pte_t *)pmd_alloc(mm, pud, addr);
+> > > > > >  	return pte;
+> > > > > 
+> > > > > I am blind on hugetlb but not sure it doesn't break eb48c071.
+> > > > > Michal?
+> > > > 
+> > > > Well, it is some time since I debugged the race and all the details
+> > > > vanished in the meantime. But this part of the changelog suggests that
+> > > > this indeed breaks the fix:
+> > > > "
+> > > >     This patch addresses the issue by moving pmd_alloc into huge_pmd_share
+> > > >     which guarantees that the shared pud is populated in the same critical
+> > > >     section as pmd.  This also means that huge_pte_offset test in
+> > > >     huge_pmd_share is serialized correctly now which in turn means that the
+> > > >     success of the sharing will be higher as the racing tasks see the pud
+> > > >     and pmd populated together.
+> > > > "
+> > > > 
+> > > > Besides that I fail to see how moving pmd_alloc down changes anything.
+> > > > Even if pmd_alloc triggered reclaim then we cannot trip over the same
+> > > > i_mmap_mutex as hugetlb pages are not reclaimable because they are not
+> > > > on the LRU.
+> > > 
+> > > I thought we could map some part of binary with normal page and other part
+> > > of the one with MAP_HUGETLB so that a address space could have both normal
+> > > page and HugeTLB page. Okay, it's impossible so HugeTLB pages are not on LRU.
+> > > Then, above lockdep warning is totally false positive.
+> > > Best solution is avoiding pmd_alloc with holding i_mmap_mutex but we need it
+> > > to fix eb48c071 so how about this if we couldn't have a better idea?
+> > 
+> > Shouldn't we rather use a hugetlb specific lock_class_key. I am not
+> > familiar with lockdep much but something like bellow should do the
+> > trick?
 > 
+> Looks good to me.
+> Could you resend it with formal patch with Ccing Peter for Dave to confirm it?
+> Below just a nitpick.
 
-I see and I understand your point. For some reason it still feels
-a bit dirty to set this kind of compatible nodes requirement (one
-node simply requiring another node).
+I would have posted it already but I have to confess I am really not
+familiar with lockdep and what is the good way to fix such a false
+positive.
 
-I would hate to set a precedent for a dirty solution...
+Peter, for you context the lockdep splat has been reported
+here: https://lkml.org/lkml/2013/7/17/381
 
-Maybe the DT maintainers can shed some light on this?
+Minchan has proposed to workaround it by using SINGLE_DEPTH_NESTING
+https://lkml.org/lkml/2013/7/23/812
+
+my idea was to use a separate class key for hugetlb as it is quite
+special in many ways:
+https://lkml.org/lkml/2013/7/25/277
+
+What is the preferred way of fixing such an issue?
+
+Thanks!
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Michal Hocko
+SUSE Labs
