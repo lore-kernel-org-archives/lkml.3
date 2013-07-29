@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3G2P6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:58:24 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36581 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab3G2P6X (ORCPT
+	id S1756071Ab3G2P6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:58:46 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47715 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab3G2P6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:58:23 -0400
-Message-ID: <1375113464.4223.31.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH 1/2] mfd: Add Dialog DA9063 core driver.
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Date: Mon, 29 Jul 2013 17:57:44 +0200
-In-Reply-To: <20130729154614.GA7704@gmail.com>
-References: <1374683683-13370-1-git-send-email-p.zabel@pengutronix.de>
-	 <1374683683-13370-2-git-send-email-p.zabel@pengutronix.de>
-	 <20130725080443.GB3403@laptop> <20130725080800.GC3403@laptop>
-	 <1374773693.4382.17.camel@pizza.hi.pengutronix.de>
-	 <20130729154614.GA7704@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Jul 2013 11:58:44 -0400
+Date: Mon, 29 Jul 2013 17:58:43 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        george.cherian@ti.com
+Subject: Re: [PATCH 2/4] usb: phy: add am335x pieces to generic phy
+Message-ID: <20130729155843.GC827@linutronix.de>
+References: <1374869757-923-1-git-send-email-bigeasy@linutronix.de>
+ <1374869757-923-3-git-send-email-bigeasy@linutronix.de>
+ <20130729122218.GG24801@radagast>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20130729122218.GG24801@radagast>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+* Felipe Balbi | 2013-07-29 15:22:18 [+0300]:
 
-Am Montag, den 29.07.2013, 16:46 +0100 schrieb Lee Jones:
-> > > > > Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-> > > > > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-> > > > > ---
-> > > > >  drivers/mfd/Kconfig                  |   12 +
-> > > > >  drivers/mfd/Makefile                 |    3 +
-> > > > >  drivers/mfd/da9063-core.c            |  177 ++++++
-> > > > >  drivers/mfd/da9063-i2c.c             |  197 ++++++
-> > > > >  drivers/mfd/da9063-irq.c             |  193 ++++++
-> > > > >  include/linux/mfd/da9063/core.h      |  110 ++++
-> > > > >  include/linux/mfd/da9063/pdata.h     |  114 ++++
-> > > > >  include/linux/mfd/da9063/registers.h | 1090 ++++++++++++++++++++++++++++++++++
-> > > > >  8 files changed, 1896 insertions(+)
-> > > > 
-> > > > Whoah!! Who's going to want to review a 2k line patch?
-> > 
-> > Well, most of those lines consist of the register and bit(field)
-> > definitions and the assignment of those to regmap and regmap-irq.
-> > 
-> > I could split this into (core+i2c) and (irq) parts if you insist.
+>On Fri, Jul 26, 2013 at 10:15:55PM +0200, Sebastian Andrzej Siewior wrote:
+>> This patch copies the phy support bits from dsps into the generic phy
+>> driver. Most code can be re-used except for the on/off.
+>> The additional am335x can be removed once we have a phy driver that does
+>> more than this.
+>> 
+>> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 >
-> I won't insist on it, but bear in mind it might take me longer to set
-> aside enough time to review the patch than if it were broken up. In
-> the latter case I could pick at it throughout the working day.
+>this is good too, but looking at the amount of am335x-specific code in
+>the driver now it makes me wonder if we want to convert phy-generic.c
+>into a library...
 
-Alright. I'll split it up a bit, then.
+So I just looked over George Cherian phy driver. I think the simplest
+thing would be to add the usb wakeup path to the driver here. Earlier I
+hoped that we could just remove the am335x bits and avoid the library
+thingy :)
+Since the library probably makes sense:
+- before or after this patch
+- where do I get the memory for this wakeup register? It is somewhere in
+  the "reset module" of the am335x
 
-regards
-Philipp
-
+Sebastian
