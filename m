@@ -1,80 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754319Ab3G2KUc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 06:20:32 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58844 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753320Ab3G2KUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 06:20:31 -0400
-X-IronPort-AV: E=Sophos;i="4.89,768,1367971200"; 
-   d="scan'208";a="39882042"
-Date: Mon, 29 Jul 2013 11:20:21 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [GIT PULL] Xen ARM fix for 3.11
-Message-ID: <alpine.DEB.2.02.1307291056000.4893@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1755398Ab3G2KVD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 06:21:03 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:49123 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab3G2KVA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 06:21:00 -0400
+From: Jonas Jensen <jonas.jensen@gmail.com>
+To: linux-watchdog@vger.kernel.org
+Cc: wim@iguana.be, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, arm@kernel.org, linux@roeck-us.net,
+        arnd@arndb.de, Jonas Jensen <jonas.jensen@gmail.com>
+Subject: [PATCH v5] watchdog: Add MOXA ART watchdog driver
+Date: Mon, 29 Jul 2013 12:20:15 +0200
+Message-Id: <1375093215-7136-1-git-send-email-jonas.jensen@gmail.com>
+X-Mailer: git-send-email 1.8.2.1
+In-Reply-To: <1374229402-20432-1-git-send-email-jonas.jensen@gmail.com>
+References: <1374229402-20432-1-git-send-email-jonas.jensen@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
-I have one fix for Xen on ARM for 3.11 (also appended for your
-convenience):
+Add watchdog driver for MOXA ART SoCs.
 
+Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+---
 
-The following changes since commit 3b2f64d00c46e1e4e9bd0bb9bb12619adac27a4b:
-
-  Linux 3.11-rc2 (2013-07-21 12:05:29 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/sstabellini/xen.git xen-arm-3.11-rc2-warn-tag
-
-Stefano Stabellini (1):
-      xen/arm,arm64: update xen_restart after ff701306cd49 and 7b6d864b48d9
-
- arch/arm/xen/enlighten.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-
-Thanks,
-
-Stefano
-
-
-
-
-commit 2451ade070ef9b0a0f118ac41896da856e72b5a1
-Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Date:   Sun Jul 21 15:17:54 2013 +0000
-
-    xen/arm,arm64: update xen_restart after ff701306cd49 and 7b6d864b48d9
+Notes:
+    Changes since v4:
     
-    Commit 7b6d864b48d9 (reboot: arm: change reboot_mode to use enum
-    reboot_mode) and ff701306cd49 (arm64: use common reboot infrastructure)
-    change the prototype of arm_pm_restart on arm and arm64.
-    Update xen_restart accordingly.
+    1. #include <linux/err.h> because IS_ERR comes from there
+    2. #include <linux/kernel.h> because UINT_MAX comes from there
+    3. #include <linux/moduleparam.h> because module_param() comes from there
     
-    Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+    device tree bindings document:
+    4. describe compatible variable "Must be" instead of "Should be".
+    5. change description so it's from the point of view of the device
+    
+    Applies to next-20130729
 
-diff --git a/arch/arm/xen/enlighten.c b/arch/arm/xen/enlighten.c
-index f71c37e..c9770ba 100644
---- a/arch/arm/xen/enlighten.c
-+++ b/arch/arm/xen/enlighten.c
-@@ -172,7 +172,7 @@ static void __init xen_percpu_init(void *unused)
- 	enable_percpu_irq(xen_events_irq, 0);
- }
+ .../bindings/watchdog/moxa,moxart-watchdog.txt     |  15 ++
+ drivers/watchdog/Kconfig                           |  10 ++
+ drivers/watchdog/Makefile                          |   1 +
+ drivers/watchdog/moxart_wdt.c                      | 169 +++++++++++++++++++++
+ 4 files changed, 195 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+ create mode 100644 drivers/watchdog/moxart_wdt.c
+
+diff --git a/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+new file mode 100644
+index 0000000..1169857
+--- /dev/null
++++ b/Documentation/devicetree/bindings/watchdog/moxa,moxart-watchdog.txt
+@@ -0,0 +1,15 @@
++MOXA ART Watchdog timer
++
++Required properties:
++
++- compatible : Must be "moxa,moxart-watchdog"
++- reg : Should contain registers location and length
++- clocks : Should contain phandle for the clock that drives the counter
++
++Example:
++
++	watchdog: watchdog@98500000 {
++		compatible = "moxa,moxart-watchdog";
++		reg = <0x98500000 0x10>;
++		clocks = <&coreclk>;
++	};
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 362085d..6883aab 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -382,6 +382,16 @@ config RETU_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called retu_wdt.
  
--static void xen_restart(char str, const char *cmd)
-+static void xen_restart(enum reboot_mode reboot_mode, const char *cmd)
- {
- 	struct sched_shutdown r = { .reason = SHUTDOWN_reboot };
- 	int rc;
++config MOXART_WDT
++	tristate "MOXART watchdog"
++	depends on ARCH_MOXART
++	help
++	  Say Y here to include Watchdog timer support for the watchdog
++	  existing on the MOXA ART SoC series platforms.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called moxart_wdt.
++
+ # AVR32 Architecture
+ 
+ config AT32AP700X_WDT
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 2f26a0b..7cab53a 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -54,6 +54,7 @@ obj-$(CONFIG_IMX2_WDT) += imx2_wdt.o
+ obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
++obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+ 
+ # AVR32 Architecture
+ obj-$(CONFIG_AT32AP700X_WDT) += at32ap700x_wdt.o
+diff --git a/drivers/watchdog/moxart_wdt.c b/drivers/watchdog/moxart_wdt.c
+new file mode 100644
+index 0000000..d79dc9c
+--- /dev/null
++++ b/drivers/watchdog/moxart_wdt.c
+@@ -0,0 +1,169 @@
++/*
++ * MOXA ART SoCs watchdog driver.
++ *
++ * Copyright (C) 2013 Jonas Jensen
++ *
++ * Jonas Jensen <jonas.jensen@gmail.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/watchdog.h>
++#include <linux/moduleparam.h>
++
++#define REG_COUNT			0x4
++#define REG_MODE			0x8
++#define REG_ENABLE			0xC
++
++struct moxart_wdt_dev {
++	struct watchdog_device dev;
++	void __iomem *base;
++	unsigned int clock_frequency;
++};
++
++static int heartbeat;
++
++static int moxart_wdt_stop(struct watchdog_device *wdt_dev)
++{
++	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++
++	writel(0, moxart_wdt->base + REG_ENABLE);
++
++	return 0;
++}
++
++static int moxart_wdt_start(struct watchdog_device *wdt_dev)
++{
++	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++
++	writel(moxart_wdt->clock_frequency * moxart_wdt->dev.timeout,
++	       moxart_wdt->base + REG_COUNT);
++	writel(0x5ab9, moxart_wdt->base + REG_MODE);
++	writel(0x03, moxart_wdt->base + REG_ENABLE);
++
++	return 0;
++}
++
++static int moxart_wdt_set_timeout(struct watchdog_device *wdt_dev,
++				  unsigned int timeout)
++{
++	struct moxart_wdt_dev *moxart_wdt = watchdog_get_drvdata(wdt_dev);
++
++	dev_dbg(wdt_dev->dev, "%s: timeout=%u\n", __func__, timeout);
++
++	moxart_wdt->dev.timeout = timeout;
++
++	return 0;
++}
++
++static const struct watchdog_info moxart_wdt_info = {
++	.identity       = "moxart-wdt",
++	.options        = WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING |
++			  WDIOF_MAGICCLOSE,
++};
++
++static const struct watchdog_ops moxart_wdt_ops = {
++	.owner          = THIS_MODULE,
++	.start          = moxart_wdt_start,
++	.stop           = moxart_wdt_stop,
++	.set_timeout    = moxart_wdt_set_timeout,
++};
++
++static int moxart_wdt_probe(struct platform_device *pdev)
++{
++	struct moxart_wdt_dev *moxart_wdt;
++	struct device *dev = &pdev->dev;
++	struct device_node *node = dev->of_node;
++	struct resource *res;
++	struct clk *clk;
++	int err;
++	unsigned int max_timeout;
++	bool nowayout = WATCHDOG_NOWAYOUT;
++
++	moxart_wdt = devm_kzalloc(&pdev->dev, sizeof(*moxart_wdt), GFP_KERNEL);
++	if (!moxart_wdt)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, moxart_wdt);
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	moxart_wdt->base = devm_ioremap_resource(dev, res);
++	if (IS_ERR(moxart_wdt->base))
++		return PTR_ERR(moxart_wdt->base);
++
++	clk = of_clk_get(node, 0);
++	if (IS_ERR(clk)) {
++		pr_err("%s: of_clk_get failed\n", __func__);
++		return PTR_ERR(clk);
++	}
++
++	moxart_wdt->clock_frequency = clk_get_rate(clk);
++	if (moxart_wdt->clock_frequency == 0) {
++		pr_err("%s: incorrect clock frequency\n", __func__);
++		return -EINVAL;
++	}
++
++	max_timeout = UINT_MAX / moxart_wdt->clock_frequency;
++
++	moxart_wdt->dev.info = &moxart_wdt_info;
++	moxart_wdt->dev.ops = &moxart_wdt_ops;
++	moxart_wdt->dev.timeout = max_timeout;
++	moxart_wdt->dev.min_timeout = 1;
++	moxart_wdt->dev.max_timeout = max_timeout;
++	moxart_wdt->dev.parent = &pdev->dev;
++
++	watchdog_init_timeout(&moxart_wdt->dev, heartbeat, &pdev->dev);
++	watchdog_set_nowayout(&moxart_wdt->dev, nowayout);
++
++	watchdog_set_drvdata(&moxart_wdt->dev, moxart_wdt);
++
++	err = watchdog_register_device(&moxart_wdt->dev);
++	if (unlikely(err))
++		return err;
++
++	dev_dbg(dev, "Watchdog enabled (heartbeat=%d sec, nowayout=%d)\n",
++		moxart_wdt->dev.timeout, nowayout);
++
++	return 0;
++}
++
++static int moxart_wdt_remove(struct platform_device *pdev)
++{
++	struct moxart_wdt_dev *moxart_wdt = platform_get_drvdata(pdev);
++
++	moxart_wdt_stop(&moxart_wdt->dev);
++	watchdog_unregister_device(&moxart_wdt->dev);
++
++	return 0;
++}
++
++static const struct of_device_id moxart_watchdog_match[] = {
++	{ .compatible = "moxa,moxart-watchdog" },
++	{ },
++};
++
++static struct platform_driver moxart_wdt_driver = {
++	.probe      = moxart_wdt_probe,
++	.remove     = moxart_wdt_remove,
++	.driver     = {
++		.name		= "moxart-watchdog",
++		.owner		= THIS_MODULE,
++		.of_match_table	= moxart_watchdog_match,
++	},
++};
++module_platform_driver(moxart_wdt_driver);
++
++module_param(heartbeat, int, 0);
++MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds");
++
++MODULE_DESCRIPTION("MOXART watchdog driver");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Jonas Jensen <jonas.jensen@gmail.com>");
+-- 
+1.8.2.1
+
