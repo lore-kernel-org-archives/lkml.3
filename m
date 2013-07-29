@@ -1,163 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab3G2F5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:57:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50216 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752515Ab3G2F5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:57:08 -0400
-Date: Mon, 29 Jul 2013 15:56:55 +1000
-From: NeilBrown <neilb@suse.de>
-To: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-raid@vger.kernel.org>
-Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
- SSD)
-Message-ID: <20130729155655.38572fed@notabene.brown>
-In-Reply-To: <001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
-References: <000501ce85fc$d3a60a10$7af21e30$@lucidpixels.com>
-	<20130722090257.2faa0874@notabene.brown>
-	<009801ce898c$34b83fc0$9e28bf40$@lucidpixels.com>
-	<20130726103549.1e6b0b92@notabene.brown>
-	<001e01ce89e6$73f93b80$5bebb280$@lucidpixels.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.18; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/+vNN0dWy8kXzo7pzO5Vn8zX"; protocol="application/pgp-signature"
+	id S1754886Ab3G2F7q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:59:46 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:54782 "EHLO
+	sivan.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864Ab3G2F7p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:59:45 -0400
+Date: Mon, 29 Jul 2013 08:59:39 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-xtensa@linux-xtensa.org
+Subject: Re: [PATCH] time: sched_clock: fix integer overflow
+Message-ID: <20130729055939.GK5161@tarshish>
+References: <232c026d1b8d2556679aea56cf77a6811f9a96c5.1374054369.git.baruch@tkos.co.il>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <232c026d1b8d2556679aea56cf77a6811f9a96c5.1374054369.git.baruch@tkos.co.il>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/+vNN0dWy8kXzo7pzO5Vn8zX
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Hi Thomas, John,
 
-On Fri, 26 Jul 2013 05:56:51 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.com>
-wrote:
+On Wed, Jul 17, 2013 at 12:46:53PM +0300, Baruch Siach wrote:
+> The expression '(1 << 32)' happens to evaluate as 0 on ARM, but it evaluates as
+> 1 on xtensa and x86_64. This zeros sched_clock_mask, and breaks sched_clock().
+> Set the type of 1 to 'unsigned long long' to get the value we need.
 
->=20
->=20
-> -----Original Message-----
-> From: NeilBrown [mailto:neilb@suse.de]=20
-> Sent: Thursday, July 25, 2013 8:36 PM
-> To: Justin Piszcz
-> Cc: linux-kernel@vger.kernel.org; linux-raid@vger.kernel.org
-> Subject: Re: 3.10.1: echo repair > sync_action causes hang on RAID-1 (2 x
-> SSD)
->=20
-> On Thu, 25 Jul 2013 19:10:50 -0400 "Justin Piszcz" <jpiszcz@lucidpixels.c=
-om>
-> wrote:
->=20
-> > Did the fix by chance make it into 3.10.3?
->=20
-> No, it looks like it missed again.  I gather there was a large inflow of
-> patches for -stable in the 3.11-rc1 merge window and Greg has been
-> processing
-> them in batches.  Hopefully in 3.10.4.
->=20
-> The relevant patch is commit 30bc9b53878a9921b02e3 in mainline.
->=20
-> NeilBrown
->=20
-> --
->=20
-> Method to get patch via git and patch kernel:
->=20
-> $ git clone
-> git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
-> $ git log |grep 30bc9b53878a9921b02e3
-> commit 30bc9b53878a9921b02e3b5bc4283ac1c6de102a
-> $ git show 30bc9b53878a9921b02e3b5bc4283ac1c6de102a > /tmp/a
-> # patch -p1 < /tmp/a
-> patching file drivers/md/raid1.c
-> Hunk #1 succeeded at 1848 (offset -1 lines).
-> Hunk #2 succeeded at 1886 (offset -1 lines).
-> Hunk #3 succeeded at 1915 (offset -1 lines).
->=20
-> Reboot- tested, success, thanks..!
->=20
-> One follow-up question:
-> $ cat /sys/block/md1/md/mismatch_cnt
-> 314112
-> -> On a live RAID-1 (root filesystem) without swap, is it normal to have
-> such a high mismatch_cnt even after a repair?
->=20
-> First repair:
-> Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
-> 314112 sectors.
-> Second repair:
-> Fri Jul 26 05:30:47 EDT 2013: The meta-device /dev/md1 has mismatch_cnt
-> 313600 sectors.
+Ping? -rc3 is out, and this bug (which currently breaks xtensa) is not fixed 
+yet. Please consider applying.
 
-Those two lines have exactly the same timestamp and  array name but differe=
-nt
-mismatch counts.  That is very strange.
+baruch
 
-Did you run two consecutive 'repair's on the one array, both with the patch=
-ed
-kernel?  If so and the second mismatch_cnt wasn't zero (or close to
-it..maybe) then something is definitely wrong.
+> Reported-by: Max Filippov <jcmvbkbc@gmail.com>
+> Tested-by: Max Filippov <jcmvbkbc@gmail.com>
+> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+> ---
+>  kernel/time/sched_clock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
+> index a326f27..0b479a6 100644
+> --- a/kernel/time/sched_clock.c
+> +++ b/kernel/time/sched_clock.c
+> @@ -121,7 +121,7 @@ void __init setup_sched_clock(u32 (*read)(void), int bits, unsigned long rate)
+>  	BUG_ON(bits > 32);
+>  	WARN_ON(!irqs_disabled());
+>  	read_sched_clock = read;
+> -	sched_clock_mask = (1 << bits) - 1;
+> +	sched_clock_mask = (1ULL << bits) - 1;
+>  	cd.rate = rate;
+>  
+>  	/* calculate the mult/shift to convert counter ticks to ns. */
+> -- 
 
-NeilBrown
-
-
->=20
-> Should I be concerned?
->=20
->=20
-> Testing the patch:
->=20
-> Personalities : [raid1]
-> md1 : active raid1 sdc2[0] sdb2[1]
->       233381376 blocks [2/2] [UU]
->       [>....................]  check =3D  0.3% (838976/233381376)
-> finish=3D9.2min speed=3D419488K/sec
->=20
-> md0 : active raid1 sdc1[0] sdb1[1]
->       1048512 blocks [2/2] [UU]
->=20
-> Personalities : [raid1]
-> md1 : active raid1 sdc2[0] sdb2[1]
->       233381376 blocks [2/2] [UU]
->       [=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D>.....]  check =3D 77=
-.5% (180889856/233381376)
-> finish=3D2.5min speed=3D342654K/sec
->=20
-> md0 : active raid1 sdc1[0] sdb1[1]
->       1048512 blocks [2/2] [UU]
->=20
-> Personalities : [raid1]
-> md1 : active raid1 sdc2[0] sdb2[1]
->       233381376 blocks [2/2] [UU]
->=20
-> md0 : active raid1 sdc1[0] sdb1[1]
->       1048512 blocks [2/2] [UU]
->=20
->=20
-> Justin.
->=20
-
-
---Sig_/+vNN0dWy8kXzo7pzO5Vn8zX
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIVAwUBUfYEKDnsnt1WYoG5AQLN2xAApE2JFdBRjs4r+Udi4Cf+4LDVwbN+7y/q
-9ijonMktuAgkcf9ybruHP6yG2aRueVajZWwZ3YzzDQZP3XLI3pfntc7rwe0k9am0
-EGairvnHyxkCsOnOcmdaQl4nnjidoH4OSMIYkYsHjoVsGiC/+jT4E9xRAaZPWUnH
-L7uU3jfZP32LtAodHaL+0OyQRxlIX1yl2lGy+j1wIwGaoyJabdX0lStHaiEK8eO0
-Kx/biLXPKq8S4ztm3XKtf0OCviKwhLWHjIjmYLiVZ5GnYWkAF13L+LJRpWoI2p9Z
-7xHdb6QzyELBCDKPm02Ed9MEqGblh6l4FM70P/FsMkUzWaSS1nBASNRy9B8X9bt2
-XWAevy/lcT4pPz16g9L9twYn5QUIJdl1JDllpTXo/XNEvtdGs3rpX58r/Ba9/5JA
-DLmIctSMfjNJo38FlJKDSpCq23/IFn4/zKtVopO3nNhAxMUGibgoGSot9ruChzIv
-sSANmD7KAZH2xIIex0t0ZJs9GkozhEBq899ICrsT1/MZ2ifFzhmMQg3oKhJJq3QS
-gWh7+efkzCULW+fMvlrNBQik/3vlsS6KNjOL9s66ZsC/P8kNaCTrQy97tv560Z1m
-+g5Jw3NLUSffOUDyylB0hJDWkeTk5X16WH6bgGxO1NBE2CnjVxr3vn+ZYnEB7ZdP
-Pzf+6psqQnE=
-=cIcR
------END PGP SIGNATURE-----
-
---Sig_/+vNN0dWy8kXzo7pzO5Vn8zX--
+-- 
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
