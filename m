@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab3G2PB7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:01:59 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:60349 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab3G2PB6 (ORCPT
+	id S1757218Ab3G2PCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:02:17 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:35750 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab3G2PCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:01:58 -0400
-From: Nix <nix@esperi.org.uk>
-To: Bernd Schubert <bernd.schubert@fastmail.fm>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        nick.cheng@areca.com.tw
-Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
-References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
-	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
-Emacs: an inspiring example of form following function... to Hell.
-Date: Mon, 29 Jul 2013 16:01:49 +0100
-In-Reply-To: <51F67959.2060803@fastmail.fm> (Bernd Schubert's message of "Mon,
-	29 Jul 2013 16:16:57 +0200")
-Message-ID: <8738qxfm02.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Mon, 29 Jul 2013 11:02:14 -0400
+Date: Mon, 29 Jul 2013 19:02:09 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Linux MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+Message-ID: <20130729150209.GO2524@moon>
+References: <20130726201807.GJ8661@moon>
+ <51F67777.6060609@parallels.com>
+ <20130729141417.GM2524@moon>
+ <878v0ps98x.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DCC-wuwien-Metrics: spindle 1290; Body=5 Fuz1=5 Fuz2=5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <878v0ps98x.fsf@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29 Jul 2013, Bernd Schubert spake thusly:
+On Mon, Jul 29, 2013 at 08:28:54PM +0530, Aneesh Kumar K.V wrote:
+> >
+> > If only I'm not missing something obvious, this code compiles not only on x86,
+> > CONFIG_MEM_SOFT_DIRTY depends on x86 (otherwise I'll have to implement
+> > pte_soft_dirty for all archs).
+> 
+> why not
+> 
+> #ifndef pte_soft_dirty 
+> #define pte_soft_dirty(pte) 0 
+> #endif
+> 
+> and on x86 
+> #define pte_soft_dirty pte_soft_dirty
 
-> On 07/29/2013 03:05 PM, Nix wrote:
->> On 29 Jul 2013, Bernd Schubert said:
->>> I tested this patch with ARC-1260 and F/W V1.49, no issues. Also, this
->>> patch is only in 3.10.3, but not yet in 3.10.1.
->>
->> ... and I see this problem with 3.10.3 but not 3.10.1. (Haven't tried
->> 3.10.2.)
->
-> Hmm, indeed that points to this commit. I just don't see what could fail there.
->
-> Could you try to run these commands with 3.10.1?
->
-> # # check if reporting opcodes works
-> # sg_opcodes -v  -n /dev/sdX
->
-> # check ata information page
-> # sg_vpd --page=0x89 /dev/sdX
-
-If this might cause the same problem I think I'd better wait until work
-is done for the day and the machine is no longer loaded, and can be
-rebooted without harm...
-
->> No changes to arcmsr between those versions... I suspect I'll have to
->> bisect, which will be a complete pig because every failure means a hard
->> powerdown of this box. Always-on servers rarely appreciate hard
->> powerdowns :(
->>
->
-> Maybe just revert this commit? Helpful would be some scsi logging to
-> see which command actually fails. I guess you don't have a serial
-> console?
-
-Not at that stage, no! And, yes, a test revert of this one commit will
-be the first thing I try this evening / tomorrow morning (depending on
-system load).
-
--- 
-NULL && (void)
+Yeah, either this way, either to use asm-generic (later I think
+more preferred), thanks!
