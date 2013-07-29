@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423Ab3G2CfU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 28 Jul 2013 22:35:20 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:38483 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754380Ab3G2CfP (ORCPT
+	id S1754430Ab3G2CgN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 28 Jul 2013 22:36:13 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:5061 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752439Ab3G2CeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 28 Jul 2013 22:35:15 -0400
+	Sun, 28 Jul 2013 22:34:11 -0400
 From: Rui Xiang <rui.xiang@huawei.com>
 To: <containers@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>
 CC: <serge.hallyn@ubuntu.com>, <ebiederm@xmission.com>,
         <akpm@linux-foundation.org>, <gaofeng@cn.fujitsu.com>,
         <libo.chen@huawei.com>, Rui Xiang <rui.xiang@huawei.com>
-Subject: [PATCH 6/9] syslog_ns: use init syslog_ns for console action
-Date: Mon, 29 Jul 2013 10:31:17 +0800
-Message-ID: <1375065080-26740-7-git-send-email-rui.xiang@huawei.com>
+Subject: [PATCH 2/9] syslog_ns: add syslog_ns into user_namespace
+Date: Mon, 29 Jul 2013 10:31:13 +0800
+Message-ID: <1375065080-26740-3-git-send-email-rui.xiang@huawei.com>
 X-Mailer: git-send-email 1.8.1.msysgit.1
 In-Reply-To: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
 References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com>
@@ -26,31 +26,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While flags SYSLOG_ACTION_CONSOLE_ON/OFF/LEVEL of
-console actin are used in syslog syscall, the related
-hanlding should be targeted at host by init_syslog_ns.
+Add a syslog_ns pointer to user_namespace, and make
+syslog_ns per user_namespace, not global.
+
+Since syslog_ns is assigned to user_ns, we can have
+full capabilities in new user_ns to create a new syslog_ns.
 
 Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
 ---
- kernel/printk.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ include/linux/syslog.h         | 5 +++++
+ include/linux/user_namespace.h | 1 +
+ 2 files changed, 6 insertions(+)
 
-diff --git a/kernel/printk.c b/kernel/printk.c
-index c5c65a8..fd2d600 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -379,6 +379,11 @@ static int check_syslog_permissions(int type, bool from_file,
- 	if (from_file && type != SYSLOG_ACTION_OPEN)
- 		return 0;
+diff --git a/include/linux/syslog.h b/include/linux/syslog.h
+index 425fafe..62ce47f 100644
+--- a/include/linux/syslog.h
++++ b/include/linux/syslog.h
+@@ -90,6 +90,11 @@ struct syslog_namespace {
+ 	size_t syslog_partial;
  
-+	if (type == SYSLOG_ACTION_CONSOLE_OFF
-+		|| type == SYSLOG_ACTION_CONSOLE_ON
-+		|| type == SYSLOG_ACTION_CONSOLE_LEVEL)
-+		ns = &init_syslog_ns;
+ 	int dmesg_restrict;
 +
- 	if (syslog_action_restricted(type, ns)) {
- 		if (ns_capable(ns->owner, CAP_SYSLOG))
- 			return 0;
++	/*
++	 * user namespace which owns this syslog ns.
++	 */
++	struct user_namespace *owner;
+ };
+ 
+ static inline struct syslog_namespace *get_syslog_ns(
+diff --git a/include/linux/user_namespace.h b/include/linux/user_namespace.h
+index b6b215f..ce2de5b 100644
+--- a/include/linux/user_namespace.h
++++ b/include/linux/user_namespace.h
+@@ -28,6 +28,7 @@ struct user_namespace {
+ 	unsigned int		proc_inum;
+ 	bool			may_mount_sysfs;
+ 	bool			may_mount_proc;
++	struct syslog_namespace *syslog_ns;
+ };
+ 
+ extern struct user_namespace init_user_ns;
 -- 
 1.8.2.2
 
