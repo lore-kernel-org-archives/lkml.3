@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab3G2TTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:19:47 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55303 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753512Ab3G2TTo (ORCPT
+	id S1754029Ab3G2TT4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:19:56 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50597 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956Ab3G2TTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:19:44 -0400
+	Mon, 29 Jul 2013 15:19:53 -0400
 From: Cody P Schafer <cody@linux.vnet.ibm.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
@@ -14,92 +14,57 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Linux MM <linux-mm@kvack.org>,
         Rik van Riel <riel@redhat.com>, Michel Lespinasse <walken@google.com>,
         Seth Jennings <sjenning@linux.vnet.ibm.com>,
         Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v2 1/5] rbtree: add postorder iteration functions
-Date: Mon, 29 Jul 2013 12:19:26 -0700
-Message-Id: <1375125570-9401-2-git-send-email-cody@linux.vnet.ibm.com>
+Subject: [PATCH v2 2/5] rbtree: add rbtree_postorder_for_each_entry_safe() helper
+Date: Mon, 29 Jul 2013 12:19:27 -0700
+Message-Id: <1375125570-9401-3-git-send-email-cody@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375125570-9401-1-git-send-email-cody@linux.vnet.ibm.com>
 References: <1375125570-9401-1-git-send-email-cody@linux.vnet.ibm.com>
 X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13072919-3620-0000-0000-000003B9020F
+x-cbid: 13072919-7606-0000-0000-00000DC71011
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add postorder iteration functions for rbtree. These are useful for
-safely freeing an entire rbtree without modifying the tree at all.
+Because deletion (of the entire tree) is a relatively common use of the
+rbtree_postorder iteration, and because doing it safely means fiddling
+with temporary storage, provide a helper to simplify postorder rbtree
+iteration.
 
 Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
 Reviewed-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 ---
- include/linux/rbtree.h |  4 ++++
- lib/rbtree.c           | 40 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 44 insertions(+)
+ include/linux/rbtree.h | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
 diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
-index 0022c1b..c467151 100644
+index c467151..aa870a4 100644
 --- a/include/linux/rbtree.h
 +++ b/include/linux/rbtree.h
-@@ -68,6 +68,10 @@ extern struct rb_node *rb_prev(const struct rb_node *);
- extern struct rb_node *rb_first(const struct rb_root *);
- extern struct rb_node *rb_last(const struct rb_root *);
- 
-+/* Postorder iteration - always visit the parent after its children */
-+extern struct rb_node *rb_first_postorder(const struct rb_root *);
-+extern struct rb_node *rb_next_postorder(const struct rb_node *);
-+
- /* Fast replacement of a single node without remove/rebalance/add/rebalance */
- extern void rb_replace_node(struct rb_node *victim, struct rb_node *new, 
- 			    struct rb_root *root);
-diff --git a/lib/rbtree.c b/lib/rbtree.c
-index c0e31fe..65f4eff 100644
---- a/lib/rbtree.c
-+++ b/lib/rbtree.c
-@@ -518,3 +518,43 @@ void rb_replace_node(struct rb_node *victim, struct rb_node *new,
- 	*new = *victim;
+@@ -85,4 +85,22 @@ static inline void rb_link_node(struct rb_node * node, struct rb_node * parent,
+ 	*rb_link = node;
  }
- EXPORT_SYMBOL(rb_replace_node);
+ 
++/**
++ * rbtree_postorder_for_each_entry_safe - iterate over rb_root in post order of
++ * given type safe against removal of rb_node entry
++ *
++ * @pos:	the 'type *' to use as a loop cursor.
++ * @n:		another 'type *' to use as temporary storage
++ * @root:	'rb_root *' of the rbtree.
++ * @field:	the name of the rb_node field within 'type'.
++ */
++#define rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
++	for (pos = rb_entry(rb_first_postorder(root), typeof(*pos), field),\
++		n = rb_entry(rb_next_postorder(&pos->field), \
++			typeof(*pos), field); \
++	     &pos->field; \
++	     pos = n, \
++		n = rb_entry(rb_next_postorder(&pos->field), \
++			typeof(*pos), field))
 +
-+static struct rb_node *rb_left_deepest_node(const struct rb_node *node)
-+{
-+	for (;;) {
-+		if (node->rb_left)
-+			node = node->rb_left;
-+		else if (node->rb_right)
-+			node = node->rb_right;
-+		else
-+			return (struct rb_node *)node;
-+	}
-+}
-+
-+struct rb_node *rb_next_postorder(const struct rb_node *node)
-+{
-+	const struct rb_node *parent;
-+	if (!node)
-+		return NULL;
-+	parent = rb_parent(node);
-+
-+	/* If we're sitting on node, we've already seen our children */
-+	if (parent && node == parent->rb_left && parent->rb_right) {
-+		/* If we are the parent's left node, go to the parent's right
-+		 * node then all the way down to the left */
-+		return rb_left_deepest_node(parent->rb_right);
-+	} else
-+		/* Otherwise we are the parent's right node, and the parent
-+		 * should be next */
-+		return (struct rb_node *)parent;
-+}
-+EXPORT_SYMBOL(rb_next_postorder);
-+
-+struct rb_node *rb_first_postorder(const struct rb_root *root)
-+{
-+	if (!root->rb_node)
-+		return NULL;
-+
-+	return rb_left_deepest_node(root->rb_node);
-+}
-+EXPORT_SYMBOL(rb_first_postorder);
+ #endif	/* _LINUX_RBTREE_H */
 -- 
 1.8.3.4
 
