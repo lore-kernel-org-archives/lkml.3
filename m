@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab3G2RBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:01:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58145 "EHLO
+	id S1758072Ab3G2RBI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:01:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58130 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab3G2RBK (ORCPT
+	with ESMTP id S1758050Ab3G2RBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:01:10 -0400
+	Mon, 29 Jul 2013 13:01:05 -0400
 From: Philipp Zabel <p.zabel@pengutronix.de>
 To: linux-kernel@vger.kernel.org
 Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>,
         Krystian Garbaciak <krystian.garbaciak@diasemi.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, devicetree@vger.kernel.org
-Subject: [PATCH v3 5/6] Documentation: Add device tree bindings for DA9063 PMIC
-Date: Mon, 29 Jul 2013 19:00:46 +0200
-Message-Id: <1375117247-6376-6-git-send-email-p.zabel@pengutronix.de>
+        Philipp Zabel <p.zabel@pengutronix.de>
+Subject: [PATCH v3 3/6] mfd: da9063: Add IRQ support
+Date: Mon, 29 Jul 2013 19:00:44 +0200
+Message-Id: <1375117247-6376-4-git-send-email-p.zabel@pengutronix.de>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
 References: <1375117247-6376-1-git-send-email-p.zabel@pengutronix.de>
@@ -27,90 +27,392 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding documentation for the Dialog Semiconductors
-DA9063 PMIC and its regulator nodes.
+From: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
 
+This patch adds a regmap irqchip for DA9063 IRQs. It depends on
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git tags/regmap-irq-ack-mask
+
+Signed-off-by: Krystian Garbaciak <krystian.garbaciak@diasemi.com>
 Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: devicetree@vger.kernel.org
+Reviewed-by: Mark Brown <broonie@linaro.org>
 ---
- .../devicetree/bindings/mfd/da9063-i2c.txt         | 68 ++++++++++++++++++++++
- 1 file changed, 68 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9063-i2c.txt
+ drivers/mfd/Makefile            |   2 +-
+ drivers/mfd/da9063-core.c       |  56 ++++++++++++
+ drivers/mfd/da9063-irq.c        | 193 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/da9063/core.h |  38 ++++++++
+ 4 files changed, 288 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mfd/da9063-irq.c
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9063-i2c.txt b/Documentation/devicetree/bindings/mfd/da9063-i2c.txt
-new file mode 100644
-index 0000000..776b662
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9063-i2c.txt
-@@ -0,0 +1,68 @@
-+* Dialog DA9063 Power Management Integrated Circuit (PMIC)
-+
-+Required properties:
-+- compatible : Should be "dialog,da9063"
-+- interrupt-parent : phandle pointing to the interrupt controller
-+- interrupts : interrupt number and flags in interrupt-parent
-+  for the chip IRQ line. Interrupt bindings are documented here:
-+  Documentation/devicetree/bindings/interrupt-controller/interrupts.txt
-+
-+Sub-nodes:
-+- regulators : Contain the regulator nodes. The DA9063 regulators are
-+  bound using their names as listed below:
-+
-+    bcore1     : regulator BCORE1
-+    bcore2     : regulator BCORE2
-+    bpro       : regulator BPRO
-+    bmem       : regulator BMEM
-+    bio        : regulator BIO
-+    bperi      : regulator BPERI
-+    ldo1       : regulator LDO1
-+    ldo2       : regulator LDO4
-+    ldo3       : regulator LDO3
-+    ldo4       : regulator LDO4
-+    ldo5       : regulator LDO5
-+    ldo6       : regulator LDO6
-+    ldo7       : regulator LDO7
-+    ldo8       : regulator LDO8
-+    ldo9       : regulator LDO9
-+    ldo10      : regulator LDO10
-+    ldo11      : regulator LDO11
-+
-+  The PMIC can also be configured to merge both bcore1/2 into a single
-+  supply and to merge bmem and bio into a single supply. In this case,
-+  the following regulators are bound instead of bcore1/2 and bpro/bmem:
-+
-+    bcores-merged   : merged regulators BCORE1, BCORE2
-+    bmem-bio-merged : merged regulators BMEM, BIO
-+
-+  See Documentation/devicetree/bindings/regulator/regulator.txt for
-+  binding details of individual regulator device nodes.
-+
-+
-+Examples:
-+
-+&i2c1 {
-+	status = "okay";
-+
-+	pmic@58 {
-+		compatible = "dialog,da9063";
-+		reg = <0x58>;
-+		interrupt-parent = <&gpio4>;
-+		interrupts = <17 0x8>; /* active-low GPIO4_17 */
-+
-+		regulators {
-+			bcore1 {
-+				regulator-min-microvolt = <300000>;
-+				regulator-max-microvolt = <1570000>;
-+			};
-+
-+			bcore2 {
-+				regulator-min-microvolt = <300000>;
-+				regulator-max-microvolt = <1570000>;
-+			};
-+
-+			/* ... */
-+		};
-+	};
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 0bb84d5..15b905c 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -107,7 +107,7 @@ obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+ da9055-objs			:= da9055-core.o da9055-i2c.o
+ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+ 
+-da9063-objs			:= da9063-core.o da9063-i2c.o
++da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+ 
+ obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
+diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
+index 29f3ed1..c9cf8d9 100644
+--- a/drivers/mfd/da9063-core.c
++++ b/drivers/mfd/da9063-core.c
+@@ -34,9 +34,52 @@
+ #include <linux/uaccess.h>
+ 
+ 
++static struct resource da9063_regulators_resources[] = {
++	{
++		.name	= "LDO_LIM",
++		.start	= DA9063_IRQ_LDO_LIM,
++		.end	= DA9063_IRQ_LDO_LIM,
++		.flags	= IORESOURCE_IRQ,
++	},
 +};
++
++static struct resource da9063_rtc_resources[] = {
++	{
++		.name	= "ALARM",
++		.start	= DA9063_IRQ_ALARM,
++		.end	= DA9063_IRQ_ALARM,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.name	= "TICK",
++		.start	= DA9063_IRQ_TICK,
++		.end	= DA9063_IRQ_TICK,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++static struct resource da9063_onkey_resources[] = {
++	{
++		.start	= DA9063_IRQ_ONKEY,
++		.end	= DA9063_IRQ_ONKEY,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct resource da9063_hwmon_resources[] = {
++	{
++		.start	= DA9063_IRQ_ADC_RDY,
++		.end	= DA9063_IRQ_ADC_RDY,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++
+ static struct mfd_cell da9063_devs[] = {
+ 	{
+ 		.name		= DA9063_DRVNAME_REGULATORS,
++		.num_resources	= ARRAY_SIZE(da9063_regulators_resources),
++		.resources	= da9063_regulators_resources,
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_LEDS,
+@@ -46,12 +89,18 @@ static struct mfd_cell da9063_devs[] = {
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_HWMON,
++		.num_resources	= ARRAY_SIZE(da9063_hwmon_resources),
++		.resources	= da9063_hwmon_resources,
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_ONKEY,
++		.num_resources	= ARRAY_SIZE(da9063_onkey_resources),
++		.resources	= da9063_onkey_resources,
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_RTC,
++		.num_resources	= ARRAY_SIZE(da9063_rtc_resources),
++		.resources	= da9063_rtc_resources,
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_VIBRATION,
+@@ -110,6 +159,12 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
+ 		 "Device detected (model-ID: 0x%02X  rev-ID: 0x%02X)\n",
+ 		 model, revision);
+ 
++	ret = da9063_irq_init(da9063);
++	if (ret) {
++		dev_err(da9063->dev, "Cannot initialize interrupts.\n");
++		return ret;
++	}
++
+ 	ret = mfd_add_devices(da9063->dev, -1, da9063_devs,
+ 			      ARRAY_SIZE(da9063_devs), NULL, da9063->irq_base,
+ 			      NULL);
+@@ -122,6 +177,7 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
+ void da9063_device_exit(struct da9063 *da9063)
+ {
+ 	mfd_remove_devices(da9063->dev);
++	da9063_irq_exit(da9063);
+ }
+ 
+ MODULE_DESCRIPTION("PMIC driver for Dialog DA9063");
+diff --git a/drivers/mfd/da9063-irq.c b/drivers/mfd/da9063-irq.c
+new file mode 100644
+index 0000000..8229226
+--- /dev/null
++++ b/drivers/mfd/da9063-irq.c
+@@ -0,0 +1,193 @@
++/* da9063-irq.c: Interrupts support for Dialog DA9063
++ *
++ * Copyright 2012 Dialog Semiconductor Ltd.
++ * Copyright 2013 Philipp Zabel, Pengutronix
++ *
++ * Author: Michal Hajduk <michal.hajduk@diasemi.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/irq.h>
++#include <linux/mfd/core.h>
++#include <linux/interrupt.h>
++#include <linux/regmap.h>
++#include <linux/mfd/da9063/core.h>
++#include <linux/mfd/da9063/pdata.h>
++
++#define	DA9063_REG_EVENT_A_OFFSET	0
++#define	DA9063_REG_EVENT_B_OFFSET	1
++#define	DA9063_REG_EVENT_C_OFFSET	2
++#define	DA9063_REG_EVENT_D_OFFSET	3
++#define EVENTS_BUF_LEN			4
++
++static const u8 mask_events_buf[] = { [0 ... (EVENTS_BUF_LEN - 1)] = ~0 };
++
++struct da9063_irq_data {
++	u16 reg;
++	u8 mask;
++};
++
++static struct regmap_irq da9063_irqs[] = {
++	/* DA9063 event A register */
++	[DA9063_IRQ_ONKEY] = {
++		.reg_offset = DA9063_REG_EVENT_A_OFFSET,
++		.mask = DA9063_M_ONKEY,
++	},
++	[DA9063_IRQ_ALARM] = {
++		.reg_offset = DA9063_REG_EVENT_A_OFFSET,
++		.mask = DA9063_M_ALARM,
++	},
++	[DA9063_IRQ_TICK] = {
++		.reg_offset = DA9063_REG_EVENT_A_OFFSET,
++		.mask = DA9063_M_TICK,
++	},
++	[DA9063_IRQ_ADC_RDY] = {
++		.reg_offset = DA9063_REG_EVENT_A_OFFSET,
++		.mask = DA9063_M_ADC_RDY,
++	},
++	[DA9063_IRQ_SEQ_RDY] = {
++		.reg_offset = DA9063_REG_EVENT_A_OFFSET,
++		.mask = DA9063_M_SEQ_RDY,
++	},
++	/* DA9063 event B register */
++	[DA9063_IRQ_WAKE] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_WAKE,
++	},
++	[DA9063_IRQ_TEMP] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_TEMP,
++	},
++	[DA9063_IRQ_COMP_1V2] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_COMP_1V2,
++	},
++	[DA9063_IRQ_LDO_LIM] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_LDO_LIM,
++	},
++	[DA9063_IRQ_REG_UVOV] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_UVOV,
++	},
++	[DA9063_IRQ_VDD_MON] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_VDD_MON,
++	},
++	[DA9063_IRQ_WARN] = {
++		.reg_offset = DA9063_REG_EVENT_B_OFFSET,
++		.mask = DA9063_M_VDD_WARN,
++	},
++	/* DA9063 event C register */
++	[DA9063_IRQ_GPI0] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI0,
++	},
++	[DA9063_IRQ_GPI1] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI1,
++	},
++	[DA9063_IRQ_GPI2] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI2,
++	},
++	[DA9063_IRQ_GPI3] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI3,
++	},
++	[DA9063_IRQ_GPI4] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI4,
++	},
++	[DA9063_IRQ_GPI5] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI5,
++	},
++	[DA9063_IRQ_GPI6] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI6,
++	},
++	[DA9063_IRQ_GPI7] = {
++		.reg_offset = DA9063_REG_EVENT_C_OFFSET,
++		.mask = DA9063_M_GPI7,
++	},
++	/* DA9063 event D register */
++	[DA9063_IRQ_GPI8] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI8,
++	},
++	[DA9063_IRQ_GPI9] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI9,
++	},
++	[DA9063_IRQ_GPI10] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI10,
++	},
++	[DA9063_IRQ_GPI11] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI11,
++	},
++	[DA9063_IRQ_GPI12] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI12,
++	},
++	[DA9063_IRQ_GPI13] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI13,
++	},
++	[DA9063_IRQ_GPI14] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI14,
++	},
++	[DA9063_IRQ_GPI15] = {
++		.reg_offset = DA9063_REG_EVENT_D_OFFSET,
++		.mask = DA9063_M_GPI15,
++	},
++};
++
++static struct regmap_irq_chip da9063_irq_chip = {
++	.name = "da9063-irq",
++	.irqs = da9063_irqs,
++	.num_irqs = DA9063_NUM_IRQ,
++
++	.num_regs = 4,
++	.status_base = DA9063_REG_EVENT_A,
++	.mask_base = DA9063_REG_IRQ_MASK_A,
++	.ack_base = DA9063_REG_EVENT_A,
++	.init_ack_masked = true,
++};
++
++int da9063_irq_init(struct da9063 *da9063)
++{
++	int ret;
++
++	if (!da9063->chip_irq) {
++		dev_err(da9063->dev, "No IRQ configured\n");
++		return -EINVAL;
++	}
++
++	ret = regmap_add_irq_chip(da9063->regmap, da9063->chip_irq,
++			IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_SHARED,
++			da9063->irq_base, &da9063_irq_chip,
++			&da9063->regmap_irq);
++	if (ret) {
++		dev_err(da9063->dev, "Failed to reguest IRQ %d: %d\n",
++				da9063->chip_irq, ret);
++		return ret;
++	}
++
++	return 0;
++}
++
++void da9063_irq_exit(struct da9063 *da9063)
++{
++	regmap_del_irq_chip(da9063->chip_irq, da9063->regmap_irq);
++}
+diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
+index ec2fd2a..2d2a0af 100644
+--- a/include/linux/mfd/da9063/core.h
++++ b/include/linux/mfd/da9063/core.h
+@@ -33,6 +33,41 @@ enum da9063_models {
+ 	PMIC_DA9063 = 0x61,
+ };
+ 
++/* Interrupts */
++enum da9063_irqs {
++	DA9063_IRQ_ONKEY = 0,
++	DA9063_IRQ_ALARM,
++	DA9063_IRQ_TICK,
++	DA9063_IRQ_ADC_RDY,
++	DA9063_IRQ_SEQ_RDY,
++	DA9063_IRQ_WAKE,
++	DA9063_IRQ_TEMP,
++	DA9063_IRQ_COMP_1V2,
++	DA9063_IRQ_LDO_LIM,
++	DA9063_IRQ_REG_UVOV,
++	DA9063_IRQ_VDD_MON,
++	DA9063_IRQ_WARN,
++	DA9063_IRQ_GPI0,
++	DA9063_IRQ_GPI1,
++	DA9063_IRQ_GPI2,
++	DA9063_IRQ_GPI3,
++	DA9063_IRQ_GPI4,
++	DA9063_IRQ_GPI5,
++	DA9063_IRQ_GPI6,
++	DA9063_IRQ_GPI7,
++	DA9063_IRQ_GPI8,
++	DA9063_IRQ_GPI9,
++	DA9063_IRQ_GPI10,
++	DA9063_IRQ_GPI11,
++	DA9063_IRQ_GPI12,
++	DA9063_IRQ_GPI13,
++	DA9063_IRQ_GPI14,
++	DA9063_IRQ_GPI15,
++};
++
++#define DA9063_IRQ_BASE_OFFSET	0
++#define DA9063_NUM_IRQ		(DA9063_IRQ_GPI15 + 1 - DA9063_IRQ_BASE_OFFSET)
++
+ struct da9063 {
+ 	/* Device */
+ 	struct device	*dev;
+@@ -46,10 +81,13 @@ struct da9063 {
+ 	/* Interrupts */
+ 	int		chip_irq;
+ 	unsigned int	irq_base;
++	struct regmap_irq_chip_data *regmap_irq;
+ };
+ 
+ int da9063_device_init(struct da9063 *da9063, unsigned int irq);
++int da9063_irq_init(struct da9063 *da9063);
+ 
+ void da9063_device_exit(struct da9063 *da9063);
++void da9063_irq_exit(struct da9063 *da9063);
+ 
+ #endif /* __MFD_DA9063_CORE_H__ */
 -- 
 1.8.3.2
 
