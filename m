@@ -1,145 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755294Ab3G2Nbx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 09:31:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:41187 "EHLO bear.ext.ti.com"
+	id S1755399Ab3G2Nc2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 09:32:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab3G2NbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 09:31:00 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Sekhar Nori <nsekhar@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
-        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
-        Mark Brown <broonie@linaro.org>,
-        Benoit Cousson <benoit.cousson@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
-        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
-        Jason Kridner <jkridner@beagleboard.org>
-CC: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux DaVinci Kernel List 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 6/9] dma: edma: Detect null slot errors and handle them correctly
-Date: Mon, 29 Jul 2013 08:29:52 -0500
-Message-ID: <1375104595-16018-7-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1375104595-16018-1-git-send-email-joelf@ti.com>
-References: <1375104595-16018-1-git-send-email-joelf@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755323Ab3G2NcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 09:32:25 -0400
+Date: Mon, 29 Jul 2013 09:32:41 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Andi Shyti <andi@etezian.org>
+Cc: smfrench@gmail.com, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mikko.rapeli@iki.fi,
+        pshilovsky@samba.org
+Subject: Re: [PATCH RESEND] cifs: file: initialize oparms.reconnect before
+ using it
+Message-ID: <20130729093241.437315e1@corrin.poochiereds.net>
+In-Reply-To: <1375088293-14110-1-git-send-email-andi@etezian.org>
+References: <1375088293-14110-1-git-send-email-andi@etezian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For crypto IP, we continue to receive events even continuously in
-NULL slot, and request lines don't get de-asserted unlike omap_hsmmc.
-Due to this, we continously receive error interrupts when we
-manually trigger an event.
+On Mon, 29 Jul 2013 10:58:13 +0200
+Andi Shyti <andi@etezian.org> wrote:
 
-We fix this, by first detecting if the Channel is currently transferring
-from a NULL slot or not, that's where the edma_read_slot in the error
-callback from interrupt handler comes in.
+> In the cifs_reopen_file function, if the following statement is
+> asserted:
+> 
+> (tcon->unix_ext && cap_unix(tcon->ses) &&
+> 		(CIFS_UNIX_POSIX_PATH_OPS_CAP &
+> 		(tcon->fsUnixInfo.Capability)))
+> 
+> and we succeed to open with cifs_posix_open, the function jumps
+> to the label reopen_success and checks for oparms.reconnect
+> which is not initialized.
+> 
+> To avoid this the oparms structure initialization is anticipated
+> before the if statement.
+> 
+> This issue has been reported by scan.coverity.com
+> 
+> Signed-off-by: Andi Shyti <andi@etezian.org>
+> ---
+>  fs/cifs/file.c | 18 +++++++++---------
+>  1 file changed, 9 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+> index 1e57f36..fbeaf45 100644
+> --- a/fs/cifs/file.c
+> +++ b/fs/cifs/file.c
+> @@ -632,6 +632,15 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+>  	else
+>  		oplock = 0;
+>  
+> +	oparms.tcon = tcon;
+> +	oparms.cifs_sb = cifs_sb;
+> +	oparms.desired_access = desired_access;
+> +	oparms.create_options = create_options;
 
-Second thing we do is, if we detect if we are on a NULL slot, we don't
-forcefully trigger as this will only result in more error conditions.
-Instead we set a missed flag and allow the manual triggerring to happen
-in edma_execute which will eventually be called. This fixes the issue
-where we are on a NULL slot and continue to receive events from
-modules like crypto that don't stop their request events after a
-transfer is completed.
+This patch just moves the brokenness around. You're
+setting .desired_access here to an unintialized variable.
+create_options also looks like it may potentially be wrong at this
+point.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- drivers/dma/edma.c |   42 ++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 38 insertions(+), 4 deletions(-)
+It may be that the code won't trip over these bugs in its current form,
+but it's not really doing much to "future-proof" it. I think this
+function needs a bit more refactoring instead of increasing the level
+of spaghetti.
 
-diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-index 1eda5cc..c72e8c9 100644
---- a/drivers/dma/edma.c
-+++ b/drivers/dma/edma.c
-@@ -70,6 +70,7 @@ struct edma_chan {
- 	int				ch_num;
- 	bool				alloced;
- 	int				slot[EDMA_MAX_SLOTS];
-+	int				missed;
- 	struct dma_slave_config		cfg;
- };
- 
-@@ -169,6 +170,18 @@ static void edma_execute(struct edma_chan *echan)
- 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
- 		edma_start(echan->ch_num);
- 	}
-+
-+	/* This happens due to setup times between intermediate transfers
-+	   in long SG lists which have to be broken up into transfers of
-+	   MAX_NR_SG */
-+	if (echan->missed) {
-+		dev_dbg(dev, "missed event in execute detected\n");
-+		edma_clean_channel(echan->ch_num);
-+		edma_stop(echan->ch_num);
-+		edma_start(echan->ch_num);
-+		edma_manual_trigger(echan->ch_num);
-+		echan->missed = 0;
-+	}
- }
- 
- static int edma_terminate_all(struct edma_chan *echan)
-@@ -387,6 +400,7 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 	struct device *dev = echan->vchan.chan.device->dev;
- 	struct edma_desc *edesc;
- 	unsigned long flags;
-+	struct edmacc_param p;
- 
- 	/* Pause the channel */
- 	edma_pause(echan->ch_num);
-@@ -414,15 +428,35 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
- 
- 		break;
- 	case DMA_CC_ERROR:
--		if (echan->edesc) {
--			dev_dbg(dev, "Missed event on %d, retrying\n",
--				ch_num);
-+		spin_lock_irqsave(&echan->vchan.lock, flags);
-+
-+		edma_read_slot(EDMA_CHAN_SLOT(echan->slot[0]), &p);
-+
-+		if (p.a_b_cnt == 0 && p.ccnt == 0) {
-+			dev_dbg(dev, "Error occurred, looks like slot is null, just setting miss\n");
-+			/*
-+			   Issue later based on missed flag which will be sure
-+			   to happen as:
-+			   (1) we finished transmitting an intermediate slot and
-+			       edma_execute is coming up.
-+			   (2) or we finished current transfer and issue will
-+			       call edma_execute.
-+
-+			   Important note: issuing can be dangerous here and
-+			   lead to some nasty recursion as this is a NULL slot
-+			   at this point.
-+			*/
-+			echan->missed = 1;
-+		} else {
-+			dev_dbg(dev, "Error occurred but slot is non-null, TRIGGERING\n");
- 			edma_clean_channel(echan->ch_num);
- 			edma_stop(echan->ch_num);
- 			edma_start(echan->ch_num);
- 			edma_manual_trigger(echan->ch_num);
- 		}
--		dev_dbg(dev, "handled error on channel %d\n", ch_num);
-+
-+		spin_unlock_irqrestore(&echan->vchan.lock, flags);
-+
- 		break;
- 	default:
- 		break;
+> +	oparms.disposition = disposition;
+> +	oparms.path = full_path;
+> +	oparms.fid = &cfile->fid;
+> +	oparms.reconnect = true;
+> +
+>  	if (tcon->unix_ext && cap_unix(tcon->ses) &&
+>  	    (CIFS_UNIX_POSIX_PATH_OPS_CAP &
+>  				le64_to_cpu(tcon->fsUnixInfo.Capability))) {
+> @@ -663,15 +672,6 @@ cifs_reopen_file(struct cifsFileInfo *cfile, bool can_flush)
+>  	if (server->ops->get_lease_key)
+>  		server->ops->get_lease_key(inode, &cfile->fid);
+>  
+> -	oparms.tcon = tcon;
+> -	oparms.cifs_sb = cifs_sb;
+> -	oparms.desired_access = desired_access;
+> -	oparms.create_options = create_options;
+> -	oparms.disposition = disposition;
+> -	oparms.path = full_path;
+> -	oparms.fid = &cfile->fid;
+> -	oparms.reconnect = true;
+> -
+>  	/*
+>  	 * Can not refresh inode by passing in file_info buf to be returned by
+>  	 * CIFSSMBOpen and then calling get_inode_info with returned buf since
+
+
 -- 
-1.7.9.5
-
+Jeff Layton <jlayton@redhat.com>
