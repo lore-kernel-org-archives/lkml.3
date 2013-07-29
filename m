@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463Ab3G2ONf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 10:13:35 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35547 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750882Ab3G2ONd (ORCPT
+	id S1756474Ab3G2OOW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 10:14:22 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:63363 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab3G2OOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 10:13:33 -0400
-Message-ID: <51F67875.9020602@ti.com>
-Date: Mon, 29 Jul 2013 09:13:09 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 10:14:20 -0400
+Date: Mon, 29 Jul 2013 18:14:17 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pavel Emelyanov <xemul@parallels.com>
+Cc: Linux MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] mm: Save soft-dirty bits on file pages
+Message-ID: <20130729141417.GM2524@moon>
+References: <20130726201807.GJ8661@moon>
+ <51F67777.6060609@parallels.com>
 MIME-Version: 1.0
-To: Benoit Cousson <benoit.cousson@gmail.com>
-CC: =?UTF-8?B?QmVub8OudCBDb3Vzc29u?= <benoit.cousson@linaro.org>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, J Keerthy <j-keerthy@ti.com>
-Subject: Re: [PATCH 0/9] ARM: dts: omap5-uevm: fixup wrong regulator configuration
-References: <1374079538-19548-1-git-send-email-nm@ti.com> <51F63C74.6070503@ti.com> <51F66B65.4030702@ti.com> <51F670AF.9080808@gmail.com>
-In-Reply-To: <51F670AF.9080808@gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F67777.6060609@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 08:39 AM, Benoit Cousson wrote:
-> Hi Nishanth,
->
-> On 29/07/2013 15:17, Nishanth Menon wrote:
->> On 07/29/2013 04:57 AM, Keerthy wrote:
->>> Hi Nishanth,
->>>
->>> On Wednesday 17 July 2013 10:15 PM, Nishanth Menon wrote:
->>>> Due to wrong older revision of documentation used as reference, we
->>>> seem to have a bunch of LDOs wrongly configured on OMAP5 uEVM. This
->>>> series is based power tree on production board 750-2628-XXX platform.
->>>> Unfortunately, the wrong voltages may be detrimental to OMAP5 as they
->>>> supply hardware blocks at voltages that are out of specification.
->>>
->>> This series looks good to me.
->>>
->>> Acked-by:  J Keerthy <j-keerthy@ti.com>
->>
->> Tony, Benoit - this series could prevent OMAP5 from being damaged on
->> uEVMs with current 3.11 rc - could you suggest what we need to do to
->> get it in?
->
-> I'm still on vacation with no way to pull any patch... but I can still
-> comment on the series quickly.
+On Mon, Jul 29, 2013 at 06:08:55PM +0400, Pavel Emelyanov wrote:
+> >  
+> > -	if (!pte_none(*pte))
+> > +	ptfile = pgoff_to_pte(pgoff);
+> > +
+> > +	if (!pte_none(*pte)) {
+> > +#ifdef CONFIG_MEM_SOFT_DIRTY
+> > +		if (pte_present(*pte) &&
+> > +		    pte_soft_dirty(*pte))
+> 
+> I think there's no need in wrapping every such if () inside #ifdef CONFIG_...,
+> since the pte_soft_dirty() routine itself would be 0 for non-soft-dirty case
+> and compiler would optimize this code out.
 
-Thanks for responding while on vacation.
-
->
-> It seems to me that this series contains some real fixes that might
-> damage the board due to hihest voltage than expected and some which are
-> just improvement like for the SMPS9 or LDO[28]. In theory they should no
-> go necesseraly to -rc, but, I guess that's fine for that one.
->
-> All the "fixes" are sharing more than 50% of the changelog content with
-> only 2 changes in the code, so you'd better squash them into one patch
-> to avoid repeating the same thing again and again.
->
-Reason for keeping them separate was to allow any future git bisect to 
-narrow down to precise patch.
-<--->
-  ARM: dts: omap5-uevm: update SMPS9 settings
-   ARM: dts: omap5-uevm: update and disable unused regulators LDO[28]
-   ARM: dts: omap5-uevm: update LDO1 voltage to 1.5V and settings
-   ARM: dts: omap5-uevm: update LDO3 voltage to 1.5V and settings
-   ARM: dts: omap5-uevm: update LDO4 voltage to 1.5V and settings
-   ARM: dts: omap5-uevm: update LDO6 voltage to 1.2V
-   ARM: dts: omap5-uevm: update LDO7 voltage to 2V and settings
-   ARM: dts: omap5-uevm: update SDCARD LDO9 and resource REGEN3
-<---->
-
-Would you have suggestions on what to squash up?
-
-
--- 
-Regards,
-Nishanth Menon
+If only I'm not missing something obvious, this code compiles not only on x86,
+CONFIG_MEM_SOFT_DIRTY depends on x86 (otherwise I'll have to implement
+pte_soft_dirty for all archs).
