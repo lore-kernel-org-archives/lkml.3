@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab3G2TXi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:23:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20991 "EHLO
+	id S1753689Ab3G2TXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:23:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14255 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751821Ab3G2TXf (ORCPT
+	with ESMTP id S1752186Ab3G2TXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 29 Jul 2013 15:23:35 -0400
-X-Authority-Analysis: v=2.0 cv=KJ7Y/S5o c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=UhU88GXn1CMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=cUV243qLiH8A:10 a=VwQbUJbxAAAA:8 a=1-b_R6CxSKIfnUpslXsA:9 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=xYolPYLyDMYA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=ppanXl1SzZAA:10 a=0vGzujyhlAE0wRuDPhsA:9 a=jeBq3FmKZ4MA:10 a=-qnxwe8RVnLnafE0:21 a=L8FKgO0VSFNiMI1X:21 a=Sro2XwOs0tJUSHxCKfOySw==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 67.255.60.225
-Message-Id: <20130729192133.143455334@goodmis.org>
+Message-Id: <20130729192334.268257077@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Mon, 29 Jul 2013 15:21:33 -0400
+Date: Mon, 29 Jul 2013 15:21:36 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Ingo Molnar <mingo@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 0/4] [GIT PULL][RCU][3.12] tracing/rcu: Export strings to userspace
+Subject: [PATCH 3/4] rcu: Simplify RCU_STATE_INITIALIZER() macro
+References: <20130729192133.143455334@goodmis.org>
+Content-Disposition: inline; filename=0003-rcu-Simplify-RCU_STATE_INITIALIZER-macro.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Paul,
+The RCU_STATE_INITIALIZER() macro is used only in the rcutree.c file
+as well as the rcutree_plugin.h file. It is passed as a rvalue to
+a variable of a similar name. A per_cpu variable is also created
+with a similar name as well.
 
-As we talked about earlier, I set up a branch based off of v3.11-rc2 which
-the first patch has my tracing patch I need for other updates, and
-the other three are RCU specific patches that you should take.
+The uses of RCU_STATE_INITIALIZER() can be simplified to remove some
+of the duplicate code that is done. Currently the three users of this
+macro has this format:
 
-You can either just pull this branch from my tree, or you can pull
-just the first patch (to keep the same SHA1) and apply the other three
-patches any way you want.
+struct rcu_state rcu_sched_state =
+	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
+DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
 
-I tested all these patches through my standard tests, but I did not run
-the RCU ones through any specific RCU tests (like rcutorture). They
-shouldn't affect the process of RCU in anyway and only should touch
-the way trace points export their strings. You may want to run them through
-other tests just to make sure there isn't some strange side effect I
-caused. :-)
+Notice that "rcu_sched" is called three times. This is the same with
+the other two users. This can be condensed to just:
 
--- Steve
+RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
 
-Please pull the latest ftrace/rcu tree, which can be found at:
+by moving the rest into the macro itself.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-ftrace/rcu
+This also opens the door to allow the RCU tracepoint strings and
+their addresses to be exported so that userspace tracing tools can
+translate the contents of the pointers of the RCU tracepoints.
+The change will allow for helper code to be placed in the
+RCU_STATE_INITIALIZER() macro to export the name that is used.
 
-Head SHA1: b7c2caaa81e8ce2643db611a661d1ef7f9fe6db8
-SHA1 of first patch: 102c9323c35a83789ad5ebd3c45fa8fb389add88
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/rcutree.c        |   14 ++++++--------
+ kernel/rcutree_plugin.h |    4 +---
+ 2 files changed, 7 insertions(+), 11 deletions(-)
 
-Steven Rostedt (Red Hat) (4):
-      tracing: Add __tracepoint_string() to export string pointers
-      rcu: Add const annotation to char * for RCU tracepoints and functions
-      rcu: Simplify RCU_STATE_INITIALIZER() macro
-      rcu: Have the RCU tracepoints use the tracepoint_string infrastructure
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 3020149..97994a3 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -64,7 +64,8 @@
+ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+ 
+-#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
++#define RCU_STATE_INITIALIZER(sname, sabbr, cr) \
++struct rcu_state sname##_state = { \
+ 	.level = { &sname##_state.node[0] }, \
+ 	.call = cr, \
+ 	.fqs_state = RCU_GP_IDLE, \
+@@ -77,14 +78,11 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+ 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+ 	.name = #sname, \
+ 	.abbr = sabbr, \
+-}
+-
+-struct rcu_state rcu_sched_state =
+-	RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
+-DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
++}; \
++DEFINE_PER_CPU(struct rcu_data, sname##_data)
+ 
+-struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+-DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
++RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
++RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+ 
+ static struct rcu_state *rcu_state;
+ LIST_HEAD(rcu_struct_flavors);
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 6b721ff..dd0f5af 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -110,9 +110,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+-struct rcu_state rcu_preempt_state =
+-	RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+-DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
++RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
+ 
+ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
+-- 
+1.7.10.4
 
-----
- include/asm-generic/vmlinux.lds.h |    7 ++-
- include/linux/ftrace_event.h      |   34 ++++++++++++
- include/linux/rcupdate.h          |    4 +-
- include/trace/events/rcu.h        |   82 ++++++++++++++---------------
- kernel/rcu.h                      |    2 +-
- kernel/rcupdate.c                 |    2 +-
- kernel/rcutiny.c                  |    2 +-
- kernel/rcutiny_plugin.h           |    2 +-
- kernel/rcutorture.c               |    8 +--
- kernel/rcutree.c                  |  105 +++++++++++++++++++++----------------
- kernel/rcutree.h                  |    2 +-
- kernel/rcutree_plugin.h           |   42 +++++++--------
- kernel/trace/trace.h              |    3 ++
- kernel/trace/trace_printk.c       |   19 +++++++
- 14 files changed, 195 insertions(+), 119 deletions(-)
+
