@@ -1,216 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755568Ab3G2N6S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 09:58:18 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:55324 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab3G2N6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 09:58:16 -0400
-Date: Mon, 29 Jul 2013 15:58:12 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>,
-        Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@suse.de>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, Kees Cook <keescook@chromium.org>,
-        Tony Luck <tony.luck@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>
-Subject: Re: [PATCH] APEI/ERST: Fix error message formatting
-Message-ID: <20130729135812.GD6634@pd.tnic>
-References: <1374526866-6813-1-git-send-email-bp@alien8.de>
- <20130724171347.GB29756@naverao1-tp.watson.ibm.com>
- <1374686598.18818.18.camel@joe-AO722>
- <51F10AA8.2050901@linux.vnet.ibm.com>
- <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
+	id S1756222Ab3G2N7r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 09:59:47 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:34695 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab3G2N7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 09:59:46 -0400
+Date: Mon, 29 Jul 2013 16:52:12 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <ldv-project@linuxtesting.org>
+Subject: Re: [PATCH] usb: gadget: mv_u3d_core: fix violation of locking
+ discipline in mv_u3d_ep_disable()
+Message-ID: <20130729135212.GC13978@radagast>
+Reply-To: <balbi@ti.com>
+References: <1374610817-14894-1-git-send-email-khoroshilov@ispras.ru>
+ <20130725173017.GK25415@radagast>
+ <51F2950D.3070103@ispras.ru>
+ <20130729125250.GB13938@radagast>
+ <51F66B0E.40408@ispras.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="S1BNGpv0yoYahz37"
 Content-Disposition: inline
-In-Reply-To: <CAErSpo5vLbsM5BXjrCVy1AKBxRRSH33TthyyK3O35Mghqw81nQ@mail.gmail.com>
+In-Reply-To: <51F66B0E.40408@ispras.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 11:32:06AM -0600, Bjorn Helgaas wrote:
-> I would suggest a change similar to 46b91e37 for ERST, and I would
-> suggest using the leading zeros, with %#010llx for physical memory
-> addresses and %#06llx for ioport addresses. That's what %pR uses, and
-> it produces columnar alignment in many cases (though not this one).
+--S1BNGpv0yoYahz37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How's that:
+On Mon, Jul 29, 2013 at 05:15:58PM +0400, Alexey Khoroshilov wrote:
+> On 07/29/2013 04:52 PM, Felipe Balbi wrote:
+> > Hi,
+> >
+> > On Fri, Jul 26, 2013 at 07:26:05PM +0400, Alexey Khoroshilov wrote:
+> >> On 07/25/2013 09:30 PM, Felipe Balbi wrote:
+> >>> On Wed, Jul 24, 2013 at 12:20:17AM +0400, Alexey Khoroshilov wrote:
+> >>>> mv_u3d_nuke() expects to be calles with ep->u3d->lock held,
+> >>>> because mv_u3d_done() does. But mv_u3d_ep_disable() calls it
+> >>>> without lock that can lead to unpleasant consequences.
+> >>>>
+> >>>> Found by Linux Driver Verification project (linuxtesting.org).
+> >>>>
+> >>>> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> >>> which commit introduced the bug ? Which kernels are affected by this =
+bug ?
+> >> The bug is present from the very beginning: commit 3d4eb9d of 15 June =
+2012.
+> >> So it is in the mainline since v3.5.
+> > Alright, do you want to have the same fix in stable kernels ? Is it
+> > necessary at all or do we consider it 'never worked before' and send it
+> > in the next merge window ?
+>=20
+> It is a tricky point. From one point of view it 'never worked before',
+> but as far as the bug leads to a data race with unpredictable
+> consequences I would prefer to have it fixed within 3.11 timeframe.
 
---
-From: Borislav Petkov <bp@suse.de>
-Date: Mon, 29 Jul 2013 15:51:35 +0200
-Subject: [PATCH] [PATCH] APEI/ERST: Fix error message formatting
+Alright, I have already sent my pull request for v3.11-rc3, so once -rc4
+is tagged (in about a week) I'll send this patch.
 
-... according to acpi/apei/ conventions. Use standard pr_fmt prefix
-while at it.
+--=20
+balbi
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- drivers/acpi/apei/erst.c | 43 +++++++++++++++++++------------------------
- 1 file changed, 19 insertions(+), 24 deletions(-)
+--S1BNGpv0yoYahz37
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/acpi/apei/erst.c b/drivers/acpi/apei/erst.c
-index 88d0b0f9f92b..853e4cf1bc9e 100644
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -39,7 +39,8 @@
- 
- #include "apei-internal.h"
- 
--#define ERST_PFX "ERST: "
-+#undef pr_fmt
-+#define pr_fmt(fmt) "ERST: " fmt
- 
- /* ERST command status */
- #define ERST_STATUS_SUCCESS			0x0
-@@ -109,8 +110,7 @@ static inline int erst_errno(int command_status)
- static int erst_timedout(u64 *t, u64 spin_unit)
- {
- 	if ((s64)*t < spin_unit) {
--		pr_warning(FW_WARN ERST_PFX
--			   "Firmware does not respond in time\n");
-+		pr_warn(FW_WARN "Firmware does not respond in time\n");
- 		return 1;
- 	}
- 	*t -= spin_unit;
-@@ -186,7 +186,7 @@ static int erst_exec_stall(struct apei_exec_context *ctx,
- 
- 	if (ctx->value > FIRMWARE_MAX_STALL) {
- 		if (!in_nmi())
--			pr_warning(FW_WARN ERST_PFX
-+			pr_warn(FW_WARN
- 			"Too long stall time for stall instruction: %llx.\n",
- 				   ctx->value);
- 		stall_time = FIRMWARE_MAX_STALL;
-@@ -206,7 +206,7 @@ static int erst_exec_stall_while_true(struct apei_exec_context *ctx,
- 
- 	if (ctx->var1 > FIRMWARE_MAX_STALL) {
- 		if (!in_nmi())
--			pr_warning(FW_WARN ERST_PFX
-+			pr_warn(FW_WARN
- 		"Too long stall time for stall while true instruction: %llx.\n",
- 				   ctx->var1);
- 		stall_time = FIRMWARE_MAX_STALL;
-@@ -271,8 +271,7 @@ static int erst_exec_move_data(struct apei_exec_context *ctx,
- 
- 	/* ioremap does not work in interrupt context */
- 	if (in_interrupt()) {
--		pr_warning(ERST_PFX
--			   "MOVE_DATA can not be used in interrupt context");
-+		pr_warn("MOVE_DATA can not be used in interrupt context");
- 		return -EBUSY;
- 	}
- 
-@@ -522,8 +521,7 @@ retry:
- 				     ERST_RECORD_ID_CACHE_SIZE_MAX);
- 		if (new_size <= erst_record_id_cache.size) {
- 			if (printk_ratelimit())
--				pr_warning(FW_WARN ERST_PFX
--					   "too many record ID!\n");
-+				pr_warn(FW_WARN "too many record IDs!\n");
- 			return 0;
- 		}
- 		alloc_size = new_size * sizeof(entries[0]);
-@@ -759,8 +757,7 @@ static int __erst_clear_from_storage(u64 record_id)
- static void pr_unimpl_nvram(void)
- {
- 	if (printk_ratelimit())
--		pr_warning(ERST_PFX
--		"NVRAM ERST Log Address Range is not implemented yet\n");
-+		pr_warn("NVRAM ERST Log Address Range is not implemented yet\n");
- }
- 
- static int __erst_write_to_nvram(const struct cper_record_header *record)
-@@ -1120,7 +1117,7 @@ static int __init erst_init(void)
- 		goto err;
- 
- 	if (erst_disable) {
--		pr_info(ERST_PFX
-+		pr_info(
- 	"Error Record Serialization Table (ERST) support is disabled.\n");
- 		goto err;
- 	}
-@@ -1131,14 +1128,14 @@ static int __init erst_init(void)
- 		goto err;
- 	else if (ACPI_FAILURE(status)) {
- 		const char *msg = acpi_format_exception(status);
--		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
-+		pr_err("Failed to get table, %s\n", msg);
- 		rc = -EINVAL;
- 		goto err;
- 	}
- 
- 	rc = erst_check_table(erst_tab);
- 	if (rc) {
--		pr_err(FW_BUG ERST_PFX "ERST table is invalid\n");
-+		pr_err(FW_BUG "ERST table is invalid\n");
- 		goto err;
- 	}
- 
-@@ -1156,21 +1153,19 @@ static int __init erst_init(void)
- 	rc = erst_get_erange(&erst_erange);
- 	if (rc) {
- 		if (rc == -ENODEV)
--			pr_info(ERST_PFX
-+			pr_info(
- 	"The corresponding hardware device or firmware implementation "
- 	"is not available.\n");
- 		else
--			pr_err(ERST_PFX
--			       "Failed to get Error Log Address Range.\n");
-+			pr_err("Failed to get Error Log Address Range.\n");
- 		goto err_unmap_reg;
- 	}
- 
- 	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
- 	if (!r) {
--		pr_err(ERST_PFX
--		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
--		(unsigned long long)erst_erange.base,
--		(unsigned long long)erst_erange.base + erst_erange.size);
-+		pr_err("Can not request [mem %#010llx-%#010llx] for ERST.\n",
-+		       (unsigned long long)erst_erange.base,
-+		       (unsigned long long)erst_erange.base + erst_erange.size);
- 		rc = -EIO;
- 		goto err_unmap_reg;
- 	}
-@@ -1180,7 +1175,7 @@ static int __init erst_init(void)
- 	if (!erst_erange.vaddr)
- 		goto err_release_erange;
- 
--	pr_info(ERST_PFX
-+	pr_info(
- 	"Error Record Serialization Table (ERST) support is initialized.\n");
- 
- 	buf = kmalloc(erst_erange.size, GFP_KERNEL);
-@@ -1192,14 +1187,14 @@ static int __init erst_init(void)
- 		rc = pstore_register(&erst_info);
- 		if (rc) {
- 			if (rc != -EPERM)
--				pr_info(ERST_PFX
-+				pr_info(
- 				"Could not register with persistent store\n");
- 			erst_info.buf = NULL;
- 			erst_info.bufsize = 0;
- 			kfree(buf);
- 		}
- 	} else
--		pr_err(ERST_PFX
-+		pr_err(
- 		"Failed to allocate %lld bytes for persistent store error log\n",
- 		erst_erange.size);
- 
--- 
-1.8.3
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Regards/Gruss,
-    Boris.
+iQIcBAEBAgAGBQJR9nOLAAoJEIaOsuA1yqREX5EP/2EtzGLtHA1rmsCPMOqNheAL
+fIyU96f8OilZdg86vzyV9VChL0JlWtjtR+oKiL7tnzhHU0bi6WT0NX+XsiYZxjiP
+IqmulGQH/p3o40ctgR8XwVBGOA/4WUFrrKVg6AUMzbs2EjkfsWsXu8zyDNlOFN/e
+MwrxiDggV7I+AOKHXTm++9rMHP+GyUBHa00Ll8S2MF9XbNTzsv080jMnVZeqo69A
+y3YgJCwzvrIpfBTIF3LMO+XAa5M5xthhPpsAosX/qlkp4inzGSoH4ZSI51QIWGP9
+MbYApldpTuwK4SOM9mqJ6MQQsmdDuj+nJXr4yW2PrHk75JrXLQMnq+fD/PadYn4g
+pA4/ZCKd8H1DXu5iDeB7G3CJ8xgnBt5f8+Lku7qGfk6Ej3q4K8PmVFAP9skztgLc
+bWgnrbMpUnENkzkK3XDOr4F5Q1BcQ3SxjG36c/muE96h0C09F3geLcby1mVm13cj
+4tBq5vLvUCbJxbE3uVfwbDOtZqOsmvyRE80rsh6ES2lTd4Dn0KOdjzFIXd1YUKNW
+1+FkTu9L4VxBWRYhIE1A0BXevk1lRHamhX9mMR4+kJp9gO4Dhr5o/9QM6f6SAZpk
+AXYigRBjPP38I/Kq2uzPp7WLMeYIh895cJLw1ZNP7Fo7+hKqAyvYqL9BJkJzsN0s
+OvQgGH96fEG+0C3+fPMU
+=5VB/
+-----END PGP SIGNATURE-----
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+--S1BNGpv0yoYahz37--
