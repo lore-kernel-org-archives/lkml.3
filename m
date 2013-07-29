@@ -1,98 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab3G2RXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:23:37 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44363 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751560Ab3G2RXg convert rfc822-to-8bit (ORCPT
+	id S1758267Ab3G2RYD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:24:03 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:38193 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751339Ab3G2RYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:23:36 -0400
-Date: Mon, 29 Jul 2013 18:23:27 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+	Mon, 29 Jul 2013 13:24:00 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/L+1X6lP3NWEJ8D2xspzZbGf7hnw2JxQY=
+Date: Mon, 29 Jul 2013 13:23:39 -0400
+From: Jason Cooper <jason@lakedaemon.net>
 To: Dave Martin <Dave.Martin@arm.com>
-Cc: Will Deacon <Will.Deacon@arm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Al Stone <al.stone@linaro.org>, Patch Tracking <patches@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Hanjun Guo <hanjun.guo@linaro.org>,
-        Naresh Bhat <naresh.bhat@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC][PATCH 1/2] ARM64: add cpu topology definition
-Message-ID: <20130729172327.GA20592@e102568-lin.cambridge.arm.com>
-References: <1374921728-9007-1-git-send-email-hanjun.guo@linaro.org>
- <CAKfTPtBpo41LJ3V8TB8YwudwqpURuA2u_Lvu4KYVK=qSs+gFuQ@mail.gmail.com>
- <20130729095400.GB32383@mudshark.cambridge.arm.com>
- <20130729133625.GA2280@localhost.localdomain>
+Cc: Mark Rutland <mark.rutland@arm.com>, Tomasz Figa <tomasz.figa@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
+Message-ID: <20130729172339.GT29916@titan.lakedaemon.net>
+References: <2469263.vMN09Q7Tzi@flatron>
+ <20130729150124.GS29916@titan.lakedaemon.net>
+ <20130729164905.GB2280@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20130729133625.GA2280@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 29 Jul 2013 17:23:30.0906 (UTC) FILETIME=[5883D3A0:01CE8C80]
-X-MC-Unique: 113072918233302001
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20130729164905.GB2280@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 02:36:30PM +0100, Dave Martin wrote:
-> On Mon, Jul 29, 2013 at 10:54:01AM +0100, Will Deacon wrote:
-> > On Mon, Jul 29, 2013 at 10:46:06AM +0100, Vincent Guittot wrote:
-> > > On 27 July 2013 12:42, Hanjun Guo <hanjun.guo@linaro.org> wrote:
-> > > > Power aware scheduling needs the cpu topology information to improve the
-> > > > cpu scheduler decision making.
-> > > 
-> > > It's not only power aware scheduling. The scheduler already uses
-> > > topology and cache sharing when  CONFIG_SCHED_MC and/or
-> > > CONFIG_SCHED_SMT are enable. So you should also add these configs for
-> > > arm64 so the scheduler can use it
+On Mon, Jul 29, 2013 at 05:49:05PM +0100, Dave Martin wrote:
+> On Mon, Jul 29, 2013 at 11:01:24AM -0400, Jason Cooper wrote:
+> > On Mon, Jul 29, 2013 at 02:21:52AM +0200, Tomasz Figa wrote:
+
+> > > b) What information should be specified in schemas? What level of 
+> > >    granularity is required?
 > > 
-> > ... except that the architecture doesn't define what the AFF fields in MPIDR
-> > really represent. Using them to make key scheduling decisions relating to
+> > One item I don't see in this list is node ordering.  There's been some
+> > discussion lately on deferred probing (re boot times).  If we were to
+> > intentionally declare that DT are parsed in the order written, then a
+> > lot of deferred probes could be avoided by moving eg the pinctrl node to
+> > near the top of the tree.
+> > 
+> > This doesn't impact buses as much, since the nodes needing the bus are
+> > already children.  However, anything accessed via phandles: pins,
+> > clocks, regulators, etc could benefit from declaring and enforcing this.
+> > Eg having the dtc warn when a phandle is used before it's corresponding
+> > node is declared.
+> > 
+> > Not critical though, just a thought.
 > 
-> In fact, the ARM Architecture doesn't place any requirements on MPIDRs to
-> force the aff fields to exist _at all_.  It's just a recommendation.
-> Instead, you have a 24 or 32-bit number which is unique per CPU, and which
-> is _probably_ assigned in a way resembling the aff fields.
+> I don't think that siblings have any defined order in DT.  If reading a
+> device tree, there's no guarantee you get nodes or properties out in the
+> same order as the original .dts file.
+
+That's why I raised the point.  If people think encoding initialization
+order in the DT is a good idea, then we should change the dtc so it
+compiles/decompiles in the same order.
+
+> Provided child/parent relationships are maintained and the set of nodes
+> and values is the same, I think completely rearranging a .dts file does
+> not change its meaning.
 > 
-> > cache proximity seems pretty risky to me, especially given the track record
-> > we've seen already on AArch32 silicon. It's a convenient register if it
-> > contains the data we want it to contain, but we need to force ourselves to
-> > come to terms with reality here and simply use it as an identifier for a
-> > CPU.
-> 
-> +1
-> 
-> Also, we should align arm and arm64.  The problem is basically exactly
-> the same, and the solution needs to be the same.  struct cputopo_arm is
-> already being abused  -- for example, TC2 describes the A15 and A7
-> clusters on a single die as having different "socket_id" values, even
-> though this is obviously nonsense.  But there's no other way to describe
-> that system today.
-> 
-> > Can't we just use the device-tree to represent this topological data for
-> > arm64? Lorenzo has been working on bindings in this area.
-> 
-> This may become more important as we start to see things like asymmetric
-> topologies appearing (different numbers of nodes and different
-> interdependence characteristics in adjacent branches of the topology
-> etc.)
+> "depends-on" relationships mostly have to come from the semantics of
+> the bindings themselves: for example, if a device is connected to some
+> clocks and regulators, the kernel may need to probe those first.
 
-Will and Dave summed up the existing issues with MPIDR definition related to
-the topology description.
+true, the answer to this problem may be to create a depgraph of the
+nodes based on phandles and child status, then init.  However, if the
+goal is to accelerate boot times, then that should not be calculated
+during each boot, especially since it doesn't likely change from boot to
+boot.
 
-FYI, a link to the current topology bindings posted on DT-discuss and LAKML:
+Which means it would either go in the dtc (dts node ordering is
+irrelevant), or in the dts.  I'm inclined to say dtc should do it, but I
+like the aesthetics of things being in the proper order in something I
+can read.  After all, C requires functions to be declared before use,
+even though the compiler could figure it out.
 
-https://lists.ozlabs.org/pipermail/devicetree-discuss/2013-April/031725.html
+thx,
 
-I am waiting for the dust to settle on the DT bindings review discussions to
-repost them and get them finalized.
-
-Lorenzo
-
+Jason.
