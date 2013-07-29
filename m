@@ -1,149 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab3G2Ud0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 16:33:26 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46061 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754318Ab3G2UdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 16:33:25 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 29 Jul 2013 22:33:12 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux1394-devel@lists.sourceforge.net
-Subject: [git pull] FireWire regression fix
-Message-ID: <20130729223312.723167d0@stein>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.17; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755095Ab3G2UgS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 16:36:18 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57981 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754683Ab3G2UgQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 16:36:16 -0400
+Date: Mon, 29 Jul 2013 23:36:05 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: <balbi@ti.com>, Illia Smyrnov <illia.smyrnov@ti.com>,
+        <linux-input@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Greg KH <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v3 1/3] Input: omap-keypad: Enable wakeup capability for
+ keypad.
+Message-ID: <20130729203605.GB6547@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375116311-13999-1-git-send-email-illia.smyrnov@ti.com>
+ <7605900.g1IUvSbegi@dtor-d630.eng.vmware.com>
+ <20130729191324.GA5767@radagast>
+ <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OwLcNYc0lM97+oe1"
+Content-Disposition: inline
+In-Reply-To: <2416808.ThTjdiEasK@dtor-d630.eng.vmware.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--OwLcNYc0lM97+oe1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Linus,
+Hi,
 
-please pull from the tag "firewire-fix" at
+On Mon, Jul 29, 2013 at 12:59:23PM -0700, Dmitry Torokhov wrote:
+> > > > > @@ -439,12 +444,50 @@ static const struct of_device_id
+> > > > > omap_keypad_dt_match[] =3D {>
+> > > > >=20
+> > > > >  MODULE_DEVICE_TABLE(of, omap_keypad_dt_match);
+> > > > >  #endif
+> > > > >=20
+> > > > > +#ifdef CONFIG_PM_SLEEP
+> > > > > +static int omap4_keypad_suspend(struct device *dev)
+> > > > > +{
+> > > > > +	struct platform_device *pdev =3D to_platform_device(dev);
+> > > >=20
+> > > > you don't need to access the platform_device...
+> > > >=20
+> > > > > +	struct omap4_keypad *keypad_data =3D platform_get_drvdata(pdev);
+> > > >=20
+> > > > ... since this can become:
+> > > > 	struct omap4_keypad *keypad_data =3D dev_get_drvdata(dev);
+> > >=20
+> > > No, please use correct accessors for the objects. Platform drivers de=
+al
+> > > with platform devices and I prefer using platform_get_drvdata() on th=
+em.
+> >=20
+> > The argument to this function is a struct device, you prefer to do some
+> > pointer math to find the containing pdev, then deref that back to dev,
+> > then to struct device_private and further to driver_data ?
+> >=20
+> > Sounds like a waste of time IMHO. You already have the device pointer
+> > anyway, why would you go through the trouble of calculating the
+> > offsets for the containing struct platform_device ?
+>=20
+> This assumes knowledge of dev_get_drvdata() implementation and assumption
+> that it will stay the same. Unless I hear from device core guys that
+> <bus>_{get|set}_drvdata() methods are obsolete and will be eventually
+> removed I will require proper accessors being used.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394.git firewire-fix
+they're not obsolete and will never be removed. They're nothing but
+helpers though. Instead of calling:
 
-This fixes corrupted video capture, seen with IIDC/DCAM video and certain
-buffer settings.  (Regression since v3.4 inclusive.)
-Thanks.
+	dev_set_drvdata(&pdev->dev);
 
-Clemens Ladisch (1):
-      firewire: fix libdc1394/FlyCap2 iso event regression
+you call:
 
- drivers/firewire/core-cdev.c       |  3 +++
- drivers/firewire/ohci.c            | 10 ++++++++--
- include/linux/firewire.h           |  1 +
- include/uapi/linux/firewire-cdev.h |  4 ++--
- 4 files changed, 14 insertions(+), 4 deletions(-)
+	platform_set_drvdata(pdev);
 
+same is valid for every single bus, but in the end they all just wrap a
+call dev_{set,get}_drvdata() internally. If you already have a struct
+device pointer as argument, why waste cycles doing pointer math just to
+go back to the same struct device pointer on the next call ?
 
-commit 0699a73af3811b66b1ab5650575acee5eea841ab
-Author: Clemens Ladisch <clemens@ladisch.de>
-Date:   Mon Jul 22 21:32:09 2013 +0200
+--=20
+balbi
 
-    firewire: fix libdc1394/FlyCap2 iso event regression
-    
-    Commit 18d627113b83 (firewire: prevent dropping of completed iso packet
-    header data) was intended to be an obvious bug fix, but libdc1394 and
-    FlyCap2 depend on the old behaviour by ignoring all returned information
-    and thus not noticing that not all packets have been received yet.  The
-    result was that the video frame buffers would be saved before they
-    contained the correct data.
-    
-    Reintroduce the old behaviour for old clients.
-    
-    Tested-by: Stepan Salenikovich <stepan.salenikovich@gmail.com>
-    Tested-by: Josep Bosch <jep250@gmail.com>
-    Cc: <stable@vger.kernel.org> # 3.4+
-    Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-    Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+--OwLcNYc0lM97+oe1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/drivers/firewire/core-cdev.c b/drivers/firewire/core-cdev.c
-index 7ef316f..ac1b43a 100644
---- a/drivers/firewire/core-cdev.c
-+++ b/drivers/firewire/core-cdev.c
-@@ -54,6 +54,7 @@
- #define FW_CDEV_KERNEL_VERSION			5
- #define FW_CDEV_VERSION_EVENT_REQUEST2		4
- #define FW_CDEV_VERSION_ALLOCATE_REGION_END	4
-+#define FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW	5
- 
- struct client {
- 	u32 version;
-@@ -1005,6 +1006,8 @@ static int ioctl_create_iso_context(struct client *client, union ioctl_arg *arg)
- 			a->channel, a->speed, a->header_size, cb, client);
- 	if (IS_ERR(context))
- 		return PTR_ERR(context);
-+	if (client->version < FW_CDEV_VERSION_AUTO_FLUSH_ISO_OVERFLOW)
-+		context->drop_overflow_headers = true;
- 
- 	/* We only support one context at this time. */
- 	spin_lock_irq(&client->lock);
-diff --git a/drivers/firewire/ohci.c b/drivers/firewire/ohci.c
-index 9e1db64..afb701e 100644
---- a/drivers/firewire/ohci.c
-+++ b/drivers/firewire/ohci.c
-@@ -2749,8 +2749,11 @@ static void copy_iso_headers(struct iso_context *ctx, const u32 *dma_hdr)
- {
- 	u32 *ctx_hdr;
- 
--	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE)
-+	if (ctx->header_length + ctx->base.header_size > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return;
- 		flush_iso_completions(ctx);
-+	}
- 
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = (u16)le32_to_cpu((__force __le32)dma_hdr[0]);
-@@ -2910,8 +2913,11 @@ static int handle_it_packet(struct context *context,
- 
- 	sync_it_packet_for_cpu(context, d);
- 
--	if (ctx->header_length + 4 > PAGE_SIZE)
-+	if (ctx->header_length + 4 > PAGE_SIZE) {
-+		if (ctx->base.drop_overflow_headers)
-+			return 1;
- 		flush_iso_completions(ctx);
-+	}
- 
- 	ctx_hdr = ctx->header + ctx->header_length;
- 	ctx->last_timestamp = le16_to_cpu(last->res_count);
-diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-index 3b0e820..5d7782e 100644
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -436,6 +436,7 @@ struct fw_iso_context {
- 	int type;
- 	int channel;
- 	int speed;
-+	bool drop_overflow_headers;
- 	size_t header_size;
- 	union {
- 		fw_iso_callback_t sc;
-diff --git a/include/uapi/linux/firewire-cdev.h b/include/uapi/linux/firewire-cdev.h
-index d500369..1db453e 100644
---- a/include/uapi/linux/firewire-cdev.h
-+++ b/include/uapi/linux/firewire-cdev.h
-@@ -215,8 +215,8 @@ struct fw_cdev_event_request2 {
-  * with the %FW_CDEV_ISO_INTERRUPT bit set, when explicitly requested with
-  * %FW_CDEV_IOC_FLUSH_ISO, or when there have been so many completed packets
-  * without the interrupt bit set that the kernel's internal buffer for @header
-- * is about to overflow.  (In the last case, kernels with ABI version < 5 drop
-- * header data up to the next interrupt packet.)
-+ * is about to overflow.  (In the last case, ABI versions < 5 drop header data
-+ * up to the next interrupt packet.)
-  *
-  * Isochronous transmit events (context type %FW_CDEV_ISO_CONTEXT_TRANSMIT):
-  *
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-Stefan Richter
--=====-===-= -=== ===-=
-http://arcgraph.de/sr/
+iQIcBAEBAgAGBQJR9tI1AAoJEIaOsuA1yqREDyMQAJlThkNzLee8vWcWwgQ7QX4m
+r7qwOXCUQQHOKIdgeT6u9TRAezKwWo+Rf38f+XtLOjeetBZBRxe9yYME8kdoMxWS
+wvbcyzt1dTG//tl+NNZqiUDS3z2kqDpCdRe5Ku/yeKwTXGEgNnbCbcXdlDf2zCOr
+Dp5VObyW0g4HdicN0OCWDWDU7Y/6ZN7Bi1hr5lNYSCZHRJJBHlZwevLzGJRfnEXX
+z3l76nEU35KN2vIqreTtCfV0D7Aqsrv3bZIV5ToDnwyF7x8LT06ur2hb/CQKbUZv
+TNAd0pK1IZb2+f3YVOxQpieOzoE0CN5g9kHpe2SFeQlLWg5FawkDQoBaoMBcHsyx
+fRatLx3VIw3GD87gUhMUwSxEJMXSngBfY2b+VpIiZ+CY6BrgmYmbEUkuQ8E/+G+0
+p/Uu6f0cWKDuj8guYz17iajXFWMoQdxCaHDLs4V+AJAxJGj2Ai86UTpi6ylNMGRs
+K4efB/mH0iSXRoNLoJslMFwvoEnPTt/qMLcGEzu3VpLrh6Xpsj4XH3s2hcOvHXb2
+PMNca6e0pBlK372APpz65rJzlYdsTVg2qGyFduFujVvm5AEojezwjvXj4x3BAkuA
+IBo8WA3t2fUYxp4L9tvE6nmayzTU8WluzDpEvw4z+erXJfhjKDLVxhyUly10Rzu5
+z0RssZwcBUv+PxaR6G5p
+=qM/g
+-----END PGP SIGNATURE-----
+
+--OwLcNYc0lM97+oe1--
