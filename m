@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755488Ab3G2VE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 17:04:59 -0400
-Received: from s16502780.onlinehome-server.info ([87.106.93.118]:61767 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755284Ab3G2VE5 (ORCPT
+	id S1755444Ab3G2VJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 17:09:42 -0400
+Received: from icebox.esperi.org.uk ([81.187.191.129]:33216 "EHLO
+	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754837Ab3G2VJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 17:04:57 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Mon, 29 Jul 2013 22:04:29 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        daniel.vetter@ffwll.ch, airlied@redhat.com,
-        Ben Widawsky <ben@bwidawsk.net>
-Subject: Re: i915 debug spew during boot.
-Message-ID: <20130729210429.GB27041@cantiga.alporthouse.com>
-References: <20130729195431.GA3540@redhat.com>
+	Mon, 29 Jul 2013 17:09:40 -0400
+From: Nix <nix@esperi.org.uk>
+To: Bernd Schubert <bernd.schubert@fastmail.fm>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        nick.cheng@areca.com.tw, stable@vger.kernel.org
+Subject: Re: [SCSI REGRESSION] 3.10.2 or 3.10.3: arcmsr failure at bootup / early userspace transition
+References: <87r4ehfzhf.fsf@spindle.srvr.nix> <51F667C2.4020801@fastmail.fm>
+	<87mwp5frdl.fsf@spindle.srvr.nix> <51F67959.2060803@fastmail.fm>
+Emacs: because editing your files should be a traumatic experience.
+Date: Mon, 29 Jul 2013 22:09:31 +0100
+In-Reply-To: <51F67959.2060803@fastmail.fm> (Bernd Schubert's message of "Mon,
+	29 Jul 2013 16:16:57 +0200")
+Message-ID: <87fvuxdqes.fsf@spindle.srvr.nix>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130729195431.GA3540@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Originating-IP: 78.156.73.22
+Content-Type: text/plain
+X-DCC-wuwien-Metrics: spindle 1290; Body=6 Fuz1=6 Fuz2=6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 03:54:31PM -0400, Dave Jones wrote:
-> [    7.542156]  [<ffffffff81079973>] cancel_delayed_work_sync+0x13/0x20
-> [    7.543020]  [<ffffffff814846ed>] intel_disable_gt_powersave+0x5d/0x420
-> [    7.543915]  [<ffffffff81486409>] intel_gt_sanitize+0x49/0xb0
-> [    7.544708]  [<ffffffff81435228>] i915_driver_load+0x608/0xe60
+On 29 Jul 2013, Bernd Schubert uttered the following:
 
-Whoops, we spotted that error and fixed it in the next tree, but forgot
-to send a fix for stable as well.
+> On 07/29/2013 03:05 PM, Nix wrote:
+>> On 29 Jul 2013, Bernd Schubert said:
+>>
+>>> Hi Nick,
+>>>
+>>> On 07/29/2013 12:10 PM, Nick Alcock wrote:
+>>>> arcmsr0: abort device command of scsi id = 0 lun = 1
+>>>> arcmsr0: abort device command of scsi id = 0 lun = 0
+>>>> arcmsr: executing bus reset eh.....num_resets=0, num_[...]
+>>>>
+>>>> arcmsr0: wait 'abort all outstanding command' timeout
+>>>> arcmsr0: executing hw bus reset ....
+>>>> arcmsr0: waiting for hw bus reset return, retry=0
+>>>> arcmsr0: waiting for hw bus reset return, retry=1
+>>>> Areca RAID Controller0: F/W V1.46 2009-01-06 & Model ARC-1210
+>>>> arcmsr: scsi  bus reset eh returns with success
+>>>> [and back to the top of the error messages again, apparently forever,
+>>>>    not that the machine would be much use without its RAID array even
+>>>>    if this loop terminated at some point, so I only gave it a couple
+>>>>    of minutes]
+>>>>
+>>>> The failure happens precisely at the moment we transition to early
+>>>> userspace, so presumably userspace I/O is failing (or something related
+>>>> to raw device access, perhaps, since the first thing it does is a
+>>>> vgscan).
+>>>>
+>>>> I haven't bisected yet (sorry, I have work to do which means this
+>>>> machine must be running right now), but nothing has changed in the
+>>>> arcmsr controller, nor in SCSI-land excepting
+>>>>
+>>>> commit 98dcc2946adbe4349ef1ef9b99873b912831edd4
+>>>> Author: Martin K. Petersen <martin.petersen@oracle.com>
+>>>> Date:   Thu Jun 6 22:15:55 2013 -0400
 
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index b152068..0c17977 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1594,6 +1594,7 @@ int i915_driver_load(struct drm_device *dev, unsigned long flags)
- 	intel_detect_pch(dev);
- 
- 	intel_irq_init(dev);
-+	intel_pm_init(dev);
- 	intel_gt_sanitize(dev);
- 	intel_gt_init(dev);
- 
-diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
-index d2ee334..70c3549 100644
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -1583,6 +1583,7 @@ void i915_handle_error(struct drm_device *dev, bool wedged);
- 
- extern void intel_irq_init(struct drm_device *dev);
- extern void intel_hpd_init(struct drm_device *dev);
-+extern void intel_pm_init(struct drm_device *dev);
- extern void intel_gt_init(struct drm_device *dev);
- extern void intel_gt_sanitize(struct drm_device *dev);
- 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index 51a2a60..1235d71 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -5536,6 +5536,10 @@ void intel_gt_init(struct drm_device *dev)
- 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
- 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
- 	}
-+}
-+
-+void intel_pm_init(struct drm_device *dev)
-+{
- 	INIT_DELAYED_WORK(&dev_priv->rps.delayed_resume_work,
- 			  intel_gen6_powersave_work);
- }
+I can now confirm that reverting this commit causes this problem to go
+away, and my machine boots fine again.
+
+Please revert (and figure out what is wrong so that 3.11 doesn't
+implode in the same way? I'm happy to assist...)
+
+(My apologies if a 'please revert' from someone bitten by a stable
+regression isn't adequate reason to revert the thing: I've never been
+quite sure who should report regressions in stable patches to Greg. It
+should at least be *evidence*. So here's my "it crashed and now it
+doesn't" evidence. :} )
 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+NULL && (void)
