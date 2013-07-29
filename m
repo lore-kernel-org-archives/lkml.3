@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab3G2LuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 07:50:20 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:44822 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752808Ab3G2LuP (ORCPT
+	id S1752580Ab3G2LzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 07:55:17 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:51522 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752186Ab3G2LzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 07:50:15 -0400
-Date: Mon, 29 Jul 2013 07:50:11 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alexander Gordeev <agordeev@redhat.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, Jeff Garzik <jgarzik@pobox.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH RESEND 0/1] AHCI: Optimize interrupt processing
-Message-ID: <20130729115011.GC20951@mtj.dyndns.org>
-References: <1374248000.2266.20.camel@dabdike>
- <1374267684.7397.1058.camel@haakon3.risingtidesystems.com>
- <1374296162.7397.1098.camel@haakon3.risingtidesystems.com>
- <20130722150359.GA16564@dhcp-26-207.brq.redhat.com>
- <1374527436.7397.1145.camel@haakon3.risingtidesystems.com>
- <20130725101641.GB31994@dhcp-26-207.brq.redhat.com>
- <1374790082.7397.1411.camel@haakon3.risingtidesystems.com>
- <20130726020928.GL29296@kernel.dk>
- <1374873276.7397.1512.camel@haakon3.risingtidesystems.com>
- <1374885793.7397.1537.camel@haakon3.risingtidesystems.com>
+	Mon, 29 Jul 2013 07:55:16 -0400
+X-AuditID: 85900ec0-d38c8b900000151e-9a-51f65821f975
+Message-ID: <51F6580B.30409@hitachi.com>
+Date: Mon, 29 Jul 2013 20:54:51 +0900
+From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120604 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1374885793.7397.1537.camel@haakon3.risingtidesystems.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kay Sievers <kay@vrfy.org>
+Cc: linux-kernel@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
+        akpm@linux-foundation.org, gregkh@linuxfoundation.org,
+        davem@davemloft.net, itoukzo@nttdata.co.jp
+Subject: Re: Re: [RFC PATCH 0/5] Add a hash value for each line in /dev/kmsg
+References: <20130703014616.18745.34699.stgit@localhost.localdomain> <CAPXgP11HzstSBt1PQUgJeGC59yXc=DSYQuruB40LOsm=RZQBZA@mail.gmail.com>
+In-Reply-To: <CAPXgP11HzstSBt1PQUgJeGC59yXc=DSYQuruB40LOsm=RZQBZA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yo,
+Hello,
 
-On Fri, Jul 26, 2013 at 05:43:13PM -0700, Nicholas A. Bellinger wrote:
-> Considering there can be more than a single ata_device hanging off each
-> ata_port, the '*sdev = ap->link.device[0].sdev' in __ata_qc_from_tag()
-> is definitely bogus, but I'm not sure how else to correlate
-> blk-mq/scsi-mq per device descriptors to existing code expecting
-> ata_port->qcmd[] descriptors to be shared across multiple devices..
-> 
-> Tejun..?
+(2013/07/26 21:43), Kay Sievers wrote:> On Wed, Jul 3, 2013 at 3:46 AM, Hidehiro Kawai
+> <hidehiro.kawai.ez@hitachi.com> wrote:
+>
+>> This patch series adds hash values of printk format strings into
+>> each line of /dev/kmsg outputs as follows:
+>>
+>>         6,154,325061,-,b7db707c@kernel/smp.c:554;Brought up 4 CPUs
+>
+> /dev/kmsg is to a certain degree a kernel ABI. Having source code
+> locations in exported log records might cause people / userspace tools
+> to rely on these strings and expect stability here. The kernel though
+> cannot make any promises of its source code layout.
 
-I have no idea.  Let's please just do simpler conversion and worry
-about embedding qc's into scsi_cmnds later.  libata isn't a normal
-SCSI driver and has a rather its own thick midlayer doing the
-impedance matching inbetween && I really don't think there is too much
-benefit to be reaped from embedding qc's into scsi_cmnds.
+All we have to keep as kABI is <hash>@<filename>:<lineno> of the 5th field.
+I regard the 5th field including hash as just a hint; it's not guaranteed
+either the hash is unique or filename:lineno is unchanged.  Userspace
+tools can use the hash to identify the message quickly, but if a hash
+collision occurs, the user space need to do message matching in a
+traditional way.  Please note that userspace tools can know which ones
+collide from a catalog generated at build time.
 
-Thanks.
+As for <filename>:<lineno>, it wouldn't be needed for the most of the cases.
+So I think I can introduce an option to suppress the output of
+<filename>:<lineno> to reduce memory space.
 
+> The hash is supposed to identify the content of a message, but what if
+> someone fixes the string? Maybe someone just fixes a one char typo,
+> the hash will change and the message will not be recognizable any
+> more.
+
+A catalog file which includes hash, location info, and message is
+generated at build time.  Combining this information with diff between
+two kernel versions, userspace tools will be able to track where
+messages moved and which messages changed.  Then, the userspace tool
+updates the message DB managed by it.  So I don't think it's a hard
+problem.
+
+> As much as "automated" hash creation sounds simple; I really think
+> adding explicit "manually" created random message ids to the bunch of
+> messages that are interesting is the better option long-term. It
+> shouldn't be that many messages, most of the printk output is not
+> really useful for automated inspection or to trigger specific actions.
+
+Yes, as far as the use case goes, it may be true.  But it has some
+drawbacks.  Please also see my reply to Joe Perches in another thread
+(I resent the patches on July 25th).  Also, I heard about the discussion
+at the kernel summit 2 years ago.  According to the article of LWN,
+it seems that Linus objected your approach (i.e. adding random bit as
+message ID).  Were there some agreements on this issue at the kernel summit?
+
+Regards,
 -- 
-tejun
+Hidehiro Kawai
+Hitachi, Yokohama Research Laboratory
+Linux Technology Center
+
+
