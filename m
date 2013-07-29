@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab3G2SpM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 14:45:12 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:52611 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab3G2SpJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 14:45:09 -0400
-Date: Mon, 29 Jul 2013 14:43:12 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth 2013-07-25
-Message-ID: <20130729184312.GE31172@tuxdriver.com>
-References: <20130725130552.GE9913@joana>
- <20130725150156.GA21959@joana>
+	id S1751462Ab3G2SrK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 14:47:10 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:38814 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750882Ab3G2SrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 14:47:08 -0400
+Date: Mon, 29 Jul 2013 20:45:20 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: dove: add initial DT file for Globalscale D2Plug
+Message-ID: <20130729184520.GI24782@lunn.ch>
+References: <1375100946-28521-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1375100946-28521-5-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130725150156.GA21959@joana>
+In-Reply-To: <1375100946-28521-5-git-send-email-sebastian.hesselbarth@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 25, 2013 at 04:01:58PM +0100, Gustavo Padovan wrote:
-> Hi John,
-> 
-> * Gustavo Padovan <gustavo@padovan.org> [2013-07-25 14:05:54 +0100]:
-> 
-> > Hi John,
-> > 
-> > A few fixes and devices ID additions for 3.11: 
-> > 
-> >  * There are 3 new ath3k device ids 
-> >  * Fixed stack memory usage in ath3k.
-> >  * Fixed the init process of BlueFRITZ! devices, they were failing to init
-> >    due to an unsupported command we sent. 
-> >  * Fixed wrong use of PTR_ERR in btusb code that was preventing intel devices
-> >    to work properly 
-> >  * Fixed race codition between hci_register_dev() and hci_dev_open() that
-> >    could cause a NULL pointer dereference.
-> 
-> Marcel just raised the comment that we need to add more information to
-> the BlueFRITZ! fixes so I'm steping back with it. So just ignore it for
-> now.
-> 
-> 	Gustavo
+On Mon, Jul 29, 2013 at 02:29:06PM +0200, Sebastian Hesselbarth wrote:
+> This adds an initial DT file for the Globalscale D2Plug with Dove SoC.
+> Currently, one LED is missing and I have not been able to get SD8787 driver
+> working. Those will be taken care of later.
 
-Is a new version of this request still coming?
+Hi Sebastion
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+I took a hard look at SDIO and failed to get it working when doing
+DMA. Polled IO does however work. I guess we need some help from
+Marvell engineers before we get stable SDIO with DMA.
+
+	Andrew
