@@ -1,105 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751727Ab3G2XnR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 19:43:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43838 "EHLO mga09.intel.com"
+	id S1751834Ab3G2Xp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:45:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:54327 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751236Ab3G2XnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 19:43:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,773,1367996400"; 
-   d="scan'208";a="353912069"
-Message-ID: <51F6FE34.2020703@intel.com>
-Date: Tue, 30 Jul 2013 07:43:48 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751236Ab3G2XpY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 19:45:24 -0400
+Date: Tue, 30 Jul 2013 09:45:32 +1000
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Dave Martin <Dave.Martin@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Domenico Andreoli <cavokz@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "ksummit-2013-discuss@lists.linuxfoundation.org" 
+	<ksummit-2013-discuss@lists.linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
+Message-ID: <20130729234532.GH29970@voom.fritz.box>
+References: <2469263.vMN09Q7Tzi@flatron>
+ <20130729150124.GS29916@titan.lakedaemon.net>
+ <20130729164905.GB2280@localhost.localdomain>
+ <20130729172339.GT29916@titan.lakedaemon.net>
+ <20130729222920.GF29970@voom.fritz.box>
+ <20130729224840.GZ29916@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org
-Subject: Re: [PATCH 1/3] ACPI / PM: Only set power states of devices that
- are power manageable
-References: <10433383.dueoNg39qi@vostro.rjw.lan> <1657971.1utElu0Hzo@vostro.rjw.lan> <51F677B1.9090502@intel.com> <3386345.rYEkrXssx8@vostro.rjw.lan>
-In-Reply-To: <3386345.rYEkrXssx8@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="WRT3RXLOp/bBMgTI"
+Content-Disposition: inline
+In-Reply-To: <20130729224840.GZ29916@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 06:21 AM, Rafael J. Wysocki wrote:
-> On Monday, July 29, 2013 10:09:53 PM Aaron Lu wrote:
->> On 07/27/2013 09:10 PM, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>
->>> Make acpi_device_set_power() check if the given device is power
->>> manageable before checking if the given power state is valid for that
->>> device.  Otherwise it will print that "Device does not support" that
->>> power state into the kernel log, which may not make sense for some
->>> power states (D0 and D3cold are supported by all devices by
->>> definition).
->>
->> It will not print "Device does not support" that power state if that
->> power state is D0 or D3cold since we have unconditionally set those two
->> power state's valid flag.
-> 
-> So you didn't actually looked at acpi_bus_get_power_flags() that set the
-> power.states[].flags.valid flag, because If you had looked at it, you would
-> have seen that that's not the case.
-> 
-> No, we don't set the valid flag for devices that aren't power manageable
-> (i.e. have flags.power_manageable unset), which is the *whole* *point* of
-> this change.
 
-Right, I missed this. Sorry for the noise.
+--WRT3RXLOp/bBMgTI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
->> OTOH, what value should we return for a device node that is not power
->> manageable in acpi_device_set_power when the target state is D0 or D3
->> cold? The old behavior is to return 0, meanning success without taking
->> any actual action.
->>
->> In acpi_bus_set_power, if the device is not power manageable, we will
->> return -ENODEV; in acpi_dev_pm_full/low_power, we will return 0 as in
->> the original acpi_device_set_power. So return -EINVAL here is correct?
-> 
-> No, the original acpi_device_set_power() will return -ENODEV then, but
-> in my opinion returning -EINVAL is more accurate, because "power
-> manageable" means "you can change power state of it".
+On Mon, Jul 29, 2013 at 06:48:40PM -0400, Jason Cooper wrote:
+> On Tue, Jul 30, 2013 at 08:29:20AM +1000, David Gibson wrote:
+> > On Mon, Jul 29, 2013 at 01:23:39PM -0400, Jason Cooper wrote:
+> > > On Mon, Jul 29, 2013 at 05:49:05PM +0100, Dave Martin wrote:
+> > > > On Mon, Jul 29, 2013 at 11:01:24AM -0400, Jason Cooper wrote:
+> > > > > On Mon, Jul 29, 2013 at 02:21:52AM +0200, Tomasz Figa wrote:
+> > >=20
+> > > > > > b) What information should be specified in schemas? What level =
+of=20
+> > > > > >    granularity is required?
+> > > > >=20
+> > > > > One item I don't see in this list is node ordering.  There's been=
+ some
+> > > > > discussion lately on deferred probing (re boot times).  If we wer=
+e to
+> > > > > intentionally declare that DT are parsed in the order written, th=
+en a
+> > > > > lot of deferred probes could be avoided by moving eg the pinctrl =
+node to
+> > > > > near the top of the tree.
+> > > > >=20
+> > > > > This doesn't impact buses as much, since the nodes needing the bu=
+s are
+> > > > > already children.  However, anything accessed via phandles: pins,
+> > > > > clocks, regulators, etc could benefit from declaring and enforcin=
+g this.
+> > > > > Eg having the dtc warn when a phandle is used before it's corresp=
+onding
+> > > > > node is declared.
+> > > > >=20
+> > > > > Not critical though, just a thought.
+> > > >=20
+> > > > I don't think that siblings have any defined order in DT.  If readi=
+ng a
+> > > > device tree, there's no guarantee you get nodes or properties out i=
+n the
+> > > > same order as the original .dts file.
+> > >=20
+> > > That's why I raised the point.  If people think encoding initializati=
+on
+> > > order in the DT is a good idea, then we should change the dtc so it
+> > > compiles/decompiles in the same order.
+> >=20
+> > I've always considered the DT to be unordered, although the flattened
+> > representation obviously has to have some order.  It is much safer to
+> > explicitly represent any required orderings with properties, rather
+> > than to rely on the flattened tree order.  I really don't think trying
+> > to have dtc magically understand device initialization ordering in
+> > this way is a good idea.
+> >=20
+> > Fwiw, dtc generally preserves order between input and output, with the
+> > exception of the -s option, which sorts the subnodes of each node by
+> > name (useful for dtdiff).
+> >=20
+> > > > Provided child/parent relationships are maintained and the set of n=
+odes
+> > > > and values is the same, I think completely rearranging a .dts file =
+does
+> > > > not change its meaning.
+> > > >=20
+> > > > "depends-on" relationships mostly have to come from the semantics of
+> > > > the bindings themselves: for example, if a device is connected to s=
+ome
+> > > > clocks and regulators, the kernel may need to probe those first.
+> > >=20
+> > > true, the answer to this problem may be to create a depgraph of the
+> > > nodes based on phandles and child status, then init.  However, if the
+> > > goal is to accelerate boot times, then that should not be calculated
+> > > during each boot, especially since it doesn't likely change from boot=
+ to
+> > > boot.
+> > >=20
+> > > Which means it would either go in the dtc (dts node ordering is
+> > > irrelevant), or in the dts.  I'm inclined to say dtc should do it, bu=
+t I
+> > > like the aesthetics of things being in the proper order in something I
+> > > can read.  After all, C requires functions to be declared before use,
+> > > even though the compiler could figure it out.
+> >=20
+> > It's not necessarily possible to encode device initialization order in
+> > flattened tree order.  Suppose you have bus A with devices A1 and A2,
+> > and bus B with devices B1 and B2.  A1 must be initialized before B1,
+> > but B2 must be initialized before A2.  There are no loops there, it's
+> > a valid set of initialization order constraints, but you can't get
+> > both of them right in the flat tree ordering.
+>=20
+> True, but is there a real scenario where this is the case?  In any
+> event, this could still fall back to deferred probing.
 
-Shall I prepare a patch to update the errno in acpi_bus_set_power?
+I never count on weird and wonderful arrangements _not_ appearing in
+embedded.
 
-Thanks,
-Aaron
+But, in regards to falling back do deferred probing.  If you're
+thinking of the fdt ordering as purely an optimization, rather than
+_required_ to get device init correct, then that's a very different
+matter.  I have no problem with optimizing the ordering, as long as
+its expected that the kernel will still be correct with arbitrary
+ordering.
 
-> 
-> Thanks,
-> Rafael
-> 
-> 
->>> Tested-by: Yinghai Lu <yinghai@kernel.org>
->>> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>> ---
->>>  drivers/acpi/device_pm.c |    3 ++-
->>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>
->>> Index: linux-pm/drivers/acpi/device_pm.c
->>> ===================================================================
->>> --- linux-pm.orig/drivers/acpi/device_pm.c
->>> +++ linux-pm/drivers/acpi/device_pm.c
->>> @@ -159,7 +159,8 @@ int acpi_device_set_power(struct acpi_de
->>>  	int result = 0;
->>>  	bool cut_power = false;
->>>  
->>> -	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->>> +	if (!device || !device->flags.power_manageable
->>> +	    || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
->>>  		return -EINVAL;
->>>  
->>>  	/* Make sure this is a valid target state */
->>>
->>
+> As I think about it more, working with only what dtc can definitely see,
+> eg busses and phandles, some ordering optimization could be done to
+> reduce the number of probe deferrals.
 
+Well.  It depends what you mean here.  To do this fully would require
+dtc to interpret properties much more than it currently does - in
+nearly all cases it treats them as opaque blobs, whereas many
+different kinds of properties can potentially include phandles, and
+you have to know how to parse them to discover them.
+
+On the other hand, if what you're referring to is dtc's &-syntax for
+phandle references, then I guess we could topsort on that.  As long as
+we bear in mind that that can miss cases, if people hand craft their
+phandles, instead of using references.
+
+--=20
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
+
+--WRT3RXLOp/bBMgTI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.13 (GNU/Linux)
+
+iEYEARECAAYFAlH2/pwACgkQaILKxv3ab8Z7mQCgjMunc/Mt/n87FHf5gVLfqqA3
+hz8AmwbDV6mrYuGjbNdx9KirMuV39iR7
+=/Ve0
+-----END PGP SIGNATURE-----
+
+--WRT3RXLOp/bBMgTI--
