@@ -1,105 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab3G2PaD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 11:30:03 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43491 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752813Ab3G2PaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 11:30:00 -0400
-Message-ID: <51F68A56.8060805@ti.com>
-Date: Mon, 29 Jul 2013 20:59:26 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1757354Ab3G2Pad (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 11:30:33 -0400
+Received: from 15.mo5.mail-out.ovh.net ([178.33.107.29]:54145 "EHLO
+	mo5.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753843Ab3G2Pab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 11:30:31 -0400
+Message-ID: <51F686D2.3020104@overkiz.com>
+Date: Mon, 29 Jul 2013 17:14:26 +0200
+From: boris brezillon <b.brezillon@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
- in usb_bind_phy
-References: <1374829418-27503-1-git-send-email-kishon@ti.com> <1374829418-27503-3-git-send-email-kishon@ti.com> <20130729150638.GD3063@radagast>
-In-Reply-To: <20130729150638.GD3063@radagast>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+To: Richard Genoud <richard.genoud@gmail.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+X-Ovh-Mailout: 178.32.228.5 (mo5.mail-out.ovh.net)
+Subject: Re: [PATCH v2 00/42] ARM: at91: move to common clk framework
+References: <1374068069-13496-1-git-send-email-b.brezillon@overkiz.com> <51F28370.6050304@gmail.com> <51F2996B.6000406@overkiz.com> <51F2A556.8020109@overkiz.com> <CACQ1gAgw-v3z_sWcsk7SqFFW-ERLjS0RS5GTgAdd5Y1tj3Z1FA@mail.gmail.com> <51F63516.8090000@overkiz.com> <CACQ1gAi53KN=zE8zDxQO=+BY2zvQXakD=OSuzUqc0VLwWLySCA@mail.gmail.com> <51F67D7F.1050906@overkiz.com> <CACQ1gAirPir5vCyeK7OKHjw806Sv_LTiorDAp5mvhObxNTE3FA@mail.gmail.com>
+In-Reply-To: <CACQ1gAirPir5vCyeK7OKHjw806Sv_LTiorDAp5mvhObxNTE3FA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 9710323746893887653
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeeijedrhedtucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Monday 29 July 2013 08:36 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Fri, Jul 26, 2013 at 02:33:38PM +0530, Kishon Vijay Abraham I wrote:
->> Previously MUSB wrapper (OMAP) device used PLATFORM_DEVID_AUTO while creating
->> MUSB core device. So in usb_bind_phy (binds the controller with the PHY), the
->> device name of the controller had *.auto* in it. Since with using
->> PLATFORM_DEVID_AUTO, there is no way to know the exact device name in advance,
->> the data given in usb_bind_phy became obsolete and usb_get_phy was failing.
->> So MUSB wrapper was modified not to use PLATFORM_DEVID_AUTO. Corresponding
->> change is done in board file here.
+On 29/07/2013 17:09, Richard Genoud wrote:
+> 2013/7/29 boris brezillon <b.brezillon@overkiz.com>:
+>> On 29/07/2013 16:18, Richard Genoud wrote:
+>>> 2013/7/29 boris brezillon <b.brezillon@overkiz.com>:
+>>>> On 29/07/2013 10:00, Richard Genoud wrote:
+>>>>> 2013/7/26 boris brezillon <b.brezillon@overkiz.com>:
+>>>>>> On 26/07/2013 17:44, boris brezillon wrote:
+>>>>>> I found 2 bugs:
+>>>>>> 1) the main frequency ready test in recalc_rate function is wrong
+>>>>>> 2) the common clk framework uses the first match for dt clk
+>>>>>> registration
+>>>>>>       and main clk has this compatible property:
+>>>>>>       compatible = "atmel,at91rm9200-clk-main", "fixed-clock";
+>>>>>>       As a result the main clk is always bound to the fixed-clock driver
+>>>>>>       which set the clock frequency to 0 if 'clock-frequency' property
+>>>>>> is
+>>>>>>       missing.
+>>>>>>
+>>>>>> These bugs will be fixed in next version.
+>>>>>> Tell me if you want need thesse patches for testing purpose.
+>>>>> Hi Boris,
+>>>>>
+>>>>> I tested your patch, the clock is not at 0 anymore:
+>>>>> AT91: PIT: mck rate = 8333333
+>>>>>
+>>>>> And it's booting correctly.
+>>>>> There's a small bug I found in the at91sam9x5 dtsi file (ssc id is 28,
+>>>>> not 27). (patch attached)
+>>>>>
+>>>>> And yes, I could use your patches for some more tests !
+>>>>>
+>>>>> Thanks,
+>>>>>
+>>>>> Richard.
+>>>> Hi Richard,
+>>>>
+>>>> Thanks for the bug report.
+>>>>
+>>>> You'll find in attachements the pre-v3 series fixing the detected bugs
+>>>> (including the ssc clock id bug).
+>>>>
+>>>> If you need anything else please let me know.
+>>> Working on sam9g35ek !
+>>> you can add my:
+>>> Tested-by: Richard Genoud <richard.genoud@gmail.com>
+>>>
+>>>
+>>> One remark though:
+>>> Maybe it would be interesting to keep using the defines in the device
+>>> tree for peripheral IDs.
+>>> For instance, in arch/arm/boot/dts/at91sam9x5.dtsi : (patch 33)
+>>> ssc_clk@28 {
+>>>          id = <28>;
+>>> };
+>>> May be more readable with the SSC id AT91SAM9X5_ID_SSC, as it was
+>>> defined in arch/arm/mach-at91/at91sam9x5.c (removed with patch 20)
+>>>
+>>> IMHO, all AT91SAM9X5_ID_xxx in
+>>> arch/arm/mach-at91/include/mach/at91sam9x5.h can me moved in
+>>> include/dt-bindings/ and used in at91sam9x5.dtsi
+>> This was requested by Jean-Christophe too.
+>> I'll add these macro files and make use of it in next version.
 >>
->> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->> ---
->>  arch/arm/mach-omap2/board-2430sdp.c          |    2 +-
->>  arch/arm/mach-omap2/board-3430sdp.c          |    2 +-
->>  arch/arm/mach-omap2/board-cm-t35.c           |    2 +-
->>  arch/arm/mach-omap2/board-devkit8000.c       |    2 +-
->>  arch/arm/mach-omap2/board-igep0020.c         |    2 +-
->>  arch/arm/mach-omap2/board-ldp.c              |    2 +-
->>  arch/arm/mach-omap2/board-omap3beagle.c      |    2 +-
->>  arch/arm/mach-omap2/board-omap3evm.c         |    2 +-
->>  arch/arm/mach-omap2/board-omap3logic.c       |    2 +-
->>  arch/arm/mach-omap2/board-omap3pandora.c     |    2 +-
->>  arch/arm/mach-omap2/board-omap3stalker.c     |    2 +-
->>  arch/arm/mach-omap2/board-omap3touchbook.c   |    2 +-
->>  arch/arm/mach-omap2/board-overo.c            |    2 +-
->>  arch/arm/mach-omap2/board-rm680.c            |    2 +-
->>  arch/arm/mach-omap2/board-rx51.c             |    2 +-
->>  arch/arm/mach-omap2/board-zoom-peripherals.c |    2 +-
->>  16 files changed, 16 insertions(+), 16 deletions(-)
+>> BTW where should I put these macro files
+>> (include/dt-bindings/at91/'soc-name'/peripherals.h) ?
+> That sounds correct I suppose.
+Ok, I will use this path pattern.
+>> Should I use macros for address fied of clocks or just for id property (or
+>> drop the address) ?
 >>
->> diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
->> index 244d8a5..17bb076 100644
->> --- a/arch/arm/mach-omap2/board-2430sdp.c
->> +++ b/arch/arm/mach-omap2/board-2430sdp.c
->> @@ -233,7 +233,7 @@ static void __init omap_2430sdp_init(void)
->>  	omap_hsmmc_init(mmc);
->>  
->>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
->> -	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->> +	usb_bind_phy("musb-hdrc.0", 0, "twl4030_usb");
-> 
-> how about moving usb_bind_phy() calls to omap2430.c ?
-> 
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index f44e8b5..b6abc1a 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -544,6 +544,9 @@ static int omap2430_probe(struct platform_device *pdev)
->  
->  		pdata->board_data	= data;
->  		pdata->config		= config;
-> +	} else {
-> +		/* bind the PHY */
-> +		usb_bind_phy(dev_name(&musb->dev), 0, "twl4030_usb");
+>> ssc_clk@AT91SAM9X5_ID_SSC {
+>>          id = <AT91SAM9X5_ID_SSC>;
+>> };
+>>
+>> or
+>>
+>> ssc_clk@28 {
+>>          id = <AT91SAM9X5_ID_SSC>;
+>> };
+>>
+>> or
+>>
+>> ssc_clk {
+>>          id = <AT91SAM9X5_ID_SSC>;
+>> };
+> I would drop the address, since the names are always different (for
+> instance, dma0_clk and dma1_clk are used).
+Ok, I'll drop the address.
+> And the define should also be used here:
+> ssc0: ssc@f0010000 { [...]
+> clocks = <&periph AT91SAM9X5_ID_SSC>;
+> [...]
+> }
+Yes of course, and it should be used for interrupt ids too (but this 
+will not be part of this series :)).
 
-This looks like a hack IMHO to workaround the usb phy library. otherwise it is
-similar to get_phy_by_name.
->  	}
->  
->  	if (pdata->has_mailbox) {
-> 
-> The only problem is if some board comes with a PHY other than
-> twl4030_usb, but in that case we can add a separate compatible flag and
-> treat it properly. We only need to bind the phy in non-DT case anyway,
+Thanks for your review.
 
-right.
-> so that's temporary. It might be better than to reintroduce the IDR in
-> musb_core.c.
+Best Regards,
 
-that’s needed for generic phy framework anyway :-s
-
-Thanks
-Kishon
+Boris
