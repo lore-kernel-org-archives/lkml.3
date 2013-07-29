@@ -1,292 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959Ab3G2F34 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 01:29:56 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:34444 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754933Ab3G2F3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 01:29:53 -0400
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Don Fry <pcnet32@frontier.com>, Grant Grundler <grundler@parisc-linux.org>,
-        Sam Creasey <sammy@sammy.net>, Andrew Gallatin <gallatin@myri.com>,
-        Wan ZongShun <mcuos.com@gmail.com>, Olof Johansson <olof@lixom.net>,
-        Manish Chopra <manish.chopra@qlogic.com>,
-        Sony Chacko <sony.chacko@qlogic.com>,
-        Rajesh Borundia <rajesh.borundia@qlogic.com>,
-        Shahed Shaikh <shahed.shaikh@qlogic.com>,
-        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
-        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 3/3] ethernet: Convert mac address uses of 6 to ETH_ALEN
-Date: Sun, 28 Jul 2013 22:29:05 -0700
-Message-Id: <6b2ad9d97f6a38382e34d9da52cb21f3c7a86c11.1375075325.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1375075325.git.joe@perches.com>
-References: <cover.1375075325.git.joe@perches.com>
+	id S1754830Ab3G2F3U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 01:29:20 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44642 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3G2F21 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 01:28:27 -0400
+X-AuditID: 9c930179-b7c49ae000000e68-b9-51f5fd78f74f
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 7/9] mm, hugetlb: add VM_NORESERVE check in vma_has_reserves()
+Date: Mon, 29 Jul 2013 14:28:19 +0900
+Message-Id: <1375075701-5998-8-git-send-email-iamjoonsoo.kim@lge.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1375075701-5998-1-git-send-email-iamjoonsoo.kim@lge.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the normal #define to help grep find mac addresses
-and ensure that addresses are aligned.
+If we map the region with MAP_NORESERVE and MAP_SHARED,
+we can skip to check reserve counting and eventually we cannot be ensured
+to allocate a huge page in fault time.
+With following example code, you can easily find this situation.
 
-Move one address in pasemi_mac.h for alignment.
+Assume 2MB, nr_hugepages = 100
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/8390/ax88796.c                |  4 ++--
- drivers/net/ethernet/amd/pcnet32.c                 |  6 +++---
- drivers/net/ethernet/broadcom/cnic_if.h            |  6 +++---
- drivers/net/ethernet/dec/tulip/tulip_core.c        |  8 +++++---
- drivers/net/ethernet/i825xx/sun3_82586.h           |  4 ++--
- drivers/net/ethernet/myricom/myri10ge/myri10ge.c   |  2 +-
- drivers/net/ethernet/nuvoton/w90p910_ether.c       |  4 ++--
- drivers/net/ethernet/pasemi/pasemi_mac.c           | 13 +++++++------
- drivers/net/ethernet/pasemi/pasemi_mac.h           |  4 ++--
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c |  4 ++--
- drivers/net/ethernet/qlogic/qlge/qlge.h            |  2 +-
- 11 files changed, 30 insertions(+), 27 deletions(-)
+        fd = hugetlbfs_unlinked_fd();
+        if (fd < 0)
+                return 1;
 
-diff --git a/drivers/net/ethernet/8390/ax88796.c b/drivers/net/ethernet/8390/ax88796.c
-index e1d2643..b7232a9 100644
---- a/drivers/net/ethernet/8390/ax88796.c
-+++ b/drivers/net/ethernet/8390/ax88796.c
-@@ -707,7 +707,7 @@ static int ax_init_dev(struct net_device *dev)
- 
- #ifdef CONFIG_AX88796_93CX6
- 	if (ax->plat->flags & AXFLG_HAS_93CX6) {
--		unsigned char mac_addr[6];
-+		unsigned char mac_addr[ETH_ALEN];
- 		struct eeprom_93cx6 eeprom;
- 
- 		eeprom.data = ei_local;
-@@ -719,7 +719,7 @@ static int ax_init_dev(struct net_device *dev)
- 				       (__le16 __force *)mac_addr,
- 				       sizeof(mac_addr) >> 1);
- 
--		memcpy(dev->dev_addr, mac_addr, 6);
-+		memcpy(dev->dev_addr, mac_addr, ETH_ALEN);
- 	}
- #endif
- 	if (ax->plat->wordlength == 2) {
-diff --git a/drivers/net/ethernet/amd/pcnet32.c b/drivers/net/ethernet/amd/pcnet32.c
-index ed21307..2d8e288 100644
---- a/drivers/net/ethernet/amd/pcnet32.c
-+++ b/drivers/net/ethernet/amd/pcnet32.c
-@@ -1521,7 +1521,7 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
- 	char *chipname;
- 	struct net_device *dev;
- 	const struct pcnet32_access *a = NULL;
--	u8 promaddr[6];
-+	u8 promaddr[ETH_ALEN];
- 	int ret = -ENODEV;
- 
- 	/* reset the chip */
-@@ -1665,10 +1665,10 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
- 	}
- 
- 	/* read PROM address and compare with CSR address */
--	for (i = 0; i < 6; i++)
-+	for (i = 0; i < ETH_ALEN; i++)
- 		promaddr[i] = inb(ioaddr + i);
- 
--	if (memcmp(promaddr, dev->dev_addr, 6) ||
-+	if (memcmp(promaddr, dev->dev_addr, ETH_ALEN) ||
- 	    !is_valid_ether_addr(dev->dev_addr)) {
- 		if (is_valid_ether_addr(promaddr)) {
- 			if (pcnet32_debug & NETIF_MSG_PROBE) {
-diff --git a/drivers/net/ethernet/broadcom/cnic_if.h b/drivers/net/ethernet/broadcom/cnic_if.h
-index ec9bb9a..7902e0c 100644
---- a/drivers/net/ethernet/broadcom/cnic_if.h
-+++ b/drivers/net/ethernet/broadcom/cnic_if.h
-@@ -238,8 +238,8 @@ struct cnic_sock {
- 	u16	src_port;
- 	u16	dst_port;
- 	u16	vlan_id;
--	unsigned char old_ha[6];
--	unsigned char ha[6];
-+	unsigned char old_ha[ETH_ALEN];
-+	unsigned char ha[ETH_ALEN];
- 	u32	mtu;
- 	u32	cid;
- 	u32	l5_cid;
-@@ -308,7 +308,7 @@ struct cnic_dev {
- #define CNIC_F_BNX2_CLASS	3
- #define CNIC_F_BNX2X_CLASS	4
- 	atomic_t	ref_count;
--	u8		mac_addr[6];
-+	u8		mac_addr[ETH_ALEN];
- 
- 	int		max_iscsi_conn;
- 	int		max_fcoe_conn;
-diff --git a/drivers/net/ethernet/dec/tulip/tulip_core.c b/drivers/net/ethernet/dec/tulip/tulip_core.c
-index c94152f..4e8cfa2 100644
---- a/drivers/net/ethernet/dec/tulip/tulip_core.c
-+++ b/drivers/net/ethernet/dec/tulip/tulip_core.c
-@@ -1304,7 +1304,9 @@ static int tulip_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+        size = 200 * MB;
+        flag = MAP_SHARED;
+        p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, fd, 0);
+        if (p == MAP_FAILED) {
+                fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+                return -1;
+        }
+
+        size = 2 * MB;
+        flag = MAP_ANONYMOUS | MAP_SHARED | MAP_HUGETLB | MAP_NORESERVE;
+        p = mmap(NULL, size, PROT_READ|PROT_WRITE, flag, -1, 0);
+        if (p == MAP_FAILED) {
+                fprintf(stderr, "mmap() failed: %s\n", strerror(errno));
+        }
+        p[0] = '0';
+        sleep(10);
+
+During executing sleep(10), run 'cat /proc/meminfo' on another process.
+
+HugePages_Free:       99
+HugePages_Rsvd:      100
+
+Number of free should be higher or equal than number of reserve,
+but this aren't. This represent that non reserved shared mapping steal
+a reserved page. Non reserved shared mapping should not eat into
+reserve space.
+
+If we consider VM_NORESERVE in vma_has_reserve() and return 0 which mean
+that we don't have reserved pages, then we check that we have enough
+free pages in dequeue_huge_page_vma(). This prevent to steal
+a reserved page.
+
+With this change, above test generate a SIGBUG which is correct,
+because all free pages are reserved and non reserved shared mapping
+can't get a free page.
+
+Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 1f6b3a6..ca15854 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -464,6 +464,8 @@ void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
+ /* Returns true if the VMA has associated reserve pages */
+ static int vma_has_reserves(struct vm_area_struct *vma)
  {
- 	struct tulip_private *tp;
- 	/* See note below on the multiport cards. */
--	static unsigned char last_phys_addr[6] = {0x00, 'L', 'i', 'n', 'u', 'x'};
-+	static unsigned char last_phys_addr[ETH_ALEN] = {
-+		0x00, 'L', 'i', 'n', 'u', 'x'
-+	};
- 	static int last_irq;
- 	static int multiport_cnt;	/* For four-port boards w/one EEPROM */
- 	int i, irq;
-@@ -1627,8 +1629,8 @@ static int tulip_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		dev->dev_addr[i] = last_phys_addr[i] + 1;
- #if defined(CONFIG_SPARC)
- 		addr = of_get_property(dp, "local-mac-address", &len);
--		if (addr && len == 6)
--			memcpy(dev->dev_addr, addr, 6);
-+		if (addr && len == ETH_ALEN)
-+			memcpy(dev->dev_addr, addr, ETH_ALEN);
- #endif
- #if defined(__i386__) || defined(__x86_64__)	/* Patch up x86 BIOS bug. */
- 		if (last_irq)
-diff --git a/drivers/net/ethernet/i825xx/sun3_82586.h b/drivers/net/ethernet/i825xx/sun3_82586.h
-index 93346f0..79aef68 100644
---- a/drivers/net/ethernet/i825xx/sun3_82586.h
-+++ b/drivers/net/ethernet/i825xx/sun3_82586.h
-@@ -133,8 +133,8 @@ struct rfd_struct
-   unsigned char  last;		/* Bit15,Last Frame on List / Bit14,suspend */
-   unsigned short next;		/* linkoffset to next RFD */
-   unsigned short rbd_offset;	/* pointeroffset to RBD-buffer */
--  unsigned char  dest[6];	/* ethernet-address, destination */
--  unsigned char  source[6];	/* ethernet-address, source */
-+  unsigned char  dest[ETH_ALEN];	/* ethernet-address, destination */
-+  unsigned char  source[ETH_ALEN];	/* ethernet-address, source */
-   unsigned short length;	/* 802.3 frame-length */
-   unsigned short zero_dummy;	/* dummy */
- };
-diff --git a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-index 967bae8..d4cdf4d 100644
---- a/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-+++ b/drivers/net/ethernet/myricom/myri10ge/myri10ge.c
-@@ -244,7 +244,7 @@ struct myri10ge_priv {
- 	int fw_ver_minor;
- 	int fw_ver_tiny;
- 	int adopted_rx_filter_bug;
--	u8 mac_addr[6];		/* eeprom mac address */
-+	u8 mac_addr[ETH_ALEN];		/* eeprom mac address */
- 	unsigned long serial_number;
- 	int vendor_specific_offset;
- 	int fw_multicast_support;
-diff --git a/drivers/net/ethernet/nuvoton/w90p910_ether.c b/drivers/net/ethernet/nuvoton/w90p910_ether.c
-index e88bdb1..dcfe58f 100644
---- a/drivers/net/ethernet/nuvoton/w90p910_ether.c
-+++ b/drivers/net/ethernet/nuvoton/w90p910_ether.c
-@@ -922,7 +922,7 @@ static void __init get_mac_address(struct net_device *dev)
- {
- 	struct w90p910_ether *ether = netdev_priv(dev);
- 	struct platform_device *pdev;
--	char addr[6];
-+	char addr[ETH_ALEN];
- 
- 	pdev = ether->pdev;
- 
-@@ -934,7 +934,7 @@ static void __init get_mac_address(struct net_device *dev)
- 	addr[5] = 0xa8;
- 
- 	if (is_valid_ether_addr(addr))
--		memcpy(dev->dev_addr, &addr, 0x06);
-+		memcpy(dev->dev_addr, &addr, ETH_ALEN);
- 	else
- 		dev_err(&pdev->dev, "invalid mac address\n");
- }
-diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.c b/drivers/net/ethernet/pasemi/pasemi_mac.c
-index a5f0b5d..f21ae7b 100644
---- a/drivers/net/ethernet/pasemi/pasemi_mac.c
-+++ b/drivers/net/ethernet/pasemi/pasemi_mac.c
-@@ -191,7 +191,7 @@ static int pasemi_get_mac_addr(struct pasemi_mac *mac)
- 	struct device_node *dn = pci_device_to_OF_node(pdev);
- 	int len;
- 	const u8 *maddr;
--	u8 addr[6];
-+	u8 addr[ETH_ALEN];
- 
- 	if (!dn) {
- 		dev_dbg(&pdev->dev,
-@@ -201,8 +201,8 @@ static int pasemi_get_mac_addr(struct pasemi_mac *mac)
- 
- 	maddr = of_get_property(dn, "local-mac-address", &len);
- 
--	if (maddr && len == 6) {
--		memcpy(mac->mac_addr, maddr, 6);
-+	if (maddr && len == ETH_ALEN) {
-+		memcpy(mac->mac_addr, maddr, ETH_ALEN);
- 		return 0;
- 	}
- 
-@@ -219,14 +219,15 @@ static int pasemi_get_mac_addr(struct pasemi_mac *mac)
- 		return -ENOENT;
- 	}
- 
--	if (sscanf(maddr, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &addr[0],
--		   &addr[1], &addr[2], &addr[3], &addr[4], &addr[5]) != 6) {
-+	if (sscanf(maddr, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-+		   &addr[0], &addr[1], &addr[2], &addr[3], &addr[4], &addr[5])
-+	    != ETH_ALEN) {
- 		dev_warn(&pdev->dev,
- 			 "can't parse mac address, not configuring\n");
- 		return -EINVAL;
- 	}
- 
--	memcpy(mac->mac_addr, addr, 6);
-+	memcpy(mac->mac_addr, addr, ETH_ALEN);
- 
- 	return 0;
- }
-diff --git a/drivers/net/ethernet/pasemi/pasemi_mac.h b/drivers/net/ethernet/pasemi/pasemi_mac.h
-index e2f4efa..649fdb4 100644
---- a/drivers/net/ethernet/pasemi/pasemi_mac.h
-+++ b/drivers/net/ethernet/pasemi/pasemi_mac.h
-@@ -79,11 +79,11 @@ struct pasemi_mac {
- 	int		last_cs;
- 	int		num_cs;
- 	u32		dma_if;
--	u8		type;
- #define MAC_TYPE_GMAC	1
- #define MAC_TYPE_XAUI	2
- 
--	u8		mac_addr[6];
-+	u8		mac_addr[ETH_ALEN];
-+	u8		type;
- 
- 	struct net_lro_mgr	lro_mgr;
- 	struct net_lro_desc	lro_desc[MAX_LRO_DESCRIPTORS];
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-index 9fbb1cd..8375cbd 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-@@ -536,10 +536,10 @@ static void netxen_p2_nic_set_multi(struct net_device *netdev)
- {
- 	struct netxen_adapter *adapter = netdev_priv(netdev);
- 	struct netdev_hw_addr *ha;
--	u8 null_addr[6];
-+	u8 null_addr[ETH_ALEN];
- 	int i;
- 
--	memset(null_addr, 0, 6);
-+	memset(null_addr, 0, ETH_ALEN);
- 
- 	if (netdev->flags & IFF_PROMISC) {
- 
-diff --git a/drivers/net/ethernet/qlogic/qlge/qlge.h b/drivers/net/ethernet/qlogic/qlge/qlge.h
-index 7e8d682..8994337 100644
---- a/drivers/net/ethernet/qlogic/qlge/qlge.h
-+++ b/drivers/net/ethernet/qlogic/qlge/qlge.h
-@@ -2149,7 +2149,7 @@ struct ql_adapter {
- 	struct timer_list timer;
- 	atomic_t lb_count;
- 	/* Keep local copy of current mac address. */
--	char current_mac_addr[6];
-+	char current_mac_addr[ETH_ALEN];
- };
- 
- /*
++	if (vma->vm_flags & VM_NORESERVE)
++		return 0;
+ 	if (vma->vm_flags & VM_MAYSHARE)
+ 		return 1;
+ 	if (is_vma_resv_set(vma, HPAGE_RESV_OWNER))
 -- 
-1.8.1.2.459.gbcd45b4.dirty
+1.7.9.5
 
