@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753946Ab3G2MYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 08:24:15 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:47402 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751205Ab3G2MYO (ORCPT
+	id S1754877Ab3G2MY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 08:24:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:55983 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab3G2MYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 08:24:14 -0400
-Date: Mon, 29 Jul 2013 14:24:01 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org
-Subject: Re: [PATCH 1/1] pinctrl: sunxi: Fix incorrect NULL check
-Message-ID: <20130729122401.GD1441@lukather>
-References: <1375085972-657-1-git-send-email-sachin.kamat@linaro.org>
+	Mon, 29 Jul 2013 08:24:23 -0400
+Date: Mon, 29 Jul 2013 15:23:44 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, <gregkh@linuxfoundation.org>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 1/6] usb: phy: msm: Move mach depndend code to
+ platform data
+Message-ID: <20130729122344.GH24801@radagast>
+Reply-To: <balbi@ti.com>
+References: <1375081464-14206-1-git-send-email-iivanov@mm-sol.com>
+ <1375081464-14206-2-git-send-email-iivanov@mm-sol.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/QKKmeG/X/bPShih"
+	protocol="application/pgp-signature"; boundary="l06SQqiZYCi8rTKz"
 Content-Disposition: inline
-In-Reply-To: <1375085972-657-1-git-send-email-sachin.kamat@linaro.org>
+In-Reply-To: <1375081464-14206-2-git-send-email-iivanov@mm-sol.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---/QKKmeG/X/bPShih
+--l06SQqiZYCi8rTKz
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jul 29, 2013 at 01:49:32PM +0530, Sachin Kamat wrote:
-> *map should be tested for NULL instead of map as kmalloc pointer
-> is assigned to it. This also fixes a potential null pointer dereference
-> bug later in the code.
+Hi,
+
+On Mon, Jul 29, 2013 at 10:04:19AM +0300, Ivan T. Ivanov wrote:
+> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 >=20
-> Signed-off-by: Sachin Kamat <sachin.kamat@linaro.org>
+> This patch fix compilation error and is an intermediate step
+> before the addition of DeviceTree support for newer targets.
+> Fix suggested here: https://lkml.org/lkml/2013/6/19/381
+>=20
+> Cc: David Brown <davidb@codeaurora.org>
+> Cc: Daniel Walker <dwalker@fifo99.com>
+> Cc: Bryan Huntsman <bryanh@codeaurora.org>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-usb@vger.kernel.org
+>=20
+> Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> ---
+>  arch/arm/mach-msm/board-msm7x30.c |   35 +++++++++++++++++++++++
+>  arch/arm/mach-msm/board-qsd8x50.c |   35 +++++++++++++++++++++++
 
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+I need acks for these.
 
-Thanks!
-Maxime
+>  drivers/usb/phy/phy-msm-usb.c     |   55 ++++++++++---------------------=
+------
+>  include/linux/usb/msm_hsusb.h     |    3 ++
+>  4 files changed, 87 insertions(+), 41 deletions(-)
+>=20
+> diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-=
+msm7x30.c
+> index db3d8c0..6b35953 100644
+> --- a/arch/arm/mach-msm/board-msm7x30.c
+> +++ b/arch/arm/mach-msm/board-msm7x30.c
+> @@ -31,6 +31,7 @@
+>  #include <asm/setup.h>
+> =20
+>  #include <mach/board.h>
+> +#include <mach/clk.h>
+>  #include <mach/msm_iomap.h>
+>  #include <mach/dma.h>
+> =20
+> @@ -61,10 +62,44 @@ static int hsusb_phy_init_seq[] =3D {
+>  	-1
+>  };
+> =20
+> +static int hsusb_link_clk_reset(struct clk *link_clk, bool assert)
+
+looks like you should be using the reset controller framework ?
+(drivers/reset)
 
 --=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+balbi
 
---/QKKmeG/X/bPShih
+--l06SQqiZYCi8rTKz
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJR9l7hAAoJEBx+YmzsjxAgU0MP/1Wr+84tNOtHD6rIwUe+Bg0s
-7dsRLcCG7YZ2psDM1mAKrCx8dGcnzbHwehNovkRI0aXlBkxT+CJfZCwGkbwR32HB
-ZLMq/SdlUTH4sXNaOQs/Ujw4KRfLiWU7X7vNkTrqvCnJXuxiSYt0PV8EGdW+a+5j
-Tcd2ANm2xyvIjn2FLCGkl/CgqkjDnrh/pjvAxc8+cyH0eNNP92DpGeGvRYwWgqSo
-WiShfkxj2szhdumFNj63xVHQwDtHy6ok+NkNdg/4ZzmmUf5TdTo5XEhrsKnRgSGL
-1sJ3sn2MxmtlHD7BlBGI58FCbmn0h9/Zlw6e8GscZq2G8oUd4m0c5jgQf3zs4isd
-L5z7ArKv+xeLMYq3iyTmmwcnuEpe127oWPkHahHQikP/LtV3CTlqqJolAr9lRl+P
-XrSYffmqqLVPpGs8ZqXP53/pzqw6bM+Ab0W/AsirwXXOMva9HIBcUxWk5ZmDIg6b
-7YE1FBWV2swgHJZr7UUt5bcGc0UroqySD0oRi7DlBqW3OWgl/lEs9v/6F1UGf6tr
-zjoPp/bhK4o8xEXX0UrNo90oeSfLfICWAm6P+BbgHhSutTgkYOyzBf1qmm5mapbx
-JwJ60m1Fn+/W9mIsn7/TBB8RrnIY58Ji/Q4wdgqPIlEws9mij+6JPCaQ5rnE7o5v
-5HlGF5k3uR/phIWbiyoE
-=k0oW
+iQIcBAEBAgAGBQJR9l7QAAoJEIaOsuA1yqREoaYQAIRYjbRt7nIiOvekSi29x+0s
+vjEBt1JlLX3UjLYLCQP9uDcVtd4un1BU8b7IXDw3HGO3R34Pcipi13XfnrofZLfA
+GrhutU+6XgyfC/fUM2uxXsZiEHMOTdc0OQGJMqTFcczYlFigHIoFC0cCFUYkz6iV
+kZSp7DGBqBfjtRnEw/1107zhERGgvOwffVG+vyQmkxrNEncFBxoXxtlNVuXvhgFO
+mxkDnR475HpwprUGo/l6VnL2Phbvio7yNvA7O1gx9mQRuyFonhnYby4iu/LQU5Js
+S8DDz0j1FL8oKlTJMXqfeXkz2YguNechgZphmyitWUm/1+qZEduoLv939/QrhLTe
+WwpfNareQ6S3Lo+F1SrDGVbfsBeg9E+xVMfx6G1iWFGnAC0zZunJivRKGRRdaLZB
+6Gj70+o7Ko8tlGSiJqSNmIcPZRr0/37SqgArk4ttXIL+T5At2NCRsWpcqviJulln
+L/+4rW79R0ltqnlmYNN2qEza19cZMq3pxr4iuTFAILSNMqpTbeFwKiHNKwMcLii5
+wFPtsG3qpQTW7SvIVObf8dCeD8wXzpv8eOBbUs6c4jLcFkoHs2q9eat4iN4cOOcl
+RS5m5CI0GqhYOhNJsJKrXG151ZcEr9LuRaZ5ginpdiBDfwaaYZD17CPeZ7gUPQ3z
+r46d3CQlRe4Uh4bMc4nI
+=1Mzm
 -----END PGP SIGNATURE-----
 
---/QKKmeG/X/bPShih--
+--l06SQqiZYCi8rTKz--
