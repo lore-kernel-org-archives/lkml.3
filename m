@@ -1,51 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3G2I3L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 04:29:11 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53710 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab3G2I3J (ORCPT
+	id S1751241Ab3G2Iab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 04:30:31 -0400
+Received: from na3sys009aog131.obsmtp.com ([74.125.149.247]:36268 "EHLO
+	na3sys009aog131.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750906Ab3G2Iaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 04:29:09 -0400
-Message-ID: <1375086510.4223.2.camel@pizza.hi.pengutronix.de>
-Subject: Re: [PATCH v2 2/2] regulator: Add Dialog DA9063 voltage regulators
- support.
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Krystian Garbaciak <krystian.garbaciak@diasemi.com>
-Date: Mon, 29 Jul 2013 10:28:30 +0200
-In-Reply-To: <20130728125111.GW9858@sirena.org.uk>
-References: <1374773943-7454-1-git-send-email-p.zabel@pengutronix.de>
-	 <1374773943-7454-3-git-send-email-p.zabel@pengutronix.de>
-	 <20130728125111.GW9858@sirena.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:ca9c:dcff:febd:f1b5
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 29 Jul 2013 04:30:30 -0400
+From: Chao Xie <chao.xie@marvell.com>
+To: <linux-kernel@vger.kernel.org>, <sameo@linux.intel.com>,
+        <xiechao.mail@gmail.com>
+CC: Chao Xie <chao.xie@marvell.com>
+Subject: [PATCH 3/4] mfd: 88pm800: add device tree support
+Date: Mon, 29 Jul 2013 04:29:26 -0400
+Message-ID: <1375086567-10705-4-git-send-email-chao.xie@marvell.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1375086567-10705-1-git-send-email-chao.xie@marvell.com>
+References: <1375086567-10705-1-git-send-email-chao.xie@marvell.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Signed-off-by: Chao Xie <chao.xie@marvell.com>
+---
+ Documentation/devicetree/bindings/mfd/88pm800.c |   55 +++++++++++++++++++++++
+ drivers/mfd/88pm800.c                           |   55 +++++++++++++++++++++++
+ 2 files changed, 110 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/88pm800.c
 
-Am Sonntag, den 28.07.2013, 13:51 +0100 schrieb Mark Brown:
-> On Thu, Jul 25, 2013 at 07:39:03PM +0200, Philipp Zabel wrote:
-> 
-> >  - 1x power switch to switch on/off 32 KHz oscilator output (32K_OUT).
-> 
-> The driver looks good except this should be implemented using the clock
-> API not the regulator API - some drivers did this while we didn't have a
-> clock API but we do now and in any case the clock shouldn't appear as a
-> regulator in the DT bindings.
-
-Thanks, I'll change this to use the clock API then.
-
-regards
-Philipp
+diff --git a/Documentation/devicetree/bindings/mfd/88pm800.c b/Documentation/devicetree/bindings/mfd/88pm800.c
+new file mode 100644
+index 0000000..2299752
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/88pm800.c
+@@ -0,0 +1,55 @@
++* Marvell 88PM800 Power Management IC
++
++Required parent device properties:
++- compatible : "marvell,88pm800"
++- reg : the I2C slave address for the 88pm800 chip
++- interrupts : IRQ line for the 88pm800 chip
++- interrupt-controller: describes the 88pm800 as an interrupt controller (has its own domain)
++- #interrupt-cells : should be 1.
++		- The cell is the 88pm800 local IRQ number
++
++Optional parent device properties:
++- marvell,88pm800-irq-write-clear: inicates whether interrupt status is cleared by write
++- marvell,88pm800-battery-detection: indicats whether need 88pm800 to support battery
++				detection or not.
++
++88pm800 consists of a large and varied group of sub-devices:
++
++Device			 Supply Names	 Description
++------			 ------------	 -----------
++88pm80x-onkey		:		: On key
++88pm80x-rtc		:		: RTC
++88pm80x-regulator	:		: Regulators
++
++Example:
++
++	pmic: 88pm800@30 {
++		compatible = "marvell,88pm800";
++		reg = <0x30>;
++		interrupts = <0 4 0x4>;
++		interrupt-parent = <&gic>;
++		interrupt-controller;
++		#interrupt-cells = <1>;
++
++		marvell,88pm800-irq-write-clr;
++
++		regulators {
++			compatible = "marvell,88pm80x-regulator";
++
++			BUCK1 {
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <3950000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++			LDO1 {
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <3950000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++		rtc {
++			compatible = "marvell,88pm80x-rtc";
++		};
++	};
+diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
+index d4d272f..07a24e2 100644
+--- a/drivers/mfd/88pm800.c
++++ b/drivers/mfd/88pm800.c
+@@ -27,6 +27,7 @@
+ #include <linux/mfd/core.h>
+ #include <linux/mfd/88pm80x.h>
+ #include <linux/slab.h>
++#include <linux/of_device.h>
+ 
+ /* Interrupt Registers */
+ #define PM800_INT_STATUS1		(0x05)
+@@ -121,6 +122,12 @@ static const struct i2c_device_id pm80x_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(i2c, pm80x_id_table);
+ 
++static const struct of_device_id pm80x_dt_ids[] = {
++	{ .compatible = "marvell,88pm800", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, pm80x_dt_ids);
++
+ static struct resource rtc_resources[] = {
+ 	{
+ 	 .name = "88pm80x-rtc",
+@@ -133,6 +140,7 @@ static struct resource rtc_resources[] = {
+ static struct mfd_cell rtc_devs[] = {
+ 	{
+ 	 .name = "88pm80x-rtc",
++	 .of_compatible = "marvell,88pm80x-rtc",
+ 	 .num_resources = ARRAY_SIZE(rtc_resources),
+ 	 .resources = &rtc_resources[0],
+ 	 .id = -1,
+@@ -151,6 +159,7 @@ static struct resource onkey_resources[] = {
+ static struct mfd_cell onkey_devs[] = {
+ 	{
+ 	 .name = "88pm80x-onkey",
++	 .of_compatible = "marvell,88pm80x-onkey",
+ 	 .num_resources = 1,
+ 	 .resources = &onkey_resources[0],
+ 	 .id = -1,
+@@ -160,6 +169,7 @@ static struct mfd_cell onkey_devs[] = {
+ static struct mfd_cell regulator_devs[] = {
+ 	{
+ 	 .name = "88pm80x-regulator",
++	 .of_compatible = "marvell,88pm80x-regulator",
+ 	 .id = -1,
+ 	},
+ };
+@@ -538,14 +548,58 @@ out:
+ 	return ret;
+ }
+ 
++static int pm800_dt_init(struct device_node *np,
++			 struct device *dev,
++			 struct pm80x_platform_data *pdata)
++{
++	pdata->irq_mode =
++		!of_property_read_bool(np, "marvell,88pm800-irq-write-clear");
++	pdata->batt_det =
++		of_property_read_bool(np, "marvell,88pm800-battery-detection");
++
++	return 0;
++}
++
++
+ static int pm800_probe(struct i2c_client *client,
+ 				 const struct i2c_device_id *id)
+ {
+ 	int ret = 0;
+ 	struct pm80x_chip *chip;
+ 	struct pm80x_platform_data *pdata = client->dev.platform_data;
++	struct device_node *node = client->dev.of_node;
+ 	struct pm80x_subchip *subchip;
+ 
++	if (IS_ENABLED(CONFIG_OF)) {
++		if (!pdata) {
++			pdata = devm_kzalloc(&client->dev,
++					     sizeof(*pdata), GFP_KERNEL);
++			if (!pdata)
++				return -ENOMEM;
++		}
++		ret = pm800_dt_init(node, &client->dev, pdata);
++		if (ret)
++			return ret;
++	} else if (!pdata) {
++		return -EINVAL;
++	}
++
++	/*
++	 * RTC in pmic can run even the core is powered off, and user can set
++	 * alarm in RTC. When the alarm is time out, the PMIC will power up
++	 * the core, and the whole system will boot up. When PMIC driver is
++	 * probed, it will read out some register to find out whether this
++	 * boot is caused by RTC timeout or not, and it need pass this
++	 * information to RTC driver.
++	 * So we need rtc platform data to be existed to pass this information.
++	 */
++	if (!pdata->rtc) {
++		pdata->rtc = devm_kzalloc(&client->dev,
++					  sizeof(*(pdata->rtc)), GFP_KERNEL);
++		if (!pdata->rtc)
++			return -ENOMEM;
++	}
++
+ 	ret = pm80x_init(client);
+ 	if (ret) {
+ 		dev_err(&client->dev, "pm800_init fail\n");
+@@ -612,6 +666,7 @@ static struct i2c_driver pm800_driver = {
+ 		.name = "88PM800",
+ 		.owner = THIS_MODULE,
+ 		.pm = &pm80x_pm_ops,
++		.of_match_table	= of_match_ptr(pm80x_dt_ids),
+ 		},
+ 	.probe = pm800_probe,
+ 	.remove = pm800_remove,
+-- 
+1.7.4.1
 
