@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab3G2RUz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 13:20:55 -0400
-Received: from mail-gh0-f178.google.com ([209.85.160.178]:63043 "EHLO
-	mail-gh0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756432Ab3G2RUx (ORCPT
+	id S1758020Ab3G2RV2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 13:21:28 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:51937 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286Ab3G2RV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 13:20:53 -0400
-Date: Mon, 29 Jul 2013 13:20:46 -0400
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        cgroups@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kent.overstreet@gmail.com,
-        Li Zefan <lizefan@huawei.com>, Glauber Costa <glommer@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: memcg creates an unkillable task in 3.2-rc2
-Message-ID: <20130729172046.GI22605@mtj.dyndns.org>
-References: <20130723174711.GE21100@mtj.dyndns.org>
- <8761vui4cr.fsf@xmission.com>
- <20130729075939.GA4678@dhcp22.suse.cz>
- <87ehahg312.fsf@xmission.com>
- <20130729095109.GB4678@dhcp22.suse.cz>
- <20130729161026.GD22605@mtj.dyndns.org>
- <87r4eh70yg.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4eh70yg.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 29 Jul 2013 13:21:26 -0400
+From: "santosh.anbu" <asantoshking@gmail.com>
+To: ericvh@gmail.com
+Cc: asantosh.king@gmail.com, linux-kernel@vger.kernel.org,
+        v9fs-developer@lists.sourceforge.net
+Subject: [PATCH] Events: 9p.h: Fixed few brace coding style issues
+Date: Mon, 29 Jul 2013 22:51:08 +0530
+Message-Id: <1375118468-3349-1-git-send-email-asantosh.king@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Eric.
+From: "santosh.anbu" <asantosh.king@gmail.com>
 
-On Mon, Jul 29, 2013 at 10:03:35AM -0700, Eric W. Biederman wrote:
-> So this is not a simple matter of a frozen task not dying when SIGKILL
-> is received.  For the most part not dying when SIGKILL is received seems
-> like correct behavior for a frozne task.  Certainly it is correct
-> behavior for any other signal.
-> 
-> The issue is that the tasks don't freeze or that when thawed the SIGKILL
-> is still ignored.  It seems a wake up is being missed in there somewhere.
+Kill all the whitespaces conforming to standards
 
-That's actually interesting and shouldn't be happening.  Can you
-please provide more data as to what's going on while freezing?  It's
-likely that the problem is not caused by freezer per-se, the task
-might be stuck elsewhere and just fails to reach the freezing point.
+Signed-off-by: santosh.anbu <asantosh.king@gmail.com>
+---
+ include/trace/events/9p.h | 26 +++++++++++++-------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
 
-Would it be possible for memcg and freezer to deadlock?  Note that
-while freezing is in progress, some tasks will enter freezer earlier
-than others (of course) and won't respond to anything.  If memcg adds
-wait dependency among the tasks being frozen, it'll surely deadlock.
-
-> A single unified hierarchy is a really nasty idea for the same set of
-> reasons. You have to recompile to disable a controller to see if it that
-> controller's bugs are what are causing problems on your production
-> system.  Compiles or even just a reboot is a very heavy hammer to ask
-> people to use when they are triaging a problem.
-
-For Nth time, unified hierarchy doesn't mean all controllers are
-enabled on all hierarchies or that controllers can't be bound and
-unbound dynamically.  Except for the removal of orthogonal
-hierarchies, things actually become a lot more dynamic.
-
-> I am also seeing what looks like a leak somewhere in the cgroup code as
-> well.  After some runs of the same reproducer I get into a state where
-> after everything is clean up.  All of the control groups have been
-> removed and the cgroup filesystem is unmounted, I can mount a cgroup
-> filesystem with that same combindation of subsystems, but I can't mount
-> a cgroup filesystem with any of those subsystems in any other
-> combination.  So I am guessing that the superblock is from the original
-> mounting is still lingering for some reason.
-
-Hmmm... yeah, if there are cgroups with refs remaining, that'd happen.
-Note that AFAIU memcg keeps the cgroups hangling around until all the
-pages are gone from it, so it could just be that it's still draining
-which may take a long time.  Maybe dropping cache would work?
-
-Thanks.
-
+diff --git a/include/trace/events/9p.h b/include/trace/events/9p.h
+index a066636..c91a015 100644
+--- a/include/trace/events/9p.h
++++ b/include/trace/events/9p.h
+@@ -83,9 +83,9 @@ TRACE_EVENT(9p_client_req,
+ 	    TP_ARGS(clnt, type, tag),
+ 
+ 	    TP_STRUCT__entry(
+-		    __field(    void *,		clnt			     )
+-		    __field(	__u8,		type			     )
+-		    __field(	__u32,		tag			     )
++		    __field(void *, clnt)
++		    __field(__u8, type)
++		    __field(__u32, tag)
+ 		    ),
+ 
+ 	    TP_fast_assign(
+@@ -97,7 +97,7 @@ TRACE_EVENT(9p_client_req,
+ 	    TP_printk("client %lu request %s tag  %d",
+ 		    (long)__entry->clnt, show_9p_op(__entry->type),
+ 		    __entry->tag)
+- );
++);
+ 
+ TRACE_EVENT(9p_client_res,
+ 	    TP_PROTO(struct p9_client *clnt, int8_t type, int tag, int err),
+@@ -105,10 +105,10 @@ TRACE_EVENT(9p_client_res,
+ 	    TP_ARGS(clnt, type, tag, err),
+ 
+ 	    TP_STRUCT__entry(
+-		    __field(    void *,		clnt			     )
+-		    __field(	__u8,		type			     )
+-		    __field(	__u32,		tag			     )
+-		    __field(	__u32,		err			     )
++		    __field(void *, clnt)
++		    __field(__u8, type)
++		    __field(__u32, tag)
++		    __field(__u32, err)
+ 		    ),
+ 
+ 	    TP_fast_assign(
+@@ -131,10 +131,10 @@ TRACE_EVENT(9p_protocol_dump,
+ 	    TP_ARGS(clnt, pdu),
+ 
+ 	    TP_STRUCT__entry(
+-		    __field(	void *,		clnt				)
+-		    __field(	__u8,		type				)
+-		    __field(	__u16,		tag				)
+-		    __array(	unsigned char,	line,	P9_PROTO_DUMP_SZ	)
++		    __field(void *, clnt)
++		    __field(__u8, type)
++		    __field(__u16, tag)
++		    __array(unsigned char, line, P9_PROTO_DUMP_SZ)
+ 		    ),
+ 
+ 	    TP_fast_assign(
+@@ -146,7 +146,7 @@ TRACE_EVENT(9p_protocol_dump,
+ 	    TP_printk("clnt %lu %s(tag = %d)\n%.3x: %16ph\n%.3x: %16ph\n",
+ 		      (unsigned long)__entry->clnt, show_9p_op(__entry->type),
+ 		      __entry->tag, 0, __entry->line, 16, __entry->line + 16)
+- );
++);
+ 
+ #endif /* _TRACE_9P_H */
+ 
 -- 
-tejun
+1.8.1.2
+
