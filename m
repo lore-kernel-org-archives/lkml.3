@@ -1,135 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab3G2Xhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 19:37:38 -0400
-Received: from mga02.intel.com ([134.134.136.20]:23457 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750946Ab3G2Xhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 19:37:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,773,1367996400"; 
-   d="scan'208";a="353907194"
-Message-ID: <51F6FCDD.3010300@intel.com>
-Date: Tue, 30 Jul 2013 07:38:05 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751573Ab3G2Xic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 19:38:32 -0400
+Received: from ks3293202.kimsufi.com ([5.135.186.141]:49140 "EHLO
+	jigen.glandium.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750946Ab3G2Xia (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 19:38:30 -0400
+X-Greylist: delayed 1346 seconds by postgrey-1.27 at vger.kernel.org; Mon, 29 Jul 2013 19:38:29 EDT
+Date: Tue, 30 Jul 2013 08:15:39 +0900
+From: Mike Hommey <glandium@mozilla.com>
+To: =?iso-8859-15?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Vyacheslav Dubeyko <slava@dubeyko.com>, Dhaval Giani <dgiani@mozilla.com>,
+        Taras Glek <tglek@mozilla.com>, linux-kernel@vger.kernel.org,
+        tytso@mit.edu, vdjeric@mozilla.com, glandium@mozilla.com,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC/PATCH 0/2] ext4: Transparent Decompression Support
+Message-ID: <20130729231539.GA28383@glandium.org>
+References: <1374699833.7083.2.camel@localhost>
+ <20130724233628.GD3641@logfs.org>
+ <51F14136.30409@mozilla.com>
+ <51F1556A.20909@mozilla.com>
+ <51FB2C87-854F-4250-9587-B5BBF4E85EE8@dubeyko.com>
+ <51F17005.7030309@mozilla.com>
+ <1374825683.3671.35.camel@slavad-ubuntu>
+ <20130726132034.GB21977@logfs.org>
 MIME-Version: 1.0
-To: =?UTF-8?B?KiBTQU3DjSAq?= <miaousami@hotmail.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Igor Gnatenko <i.gnatenko.brain@gmail.com>
-Subject: Re: [Intel-gfx] Linux 3.11-rc2 [backlight] [ASUS N56VZ]
-References: <BLU0-SMTP125E791F01E26C3D60D7353A6680@phx.gbl> <2024506.rXjN91yI0W@vostro.rjw.lan> <877ggeyg1p.fsf@intel.com> <5730704.o2aLKRMvVz@vostro.rjw.lan> <BLU0-SMTP272CC1C4BE207873BCD0CFFA6550@phx.gbl>
-In-Reply-To: <BLU0-SMTP272CC1C4BE207873BCD0CFFA6550@phx.gbl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130726132034.GB21977@logfs.org>
+X-GPG-Fingerprint: 182E 161D 1130 B9FC CD7D  B167 E42A A04F A6AA 8C72
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 03:36 AM, * SAMÃ * wrote:
-> Hi Rafael,
+On Fri, Jul 26, 2013 at 09:20:34AM -0400, Jörn Engel wrote:
+> On Fri, 26 July 2013 12:01:23 +0400, Vyacheslav Dubeyko wrote:
+> > 
+> > We are discussing not about good or bad idea. We need to elaborate a
+> > right solution. I think that suggested idea is not clear. Do you
+> > want to support compression in ext4? Or do you want to add some new
+> > compression feature (likewise file-oriented compression)? If we are
+> > talking about compression in ext4 then it needs to use e2compr patch
+> > set. Otherwise, if we are talking about file compression then it is
+> > not question of concrete filesystem. And we need to make
+> > implementation on VFS level. It is only architectural point of view.
 > 
+> I don't think the e2compr patches are strictly necessary.  They are a
+> good option, but not the only one.
 > 
-> did you commit a full revert?
-> Because I am experiencing quite weird things in rc3.
-> Do we have a bug opened to discuss about it?
+> One trick to simplify the problem is to make Dhaval's compressed files
+> strictly read-only.  It will require some dance to load the compressed
+> content, flip the switch, then uncompress data on the fly and disallow
+> writes.  Not the most pleasing of interfaces, but yet another option.
+> 
+> > Why do you try to implement likewise concept on kernel level? It
+> > looks like you try to move some user-space concept in kernel-space.
+> 
+> The kernel controls the page cache.  Once the page cache is filled
+> with uncompressed file content, you can do mmap, regular file io, etc.
+> Putting uncompression code into the kernel makes sense to me.  Whether
+> a solution different from e2compr makes sense is yet to be seen.
+> 
+> Whatever you do, it will require support from the on-disk format and
+> the userspace ABI.  Setting the compression bit on a file has the
+> clear advantage that it is an established interface and also supported
+> by other filesystems.  Introducing yet another interface requires a
+> fairly strong case to be made.  But who knows, maybe Dhaval can pull
+> it off.
 
-Yes we have:
-https://bugzilla.kernel.org/show_bug.cgi?id=52951
+Come to think of it, the whole thing could be handled entirely in user
+space through fuse. While this is probably a workable solution on
+desktop/server environments, it doesn't pan out on Android: /dev/fuse is
+rarely available, and even if it were, fusermount needs to be there and
+be a setuid program (or have the right capabilities). So, another angle
+could be to allow some things to happen without privileges, such as
+mounting filesystems in a private namespace. That wouldn't solve the
+lack of /dev/fuse, though.
 
-I'll look into this issue.
-
-Thanks,
-Aaron
-
-> 
-> Here is what I can observe:
-> 1) During boot, probably when loading the driver, backlight gets off (or 
-> to a level low enough to make me feel it is off)
-> 2) When I am playing with my Fn+x keys, I am getting a completely full / 
-> completely low brightness with no intermediate steps
-> 3) When I am playing with my Fn+x keys while gnome brightness settings 
-> panel is open, I am recovering intermediate steps but the Fn+x keys 
-> behavior is inverted (the key supposed to lower the brightness make it 
-> increase and vice-versa. Note that the gnome brightness indicator also 
-> gets inverted).
-> 4) Playing with the mouse on gnome brightness settings is working, 
-> except that on the minimum level, backlight gets off
-> 5) Writing to /sys/class/backlight/intel_backlight/brightness works
-> 
-> 
-> Regards
-> 
-> On 07/25/2013 02:57 PM, Rafael J. Wysocki wrote:
->> On Thursday, July 25, 2013 03:34:10 PM Jani Nikula wrote:
->>> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>>> On Thursday, July 25, 2013 11:09:27 AM Jani Nikula wrote:
->>>>> On Thu, 25 Jul 2013, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->>>>>> Well, I wonder what about the appended (untested) patch?
->>>>> Rafael, before going there, I've been trying to wrap my (poor, rusty
->>>>> after vacation) head around
->>>>>
->>>>> commit 8c5bd7adb2ce47e6aa39d17b2375f69b0c0aa255
->>>>> Author: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->>>>> Date:   Thu Jul 18 02:08:06 2013 +0200
->>>>>
->>>>>      ACPI / video / i915: No ACPI backlight if firmware expects Windows 8
->>>>>
->>>>> and I can't see how it could work.
->>>> Well, if it didn't work, people wouldn't see either improvement or breakage
->>>> from it, but they do see that, so it evidently works. :-)
->>> I didn't claim it didn't work, just that *I* didn't see how it could. ;)
->>>
->>>>> First, the ACPI_VIDEO_SKIP_BACKLIGHT flag seems to be checked before
->>>>> it's actually set anywhere.
->>>> Are you sure about that?
->>>>
->>>> acpi_video_bus_add() is the .add() callback routine for acpi_video_bus which
->>>> in fact is an ACPI driver (the naming sucks, but I didn't invent it).  This
->>>> means that acpi_video_bus_add() can only be called *after* acpi_video_bus
->>>> has been registered with the ACPI subsystem (and the driver core).  That
->>>> is done by acpi_bus_register_driver() and, guess what?, this happens in
->>>> __acpi_video_register().  So clearly, acpi_video_bus_add() *cannot* run before
->>>> __acpi_video_register().
->>> Right. I totally missed the call within the ternary operator. Thanks for
->>> the explanation, and apologies for the noise.
->>>
->>>>> Second, with i915 that has opregion support, __acpi_video_register()
->>>>> should only ever get called once. Which means the acpi_walk_namespace()
->>>>> with video_unregister_backlight() should never get called in register.
->>>>>
->>>>> Please enlighten me.
->>>> Actually, that's correct, so we don't need the whole
->>>> video_unregister_backlight() thing, calling acpi_video_backlight_quirks() would
->>>> be sufficient.
->>>>
->>>> Ah, one more reason to do a full revert.  I'm thinking, though, that I'll leave
->>>> acpi_video_backlight_quirks() as is so that it can be used by
->>>> acpi_video_bus_(start)|(stop)_devices(), because that doesn't seem to cause
->>>> problems to happen.
->>> I observe that for the regular non-quirk acpi_video_register() call,
->>> acpi_video_backlight_quirks() won't be called during register, but it
->>> will get called later. This might have subtle effects later on, don't
->>> you think?
->> Yes, it might, but after dropping ACPI_VIDEO_SKIP_BACKLIGHT it should be OK.
->>
->>> As to the original problem, and your patch in this thread, what do you
->>> think about having another value in acpi_backlight kernel parameter for
->>> it? Having an i915 module parameter to tell acpi to use or not use
->>> quirks seems odd, since the i915 is not really taking over
->>> anything. It's just passing the info on to acpi.
->> I agree, I'm going to send a full revert in a while and we'll think what to
->> do about all that later.
->>
->> Thanks,
->> Rafael
->>
->>
-> 
-
+Mike
