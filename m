@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab3G2Tmp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 15:42:45 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:54949 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410Ab3G2Tmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 15:42:43 -0400
-Date: Mon, 29 Jul 2013 14:42:51 -0500
-From: Alex Thorlton <athorlton@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Galbraith <bitbucket@online.de>, Robin Holt <holt@sgi.com>,
-        Li Zefan <lizefan@huawei.com>, Rob Landley <rob@landley.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        linux-doc@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Alex Thorlton <athorlton@sgi.com>
-Subject: Re: [PATCH v2] Make transparent hugepages cpuset aware
-Message-ID: <20130729194250.GC26476@sgi.com>
-References: <1370967244-5610-1-git-send-email-athorlton@sgi.com>
- <alpine.DEB.2.02.1306111517200.6141@chino.kir.corp.google.com>
- <20130618164537.GJ16067@sgi.com>
- <alpine.DEB.2.02.1306181654350.4503@chino.kir.corp.google.com>
- <20130619093212.GX3658@sgi.com>
- <alpine.DEB.2.02.1306191419081.13015@chino.kir.corp.google.com>
- <20130620022739.GF3658@sgi.com>
- <alpine.DEB.2.02.1306191939250.24151@chino.kir.corp.google.com>
- <1371697844.5739.29.camel@marge.simpson.net>
- <alpine.DEB.2.02.1306201334460.24145@chino.kir.corp.google.com>
+	id S1754149Ab3G2Tot (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 15:44:49 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:49884 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753075Ab3G2Tor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 15:44:47 -0400
+Date: Mon, 29 Jul 2013 16:44:53 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>
+Subject: Re: [PATCH] ATA: sata_mv: Remove uneeded CONFIG_HAVE_CLK ifdefs
+Message-ID: <20130729194452.GA31864@localhost>
+References: <1375111282-22624-1-git-send-email-ezequiel.garcia@free-electrons.com>
+ <1375111282-22624-2-git-send-email-ezequiel.garcia@free-electrons.com>
+ <20130729190431.GJ24782@lunn.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1306201334460.24145@chino.kir.corp.google.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130729190431.GJ24782@lunn.ch>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've re-evaluated the need for a patch to support some sort of finer
-grained control over thp, and, based on some tests performed by our 
-benchmarking team, we're seeing that we'd definitely still like to
-implement some method to support this.  Here's an e-mail from John 
-Baron (jbaron@sgi.com), on our benchmarking team,  containing some data
-which shows a decrease in performance for some SPEC OMP benchmarks when
-thp is enabled:
+Hi Andrew,
 
-> Here are results for SPEC OMP benchmarks on UV2 using 512 threads / 64
-> sockets.  These show the performance ratio for jobs run with THP
-> disabled versus THP enabled (so > 1.0 means THP disabled is faster).  
-> One possible reason for lower performance with THP enabled is that the 
-> larger page granularity can result in more remote data accesses.
+On Mon, Jul 29, 2013 at 09:04:31PM +0200, Andrew Lunn wrote:
+> On Mon, Jul 29, 2013 at 12:21:22PM -0300, Ezequiel Garcia wrote:
+> > If CONFIG_HAVE_CLK is not selected, then all the clk API turn out
+> > into stubs, so there's no need to have the ifdefs.
+> > The only side-effect of this patch is the extra tiny kmalloc,
+> > but that's not enough reason to have such ugly ifdefs all around
+> > the code.
+> > 
+> > Signed-off-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
 > 
+> What architectures did you compile this for? PowerPC and x86 as well
+> as ARM? I _think_ this driver is also used there, and i _think_
+> without some #ifdef, it failed to build. But maybe since then, the
+> common clock is now available on all architectures?
 > 
-> SPEC OMP2012:
-> 
-> 350.md          1.0
-> 351.bwaves      1.3
-> 352.nab         1.0
-> 357.bt331       0.9
-> 358.botsalgn    1.0
-> 359.botsspar    1.1
-> 360.ilbdc       1.8
-> 362.fma3d       1.0
-> 363.swim        1.4
-> 367.imagick     0.9
-> 370.mgrid331    1.1
-> 371.applu331    0.9
-> 372.smithwa     1.0
-> 376.kdtree      1.0
-> 
-> SPEC OMPL2001:
-> 
-> 311.wupwise_l   1.1
-> 313.swim_l      1.5
-> 315.mgrid_l     1.0
-> 317.applu_l     1.1
-> 321.equake_l    5.8
-> 325.apsi_l      1.5
-> 327.gafort_l    1.0
-> 329.fma3d_l     1.0
-> 331.art_l       0.8
-> 
-> One could argue that real-world applications could be modified to avoid
-> these kinds of effects, but (a) it is not always possible to modify code
-> (e.g. in benchmark situations) and (b) even if it is possible to do so,
-> it is not necessarily easy to do so (e.g. for customers with large
-> legacy Fortran codes).
-> 
-> We have also observed on Intel Sandy Bridge processors that, as
-> counter-intuitive as it may seem, local memory bandwidth is actually
-> slightly lower with THP enabled (1-2%), even with unit stride data
-> accesses.  This may not seem like much of a performance hit but
-> it is important for HPC workloads.  No code modification will help here.
 
-In light of the previous issues discussed in this thread, and some
-suggestions from David Rientjes:
+Using COMPILE_TEST=y, I've compiled with a working ARM config,
+as well as with a MMU-less ARM (with COMMON_CLK=n).
 
-> why not make it per-process so users don't have to configure
-> cpusets to control it?
+And now that you mention x86, I've compiled it with an x86 config
+(with COMMON_CLK=n).
 
-Robin and I have come up with a proposal for a way to replicate behavior
-similar to what this patch introduced, only on a per-process level
-instead of at the cpuset level.
+I'm not sure this particular change is architecture dependent (at least
+nowadays), since by looking at include/linux/clk.h it seems pretty
+straightforward that all the operations are no-ops if HAVE_CLK=n.
 
-Our idea would be to add a flag somewhere in the task_struct to keep
-track of whether or not thp is enabled for each task.  The flag would be
-controlled by an additional option included in prctl(), allowing
-programmers to set/unset this flag via the prctl() syscall.  We would 
-also introduce some code into the clone() syscall to ensure that this 
-flag is copied down from parent to child tasks when necessary.  The flag
-would be checked in the same place the the per-cpuset flag was checked
-in my original patch, thereby allowing the same behavior to be
-replicated on a per-process level.
-
-In this way, we will also be able to get static binaries to behave
-appropriately by setting this flag in a userland program, and then
-having that program exec the static binary for which we need to disable
-thp.
-
-This solution allows us to incorporate the behavior that we're looking
-for into the kernel, without abusing cpusets for the purpose of
-containerization.
-
-Please let me know if anyone has any objections to this approach, or if
-you have any suggestions as to how we could improve upon this idea.
-
-Thanks!
-
-- Alex
+Am I missing something?
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
