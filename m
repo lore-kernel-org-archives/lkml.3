@@ -1,147 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751159Ab3G2L0R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 07:26:17 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:48106 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754821Ab3G2LZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 07:25:47 -0400
-From: James Hogan <james.hogan@imgtec.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, <linux-kernel@vger.kernel.org>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Doug Anderson <dianders@chromium.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "James Hogan" <james.hogan@imgtec.com>
-Subject: [PATCH v6 5/5] clk: clk-mux: implement remuxing on set_rate
-Date: Mon, 29 Jul 2013 12:25:02 +0100
-Message-ID: <1375097102-28892-6-git-send-email-james.hogan@imgtec.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1375097102-28892-1-git-send-email-james.hogan@imgtec.com>
-References: <1375097102-28892-1-git-send-email-james.hogan@imgtec.com>
+	id S1752527Ab3G2Lgj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 07:36:39 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49881 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290Ab3G2Lgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 07:36:38 -0400
+Message-ID: <51F653C2.3010407@hitachi.com>
+Date: Mon, 29 Jul 2013 20:36:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01192__2013_07_29_12_25_42
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Alexander Z Lam <azl@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        David Sharp <dhsharp@google.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/6] tracing: open/delete fixes
+References: <20130726172513.GA3586@redhat.com>
+In-Reply-To: <20130726172513.GA3586@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement clk-mux remuxing if the CLK_SET_RATE_NO_REPARENT flag isn't
-set. This implements determine_rate for clk-mux to propagate to each
-parent and to choose the best one (like clk-divider this chooses the
-parent which provides the fastest rate <= the requested rate).
+(2013/07/27 2:25), Oleg Nesterov wrote:
+> Hello.
+> 
+> Testing: seems to work, but assumes that debugs was fixed too. Hopefully
+> "debugfs: debugfs_remove_recursive() must not rely on list_empty(d_subdirs)"
+> is fine.
+> 
+> (We should probably make debugfs_remove_recursive() to return the error
+>  and trace_events.c should warn if it fails)
+> 
+> However: I am still testing this patches, so this is still mostly for
+> review. I'll report if I find anything, but to remind we have other
+> bugs which need more fixes. And in fact I need to re-read this series
+> to convince myself it should work, I was distracted by the unexpected
+> problem in debugfs.
+> 
+> Changes: a lot but all cosmetic, addresses the comments from Steven.
+> 
+> Steven, 1/6 was not changed, I assume you agreed with my reply.
+> 
+> Masami, I'll appreciate your review ;)
 
-The determine_rate op is implemented as a core helper function so that
-it can be easily used by more complex clocks which incorporate muxes.
+I think this is OK except for the bisecting issue, as I pointed in
+reply to 6/6. ;)
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org
----
-Changes in v4:
+Thank you!
 
-* never pass NULL to determine_rate's best_parent_clk parameter.
-
-Changes in v3:
-
-* rename/invert CLK_SET_RATE_REMUX to CLK_SET_RATE_NO_REPARENT and move
-  to patch 3.
-
- drivers/clk/clk-mux.c        |  1 +
- drivers/clk/clk.c            | 49 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/clk-provider.h |  3 +++
- 3 files changed, 53 insertions(+)
-
-diff --git a/drivers/clk/clk-mux.c b/drivers/clk/clk-mux.c
-index 614444c..b487b3c 100644
---- a/drivers/clk/clk-mux.c
-+++ b/drivers/clk/clk-mux.c
-@@ -104,6 +104,7 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
- const struct clk_ops clk_mux_ops = {
- 	.get_parent = clk_mux_get_parent,
- 	.set_parent = clk_mux_set_parent,
-+	.determine_rate = __clk_mux_determine_rate,
- };
- EXPORT_SYMBOL_GPL(clk_mux_ops);
- 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 2a047a0..1ed9bdd 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -692,6 +692,55 @@ struct clk *__clk_lookup(const char *name)
- 	return NULL;
- }
- 
-+/*
-+ * Helper for finding best parent to provide a given frequency. This can be used
-+ * directly as a determine_rate callback (e.g. for a mux), or from a more
-+ * complex clock that may combine a mux with other operations.
-+ */
-+long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *best_parent_rate,
-+			      struct clk **best_parent_p)
-+{
-+	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
-+	int i, num_parents;
-+	unsigned long parent_rate, best = 0;
-+
-+	/* if NO_REPARENT flag set, pass through to current parent */
-+	if (clk->flags & CLK_SET_RATE_NO_REPARENT) {
-+		parent = clk->parent;
-+		if (clk->flags & CLK_SET_RATE_PARENT)
-+			best = __clk_round_rate(parent, rate);
-+		else if (parent)
-+			best = __clk_get_rate(parent);
-+		else
-+			best = __clk_get_rate(clk);
-+		goto out;
-+	}
-+
-+	/* find the parent that can provide the fastest rate <= rate */
-+	num_parents = clk->num_parents;
-+	for (i = 0; i < num_parents; i++) {
-+		parent = clk_get_parent_by_index(clk, i);
-+		if (!parent)
-+			continue;
-+		if (clk->flags & CLK_SET_RATE_PARENT)
-+			parent_rate = __clk_round_rate(parent, rate);
-+		else
-+			parent_rate = __clk_get_rate(parent);
-+		if (parent_rate <= rate && parent_rate > best) {
-+			best_parent = parent;
-+			best = parent_rate;
-+		}
-+	}
-+
-+out:
-+	if (best_parent)
-+		*best_parent_p = best_parent;
-+	*best_parent_rate = best;
-+
-+	return best;
-+}
-+
- /***        clk api        ***/
- 
- void __clk_unprepare(struct clk *clk)
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 8ffe06c..9861cee 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -434,6 +434,9 @@ unsigned long __clk_get_flags(struct clk *clk);
- bool __clk_is_prepared(struct clk *clk);
- bool __clk_is_enabled(struct clk *clk);
- struct clk *__clk_lookup(const char *name);
-+long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
-+			      unsigned long *best_parent_rate,
-+			      struct clk **best_parent_p);
- 
- /*
-  * FIXME clock api without lock protection
 -- 
-1.8.1.2
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
