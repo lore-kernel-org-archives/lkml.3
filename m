@@ -1,206 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab3G3Ber (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 21:34:47 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50385 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab3G3Beq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 21:34:46 -0400
-Message-ID: <51F71832.2080009@hitachi.com>
-Date: Tue, 30 Jul 2013 10:34:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1756712Ab3G3BgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 21:36:15 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:2203 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753773Ab3G3BgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 21:36:14 -0400
+X-IronPort-AV: E=Sophos;i="4.89,774,1367942400"; 
+   d="scan'208";a="8062744"
+Message-ID: <51F71973.5070104@cn.fujitsu.com>
+Date: Tue, 30 Jul 2013 09:40:03 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 3/6] tracing: Change event_filter_read/write to verify
- i_private != NULL
-References: <20130726172540.GA3619@redhat.com>
-In-Reply-To: <20130726172540.GA3619@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: paulmck@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
+ kthreads onto timekeeping CPU
+References: <20130726231848.GA12967@linux.vnet.ibm.com> <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com> <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com> <51F5E325.4000607@cn.fujitsu.com> <20130729165253.GP26694@linux.vnet.ibm.com>
+In-Reply-To: <20130729165253.GP26694@linux.vnet.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 09:33:56,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 09:34:01,
+	Serialize complete at 2013/07/30 09:34:01
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/27 2:25), Oleg Nesterov wrote:
-> event_filter_read/write() are racy, ftrace_event_call can be already
-> freed by trace_remove_event_call() callers.
+On 07/30/2013 12:52 AM, Paul E. McKenney wrote:
+> On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
+>> On 07/27/2013 07:19 AM, Paul E. McKenney wrote:
+>>> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+>>>
+>>> Because RCU's quiescent-state-forcing mechanism is used to drive the
+>>> full-system-idle state machine, and because this mechanism is executed
+>>> by RCU's grace-period kthreads, this commit forces these kthreads to
+>>> run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
+>>> mean that the RCU grace-period kthreads would force the system into
+>>> non-idle state every time they drove the state machine, which would
+>>> be just a bit on the futile side.
+>>>
+>>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>>> ---
+>>>  kernel/rcutree.c        |  1 +
+>>>  kernel/rcutree.h        |  1 +
+>>>  kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
+>>>  3 files changed, 21 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+>>> index aa6d96e..fe83085 100644
+>>> --- a/kernel/rcutree.c
+>>> +++ b/kernel/rcutree.c
+>>> @@ -1286,6 +1286,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+>>>  	struct rcu_data *rdp;
+>>>  	struct rcu_node *rnp = rcu_get_root(rsp);
+>>>  
+>>> +	rcu_bind_gp_kthread();
+>>>  	raw_spin_lock_irq(&rnp->lock);
+>>>  	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
+>>
+>> bind the gp thread when RCU_GP_FLAG_INIT ...
+>>
+>>>  
+>>> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+>>> index e0de5dc..49dac99 100644
+>>> --- a/kernel/rcutree.h
+>>> +++ b/kernel/rcutree.h
+>>> @@ -560,6 +560,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+>>>  static bool is_sysidle_rcu_state(struct rcu_state *rsp);
+>>>  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+>>>  				  unsigned long maxj);
+>>> +static void rcu_bind_gp_kthread(void);
+>>>  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+>>>  
+>>>  #endif /* #ifndef RCU_TREE_NONCORE */
+>>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+>>> index ff84bed..f65d9c2 100644
+>>> --- a/kernel/rcutree_plugin.h
+>>> +++ b/kernel/rcutree_plugin.h
+>>> @@ -2544,7 +2544,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+>>>  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+>>>  	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+>>>  		return;
+>>> -	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
+>>> +	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+>>
+>>
+>> but call rcu_sysidle_check_cpu() when RCU_GP_FLAG_FQS.
 > 
-> 1. Shift mutex_lock(event_mutex) from print/apply_event_filter to
->    the callers.
+> Yep!  But we don't call rcu_gp_fqs() until the grace period is started,
+> by which time the kthread will be bound.  Any setting of RCU_GP_FLAG_FQS
+> while there is no grace period in progress is ignored.
+
+tick_do_timer_cpu can be changed.
+when rcu_gp_fqs() is called, the tick_do_timer_cpu may be a different CPU.
+
+xxx_thread()
+{
+	bind itself to tick_do_timer_cpu.
+	sleep(); /* tick_do_timer_cpu can be changed while this */
+	use wrong tick_do_timer_cpu.
+}
+	
+
 > 
-> 2. Change the callers, event_filter_read() and event_filter_write()
->    to read i_private under this mutex and abort if it is NULL.
+>> In this time, the thread may not be bound to tick_do_timer_cpu,
+>> the WARN_ON_ONCE() may be wrong.
+>>
+>> Does any other code ensure the gp thread bound on tick_do_timer_cpu
+>> which I missed?
 > 
-> This fixes nothing, but now we can change debugfs_remove("filter")
-> callers to nullify ->i_private and fix the the problem.
-
-Looks good for me. (Note: this also has some cosmetic changes)
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
-
+> However, on small systems, rcu_sysidle_check_cpu() can be called from
+> the timekeeping CPU.  I suppose that this could potentially happen
+> before the first grace period starts, and in that case, we could
+> potentially see a spurious warning.  I could imagine a number of ways
+> to fix this:
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/trace/trace_events.c        |   28 +++++++++++++++++++---------
->  kernel/trace/trace_events_filter.c |   17 ++++++-----------
->  2 files changed, 25 insertions(+), 20 deletions(-)
+> 1.	Bind the kthread when it is created.
 > 
-> diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-> index 39cb049..b5144c4 100644
-> --- a/kernel/trace/trace_events.c
-> +++ b/kernel/trace/trace_events.c
-> @@ -978,24 +978,30 @@ static ssize_t
->  event_filter_read(struct file *filp, char __user *ubuf, size_t cnt,
->  		  loff_t *ppos)
->  {
-> -	struct ftrace_event_call *call = filp->private_data;
-> +	struct ftrace_event_call *call;
->  	struct trace_seq *s;
-> -	int r;
-> +	int r = -ENODEV;
->  
->  	if (*ppos)
->  		return 0;
->  
->  	s = kmalloc(sizeof(*s), GFP_KERNEL);
-> +
->  	if (!s)
->  		return -ENOMEM;
->  
->  	trace_seq_init(s);
->  
-> -	print_event_filter(call, s);
-> -	r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
-> +	mutex_lock(&event_mutex);
-> +	call = event_file_data(filp);
-> +	if (call)
-> +		print_event_filter(call, s);
-> +	mutex_unlock(&event_mutex);
->  
-> -	kfree(s);
-> +	if (call)
-> +		r = simple_read_from_buffer(ubuf, cnt, ppos, s->buffer, s->len);
->  
-> +	kfree(s);
->  	return r;
->  }
->  
-> @@ -1003,9 +1009,9 @@ static ssize_t
->  event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
->  		   loff_t *ppos)
->  {
-> -	struct ftrace_event_call *call = filp->private_data;
-> +	struct ftrace_event_call *call;
->  	char *buf;
-> -	int err;
-> +	int err = -ENODEV;
->  
->  	if (cnt >= PAGE_SIZE)
->  		return -EINVAL;
-> @@ -1020,13 +1026,17 @@ event_filter_write(struct file *filp, const char __user *ubuf, size_t cnt,
->  	}
->  	buf[cnt] = '\0';
->  
-> -	err = apply_event_filter(call, buf);
-> +	mutex_lock(&event_mutex);
-> +	call = event_file_data(filp);
-> +	if (call)
-> +		err = apply_event_filter(call, buf);
-> +	mutex_unlock(&event_mutex);
-> +
->  	free_page((unsigned long) buf);
->  	if (err < 0)
->  		return err;
->  
->  	*ppos += cnt;
-> -
->  	return cnt;
->  }
->  
-> diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-> index 0c7b75a..97daa8c 100644
-> --- a/kernel/trace/trace_events_filter.c
-> +++ b/kernel/trace/trace_events_filter.c
-> @@ -637,17 +637,15 @@ static void append_filter_err(struct filter_parse_state *ps,
->  	free_page((unsigned long) buf);
->  }
->  
-> +/* caller must hold event_mutex */
->  void print_event_filter(struct ftrace_event_call *call, struct trace_seq *s)
->  {
-> -	struct event_filter *filter;
-> +	struct event_filter *filter = call->filter;
->  
-> -	mutex_lock(&event_mutex);
-> -	filter = call->filter;
->  	if (filter && filter->filter_string)
->  		trace_seq_printf(s, "%s\n", filter->filter_string);
->  	else
->  		trace_seq_puts(s, "none\n");
-> -	mutex_unlock(&event_mutex);
->  }
->  
->  void print_subsystem_event_filter(struct event_subsystem *system,
-> @@ -1841,23 +1839,22 @@ static int create_system_filter(struct event_subsystem *system,
->  	return err;
->  }
->  
-> +/* caller must hold event_mutex */
->  int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
->  {
->  	struct event_filter *filter;
-> -	int err = 0;
-> -
-> -	mutex_lock(&event_mutex);
-> +	int err;
->  
->  	if (!strcmp(strstrip(filter_string), "0")) {
->  		filter_disable(call);
->  		filter = call->filter;
->  		if (!filter)
-> -			goto out_unlock;
-> +			return 0;
->  		RCU_INIT_POINTER(call->filter, NULL);
->  		/* Make sure the filter is not being used */
->  		synchronize_sched();
->  		__free_filter(filter);
-> -		goto out_unlock;
-> +		return 0;
->  	}
->  
->  	err = create_filter(call, filter_string, true, &filter);
-> @@ -1884,8 +1881,6 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
->  			__free_filter(tmp);
->  		}
->  	}
-> -out_unlock:
-> -	mutex_unlock(&event_mutex);
->  
->  	return err;
->  }
+> 2.	Bind the kthread when it first starts running, rather than just
+> 	after the grace period starts.
 > 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+> 3.	Suppress the warning when there is no grace period in progress.
+> 
+> 4.	Suppress the warning prior to the first grace period starting.
+> 
+> Seems like #3 is the most straightforward approach.  I just change it to:
+> 
+> 	if (rcu_gp_in_progress(rdp->rsp))
+> 		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> 
+> This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
+> but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
+> probability of complaining should some bug creep in.
+> 
+> Sound reasonable?
+> 
+> 							Thanx, Paul
+> 
+>>>  	/* Pick up current idle and NMI-nesting counter and check. */
+>>>  	cur = atomic_read(&rdtp->dynticks_idle);
+>>> @@ -2570,6 +2570,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+>>>  }
+>>>  
+>>>  /*
+>>> + * Bind the grace-period kthread for the sysidle flavor of RCU to the
+>>> + * timekeeping CPU.
+>>> + */
+>>> +static void rcu_bind_gp_kthread(void)
+>>> +{
+>>> +	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
+>>> +
+>>> +	if (cpu < 0 || cpu >= nr_cpu_ids)
+>>> +		return;
+>>> +	if (raw_smp_processor_id() != cpu)
+>>> +		set_cpus_allowed_ptr(current, cpumask_of(cpu));
+>>> +}
+>>> +
+>>> +/*
+>>>   * Return a delay in jiffies based on the number of CPUs, rcu_node
+>>>   * leaf fanout, and jiffies tick rate.  The idea is to allow larger
+>>>   * systems more time to transition to full-idle state in order to
+>>> @@ -2767,6 +2781,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+>>>  	return false;
+>>>  }
+>>>  
+>>> +static void rcu_bind_gp_kthread(void)
+>>> +{
+>>> +}
+>>> +
+>>>  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+>>>  				  unsigned long maxj)
+>>>  {
+>>
+> 
+> 
 
