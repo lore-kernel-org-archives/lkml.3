@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab3G3PSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:18:03 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:54993 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752030Ab3G3PSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:18:00 -0400
-Message-ID: <1375197479.2075.116.camel@joe-AO722>
-Subject: [PATCH] MAINTAINERS: USB, remove F: drivers/net/usb/ pattern
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Hayes Wang <hayeswang@realtek.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nic_swsd@realtek.com
-Date: Tue, 30 Jul 2013 08:17:59 -0700
-In-Reply-To: <20130730135828.GD27962@kroah.com>
-References: <D7C722C73C7A400780358D0376412267@realtek.com.tw>
-	 <1375172936-4145-1-git-send-email-hayeswang@realtek.com>
-	 <20130730135828.GD27962@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756430Ab3G3PSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:18:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55287 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab3G3PSH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 11:18:07 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 15/75] drm/radeon: allocate SA bo in the requested domain
+Date: Tue, 30 Jul 2013 08:16:44 -0700
+Message-Id: <1375197464-27962-16-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 06:58 -0700, Greg KH wrote:
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-> In the future, you do not need to send drivers/net/usb/ patches to me,
-> netdev and the linux-usb mailing lists should be sufficient.
+------------------
 
-Signed-off-by: Joe Perches <joe@perches.com>
+From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+
+commit 7220f639c2eca36774dbf65b16fe503bfb40fff5 upstream.
+
+This avoid moving the BO directly after allocating it.
+
+Signed-off-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+[ kamal: 3.8.y-stable prereq for:
+  6c4f978 "drm/radeon: allow selection of alignment in the sub-allocator" ]
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
+ drivers/gpu/drm/radeon/radeon_sa.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This might help...
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 339e798..9b5335a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -8780,7 +8780,6 @@ W:	http://www.linux-usb.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb.git
- S:	Supported
- F:	Documentation/usb/
--F:	drivers/net/usb/
- F:	drivers/usb/
- F:	include/linux/usb.h
- F:	include/linux/usb/
-
+diff --git a/drivers/gpu/drm/radeon/radeon_sa.c b/drivers/gpu/drm/radeon/radeon_sa.c
+index cb80099..0abe5a9 100644
+--- a/drivers/gpu/drm/radeon/radeon_sa.c
++++ b/drivers/gpu/drm/radeon/radeon_sa.c
+@@ -64,7 +64,7 @@ int radeon_sa_bo_manager_init(struct radeon_device *rdev,
+ 	}
+ 
+ 	r = radeon_bo_create(rdev, size, RADEON_GPU_PAGE_SIZE, true,
+-			     RADEON_GEM_DOMAIN_CPU, NULL, &sa_manager->bo);
++			     domain, NULL, &sa_manager->bo);
+ 	if (r) {
+ 		dev_err(rdev->dev, "(%d) failed to allocate bo for manager\n", r);
+ 		return r;
+-- 
+1.8.1.2
 
