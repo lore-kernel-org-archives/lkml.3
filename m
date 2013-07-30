@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab3G3PST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:18:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55286 "EHLO
+	id S1756185Ab3G3PSR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:18:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55306 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754746Ab3G3PSH (ORCPT
+	with ESMTP id S1755647Ab3G3PSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 11:18:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 16/75] drm/radeon: allow selection of alignment in the sub-allocator
-Date: Tue, 30 Jul 2013 08:16:45 -0700
-Message-Id: <1375197464-27962-17-git-send-email-kamal@canonical.com>
+Subject: [PATCH 13/75] drm/i915: Preserve the DDI_A_4_LANES bit from the bios
+Date: Tue, 30 Jul 2013 08:16:42 -0700
+Message-Id: <1375197464-27962-14-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,110 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: =?UTF-8?q?St=C3=A9phane=20Marchesin?= <marcheu@chromium.org>
 
-commit 6c4f978b357bc779c703fda1f200e9179623d3e9 upstream.
+commit bcf53de4e60d9000b82f541d654529e2902a4c2c upstream.
 
-There are cases where we need more than 4k alignment.  No
-functional change with this commit.
+Otherwise the DDI_A_4_LANES bit gets lost and we can't use > 2 lanes
+on eDP. This fixes eDP on hsw with > 2 lanes.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Also s/port_reversal/saved_port_bits/ since the current name is
+confusing.
+
+Signed-off-by: Stéphane Marchesin <marcheu@chromium.org>
+Reviewed-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon.h        | 1 +
- drivers/gpu/drm/radeon/radeon_gart.c   | 1 +
- drivers/gpu/drm/radeon/radeon_object.h | 2 +-
- drivers/gpu/drm/radeon/radeon_ring.c   | 1 +
- drivers/gpu/drm/radeon/radeon_sa.c     | 7 ++++---
- 5 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/intel_ddi.c | 10 ++++++----
+ drivers/gpu/drm/i915/intel_drv.h |  2 +-
+ 2 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeon.h
-index a08f657..aa2d2e2 100644
---- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -387,6 +387,7 @@ struct radeon_sa_manager {
- 	uint64_t		gpu_addr;
- 	void			*cpu_ptr;
- 	uint32_t		domain;
-+	uint32_t		align;
+diff --git a/drivers/gpu/drm/i915/intel_ddi.c b/drivers/gpu/drm/i915/intel_ddi.c
+index bd37fe0..b8e53d9 100644
+--- a/drivers/gpu/drm/i915/intel_ddi.c
++++ b/drivers/gpu/drm/i915/intel_ddi.c
+@@ -681,7 +681,7 @@ static void intel_ddi_mode_set(struct drm_encoder *encoder,
+ 		struct intel_digital_port *intel_dig_port =
+ 			enc_to_dig_port(encoder);
+ 
+-		intel_dp->DP = intel_dig_port->port_reversal |
++		intel_dp->DP = intel_dig_port->saved_port_bits |
+ 			       DDI_BUF_CTL_ENABLE | DDI_BUF_EMP_400MV_0DB_HSW;
+ 		switch (intel_dp->lane_count) {
+ 		case 1:
+@@ -1303,7 +1303,8 @@ static void intel_enable_ddi(struct intel_encoder *intel_encoder)
+ 		 * enabling the port.
+ 		 */
+ 		I915_WRITE(DDI_BUF_CTL(port),
+-			   intel_dig_port->port_reversal | DDI_BUF_CTL_ENABLE);
++			   intel_dig_port->saved_port_bits |
++			   DDI_BUF_CTL_ENABLE);
+ 	} else if (type == INTEL_OUTPUT_EDP) {
+ 		struct intel_dp *intel_dp = enc_to_intel_dp(encoder);
+ 
+@@ -1496,8 +1497,9 @@ void intel_ddi_init(struct drm_device *dev, enum port port)
+ 	intel_encoder->get_hw_state = intel_ddi_get_hw_state;
+ 
+ 	intel_dig_port->port = port;
+-	intel_dig_port->port_reversal = I915_READ(DDI_BUF_CTL(port)) &
+-					DDI_BUF_PORT_REVERSAL;
++	intel_dig_port->saved_port_bits = I915_READ(DDI_BUF_CTL(port)) &
++					  (DDI_BUF_PORT_REVERSAL |
++					   DDI_A_4_LANES);
+ 	intel_dig_port->dp.output_reg = DDI_BUF_CTL(port);
+ 
+ 	intel_encoder->type = INTEL_OUTPUT_UNKNOWN;
+diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/intel_drv.h
+index a803234..2d8fff3 100644
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -377,7 +377,7 @@ struct intel_dp {
+ struct intel_digital_port {
+ 	struct intel_encoder base;
+ 	enum port port;
+-	u32 port_reversal;
++	u32 saved_port_bits;
+ 	struct intel_dp dp;
+ 	struct intel_hdmi hdmi;
  };
- 
- struct radeon_sa_bo;
-diff --git a/drivers/gpu/drm/radeon/radeon_gart.c b/drivers/gpu/drm/radeon/radeon_gart.c
-index daf9710..dfa0ca1 100644
---- a/drivers/gpu/drm/radeon/radeon_gart.c
-+++ b/drivers/gpu/drm/radeon/radeon_gart.c
-@@ -467,6 +467,7 @@ int radeon_vm_manager_init(struct radeon_device *rdev)
- 		size *= 2;
- 		r = radeon_sa_bo_manager_init(rdev, &rdev->vm_manager.sa_manager,
- 					      RADEON_GPU_PAGE_ALIGN(size),
-+					      RADEON_GPU_PAGE_SIZE,
- 					      RADEON_GEM_DOMAIN_VRAM);
- 		if (r) {
- 			dev_err(rdev->dev, "failed to allocate vm bo (%dKB)\n",
-diff --git a/drivers/gpu/drm/radeon/radeon_object.h b/drivers/gpu/drm/radeon/radeon_object.h
-index 5fc86b0..ec18ad5 100644
---- a/drivers/gpu/drm/radeon/radeon_object.h
-+++ b/drivers/gpu/drm/radeon/radeon_object.h
-@@ -158,7 +158,7 @@ static inline void * radeon_sa_bo_cpu_addr(struct radeon_sa_bo *sa_bo)
- 
- extern int radeon_sa_bo_manager_init(struct radeon_device *rdev,
- 				     struct radeon_sa_manager *sa_manager,
--				     unsigned size, u32 domain);
-+				     unsigned size, u32 align, u32 domain);
- extern void radeon_sa_bo_manager_fini(struct radeon_device *rdev,
- 				      struct radeon_sa_manager *sa_manager);
- extern int radeon_sa_bo_manager_start(struct radeon_device *rdev,
-diff --git a/drivers/gpu/drm/radeon/radeon_ring.c b/drivers/gpu/drm/radeon/radeon_ring.c
-index 3760eff..cac9f20 100644
---- a/drivers/gpu/drm/radeon/radeon_ring.c
-+++ b/drivers/gpu/drm/radeon/radeon_ring.c
-@@ -205,6 +205,7 @@ int radeon_ib_pool_init(struct radeon_device *rdev)
- 	}
- 	r = radeon_sa_bo_manager_init(rdev, &rdev->ring_tmp_bo,
- 				      RADEON_IB_POOL_SIZE*64*1024,
-+				      RADEON_GPU_PAGE_SIZE,
- 				      RADEON_GEM_DOMAIN_GTT);
- 	if (r) {
- 		return r;
-diff --git a/drivers/gpu/drm/radeon/radeon_sa.c b/drivers/gpu/drm/radeon/radeon_sa.c
-index 0abe5a9..f0bac68 100644
---- a/drivers/gpu/drm/radeon/radeon_sa.c
-+++ b/drivers/gpu/drm/radeon/radeon_sa.c
-@@ -49,7 +49,7 @@ static void radeon_sa_bo_try_free(struct radeon_sa_manager *sa_manager);
- 
- int radeon_sa_bo_manager_init(struct radeon_device *rdev,
- 			      struct radeon_sa_manager *sa_manager,
--			      unsigned size, u32 domain)
-+			      unsigned size, u32 align, u32 domain)
- {
- 	int i, r;
- 
-@@ -57,13 +57,14 @@ int radeon_sa_bo_manager_init(struct radeon_device *rdev,
- 	sa_manager->bo = NULL;
- 	sa_manager->size = size;
- 	sa_manager->domain = domain;
-+	sa_manager->align = align;
- 	sa_manager->hole = &sa_manager->olist;
- 	INIT_LIST_HEAD(&sa_manager->olist);
- 	for (i = 0; i < RADEON_NUM_RINGS; ++i) {
- 		INIT_LIST_HEAD(&sa_manager->flist[i]);
- 	}
- 
--	r = radeon_bo_create(rdev, size, RADEON_GPU_PAGE_SIZE, true,
-+	r = radeon_bo_create(rdev, size, align, true,
- 			     domain, NULL, &sa_manager->bo);
- 	if (r) {
- 		dev_err(rdev->dev, "(%d) failed to allocate bo for manager\n", r);
-@@ -317,7 +318,7 @@ int radeon_sa_bo_new(struct radeon_device *rdev,
- 	unsigned tries[RADEON_NUM_RINGS];
- 	int i, r;
- 
--	BUG_ON(align > RADEON_GPU_PAGE_SIZE);
-+	BUG_ON(align > sa_manager->align);
- 	BUG_ON(size > sa_manager->size);
- 
- 	*sa_bo = kmalloc(sizeof(struct radeon_sa_bo), GFP_KERNEL);
 -- 
 1.8.1.2
 
