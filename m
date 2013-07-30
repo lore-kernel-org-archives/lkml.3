@@ -1,151 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559Ab3G3JHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:07:43 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:57657 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758261Ab3G3JHj convert rfc822-to-8bit (ORCPT
+	id S1758357Ab3G3JJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:09:11 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56415 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758249Ab3G3JJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:07:39 -0400
-Date: Tue, 30 Jul 2013 11:07:30 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Thorsten Glaser <tg@mirbsd.de>
-cc: Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
-        linux-btrfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: btrfs zero divide (was: Re: Linux 3.10 problem reports (yes,
- plural))
-In-Reply-To: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
-Message-ID: <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 30 Jul 2013 05:09:07 -0400
+Date: Tue, 30 Jul 2013 10:08:32 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jonas Jensen <jonas.jensen@gmail.com>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "arm@kernel.org" <arm@kernel.org>
+Subject: Re: [PATCH v3] mmc: sdhci-moxart: Add MOXA ART SDHCI driver
+Message-ID: <20130730090832.GB28716@e106331-lin.cambridge.arm.com>
+References: <1374065502-27110-1-git-send-email-jonas.jensen@gmail.com>
+ <1375094974-7536-1-git-send-email-jonas.jensen@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375094974-7536-1-git-send-email-jonas.jensen@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013, Thorsten Glaser wrote:
-> NEW problem: btrfs doesn’t work at all. I had to reboot my
-> buildd into 3.2 using echo s/u/s/o >/proc/sysrq-trigger as
-> the attempt to mount it left the system hanging there.
+On Mon, Jul 29, 2013 at 11:49:34AM +0100, Jonas Jensen wrote:
+> Add SDHCI driver for MOXA ART SoCs.
+> 
+> Signed-off-by: Jonas Jensen <jonas.jensen@gmail.com>
+> ---
+> 
+> Notes:
+>     Changes since v2:
+> 
+>     1. #include <linux/bitops.h> because BIT() comes from there
+>     2. reinsert dev_set_drvdata() in moxart_remove
+>     3. remove MODULE_VERSION()
+> 
+>     device tree bindings document:
+>     4. describe compatible variable "Must be" instead of "Should be".
+>     5. change description so it's from the point of view of the device
+> 
+>     Applies to next-20130729
+> 
+>  .../devicetree/bindings/mmc/moxa,moxart-mmc.txt    |  17 +
+>  drivers/mmc/host/Kconfig                           |   9 +
+>  drivers/mmc/host/Makefile                          |   1 +
+>  drivers/mmc/host/sdhci-moxart.c                    | 782 +++++++++++++++++++++
+>  drivers/mmc/host/sdhci-moxart.h                    | 155 ++++
+>  5 files changed, 964 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+>  create mode 100644 drivers/mmc/host/sdhci-moxart.c
+>  create mode 100644 drivers/mmc/host/sdhci-moxart.h
+> 
+> diff --git a/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt b/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+> new file mode 100644
+> index 0000000..67782ad
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mmc/moxa,moxart-mmc.txt
+> @@ -0,0 +1,17 @@
+> +MOXA ART SD Host Controller Interface
+> +
+> +Required properties:
+> +
+> +- compatible : Must be "moxa,moxart-mmc"
+> +- reg : Should contain registers location and length
+> +- interrupts : Should contain the interrupt number
+> +- clocks : Should contain phandle for the clock feeding the SDHCI controller
+> +
+> +Example:
+> +
+> +       mmc: mmc@98e00000 {
+> +               compatible = "moxa,moxart-mmc";
+> +               reg = <0x98e00000 0x5C>;
+> +               interrupts = <5 0>;
+> +               clocks = <&coreclk>;
+> +       };
 
-> [    0.000000] Linux version 3.10-1-m68k (debian-kernel@lists.debian.org) (gcc version 4.8.1 (Debian 4.8.1-7+m68k.1) ) #1 Debian 3.10.3-1 (2013-07-27)
+This binding looks sensible, but I'd appreciate someone who understands
+MMCs checking that this captures the relevant information, as I don't
+know much about MMCs.
 
-> [    6.720000] bio: create slab <bio-1> at 1
-> [    6.740000] Btrfs loaded
-> [    6.830000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> [    7.150000] EXT4-fs (nfhd8p1): mounted filesystem with ordered data mode. Opts: (null)
-> [   14.520000] udevd[228]: starting version 175
-> [   17.820000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> [   20.850000] Adding 3670012k swap on /dev/nfhd8p2.  Priority:-1 extents:1 across:3670012k
-> [   21.380000] EXT4-fs (nfhd8p1): re-mounted. Opts: (null)
-> [   31.300000] EXT4-fs (nfhd8p1): re-mounted. Opts: errors=remount-ro
-> [   38.460000] device label ara5-butter devid 1 transid 376178 /dev/nfhd8p3
-> [   38.530000] btrfs: setting nodatacow, compression disabled
-> [   38.540000] btrfs: enabling auto recovery
-> [   38.570000] btrfs: disk space caching is enabled
-> [   38.600000] *** ZERO DIVIDE ***   FORMAT=2
-> [   38.630000] Current process id is 722
-> [   38.660000] BAD KERNEL TRAP: 00000000
-> [   38.680000] Modules linked in: evdev mac_hid ext4 crc16 jbd2 mbcache btrfs xor lzo_compress zlib_deflate raid6_pq crc32c libcrc32c
-> [   38.730000] PC: [<319535b2>] __btrfs_map_block+0x11c/0x119a [btrfs]
+Most mmc bindings I see have to describe some gpio pins, pinctrl to mux
+the relevant pins on from the SoC, etc. Is this a full description of
+the hardware supporting all features?
 
-Woops, adding the btrfs devs to CC.
+[...]
 
-> [   38.770000] SR: 2000  SP: 30c1fab4  a2: 30f0faf0
-> [   38.800000] d0: 00000000    d1: 00001000    d2: 00000000    d3: 00000000
-> [   38.830000] d4: 00010000    d5: 00000000    a0: 3085c72c    a1: 3085c72c
-> [   38.850000] Process mount (pid: 722, task=30f0faf0)
-> [   38.870000] Frame format=2 instr addr=319535ae
-> [   38.880000] Stack from 30c1faec:
-> [   38.880000]         00000000 00000020 00000000 00001000 00000000 01401000 30253928 300ffc00
-> [   38.880000]         00a843ac 3026f640 00000000 00010000 0009e250 00d106c0 00011220 00000000
-> [   38.880000]         00001000 301c6830 0009e32a 000000ff 00000009 3085c72c 00000000 00000000
-> [   38.880000]         30c1fd14 00000000 00000020 00000000 30c1fd14 0009e26c 00000020 00000003
-> [   38.880000]         00000000 0009dd8a 300b0b6c 30253928 00a843ac 00001000 00000000 00000000
-> [   38.880000]         0000a008 3194e76a 30253928 00a843ac 00001000 00000000 00000000 00000002
-> [   39.190000] Call Trace: [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.210000]  [<00010000>] res_func+0x1020/0x141a
-> [   39.250000]  [<0009e250>] bvec_alloc+0xa2/0xbe
-> [   39.270000]  [<00011220>] sasin+0x87c/0x944
-> [   39.290000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.330000]  [<0009e32a>] bio_alloc_bioset+0xbe/0x12e
-> [   39.360000]  [<0009e26c>] bio_alloc_bioset+0x0/0x12e
-> [   39.380000]  [<0009dd8a>] bio_add_page+0x4a/0x58
-> [   39.420000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.470000]  [<0000a008>] via_nubus_irq+0x1c/0xa2
-> [   39.500000]  [<3194e76a>] submit_extent_page.isra.44+0x170/0x1bc [btrfs]
-> [   39.530000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.560000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.600000]  [<31959778>] btrfs_map_bio+0x60/0x48c [btrfs]
-> [   39.630000]  [<31931b72>] btree_submit_bio_hook+0x0/0xae [btrfs]
-> [   39.660000]  [<3194eaa0>] end_bio_extent_readpage+0x0/0x69c [btrfs]
-> [   39.710000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   39.730000]  [<31931944>] btrfs_bio_wq_end_io+0x16/0x50 [btrfs]
-> [   39.760000]  [<31931bce>] btree_submit_bio_hook+0x5c/0xae [btrfs]
-> [   39.780000]  [<3194bd36>] submit_one_bio+0x7c/0xb2 [btrfs]
-> [   39.810000]  [<3194f174>] __extent_read_full_page+0x0/0x70a [btrfs]
-> [   39.830000]  [<00058828>] unlock_page+0x0/0x26
-> [   39.840000]  [<31951736>] read_extent_buffer_pages+0x1a8/0x218 [btrfs]
-> [   39.890000]  [<00027d81>] devkmsg_read+0x213/0x39a
-> [   39.930000]  [<31959006>] btrfs_num_copies+0x0/0x142 [btrfs]
-> [   39.970000]  [<31930a66>] btree_read_extent_buffer_pages.constprop.52+0x42/0xca [btrfs]
-> [   40.030000]  [<3192f7c2>] btree_get_extent+0x0/0x102 [btrfs]
-> [   40.060000]  [<00027d81>] devkmsg_read+0x213/0x39a
-> [   40.090000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   40.100000]  [<3193221e>] read_tree_block+0x38/0x48 [btrfs]
-> [   40.130000]  [<00027d81>] devkmsg_read+0x213/0x39a
-> [   40.140000]  [<319321e6>] read_tree_block+0x0/0x48 [btrfs]
-> [   40.170000]  [<31933d00>] open_ctree+0xe80/0x15e6 [btrfs]
-> [   40.200000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   40.220000]  [<00027d81>] devkmsg_read+0x213/0x39a
-> [   40.230000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   40.260000]  [<000f280a>] resource_string.isra.12+0x2b4/0x2ee
-> [   40.280000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   40.320000]  [<00001000>] kernel_pg_dir+0x0/0x1000
-> [   40.350000]  [<000e59ba>] disk_name+0x72/0x80
-> [   40.360000]  [<0000aff0>] mac_hwclk.part.0+0xe6/0x174
-> [   40.390000]  [<31913ede>] btrfs_mount+0x450/0x73e [btrfs]
-> [   40.410000]  [<00006ff0>] amiga_get_hardware_list+0x19e/0x44a
-> [   40.460000]  [<0007acc0>] __kmalloc+0x14/0xac
-> [   40.500000]  [<000675c6>] kstrdup+0x36/0x48
-> [   40.530000]  [<0007fae4>] mount_fs+0x1c/0xc8
-> [   40.560000]  [<0008fec8>] vfs_kern_mount+0x44/0xbe
-> [   40.580000]  [<0008f55c>] put_filesystem+0x0/0x10
-> [   40.620000]  [<00085e7e>] kern_path+0x0/0x3c
-> [   40.640000]  [<00091a96>] do_mount+0x61e/0x6e0
-> [   40.670000]  [<0007a73e>] kfree+0x0/0xa2
-> [   40.680000]  [<0009144a>] copy_mount_string+0x0/0x2e
-> [   40.700000]  [<00091bd0>] SyS_mount+0x78/0xb0
-> [   40.730000]  [<00002614>] syscall+0x8/0xc
-> [   40.750000]  [<0008c018>] __d_move+0x46/0x1a8
-> [   40.770000]
-> [   40.790000] Code: 222e ff74 2a2e ff5c 2c2e ff60 4c45 1402 <2d40> ff64 2d41 ff68 2205 4c2e 1800 ff68 4c04 0800 2041 d1c0 2206 4c2e 1400 ff68
-> [   40.830000] Disabling lock debugging due to kernel taint
+> +static int moxart_get_ro(struct mmc_host *mmc)
+> +{
+> +       int ret;
+> +       struct moxart_host *host = mmc_priv(mmc);
+> +
+> +       (readl(&host->reg->status) & MSD_WRITE_PROT) ? (ret = 1) : (ret = 0);
+> +       return ret;
 
-   0:	222e ff74      	movel %fp@(-140),%d1
-   4:	2a2e ff5c      	movel %fp@(-164),%d5
-   8:	2c2e ff60      	movel %fp@(-160),%d6
-   c:	4c45 1402     <	divul %d5,%d2,%d1 >
-  10:	2d40 ff64      	movel %d0,%fp@(-156)
-  14:	2d41 ff68      	movel %d1,%fp@(-152)
-  18:	2205           	movel %d5,%d1
-  1a:	4c2e 1800 ff68 	mulsl %fp@(-152),%d1
-  20:	4c04 0800      	mulsl %d4,%d0
-  24:	2041           	moveal %d1,%a0
-  26:	d1c0           	addal %d0,%a0
-  28:	2206           	movel %d6,%d1
-  2a:	4c2e 1400 ff68 	mulul %fp@(-152),%d0,%d1
+This looks a little odd, how about something like:
 
-Gr{oetje,eeting}s,
+return !!(readl(&host->reg->status) & SD_WRITE_PROT);
 
-						Geert
+> +}
+> +
+> +static struct mmc_host_ops moxart_ops = {
+> +       .request = moxart_request,
+> +       .set_ios = moxart_set_ios,
+> +       .get_ro = moxart_get_ro,
+> +};
+> +
+> +static int moxart_probe(struct platform_device *pdev)
+> +{
+> +       struct device *dev = &pdev->dev;
+> +       struct device_node *node = dev->of_node;
+> +       struct resource res_mmc;
+> +       struct mmc_host *mmc;
+> +       struct moxart_host *host = NULL;
+> +       void __iomem *reg_mmc;
+> +       dma_cap_mask_t mask;
+> +       int ret;
+> +       struct dma_slave_config cfg;
+> +       unsigned int irq;
+> +       struct clk *clk;
+> +       unsigned int dma_chan_rx_req = 1;
+> +       unsigned int dma_chan_tx_req = 0;
+> +
+> +       mmc = mmc_alloc_host(sizeof(struct moxart_host), dev);
+> +       if (!mmc) {
+> +               dev_err(dev, "%s: mmc_alloc_host failed\n", __func__);
+> +               ret = -ENOMEM;
+> +               goto out;
+> +       }
+> +
+> +       ret = of_address_to_resource(node, 0, &res_mmc);
+> +       if (ret) {
+> +               dev_err(dev, "%s: could not get MMC base resource\n", __func__);
+> +               goto out;
+> +       }
+> +
+> +       irq = irq_of_parse_and_map(node, 0);
+> +
+> +       reg_mmc = devm_ioremap_resource(dev, &res_mmc);
+> +       if (IS_ERR(reg_mmc)) {
+> +               dev_err(dev, "%s: devm_ioremap_resource res_mmc failed\n",
+> +                       __func__);
+> +               return PTR_ERR(reg_mmc);
+> +       }
+> +
+> +       mmc->ops = &moxart_ops;
+> +
+> +       /*
+> +        * hardware does not support MMC_CAP_SD_HIGHSPEED
+> +        * CMD6 will timeout and make things not work
+> +        */
+> +       mmc->caps = MMC_CAP_4_BIT_DATA;
+> +
+> +       mmc->f_min = 400000;
+> +       mmc->f_max = 25000000;
+> +       mmc->ocr_avail = 0xffff00;      /* support 2.0v - 3.6v power */
+> +       mmc->max_segs = 32;
+> +       mmc->max_blk_size = 512;
+> +       mmc->max_blk_count = mmc->max_req_size / mmc->max_blk_size;
+> +       mmc->max_seg_size = mmc->max_req_size;
+> +
+> +       host = mmc_priv(mmc);
+> +       host->mmc = mmc;
+> +       host->reg = (struct moxart_reg *)reg_mmc;
+> +       host->reg_phys = res_mmc.start;
+> +       host->timeout = msecs_to_jiffies(1000);
+> +
+> +       dma_cap_zero(mask);
+> +       dma_cap_set(DMA_SLAVE, mask);
+> +
+> +       clk = of_clk_get(node, 0);
+> +       if (IS_ERR(clk)) {
+> +               dev_err(dev, "%s: of_clk_get failed\n", __func__);
+> +               return PTR_ERR(clk);
+> +       }
+> +       host->sysclk = clk_get_rate(clk);
+> +
+> +       spin_lock_init(&host->lock);
+> +
+> +       /* disable all interrupt */
+> +       writel(0, &host->reg->interrupt_mask);
+> +
+> +       /* reset chip */
+> +       writel(MSD_SDC_RST, &host->reg->command);
+> +
+> +       /* wait for reset finished */
+> +       while (readl(&host->reg->command) & MSD_SDC_RST)
+> +               udelay(10);
+> +
+> +       host->dma_chan_tx = dma_request_channel(mask, moxart_filter_fn,
+> +                                               (void *)&dma_chan_tx_req);
+> +       host->dma_chan_rx = dma_request_channel(mask, moxart_filter_fn,
+> +                                               (void *)&dma_chan_rx_req);
+> +       dev_dbg(dev, "%s: using 2 DMA channels rx=%p tx=%p\n",
+> +               __func__, host->dma_chan_rx, host->dma_chan_tx);
+> +
+> +       if (!host->dma_chan_rx || !host->dma_chan_tx) {
+> +               host->have_dma = false;
+> +               mmc->max_blk_count = 1;
+> +       } else {
+> +               cfg.slave_id = APB_DMA_SD_REQ_NO;
+> +               cfg.direction = DMA_MEM_TO_DEV;
+> +               cfg.src_addr = 0;
+> +               cfg.dst_addr = (unsigned int)host->reg_phys + MSD_DATA_WIN_REG;
+> +               cfg.src_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+> +               dmaengine_slave_config(host->dma_chan_tx, &cfg);
+> +
+> +               cfg.slave_id = APB_DMA_SD_REQ_NO;
+> +               cfg.direction = DMA_DEV_TO_MEM;
+> +               cfg.src_addr = (unsigned int)host->reg_phys + MSD_DATA_WIN_REG;
+> +               cfg.dst_addr = 0;
+> +               cfg.dst_addr_width = DMA_SLAVE_BUSWIDTH_4_BYTES;
+> +               dmaengine_slave_config(host->dma_chan_rx, &cfg);
+> +
+> +               host->have_dma = true;
+> +
+> +               /*
+> +                * there seems to be a max size on transfers so
+> +                * set max_blk_count low for both DMA and PIO
+> +                *
+> +                * sending large chunks result either in timeout
+> +                * or render the MMC controller unresponsive
+> +                * (status register 0 on consecutive read retries,
+> +                * also see comments in moxart_send_command)
+> +                *
+> +                * obviously, DMA is quicker and can handle
+> +                * larger chunks but setting it higher than 16
+> +                * can still bug the controller
+> +                */
+> +               mmc->max_blk_count = 16;
+> +       }
+> +
+> +       devm_request_irq(dev, irq, moxart_irq, 0, "moxart-mmc", host);
+> +
+> +       if (ret)
+> +               goto out;
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Presumably you meant to record the return code of devm_request_irq?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+> +
+> +       dev_set_drvdata(dev, mmc);
+> +       mmc_add_host(mmc);
+> +
+> +       dev_dbg(dev, "%s: IRQ=%d\n", __func__, irq);
+> +
+> +       return 0;
+> +
+> +out:
+> +       if (mmc)
+> +               mmc_free_host(mmc);
+> +       return ret;
+> +}
+
+[...]
+
+> +struct moxart_reg {
+> +
+> +#define MSD_SDC_RST            BIT(10)
+> +#define MSD_CMD_EN             BIT(9)
+> +#define MSD_APP_CMD            BIT(8)
+> +#define MSD_LONG_RSP           BIT(7)
+> +#define MSD_NEED_RSP           BIT(6)
+> +#define MSD_CMD_IDX_MASK       0x3f
+> +       unsigned int    command;
+> +
+> +       unsigned int    argument;
+> +       unsigned int    response0;
+> +       unsigned int    response1;
+> +       unsigned int    response2;
+> +       unsigned int    response3;
+> +
+> +#define MSD_RSP_CMD_APP                BIT(6)
+> +#define MSD_RSP_CMD_IDX_MASK   0x3f
+> +       unsigned int    response_command;
+> +
+> +#define MSD_DATA_EN            BIT(6)
+> +#define MSD_DMA_EN             BIT(5)
+> +#define MSD_DATA_WRITE         BIT(4)
+> +#define MSD_BLK_SIZE_MASK      0x0f
+> +       unsigned int    data_control;
+> +
+> +       unsigned int    data_timer;
+> +
+> +#define MSD_DATA_LEN_MASK      0xffffff
+> +       unsigned int    data_length;
+> +
+> +#define MSD_WRITE_PROT         BIT(12)
+> +#define MSD_CARD_DETECT                BIT(11)
+> +/* 1-10 below can be sent to interrupt or clear register */
+> +#define MSD_CARD_CHANGE                BIT(10)
+> +#define MSD_FIFO_ORUN          BIT(9)
+> +#define MSD_FIFO_URUN          BIT(8)
+> +#define MSD_DATA_END           BIT(7)
+> +#define MSD_CMD_SENT           BIT(6)
+> +#define MSD_DATA_CRC_OK                BIT(5)
+> +#define MSD_RSP_CRC_OK         BIT(4)
+> +#define MSD_DATA_TIMEOUT       BIT(3)
+> +#define MSD_RSP_TIMEOUT                BIT(2)
+> +#define MSD_DATA_CRC_FAIL      BIT(1)
+> +#define MSD_RSP_CRC_FAIL       BIT(0)
+> +       unsigned int    status;
+> +
+> +       unsigned int    clear;
+> +       unsigned int    interrupt_mask;
+> +
+> +#define MSD_SD_POWER_ON                BIT(4)
+> +#define MSD_SD_POWER_MASK      0x0f
+> +       unsigned int    power_control;
+> +
+> +#define MSD_CLK_DIS            BIT(8)
+> +#define MSD_CLK_SD             BIT(7)
+> +#define MSD_CLK_DIV_MASK       0x7f
+> +       unsigned int    clock_control;
+> +
+> +#define MSD_WIDE_BUS_SUPPORT   BIT(3)
+> +#define MSD_WIDE_BUS           BIT(2)  /* bus width is 4 bytes */
+> +#define MSD_SINGLE_BUS         BIT(0)  /* bus width is 1 byte */
+> +       unsigned int    bus_width;
+> +
+> +       unsigned int    data_window;
+> +
+> +#define MSD_CPRM_FUNCTION      BIT(8)
+> +       unsigned int    feature;
+> +
+> +       unsigned int    revision;
+> +};
+
+I see you're using this to handle your register offsets. This isn't
+necessarily portable, as you're relying on the size of unsigned int
+being 4 bytes, and that elements aren't padded to a larger size. At the
+very least unsigned int should be replaced with u32.
+
+Thanks,
+Mark.
