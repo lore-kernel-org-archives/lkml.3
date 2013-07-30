@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3G3RgM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:36:12 -0400
-Received: from perches-mx.perches.com ([206.117.179.246]:52079 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751763Ab3G3RgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:36:10 -0400
-Message-ID: <1375205770.2075.121.camel@joe-AO722>
-Subject: Re: btrfs zero divide (was: Re: Linux 3.10 problem reports (yes,
- plural))
-From: Joe Perches <joe@perches.com>
-To: Josef Bacik <jbacik@fusionio.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Thorsten Glaser <tg@mirbsd.de>,
-        Debian GNU/Linux m68k <debian-68k@lists.debian.org>,
-        linux-btrfs@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Jul 2013 10:36:10 -0700
-In-Reply-To: <20130730171329.GF24583@localhost.localdomain>
-References: <Pine.BSM.4.64L.1307300820160.20675@herc.mirbsd.org>
-	 <alpine.DEB.2.02.1307301052010.23107@ayla.of.borg>
-	 <20130730171329.GF24583@localhost.localdomain>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.4-0ubuntu1 
+	id S1754731Ab3G3Rjx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:39:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:7258 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725Ab3G3Rjw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 13:39:52 -0400
+X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=UYW163BL8a0A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=1gQPHaU64nIA:10 a=-yY2HHypoo5wy1-GbIgA:9 a=QEXdDO2ut3YA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.255.60.225
+Message-ID: <1375205989.6580.66.camel@gandalf.local.home>
+Subject: Re: [for-next-3.11][PATCH 8/8] ftrace: Clear module traced
+ functions on unload module
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Dave Jones <davej@redhat.com>, Steve Hodgson <steve@purestorage.com>
+Date: Tue, 30 Jul 2013 13:39:49 -0400
+In-Reply-To: <20130730113153.375039705@goodmis.org>
+References: <20130730112718.273490378@goodmis.org>
+	 <20130730113153.375039705@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 13:13 -0400, Josef Bacik wrote:
-> I've looked at all the places we do divides in this function and it
-> doesn't look like we're doing this anywhere but I could be blind,
+On Tue, 2013-07-30 at 07:27 -0400, Steven Rostedt wrote:
 
-do_div seems a likely suspect...
+> The solution here is on module unload, look at all the registered funtion
+> callbacks and remove any hash entry that points to any function in the
+> module that is about to be removed.
 
-	/*
-	 * stripe_nr counts the total number of stripes we have to stride
-	 * to get to this block
-	 */
-	do_div(stripe_nr, stripe_len);
+There's another bug that is very similar to this one. I originally did a
+ref count to ops, but I didn't really like it (it was included in what
+Steve tested). While looking at other solutions I think I have something
+that may be a bit better. It wont clear the trace on module reload, but
+it can reenable the trace if a module is loaded with a function at the
+same address that was traced before.
+
+Sure this may be a bit confusing if another module gets traced, but it
+allows for tracing functions on module load, which is useful.
+
+I'm working on a new patch and hopefully Steve can test that one too.
+
+Thanks,
+
+-- Steve
 
 
