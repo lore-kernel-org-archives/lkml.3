@@ -1,132 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755809Ab3G3QvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:51:01 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:54302 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab3G3QvA (ORCPT
+	id S1756145Ab3G3RI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:08:56 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:33027 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab3G3RIy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:51:00 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Hugh Dickins <hughd@google.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        David Gibson <david@gibson.dropbear.id.au>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Joonsoo Kim <js1304@gmail.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Hillf Danton <dhillf@gmail.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH 02/18] mm, hugetlb: change variable name reservations to resv
-In-Reply-To: <1375075929-6119-3-git-send-email-iamjoonsoo.kim@lge.com>
-References: <1375075929-6119-1-git-send-email-iamjoonsoo.kim@lge.com> <1375075929-6119-3-git-send-email-iamjoonsoo.kim@lge.com>
-User-Agent: Notmuch/0.15.2+167~g5306b2b (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-Date: Tue, 30 Jul 2013 22:20:51 +0530
-Message-ID: <87zjt4outw.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073016-4790-0000-0000-000009899E3E
+	Tue, 30 Jul 2013 13:08:54 -0400
+From: Julius Werner <jwerner@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Andiry Xu <andiry.xu@amd.com>, Vincent Palatin <vpalatin@chromium.org>,
+        Benson Leung <bleung@chromium.org>,
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH] usb: core: don't try to reset_device() a port that got just disconnected
+Date: Tue, 30 Jul 2013 10:08:10 -0700
+Message-Id: <1375204090-27465-1-git-send-email-jwerner@chromium.org>
+X-Mailer: git-send-email 1.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joonsoo Kim <iamjoonsoo.kim@lge.com> writes:
+The USB hub driver's event handler contains a check to catch SuperSpeed
+devices that transitioned into the SS.Inactive state and tries to fix
+them with a reset. It decides whether to do a plain hub port reset or
+call the usb_reset_device() method based on whether there was a device
+attached to the port.
 
-> 'reservations' is so long name as a variable and we use 'resv_map'
-> to represent 'struct resv_map' in other place. To reduce confusion and
-> unreadability, change it.
->
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+However, there are device/hub combinations (found with a JetFlash
+Transcend mass storage stick (8564:1000) on the root hub of an Intel
+LynxPoint PCH) which can transition to the SS.Inactive state on
+disconnect (and stay there long enough for the host to notice). In this
+case, above-mentioned reset check will call usb_reset_device() on the
+now disconnected device. This leads to a futile attempt of asking a
+bunch of floating wires to disable device-initiated U1 and U2, each
+stalling khubd for a 5 second timeout before finally accepting the
+device's fate amongst a flurry of error messages.
 
-Reviewed-by: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+This patch makes the choice of reset dependent on the port status that
+has just been read from the hub, as opposed to any previous in-kernel
+state, thus working around this problem.
 
->
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index d971233..12b6581 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -1095,9 +1095,9 @@ static long vma_needs_reservation(struct hstate *h,
->  	} else  {
->  		long err;
->  		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *reservations = vma_resv_map(vma);
-> +		struct resv_map *resv = vma_resv_map(vma);
->
-> -		err = region_chg(&reservations->regions, idx, idx + 1);
-> +		err = region_chg(&resv->regions, idx, idx + 1);
->  		if (err < 0)
->  			return err;
->  		return 0;
-> @@ -1115,10 +1115,10 @@ static void vma_commit_reservation(struct hstate *h,
->
->  	} else if (is_vma_resv_set(vma, HPAGE_RESV_OWNER)) {
->  		pgoff_t idx = vma_hugecache_offset(h, vma, addr);
-> -		struct resv_map *reservations = vma_resv_map(vma);
-> +		struct resv_map *resv = vma_resv_map(vma);
->
->  		/* Mark this page used in the map. */
-> -		region_add(&reservations->regions, idx, idx + 1);
-> +		region_add(&resv->regions, idx, idx + 1);
->  	}
->  }
->
-> @@ -2168,7 +2168,7 @@ out:
->
->  static void hugetlb_vm_op_open(struct vm_area_struct *vma)
->  {
-> -	struct resv_map *reservations = vma_resv_map(vma);
-> +	struct resv_map *resv = vma_resv_map(vma);
->
->  	/*
->  	 * This new VMA should share its siblings reservation map if present.
-> @@ -2178,34 +2178,34 @@ static void hugetlb_vm_op_open(struct vm_area_struct *vma)
->  	 * after this open call completes.  It is therefore safe to take a
->  	 * new reference here without additional locking.
->  	 */
-> -	if (reservations)
-> -		kref_get(&reservations->refs);
-> +	if (resv)
-> +		kref_get(&resv->refs);
->  }
->
->  static void resv_map_put(struct vm_area_struct *vma)
->  {
-> -	struct resv_map *reservations = vma_resv_map(vma);
-> +	struct resv_map *resv = vma_resv_map(vma);
->
-> -	if (!reservations)
-> +	if (!resv)
->  		return;
-> -	kref_put(&reservations->refs, resv_map_release);
-> +	kref_put(&resv->refs, resv_map_release);
->  }
->
->  static void hugetlb_vm_op_close(struct vm_area_struct *vma)
->  {
->  	struct hstate *h = hstate_vma(vma);
-> -	struct resv_map *reservations = vma_resv_map(vma);
-> +	struct resv_map *resv = vma_resv_map(vma);
->  	struct hugepage_subpool *spool = subpool_vma(vma);
->  	unsigned long reserve;
->  	unsigned long start;
->  	unsigned long end;
->
-> -	if (reservations) {
-> +	if (resv) {
->  		start = vma_hugecache_offset(h, vma, vma->vm_start);
->  		end = vma_hugecache_offset(h, vma, vma->vm_end);
->
->  		reserve = (end - start) -
-> -			region_count(&reservations->regions, start, end);
-> +			region_count(&resv->regions, start, end);
->
->  		resv_map_put(vma);
->
-> -- 
-> 1.7.9.5
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+---
+ drivers/usb/core/hub.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 4a8a1d6..ace0c52 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -4798,7 +4798,7 @@ static void hub_events(void)
+ 					hub->ports[i - 1]->child;
+ 
+ 				dev_dbg(hub_dev, "warm reset port %d\n", i);
+-				if (!udev) {
++				if (!(portstatus & USB_PORT_STAT_CONNECTION)) {
+ 					status = hub_port_reset(hub, i,
+ 							NULL, HUB_BH_RESET_TIME,
+ 							true);
+@@ -4808,8 +4808,8 @@ static void hub_events(void)
+ 					usb_lock_device(udev);
+ 					status = usb_reset_device(udev);
+ 					usb_unlock_device(udev);
++					connect_change = 0;
+ 				}
+-				connect_change = 0;
+ 			}
+ 
+ 			if (connect_change)
+-- 
+1.7.12.4
 
