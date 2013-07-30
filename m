@@ -1,40 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab3G3Gqh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 02:46:37 -0400
-Received: from co1ehsobe002.messaging.microsoft.com ([216.32.180.185]:49295
-	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752905Ab3G3Gqg (ORCPT
+	id S1757584Ab3G3GrF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 02:47:05 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:53962 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357Ab3G3GrD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 02:46:36 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dIda00h1432Idc73hzz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6hzz1de098h1de097hz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1151h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Tue, 30 Jul 2013 14:46:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] dts: wandboard: Add support for SDIO bcm4329
-Message-ID: <20130730064652.GB12382@S2101-09.ap.freescale.net>
-References: <1374969621-4187-1-git-send-email-linux@prisktech.co.nz>
+	Tue, 30 Jul 2013 02:47:03 -0400
+Message-ID: <51F7613C.5070803@ti.com>
+Date: Tue, 30 Jul 2013 12:16:20 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1374969621-4187-1-git-send-email-linux@prisktech.co.nz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: <balbi@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
+ in usb_bind_phy
+References: <1374829418-27503-1-git-send-email-kishon@ti.com> <1374829418-27503-3-git-send-email-kishon@ti.com> <20130729150638.GD3063@radagast> <51F68A56.8060805@ti.com> <20130729175413.GC4964@radagast> <51F74BC8.7020903@ti.com> <20130730060134.GD9155@radagast> <51F7590B.4020705@ti.com> <20130730061830.GE9155@radagast> <51F75C40.4060406@ti.com> <20130730062844.GH9155@radagast>
+In-Reply-To: <20130730062844.GH9155@radagast>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 28, 2013 at 12:00:20PM +1200, Tony Prisk wrote:
-> The wandboard has a Broadcom 4329 WiFi connected via SDIO. This patch
-> sets the required pins to enable the wifi module.
+Hi,
+
+On Tuesday 30 July 2013 11:58 AM, Felipe Balbi wrote:
+> Hi,
 > 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+> On Tue, Jul 30, 2013 at 11:55:04AM +0530, Kishon Vijay Abraham I wrote:
+>>> On Tue, Jul 30, 2013 at 11:41:23AM +0530, Kishon Vijay Abraham I wrote:
+>>>>>>>>>> diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>>>>>> index 244d8a5..17bb076 100644
+>>>>>>>>>> --- a/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>>>>>> +++ b/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>>>>>> @@ -233,7 +233,7 @@ static void __init omap_2430sdp_init(void)
+>>>>>>>>>>  	omap_hsmmc_init(mmc);
+>>>>>>>>>>  
+>>>>>>>>>>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
+>>>>>>>>>> -	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+>>>>>>>>>> +	usb_bind_phy("musb-hdrc.0", 0, "twl4030_usb");
+>>>>>>>>>
+>>>>>>>>> how about moving usb_bind_phy() calls to omap2430.c ?
+>>>>>>>>>
+>>>>>>>>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>>>>>>>>> index f44e8b5..b6abc1a 100644
+>>>>>>>>> --- a/drivers/usb/musb/omap2430.c
+>>>>>>>>> +++ b/drivers/usb/musb/omap2430.c
+>>>>>>>>> @@ -544,6 +544,9 @@ static int omap2430_probe(struct platform_device *pdev)
+>>>>>>>>>  
+>>>>>>>>>  		pdata->board_data	= data;
+>>>>>>>>>  		pdata->config		= config;
+>>>>>>>>> +	} else {
+>>>>>>>>> +		/* bind the PHY */
+>>>>>>>>> +		usb_bind_phy(dev_name(&musb->dev), 0, "twl4030_usb");
+>>>>>>>>
+>>>>>>>> This looks like a hack IMHO to workaround the usb phy library. otherwise it is
+>>>>>>>> similar to get_phy_by_name.
+>>>>>>>
+>>>>>>> actually, this is a workaround to the fact that we're not creating all
+>>>>>>> platform_devices in arch/arm/mach-omap2/ :-)
+>>>>>>>
+>>>>>>> If we had the musb allocation there, we could easily handle
+>>>>>>> usb_bind_phy()
+>>>>>>>
+>>>>>>>>> so that's temporary. It might be better than to reintroduce the IDR in
+>>>>>>>>> musb_core.c.
+>>>>>>>>
+>>>>>>>> that’s needed for generic phy framework anyway :-s
+>>>>>>>
+>>>>>>> right, but generic phy framework can handle everything just fine, the
+>>>>>>> only problem is that names are changing.
+>>>>>>
+>>>>>> right. But if the names change, PHY framework wouldn't be able to return the
+>>>>>> reference to the PHY.
+>>>>>
+>>>>> with my suggestion they can change whenever they want since we're using
+>>>>> dev_name() of the just-created musb platform_device. Right ?
+>>>>
+>>>> right. But the PHY device can be created in a different place from where the
+>>>> musb devices are created. And in the PHY framework, the PHY device should have
+>>>
+>>> this shouldn't be a problem. As long as the phy is created, all should
+>>> be good.
+>>>
+>>>> the list of controller device (names) it can support (PHY framework does not
+>>>> maintain a separate list for binding like how we had in USB PHY library). e.g.
+>>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.html. In such
+>>>
+>>> this has nothing to do with $subject though. We talk about generic PHY
+>>> framework once all these PHY drivers are moved there :-)
+>>>
+>>>> cases how do we pass the device names. Also will the MUSB core device be
+>>>> created before twl4030-usb PHY device?
+>>>
+>>> and why would that be a problem ? We're telling the framework that the
+>>> musb device will use a phy with a name of 'twl4030'. If musb calls
+>>> usb_get_phy_dev() and doesn't find a phy, it'll return -EPROBE_DEFER and
+>>> try again later.
+>>
+>> I think we are talking about different problems here ;-) I'm trying to tell
+>> using idr in MUSB core is needed for Generic PHY Framework. So in a way, the
+>> Generic PHY Framework series depends on this patch series or else MUSB in OMAP3
+>> platforms wont work after Generic PHY framework gets merged.
+> 
+> then you just found a limitation in your framework, right ? :-) I mean,
+> imagine if now we have to add an IDR to every single user of your
+> framework because they could end up in systems with multiple instances
+> of the same IP ?
 
-Applied, thanks.
+I raised a similar concern in the PHY framework discussion [1] :-) And since
+it's used everywhere else regulators, clkdev, etc.. it's agreed to be used in
+PHY as well. Btw if PLATFORM_DEVID_AUTO is used even regulator, clk_get should
+fail IMO.
 
+[1] -> http://lkml.indiana.edu/hypermail/linux/kernel/1307.2/03573.html
+
+Thanks
+Kishon
