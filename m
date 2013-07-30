@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab3G3Utr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:49:47 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:43971 "EHLO
+	id S1758014Ab3G3Utu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:49:50 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:44009 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757820Ab3G3Uto (ORCPT
+	by vger.kernel.org with ESMTP id S1757853Ab3G3Uts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:49:44 -0400
+	Tue, 30 Jul 2013 16:49:48 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCHv2 03/10] ARM: sunxi: Add the Allwinner A31 compatible to the machine definition
-Date: Tue, 30 Jul 2013 22:49:32 +0200
-Message-Id: <1375217379-15126-4-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCHv2 08/10] ARM: sunxi: dt: Add PIO controller to A31 DTSI
+Date: Tue, 30 Jul 2013 22:49:37 +0200
+Message-Id: <1375217379-15126-9-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375217379-15126-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,40 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A31 is a quad-Cortex-A7 based SoC, which shares a lot of
-IPs with the previous SoCs from Allwinner, like the PIO, I2C, UARTs,
-timers, watchdog IPs, but also differs by dropping the WEMAC ethernet
-controller and most notably dropping the in-house IRQ controller in
-favor of a ARM GIC one.
+The A31 has a different set of pins than the one found on the A10 and
+A13. Now that we have support for the A31 pin set in the pinctrl driver,
+we can enable it in the DTSI with its own compatible.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/mach-sunxi/Kconfig | 2 ++
- arch/arm/mach-sunxi/sunxi.c | 1 +
- 2 files changed, 3 insertions(+)
+ arch/arm/boot/dts/sun6i-a31.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 5b045e3..3ab2f65 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -10,3 +10,5 @@ config ARCH_SUNXI
- 	select SPARSE_IRQ
- 	select SUN4I_TIMER
- 	select PINCTRL_SUNXI
-+	select ARM_GIC
-+	select HAVE_SMP
-diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-index 38a3c55..11326d9 100644
---- a/arch/arm/mach-sunxi/sunxi.c
-+++ b/arch/arm/mach-sunxi/sunxi.c
-@@ -96,6 +96,7 @@ static const char * const sunxi_board_dt_compat[] = {
- 	"allwinner,sun4i-a10",
- 	"allwinner,sun5i-a10s",
- 	"allwinner,sun5i-a13",
-+	"allwinner,sun6i-a31",
- 	NULL,
- };
+diff --git a/arch/arm/boot/dts/sun6i-a31.dtsi b/arch/arm/boot/dts/sun6i-a31.dtsi
+index 407e7b4..2d10eb4 100644
+--- a/arch/arm/boot/dts/sun6i-a31.dtsi
++++ b/arch/arm/boot/dts/sun6i-a31.dtsi
+@@ -66,6 +66,18 @@
+ 		#size-cells = <1>;
+ 		ranges;
  
++		pio: pinctrl@01c20800 {
++			compatible = "allwinner,sun6i-a31-pinctrl";
++			reg = <0x01c20800 0x400>;
++			interrupts = <0 11 1>, <0 15 1>, <0 16 1>, <0 17 1>;
++			clocks = <&osc>;
++			gpio-controller;
++			interrupt-controller;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			#gpio-cells = <3>;
++		};
++
+ 		timer@01c20c00 {
+ 			compatible = "allwinner,sun4i-timer";
+ 			reg = <0x01c20c00 0xa0>;
 -- 
 1.8.3.4
 
