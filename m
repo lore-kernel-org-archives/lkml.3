@@ -1,72 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab3G3Rpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:45:49 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:51356 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab3G3Rps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:45:48 -0400
-Date: Tue, 30 Jul 2013 13:45:39 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/3] mm: vmscan: fix numa reclaim balance problem in
- kswapd
-Message-ID: <20130730174539.GF715@cmpxchg.org>
-References: <1374267325-22865-1-git-send-email-hannes@cmpxchg.org>
- <1374267325-22865-2-git-send-email-hannes@cmpxchg.org>
- <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
+	id S1756401Ab3G3RqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:46:10 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:53260 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756282Ab3G3RqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 13:46:07 -0400
+Date: Tue, 30 Jul 2013 10:45:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, dhowells@redhat.com,
+        edumazet@google.com, darren@dvhart.com, fweisbec@gmail.com,
+        sbw@mit.edu
+Subject: Re: [PATCH RFC nohz_full 7/7] nohz_full: Force RCU's grace-period
+ kthreads onto timekeeping CPU
+Message-ID: <20130730174553.GE26694@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130726231848.GA12967@linux.vnet.ibm.com>
+ <1374880764-14248-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1374880764-14248-7-git-send-email-paulmck@linux.vnet.ibm.com>
+ <51F5E325.4000607@cn.fujitsu.com>
+ <20130729165253.GP26694@linux.vnet.ibm.com>
+ <51F71973.5070104@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130726155319.21e8a191456bf8a0ff724199@linux-foundation.org>
+In-Reply-To: <51F71973.5070104@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073017-7408-0000-0000-00001278AE39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 26, 2013 at 03:53:19PM -0700, Andrew Morton wrote:
-> On Fri, 19 Jul 2013 16:55:23 -0400 Johannes Weiner <hannes@cmpxchg.org> wrote:
-> 
-> > When the page allocator fails to get a page from all zones in its
-> > given zonelist, it wakes up the per-node kswapds for all zones that
-> > are at their low watermark.
+On Tue, Jul 30, 2013 at 09:40:03AM +0800, Lai Jiangshan wrote:
+> On 07/30/2013 12:52 AM, Paul E. McKenney wrote:
+> > On Mon, Jul 29, 2013 at 11:36:05AM +0800, Lai Jiangshan wrote:
+> >> On 07/27/2013 07:19 AM, Paul E. McKenney wrote:
+> >>> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> >>>
+> >>> Because RCU's quiescent-state-forcing mechanism is used to drive the
+> >>> full-system-idle state machine, and because this mechanism is executed
+> >>> by RCU's grace-period kthreads, this commit forces these kthreads to
+> >>> run on the timekeeping CPU (tick_do_timer_cpu).  To do otherwise would
+> >>> mean that the RCU grace-period kthreads would force the system into
+> >>> non-idle state every time they drove the state machine, which would
+> >>> be just a bit on the futile side.
+> >>>
+> >>> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> >>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >>> Cc: Steven Rostedt <rostedt@goodmis.org>
+> >>> ---
+> >>>  kernel/rcutree.c        |  1 +
+> >>>  kernel/rcutree.h        |  1 +
+> >>>  kernel/rcutree_plugin.h | 20 +++++++++++++++++++-
+> >>>  3 files changed, 21 insertions(+), 1 deletion(-)
+> >>>
+> >>> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> >>> index aa6d96e..fe83085 100644
+> >>> --- a/kernel/rcutree.c
+> >>> +++ b/kernel/rcutree.c
+> >>> @@ -1286,6 +1286,7 @@ static int rcu_gp_init(struct rcu_state *rsp)
+> >>>  	struct rcu_data *rdp;
+> >>>  	struct rcu_node *rnp = rcu_get_root(rsp);
+> >>>  
+> >>> +	rcu_bind_gp_kthread();
+> >>>  	raw_spin_lock_irq(&rnp->lock);
+> >>>  	rsp->gp_flags = 0; /* Clear all flags: New grace period. */
+> >>
+> >> bind the gp thread when RCU_GP_FLAG_INIT ...
+> >>
+> >>>  
+> >>> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> >>> index e0de5dc..49dac99 100644
+> >>> --- a/kernel/rcutree.h
+> >>> +++ b/kernel/rcutree.h
+> >>> @@ -560,6 +560,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+> >>>  static bool is_sysidle_rcu_state(struct rcu_state *rsp);
+> >>>  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+> >>>  				  unsigned long maxj);
+> >>> +static void rcu_bind_gp_kthread(void);
+> >>>  static void rcu_sysidle_init_percpu_data(struct rcu_dynticks *rdtp);
+> >>>  
+> >>>  #endif /* #ifndef RCU_TREE_NONCORE */
+> >>> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> >>> index ff84bed..f65d9c2 100644
+> >>> --- a/kernel/rcutree_plugin.h
+> >>> +++ b/kernel/rcutree_plugin.h
+> >>> @@ -2544,7 +2544,7 @@ static void rcu_sysidle_check_cpu(struct rcu_data *rdp, bool *isidle,
+> >>>  	if (!*isidle || rdp->rsp != rcu_sysidle_state ||
+> >>>  	    cpu_is_offline(rdp->cpu) || rdp->cpu == tick_do_timer_cpu)
+> >>>  		return;
+> >>> -	/* WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu); */
+> >>> +	WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> >>
+> >>
+> >> but call rcu_sysidle_check_cpu() when RCU_GP_FLAG_FQS.
 > > 
-> > However, with a system under load and the free page counters being
-> > per-cpu approximations, the observed counter value in a zone can
-> > fluctuate enough that the allocation fails but the kswapd wakeup is
-> > also skipped while the zone is still really close to the low
-> > watermark.
-> > 
-> > When one node misses a wakeup like this, it won't be aged before all
-> > the other node's zones are down to their low watermarks again.  And
-> > skipping a full aging cycle is an obvious fairness problem.
-> > 
-> > Kswapd runs until the high watermarks are restored, so it should also
-> > be woken when the high watermarks are not met.  This ages nodes more
-> > equally and creates a safety margin for the page counter fluctuation.
+> > Yep!  But we don't call rcu_gp_fqs() until the grace period is started,
+> > by which time the kthread will be bound.  Any setting of RCU_GP_FLAG_FQS
+> > while there is no grace period in progress is ignored.
 > 
-> Well yes, but what guarantee is there that the per-cpu counter error
-> problem is reliably fixed?  AFAICT this patch "fixes" it because the
-> gap between the low and high watermarks happens to be larger than the
-> per-cpu counter fluctuation, yes?  If so, there are surely all sorts of
-> situations where it will break again.
+> tick_do_timer_cpu can be changed.
+> when rcu_gp_fqs() is called, the tick_do_timer_cpu may be a different CPU.
 > 
-> To fix this reliably, we should be looking at constraining counter
-> batch sizes or performing a counter summation to get the more accurate
-> estimate?
+> xxx_thread()
+> {
+> 	bind itself to tick_do_timer_cpu.
+> 	sleep(); /* tick_do_timer_cpu can be changed while this */
+> 	use wrong tick_do_timer_cpu.
+> }
 
-Thinking about this some more, the per-cpu fluctuation appears to be a
-red herring in this case.  Kswapd wakeup uses the safe version of the
-watermark checking code.  A percpu inaccuracy would result in the
-allocator waking kswapd a little too early or too late, but once it
-decides to wake it, we are getting an accurate picture on all zones.
-The safe watermark checks are designed to catch percpu inaccuracies
-between the low and the min watermark, the distance between low and
-high is twice as big, so we should be good.
+Yes, but Frederic's patches currently disable changing of tick_do_timer_cpu.
+He said that he will re-enable this at some point, and he and I will need
+to coordinate that change to allow RCU to tolerate tick_do_timer_cpu
+migration.
 
-The fluctuation that makes individual zones miss full aging cycles
-comes from true free page variation under load when the NOT OK
-threshold for the allocator is the same value as the OK threshold for
-skipping kswapd wakeups.
+							Thanx, Paul
+
+> >> In this time, the thread may not be bound to tick_do_timer_cpu,
+> >> the WARN_ON_ONCE() may be wrong.
+> >>
+> >> Does any other code ensure the gp thread bound on tick_do_timer_cpu
+> >> which I missed?
+> > 
+> > However, on small systems, rcu_sysidle_check_cpu() can be called from
+> > the timekeeping CPU.  I suppose that this could potentially happen
+> > before the first grace period starts, and in that case, we could
+> > potentially see a spurious warning.  I could imagine a number of ways
+> > to fix this:
+> > 
+> > 1.	Bind the kthread when it is created.
+> > 
+> > 2.	Bind the kthread when it first starts running, rather than just
+> > 	after the grace period starts.
+> > 
+> > 3.	Suppress the warning when there is no grace period in progress.
+> > 
+> > 4.	Suppress the warning prior to the first grace period starting.
+> > 
+> > Seems like #3 is the most straightforward approach.  I just change it to:
+> > 
+> > 	if (rcu_gp_in_progress(rdp->rsp))
+> > 		WARN_ON_ONCE(smp_processor_id() != tick_do_timer_cpu);
+> > 
+> > This still gets a WARN_ON_ONCE() if someone moves the timekeeping CPU,
+> > but Frederic tells me that it never moves.  My WARN_ON_ONCE() has some
+> > probability of complaining should some bug creep in.
+> > 
+> > Sound reasonable?
+> > 
+> > 							Thanx, Paul
+> > 
+> >>>  	/* Pick up current idle and NMI-nesting counter and check. */
+> >>>  	cur = atomic_read(&rdtp->dynticks_idle);
+> >>> @@ -2570,6 +2570,20 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+> >>>  }
+> >>>  
+> >>>  /*
+> >>> + * Bind the grace-period kthread for the sysidle flavor of RCU to the
+> >>> + * timekeeping CPU.
+> >>> + */
+> >>> +static void rcu_bind_gp_kthread(void)
+> >>> +{
+> >>> +	int cpu = ACCESS_ONCE(tick_do_timer_cpu);
+> >>> +
+> >>> +	if (cpu < 0 || cpu >= nr_cpu_ids)
+> >>> +		return;
+> >>> +	if (raw_smp_processor_id() != cpu)
+> >>> +		set_cpus_allowed_ptr(current, cpumask_of(cpu));
+> >>> +}
+> >>> +
+> >>> +/*
+> >>>   * Return a delay in jiffies based on the number of CPUs, rcu_node
+> >>>   * leaf fanout, and jiffies tick rate.  The idea is to allow larger
+> >>>   * systems more time to transition to full-idle state in order to
+> >>> @@ -2767,6 +2781,10 @@ static bool is_sysidle_rcu_state(struct rcu_state *rsp)
+> >>>  	return false;
+> >>>  }
+> >>>  
+> >>> +static void rcu_bind_gp_kthread(void)
+> >>> +{
+> >>> +}
+> >>> +
+> >>>  static void rcu_sysidle_report_gp(struct rcu_state *rsp, int isidle,
+> >>>  				  unsigned long maxj)
+> >>>  {
+> >>
+> > 
+> > 
+> 
+
