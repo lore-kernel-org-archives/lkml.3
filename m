@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011Ab3G3PLv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:11:51 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:43582 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3G3PLt (ORCPT
+	id S1755492Ab3G3PMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:12:16 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:53878 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab3G3PLr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:11:49 -0400
+	Tue, 30 Jul 2013 11:11:47 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: gnatapov@redhat.com, kvm@vger.kernel.org
-Subject: [PATCH 3/3] KVM: x86: handle singlestep during emulation
-Date: Tue, 30 Jul 2013 17:11:36 +0200
-Message-Id: <1375197096-2454-4-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH 2/3] KVM: x86: handle hardware breakpoints during emulation
+Date: Tue, 30 Jul 2013 17:11:35 +0200
+Message-Id: <1375197096-2454-3-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
 References: <1375197096-2454-1-git-send-email-pbonzini@redhat.com>
@@ -23,76 +23,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This lets debugging work better during emulation of invalid
 guest state.
 
-This time the check is done after emulation, but before writeback
-of the flags; we need to check the flags *before* execution of the
-instruction, we cannot check singlestep_rip because the CS base may
-have already been modified.
+The check is done before emulating the instruction, and (in the case
+of guest debugging) reuses EMULATE_DO_MMIO to exit with KVM_EXIT_DEBUG.
 
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
- arch/x86/kvm/x86.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+ arch/x86/kvm/x86.c | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 66 insertions(+)
 
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1368cf5..9805cfd 100644
+index c2a0674..1368cf5 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -4971,6 +4971,41 @@ static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
- 	return dr6;
- }
+@@ -4956,6 +4956,62 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+ static int complete_emulated_mmio(struct kvm_vcpu *vcpu);
+ static int complete_emulated_pio(struct kvm_vcpu *vcpu);
  
-+static void kvm_vcpu_check_singlestep(struct kvm_vcpu *vcpu, int *r)
++static int kvm_vcpu_check_hw_bp(unsigned long addr, u32 type, u32 dr7,
++				unsigned long *db)
++{
++	u32 dr6 = 0;
++	int i;
++	u32 enable, rwlen;
++
++	enable = dr7;
++	rwlen = dr7 >> 16;
++	for (i = 0; i < 4; i++, enable >>= 2, rwlen >>= 4)
++		if ((enable & 3) && (rwlen & 15) == type && db[i] == addr)
++			dr6 |= (1 << i);
++	return dr6;
++}
++
++static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
 +{
 +	struct kvm_run *kvm_run = vcpu->run;
++	unsigned long eip = vcpu->arch.emulate_ctxt.eip;
++	u32 dr6 = 0;
 +
-+	/*
-+	 * Use the "raw" value to see if TF was passed to the processor.
-+	 * Note that the new value of the flags has not been saved yet.
-+	 *
-+	 * This is correct even for TF set by the guest, because "the
-+	 * processor will not generate this exception after the instruction
-+	 * that sets the TF flag".
-+	 */
-+	unsigned long rflags = kvm_x86_ops->get_rflags(vcpu);
++	if (unlikely(vcpu->guest_debug & KVM_GUESTDBG_USE_HW_BP) &&
++	    (vcpu->arch.guest_debug_dr7 & DR7_BP_EN_MASK)) {
++		dr6 = kvm_vcpu_check_hw_bp(eip, 0,
++					   vcpu->arch.guest_debug_dr7,
++					   vcpu->arch.eff_db);
 +
-+	if (unlikely(rflags & X86_EFLAGS_TF)) {
-+		if (vcpu->guest_debug & KVM_GUESTDBG_SINGLESTEP) {
-+			kvm_run->debug.arch.dr6 = DR6_BS | DR6_FIXED_1;
-+			kvm_run->debug.arch.pc = vcpu->arch.singlestep_rip;
++		if (dr6 != 0) {
++			kvm_run->debug.arch.dr6 = dr6 | DR6_FIXED_1;
++			kvm_run->debug.arch.pc = kvm_rip_read(vcpu) +
++				get_segment_base(vcpu, VCPU_SREG_CS);
++
 +			kvm_run->debug.arch.exception = DB_VECTOR;
 +			kvm_run->exit_reason = KVM_EXIT_DEBUG;
 +			*r = EMULATE_USER_EXIT;
-+		} else {
-+			vcpu->arch.emulate_ctxt.eflags &= ~X86_EFLAGS_TF;
-+			/*
-+			 * "Certain debug exceptions may clear bit 0-3.  The
-+			 * remaining contents of the DR6 register are never
-+			 * cleared by the processor".
-+			 */
-+			vcpu->arch.dr6 &= ~15;
-+			vcpu->arch.dr6 |= DR6_BS;
-+			kvm_queue_exception(vcpu, DB_VECTOR);
++			return true;
 +		}
 +	}
++
++	if (unlikely(vcpu->arch.dr7 & DR7_BP_EN_MASK)) {
++		dr6 = kvm_vcpu_check_hw_bp(eip, 0,
++					   vcpu->arch.dr7,
++					   vcpu->arch.db);
++
++		if (dr6 != 0) {
++			vcpu->arch.dr6 &= ~15;
++			vcpu->arch.dr6 |= dr6;
++			kvm_queue_exception(vcpu, DB_VECTOR);
++			*r = EMULATE_DONE;
++			return true;
++		}
++	}
++
++	return false;
 +}
 +
- static bool kvm_vcpu_check_breakpoint(struct kvm_vcpu *vcpu, int *r)
- {
- 	struct kvm_run *kvm_run = vcpu->run;
-@@ -5117,10 +5152,12 @@ restart:
+ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 			    unsigned long cr2,
+ 			    int emulation_type,
+@@ -4976,6 +5032,16 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
  
- 	if (writeback) {
- 		toggle_interruptibility(vcpu, ctxt->interruptibility);
--		kvm_set_rflags(vcpu, ctxt->eflags);
- 		kvm_make_request(KVM_REQ_EVENT, vcpu);
- 		vcpu->arch.emulate_regs_need_sync_to_vcpu = false;
- 		kvm_rip_write(vcpu, ctxt->eip);
-+		if (r == EMULATE_DONE)
-+			kvm_vcpu_check_singlestep(vcpu, &r);
-+		kvm_set_rflags(vcpu, ctxt->eflags);
- 	} else
- 		vcpu->arch.emulate_regs_need_sync_to_vcpu = true;
- 
+ 	if (!(emulation_type & EMULTYPE_NO_DECODE)) {
+ 		init_emulate_ctxt(vcpu);
++
++		/*
++		 * We will reenter on the same instruction since
++		 * we do not set complete_userspace_io.  This does not
++		 * handle watchpoints yet, those would be handled in
++		 * the emulate_ops.
++		 */
++		if (kvm_vcpu_check_breakpoint(vcpu, &r))
++			return r;
++
+ 		ctxt->interruptibility = 0;
+ 		ctxt->have_exception = false;
+ 		ctxt->perm_ok = false;
 -- 
 1.8.1.4
+
 
