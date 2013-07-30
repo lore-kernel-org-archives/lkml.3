@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753067Ab3G3Mkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:40:46 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:61600 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab3G3Mkm (ORCPT
+	id S1754073Ab3G3MnH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:43:07 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:40761 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab3G3Mko (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 08:40:42 -0400
+	Tue, 30 Jul 2013 08:40:44 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
-Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>,
-        Steven Whitehouse <swhiteho@redhat.com>, cluster-devel@redhat.com
-Subject: [PATCH 6/9] gfs2: WQ_NON_REENTRANT is meaningless and going away
-Date: Tue, 30 Jul 2013 08:40:25 -0400
-Message-Id: <1375188028-11910-7-git-send-email-tj@kernel.org>
+Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
+Subject: [PATCH 7/9] xfs: WQ_NON_REENTRANT is meaningless and going away
+Date: Tue, 30 Jul 2013 08:40:26 -0400
+Message-Id: <1375188028-11910-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1375188028-11910-1-git-send-email-tj@kernel.org>
 References: <1375188028-11910-1-git-send-email-tj@kernel.org>
@@ -36,24 +36,37 @@ WQ_NON_REENTRANT no-op and the flag is going away.  Remove its usages.
 This patch doesn't introduce any behavior changes.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com
+Cc: Ben Myers <bpm@sgi.com>
+Cc: Alex Elder <elder@kernel.org>
+Cc: xfs@oss.sgi.com
 ---
- fs/gfs2/main.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/xfs/xfs_super.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
-index e04d0e0..7b0f504 100644
---- a/fs/gfs2/main.c
-+++ b/fs/gfs2/main.c
-@@ -155,7 +155,7 @@ static int __init init_gfs2_fs(void)
- 		goto fail_wq;
+diff --git a/fs/xfs/xfs_super.c b/fs/xfs/xfs_super.c
+index 1d68ffc..aeef0fc 100644
+--- a/fs/xfs/xfs_super.c
++++ b/fs/xfs/xfs_super.c
+@@ -870,17 +870,17 @@ xfs_init_mount_workqueues(
+ 		goto out_destroy_unwritten;
  
- 	gfs2_control_wq = alloc_workqueue("gfs2_control",
--			       WQ_NON_REENTRANT | WQ_UNBOUND | WQ_FREEZABLE, 0);
-+					  WQ_UNBOUND | WQ_FREEZABLE, 0);
- 	if (!gfs2_control_wq)
- 		goto fail_recovery;
+ 	mp->m_reclaim_workqueue = alloc_workqueue("xfs-reclaim/%s",
+-			WQ_NON_REENTRANT, 0, mp->m_fsname);
++			0, 0, mp->m_fsname);
+ 	if (!mp->m_reclaim_workqueue)
+ 		goto out_destroy_cil;
+ 
+ 	mp->m_log_workqueue = alloc_workqueue("xfs-log/%s",
+-			WQ_NON_REENTRANT, 0, mp->m_fsname);
++			0, 0, mp->m_fsname);
+ 	if (!mp->m_log_workqueue)
+ 		goto out_destroy_reclaim;
+ 
+ 	mp->m_eofblocks_workqueue = alloc_workqueue("xfs-eofblocks/%s",
+-			WQ_NON_REENTRANT, 0, mp->m_fsname);
++			0, 0, mp->m_fsname);
+ 	if (!mp->m_eofblocks_workqueue)
+ 		goto out_destroy_log;
  
 -- 
 1.8.3.1
