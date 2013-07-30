@@ -1,150 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069Ab3G3IP5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:15:57 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52563 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050Ab3G3IPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:15:47 -0400
-Message-ID: <51F7762E.7010906@hitachi.com>
-Date: Tue, 30 Jul 2013 17:15:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1758059Ab3G3IQY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:16:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34798 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758079Ab3G3IQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 04:16:08 -0400
+Date: Tue, 30 Jul 2013 11:15:20 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <balbi@ti.com>, <tony@atomide.com>, <linux@arm.linux.org.uk>,
+        <eballetbo@gmail.com>, <javier@dowhile0.org>,
+        <gregkh@linuxfoundation.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given in
+ usb_bind_phy
+Message-ID: <20130730081520.GH16441@radagast>
+Reply-To: <balbi@ti.com>
+References: <20130729175413.GC4964@radagast>
+ <51F74BC8.7020903@ti.com>
+ <20130730060134.GD9155@radagast>
+ <51F7590B.4020705@ti.com>
+ <20130730061830.GE9155@radagast>
+ <51F75C40.4060406@ti.com>
+ <20130730062844.GH9155@radagast>
+ <51F7613C.5070803@ti.com>
+ <20130730071611.GD16441@radagast>
+ <51F7752B.8050804@ti.com>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 3/4] tracing/kprobes: Fail to unregister if probe
- event files are open
-References: <20130704033347.807661713@goodmis.org> <20130704034038.819592356@goodmis.org>
-In-Reply-To: <20130704034038.819592356@goodmis.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dMyqICaxQaaUjrCL"
+Content-Disposition: inline
+In-Reply-To: <51F7752B.8050804@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/04 12:33), Steven Rostedt wrote:
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> When one of the event files is opened, we need to prevent them from
-> being removed. Modules do with with the module owner set (automated
-> from the VFS layer).  The ftrace buffer instances have a ref count added
-> to the trace_array when the enabled file is opened (the others are not
-> that big of a deal, as they only reference the event calls which
-> still exist when an instance disappears). But kprobes and uprobes
-> do not have any protection.
-> 
->  # cd /sys/kernel/debug/tracing
->  # echo 'p:sigprocmask sigprocmask' > kprobe_events || exit -1
->  # enable_probe() {
->     sleep 10
->     echo 1
->  }
->  # file=events/kprobes/sigprocmask/enable
->  # enable_probe > $file &
->  > kprobe_events
-> 
-> The above will corrupt the kprobe system, as the write to the enable
-> file will happen after the kprobe was deleted.
-> 
-> Trying to create the probe again fails:
-> 
->  # echo 'p:sigprocmask sigprocmask' > kprobe_events
->  # cat kprobe_events
-> p:kprobes/sigprocmask sigprocmask
->  # ls events/kprobes/
-> enable  filter
-> 
-> Have the unregister probe fail when the event files are open, in use
-> are used by perf.
-> 
+--dMyqICaxQaaUjrCL
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Now, since the commit a232e270d makes sure that disable_trace_probe()
-waits until all running handlers are done, this patch has no problem.
+On Tue, Jul 30, 2013 at 01:41:23PM +0530, Kishon Vijay Abraham I wrote:
+> On Tuesday 30 July 2013 12:46 PM, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > On Tue, Jul 30, 2013 at 12:16:20PM +0530, Kishon Vijay Abraham I wrote:
+> >>>>>> the list of controller device (names) it can support (PHY framewor=
+k does not
+> >>>>>> maintain a separate list for binding like how we had in USB PHY li=
+brary). e.g.
+> >>>>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.ht=
+ml. In such
+> >>>>>
+> >>>>> this has nothing to do with $subject though. We talk about generic =
+PHY
+> >>>>> framework once all these PHY drivers are moved there :-)
+> >>>>>
+> >>>>>> cases how do we pass the device names. Also will the MUSB core dev=
+ice be
+> >>>>>> created before twl4030-usb PHY device?
+> >>>>>
+> >>>>> and why would that be a problem ? We're telling the framework that =
+the
+> >>>>> musb device will use a phy with a name of 'twl4030'. If musb calls
+> >>>>> usb_get_phy_dev() and doesn't find a phy, it'll return -EPROBE_DEFE=
+R and
+> >>>>> try again later.
+> >>>>
+> >>>> I think we are talking about different problems here ;-) I'm trying =
+to tell
+> >>>> using idr in MUSB core is needed for Generic PHY Framework. So in a =
+way, the
+> >>>> Generic PHY Framework series depends on this patch series or else MU=
+SB in OMAP3
+> >>>> platforms wont work after Generic PHY framework gets merged.
+> >>>
+> >>> then you just found a limitation in your framework, right ? :-) I mea=
+n,
+> >>> imagine if now we have to add an IDR to every single user of your
+> >>> framework because they could end up in systems with multiple instances
+> >>> of the same IP ?
+> >>
+> >> I raised a similar concern in the PHY framework discussion [1] :-) And=
+ since
+> >> it's used everywhere else regulators, clkdev, etc.. it's agreed to be =
+used in
+> >> PHY as well. Btw if PLATFORM_DEVID_AUTO is used even regulator, clk_ge=
+t should
+> >> fail IMO.
+> >>
+> >> [1] -> http://lkml.indiana.edu/hypermail/linux/kernel/1307.2/03573.html
+> >=20
+> > look at Greg's and my reply to that email.
+>=20
+> but finally Greg agreed to what Tomasz proposed no?
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+that's not what I see in the thread. I see Greg agreed to regulator's
+own IDs being sequentially created, but he mentions device names can
+change.
 
-Thank you!
+--=20
+balbi
 
+--dMyqICaxQaaUjrCL
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_kprobe.c |   21 +++++++++++++++------
->  1 file changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-> index 7ed6976..ffcaf42 100644
-> --- a/kernel/trace/trace_kprobe.c
-> +++ b/kernel/trace/trace_kprobe.c
-> @@ -95,7 +95,7 @@ static __kprobes bool trace_probe_is_on_module(struct trace_probe *tp)
->  }
->  
->  static int register_probe_event(struct trace_probe *tp);
-> -static void unregister_probe_event(struct trace_probe *tp);
-> +static int unregister_probe_event(struct trace_probe *tp);
->  
->  static DEFINE_MUTEX(probe_lock);
->  static LIST_HEAD(probe_list);
-> @@ -340,9 +340,12 @@ static int unregister_trace_probe(struct trace_probe *tp)
->  	if (trace_probe_is_enabled(tp))
->  		return -EBUSY;
->  
-> +	/* Will fail if probe is being used by ftrace or perf */
-> +	if (unregister_probe_event(tp))
-> +		return -EBUSY;
-> +
->  	__unregister_trace_probe(tp);
->  	list_del(&tp->list);
-> -	unregister_probe_event(tp);
->  
->  	return 0;
->  }
-> @@ -621,7 +624,9 @@ static int release_all_trace_probes(void)
->  	/* TODO: Use batch unregistration */
->  	while (!list_empty(&probe_list)) {
->  		tp = list_entry(probe_list.next, struct trace_probe, list);
-> -		unregister_trace_probe(tp);
-> +		ret = unregister_trace_probe(tp);
-> +		if (ret)
-> +			goto end;
->  		free_trace_probe(tp);
->  	}
->  
-> @@ -1242,11 +1247,15 @@ static int register_probe_event(struct trace_probe *tp)
->  	return ret;
->  }
->  
-> -static void unregister_probe_event(struct trace_probe *tp)
-> +static int unregister_probe_event(struct trace_probe *tp)
->  {
-> +	int ret;
-> +
->  	/* tp->event is unregistered in trace_remove_event_call() */
-> -	trace_remove_event_call(&tp->call);
-> -	kfree(tp->call.print_fmt);
-> +	ret = trace_remove_event_call(&tp->call);
-> +	if (!ret)
-> +		kfree(tp->call.print_fmt);
-> +	return ret;
->  }
->  
->  /* Make a debugfs interface for controlling probe points */
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJR93YXAAoJEIaOsuA1yqRE2dgP/1ub6lcQOcC0FymtHYNtY0UM
+iw5h7oeHKB+R09SmfF3Z5iEGv9gwPSp32gspFeFSy4mvtvQfjQlwNjEeUZQEsZhX
+yZ3DHYkkAyOVXIr6IWZp2lvVVOuimj0W58ddUFQqEeV4L6SlP7GVKrYpENdwGz4o
+CuG7ykx3GfGiscJFgWT8SlMCmo6PosLT6yf+eXo6Ta+YNPlqvmQmwgbeJqmZjWF/
+D/1F/GoMviBKGW/wifsf0phUCfpHP8lkc6WTb0fDOXkdJtmq6DKnuiqJr7woeZZr
+bCz85DhKIOCrRcMbNtoqFqStJ/BYvJwebTL3rolNRggM8zmQV3M9RspkqW/2QP3B
+RSPEsLMhOdyJrhcheqCHZF4CjgT9amPKlQ/5lAjGiBMykfN9p73xfk0JmmILk6MK
+WKDbj3Lh2jQvSLnFSLdDizun5RkuO+F1t1oLx4PeKfAeBaKpCWseEctlnJR/iBAR
+vu7DLOsrDfLN11Ot5D4dGxiBToBQFhhDhxiOuMzQ24ajV83fyjmI2Pqan11LVVwh
+NhApUt3nYWkYP+D+7Wgpzq6kE/5DK0IhRvyXVMHG49pYxFCqv21paoo9NgFr2bYx
+2sA15RBNgEoDQdKDgKZC6VMPg8wWVZ71uBdnVXFyB6gRh4eCHaLCYECLlsySKZax
+q2sWhY4fzN4sxbcuAXlK
+=XK1L
+-----END PGP SIGNATURE-----
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--dMyqICaxQaaUjrCL--
