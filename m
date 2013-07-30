@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932777Ab3G3JmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:42:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53302 "EHLO
+	id S932747Ab3G3Jme (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:42:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53297 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932557Ab3G3Jdi (ORCPT
+	with ESMTP id S932555Ab3G3Jdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:38 -0400
+	Tue, 30 Jul 2013 05:33:36 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Barry Grussling <barry@grussling.com>,
+Cc: Daniil Bolsun <dan.bolsun@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 078/106] usb: cp210x support SEL C662 Vendor/Device
-Date: Tue, 30 Jul 2013 10:31:37 +0100
-Message-Id: <1375176725-5825-79-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 077/106] USB: option: append Petatel NP10T device to GSM modems list
+Date: Tue, 30 Jul 2013 10:31:36 +0100
+Message-Id: <1375176725-5825-78-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,32 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Barry Grussling <barry@grussling.com>
+From: Daniil Bolsun <dan.bolsun@gmail.com>
 
-commit b579fa52f6be0b4157ca9cc5e94d44a2c89a7e95 upstream.
+commit c38e83b6cc2adf80e3f091fd92cfbeacc9748347 upstream.
 
-This patch adds support for the Schweitzer Engineering Laboratories
-C662 USB cable based off the CP210x driver.
+This patch was tested on 3.10.1 kernel.
 
-Signed-off-by: Barry Grussling <barry@grussling.com>
+Same models of Petatel NP10T modems have different device IDs.
+Unfortunately they have no additional revision information on a board
+which may treat them as different devices. Currently I've seen only
+two NP10T devices with various IDs. Possibly Petatel NP10T list will
+be appended upon devices with new IDs will appear.
+
+Signed-off-by: Daniil Bolsun <dan.bolsun@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/option.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 67260ca..8521468 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -155,6 +155,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-+	{ USB_DEVICE(0x1ADB, 0x0001) }, /* Schweitzer Engineering C662 Cable */
- 	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x1E29, 0x0102) }, /* Festo CPX-USB */
- 	{ USB_DEVICE(0x1E29, 0x0501) }, /* Festo CMSP */
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 71ae3ca..8d45809 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -450,7 +450,8 @@ static void option_instat_callback(struct urb *urb);
+ 
+ /* Hyundai Petatel Inc. products */
+ #define PETATEL_VENDOR_ID			0x1ff4
+-#define PETATEL_PRODUCT_NP10T			0x600e
++#define PETATEL_PRODUCT_NP10T_600A		0x600a
++#define PETATEL_PRODUCT_NP10T_600E		0x600e
+ 
+ /* TP-LINK Incorporated products */
+ #define TPLINK_VENDOR_ID			0x2357
+@@ -1351,7 +1352,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x02, 0x01) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(MEDIATEK_VENDOR_ID, MEDIATEK_PRODUCT_DC_4COM2, 0xff, 0x00, 0x00) },
+ 	{ USB_DEVICE(CELLIENT_VENDOR_ID, CELLIENT_PRODUCT_MEN200) },
+-	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600A) },
++	{ USB_DEVICE(PETATEL_VENDOR_ID, PETATEL_PRODUCT_NP10T_600E) },
+ 	{ USB_DEVICE(TPLINK_VENDOR_ID, TPLINK_PRODUCT_MA180),
+ 	  .driver_info = (kernel_ulong_t)&net_intf4_blacklist },
+ 	{ USB_DEVICE(CHANGHONG_VENDOR_ID, CHANGHONG_PRODUCT_CH690) },
 -- 
 1.8.3.2
 
