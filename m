@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab3G3Qaw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:30:52 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34182 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752625Ab3G3Qau (ORCPT
+	id S1754746Ab3G3Qgr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:36:47 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:40108 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633Ab3G3Qgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:30:50 -0400
-Message-ID: <51F7EA35.6070501@wwwdotorg.org>
-Date: Tue, 30 Jul 2013 10:30:45 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	Tue, 30 Jul 2013 12:36:45 -0400
 MIME-Version: 1.0
-To: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-CC: David Gibson <david@gibson.dropbear.id.au>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <Pawel.Moll@arm.com>,
+In-Reply-To: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
+References: <1374657972-2456-1-git-send-email-wangyijing@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 30 Jul 2013 10:36:24 -0600
+Message-ID: <CAErSpo79sEzYXg9yy6bJjpEs2rmhYa+rgh50K76m1RPvn6mJHw@mail.gmail.com>
+Subject: Re: [PATCH] PCI: update NumVFs register properly during
+ enable/disable sriov
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [Ksummit-2013-discuss] DT bindings as ABI [was: Do we have people
- interested in device tree janitoring / cleanup?]
-References: <20130725175702.GC22291@e106331-lin.cambridge.arm.com> <2007664.vYsECFSKrV@flatron> <51F39FD8.6080808@broadcom.com> <2460092.aLmjrOVh1g@flatron> <51F3A82E.2000907@broadcom.com> <CACxGe6t0C7PTiDDaFkgoMZWUpBVokasxwZpV6HEtf3LaPi4qUw@mail.gmail.com> <CAKON4OymA55w_V=oP4BL2su84m8EnPgdhnQtyLWKaAJE-yNBkQ@mail.gmail.com> <CACxGe6uE6jOE-vz0onW5h93Es-soGiBAcFBM7Dvxh+HvCNrHkw@mail.gmail.com> <CACxGe6vw9=y5a+EgF1gO39SwGAdGofD2MYjyJ3jYu6uN3ke70A@mail.gmail.com> <1374988276.1973.29.camel@dabdike> <20130730014453.GJ29970@voom.fritz.box> <CAKON4OyWuF+qm2MAhbXnGg=ozzw37kpSWciLxyUy+QQzxoWdxQ@mail.gmail.com>
-In-Reply-To: <CAKON4OyWuF+qm2MAhbXnGg=ozzw37kpSWciLxyUy+QQzxoWdxQ@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
+        Hanjun Guo <guohanjun@huawei.com>, Jiang Liu <jiang.liu@huawei.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 08:15 PM, jonsmirl@gmail.com wrote:
-> On Mon, Jul 29, 2013 at 9:44 PM, David Gibson
-> <david@gibson.dropbear.id.au> wrote:
-...
->> I also think we should consider the option of having a simple and
->> straightforward schema language which handles, say, 80% of cases with
->> a fall back to C for the 20% of curly cases.  That might actually be
->> simpler to work with in practice than a schema language which can
->> express absolutely anything, at the cost of being awkward for simple
->> cases or difficult to get your head around.
-> 
-> Would C++ work? You can use operating overloading and templates to
-> change the syntax into something that doesn't even resemble C any
-> more.
+On Wed, Jul 24, 2013 at 3:26 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> Currently, we only update NumVFs register during sriov_enable().
+> This register should also be updated properly during sriov_disable.
+> Otherwise, we will get the stale "Number of VFs" info from lspci.
+>
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 
->From my perspective, that's precisely why C++ should /not/ be used.
+Applied to pci/misc, thanks!
+
+> ---
+>  drivers/pci/iov.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/pci/iov.c b/drivers/pci/iov.c
+> index de8ffac..6e4844b 100644
+> --- a/drivers/pci/iov.c
+> +++ b/drivers/pci/iov.c
+> @@ -286,7 +286,6 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+>             (!(iov->cap & PCI_SRIOV_CAP_VFM) && (nr_virtfn > initial)))
+>                 return -EINVAL;
+>
+> -       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
+>         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_OFFSET, &offset);
+>         pci_read_config_word(dev, iov->pos + PCI_SRIOV_VF_STRIDE, &stride);
+>         if (!offset || (nr_virtfn > 1 && !stride))
+> @@ -334,6 +333,7 @@ static int sriov_enable(struct pci_dev *dev, int nr_virtfn)
+>                         return rc;
+>         }
+>
+> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, nr_virtfn);
+>         iov->ctrl |= PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE;
+>         pci_cfg_access_lock(dev);
+>         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
+> @@ -368,6 +368,7 @@ failed:
+>         iov->ctrl &= ~(PCI_SRIOV_CTRL_VFE | PCI_SRIOV_CTRL_MSE);
+>         pci_cfg_access_lock(dev);
+>         pci_write_config_word(dev, iov->pos + PCI_SRIOV_CTRL, iov->ctrl);
+> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
+>         ssleep(1);
+>         pci_cfg_access_unlock(dev);
+>
+> @@ -401,6 +402,7 @@ static void sriov_disable(struct pci_dev *dev)
+>                 sysfs_remove_link(&dev->dev.kobj, "dep_link");
+>
+>         iov->num_VFs = 0;
+> +       pci_write_config_word(dev, iov->pos + PCI_SRIOV_NUM_VF, 0);
+>  }
+>
+>  static int sriov_init(struct pci_dev *dev, int pos)
+> --
+> 1.7.1
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
