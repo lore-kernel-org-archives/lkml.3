@@ -1,127 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab3G3HuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 03:50:17 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:33208 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758010Ab3G3HuL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 03:50:11 -0400
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Mel Gorman <mgorman@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [RFC PATCH 10/10] x86, mm: Prevent gcc to re-read the pagetables
-Date: Tue, 30 Jul 2013 13:18:25 +0530
-Message-Id: <1375170505-5967-11-git-send-email-srikar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
-References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073007-5806-0000-0000-0000223B3B51
+	id S1757951Ab3G3Hvb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 03:51:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:58586 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757582Ab3G3HtY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 03:49:24 -0400
+Date: Tue, 30 Jul 2013 00:49:23 -0700 (PDT)
+Message-Id: <20130730.004923.1092822113714066844.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: joe@perches.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH - diffstat only] include/net: Remove extern from
+ function prototypes
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20130730173800.1825a1452694f40370699413@canb.auug.org.au>
+References: <1374602291.3387.17.camel@joe-AO722>
+	<20130730.001001.618776305200728182.davem@davemloft.net>
+	<20130730173800.1825a1452694f40370699413@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 30 Jul 2013 00:49:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 30 Jul 2013 17:38:00 +1000
 
-GCC is very likely to read the pagetables just once and cache them in
-the local stack or in a register, but it is can also decide to re-read
-the pagetables. The problem is that the pagetable in those places can
-change from under gcc.
+> I must admit I prefer the other way (i.e. with the explicit extern).  If
+> nothing else it makes it consistent with variable declarations in header
+> files (which need the extern) and "static inlines" ...
+> 
+> Making these churn changes also will almost certainly cause unnecessary
+> conflicts :-(
 
-In the page fault we only hold the ->mmap_sem for reading and both the
-page fault and MADV_DONTNEED only take the ->mmap_sem for reading and we
-don't hold any PT lock yet.
+Regardless of preferences, the whole tree is a mix, and we should choose
+one way or the other consistently.
 
-In get_user_pages_fast() the TLB shootdown code can clear the pagetables
-before firing any TLB flush (the page can't be freed until the TLB
-flushing IPI has been delivered but the pagetables will be cleared well
-before sending any TLB flushing IPI).
-
-With THP/hugetlbfs the pmd (and pud for hugetlbfs giga pages) can
-change as well under gup_fast, it won't just be cleared for the same
-reasons described above for the pte in the page fault case.
-
-[ This patch was picked up from the AutoNUMA tree. Also stayed in Ingo
-Molnar's Numa tree for a while.]
-
-Originally-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
----
-Ingo, Andrea, Please let me know if I can add your signed-off-by.
----
- arch/x86/mm/gup.c |   23 ++++++++++++++++++++---
- mm/memory.c       |    2 +-
- 2 files changed, 21 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-index dd74e46..6dc9921 100644
---- a/arch/x86/mm/gup.c
-+++ b/arch/x86/mm/gup.c
-@@ -150,7 +150,13 @@ static int gup_pmd_range(pud_t pud, unsigned long addr, unsigned long end,
- 
- 	pmdp = pmd_offset(&pud, addr);
- 	do {
--		pmd_t pmd = *pmdp;
-+		/*
-+		 * With THP and hugetlbfs the pmd can change from
-+		 * under us and it can be cleared as well by the TLB
-+		 * shootdown, so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pmd_t pmd = ACCESS_ONCE(*pmdp);
- 
- 		next = pmd_addr_end(addr, end);
- 		/*
-@@ -220,7 +226,13 @@ static int gup_pud_range(pgd_t pgd, unsigned long addr, unsigned long end,
- 
- 	pudp = pud_offset(&pgd, addr);
- 	do {
--		pud_t pud = *pudp;
-+		/*
-+		 * With hugetlbfs giga pages the pud can change from
-+		 * under us and it can be cleared as well by the TLB
-+		 * shootdown, so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pud_t pud = ACCESS_ONCE(*pudp);
- 
- 		next = pud_addr_end(addr, end);
- 		if (pud_none(pud))
-@@ -280,7 +292,12 @@ int __get_user_pages_fast(unsigned long start, int nr_pages, int write,
- 	local_irq_save(flags);
- 	pgdp = pgd_offset(mm, addr);
- 	do {
--		pgd_t pgd = *pgdp;
-+		/*
-+		 * The pgd could be cleared by the TLB shootdown from
-+		 * under us so read it with ACCESS_ONCE to do all
-+		 * computations on the same sampling.
-+		 */
-+		pgd_t pgd = ACCESS_ONCE(*pgdp);
- 
- 		next = pgd_addr_end(addr, end);
- 		if (pgd_none(pgd))
-diff --git a/mm/memory.c b/mm/memory.c
-index ba94dec..6254dd2 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3703,7 +3703,7 @@ int handle_pte_fault(struct mm_struct *mm,
- 	pte_t entry;
- 	spinlock_t *ptl;
- 
--	entry = *pte;
-+	entry = ACCESS_ONCE(*pte);
- 	if (!pte_present(entry)) {
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
--- 
-1.7.1
-
+It seems like new code in other major subsystems are using the
+no-extern scheme, and I'm more than happy to follow suit.
