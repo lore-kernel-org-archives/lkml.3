@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932106Ab3G3Stx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:49:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:39693 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756954Ab3G3StA (ORCPT
+	id S1758201Ab3G3SuT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:50:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56695 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756311Ab3G3Ss6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:49:00 -0400
-Date: Tue, 30 Jul 2013 11:49:00 -0700 (PDT)
-Message-Id: <20130730.114900.5636932806999400.davem@davemloft.net>
-To: joe@perches.com
-Cc: gregkh@linuxfoundation.org, hayeswang@realtek.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        nic_swsd@realtek.com
-Subject: Re: [PATCH v3 1/3] net/usb/r815x: replace USB buffer from stack to
- DMA-able
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1375209677.2075.129.camel@joe-AO722>
-References: <20130730140059.GE27962@kroah.com>
-	<20130730.113329.1450325193505423812.davem@davemloft.net>
-	<1375209677.2075.129.camel@joe-AO722>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 30 Jul 2013 11:49:00 -0700 (PDT)
+	Tue, 30 Jul 2013 14:48:58 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Jason Wang <jasowang@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 63/75] tuntap: correctly linearize skb when zerocopy is used
+Date: Tue, 30 Jul 2013 11:45:07 -0700
+Message-Id: <1375209919-1768-30-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Tue, 30 Jul 2013 11:41:17 -0700
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, 2013-07-30 at 11:33 -0700, David Miller wrote:
->> From: Greg KH <gregkh@linuxfoundation.org>
->> Date: Tue, 30 Jul 2013 07:00:59 -0700
->> 
->> > This call is so slow, you can afford to make a call to kmalloc for the
->> > data, as it sure just did for other structures it needed :)
->> 
->> I told him to implement things this way, to avoid calling kmalloc every
->> single register access.
->> 
->> Using kmalloc all the time makes the access fragile, since a badly timed
->> call during high memory pressure can fail.
->> 
->> I'd rather the potential failure happen at one time, probe time.
->> 
->> In any event, Ming Lei has suggested using usbnet_{read,write}_cmd()
->> instead, which sounds like a good solution to this problem.
-> 
-> Those do per-call allocs too.
+------------------
 
-Sigh...  Ok I won't fight this any longer then :-)
+From: Jason Wang <jasowang@redhat.com>
+
+[ Upstream commit 3dd5c3308e8b671e8e8882ba972f51cefbe9fd0d ]
+
+Userspace may produce vectors greater than MAX_SKB_FRAGS. When we try to
+linearize parts of the skb to let the rest of iov to be fit in
+the frags, we need count copylen into linear when calling tun_alloc_skb()
+instead of partly counting it into data_len. Since this breaks
+zerocopy_sg_from_iovec() since its inner counter assumes nr_frags should
+be zero at beginning. This cause nr_frags to be increased wrongly without
+setting the correct frags.
+
+This bug were introduced from 0690899b4d4501b3505be069b9a687e68ccbe15b
+(tun: experimental zero copy tx support)
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/tun.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+index 2a56317..0ebfa18 100644
+--- a/drivers/net/tun.c
++++ b/drivers/net/tun.c
+@@ -1045,7 +1045,7 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ {
+ 	struct tun_pi pi = { 0, cpu_to_be16(ETH_P_IP) };
+ 	struct sk_buff *skb;
+-	size_t len = total_len, align = NET_SKB_PAD;
++	size_t len = total_len, align = NET_SKB_PAD, linear;
+ 	struct virtio_net_hdr gso = { 0 };
+ 	int offset = 0;
+ 	int copylen;
+@@ -1109,10 +1109,13 @@ static ssize_t tun_get_user(struct tun_struct *tun, struct tun_file *tfile,
+ 			copylen = gso.hdr_len;
+ 		if (!copylen)
+ 			copylen = GOODCOPY_LEN;
+-	} else
++		linear = copylen;
++	} else {
+ 		copylen = len;
++		linear = gso.hdr_len;
++	}
+ 
+-	skb = tun_alloc_skb(tfile, align, copylen, gso.hdr_len, noblock);
++	skb = tun_alloc_skb(tfile, align, copylen, linear, noblock);
+ 	if (IS_ERR(skb)) {
+ 		if (PTR_ERR(skb) != -EAGAIN)
+ 			tun->dev->stats.rx_dropped++;
+-- 
+1.8.1.2
+
