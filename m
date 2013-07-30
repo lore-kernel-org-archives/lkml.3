@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab3G3S4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:56:17 -0400
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:65257 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311Ab3G3S4N (ORCPT
+	id S1757366Ab3G3Sy7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:54:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56545 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab3G3Spe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:56:13 -0400
-Date: Tue, 30 Jul 2013 20:56:09 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Wei Yongjun <weiyj.lk@gmail.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, ffainelli@freebox.fr,
-        bigeasy@linutronix.de, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org, yongjun_wei@trendmicro.com.cn,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -next] x86: ce4100: remove duplicated include from
- ce4100.c
-Message-ID: <20130730185609.GB21687@gmail.com>
-References: <CAPgLHd_SnM4M-OZ5hX-vRpvjcm4=i-LiNgTTvwQmHhmOdsaPeg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPgLHd_SnM4M-OZ5hX-vRpvjcm4=i-LiNgTTvwQmHhmOdsaPeg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 30 Jul 2013 14:45:34 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 38/75] drm/i915: inverted brightness quirk for Acer Aspire 4736Z
+Date: Tue, 30 Jul 2013 11:44:42 -0700
+Message-Id: <1375209919-1768-5-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.8.13.6 -stable review patch.  If anyone has any objections, please let me know.
 
-* Wei Yongjun <weiyj.lk@gmail.com> wrote:
+------------------
 
-> From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> 
-> Remove duplicated include.
-> 
-> Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
-> ---
->  arch/x86/platform/ce4100/ce4100.c | 1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-> index 8244f5e..d62e74d 100644
-> --- a/arch/x86/platform/ce4100/ce4100.c
-> +++ b/arch/x86/platform/ce4100/ce4100.c
-> @@ -15,7 +15,6 @@
->  #include <linux/reboot.h>
->  #include <linux/serial_reg.h>
->  #include <linux/serial_8250.h>
-> -#include <linux/reboot.h>
->  
->  #include <asm/ce4100.h>
->  #include <asm/prom.h>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-Hm, while at it, this file could need more cleanups:
+commit ac4199e0f047546aa40172785e26c82b54bbe811 upstream.
 
- - nonstandard comments
- - various checkpatch complaints that seem legit
- - col80 limits were 'solved' using ugly linebreaks
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=53881
+Cc: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Jani Monoses <jani@ubuntu.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/i915/intel_display.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Thanks,
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index b17d8a8..d203d77 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -8912,6 +8912,9 @@ static struct intel_quirk intel_quirks[] = {
+ 
+ 	/* Acer/Packard Bell NCL20 */
+ 	{ 0x2a42, 0x1025, 0x034b, quirk_invert_brightness },
++
++	/* Acer Aspire 4736Z */
++	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
+ };
+ 
+ static void intel_init_quirks(struct drm_device *dev)
+-- 
+1.8.1.2
 
-	Ingo
