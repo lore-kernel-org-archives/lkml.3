@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab3G3PUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:20:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55371 "EHLO
+	id S1756513Ab3G3PUs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:20:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55387 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab3G3PUk (ORCPT
+	with ESMTP id S1752937Ab3G3PUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:20:40 -0400
+	Tue, 30 Jul 2013 11:20:45 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 24/75] ALSA: ua101: Fix unlocked snd_pcm_stop() call
-Date: Tue, 30 Jul 2013 08:16:53 -0700
-Message-Id: <1375197464-27962-25-git-send-email-kamal@canonical.com>
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 31/75] x86, suspend: Handle CPUs which fail to #GP on RDMSR
+Date: Tue, 30 Jul 2013 08:17:00 -0700
+Message-Id: <1375197464-27962-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +29,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 9538aa46c2427d6782aa10036c4da4c541605e0e upstream.
+commit 5ff560fd48d5b3d82fa0c3aff625c9da1a301911 upstream.
 
-snd_pcm_stop() must be called in the PCM substream lock context.
+There are CPUs which have errata causing RDMSR of a nonexistent MSR to
+not fault.  We would then try to WRMSR to restore the value of that
+MSR, causing a crash.  Specifically, some Pentium M variants would
+have this problem trying to save and restore the non-existent EFER,
+causing a crash on resume.
 
-Acked-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Work around this by making sure we can write back the result at
+suspend time.
+
+Huge thanks to Christian Sünkenberg for finding the offending erratum
+that finally deciphered the mystery.
+
+Reported-and-tested-by: Johan Heinrich <onny@project-insanity.org>
+Debugged-by: Christian Sünkenberg <christian.suenkenberg@student.kit.edu>
+Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/51DDC972.3010005@student.kit.edu
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/misc/ua101.c | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
+ arch/x86/kernel/acpi/sleep.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
 
-diff --git a/sound/usb/misc/ua101.c b/sound/usb/misc/ua101.c
-index 6ad617b..76d8329 100644
---- a/sound/usb/misc/ua101.c
-+++ b/sound/usb/misc/ua101.c
-@@ -613,14 +613,24 @@ static int start_usb_playback(struct ua101 *ua)
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index d5e0d71..753dfaa 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -48,9 +48,20 @@ int acpi_suspend_lowlevel(void)
+ #ifndef CONFIG_64BIT
+ 	store_gdt((struct desc_ptr *)&header->pmode_gdt);
  
- static void abort_alsa_capture(struct ua101 *ua)
- {
--	if (test_bit(ALSA_CAPTURE_RUNNING, &ua->states))
-+	unsigned long flags;
-+
-+	if (test_bit(ALSA_CAPTURE_RUNNING, &ua->states)) {
-+		snd_pcm_stream_lock_irqsave(ua->capture.substream, flags);
- 		snd_pcm_stop(ua->capture.substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock_irqrestore(ua->capture.substream, flags);
-+	}
- }
++	/*
++	 * We have to check that we can write back the value, and not
++	 * just read it.  At least on 90 nm Pentium M (Family 6, Model
++	 * 13), reading an invalid MSR is not guaranteed to trap, see
++	 * Erratum X4 in "Intel Pentium M Processor on 90 nm Process
++	 * with 2-MB L2 Cache and Intel® Processor A100 and A110 on 90
++	 * nm process with 512-KB L2 Cache Specification Update".
++	 */
+ 	if (!rdmsr_safe(MSR_EFER,
+ 			&header->pmode_efer_low,
+-			&header->pmode_efer_high))
++			&header->pmode_efer_high) &&
++	    !wrmsr_safe(MSR_EFER,
++			header->pmode_efer_low,
++			header->pmode_efer_high))
+ 		header->pmode_behavior |= (1 << WAKEUP_BEHAVIOR_RESTORE_EFER);
+ #endif /* !CONFIG_64BIT */
  
- static void abort_alsa_playback(struct ua101 *ua)
- {
--	if (test_bit(ALSA_PLAYBACK_RUNNING, &ua->states))
-+	unsigned long flags;
-+
-+	if (test_bit(ALSA_PLAYBACK_RUNNING, &ua->states)) {
-+		snd_pcm_stream_lock_irqsave(ua->playback.substream, flags);
- 		snd_pcm_stop(ua->playback.substream, SNDRV_PCM_STATE_XRUN);
-+		snd_pcm_stream_unlock_irqrestore(ua->playback.substream, flags);
-+	}
- }
- 
- static int set_stream_hw(struct ua101 *ua, struct snd_pcm_substream *substream,
+@@ -61,7 +72,10 @@ int acpi_suspend_lowlevel(void)
+ 	}
+ 	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
+ 			&header->pmode_misc_en_low,
+-			&header->pmode_misc_en_high))
++			&header->pmode_misc_en_high) &&
++	    !wrmsr_safe(MSR_IA32_MISC_ENABLE,
++			header->pmode_misc_en_low,
++			header->pmode_misc_en_high))
+ 		header->pmode_behavior |=
+ 			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
 -- 
 1.8.1.2
 
