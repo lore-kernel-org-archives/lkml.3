@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab3G3KoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:44:14 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:59170 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab3G3KoN (ORCPT
+	id S1751616Ab3G3Kuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:50:55 -0400
+Received: from mail-db8lp0189.outbound.messaging.microsoft.com ([213.199.154.189]:11273
+	"EHLO db8outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750877Ab3G3Kuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:44:13 -0400
-Message-ID: <51F84172.50408@gmail.com>
-Date: Tue, 30 Jul 2013 18:42:58 -0400
-From: Dong Fang <yp.fangdong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 06:50:54 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 4
+X-BigFish: VS4(z2005kz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h1202h1e76h1d1ah1d2ah1fc6h1082kzz1de098h8275bh1de097hz2dh2a8h668h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1d0ch1d2eh1d3fh1dfeh1dffh1155h)
+Date: Tue, 30 Jul 2013 18:54:50 +0800
+From: Robin Gong <b38343@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: Axel Lin <axel.lin@ingics.com>, Liam Girdwood <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: pfuze100: Fix n_voltages setting for
+ SW2~SW4 with high bit set
+Message-ID: <20130730105449.GA4084@Robin-OptiPlex-780>
+References: <1375152388.4265.1.camel@phoenix>
+ <20130730032310.GC1430@Robin-OptiPlex-780>
+ <20130730102110.GK9858@sirena.org.uk>
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: akpm@linux-foundation.org, jeff.liu@oracle.com, xuejiufei@huawei.com,
-        shencanquan@huawei.com, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH v2] fs/ocfs2: use list_for_each_entry() instead of list_for_each()
-References: <1374931429-14062-1-git-send-email-yp.fangdong@gmail.com> <20130729074928.GB5053@mwanda> <20130729080606.GD5053@mwanda>
-In-Reply-To: <20130729080606.GD5053@mwanda>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20130730102110.GK9858@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 04:06 AM, Dan Carpenter wrote:
-> Oh.  It appears that nothing changed between v1 and v2.  Only the CC
-> list.
->
-> It's probably that the list moderation on ocfs2-devel was confusing
-> for non-native English speakers the patch submitter thought his
-> patch was dropped.
->
-> Also mailing lists should have a white list so that I don't get the
-> message every single time.
->
-> regards,
-> dan carpenter
->
-hi, dan carpenter.
+Hi Mark,
+	Thanks for your kindly remind.
 
-i am not a member of Ocfs2-devel mailing list, after i send this patch,
-it notice me "Your message to Ocfs2-devel awaits moderator approval".
-i subscribe this mailing list just now, do you think i need to resend
-this patch to Ocfs2-devel ?
+On Tue, Jul 30, 2013 at 11:21:10AM +0100, Mark Brown wrote:
+> On Tue, Jul 30, 2013 at 11:23:11AM +0800, Robin Gong wrote:
+> > Ok for me.
+> 
+> For Linux kernel process you should say
+> 
+>    Acked-by: Robin Gong <b38343@freescale.com>
+> 
+> or
+> 
+>    Reviewed-by: Robin Gong <b38343@freescale.com>
+> 
+> to say if you are OK - the first means you didn't really review but it
+> looks OK, the second means you did a proper review.
 
-thx very much.
+
+
