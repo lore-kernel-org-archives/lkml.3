@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755873Ab3G3Nsq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:48:46 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:26102 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755783Ab3G3Nso (ORCPT
+	id S1755938Ab3G3NtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:49:11 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:43636 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594Ab3G3NtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:48:44 -0400
-Message-ID: <51F7C433.6070005@atmel.com>
-Date: Tue, 30 Jul 2013 14:48:35 +0100
-From: Rupesh Gujare <rupesh.gujare@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 09:49:08 -0400
 MIME-Version: 1.0
-To: Dan Carpenter <dan.carpenter@oracle.com>
-CC: <devel@linuxdriverproject.org>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging: ozwpan: High resolution timers
-References: <1375187510-28042-1-git-send-email-rupesh.gujare@atmel.com> <20130730131230.GC5002@mwanda>
-In-Reply-To: <20130730131230.GC5002@mwanda>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <1524530.dqCvbcsNq5@vostro.rjw.lan>
+References: <2095cb9de80d87867dbfa42f8433f766891c93ab.1375191318.git.viresh.kumar@linaro.org>
+	<1524530.dqCvbcsNq5@vostro.rjw.lan>
+Date: Tue, 30 Jul 2013 19:19:07 +0530
+Message-ID: <CAKohpok_Z943pkiyV3gFXpSpcp+gm724y3_P+fghwLRUOo-F6A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] cpufreq: Remove extra variables
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-kernel@lists.linaro.org, patches@linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/07/13 14:12, Dan Carpenter wrote:
-> On Tue, Jul 30, 2013 at 01:31:50PM +0100, Rupesh Gujare wrote:
->> Current implementation assumes HZ = 1000 for calculating
->> all internal timer intervals, which creates problem on
->> platforms where HZ != 1000.
+On 30 July 2013 19:28, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Tuesday, July 30, 2013 07:06:33 PM Viresh Kumar wrote:
+>> We call cpufreq_cpu_get() in cpufreq_add_dev_symlink() to increase usage
+>> refcount of policy and not to get policy for a cpu. So, we don't really need to
+>> capture the return value of this routine and call put for it later for failure
+>> cases. We can simply use policy passed as an argument to this routine.
 >>
->> As well we need resolution of less than 10 mSec for heartbeat
->> calculation, this creates problem on some platforms where HZ is
->> configured as HZ = 100, or around, which restricts us to timer interval
->> of 10 mSec. This is particularly found on embedded devices.
+>> Moreover debug print is rewritten to make it more clear.
 >>
->> This patch moves on to use high resolution timers to calculate
->> all timer intervals as it allows us to have very small resolution
->> of timer interval, removing dependency on HZ.
->>
-> I am new to this driver.  So we batch all the transfers together and
-> send/recieve them in oz_hcd_heartbeat() every 10msec?  It's a
-> polling interface?
+>> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 >
-> Sorry, if I am completely mis-reading what this driver is doing.
->
-> In other words, could you explain what oz_hcd_heartbeat() does.
->
->
->
+> Both [1-2/2] look good, but what do they apply to?  Mainline, linux-next,
+> my bleeding-edge branch?
 
-Yes, you are right. USB service requests for regular heartbeat when it 
-have URBs queued (at them moment every 8mSsec when ISOC endpoints are
-configured). This heartbeat is also used by EP0 traffic to retransmit 
-packet over WiFi.
-
-At heartbeat expiry, oz_hcd_heartbeat(), goes on to process all received 
-URBs and send it over WiFi.
-
-
--- 
-Regards,
-Rupesh Gujare
-
+Sorry for not mentioning this, bleeding-edge :)
