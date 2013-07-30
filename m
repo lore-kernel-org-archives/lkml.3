@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab3G3IgG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:36:06 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:17142 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab3G3IgD (ORCPT
+	id S1758080Ab3G3IiO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:38:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40077 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab3G3IiL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:36:03 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 30 Jul 2013 01:34:40 -0700
-From: Mikko Perttunen <mperttunen@nvidia.com>
-To: <thierry.reding@gmail.com>
-CC: <tbergstrom@nvidia.com>, <dri-devel@lists.freedesktop.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Mikko Perttunen <mperttunen@nvidia.com>
-Subject: [PATCH] host1x: hdmi: Make sure clock is enabled before dumping registers
-Date: Tue, 30 Jul 2013 11:35:03 +0300
-Message-ID: <1375173303-4275-1-git-send-email-mperttunen@nvidia.com>
-X-Mailer: git-send-email 1.8.1.5
-X-NVConfidentiality: public
+	Tue, 30 Jul 2013 04:38:11 -0400
+Date: Tue, 30 Jul 2013 10:37:58 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
+Message-ID: <20130730083758.GH3008@twins.programming.kicks-ass.net>
+References: <20130624084338.GI28407@twins.programming.kicks-ass.net>
+ <CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
+ <20130625104700.GZ28407@twins.programming.kicks-ass.net>
+ <20130625105123.GA13649@gmail.com>
+ <20130626103303.GB28407@twins.programming.kicks-ass.net>
+ <CABPqkBTETCE7unsE=zvcC5n865ZN-QTW5Y0j-meTO9x-8=BJog@mail.gmail.com>
+ <20130628095828.GG29209@dyad.programming.kicks-ass.net>
+ <CABPqkBSfkg+rPw4A=n8wmPg=iwn1Qf8PdYA4ycxxooOv3GrvmA@mail.gmail.com>
+ <20130708081919.GV23916@twins.programming.kicks-ass.net>
+ <CABPqkBSesQsfeutY2qu1n3uMka0dOFOT2tzqCWYGV=2p6F8Y9w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CABPqkBSesQsfeutY2qu1n3uMka0dOFOT2tzqCWYGV=2p6F8Y9w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debugfs register dumping function did not enable the HDMI clock.
-This led to a possible system hang when reading the debugfs entry
-while no HDMI cable was connected to the system. This patch makes
-sure that the clock is enabled during the read.
+On Tue, Jul 30, 2013 at 10:02:01AM +0200, Stephane Eranian wrote:
+> > Ahh. We don't put the useful bits in the mmap event; we'll need to fix
+> > that too then ;-)
+> >
+> > Doing so is going to be a bit of a bother since we use the tail of
+> > PERF_RECORD_MMAP for filenames and thus aren't particularly extensible.
+> >
+> > This would mean doing something like PERF_RECORD_MMAP2 and some means
+> > for userspace to requrest the new events instead of the old one.
+> >
+> Tracking mmaps even for shmat() won't cover the paging cases. When you page a
+> page back in, it most likely gets a different physical page. How would
+> we track that
+> case too using the same approach?
 
-Signed-off-by: Mikko Perttunen <mperttunen@nvidia.com>
----
- drivers/gpu/host1x/drm/hdmi.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+It doesn't matter. Even if a page ends up being a different physical
+page, it will always be the same sb:inode:pgoffset. You should be able
+to always uniquely identify a (shared) page by that triplet.
 
-diff --git a/drivers/gpu/host1x/drm/hdmi.c b/drivers/gpu/host1x/drm/hdmi.c
-index 01097da..bf7f027 100644
---- a/drivers/gpu/host1x/drm/hdmi.c
-+++ b/drivers/gpu/host1x/drm/hdmi.c
-@@ -904,6 +904,11 @@ static int tegra_hdmi_show_regs(struct seq_file *s, void *data)
- {
- 	struct drm_info_node *node = s->private;
- 	struct tegra_hdmi *hdmi = node->info_ent->data;
-+	int err;
-+
-+	err = clk_enable(hdmi->clk);
-+	if (err)
-+		return err;
- 
- #define DUMP_REG(name)						\
- 	seq_printf(s, "%-56s %#05x %08lx\n", #name, name,	\
-@@ -1069,6 +1074,8 @@ static int tegra_hdmi_show_regs(struct seq_file *s, void *data)
- 
- #undef DUMP_REG
- 
-+	clk_disable(hdmi->clk);
-+
- 	return 0;
- }
- 
--- 
-1.8.1.5
-
+So if we create a net MMAP record that includes the device (substitute
+for the superblock) and inode information we should be good.
