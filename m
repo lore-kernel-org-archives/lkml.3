@@ -1,77 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab3G3VZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:25:51 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:60886 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab3G3VZt (ORCPT
+	id S1757648Ab3G3V2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:28:23 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47520 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756140Ab3G3V2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:25:49 -0400
-Message-ID: <51F82F58.8090705@wwwdotorg.org>
-Date: Tue, 30 Jul 2013 15:25:44 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Andrew Chew <AChew@nvidia.com>
-CC: Laxman Dewangan <ldewangan@nvidia.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: palmas: Add DVFS mux setting
-References: <1374871308-490-1-git-send-email-achew@nvidia.com> <51F2E74E.2060107@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com> <51F2EC66.2080200@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com> <51F2F22B.500@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com> <51F398F8.5070602@nvidia.com> <51F81FF5.4020600@wwwdotorg.org> <643E69AA4436674C8F39DCC2C05F763862A1274697@HQMAIL03.nvidia.com>
-In-Reply-To: <643E69AA4436674C8F39DCC2C05F763862A1274697@HQMAIL03.nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 30 Jul 2013 17:28:21 -0400
+Date: Tue, 30 Jul 2013 14:28:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Zach Brown <zab@zabbo.net>
+Subject: Re: [PATCH V8 00/33] loop: Issue O_DIRECT aio using bio_vec
+Message-Id: <20130730142820.313f1af6827276df31913106@linux-foundation.org>
+In-Reply-To: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1374774659-13121-1-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/30/2013 02:53 PM, Andrew Chew wrote:
->> On 07/27/2013 03:55 AM, Laxman Dewangan wrote:
->>> On Saturday 27 July 2013 03:42 AM, Andrew Chew wrote:
->>>> I wrote:
->>>>> Andrew wrote:
->>>>>> [adding a third pinmux configuration property to Palmas's DT]
->>>>>
->>>>> How does this interact with the pinctrl driver that Laxman just sent
->>>>> for Palmas?
->>>>>
->>>>> https://lkml.org/lkml/2013/7/26/141
->>>>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
->> ..
->>>> Abandoning this patch.
->> ...
->>> once we will have the pincontrol driver then mux pads are become
->> redundant.
->>
->> OK. The driver should probably operate like this then:
->>
->> * During probe(), parse the ti,mux-pad* parameters, if present, and apply
->> them. This is needed to maintain compatibility with old DTs that may contain
->> these properties.
->>
->> * At the end of probe(), register the pinctrl driver. If standard pinctrl
->> properties are present in DT, these will then be applied. These may override
->> the values set by any ti,mux-pad* properties if they were present.
->>
->> Also, we should remove, or mark deprecated, the ti,mux-pad* properties in
->> the binding document when adding pinctrl support.
-> 
-> Sounds reasonable to me.  The fate of my patch hasn't really been discussed, though.
-> Can we apply it, to make the ti,mux-pad* stuff complete?
+On Thu, 25 Jul 2013 12:50:26 -0500 Dave Kleikamp <dave.kleikamp@oracle.com> wrote:
 
-Oh, I thought you said you were dropping it. I don't see a need to apply
-it if the correct approach is Laxman's pinctrl driver.
+> This patch series adds a kernel interface to fs/aio.c so that kernel code can
+> issue concurrent asynchronous IO to file systems.  It adds an aio command and
+> file system methods which specify io memory with pages instead of userspace
+> addresses.
+> 
+> This series was written to reduce the current overhead loop imposes by
+> performing synchronus buffered file system IO from a kernel thread.  These
+> patches turn loop into a light weight layer that translates bios into iocbs.
+
+Do you have any performance numbers?
+
+Does anyone care much about loop performance?  What's the value here?
