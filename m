@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab3G3Atf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 20:49:35 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:39168 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725Ab3G3Atd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 20:49:33 -0400
+	id S1755384Ab3G3Aug (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 20:50:36 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:39466 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752011Ab3G3Aue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 20:50:34 -0400
+X-IronPort-AV: E=Sophos;i="4.89,774,1367942400"; 
+   d="scan'208";a="8062334"
+Message-ID: <51F70CF5.9090003@cn.fujitsu.com>
+Date: Tue, 30 Jul 2013 08:46:45 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1307291739150.13736@nftneq.ynat.uz>
-References: <2469263.vMN09Q7Tzi@flatron>
-	<20130729150124.GS29916@titan.lakedaemon.net>
-	<20130729164905.GB2280@localhost.localdomain>
-	<20130729172339.GT29916@titan.lakedaemon.net>
-	<alpine.DEB.2.02.1307291739150.13736@nftneq.ynat.uz>
-Date: Mon, 29 Jul 2013 20:49:31 -0400
-Message-ID: <CAKON4Ow2KMC_9xod3Ay51Yetg9RbfMxVcy4DH0A3baHpmxP+7A@mail.gmail.com>
-Subject: Re: [Ksummit-2013-discuss] Defining schemas for Device Tree
-From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
-To: David Lang <david@lang.hm>
-Cc: Jason Cooper <jason@lakedaemon.net>, Dave Martin <Dave.Martin@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Domenico Andreoli <cavokz@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "ksummit-2013-discuss@lists.linuxfoundation.org" 
-	<ksummit-2013-discuss@lists.linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+To: Rui Xiang <rui.xiang@huawei.com>
+CC: containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        akpm@linux-foundation.org, gaofeng@cn.fujitsu.com,
+        libo.chen@huawei.com
+Subject: Re: [PATCH 1/9] syslog_ns: add syslog_namespace and put/get_syslog_ns
+References: <1375065080-26740-1-git-send-email-rui.xiang@huawei.com> <1375065080-26740-2-git-send-email-rui.xiang@huawei.com> <51F6388B.8000308@cn.fujitsu.com> <51F65636.6080505@huawei.com>
+In-Reply-To: <51F65636.6080505@huawei.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 08:48:20,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/07/30 08:48:22,
+	Serialize complete at 2013/07/30 08:48:22
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 29, 2013 at 8:41 PM, David Lang <david@lang.hm> wrote:
-> On Mon, 29 Jul 2013, Jason Cooper wrote:
->
+On 07/29/2013 07:47 PM, Rui Xiang wrote:
+
+> On 2013/7/29 17:40, Gu Zheng wrote:
+>> Hi Rui,
+>> 	Refer to inline:).
 >>
+> Hi Gu,
+> 
+> Thanks for your attention.
+> 
+>> On 07/29/2013 10:31 AM, Rui Xiang wrote:
+>>
+>>> Add a struct syslog_namespace which contains the necessary
+>>> members for hanlding syslog and realize get_syslog_ns and
+>>> put_syslog_ns API.
 >>>
->>> I don't think that siblings have any defined order in DT.  If reading a
->>> device tree, there's no guarantee you get nodes or properties out in the
->>> same order as the original .dts file.
+>>> Signed-off-by: Rui Xiang <rui.xiang@huawei.com>
+>>> ---
+>>>  include/linux/syslog.h | 68 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>>>  kernel/printk.c        |  7 ------
+>>>  2 files changed, 68 insertions(+), 7 deletions(-)
+>>>
+> 
+> ...
+> 
+>>> +
+>>> +static inline void free_syslog_ns(struct kref *kref)
+>>> +{
+>>> +	struct syslog_namespace *ns;
+>>> +	ns = container_of(kref, struct syslog_namespace, kref);
+>>> +
+>>> +	kfree(ns->log_buf);
+>>> +	kfree(ns);
+>>> +}
 >>
+>> This interface seems a bit ugly, why not use the format like put_syslog_ns()?
 >>
->> That's why I raised the point.  If people think encoding initialization
->> order in the DT is a good idea, then we should change the dtc so it
->> compiles/decompiles in the same order.
->
->
-> if you make the initializaiton order 'magicly' correct by following the
-> order of the flat representation, how do you reflect the case where
-> initialization can be overlapped for different devices?
+>> static inline void free_syslog_ns(struct syslog_namespace *ns)
+>>
+> 
+> Free_syslog_ns is used in put_syslog_ns. And the kref_put function uses kref as
+> a parameter for its relase funtion. You can see that from 
+> static inline int kref_put(struct kref *kref, void (*release)(struct kref *kref)).
 
-I agree with David, using DT to try and eliminate deferred probes
-isn't a good solution.  Overlapped probes and doing probes on multiple
-CPUs introduces a temporal angle to the problem. Best to just let the
-deferred probing code dynamically solve the problem. From what I can
-see the deferred probing solution is working out nicely.
+Got it.
 
-Plus there isn't that much code being run in deferred probing. I
-suspect potential savings (if there even is any) are under a
-millisecond.
+Regards,
+Gu
 
->
-> you are just trading one side of the problem for the other.
->
-> David Lang
+> 
+> Thanks.
+> 
+>>> +
+>>> +static inline void put_syslog_ns(struct syslog_namespace *ns)
+>>> +{
+>>> +	if (ns)
+>>> +		kref_put(&ns->kref, free_syslog_ns);
+>>> +}
+>>> +
+>>>
+> 
+> 
 
 
-
--- 
-Jon Smirl
-jonsmirl@gmail.com
