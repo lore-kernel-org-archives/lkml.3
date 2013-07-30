@@ -1,88 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab3G3TWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:22:18 -0400
-Received: from mx2.parallels.com ([199.115.105.18]:33735 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750957Ab3G3TWQ convert rfc822-to-8bit (ORCPT
+	id S1756826Ab3G3TZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:25:03 -0400
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:56153 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab3G3TZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:22:16 -0400
-From: James Bottomley <jbottomley@parallels.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
-Thread-Topic: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
-Thread-Index: AQHOiLn9lIPAkmLJT0q4B8AZLxq1S5l94uSAgAAvZYCAAAXEgA==
-Date: Tue, 30 Jul 2013 19:22:16 +0000
-Message-ID: <1375212127.2065.20.camel@dabdike.int.hansenpartnership.com>
-References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
-	 <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
-	 <1375200711.2065.10.camel@dabdike.int.hansenpartnership.com>
-	 <20130730190129.GC25353@kroah.com>
-In-Reply-To: <20130730190129.GC25353@kroah.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.17.213.192]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <E9B67C2971EE8D40A0C010483B1851FA@sw.swsoft.com>
-Content-Transfer-Encoding: 7BIT
+	Tue, 30 Jul 2013 15:25:01 -0400
+Date: Tue, 30 Jul 2013 21:24:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        "Shi, Alex" <alex.shi@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Dave Hansen <dave.hansen@intel.com>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+Subject: Re: Performance regression from switching lock to rw-sem for
+ anon-vma tree
+Message-ID: <20130730192455.GA22259@gmail.com>
+References: <20130628093809.GB29205@gmail.com>
+ <1372453461.22432.216.camel@schen9-DESK>
+ <20130629071245.GA5084@gmail.com>
+ <1372710497.22432.224.camel@schen9-DESK>
+ <20130702064538.GB3143@gmail.com>
+ <1373997195.22432.297.camel@schen9-DESK>
+ <20130723094513.GA24522@gmail.com>
+ <20130723095124.GW27075@twins.programming.kicks-ass.net>
+ <20130723095306.GA26174@gmail.com>
+ <1375143209.22432.419.camel@schen9-DESK>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1375143209.22432.419.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 12:01 -0700, Greg Kroah-Hartman wrote:
-> On Tue, Jul 30, 2013 at 04:11:52PM +0000, James Bottomley wrote:
-> > On Wed, 2013-07-24 at 15:05 -0700, Greg Kroah-Hartman wrote:
-> > > The dev_attrs field of struct class is going away soon, dev_groups
-> > > should be used instead.  This converts the scsi disk class code to use
-> > > the correct field.
-> > > 
-> > > It required some functions to be moved around to place the show and
-> > > store functions next to each other, the old order seemed to make no
-> > > sense at all.
-> > > 
-> > > Cc: James E.J. Bottomley <JBottomley@parallels.com>
-> > > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > > ---
-> > > 
-> > > James, feel free to take this through your tree, or ACK it and I can
-> > > take it through mine.
+
+* Tim Chen <tim.c.chen@linux.intel.com> wrote:
+
+> On Tue, 2013-07-23 at 11:53 +0200, Ingo Molnar wrote:
+> > * Peter Zijlstra <peterz@infradead.org> wrote:
 > > 
-> > Just found this ... I have the stable folder rule be git-send-email and
-> > from you, so it picks up your patches as well.
+> > > On Tue, Jul 23, 2013 at 11:45:13AM +0200, Ingo Molnar wrote:
+> > >
+> > > > Why not just try the delayed addition approach first? The spinning is 
+> > > > time limited AFAICS, so we don't _have to_ recognize those as writers 
+> > > > per se, only if the spinning fails and it wants to go on the waitlist. 
+> > > > Am I missing something?
+> > > > 
+> > > > It will change patterns, it might even change the fairness balance - 
+> > > > but is a legit change otherwise, especially if it helps performance.
+> > > 
+> > > Be very careful here. Some people (XFS) have very specific needs. Walken 
+> > > and dchinner had a longish discussion on this a while back.
+> > 
+> > Agreed - yet it's worth at least trying it out the quick way, to see the 
+> > main effect and to see whether that explains the performance assymetry and 
+> > invest more effort into it.
+> > 
 > 
-> It seems you aren't the only one who has procmail rules for my emails :)
-
-It's not that I don't like you, I procmail it to a different folder
-because of mobile phones: my inbox is about 50 deep and a stable patch
-run can basically empty the cache ... this can be damn annoying if your
-hotel reservation is number 51.
-
-> I wonder if I need to start sending my stable stuff out from a different
-> email address...
-
-You don't need a different address, just use a different tag.  I tag all
-SCSI git email with 
-
-X-Git-Tree: SCSI
-
-Ben Hutchings tags all his stable email with:
-
-X-mailer: LinuxStableQueue (scripts by bwh)
-
-and so on ... any header tag does ... I'm sure git-send-email can be
-persuaded to add a more meaningful one.
-
-> > I'll take it through my tree, just in case we're mucking about with
-> > attributes this cycle around.
+> Ingo & Peter,
 > 
-> That's fine with me, thanks.
+> Here's a patch that moved optimistic spinning of the 
+> writer lock acquisition before putting the writer on the 
+> wait list.  It did give me a 5% performance boost on my 
+> exim mail server workload. It recovered a good portion of 
+> the 8% performance regression from mutex implementation.
 
-OK, adding it to the testing queue now.
+Very nice detective work!
 
-James
+> I think we are on the right track. Let me know if there's 
+> anything in the patch that may cause grief to XFS.
+> 
+> There is some further optimization possible.  We went to 
+> the failed path within __down_write if the count field is 
+> non zero. But in fact if the old count field was 
+> RWSEM_WAITING_BIAS, there's no one active and we could 
+> have stolen the lock when we perform our atomic op on the 
+> count field in __down_write. Yet we go to the failed path 
+> in the current code.
+> 
+> I will combine this change and also Alex's patches on 
+> rwsem together in a patchset later.
+> 
+> Your comments and thoughts are most welcomed.
+> 
+> Tim
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
 
+> +config RWSEM_SPIN_ON_WRITE_OWNER
+> +	bool "Optimistic spin write acquisition for writer owned rw-sem"
+> +	default n
+> +	depends on SMP
+> +	help
+> +	  Allows a writer to perform optimistic spinning if another writer own
+> +	  the read write semaphore.  If the lock owner is running, it is likely
+> +	  to release the lock soon. Spinning gives a greater chance for writer to
+> +	  acquire a semaphore before putting it to sleep.
+
+The way you've worded this new Kconfig option makes it 
+sound as if it's not just for testing, and I'm not a big 
+believer in extra Kconfig degrees of freedom for 
+scalability features of core locking primitives like 
+rwsems, in production kernels ...
+
+So the bad news is that such scalability optimizations 
+really need to work for everyone.
+
+The good news is that I don't think there's anything 
+particularly controversial about making the rwsem write 
+side perform just as well as mutexes - it would in fact be 
+a very nice quality of implementation feature: it gives 
+people freedom to switch between mutexes and rwsems without 
+having to worry about scalability differences too much.
+
+Once readers are mixed into the workload can we keep the 
+XFS assumptions, if they are broken in any way?
+
+We are spinning here so we have full awareness about the 
+state of the lock and we can react to a new reader in very 
+short order - so at a quick glance I don't see any 
+fundamental difficulty in being able to resolve it - beyond 
+the SMOP aspect that is ... :-)
+
+Thanks,
+
+	Ingo
