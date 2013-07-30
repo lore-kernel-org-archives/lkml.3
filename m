@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662Ab3G3CBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 22:01:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14918 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab3G3CBl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 22:01:41 -0400
-X-Authority-Analysis: v=2.0 cv=aqMw+FlV c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=ZgYRSZqRWO8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=6PEQZdHCN9wA:10 a=3nbZYyFuAAAA:8 a=5_lkDTT39hjBKQWGUxMA:9 a=QEXdDO2ut3YA:10 a=EvKJbDF4Ut8A:10 a=h2Mh8ob_nCkA:10 a=F8gF8Te7fPcA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-ID: <1375149700.6580.61.camel@gandalf.local.home>
-Subject: Re: [PATCH v3 6/6] tracing: Change remove_event_file_dir() to clear
- "d_subdirs"->i_private
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Alexander Z Lam <azl@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        David Sharp <dhsharp@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 29 Jul 2013 22:01:40 -0400
-In-Reply-To: <51F71891.3030508@hitachi.com>
-References: <20130726172513.GA3586@redhat.com>
-	 <20130726172551.GA3632@redhat.com> <20130728183527.GB16723@redhat.com>
-	 <51F71891.3030508@hitachi.com>
+	id S1756740Ab3G3CEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 22:04:48 -0400
+Received: from ozlabs.org ([203.10.76.45]:39348 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752062Ab3G3CEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 29 Jul 2013 22:04:46 -0400
+Message-ID: <1375149883.8313.3.camel@concordia>
+Subject: Re: kisskb: sparc-allmodconfig is actually sparc64
+From: Michael Ellerman <michael@ellerman.id.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        sparclinux <sparclinux@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Date: Tue, 30 Jul 2013 12:04:43 +1000
+In-Reply-To: <CAMuHMdUjaGRnHZpxs1j4VkYgTUXQNXvqu8LstpxLe8tYdf1oVw@mail.gmail.com>
+References: <CAMuHMdUjaGRnHZpxs1j4VkYgTUXQNXvqu8LstpxLe8tYdf1oVw@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+X-Mailer: Evolution 3.6.4-0ubuntu1 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-07-30 at 10:36 +0900, Masami Hiramatsu wrote:
-
-> Looks good for me.
+On Fri, 2013-07-26 at 12:23 +0200, Geert Uytterhoeven wrote:
+> Hi Michael, Stephen,
 > 
-> Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> The sparc-allmodconfig builds on http://kisskb.ellerman.id.au/kisskb/matrix/
+> seem to be sparc64, not sparc32, allmodconfig builds.
+> The sparc-allnoconfig builds are sparc32.
 
-I've applied them all locally, but I'll rebase and add your reviewed-by
-tags. (also make some other checks)  Then I need to rerun them through
-my main tests before I post them to next, and then onto Linus.
+OK this should be fixed.
 
-Thanks to both of you,
+See http://kisskb.ellerman.id.au/kisskb/buildresult/9234872/
 
--- Steve
+In particular the config at http://kisskb.ellerman.id.au/kisskb/buildresult/9234872/config/
 
+Shows:
+
+CONFIG_SPARC=y
+CONFIG_SPARC32=y
+# CONFIG_SPARC64 is not set
+
+vs an older result (http://kisskb.ellerman.id.au/kisskb/buildresult/9195810/config/)
+
+CONFIG_64BIT=y
+CONFIG_SPARC=y
+# CONFIG_SPARC32 is not set
+
+
+cheers
 
