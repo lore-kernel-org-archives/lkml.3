@@ -1,105 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756656Ab3G3Taa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 15:30:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26473 "EHLO mga02.intel.com"
+	id S1756483Ab3G3Tfd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 15:35:33 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36278 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752030Ab3G3Ta3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 15:30:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.89,780,1367996400"; 
-   d="scan'208";a="373619100"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Shuah Khan <shuah.kh@samsung.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Konstantin Khlebnikov" <khlebnikov@openvz.org>
-Subject: RE: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-Thread-Topic: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-Thread-Index: AQHOjRXXO1QsMPwzCEeJTRhZuUOzTZl9mBJg
-Date: Tue, 30 Jul 2013 19:30:24 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AE7868F@HASMSX106.ger.corp.intel.com>
-References: <1375182711-10253-1-git-send-email-tomas.winkler@intel.com>
- <20130730142209.GA28956@kroah.com>
- <5B8DA87D05A7694D9FA63FD143655C1B1AE783C8@HASMSX106.ger.corp.intel.com>
- <B8EFE96D1287C24090BAD9D858E15E6174EAFA@sisaex01sj>
-In-Reply-To: <B8EFE96D1287C24090BAD9D858E15E6174EAFA@sisaex01sj>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752030Ab3G3Tfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 15:35:32 -0400
+Date: Tue, 30 Jul 2013 21:35:30 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Ilari Stenroth <ilari.stenroth@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: arch/x86/kernel/cpu/intel.c needs an update for Haswell?
+Message-ID: <20130730193530.GB23299@pd.tnic>
+References: <kt91u2$jhs$1@ger.gmane.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <kt91u2$jhs$1@ger.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 30, 2013 at 09:50:49PM +0300, Ilari Stenroth wrote:
+> Does somebody know why arch/x86/kernel/cpu/intel.c has
+> tlb_flushall_shift detection logic for Ivy Bridge CPU family but not
+> for Haswell? Maybe intel_cacheinfo.c needs to be checked for Haswell
+> updates too.
 
->
- >>> Both H_IS and H_IE needs to be set to receive H_RDY interrupt
-> >>>
-> >>> 1. Assert H_IS to clear the interrupts during hw reset and use
-> >>> mei_me_reg_write instead of mei_hcsr_set as the later strips down
-> >>> the H_IS
-> >>>
-> >>> 2. fix interrupt disablement embarrassing typo
-> >>>    hcsr |= ~H_IE -> hcsr &= ~H_IE;
-> >>> this will remove the unwanted interrupt on power down
-> >>>
-> >>> 3. remove useless debug print outs
-> >>>
-> >>> Cc: Shuah Khan <shuah.kh@samsung.com>
-> >>> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> >>> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> >>> ---
-> >>>
-> >>> V2: Fixed typo in Shuah email
-> >>>
-> >>> Hope this finally resolve the ME reset issue for all
-> >>
-> >> Can I get a "Tested-by:" from someone to ensure that it really does
-> >> solve the problem?
-> >
-> > Yes,  please wait for ack/test results. It works for me but unfortunately I
-> cannot go over all  9 gens of  PCH and all their proliferations  where ME
-> resides.
-> > I'm putting some effort to have better legacy HW testing coverage but I'm
-> not there yet.
-> >
-> 
-> Tomas,
-> 
-> I have a test system that has shows the mei_me reset problem after boot-
-> up. I tested this patch on top of 3.11-rc3 that has the previous 4 patches. I am
-> seeing the issue still on this system:
-> 
-> 00:03.0 Communication controller: Intel Corporation 82Q963/Q965 HECI
-> Controller (rev 02)
->          Subsystem: Hewlett-Packard Company Device 2801
->          Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> ParErr- Stepping- SERR- FastB2B- DisINTx+
->          Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->          Latency: 0
->          Interrupt: pin A routed to IRQ 41
->          Region 0: Memory at f0521900 (64-bit, non-prefetchable) [size=16]
->          Capabilities: <access denied>
->          Kernel driver in use: mei_me
-> 
-> 
-> I am attaching the dmesg. Please let me know if you need any more
-> information from the system.
+Because someone needs to sit down and write it. Oh, and more
+importantly, test it on real hardware.
 
-I'm not sure this error though looks similar is coming from the same source,  this is even after boot up, which  I haven't seen before.
-Would it be possible you open more logs through dynamic debug on mei and mei_me modules
-To preserve it over reboot I add it into /etc/modprobe.d/mei.conf
-options mei dyndbg="+plf"
-options mei_me dyndbg="+plf"
+:-)
 
-Thanks
-Tomas
- 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
