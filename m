@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757780Ab3G3Sxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:53:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56596 "EHLO
+	id S1757441Ab3G3Srl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:47:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757492Ab3G3Srp (ORCPT
+	with ESMTP id S1756911Ab3G3Sri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:47:45 -0400
+	Tue, 30 Jul 2013 14:47:38 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+Cc: Sasha Levin <sasha.levin@oracle.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 69/75] ipv6: only static routes qualify for equal cost multipathing
-Date: Tue, 30 Jul 2013 11:45:13 -0700
-Message-Id: <1375209919-1768-36-git-send-email-kamal@canonical.com>
+Subject: [PATCH 66/75] 9p: fix off by one causing access violations and memory corruption
+Date: Tue, 30 Jul 2013 11:45:10 -0700
+Message-Id: <1375209919-1768-33-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -29,86 +28,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Sasha Levin <sasha.levin@oracle.com>
 
-[ Upstream commit 307f2fb95e9b96b3577916e73d92e104f8f26494 ]
+[ Upstream commit 110ecd69a9feea82a152bbf9b12aba57e6396883 ]
 
-Static routes in this case are non-expiring routes which did not get
-configured by autoconf or by icmpv6 redirects.
+p9_release_pages() would attempt to dereference one value past the end of
+pages[]. This would cause the following crashes:
 
-To make sure we actually get an ecmp route while searching for the first
-one in this fib6_node's leafs, also make sure it matches the ecmp route
-assumptions.
+[ 6293.171817] BUG: unable to handle kernel paging request at ffff8807c96f3000
+[ 6293.174146] IP: [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.176447] PGD 79c5067 PUD 82c1e3067 PMD 82c197067 PTE 80000007c96f3060
+[ 6293.180060] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+[ 6293.180060] Modules linked in:
+[ 6293.180060] CPU: 62 PID: 174043 Comm: modprobe Tainted: G        W    3.10.0-next-20130710-sasha #3954
+[ 6293.180060] task: ffff8807b803b000 ti: ffff880787dde000 task.ti: ffff880787dde000
+[ 6293.180060] RIP: 0010:[<ffffffff8412793b>]  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.214316] RSP: 0000:ffff880787ddfc28  EFLAGS: 00010202
+[ 6293.214316] RAX: 0000000000000001 RBX: ffff8807c96f2ff8 RCX: 0000000000000000
+[ 6293.222017] RDX: ffff8807b803b000 RSI: 0000000000000001 RDI: ffffea001c7e3d40
+[ 6293.222017] RBP: ffff880787ddfc48 R08: 0000000000000000 R09: 0000000000000000
+[ 6293.222017] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
+[ 6293.222017] R13: 0000000000000001 R14: ffff8807cc50c070 R15: ffff8807cc50c070
+[ 6293.222017] FS:  00007f572641d700(0000) GS:ffff8807f3600000(0000) knlGS:0000000000000000
+[ 6293.256784] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 6293.256784] CR2: ffff8807c96f3000 CR3: 00000007c8e81000 CR4: 00000000000006e0
+[ 6293.256784] Stack:
+[ 6293.256784]  ffff880787ddfcc8 ffff880787ddfcc8 0000000000000000 ffff880787ddfcc8
+[ 6293.256784]  ffff880787ddfd48 ffffffff84128be8 ffff880700000002 0000000000000001
+[ 6293.256784]  ffff8807b803b000 ffff880787ddfce0 0000100000000000 0000000000000000
+[ 6293.256784] Call Trace:
+[ 6293.256784]  [<ffffffff84128be8>] p9_virtio_zc_request+0x598/0x630
+[ 6293.256784]  [<ffffffff8115c610>] ? wake_up_bit+0x40/0x40
+[ 6293.256784]  [<ffffffff841209b1>] p9_client_zc_rpc+0x111/0x3a0
+[ 6293.256784]  [<ffffffff81174b78>] ? sched_clock_cpu+0x108/0x120
+[ 6293.256784]  [<ffffffff84122a21>] p9_client_read+0xe1/0x2c0
+[ 6293.256784]  [<ffffffff81708a90>] v9fs_file_read+0x90/0xc0
+[ 6293.256784]  [<ffffffff812bd073>] vfs_read+0xc3/0x130
+[ 6293.256784]  [<ffffffff811a78bd>] ? trace_hardirqs_on+0xd/0x10
+[ 6293.256784]  [<ffffffff812bd5a2>] SyS_read+0x62/0xa0
+[ 6293.256784]  [<ffffffff841a1a00>] tracesys+0xdd/0xe2
+[ 6293.256784] Code: 66 90 48 89 fb 41 89 f5 48 8b 3f 48 85 ff 74 29 85 f6 74 25 45 31 e4 66 0f 1f 84 00 00 00 00 00 e8 eb 14 12 fd 41 ff c4 49 63 c4 <48> 8b 3c c3 48 85 ff 74 05 45 39 e5 75 e7 48 83 c4 08 5b 41 5c
+[ 6293.256784] RIP  [<ffffffff8412793b>] p9_release_pages+0x3b/0x60
+[ 6293.256784]  RSP <ffff880787ddfc28>
+[ 6293.256784] CR2: ffff8807c96f3000
+[ 6293.256784] ---[ end trace 50822ee72cd360fc ]---
 
-v2:
-a) Removed RTF_EXPIRE check in dst.from chain. The check of RTF_ADDRCONF
-   already ensures that this route, even if added again without
-   RTF_EXPIRES (in case of a RA announcement with infinite timeout),
-   does not cause the rt6i_nsiblings logic to go wrong if a later RA
-   updates the expiration time later.
-
-v3:
-a) Allow RTF_EXPIRES routes to enter the ecmp route set. We have to do so,
-   because an pmtu event could update the RTF_EXPIRES flag and we would
-   not count this route, if another route joins this set. We now filter
-   only for RTF_GATEWAY|RTF_ADDRCONF|RTF_DYNAMIC, which are flags that
-   don't get changed after rt6_info construction.
-
-Cc: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/ip6_fib.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ net/9p/trans_common.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv6/ip6_fib.c b/net/ipv6/ip6_fib.c
-index 710cafd..e67039f 100644
---- a/net/ipv6/ip6_fib.c
-+++ b/net/ipv6/ip6_fib.c
-@@ -634,6 +634,12 @@ insert_above:
- 	return ln;
- }
- 
-+static inline bool rt6_qualify_for_ecmp(struct rt6_info *rt)
-+{
-+	return (rt->rt6i_flags & (RTF_GATEWAY|RTF_ADDRCONF|RTF_DYNAMIC)) ==
-+	       RTF_GATEWAY;
-+}
-+
- /*
-  *	Insert routing information in a node.
+diff --git a/net/9p/trans_common.c b/net/9p/trans_common.c
+index de8df95..2ee3879 100644
+--- a/net/9p/trans_common.c
++++ b/net/9p/trans_common.c
+@@ -24,11 +24,11 @@
   */
-@@ -648,6 +654,7 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
- 	int add = (!info->nlh ||
- 		   (info->nlh->nlmsg_flags & NLM_F_CREATE));
- 	int found = 0;
-+	bool rt_can_ecmp = rt6_qualify_for_ecmp(rt);
+ void p9_release_pages(struct page **pages, int nr_pages)
+ {
+-	int i = 0;
+-	while (pages[i] && nr_pages--) {
+-		put_page(pages[i]);
+-		i++;
+-	}
++	int i;
++
++	for (i = 0; i < nr_pages; i++)
++		if (pages[i])
++			put_page(pages[i]);
+ }
+ EXPORT_SYMBOL(p9_release_pages);
  
- 	ins = &fn->leaf;
- 
-@@ -693,9 +700,8 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
- 			 * To avoid long list, we only had siblings if the
- 			 * route have a gateway.
- 			 */
--			if (rt->rt6i_flags & RTF_GATEWAY &&
--			    !(rt->rt6i_flags & RTF_EXPIRES) &&
--			    !(iter->rt6i_flags & RTF_EXPIRES))
-+			if (rt_can_ecmp &&
-+			    rt6_qualify_for_ecmp(iter))
- 				rt->rt6i_nsiblings++;
- 		}
- 
-@@ -717,7 +723,8 @@ static int fib6_add_rt2node(struct fib6_node *fn, struct rt6_info *rt,
- 		/* Find the first route that have the same metric */
- 		sibling = fn->leaf;
- 		while (sibling) {
--			if (sibling->rt6i_metric == rt->rt6i_metric) {
-+			if (sibling->rt6i_metric == rt->rt6i_metric &&
-+			    rt6_qualify_for_ecmp(sibling)) {
- 				list_add_tail(&rt->rt6i_siblings,
- 					      &sibling->rt6i_siblings);
- 				break;
 -- 
 1.8.1.2
 
