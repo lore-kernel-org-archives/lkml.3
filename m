@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225Ab3G3Ivp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 04:51:45 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:57747 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755067Ab3G3Ivl (ORCPT
+	id S1758252Ab3G3Ivx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 04:51:53 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50938 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755067Ab3G3Ivr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 04:51:41 -0400
-Date: Tue, 30 Jul 2013 10:51:37 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Linux/PPC Development <linuxppc-dev@lists.ozlabs.org>,
-        linux-usb@vger.kernel.org
-Subject: Re: Build regressions/improvements in v3.11-rc3
-In-Reply-To: <alpine.DEB.2.02.1307301048280.23035@ayla.of.borg>
-Message-ID: <alpine.DEB.2.02.1307301049230.23054@ayla.of.borg>
-References: <alpine.DEB.2.02.1307301048280.23035@ayla.of.borg>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 30 Jul 2013 04:51:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130730083758.GH3008@twins.programming.kicks-ass.net>
+References: <20130624084338.GI28407@twins.programming.kicks-ass.net>
+	<CABPqkBRqiNVZnioV_R4sfam1QwHwXZgo36Gixxg5ALPbLbiXfw@mail.gmail.com>
+	<20130625104700.GZ28407@twins.programming.kicks-ass.net>
+	<20130625105123.GA13649@gmail.com>
+	<20130626103303.GB28407@twins.programming.kicks-ass.net>
+	<CABPqkBTETCE7unsE=zvcC5n865ZN-QTW5Y0j-meTO9x-8=BJog@mail.gmail.com>
+	<20130628095828.GG29209@dyad.programming.kicks-ass.net>
+	<CABPqkBSfkg+rPw4A=n8wmPg=iwn1Qf8PdYA4ycxxooOv3GrvmA@mail.gmail.com>
+	<20130708081919.GV23916@twins.programming.kicks-ass.net>
+	<CABPqkBSesQsfeutY2qu1n3uMka0dOFOT2tzqCWYGV=2p6F8Y9w@mail.gmail.com>
+	<20130730083758.GH3008@twins.programming.kicks-ass.net>
+Date: Tue, 30 Jul 2013 10:51:46 +0200
+Message-ID: <CABPqkBTxovrj11sskW50TZzf6e_V0tObT-qDPAbxHcrpLJNNZg@mail.gmail.com>
+Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 30 Jul 2013, Geert Uytterhoeven wrote:
-> JFYI, when comparing v3.11-rc3 to v3.11-rc2[3], the summaries are:
->   - build errors: +38/-14
+On Tue, Jul 30, 2013 at 10:37 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, Jul 30, 2013 at 10:02:01AM +0200, Stephane Eranian wrote:
+>> > Ahh. We don't put the useful bits in the mmap event; we'll need to fix
+>> > that too then ;-)
+>> >
+>> > Doing so is going to be a bit of a bother since we use the tail of
+>> > PERF_RECORD_MMAP for filenames and thus aren't particularly extensible.
+>> >
+>> > This would mean doing something like PERF_RECORD_MMAP2 and some means
+>> > for userspace to requrest the new events instead of the old one.
+>> >
+>> Tracking mmaps even for shmat() won't cover the paging cases. When you page a
+>> page back in, it most likely gets a different physical page. How would
+>> we track that
+>> case too using the same approach?
+>
+> It doesn't matter. Even if a page ends up being a different physical
+> page, it will always be the same sb:inode:pgoffset. You should be able
+> to always uniquely identify a (shared) page by that triplet.
+>
+Ok, so you're saying that triplet uniquely identifies a virtual page
+regardless of
+the physical page it is mapped onto. If the physical page changes because
+of paging, we keep the same triplet and therefore we can still detect the false
+sharing.
 
-  + arch/powerpc/kvm/book3s_emulate.c: error: 'bat' may be used uninitialized in this function [-Werror=uninitialized]:  => 349:2
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ANDCOND' undeclared (first use in this function):  => 161:17, 86:16
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_AVPN' undeclared (first use in this function):  => 160:17, 85:16, 192:16
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_BULK_REMOVE' undeclared (first use in this function):  => 246:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CEDE' undeclared (first use in this function):  => 250:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_CPPR' undeclared (first use in this function):  => 257:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_ENTER' undeclared (first use in this function):  => 240:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EOI' undeclared (first use in this function):  => 258:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_EXACT' undeclared (first use in this function):  => 50:6
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPI' undeclared (first use in this function):  => 259:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_IPOLL' undeclared (first use in this function):  => 260:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_NOT_FOUND' undeclared (first use in this function):  => 193:27, 87:27
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PARAMETER' undeclared (first use in this function):  => 138:10
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PROTECT' undeclared (first use in this function):  => 244:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PTEG_FULL' undeclared (first use in this function):  => 54:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_PUT_TCE' undeclared (first use in this function):  => 248:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_REMOVE' undeclared (first use in this function):  => 242:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_RTAS' undeclared (first use in this function):  => 265:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_SUCCESS' undeclared (first use in this function):  => 67:26, 96:26, 211:26, 125:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_TOO_HARD' undeclared (first use in this function):  => 224:12
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR' undeclared (first use in this function):  => 256:7
-  + arch/powerpc/kvm/book3s_pr_papr.c: error: 'H_XIRR_X' undeclared (first use in this function):  => 261:7
-  + arch/powerpc/platforms/pseries/hotplug-memory.c: error: 'SECTION_SIZE_BITS' undeclared (first use in this function):  => 24:31
-  + mm/memory_hotplug.c: error: 'PAGES_PER_SECTION' undeclared (first use in this function):  => 1630:46
-  + mm/memory_hotplug.c: error: implicit declaration of function '__nr_to_section' [-Werror=implicit-function-declaration]:  => 1635:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'find_memory_block_hinted' [-Werror=implicit-function-declaration]:  => 1642:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'pfn_to_section_nr' [-Werror=implicit-function-declaration]:  => 1631:3
-  + mm/memory_hotplug.c: error: implicit declaration of function 'present_section_nr' [-Werror=implicit-function-declaration]:  => 1632:3
+> So if we create a net MMAP record that includes the device (substitute
+> for the superblock) and inode information we should be good.
 
-powerpc-randconfig
-
-  + drivers/md/dm-cache-policy-mq.c: error: conflicting types for 'remove_mapping':  => 962:13
-
-sparc-allmodconfig, not a regression (was hidden due to a sparc64/sparc32
-mixup on kissb), patch submitted
-
-  + error: "usb_add_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_del_gadget_udc" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_gadget_map_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-  + error: "usb_gadget_unmap_request" [drivers/usb/chipidea/ci_hdrc.ko] undefined!:  => N/A
-
-x86_64-randconfig
-
-> [1] http://kisskb.ellerman.id.au/kisskb/head/6490/ (all 120 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/6461/ (all 120 configs)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+I will try that. I am not familiar with mm, so where do we find the
+device? Inside
+the vma?
