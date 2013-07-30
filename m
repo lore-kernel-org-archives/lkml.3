@@ -1,45 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758152Ab3G3Wyx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 18:54:53 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:42912 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756180Ab3G3Wyv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 18:54:51 -0400
-Date: Tue, 30 Jul 2013 15:54:50 -0700 (PDT)
-Message-Id: <20130730.155450.370003633888422808.davem@davemloft.net>
-To: andi@etezian.org
-Cc: dominique.martinet@cea.fr, pebolle@tiscali.nl, lucho@ionkov.net,
-        ericvh@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        v9fs-developer@lists.sourceforge.net, rminnich@sandia.gov
-Subject: Re: [PATCH] 9p: client: remove unused code and any reference to
- "cancelled" function
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1374742464-10686-1-git-send-email-andi@etezian.org>
-References: <20130725061411.GA8579@nautica>
-	<1374742464-10686-1-git-send-email-andi@etezian.org>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.1 (shards.monkeyblade.net [0.0.0.0]); Tue, 30 Jul 2013 15:54:51 -0700 (PDT)
+	id S1758208Ab3G3Wzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 18:55:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21515 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757853Ab3G3Wzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 18:55:32 -0400
+Date: Tue, 30 Jul 2013 18:55:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>, bskeggs@redhat.com
+Cc: maarten.lankhorst@canonical.com
+Subject: nouveau: check client.base.vm before dereferencing it.
+Message-ID: <20130730225521.GA25895@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, bskeggs@redhat.com,
+	maarten.lankhorst@canonical.com
+References: <20130725162203.GA32273@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130725162203.GA32273@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Shyti <andi@etezian.org>
-Date: Thu, 25 Jul 2013 10:54:24 +0200
+On Thu, Jul 25, 2013 at 12:22:03PM -0400, Dave Jones wrote:
+ > This recently started happening (since the last DRM merge, 3.10 was fine).
+ > 
+ > [   17.751970] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+ > [   17.753911] CPU: 3 PID: 292 Comm: systemd-udevd Not tainted 3.11.0-rc2+ #13 
+ > [   17.754392] EIP: 0060:[<f86dde0f>] EFLAGS: 00010296 CPU: 3
+ > [   17.754542] EIP is at nouveau_bo_new+0x1f/0x28c [nouveau]
+ > [   17.754647] EAX: 00000000 EBX: ed8610b0 ECX: 00000100 EDX: 00004000
+ > ..
+ > [   17.756729] Call Trace:
+ > [   17.756849]  [<f850280f>] ? drm_mode_crtc_set_gamma_size+0x23/0x43 [drm]
+ > [   17.756993]  [<f86ef2f6>] nv04_crtc_create+0xd4/0x142 [nouveau]
+ > [   17.757138]  [<f86f2758>] nv04_display_create+0xf2/0x35a [nouveau]
+ > [   17.757281]  [<f86e801a>] nouveau_display_create+0x33f/0x553 [nouveau]
+ > [   17.757422]  [<f86d99fb>] nouveau_drm_load+0x22f/0x5dc [nouveau]
+ > [   17.757534]  [<c1391816>] ? device_register+0x17/0x1a
+ > [   17.757648]  [<f84ff77b>] ? drm_sysfs_device_add+0x76/0xa3 [drm]
+ > [   17.757764]  [<f84fe6bd>] drm_get_pci_dev+0x138/0x238 [drm]
+ > [   17.757902]  [<f86ab3ce>] ? nouveau_device_create_+0x65/0x11b [nouveau]
+ > [   17.758044]  [<f86da081>] nouveau_drm_probe+0x2d9/0x360 [nouveau]
+ > [   17.758155]  [<c12d55ac>] pci_device_probe+0x6c/0xb0
+ > [   17.758261]  [<c1393dae>] driver_probe_device+0x7f/0x356
+ > [   17.758367]  [<c139412c>] __driver_attach+0x74/0x76
+ > [   17.758473]  [<c13940b8>] ? __device_attach+0x33/0x33
+ > [   17.758579]  [<c13922b6>] bus_for_each_dev+0x49/0x74
+ > [   17.758684]  [<c13938ec>] driver_attach+0x1e/0x20
+ > [   17.758791]  [<c13940b8>] ? __device_attach+0x33/0x33
+ > [   17.758896]  [<c1393550>] bus_add_driver+0x1d0/0x27c
+ > [   17.759002]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
+ > [   17.759109]  [<c12d51c2>] ? pci_pm_suspend+0x111/0x111
+ > [   17.759215]  [<c1394667>] driver_register+0x6a/0x123
+ > [   17.759321]  [<c12bdfad>] ? __raw_spin_lock_init+0x2d/0x4e
+ > [   17.759428]  [<c12d45f3>] __pci_register_driver+0x4a/0x4d
+ > [   17.760008]  [<f84fe8a3>] drm_pci_init+0xe6/0xee [drm]
+ > [   17.760008]  [<f8752000>] ? 0xf8751fff
+ > [   17.760008]  [<f8752048>] nouveau_drm_init+0x48/0x1000 [nouveau]
+ > [   17.760008]  [<c10003f0>] do_one_initcall+0xc0/0x180
+ > [   17.760008]  [<f8752000>] ? 0xf8751fff
+ > [   17.760008]  [<c1033765>] ? set_memory_nx+0x5a/0x5c
+ > [   17.760008]  [<c15aca75>] ? set_section_ro_nx+0x54/0x59
+ > [   17.760008]  [<c10b4174>] load_module+0x1ad6/0x2519
+ > [   17.760008]  [<c10b05ed>] ? copy_module_from_fd.isra.49+0x34/0x13b
+ > [   17.760008]  [<c10b4d0b>] SyS_finit_module+0x73/0xac
+ > [   17.760008]  [<c106b0cb>] ? up_write+0x1b/0x30
+ > [   17.760008]  [<c11343ca>] ? vm_mmap_pgoff+0x7a/0x97
+ > [   17.760008]  [<c15bf03b>] sysenter_do_call+0x12/0x32
+ > [   17.760008] Code: c7 83 1c 01 00 00 ff ff ff ff eb aa 55 89 e5 57 56 53 83 ec 2c 66 66 66 66 90 89 d6 89 4d e8 8b b8 ec 03 00 00 8b 87 8c 00 00 00 <8b> 00 0f b6 88 91 00 00 00 b8 ff ff ff ff d3 e0 25 ff ff ff 7f
 
-> This patch reverts commit
-> 
-> 80b45261a0b263536b043c5ccfc4ba4fc27c2acc
-> 
-> which was implementing a 'cancelled' functionality to notify that
-> a cancelled request will not be replied.
-> 
-> This implementation was not used anywhere and therefore removed.
-> 
-> Signed-off-by: Andi Shyti <andi@etezian.org>
+0108bc808107b97e101b15af9705729626be6447 introduced an oops due
+to use doing a dereference on a variable that can validly be null.
+    
+Split up the new check, and add an additional check before
+the potential NULL dereference.
+    
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-Applied, thanks Andi.
+diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+index 9b2c939..6c1ba6b 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_bo.c
++++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+@@ -198,13 +198,22 @@ nouveau_bo_new(struct drm_device *dev, int size, int align,
+ 	size_t acc_size;
+ 	int ret;
+ 	int type = ttm_bo_type_device;
+-	int max_size = INT_MAX & ~((1 << drm->client.base.vm->vmm->lpg_shift) - 1);
++	int max_size;
+ 
+-	if (size <= 0 || size > max_size) {
++	if (size <= 0) {
+ 		nv_warn(drm, "skipped size %x\n", (u32)size);
+ 		return -EINVAL;
+ 	}
+ 
++	if (drm->client.base.vm) {
++		max_size = INT_MAX & ~((1 << drm->client.base.vm->vmm->lpg_shift) - 1);
++
++		if (size > max_size) {
++			nv_warn(drm, "skipped size %x\n", (u32)size);
++			return -EINVAL;
++		}
++	}
++
+ 	if (sg)
+ 		type = ttm_bo_type_sg;
+ 
