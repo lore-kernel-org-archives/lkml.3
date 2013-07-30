@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab3G3VIr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:08:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19961 "EHLO mga09.intel.com"
+	id S932130Ab3G3VIm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:08:42 -0400
+Received: from mga11.intel.com ([192.55.52.93]:55337 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932141Ab3G3VIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:08:44 -0400
+	id S1757425Ab3G3VIc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 17:08:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.89,781,1367996400"; 
-   d="scan'208";a="373654139"
+   d="scan'208";a="373654044"
 From: Adrian Hunter <adrian.hunter@intel.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
@@ -17,9 +17,9 @@ Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH V2 8/9] perf tools: add kcore to the object code reading test
-Date: Wed, 31 Jul 2013 00:13:57 +0300
-Message-Id: <1375218838-31042-9-git-send-email-adrian.hunter@intel.com>
+Subject: [PATCH V2 5/9] perf tools: avoid SyS kernel syscall aliases
+Date: Wed, 31 Jul 2013 00:13:54 +0300
+Message-Id: <1375218838-31042-6-git-send-email-adrian.hunter@intel.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
 References: <1375218838-31042-1-git-send-email-adrian.hunter@intel.com>
@@ -28,182 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the "object code reading" test attempt to read from
-kcore.
+When removing duplicate symbols, prefer to remove
+syscall aliases starting with SyS or compat_SyS.
 
-The test uses objdump which struggles with kcore. i.e.
-doesn't always work, sometimes takes a long time.
-The test has been made to work around those issues.
+A side-effect of that is that it results in slightly
+improved results for the "vmlinux symtab matches kallsyms"
+test.
 
 Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
 ---
- tools/perf/tests/code-reading.c | 75 +++++++++++++++++++++++++++++++++++------
- 1 file changed, 65 insertions(+), 10 deletions(-)
+ tools/perf/util/symbol.c | 17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/tests/code-reading.c b/tools/perf/tests/code-reading.c
-index 6cd3190..030cf60 100644
---- a/tools/perf/tests/code-reading.c
-+++ b/tools/perf/tests/code-reading.c
-@@ -107,6 +107,9 @@ static int read_via_objdump(const char *filename, u64 addr, void *buf,
- 
- 	pr_debug("Objdump command is: %s\n", cmd);
- 
-+	/* Ignore objdump errors */
-+	strcat(cmd, " 2>/dev/null");
-+
- 	f = popen(cmd, "r");
- 	if (!f) {
- 		pr_debug("popen failed\n");
-@@ -146,7 +149,8 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 
- 	pr_debug("File is: %s\n", al.map->dso->long_name);
- 
--	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
-+	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
-+	    !dso__is_kcore(al.map->dso)) {
- 		pr_debug("Unexpected kernel address - skipping\n");
- 		return 0;
- 	}
-@@ -175,6 +179,26 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 	if (map__load(al.map, NULL))
- 		return -1;
- 
-+	/* objdump struggles with kcore - try each map only once */
-+	if (dso__is_kcore(al.map->dso)) {
-+		static u64 done[1024];
-+		static size_t done_cnt;
-+		size_t d;
-+
-+		for (d = 0; d < done_cnt; d++) {
-+			if (done[d] == al.map->start) {
-+				pr_debug("kcore map tested already");
-+				pr_debug(" - skipping\n");
-+				return 0;
-+			}
-+		}
-+		if (done_cnt >= ARRAY_SIZE(done)) {
-+			pr_debug("Too many kcore maps - skipping\n");
-+			return 0;
-+		}
-+		done[done_cnt++] = al.map->start;
-+	}
-+
- 	/* Read the object code using objdump */
- 	objdump_addr = map__rip_2objdump(al.map, al.addr);
- 	ret = read_via_objdump(al.map->dso->long_name, objdump_addr, buf2, len);
-@@ -186,10 +210,19 @@ static int read_object_code(u64 addr, size_t len, u8 cpumode,
- 		if (cpumode == PERF_RECORD_MISC_KERNEL ||
- 		    cpumode == PERF_RECORD_MISC_GUEST_KERNEL) {
- 			len -= ret;
--			if (len)
-+			if (len) {
- 				pr_debug("Reducing len to %zu\n", len);
--			else
-+			} else if (dso__is_kcore(al.map->dso)) {
-+				/*
-+				 * objdump cannot handle very large segments
-+				 * that may be found in kcore.
-+				 */
-+				pr_debug("objdump failed for kcore");
-+				pr_debug(" - skipping\n");
-+				return 0;
-+			} else {
- 				return -1;
-+			}
- 		}
- 	}
- 	if (ret < 0) {
-@@ -323,10 +356,12 @@ static void do_something(void)
- enum {
- 	TEST_CODE_READING_OK,
- 	TEST_CODE_READING_NO_VMLINUX,
-+	TEST_CODE_READING_NO_KCORE,
- 	TEST_CODE_READING_NO_ACCESS,
-+	TEST_CODE_READING_NO_KERNEL_OBJ,
- };
- 
--static int do_test_code_reading(void)
-+static int do_test_code_reading(bool try_kcore)
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index b407c53..04300dd 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -87,6 +87,7 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
  {
- 	struct machines machines;
- 	struct machine *machine;
-@@ -347,7 +382,7 @@ static int do_test_code_reading(void)
- 	int err = -1, ret;
- 	pid_t pid;
- 	struct map *map;
--	bool have_vmlinux, excl_kernel = false;
-+	bool have_vmlinux, have_kcore, excl_kernel = false;
+ 	s64 a;
+ 	s64 b;
++	size_t na, nb;
  
- 	pid = getpid();
+ 	/* Prefer a symbol with non zero length */
+ 	a = syma->end - syma->start;
+@@ -120,11 +121,21 @@ static int choose_best_symbol(struct symbol *syma, struct symbol *symb)
+ 	else if (a > b)
+ 		return SYMBOL_B;
  
-@@ -360,6 +395,10 @@ static int do_test_code_reading(void)
- 		goto out_err;
- 	}
- 
-+	/* Force the use of kallsyms instead of vmlinux to try kcore */
-+	if (try_kcore)
-+		symbol_conf.kallsyms_name = "/proc/kallsyms";
+-	/* If all else fails, choose the symbol with the longest name */
+-	if (strlen(syma->name) >= strlen(symb->name))
++	/* Choose the symbol with the longest name */
++	na = strlen(syma->name);
++	nb = strlen(symb->name);
++	if (na > nb)
+ 		return SYMBOL_A;
+-	else
++	else if (na < nb)
++		return SYMBOL_B;
 +
- 	/* Load kernel map */
- 	map = machine->vmlinux_maps[MAP__FUNCTION];
- 	ret = map__load(map, NULL);
-@@ -367,9 +406,15 @@ static int do_test_code_reading(void)
- 		pr_debug("map__load failed\n");
- 		goto out_err;
- 	}
--	have_vmlinux = map->dso->symtab_type == DSO_BINARY_TYPE__VMLINUX;
--	/* No point getting kernel events if there is no vmlinux */
--	if (!have_vmlinux)
-+	have_vmlinux = dso__is_vmlinux(map->dso);
-+	have_kcore = dso__is_kcore(map->dso);
++	/* Avoid "SyS" kernel syscall aliases */
++	if (na >= 3 && !strncmp(syma->name, "SyS", 3))
+ 		return SYMBOL_B;
++	if (na >= 10 && !strncmp(syma->name, "compat_SyS", 10))
++		return SYMBOL_B;
 +
-+	/* 2nd time through we just try kcore */
-+	if (try_kcore && !have_kcore)
-+		return TEST_CODE_READING_NO_KCORE;
-+
-+	/* No point getting kernel events if there is no kernel object */
-+	if (!have_vmlinux && !have_kcore)
- 		excl_kernel = true;
++	return SYMBOL_A;
+ }
  
- 	threads = thread_map__new_by_tid(pid);
-@@ -456,7 +501,9 @@ static int do_test_code_reading(void)
- 	if (ret < 0)
- 		goto out_err;
- 
--	if (!have_vmlinux)
-+	if (!have_vmlinux && !have_kcore && !try_kcore)
-+		err = TEST_CODE_READING_NO_KERNEL_OBJ;
-+	else if (!have_vmlinux && !try_kcore)
- 		err = TEST_CODE_READING_NO_VMLINUX;
- 	else if (excl_kernel)
- 		err = TEST_CODE_READING_NO_ACCESS;
-@@ -484,7 +531,9 @@ int test__code_reading(void)
- {
- 	int ret;
- 
--	ret = do_test_code_reading();
-+	ret = do_test_code_reading(false);
-+	if (!ret)
-+		ret = do_test_code_reading(true);
- 
- 	switch (ret) {
- 	case TEST_CODE_READING_OK:
-@@ -492,9 +541,15 @@ int test__code_reading(void)
- 	case TEST_CODE_READING_NO_VMLINUX:
- 		fprintf(stderr, " (no vmlinux)");
- 		return 0;
-+	case TEST_CODE_READING_NO_KCORE:
-+		fprintf(stderr, " (no kcore)");
-+		return 0;
- 	case TEST_CODE_READING_NO_ACCESS:
- 		fprintf(stderr, " (no access)");
- 		return 0;
-+	case TEST_CODE_READING_NO_KERNEL_OBJ:
-+		fprintf(stderr, " (no kernel obj)");
-+		return 0;
- 	default:
- 		return -1;
- 	};
+ void symbols__fixup_duplicate(struct rb_root *symbols)
 -- 
 1.7.11.7
 
