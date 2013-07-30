@@ -1,112 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581Ab3G3KxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:53:00 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2684 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab3G3Kw5 (ORCPT
+	id S1752778Ab3G3K6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:58:55 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:15758 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab3G3K6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:52:57 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 30 Jul 2013 03:51:33 -0700
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <grant.likely@linaro.org>, <rob.herring@calxeda.com>,
-        <linus.walleij@linaro.org>, <linux-doc@vger.kernel.org>,
-        <linux-tegra@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] pinctrl: tegra: add valid function name on DT document
-Date: Tue, 30 Jul 2013 16:34:21 +0530
-Message-ID: <1375182261-30946-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 30 Jul 2013 06:58:53 -0400
+X-AuditID: cbfee68e-b7f276d000002279-40-51f79c6b875e
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "'Wim Van Sebroeck'" <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, "'Guenter Roeck'" <linux@roeck-us.net>,
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH V2 03/35] watchdog: use dev_get_platdata()
+Date: Tue, 30 Jul 2013 19:58:51 +0900
+Message-id: <008001ce8d13$c6805fc0$53811f40$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac6NE8DuJvLZSICrQ5eS2LQukQ0/6Q==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zQ93sOd8DDc7u0bSYs34Nm8XlhZdY
+	LS7vmsNmcWPdPnaLJwvPMFncmvGC1YHN49pmMY8TM36zeOz83sDu0bdlFaPH501yAaxRXDYp
+	qTmZZalF+nYJXBkTZ59nKXiuXrGz9ShrA+MZxS5GTg4JAROJ+Y27GSFsMYkL99azdTFycQgJ
+	LGOUuHzzIiNM0dUvz6ES0xklXr9/zwLh/GKUuLVwFjNIFZuAmsSXL4fZuxg5OEQE9CXaWjRA
+	apgFNjBKnPz/lx2kRljASmLKlQ4WEJtFQFViQ+MDsA28ApYSZ9fNZIawBSV+TL4HVsMsoCWx
+	fudxJghbXmLzmrfMEBcpSOw4+xqsV0RAT2LN+zmMEDUiEvtevGMEWSwhcI5d4tH0L8wQywQk
+	vk0+xAJynISArMSmA1BzJCUOrrjBMoFRbBaS1bOQrJ6FZPUsJCsWMLKsYhRNLUguKE5KLzLS
+	K07MLS7NS9dLzs/dxAiJwr4djDcPWB9iTAZaP5FZSjQ5HxjFeSXxhsZmRhamJqbGRuaWZqQJ
+	K4nzqrVYBwoJpCeWpGanphakFsUXleakFh9iZOLglGpgnJX1S9R7RXWcdbvPgYxU2Yp9u/WC
+	3riHf0ub8WZC3jnd5afP7l3n9sBWWINRPaxItNyPodn4ndsxc7WoWdMzP24/qVoneHbWiqcb
+	F++Y7vr88Ad+/g3dvIK7Z6xZtc2bmVUwhV+t0kj5ZHlR+auFhjlNLHpfV93//V5j1/K6rBU7
+	l6ZuPnBtihJLcUaioRZzUXEiAKgwMJXYAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrEKsWRmVeSWpSXmKPExsVy+t9jQd3sOd8DDdbsU7GYs34Nm8XlhZdY
+	LS7vmsNmcWPdPnaLJwvPMFncmvGC1YHN49pmMY8TM36zeOz83sDu0bdlFaPH501yAaxRDYw2
+	GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUAXKCmUJeaU
+	AoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ6xgzJs4+z1LwXL1iZ+tR1gbGM4pdjJwc
+	EgImEle/PGeDsMUkLtxbD2RzcQgJTGeUeP3+PQuE84tR4tbCWcwgVWwCahJfvhxm72Lk4BAR
+	0Jdoa9EAqWEW2MAocfL/X3aQGmEBK4kpVzpYQGwWAVWJDY0PGEFsXgFLibPrZjJD2IISPybf
+	A6thFtCSWL/zOBOELS+xec1bZoiLFCR2nH0N1isioCex5v0cRogaEYl9L94xTmAUmIVk1Cwk
+	o2YhGTULScsCRpZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMEx/kx6B+OqBotDjAIcjEo8
+	vBsKvgUKsSaWFVfmHmKU4GBWEuE9P/F7oBBvSmJlVWpRfnxRaU5q8SHGZKBPJzJLiSbnA9NP
+	Xkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwTprmlq95POrO
+	DKGUUwobmU59k3d5/m3lfiXWnRJrBffunn7Mhf3O7G99s07ZBsn8cXCP/bHALfLnolq/89HG
+	ykeOH22QrZ1aeSS94+MJ/7UP669NuNPt/MjN7/XPpT19Auc5L0ur6nDvsjecY5mX1eXJXiDA
+	lM5mc5I/8Y7WZI8pwRI2Fk6PlFiKMxINtZiLihMBw/y4BzUDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add valid property name for the property "nvidia,function" in
-DT binding document of Tegra pincontrol.
+Use the wrapper function for retrieving the platform data instead of
+accessing dev->platform_data directly.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- .../bindings/pinctrl/nvidia,tegra114-pinmux.txt    |   10 ++++++++++
- .../bindings/pinctrl/nvidia,tegra20-pinmux.txt     |   11 +++++++++++
- .../bindings/pinctrl/nvidia,tegra30-pinmux.txt     |   11 +++++++++++
- 3 files changed, 32 insertions(+), 0 deletions(-)
+ drivers/watchdog/iTCO_wdt.c         |    2 +-
+ drivers/watchdog/mv64x60_wdt.c      |    2 +-
+ drivers/watchdog/omap_wdt.c         |    2 +-
+ drivers/watchdog/rdc321x_wdt.c      |    2 +-
+ drivers/watchdog/stmp3xxx_rtc_wdt.c |    4 ++--
+ drivers/watchdog/ux500_wdt.c        |    2 +-
+ drivers/watchdog/wm831x_wdt.c       |    8 +++-----
+ 7 files changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt
-index e204d00..b28bdee 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra114-pinmux.txt
-@@ -69,6 +69,16 @@ Valid values for pin and group names are:
-     gpio_w2_aud_pw2, gpio_w3_aud_pw3, usb_vbus_en0_pn4, usb_vbus_en1_pn5,
-     sdmmc3_clk_lb_in_pee5, sdmmc3_clk_lb_out_pee4, reset_out_n.
+diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+index 6130321..439b160 100644
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -394,7 +394,7 @@ static int iTCO_wdt_probe(struct platform_device *dev)
+ {
+ 	int ret = -ENODEV;
+ 	unsigned long val32;
+-	struct lpc_ich_info *ich_info = dev->dev.platform_data;
++	struct lpc_ich_info *ich_info = dev_get_platdata(&dev->dev);
  
-+The valid names for the nvidia,functions are:
-+    blink, cec, cldvfs, clk12, cpu, dap, dap1, dap2, dev3, displaya,
-+    displaya_alt, displayb, dtv, emc_dll, extperiph1, extperiph2,
-+    extperiph3, gmi, gmi_alt, hda, hsi, i2c1, i2c2, i2c3, i2c4, i2cpwr,
-+    i2s0, i2s1, i2s2, i2s3, i2s4, irda, kbc, nand, nand_alt, owr, pmi,
-+    pwm0, pwm1, pwm2, pwm3, pwron, reset_out_n, rsvd1, rsvd2, rsvd3,
-+    rsvd4, sdmmc1, sdmmc2, sdmmc3, sdmmc4, soc, spdif, spi1, spi2, spi3,
-+    spi4, spi5, spi6, sysclk, trace, uarta, uartb, uartc, uartd, ulpi,
-+    usb, vgp1, vgp2, vgp3, vgp4, vgp5, vgp6, vi, vi_alt1, vi_alt3
-+
-   drive groups:
+ 	if (!ich_info)
+ 		goto out;
+diff --git a/drivers/watchdog/mv64x60_wdt.c b/drivers/watchdog/mv64x60_wdt.c
+index e4cf980..2f2ff19 100644
+--- a/drivers/watchdog/mv64x60_wdt.c
++++ b/drivers/watchdog/mv64x60_wdt.c
+@@ -255,7 +255,7 @@ static struct miscdevice mv64x60_wdt_miscdev = {
  
-     These all support nvidia,pull-down-strength, nvidia,pull-up-strength,
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-index 683fde9..ba6f2c4 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra20-pinmux.txt
-@@ -82,6 +82,7 @@ Valid values for pin and group names are:
-     spdo, spia, spib, spic, spid, spie, spif, spig, spih, uaa, uab, uac, uad,
-     uca, ucb, uda.
+ static int mv64x60_wdt_probe(struct platform_device *dev)
+ {
+-	struct mv64x60_wdt_pdata *pdata = dev->dev.platform_data;
++	struct mv64x60_wdt_pdata *pdata = dev_get_platdata(&dev->dev);
+ 	struct resource *r;
+ 	int timeout = 10;
  
-+
-   tristate groups:
+diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
+index af88ffd..7b79ca0 100644
+--- a/drivers/watchdog/omap_wdt.c
++++ b/drivers/watchdog/omap_wdt.c
+@@ -205,7 +205,7 @@ static const struct watchdog_ops omap_wdt_ops = {
  
-     These only support nvidia,pull.
-@@ -103,6 +104,16 @@ Valid values for pin and group names are:
-     drive_gma, drive_gmb, drive_gmc, drive_gmd, drive_gme, drive_owr,
-     drive_uda.
+ static int omap_wdt_probe(struct platform_device *pdev)
+ {
+-	struct omap_wd_timer_platform_data *pdata = pdev->dev.platform_data;
++	struct omap_wd_timer_platform_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct watchdog_device *omap_wdt;
+ 	struct resource *res, *mem;
+ 	struct omap_wdt_dev *wdev;
+diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
+index b0f116c..8d5facd 100644
+--- a/drivers/watchdog/rdc321x_wdt.c
++++ b/drivers/watchdog/rdc321x_wdt.c
+@@ -231,7 +231,7 @@ static int rdc321x_wdt_probe(struct platform_device *pdev)
+ 	struct resource *r;
+ 	struct rdc321x_wdt_pdata *pdata;
  
-+The valid names for the nvidia,functions are:
-+    ahb_clk, apb_clk, audio_sync, crt, dap1, dap2, dap3, dap4, dap5,
-+    displaya, displayb, emc_test0_dll, emc_test1_dll, gmi, gmi_int,
-+    hdmi, i2cp, i2c1, i2c2, i2c3, ide, irda, kbc, mio, mipi_hs, nand,
-+    osc, owr, pcie, plla_out, pllc_out1, pllm_out1, pllp_out2, pllp_out3,
-+    pllp_out4, pwm, pwr_intr, pwr_on, rsvd1, rsvd2, rsvd3, rsvd4, rtck,
-+    sdio1, sdio2, sdio3, sdio4, sflash, spdif, spi1, spi2, spi2_alt,
-+    spi3, spi4, trace, twc, uarta, uartb, uartc, uartd, uarte, ulpi,
-+    vi, vi_sensor_clk, xio
-+
- Example:
+-	pdata = pdev->dev.platform_data;
++	pdata = dev_get_platdata(&pdev->dev);
+ 	if (!pdata) {
+ 		dev_err(&pdev->dev, "no platform data supplied\n");
+ 		return -ENODEV;
+diff --git a/drivers/watchdog/stmp3xxx_rtc_wdt.c b/drivers/watchdog/stmp3xxx_rtc_wdt.c
+index c97e98d..7bf8c50 100644
+--- a/drivers/watchdog/stmp3xxx_rtc_wdt.c
++++ b/drivers/watchdog/stmp3xxx_rtc_wdt.c
+@@ -30,7 +30,7 @@ MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat period in seconds from 1 to "
+ static int wdt_start(struct watchdog_device *wdd)
+ {
+ 	struct device *dev = watchdog_get_drvdata(wdd);
+-	struct stmp3xxx_wdt_pdata *pdata = dev->platform_data;
++	struct stmp3xxx_wdt_pdata *pdata = dev_get_platdata(dev);
  
- 	pinctrl@70000000 {
-diff --git a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-index 6f426ed..909d491 100644
---- a/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/nvidia,tegra30-pinmux.txt
-@@ -80,6 +80,17 @@ Valid values for pin and group names are:
-     clk1_req_pee2, hdmi_cec_pee3, clk_32k_in, core_pwr_req, cpu_pwr_req, owr,
-     pwr_int_n.
+ 	pdata->wdt_set_timeout(dev->parent, wdd->timeout * WDOG_TICK_RATE);
+ 	return 0;
+@@ -39,7 +39,7 @@ static int wdt_start(struct watchdog_device *wdd)
+ static int wdt_stop(struct watchdog_device *wdd)
+ {
+ 	struct device *dev = watchdog_get_drvdata(wdd);
+-	struct stmp3xxx_wdt_pdata *pdata = dev->platform_data;
++	struct stmp3xxx_wdt_pdata *pdata = dev_get_platdata(dev);
  
-+The valid names for the nvidia,functions are:
-+    blink, cec, clk_12m_out, clk_32k_in, core_pwr_req, cpu_pwr_req, crt,
-+    dap, ddr, dev3, displaya, displayb, dtv, extperiph1, extperiph2,
-+    extperiph3, gmi, gmi_alt, hda, hdcp, hdmi, hsi, i2c1, i2c2, i2c3,
-+    i2c4, i2cpwr, i2s0, i2s1, i2s2, i2s3, i2s4, invalid, kbc, mio, nand,
-+    nand_alt, owr, pcie, pwm0, pwm1, pwm2, pwm3, pwr_int_n, rsvd1, rsvd2,
-+    rsvd3, rsvd4, rtck, sata, sdmmc1, sdmmc2, sdmmc3, sdmmc4, spdif, spi1,
-+    spi2, spi2_alt, spi3, spi4, spi5, spi6, sysclk, test, trace, uarta,
-+    uartb, uartc, uartd, uarte, ulpi, vgp1, vgp2, vgp3, vgp4, vgp5, vgp6,
-+    vi, vi_alt1, vi_alt2, vi_alt3
-+
-   drive groups:
+ 	pdata->wdt_set_timeout(dev->parent, 0);
+ 	return 0;
+diff --git a/drivers/watchdog/ux500_wdt.c b/drivers/watchdog/ux500_wdt.c
+index a614d84..d9af934 100644
+--- a/drivers/watchdog/ux500_wdt.c
++++ b/drivers/watchdog/ux500_wdt.c
+@@ -88,7 +88,7 @@ static struct watchdog_device ux500_wdt = {
+ static int ux500_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+-	struct ux500_wdt_data *pdata = pdev->dev.platform_data;
++	struct ux500_wdt_data *pdata = dev_get_platdata(&pdev->dev);
  
-     These all support nvidia,pull-down-strength, nvidia,pull-up-strength,
+ 	if (pdata) {
+ 		if (pdata->timeout > 0)
+diff --git a/drivers/watchdog/wm831x_wdt.c b/drivers/watchdog/wm831x_wdt.c
+index d4e47ed..e243bd0 100644
+--- a/drivers/watchdog/wm831x_wdt.c
++++ b/drivers/watchdog/wm831x_wdt.c
+@@ -184,7 +184,7 @@ static const struct watchdog_ops wm831x_wdt_ops = {
+ static int wm831x_wdt_probe(struct platform_device *pdev)
+ {
+ 	struct wm831x *wm831x = dev_get_drvdata(pdev->dev.parent);
+-	struct wm831x_pdata *chip_pdata;
++	struct wm831x_pdata *chip_pdata = dev_get_platdata(pdev->dev.parent);
+ 	struct wm831x_watchdog_pdata *pdata;
+ 	struct wm831x_wdt_drvdata *driver_data;
+ 	struct watchdog_device *wm831x_wdt;
+@@ -231,12 +231,10 @@ static int wm831x_wdt_probe(struct platform_device *pdev)
+ 		wm831x_wdt->timeout = wm831x_wdt_cfgs[i].time;
+ 
+ 	/* Apply any configuration */
+-	if (pdev->dev.parent->platform_data) {
+-		chip_pdata = pdev->dev.parent->platform_data;
++	if (chip_pdata)
+ 		pdata = chip_pdata->watchdog;
+-	} else {
++	else
+ 		pdata = NULL;
+-	}
+ 
+ 	if (pdata) {
+ 		reg &= ~(WM831X_WDOG_SECACT_MASK | WM831X_WDOG_PRIMACT_MASK |
 -- 
-1.7.1.1
+1.7.10.4
+
 
