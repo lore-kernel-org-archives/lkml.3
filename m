@@ -1,284 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab3G3NHv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:07:51 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39090 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab3G3NHr (ORCPT
+	id S1755687Ab3G3NIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:08:13 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44024 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab3G3NH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:07:47 -0400
+	Tue, 30 Jul 2013 09:07:56 -0400
 From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 To: gleb@redhat.com
 Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
         linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
         Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: [PATCH 07/12] KVM: MMU: redesign the algorithm of pte_list
-Date: Tue, 30 Jul 2013 21:02:05 +0800
-Message-Id: <1375189330-24066-8-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 12/12] KVM: MMU: clean up spte_write_protect
+Date: Tue, 30 Jul 2013 21:02:10 +0800
+Message-Id: <1375189330-24066-13-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
 References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-TM-AS-MML: No
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073012-9264-0000-0000-0000043AF7C9
+x-cbid: 13073013-3864-0000-0000-000009534724
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change the algorithm to:
-1) always add new desc to the first desc (pointed by parent_ptes/rmap)
-   that is good to implement rcu-nulls-list-like lockless rmap
-   walking
-
-2) always move the entry in first desc to the the position we want
-   to remove when remove a spte in the parent_ptes/rmap （backward-move).
-   It is good for us to implement lockless rmap walk since in the current
-   code, when a spte is deleted from the "desc", another spte in the last
-   "desc" will be moved to this position to replace the deleted one. If the
-   deleted one has been accessed and we do not access the replaced one, the
-   replaced one is missed when we do lockless walk.
-   To fix this case, we do not backward move the spte, instead, we forward
-   move the entry: when a spte is deleted, we move the entry in the first
-   desc to that position
-
-Both of these also can reduce cache miss
+Now, the only user of spte_write_protect is rmap_write_protect which
+always calls spte_write_protect with pt_protect = true, so drop
+it and the unused parameter @kvm
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
 ---
- arch/x86/kvm/mmu.c | 182 ++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 125 insertions(+), 57 deletions(-)
+ arch/x86/kvm/mmu.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 5a40564..3013bb1 100644
+index a50eea8..8073c1f 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -918,6 +918,50 @@ static int mapping_level(struct kvm_vcpu *vcpu, gfn_t large_gfn)
- 	return level - 1;
+@@ -1319,8 +1319,7 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
  }
  
-+static int __find_first_free(struct pte_list_desc *desc)
-+{
-+	int i;
-+
-+	for (i = 0; i < PTE_LIST_EXT; i++)
-+		if (!desc->sptes[i])
-+			break;
-+	return i;
-+}
-+
-+static int find_first_free(struct pte_list_desc *desc)
-+{
-+	int free = __find_first_free(desc);
-+
-+	WARN_ON(free >= PTE_LIST_EXT);
-+	return free;
-+}
-+
-+static int find_last_used(struct pte_list_desc *desc)
-+{
-+	int used = __find_first_free(desc) - 1;
-+
-+	WARN_ON(used < 0 || used >= PTE_LIST_EXT);
-+	return used;
-+}
-+
-+/*
-+ * TODO: we can encode the desc number into the rmap/parent_ptes
-+ * since at least 10 physical/virtual address bits are reserved
-+ * on x86. It is worthwhile if it shows that the desc walking is
-+ * a performance issue.
-+ */
-+static int count_spte_number(struct pte_list_desc *desc)
-+{
-+	int first_free, desc_num;
-+
-+	first_free = __find_first_free(desc);
-+
-+	for (desc_num = 0; desc->more; desc = desc->more)
-+		desc_num++;
-+
-+	return first_free + desc_num * PTE_LIST_EXT;
-+}
-+
  /*
-  * Pte mapping structures:
+- * Write-protect on the specified @sptep, @pt_protect indicates whether
+- * spte write-protection is caused by protecting shadow page table.
++ * Write-protect on the specified @sptep.
   *
-@@ -934,92 +978,116 @@ static int pte_list_add(struct kvm_vcpu *vcpu, u64 *spte,
- 			unsigned long *pte_list)
+  * Note: write protection is difference between drity logging and spte
+  * protection:
+@@ -1331,25 +1330,23 @@ static void drop_large_spte(struct kvm_vcpu *vcpu, u64 *sptep)
+  *
+  * Return true if tlb need be flushed.
+  */
+-static bool spte_write_protect(struct kvm *kvm, u64 *sptep, bool pt_protect)
++static bool spte_write_protect(u64 *sptep)
  {
- 	struct pte_list_desc *desc;
--	int i, count = 0;
-+	int free_pos;
+ 	u64 spte = *sptep;
  
- 	if (!*pte_list) {
- 		rmap_printk("pte_list_add: %p %llx 0->1\n", spte, *spte);
- 		*pte_list = (unsigned long)spte;
--	} else if (!(*pte_list & 1)) {
-+		return 0;
-+	}
-+
-+	if (!(*pte_list & 1)) {
- 		rmap_printk("pte_list_add: %p %llx 1->many\n", spte, *spte);
- 		desc = mmu_alloc_pte_list_desc(vcpu);
- 		desc->sptes[0] = (u64 *)*pte_list;
- 		desc->sptes[1] = spte;
- 		*pte_list = (unsigned long)desc | 1;
--		++count;
--	} else {
--		rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
--		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
--		while (desc->sptes[PTE_LIST_EXT-1] && desc->more) {
--			desc = desc->more;
--			count += PTE_LIST_EXT;
--		}
--		if (desc->sptes[PTE_LIST_EXT-1]) {
--			desc->more = mmu_alloc_pte_list_desc(vcpu);
--			desc = desc->more;
--		}
--		for (i = 0; desc->sptes[i]; ++i)
--			++count;
--		desc->sptes[i] = spte;
-+		return 1;
-+	}
-+
-+	rmap_printk("pte_list_add: %p %llx many->many\n", spte, *spte);
-+	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
-+
-+	/* No empty position in the desc. */
-+	if (desc->sptes[PTE_LIST_EXT - 1]) {
-+		struct pte_list_desc *new_desc;
-+		new_desc = mmu_alloc_pte_list_desc(vcpu);
-+		new_desc->more = desc;
-+		desc = new_desc;
-+		*pte_list = (unsigned long)desc | 1;
+ 	if (!is_writable_pte(spte) &&
+-	      !(pt_protect && spte_is_locklessly_modifiable(spte)))
++	      !spte_is_locklessly_modifiable(spte))
+ 		return false;
+ 
+ 	rmap_printk("rmap_write_protect: spte %p %llx\n", sptep, *sptep);
+ 
+-	if (pt_protect)
+-		spte &= ~SPTE_MMU_WRITEABLE;
+-	spte = spte & ~PT_WRITABLE_MASK;
++	spte &= ~SPTE_MMU_WRITEABLE;
++	spte &= ~PT_WRITABLE_MASK;
+ 
+ 	return mmu_spte_update(sptep, spte);
+ }
+ 
+-static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+-				 bool pt_protect)
++static bool __rmap_write_protect(unsigned long *rmapp)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1358,7 +1355,7 @@ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+ 	for (sptep = rmap_get_first(*rmapp, &iter); sptep;) {
+ 		BUG_ON(!(*sptep & PT_PRESENT_MASK));
+ 
+-		flush |= spte_write_protect(kvm, sptep, pt_protect);
++		flush |= spte_write_protect(sptep);
+ 		sptep = rmap_get_next(&iter);
  	}
--	return count;
-+
-+	free_pos = find_first_free(desc);
-+	desc->sptes[free_pos] = spte;
-+	return count_spte_number(desc);
- }
  
- static void
--pte_list_desc_remove_entry(unsigned long *pte_list, struct pte_list_desc *desc,
--			   int i, struct pte_list_desc *prev_desc)
-+pte_list_desc_remove_entry(unsigned long *pte_list,
-+			   struct pte_list_desc *desc, int i)
- {
--	int j;
-+	struct pte_list_desc *first_desc;
-+	int last_used;
-+
-+	first_desc = (struct pte_list_desc *)(*pte_list & ~1ul);
-+	last_used = find_last_used(first_desc);
- 
--	for (j = PTE_LIST_EXT - 1; !desc->sptes[j] && j > i; --j)
--		;
--	desc->sptes[i] = desc->sptes[j];
--	desc->sptes[j] = NULL;
--	if (j != 0)
-+	/*
-+	 * Move the entry from the first desc to this position we want
-+	 * to remove.
-+	 */
-+	desc->sptes[i] = first_desc->sptes[last_used];
-+	first_desc->sptes[last_used] = NULL;
-+
-+	/* No valid entry in this desc, we can free this desc now. */
-+	if (!first_desc->sptes[0]) {
-+		struct pte_list_desc *next_desc = first_desc->more;
-+
-+		/*
-+		 * Only one entry existing but still use a desc to store it?
-+		 */
-+		WARN_ON(!next_desc);
-+
-+		mmu_free_pte_list_desc(first_desc);
-+		first_desc = next_desc;
-+		*pte_list = (unsigned long)first_desc | 1ul;
- 		return;
--	if (!prev_desc && !desc->more)
--		*pte_list = (unsigned long)desc->sptes[0];
--	else
--		if (prev_desc)
--			prev_desc->more = desc->more;
--		else
--			*pte_list = (unsigned long)desc->more | 1;
--	mmu_free_pte_list_desc(desc);
-+	}
-+
-+	WARN_ON(!first_desc->sptes[0]);
-+
-+	/*
-+	 * Only one entry in this desc, move the entry to the head
-+	 * then the desc can be freed.
-+	 */
-+	if (!first_desc->sptes[1] && !first_desc->more) {
-+		*pte_list = (unsigned long)first_desc->sptes[0];
-+		mmu_free_pte_list_desc(first_desc);
-+	}
- }
- 
- static void pte_list_remove(u64 *spte, unsigned long *pte_list)
- {
- 	struct pte_list_desc *desc;
--	struct pte_list_desc *prev_desc;
- 	int i;
- 
- 	if (!*pte_list) {
--		printk(KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
--		BUG();
--	} else if (!(*pte_list & 1)) {
-+		WARN(1, KERN_ERR "pte_list_remove: %p 0->BUG\n", spte);
-+		return;
-+	}
-+
-+	if (!(*pte_list & 1)) {
- 		rmap_printk("pte_list_remove:  %p 1->0\n", spte);
- 		if ((u64 *)*pte_list != spte) {
--			printk(KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
--			BUG();
-+			WARN(1, KERN_ERR "pte_list_remove:  %p 1->BUG\n", spte);
- 		}
- 		*pte_list = 0;
--	} else {
--		rmap_printk("pte_list_remove:  %p many->many\n", spte);
--		desc = (struct pte_list_desc *)(*pte_list & ~1ul);
--		prev_desc = NULL;
--		while (desc) {
--			for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
--				if (desc->sptes[i] == spte) {
--					pte_list_desc_remove_entry(pte_list,
--							       desc, i,
--							       prev_desc);
--					return;
--				}
--			prev_desc = desc;
--			desc = desc->more;
--		}
--		pr_err("pte_list_remove: %p many->many\n", spte);
--		BUG();
-+		return;
+@@ -1426,7 +1423,7 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
+ 	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+-		write_protected |= __rmap_write_protect(kvm, rmapp, true);
++		write_protected |= __rmap_write_protect(rmapp);
  	}
-+
-+	rmap_printk("pte_list_remove:  %p many->many\n", spte);
-+	desc = (struct pte_list_desc *)(*pte_list & ~1ul);
-+	while (desc) {
-+		for (i = 0; i < PTE_LIST_EXT && desc->sptes[i]; ++i)
-+			if (desc->sptes[i] == spte) {
-+				pte_list_desc_remove_entry(pte_list,
-+							       desc, i);
-+				return;
-+			}
-+		desc = desc->more;
-+	}
-+
-+	WARN(1, "pte_list_remove: %p many->many\n", spte);
- }
  
- typedef void (*pte_list_walk_fn) (u64 *spte);
+ 	return write_protected;
 -- 
 1.8.1.4
 
