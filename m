@@ -1,178 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab3G3KKT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:10:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58042 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751918Ab3G3KKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:10:16 -0400
-X-IronPort-AV: E=Sophos;i="4.89,777,1367942400"; 
-   d="scan'208";a="8067763"
-Message-ID: <51F7901E.3010204@cn.fujitsu.com>
-Date: Tue, 30 Jul 2013 18:06:22 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S1757676Ab3G3KLM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:11:12 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:59101 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753500Ab3G3KLL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 06:11:11 -0400
 MIME-Version: 1.0
-To: Kim <jaegeuk.kim@samsung.com>
-CC: f2fs <linux-f2fs-devel@lists.sourceforge.net>,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] f2fs: add a wait step when submit bio with {READ,WRITE}_SYNC
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/30 18:07:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/07/30 18:07:57,
-	Serialize complete at 2013/07/30 18:07:57
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1375178392-26060-1-git-send-email-richard.genoud@gmail.com>
+References: <1375178392-26060-1-git-send-email-richard.genoud@gmail.com>
+From: Richard Genoud <richard.genoud@gmail.com>
+Date: Tue, 30 Jul 2013 12:10:50 +0200
+Message-ID: <CACQ1gAjQn=bxCLGeF3VoyB=LLo1JHyUiqX1OD7JZMbP63AQ3Xw@mail.gmail.com>
+Subject: Re: [PATCH v6 0/8] Sound support for at91sam9x5-wm8731 based boards
+To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>
+Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, Richard Genoud <richard.genoud@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we submit bio with READ_SYNC or WRITE_SYNC, we need to wait a
-moment for the io completion, current codes only find_data_page() follows the
-rule, other places missing this step, so add it.
+arrrrggg...
+I forgot that the DT list has changed.
+I'll resend this with the correct address.
 
-Further more, moving the PageUptodate check into f2fs_readpage() to clean up
-the codes.
-
-Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
----
- fs/f2fs/checkpoint.c |    1 -
- fs/f2fs/data.c       |   39 +++++++++++++++++----------------------
- fs/f2fs/node.c       |    1 -
- fs/f2fs/recovery.c   |    2 --
- fs/f2fs/segment.c    |    2 +-
- 5 files changed, 18 insertions(+), 27 deletions(-)
-
-diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
-index fe91773..e376a42 100644
---- a/fs/f2fs/checkpoint.c
-+++ b/fs/f2fs/checkpoint.c
-@@ -64,7 +64,6 @@ repeat:
- 	if (f2fs_readpage(sbi, page, index, READ_SYNC))
- 		goto repeat;
- 
--	lock_page(page);
- 	if (page->mapping != mapping) {
- 		f2fs_put_page(page, 1);
- 		goto repeat;
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 19cd7c6..b048936 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -216,13 +216,11 @@ struct page *find_data_page(struct inode *inode, pgoff_t index, bool sync)
- 
- 	err = f2fs_readpage(sbi, page, dn.data_blkaddr,
- 					sync ? READ_SYNC : READA);
--	if (sync) {
--		wait_on_page_locked(page);
--		if (!PageUptodate(page)) {
--			f2fs_put_page(page, 0);
--			return ERR_PTR(-EIO);
--		}
--	}
-+	if (err)
-+		return ERR_PTR(err);
-+
-+	if (sync)
-+		unlock_page(page);
- 	return page;
- }
- 
-@@ -267,11 +265,6 @@ repeat:
- 	if (err)
- 		return ERR_PTR(err);
- 
--	lock_page(page);
--	if (!PageUptodate(page)) {
--		f2fs_put_page(page, 1);
--		return ERR_PTR(-EIO);
--	}
- 	if (page->mapping != mapping) {
- 		f2fs_put_page(page, 1);
- 		goto repeat;
-@@ -325,11 +318,7 @@ repeat:
- 		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
- 		if (err)
- 			return ERR_PTR(err);
--		lock_page(page);
--		if (!PageUptodate(page)) {
--			f2fs_put_page(page, 1);
--			return ERR_PTR(-EIO);
--		}
-+
- 		if (page->mapping != mapping) {
- 			f2fs_put_page(page, 1);
- 			goto repeat;
-@@ -399,6 +388,16 @@ int f2fs_readpage(struct f2fs_sb_info *sbi, struct page *page,
- 
- 	submit_bio(type, bio);
- 	up_read(&sbi->bio_sem);
-+
-+	if (type == READ_SYNC) {
-+		wait_on_page_locked(page);
-+		lock_page(page);
-+		if (!PageUptodate(page)) {
-+			f2fs_put_page(page, 1);
-+			return -EIO;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -679,11 +678,7 @@ repeat:
- 		err = f2fs_readpage(sbi, page, dn.data_blkaddr, READ_SYNC);
- 		if (err)
- 			return err;
--		lock_page(page);
--		if (!PageUptodate(page)) {
--			f2fs_put_page(page, 1);
--			return -EIO;
--		}
-+
- 		if (page->mapping != mapping) {
- 			f2fs_put_page(page, 1);
- 			goto repeat;
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index f5172e2..f061554 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1534,7 +1534,6 @@ int restore_node_summary(struct f2fs_sb_info *sbi,
- 		if (f2fs_readpage(sbi, page, addr, READ_SYNC))
- 			goto out;
- 
--		lock_page(page);
- 		rn = F2FS_NODE(page);
- 		sum_entry->nid = rn->footer.nid;
- 		sum_entry->version = 0;
-diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
-index 639eb34..ec68183 100644
---- a/fs/f2fs/recovery.c
-+++ b/fs/f2fs/recovery.c
-@@ -140,8 +140,6 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
- 		if (err)
- 			goto out;
- 
--		lock_page(page);
--
- 		if (cp_ver != cpver_of_node(page))
- 			break;
- 
-diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
-index 9b74ae2..bcd19db 100644
---- a/fs/f2fs/segment.c
-+++ b/fs/f2fs/segment.c
-@@ -639,7 +639,7 @@ static void do_submit_bio(struct f2fs_sb_info *sbi,
- 
- 		trace_f2fs_do_submit_bio(sbi->sb, btype, sync, sbi->bio[btype]);
- 
--		if (type == META_FLUSH) {
-+		if ((type == META_FLUSH) || (rw & WRITE_SYNC)) {
- 			DECLARE_COMPLETION_ONSTACK(wait);
- 			p->is_sync = true;
- 			p->wait = &wait;
--- 
-1.7.7
-
+Sorry for the noise.
