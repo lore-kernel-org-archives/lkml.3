@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932633Ab3G3Jdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:33:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53337 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611Ab3G3Jdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932608Ab3G3Jdq (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 30 Jul 2013 05:33:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53326 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932595Ab3G3Jdn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 05:33:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jeff Skirvin <jeffrey.d.skirvin@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>,
+Cc: Alex Deucher <alexander.deucher@amd.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 085/106] [SCSI] isci: Fix a race condition in the SSP task management path
-Date: Tue, 30 Jul 2013 10:31:44 +0100
-Message-Id: <1375176725-5825-86-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 083/106] drm/radeon: improve dac adjust heuristics for legacy pdac
+Date: Tue, 30 Jul 2013 10:31:42 +0100
+Message-Id: <1375176725-5825-84-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,60 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 96f15f29038e58e1b0a96483e2b369ff446becf1 upstream.
+commit 03ed8cf9b28d886c64c7e705c7bb1a365fd8fb95 upstream.
 
-This commit fixes a race condition in the isci driver abort task and SSP
-device task management path.  The race is caused when an I/O termination
-in the SCU hardware is necessary because of an SSP target timeout condition,
-and the check of the I/O end state races against the HW-termination-driven
-end state.  The failure of the race meant that no TMF was sent to the device
-to clean-up the pending I/O.
+Hopefully avoid more quirks in the future due to bogus
+vbios dac data.
 
-Signed-off-by: Jeff Skirvin <jeffrey.d.skirvin@intel.com>
-Reviewed-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/scsi/isci/task.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/radeon_combios.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
-index 6bc74eb..efd9e9e 100644
---- a/drivers/scsi/isci/task.c
-+++ b/drivers/scsi/isci/task.c
-@@ -491,6 +491,7 @@ int isci_task_abort_task(struct sas_task *task)
- 	struct isci_tmf           tmf;
- 	int                       ret = TMF_RESP_FUNC_FAILED;
- 	unsigned long             flags;
-+	int                       target_done_already = 0;
+diff --git a/drivers/gpu/drm/radeon/radeon_combios.c b/drivers/gpu/drm/radeon/radeon_combios.c
+index f44dc93..be9be8e 100644
+--- a/drivers/gpu/drm/radeon/radeon_combios.c
++++ b/drivers/gpu/drm/radeon/radeon_combios.c
+@@ -953,8 +953,10 @@ struct radeon_encoder_primary_dac *radeon_combios_get_primary_dac_info(struct
+ 			dac = RBIOS8(dac_info + 0x3) & 0xf;
+ 			p_dac->ps2_pdac_adj = (bg << 8) | (dac);
+ 		}
+-		/* if the values are all zeros, use the table */
+-		if (p_dac->ps2_pdac_adj)
++		/* if the values are zeros, use the table */
++		if ((dac == 0) || (bg == 0))
++			found = 0;
++		else
+ 			found = 1;
+ 	}
  
- 	/* Get the isci_request reference from the task.  Note that
- 	 * this check does not depend on the pending request list
-@@ -505,9 +506,11 @@ int isci_task_abort_task(struct sas_task *task)
- 	/* If task is already done, the request isn't valid */
- 	if (!(task->task_state_flags & SAS_TASK_STATE_DONE) &&
- 	    (task->task_state_flags & SAS_TASK_AT_INITIATOR) &&
--	    old_request)
-+	    old_request) {
- 		idev = isci_get_device(task->dev->lldd_dev);
--
-+		target_done_already = test_bit(IREQ_COMPLETE_IN_TARGET,
-+					       &old_request->flags);
-+	}
- 	spin_unlock(&task->task_state_lock);
- 	spin_unlock_irqrestore(&ihost->scic_lock, flags);
- 
-@@ -561,7 +564,7 @@ int isci_task_abort_task(struct sas_task *task)
- 
- 	if (task->task_proto == SAS_PROTOCOL_SMP ||
- 	    sas_protocol_ata(task->task_proto) ||
--	    test_bit(IREQ_COMPLETE_IN_TARGET, &old_request->flags) ||
-+	    target_done_already ||
- 	    test_bit(IDEV_GONE, &idev->flags)) {
- 
- 		spin_unlock_irqrestore(&ihost->scic_lock, flags);
 -- 
 1.8.3.2
 
