@@ -1,124 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab3G3JrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:47:07 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:48888 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564Ab3G3JrC (ORCPT
+	id S932513Ab3G3Jq7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:46:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53212 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab3G3JdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:47:02 -0400
-Date: Tue, 30 Jul 2013 15:16:50 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mgorman@suse.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC PATCH 00/10] Improve numa scheduling by consolidating tasks
-Message-ID: <20130730094650.GB28656@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1375170505-5967-1-git-send-email-srikar@linux.vnet.ibm.com>
- <20130730081755.GF3008@twins.programming.kicks-ass.net>
- <20130730082001.GG3008@twins.programming.kicks-ass.net>
- <20130730090345.GA22201@linux.vnet.ibm.com>
- <20130730091021.GM3008@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130730091021.GM3008@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073009-3620-0000-0000-000003BA9082
+	Tue, 30 Jul 2013 05:33:19 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Ding Tianhong <dingtianhong@huawei.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 061/106] ifb: fix oops when loading the ifb failed
+Date: Tue, 30 Jul 2013 10:31:20 +0100
+Message-Id: <1375176725-5825-62-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2013-07-30 11:10:21]:
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Jul 30, 2013 at 02:33:45PM +0530, Srikar Dronamraju wrote:
-> > * Peter Zijlstra <peterz@infradead.org> [2013-07-30 10:20:01]:
-> > 
-> > > On Tue, Jul 30, 2013 at 10:17:55AM +0200, Peter Zijlstra wrote:
-> > > > On Tue, Jul 30, 2013 at 01:18:15PM +0530, Srikar Dronamraju wrote:
-> > > > > Here is an approach that looks to consolidate workloads across nodes.
-> > > > > This results in much improved performance. Again I would assume this work
-> > > > > is complementary to Mel's work with numa faulting.
-> > > > 
-> > > > I highly dislike the use of task weights here. It seems completely
-> > > > unrelated to the problem at hand.
-> > > 
-> > > I also don't particularly like the fact that it's purely process based.
-> > > The faults information we have gives much richer task relations.
-> > > 
-> > 
-> > With just pure fault information based approach, I am not seeing any
-> > major improvement in tasks/memory consolidation. I still see memory
-> > spread across different nodes and tasks getting ping-ponged to different
-> > nodes. And if there are multiple unrelated processes, then we see a mix
-> > of tasks of different processes in each of the node.
-> 
-> The fault thing isn't finished. Mel explicitly said it doesn't yet have
-> inter-task relations. And you run everything in a VM which is like a big
-> nasty mangler for anything sane.
-> 
+------------------
 
-I am not against fault and fault based handling is very much needed. 
-I have listed that this approach is complementary to numa faults that
-Mel is proposing. 
+From: dingtianhong <dingtianhong@huawei.com>
 
-Right now I think if we can first get the tasks to consolidate on nodes
-and then use the numa faults to place the tasks, then we would be able
-to have a very good solution. 
+commit f2966cd5691058b8674a20766525bedeaea9cbcf upstream.
 
-Plain fault information is actually causing confusion in enough number
-of cases esp if the initial set of pages is all consolidated into fewer
-set of nodes. With plain fault information, memory follows cpu, cpu
-follows memory are conflicting with each other. memory wants to move to
-nodes where the tasks are currently running and the tasks are planning
-to move nodes where the current memory is around.
+If __rtnl_link_register() return faild when loading the ifb, it will
+take the wrong path and get oops, so fix it just like dummy.
 
-Also most of the consolidation that I have proposed is pretty
-conservative or either done at idle balance time. This would not affect
-the numa faulting in any way. When I run with my patches (along with
-some debug code), the consolidation happens pretty pretty quickly.
-Once consolidation has happened, numa faults would be of immense value.
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/ifb.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-Here is how I am looking at the solution.
-
-1. Till the initial scan delay, allow tasks to consolidate
-
-2. After the first scan delay to the next scan delay, account numa
-   faults, allow memory to move. But dont use numa faults as yet to
-   drive scheduling decisions. Here also task continue to consolidate.
-
-	This will lead to tasks and memory moving to specific nodes and
-	leading to consolidation.
-	
-3. After the second scan delay, continue to account numa faults and
-allow numa faults to drive scheduling decisions.
-
-Should we use also use task weights at stage 3 or just numa faults or
-which one should get more preference is something that I am not clear at
-this time. At this time, I would think we would need to factor in both
-of them.
-
-I think this approach would mean tasks get consolidated but the inter
-process, inter task relations that you are looking for also remain
-strong.
-
-Is this a acceptable solution?
-
+diff --git a/drivers/net/ifb.c b/drivers/net/ifb.c
+index 04ab337..635d01c 100644
+--- a/drivers/net/ifb.c
++++ b/drivers/net/ifb.c
+@@ -290,6 +290,8 @@ static int __init ifb_init_module(void)
+ 
+ 	rtnl_lock();
+ 	err = __rtnl_link_register(&ifb_link_ops);
++	if (err < 0)
++		goto out;
+ 
+ 	for (i = 0; i < numifbs && !err; i++) {
+ 		err = ifb_init_one(i);
+@@ -297,6 +299,8 @@ static int __init ifb_init_module(void)
+ 	}
+ 	if (err)
+ 		__rtnl_link_unregister(&ifb_link_ops);
++
++out:
+ 	rtnl_unlock();
+ 
+ 	return err;
 -- 
-Thanks and Regards
-Srikar
-
-
-
-
--- 
-Thanks and Regards
-Srikar Dronamraju
+1.8.3.2
 
