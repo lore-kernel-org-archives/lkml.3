@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab3G3Jch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:32:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52998 "EHLO
+	id S1758733Ab3G3Jc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:32:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53076 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab3G3Jcd (ORCPT
+	with ESMTP id S1758712Ab3G3Jcu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:32:33 -0400
+	Tue, 30 Jul 2013 05:32:50 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Josef Bacik <jbacik@fusionio.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 020/106] drm/radeon/hdmi: make sure we have an afmt block assigned
-Date: Tue, 30 Jul 2013 10:30:39 +0100
-Message-Id: <1375176725-5825-21-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 036/106] Btrfs: fix lock leak when resuming snapshot deletion
+Date: Tue, 30 Jul 2013 10:30:55 +0100
+Message-Id: <1375176725-5825-37-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -27,64 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Josef Bacik <jbacik@fusionio.com>
 
-commit c2b4cacfe9816c1fe378c785ce8a678cf0635ec6 upstream.
+commit fec386ac1428f9c0e672df952cbca5cebd4e4e2f upstream.
 
-Prevents a segfault if an afmt block is not assigned to the
-encoder such as in the LVDS or eDP case.
+We aren't setting path->locks[level] when we resume a snapshot deletion which
+means we won't unlock the buffer when we free the path.  This causes deadlocks
+if we happen to re-allocate the block before we've evicted the extent buffer
+from cache.  Thanks,
 
-Fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=66714
-
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-[ luis: backported to 3.5:
-  - adjusted context
-  - dropped changes to evergreen_hdmi_enable() ]
+Reported-by: Alex Lyakas <alex.btrfs@zadarastorage.com>
+Signed-off-by: Josef Bacik <jbacik@fusionio.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/evergreen_hdmi.c | 3 +++
- drivers/gpu/drm/radeon/r600_hdmi.c      | 6 ++++++
- 2 files changed, 9 insertions(+)
+ fs/btrfs/extent-tree.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/evergreen_hdmi.c b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-index 65c5416..44b3b07 100644
---- a/drivers/gpu/drm/radeon/evergreen_hdmi.c
-+++ b/drivers/gpu/drm/radeon/evergreen_hdmi.c
-@@ -156,6 +156,9 @@ void evergreen_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode
- 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
- 	uint32_t offset;
+diff --git a/fs/btrfs/extent-tree.c b/fs/btrfs/extent-tree.c
+index 9e99ea0..9b1dc7b 100644
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -6905,6 +6905,7 @@ int btrfs_drop_snapshot(struct btrfs_root *root,
+ 		while (1) {
+ 			btrfs_tree_lock(path->nodes[level]);
+ 			btrfs_set_lock_blocking(path->nodes[level]);
++			path->locks[level] = BTRFS_WRITE_LOCK_BLOCKING;
  
-+	if (!dig || !dig->afmt)
-+		return;
-+
- 	/* Silent, r600_hdmi_enable will raise WARN for us */
- 	if (!dig->afmt->enabled)
- 		return;
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 26ce6c1..949bf83 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -322,6 +322,9 @@ void r600_hdmi_setmode(struct drm_encoder *encoder, struct drm_display_mode *mod
- 	struct radeon_encoder_atom_dig *dig = radeon_encoder->enc_priv;
- 	uint32_t offset;
+ 			ret = btrfs_lookup_extent_info(trans, root,
+ 						path->nodes[level]->start,
+@@ -6921,6 +6922,7 @@ int btrfs_drop_snapshot(struct btrfs_root *root,
+ 				break;
  
-+	if (!dig || !dig->afmt)
-+		return;
-+
- 	/* Silent, r600_hdmi_enable will raise WARN for us */
- 	if (!dig->afmt->enabled)
- 		return;
-@@ -480,6 +483,9 @@ void r600_hdmi_enable(struct drm_encoder *encoder)
- 	uint32_t offset;
- 	u32 hdmi;
- 
-+	if (!dig || !dig->afmt)
-+		return;
-+
- 	if (ASIC_IS_DCE6(rdev))
- 		return;
- 
+ 			btrfs_tree_unlock(path->nodes[level]);
++			path->locks[level] = 0;
+ 			WARN_ON(wc->refs[level] != 1);
+ 			level--;
+ 		}
 -- 
 1.8.3.2
 
