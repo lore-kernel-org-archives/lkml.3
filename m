@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab3G3ElR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 00:41:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48640 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab3G3ElP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 00:41:15 -0400
-Message-ID: <51F73738.6080901@ti.com>
-Date: Mon, 29 Jul 2013 22:47:04 -0500
+	id S1757253Ab3G3ElY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 00:41:24 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:53744 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755317Ab3G3ElU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 00:41:20 -0400
+Message-ID: <51F738BF.7070808@ti.com>
+Date: Mon, 29 Jul 2013 22:53:35 -0500
 From: Joel Fernandes <joelf@ti.com>
 Reply-To: <joelf@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
@@ -26,113 +25,33 @@ CC: Tony Lindgren <tony@atomide.com>, Vinod Koul <vinod.koul@intel.com>,
         Pantel Antoniou <panto@antoniou-consulting.com>
 Subject: Re: [PATCH v2] ARM: EDMA: Fix clearing of unused list for DT DMA
  resources
-References: <1374515989-7391-1-git-send-email-joelf@ti.com> <51F61359.1090309@ti.com>
-In-Reply-To: <51F61359.1090309@ti.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+References: <1374515989-7391-1-git-send-email-joelf@ti.com> <51F4589E.5070108@ti.com> <51F6140B.3070600@ti.com>
+In-Reply-To: <51F6140B.3070600@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 02:01 AM, Sekhar Nori wrote:> On Monday 22 July 2013 11:29
-PM, Joel Fernandes wrote:
->> HWMOD removal for MMC is breaking edma_start as the events are being
-manually
->> triggered due to unused channel list not being clear, Thanks to
-Balaji TK for
->> finding this issue.
->
-> So, Reported-by: Balaji T K <balajitk@ti.com>
->
-> ?
-
-Sure, I'll add that as well.
-
->
+On 07/29/2013 02:04 AM, Sekhar Nori wrote:
+> On Sunday 28 July 2013 05:02 AM, Joel Fernandes wrote:
+>> Hi Tony or Sekhar,
 >>
->> This patch fixes the issue, by reading the "dmas" property from the
-DT node if
->> it exists and clearing the bits in the unused channel list.
+>> If this patch looks ok, could you pick it up for -rc cycle?
 >>
->> Cc: Balaji T K <balajitk@ti.com>
->> Cc: Pantel Antoniou <panto@antoniou-consulting.com>
->> Signed-off-by: Joel Fernandes <joelf@ti.com>
->> ---
->> v2 changes: Fixed compiler warning
->>
->>  arch/arm/common/edma.c |   31 +++++++++++++++++++++++--------
->>  1 file changed, 23 insertions(+), 8 deletions(-)
->>
->> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
->> index a432e6c..765d578 100644
->> --- a/arch/arm/common/edma.c
->> +++ b/arch/arm/common/edma.c
->> @@ -561,14 +561,29 @@ static int reserve_contiguous_slots(int ctlr,
-unsigned int id,
->>  static int prepare_unused_channel_list(struct device *dev, void *data)
->>  {
->>  	struct platform_device *pdev = to_platform_device(dev);
->> -	int i, ctlr;
->> -
->> -	for (i = 0; i < pdev->num_resources; i++) {
->> -		if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
->> -				(int)pdev->resource[i].start >= 0) {
->> -			ctlr = EDMA_CTLR(pdev->resource[i].start);
->> -			clear_bit(EDMA_CHAN_SLOT(pdev->resource[i].start),
->> -					edma_cc[ctlr]->edma_unused);
->> +	int i = 0, ctlr;
->> +	u32 dma_chan;
->> +	const __be32 *dma_chan_p;
->> +	struct property *prop;
->> +
->> +	if (dev->of_node) {
->> +		of_property_for_each_u32(dev->of_node, "dmas", prop, \
->> +					 dma_chan_p, dma_chan) {
->> +			if (i++ & 1) {
->> +				ctlr = EDMA_CTLR(dma_chan);
->> +				clear_bit(EDMA_CHAN_SLOT(dma_chan),
->> +						edma_cc[ctlr]->edma_unused);
->> +			}
->
-> I think it will be cleaner if you use of_property_count_strings() on
-> dma-names to get the count of DMA channels for this device and then use
-> of_parse_phandle_with_args() to get access to the args. Honestly, I have
-> not used these APIs myself, so if this doesn’t work the way I think it
-> should then let me know and I will try to do some experiments myself.
->
-> The current way of skipping over even fields really depends on
-> #dma-cells for EDMA to be 1. That in itself is not such a bad
-> assumption, but if you have APIs which already take care of this for
-> you, why not use them?
+>> It fixes DMA breakages after the merge window for devices for which DMA
+>> resources are being populated in device tree instead pdev.
+> 
+> But which DT-enabled platform in kernel is using EDMA? A grep for edma
+> over arch/arm/boot/dts/* brings up nothing.
+> Does this really have to go into the -rc cycle or can it wait till
+> v3.12?
 
-Sure, looks like of_dma_request_slave_channel does same thing in
-drive/dma/of-dma.c. Let me follow up with a patch that does it this way.
-I agree its cleaner.
 
->> +		}
->> +	} else {
->> +		for (; i < pdev->num_resources; i++) {
->> +			if ((pdev->resource[i].flags & IORESOURCE_DMA) &&
->> +			    (int)pdev->resource[i].start >= 0) {
->> +				ctlr = EDMA_CTLR(pdev->resource[i].start);
->> +				clear_bit(EDMA_CHAN_SLOT(
->> +					  pdev->resource[i].start),
->> +					  edma_cc[ctlr]->edma_unused);
->> +			}
->
-> So there is very little in common between OF and non-OF versions of this
-> function. Why not have two different versions of this function for the
-> two cases? The OF version can reside under the CONFIG_OF conditional
-> already in use in the file. This will also save you the ugly line breaks
-> you had to resort to due to too deep indentation.
+But unused channel list is also populated for private EDMA callers like
+davinci-pcm no? IIRC, HWMOD data is also removed for McASP so EDMA for
+those may break.
 
-Actually those line breaks are not necessary and wouldn't result in
-compilation errors. I was planning to drop them. I'll go ahead and split
-it out anyway, now that also the OF version of the function is going to
-be bit longer if we use the of_parse functions.
-
-Thanks for your review,
-
-Regards,
+Thanks,
 
 -Joel
