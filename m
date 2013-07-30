@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab3G3FPd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 01:15:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54217 "EHLO comal.ext.ti.com"
+	id S1757350Ab3G3FTO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 01:19:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54398 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753488Ab3G3FPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 01:15:31 -0400
-Message-ID: <51F74BC8.7020903@ti.com>
-Date: Tue, 30 Jul 2013 10:44:48 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
+	id S1750877Ab3G3FTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 01:19:12 -0400
+Message-ID: <51F74CAD.3040604@ti.com>
+Date: Tue, 30 Jul 2013 10:48:37 +0530
+From: Sekhar Nori <nsekhar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
-        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
- in usb_bind_phy
-References: <1374829418-27503-1-git-send-email-kishon@ti.com> <1374829418-27503-3-git-send-email-kishon@ti.com> <20130729150638.GD3063@radagast> <51F68A56.8060805@ti.com> <20130729175413.GC4964@radagast>
-In-Reply-To: <20130729175413.GC4964@radagast>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+To: Joel Fernandes <joelf@ti.com>
+CC: Tony Lindgren <tony@atomide.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Sricharan R <r.sricharan@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Lokesh Vutla <lokeshvutla@ti.com>, Matt Porter <matt@ohporter.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vinod Koul <vinod.koul@intel.com>, Dan Williams <djbw@fb.com>,
+        Mark Brown <broonie@linaro.org>,
+        Benoit Cousson <benoit.cousson@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>, Balaji TK <balajitk@ti.com>,
+        Gururaja Hebbar <gururaja.hebbar@ti.com>, Chris Ball <cjb@laptop.org>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux DaVinci Kernel List 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH 3/9] ARM: edma: Add function to manually trigger an EDMA
+ channel
+References: <1375104595-16018-1-git-send-email-joelf@ti.com> <1375104595-16018-4-git-send-email-joelf@ti.com>
+In-Reply-To: <1375104595-16018-4-git-send-email-joelf@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Monday 29 July 2013 06:59 PM, Joel Fernandes wrote:
+> Manual trigger for events missed as a result of splitting a
+> scatter gather list and DMA'ing it in batches. Add a helper
+> function to trigger a channel incase any such events are missed.
+> 
+> Signed-off-by: Joel Fernandes <joelf@ti.com>
+> ---
+>  arch/arm/common/edma.c             |   21 +++++++++++++++++++++
+>  include/linux/platform_data/edma.h |    2 ++
+>  2 files changed, 23 insertions(+)
+> 
+> diff --git a/arch/arm/common/edma.c b/arch/arm/common/edma.c
+> index 3567ba1..10995b2 100644
+> --- a/arch/arm/common/edma.c
+> +++ b/arch/arm/common/edma.c
+> @@ -1236,6 +1236,27 @@ void edma_resume(unsigned channel)
+>  }
+>  EXPORT_SYMBOL(edma_resume);
+>  
+> +int edma_manual_trigger(unsigned channel)
 
-On Monday 29 July 2013 11:24 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Mon, Jul 29, 2013 at 08:59:26PM +0530, Kishon Vijay Abraham I wrote:
->>>> Previously MUSB wrapper (OMAP) device used PLATFORM_DEVID_AUTO while creating
->>>> MUSB core device. So in usb_bind_phy (binds the controller with the PHY), the
->>>> device name of the controller had *.auto* in it. Since with using
->>>> PLATFORM_DEVID_AUTO, there is no way to know the exact device name in advance,
->>>> the data given in usb_bind_phy became obsolete and usb_get_phy was failing.
->>>> So MUSB wrapper was modified not to use PLATFORM_DEVID_AUTO. Corresponding
->>>> change is done in board file here.
->>>>
->>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
->>>> ---
->>>>  arch/arm/mach-omap2/board-2430sdp.c          |    2 +-
->>>>  arch/arm/mach-omap2/board-3430sdp.c          |    2 +-
->>>>  arch/arm/mach-omap2/board-cm-t35.c           |    2 +-
->>>>  arch/arm/mach-omap2/board-devkit8000.c       |    2 +-
->>>>  arch/arm/mach-omap2/board-igep0020.c         |    2 +-
->>>>  arch/arm/mach-omap2/board-ldp.c              |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3beagle.c      |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3evm.c         |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3logic.c       |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3pandora.c     |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3stalker.c     |    2 +-
->>>>  arch/arm/mach-omap2/board-omap3touchbook.c   |    2 +-
->>>>  arch/arm/mach-omap2/board-overo.c            |    2 +-
->>>>  arch/arm/mach-omap2/board-rm680.c            |    2 +-
->>>>  arch/arm/mach-omap2/board-rx51.c             |    2 +-
->>>>  arch/arm/mach-omap2/board-zoom-peripherals.c |    2 +-
->>>>  16 files changed, 16 insertions(+), 16 deletions(-)
->>>>
->>>> diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
->>>> index 244d8a5..17bb076 100644
->>>> --- a/arch/arm/mach-omap2/board-2430sdp.c
->>>> +++ b/arch/arm/mach-omap2/board-2430sdp.c
->>>> @@ -233,7 +233,7 @@ static void __init omap_2430sdp_init(void)
->>>>  	omap_hsmmc_init(mmc);
->>>>  
->>>>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
->>>> -	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
->>>> +	usb_bind_phy("musb-hdrc.0", 0, "twl4030_usb");
->>>
->>> how about moving usb_bind_phy() calls to omap2430.c ?
->>>
->>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
->>> index f44e8b5..b6abc1a 100644
->>> --- a/drivers/usb/musb/omap2430.c
->>> +++ b/drivers/usb/musb/omap2430.c
->>> @@ -544,6 +544,9 @@ static int omap2430_probe(struct platform_device *pdev)
->>>  
->>>  		pdata->board_data	= data;
->>>  		pdata->config		= config;
->>> +	} else {
->>> +		/* bind the PHY */
->>> +		usb_bind_phy(dev_name(&musb->dev), 0, "twl4030_usb");
->>
->> This looks like a hack IMHO to workaround the usb phy library. otherwise it is
->> similar to get_phy_by_name.
-> 
-> actually, this is a workaround to the fact that we're not creating all
-> platform_devices in arch/arm/mach-omap2/ :-)
-> 
-> If we had the musb allocation there, we could easily handle
-> usb_bind_phy()
-> 
->>> so that's temporary. It might be better than to reintroduce the IDR in
->>> musb_core.c.
->>
->> that’s needed for generic phy framework anyway :-s
-> 
-> right, but generic phy framework can handle everything just fine, the
-> only problem is that names are changing.
+edma_trigger_channel() maybe? Brings consistency with
+edma_alloc_channel() edma_free_channel() etc.
 
-right. But if the names change, PHY framework wouldn't be able to return the
-reference to the PHY.
+> +{
+> +	unsigned ctlr;
+> +	int j;
+> +	unsigned int mask;
+> +
+> +	ctlr = EDMA_CTLR(channel);
+> +	channel = EDMA_CHAN_SLOT(channel);
+> +	mask = BIT(channel & 0x1f);
+> +
+> +	j = channel >> 5;
+> +
+> +	/* EDMA channels without event association */
 
-Thanks
-Kishon
+May be actually check for no-event association before you trigger in
+software? You can do that by looking at unused channel list, no?
+
+> +	edma_shadow0_write_array(ctlr, SH_ESR, j, mask);
+
+edma_shadow0_write_array(ctlr, SH_ESR, channel >> 5, mask) is no less
+readable, but I leave it to you.
+
+Thanks,
+Sekhar
+
