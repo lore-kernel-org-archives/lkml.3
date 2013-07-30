@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab3G3NDD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:03:03 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:37618 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab3G3NC4 (ORCPT
+	id S1754361Ab3G3NDe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:03:34 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:47761 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752968Ab3G3ND3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:02:56 -0400
-Message-ID: <51F7B97B.3010704@gmail.com>
-Date: Tue, 30 Jul 2013 22:02:51 +0900
-From: Akira Hayakawa <ruby.wktk@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: sunnikrishnan@stec-inc.com, kmo@daterainc.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [RFC] dm-lc target
-References: <CABmKtjcsZUbafxtmPb=2-Gkxz9PkFq7KVsQBqRkHduEn7aaqkw@mail.gmail.com> <51F48531.6040104@gmail.com> <20130729143916.GA20119@debian>
-In-Reply-To: <20130729143916.GA20119@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 30 Jul 2013 09:03:29 -0400
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+To: gleb@redhat.com
+Cc: avi.kivity@gmail.com, mtosatti@redhat.com, pbonzini@redhat.com,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: [PATCH 04/12] KVM: MMU: log dirty page after marking spte writable
+Date: Tue, 30 Jul 2013 21:02:02 +0800
+Message-Id: <1375189330-24066-5-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+References: <1375189330-24066-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13073012-1396-0000-0000-000003565060
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your comment, Joe.
+Make sure we can see the writable spte before the dirt bitmap is visible
 
-Yes, dm-lc focuses solely on optimizing writes.
+We do this is for kvm_vm_ioctl_get_dirty_log() write-protects the spte based
+on the dirty bitmap, we should ensure the writable spte can be found in rmap
+before the dirty bitmap is visible. Otherwise, we cleared the dirty bitmap and
+failed to write-protect the page
 
-As you know, writing to RAID storage is slower than reading because of
-so-called RAID penalty. So, only improving writes may rescue most of the
-actual storage systems suffering from heavy I/Os. That's why I cares
-writes more than reads.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-> The next step is to get some third party users to post their
-> experiences with it, and get some feedback on the code itself from
-> Mike Snitzer.
-Yes, I want to make my code better.
-
-> If I get time I'll integrate it with my test suite.
-Thanks. That seems to be a nice test suite.
-I am currently testing dm-lc by make -j N and then make test with ruby
-source code, but I think the test should be severer.
-Actually, I have tried to implement general test tool for block device.
-But I gave up.
-https://github.com/akiradeveloper/iocheck
-
-Your test suite is like one I have been pursuing.
-I am really happy if you integrate dm-lc to your test suite.
-
-Akira
-
-On 7/29/13 11:39 PM, Joe Thornber wrote:
-> On Sun, Jul 28, 2013 at 11:42:57AM +0900, Akira Hayakawa wrote:
->> I wrote an introduction slide which is available in URL below:
->> https://github.com/akiradeveloper/dm-lc/blob/develop/what-is-dm-lc.pdf
->> access the page and click "view raw".
-> 
-> This is nicely orthogonal to dm-cache.
-> 
-> dm-cache tries to move a working set of fixed size blocks into a cache
-> to optimise both read and write.  dm-lc focusses solely on optimising
-> bursty writes and uses a journal based structure to accomodate
-> variable sized blocks.
-> 
-> The next step is to get some third party users to post their
-> experiences with it, and get some feedback on the code itself from
-> Mike Snitzer.
-> 
-> If I get time I'll integrate it with my test suite.
-> 
-> https://github.com/jthornber/device-mapper-test-suite
-> 
-> 
-> - Joe
-> 
-> --
-> dm-devel mailing list
-> dm-devel@redhat.com
-> https://www.redhat.com/mailman/listinfo/dm-devel
-> 
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 35d4b50..0fe56ad 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2486,12 +2486,12 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		}
+ 	}
+ 
+-	if (pte_access & ACC_WRITE_MASK)
+-		mark_page_dirty(vcpu->kvm, gfn);
+-
+ set_pte:
+ 	if (mmu_spte_update(sptep, spte))
+ 		kvm_flush_remote_tlbs(vcpu->kvm);
++
++	if (pte_access & ACC_WRITE_MASK)
++		mark_page_dirty(vcpu->kvm, gfn);
+ done:
+ 	return ret;
+ }
+-- 
+1.8.1.4
 
