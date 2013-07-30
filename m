@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab3G3Dwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 29 Jul 2013 23:52:36 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:54200 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab3G3Dwf (ORCPT
+	id S1757225Ab3G3D5x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 29 Jul 2013 23:57:53 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:8191 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751485Ab3G3D5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 29 Jul 2013 23:52:35 -0400
-Message-ID: <51F73847.6090002@linux.vnet.ibm.com>
-Date: Tue, 30 Jul 2013 09:21:35 +0530
-From: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 29 Jul 2013 23:57:51 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgMFAKg491F5LPxHgWdsb2JhbABbgzuCd7YyhTKBHhcOAQEWJiiCJAEBBTocIxAIAxgJJQ8FJQMhE4gPDbh+Fo0QgSKBNgeEBwOXXooiiQaBSyqBLQ
+Date: Tue, 30 Jul 2013 13:57:48 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Gao feng <gaofeng@cn.fujitsu.com>
+Cc: dwight.engen@oracle.com, "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-fsdevel@vger.kernel.org,
+        Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>,
+        Ben Myers <bpm@sgi.com>, Alex Elder <elder@kernel.org>,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH review 05/16] xfs: Update xfs_ioctl_setattr to handle
+ projids in any user namespace
+Message-ID: <20130730035748.GJ21982@dastard>
+References: <87txpaph4n.fsf@xmission.com>
+ <1361149870-27732-1-git-send-email-ebiederm@xmission.com>
+ <1361149870-27732-5-git-send-email-ebiederm@xmission.com>
+ <20130219015550.GJ26694@dastard>
+ <51F616F2.5040906@cn.fujitsu.com>
+ <20130729075109.GF13468@dastard>
+ <51F72FE6.4080202@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: linux-pm@lists.linux-foundation.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [PATCH 1/3] cpuidle/powernv: cpuidle backend driver
- for powernv
-References: <20130723090111.7291.99479.stgit@deepthi.in.ibm.com> <20130723090137.7291.36657.stgit@deepthi.in.ibm.com> <51F35A2A.1080408@linaro.org> <51F67E96.6040008@linux.vnet.ibm.com> <51F681E7.1060609@linaro.org>
-In-Reply-To: <51F681E7.1060609@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13073003-5490-0000-0000-000003E7E896
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <51F72FE6.4080202@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/29/2013 08:23 PM, Daniel Lezcano wrote:
-> On 07/29/2013 04:39 PM, Deepthi Dharwar wrote:
->> Hi Daniel,
->>
->> On 07/27/2013 10:57 AM, Daniel Lezcano wrote:
->>> On 07/23/2013 11:01 AM, Deepthi Dharwar wrote:
->>>> This patch implements a back-end cpuidle driver for
->>>> powernv calling power7_nap and snooze idle states.
->>>> This can be extended by adding more idle states
->>>> in the future to the existing framework.
->>>>
->>>> Signed-off-by: Deepthi Dharwar <deepthi@linux.vnet.ibm.com>
+On Tue, Jul 30, 2013 at 11:15:50AM +0800, Gao feng wrote:
+> On 07/29/2013 03:51 PM, Dave Chinner wrote:
+> > http://oss.sgi.com/pipermail/xfs/2013-July/028467.html
+> > 
+> > Basically, the discussion we are currently having is whether project
+> > IDs should be exposed to user namespaces at all. e.g:
+> > 
+> > http://oss.sgi.com/pipermail/xfs/2013-July/028497.html
+> > http://oss.sgi.com/pipermail/xfs/2013-July/028551.html
+> > 
+> > "Basically, until we have worked out *if* project quotas can be used
+> > safely within user namespaces, we need to reject any attempt to use
+> > them from within a user namespace container."
+> > 
 > 
-> [ ... ]
-> 
->>>> +static int snooze_loop(struct cpuidle_device *dev,
->>>> +			struct cpuidle_driver *drv,
->>>> +			int index)
->>>> +{
->>>> +	int cpu = dev->cpu;
->>>> +
->>>> +	local_irq_enable();
->>>> +	set_thread_flag(TIF_POLLING_NRFLAG);
->>>> +
->>>> +	while ((!need_resched()) && cpu_online(cpu)) {
->>>> +		ppc64_runlatch_off();
->>>> +		HMT_very_low();
->>>> +	}
->>>
->>> Why are you using the cpu_online test here ?
->>
->> Snooze state is an idle state where cpu executes an infinite loop by
->> reducing the priority of the thread and the idle cpu can come out of it
->> only if need_resched is set or in case the cpu is offlined. In order to
->> continue executing this loop to remain in this idle state, we need the
->> check just to be safe.
-> 
-> Yes, but if the cpu is offline you are no longer executing this code, no ?
-> 
+> yes, seems this v6 patchset allows user in un-init user namespace to setup proj quota
+> through ioctl, and the projid hasn't been converted to kprojid in this patchset.
+> Doesn't this will cause user in container has the ability to change the proj quota
+> which is set by root user in host?
 
-Yes, not needed.
+Dwight just posted v7. can you discuss your concerns in reposnse to
+the relevant patch in that series, please? it's much easier for
+everyone if we keep the discussion int eh one thread ;)
 
-Thanks !
-Deepthi
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
