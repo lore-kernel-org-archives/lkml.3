@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab3G3PAI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:00:08 -0400
-Received: from mail.free-electrons.com ([94.23.35.102]:42271 "EHLO
+	id S1755629Ab3G3PAS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:00:18 -0400
+Received: from mail.free-electrons.com ([94.23.35.102]:42318 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753705Ab3G3PAD (ORCPT
+	by vger.kernel.org with ESMTP id S1754829Ab3G3PAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:00:03 -0400
+	Tue, 30 Jul 2013 11:00:11 -0400
 From: Maxime Ripard <maxime.ripard@free-electrons.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: Emilio Lopez <emilio@elopez.com.ar>, kevin.z.m.zh@gmail.com,
         sunny@allwinnertech.com, shuge@allwinnertech.com,
         linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
         Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 02/10] ARM: sun7i: Add Allwinner A20 DTSI
-Date: Tue, 30 Jul 2013 16:59:46 +0200
-Message-Id: <1375196394-21138-3-git-send-email-maxime.ripard@free-electrons.com>
+Subject: [PATCH 08/10] ARM: sun7i: DT: Add UART muxing options to the DTSI
+Date: Tue, 30 Jul 2013 16:59:52 +0200
+Message-Id: <1375196394-21138-9-git-send-email-maxime.ripard@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.4
 In-Reply-To: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
 References: <1375196394-21138-1-git-send-email-maxime.ripard@free-electrons.com>
@@ -23,192 +23,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Allwinner A20 SoC is based on 2 Cortex A7, an ARM Mali GPU, and is
-built to be pin-compatible with the older Allwinner A10.
+The UARTs on the A20 can be muxed to several pins. Add a few options to
+the DTSI so that we can start using them in the boards' DT.
 
 Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 ---
- arch/arm/boot/dts/sun7i-a20.dtsi | 171 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 171 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun7i-a20.dtsi
+ arch/arm/boot/dts/sun7i-a20.dtsi | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
 diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a20.dtsi
-new file mode 100644
-index 0000000..1afdb4e
---- /dev/null
+index 704fca9..9f45e8d 100644
+--- a/arch/arm/boot/dts/sun7i-a20.dtsi
 +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-@@ -0,0 +1,171 @@
-+/*
-+ * Copyright 2013 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 or later at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
+@@ -70,6 +70,27 @@
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			#gpio-cells = <3>;
 +
-+/include/ "skeleton.dtsi"
++			uart0_pins_a: uart0@0 {
++				allwinner,pins = "PB22", "PB23";
++				allwinner,function = "uart0";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
 +
-+/ {
-+	interrupt-parent = <&gic>;
++			uart6_pins_a: uart6@0 {
++				allwinner,pins = "PI12", "PI13";
++				allwinner,function = "uart6";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
 +
-+	cpus {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		cpu@0 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <0>;
-+		};
-+
-+		cpu@1 {
-+			compatible = "arm,cortex-a7";
-+			device_type = "cpu";
-+			reg = <1>;
-+		};
-+	};
-+
-+	memory {
-+		reg = <0x40000000 0x80000000>;
-+	};
-+
-+	clocks {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		osc24M: osc24M@01c20050 {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <24000000>;
-+		};
-+
-+		osc32k: osc32k {
-+			#clock-cells = <0>;
-+			compatible = "fixed-clock";
-+			clock-frequency = <32768>;
-+		};
-+	};
-+
-+	soc@01c20000 {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		timer@01c20c00 {
-+			compatible = "allwinner,sun4i-timer";
-+			reg = <0x01c20c00 0x90>;
-+			interrupts = <0 22 1>,
-+				     <0 23 1>,
-+				     <0 24 1>,
-+				     <0 25 1>,
-+				     <0 67 1>,
-+				     <0 68 1>;
-+			clocks = <&osc24M>;
-+		};
-+
-+		wdt: watchdog@01c20c90 {
-+			compatible = "allwinner,sun4i-wdt";
-+			reg = <0x01c20c90 0x10>;
-+		};
-+
-+		uart0: serial@01c28000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28000 0x400>;
-+			interrupts = <0 1 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart1: serial@01c28400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28400 0x400>;
-+			interrupts = <0 2 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart2: serial@01c28800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28800 0x400>;
-+			interrupts = <0 3 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart3: serial@01c28c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c28c00 0x400>;
-+			interrupts = <0 4 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart4: serial@01c29000 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29000 0x400>;
-+			interrupts = <0 17 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart5: serial@01c29400 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29400 0x400>;
-+			interrupts = <0 18 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart6: serial@01c29800 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29800 0x400>;
-+			interrupts = <0 19 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		uart7: serial@01c29c00 {
-+			compatible = "snps,dw-apb-uart";
-+			reg = <0x01c29c00 0x400>;
-+			interrupts = <0 20 1>;
-+			reg-shift = <2>;
-+			reg-io-width = <4>;
-+			clocks = <&osc24M>;
-+			status = "disabled";
-+		};
-+
-+		gic: interrupt-controller@01c81000 {
-+			compatible = "arm,cortex-a7-gic";
-+			reg = <0x01c81000 0x1000>,
-+			      <0x01c82000 0x1000>,
-+			      <0x01c84000 0x2000>,
-+			      <0x01c86000 0x2000>;
-+			interrupt-controller;
-+			#interrupt-cells = <3>;
-+			interrupts = <1 9 0xf04>;
-+		};
-+	};
-+};
++			uart7_pins_a: uart7@0 {
++				allwinner,pins = "PI20", "PI21";
++				allwinner,function = "uart7";
++				allwinner,drive = <0>;
++				allwinner,pull = <0>;
++			};
+ 		};
+ 
+ 		timer@01c20c00 {
 -- 
 1.8.3.4
 
