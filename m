@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab3G3KDo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:03:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:52942 "EHLO
+	id S1759009Ab3G3KET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:04:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52941 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932181Ab3G3JcV (ORCPT
+	with ESMTP id S932151Ab3G3JcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 05:32:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, <srikar@linux.vnet.ibm.com>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 005/106] uprobes: Fix return value in error handling path
-Date: Tue, 30 Jul 2013 10:30:24 +0100
-Message-Id: <1375176725-5825-6-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 009/106] ASoC: sglt5000: Fix SGTL5000_PLL_FRAC_DIV_MASK
+Date: Tue, 30 Jul 2013 10:30:28 +0100
+Message-Id: <1375176725-5825-10-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -29,48 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>
+From: Fabio Estevam <fabio.estevam@freescale.com>
 
-commit fa44063f9ef163c3a4c8d8c0465bb8a056b42035 upstream.
+commit 5c78dfe87ea04b501ee000a7f03b9432ac9d008c upstream.
 
-When wrong argument is passed into uprobe_events it does not return
-an error:
+SGTL5000_PLL_FRAC_DIV_MASK is used to mask bits 0-10 (11 bits in total) of
+register CHIP_PLL_CTRL, so fix the mask to accomodate all this bit range.
 
-[root@jovi tracing]# echo 'p:myprobe /bin/bash' > uprobe_events
-[root@jovi tracing]#
-
-The proper response is:
-
-[root@jovi tracing]# echo 'p:myprobe /bin/bash' > uprobe_events
--bash: echo: write error: Invalid argument
-
-Link: http://lkml.kernel.org/r/51B964FF.5000106@huawei.com
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: <srikar@linux.vnet.ibm.com>
-Signed-off-by: zhangwei(Jovi) <jovi.zhangwei@huawei.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Reported-by: Oskar Schirmer <oskar@scara.com>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/trace/trace_uprobe.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ sound/soc/codecs/sgtl5000.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 2b36ac6..5c83613 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -243,8 +243,10 @@ static int create_trace_uprobe(int argc, char **argv)
- 		return -EINVAL;
- 	}
- 	arg = strchr(argv[1], ':');
--	if (!arg)
-+	if (!arg) {
-+		ret = -EINVAL;
- 		goto fail_address_parse;
-+	}
+diff --git a/sound/soc/codecs/sgtl5000.h b/sound/soc/codecs/sgtl5000.h
+index 8a9f435..d3a68bb 100644
+--- a/sound/soc/codecs/sgtl5000.h
++++ b/sound/soc/codecs/sgtl5000.h
+@@ -347,7 +347,7 @@
+ #define SGTL5000_PLL_INT_DIV_MASK		0xf800
+ #define SGTL5000_PLL_INT_DIV_SHIFT		11
+ #define SGTL5000_PLL_INT_DIV_WIDTH		5
+-#define SGTL5000_PLL_FRAC_DIV_MASK		0x0700
++#define SGTL5000_PLL_FRAC_DIV_MASK		0x07ff
+ #define SGTL5000_PLL_FRAC_DIV_SHIFT		0
+ #define SGTL5000_PLL_FRAC_DIV_WIDTH		11
  
- 	*arg++ = '\0';
- 	filename = argv[1];
 -- 
 1.8.3.2
 
