@@ -1,125 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757374Ab3G3GKf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 02:10:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35461 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752623Ab3G3GKe (ORCPT
+	id S1757417Ab3G3GMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 02:12:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52681 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab3G3GME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 02:10:34 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <51F758B6.9090204@jp.fujitsu.com>
-Date: Tue, 30 Jul 2013 15:09:58 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	Tue, 30 Jul 2013 02:12:04 -0400
+Message-ID: <51F7590B.4020705@ti.com>
+Date: Tue, 30 Jul 2013 11:41:23 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: bhelgaas@google.com, vgoyal@redhat.com
-CC: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        iommu@lists.linux-foundation.org, kexec@lists.infradead.org,
-        ishii.hironobu@jp.fujitsu.com, ddutile@redhat.com, bill.sumner@hp.com,
-        alex.williamson@redhat.com, hbabu@us.ibm.com
-Subject: Re: [PATCH v2] PCI: Reset PCIe devices to stop ongoing DMA
-References: <1368509365-2260-1-git-send-email-indou.takao@jp.fujitsu.com> <CAErSpo4t_2Xw76p3Z9FVzyyK-MBovavDu9D=pYoPMjESSxgT=w@mail.gmail.com> <51B19DF3.2070009@jp.fujitsu.com> <CAErSpo6dfEnzriHD_aWZB_3E-kSzauhNRHPd+VuFX5HONVKgqw@mail.gmail.com> <51B6BEDB.3000509@jp.fujitsu.com> <CAErSpo5u8qGALt6C+tuPYXdd2YgyMH6fnPnA+afUteEZ7kY0iw@mail.gmail.com> <51B93221.2040505@jp.fujitsu.com> <CAErSpo5tVK-Z3aOdMTzab-S8o5zLVtDOFQ8-LSYpUgbrJSsxuw@mail.gmail.com> <51BA7BB6.1080104@jp.fujitsu.com> <51EF7466.20703@jp.fujitsu.com> <CAErSpo5B7NzVfxwW3bQnfK+iK+DrRsWQd2Cm14z5PWNnRHWL5w@mail.gmail.com> <51F5B966.9080405@jp.fujitsu.com> <CAErSpo4JtG5qVJb-nCywe3vkft=-cDeRDKn_V92RCZ-sGXpwbg@mail.gmail.com>
-In-Reply-To: <CAErSpo4JtG5qVJb-nCywe3vkft=-cDeRDKn_V92RCZ-sGXpwbg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+To: <balbi@ti.com>
+CC: <tony@atomide.com>, <linux@arm.linux.org.uk>, <eballetbo@gmail.com>,
+        <javier@dowhile0.org>, <gregkh@linuxfoundation.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 2/2] arm: omap: remove *.auto* from device names given
+ in usb_bind_phy
+References: <1374829418-27503-1-git-send-email-kishon@ti.com> <1374829418-27503-3-git-send-email-kishon@ti.com> <20130729150638.GD3063@radagast> <51F68A56.8060805@ti.com> <20130729175413.GC4964@radagast> <51F74BC8.7020903@ti.com> <20130730060134.GD9155@radagast>
+In-Reply-To: <20130730060134.GD9155@radagast>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/07/29 23:17), Bjorn Helgaas wrote:
-> On Sun, Jul 28, 2013 at 6:37 PM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
->> (2013/07/26 2:00), Bjorn Helgaas wrote:
->>> On Wed, Jul 24, 2013 at 12:29 AM, Takao Indoh
->>> <indou.takao@jp.fujitsu.com> wrote:
->>>> Sorry for letting this discussion slide, I was busy on other works:-(
->>>> Anyway, the summary of previous discussion is:
->>>> - My patch adds new initcall(fs_initcall) to reset all PCIe endpoints on
->>>>     boot. This expects PCI enumeration is done before IOMMU
->>>>     initialization as follows.
->>>>       (1) PCI enumeration
->>>>       (2) fs_initcall ---> device reset
->>>>       (3) IOMMU initialization
->>>> - This works on x86, but does not work on other architecture because
->>>>     IOMMU is initialized before PCI enumeration on some architectures. So,
->>>>     device reset should be done where IOMMU is initialized instead of
->>>>     initcall.
->>>> - Or, as another idea, we can reset devices in first kernel(panic kernel)
+Hi,
+
+On Tuesday 30 July 2013 11:31 AM, Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Jul 30, 2013 at 10:44:48AM +0530, Kishon Vijay Abraham I wrote:
+>>> On Mon, Jul 29, 2013 at 08:59:26PM +0530, Kishon Vijay Abraham I wrote:
+>>>>>> Previously MUSB wrapper (OMAP) device used PLATFORM_DEVID_AUTO while creating
+>>>>>> MUSB core device. So in usb_bind_phy (binds the controller with the PHY), the
+>>>>>> device name of the controller had *.auto* in it. Since with using
+>>>>>> PLATFORM_DEVID_AUTO, there is no way to know the exact device name in advance,
+>>>>>> the data given in usb_bind_phy became obsolete and usb_get_phy was failing.
+>>>>>> So MUSB wrapper was modified not to use PLATFORM_DEVID_AUTO. Corresponding
+>>>>>> change is done in board file here.
+>>>>>>
+>>>>>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>>>>>> ---
+>>>>>>  arch/arm/mach-omap2/board-2430sdp.c          |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-3430sdp.c          |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-cm-t35.c           |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-devkit8000.c       |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-igep0020.c         |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-ldp.c              |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3beagle.c      |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3evm.c         |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3logic.c       |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3pandora.c     |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3stalker.c     |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-omap3touchbook.c   |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-overo.c            |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-rm680.c            |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-rx51.c             |    2 +-
+>>>>>>  arch/arm/mach-omap2/board-zoom-peripherals.c |    2 +-
+>>>>>>  16 files changed, 16 insertions(+), 16 deletions(-)
+>>>>>>
+>>>>>> diff --git a/arch/arm/mach-omap2/board-2430sdp.c b/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>> index 244d8a5..17bb076 100644
+>>>>>> --- a/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>> +++ b/arch/arm/mach-omap2/board-2430sdp.c
+>>>>>> @@ -233,7 +233,7 @@ static void __init omap_2430sdp_init(void)
+>>>>>>  	omap_hsmmc_init(mmc);
+>>>>>>  
+>>>>>>  	omap_mux_init_signal("usb0hs_stp", OMAP_PULL_ENA | OMAP_PULL_UP);
+>>>>>> -	usb_bind_phy("musb-hdrc.0.auto", 0, "twl4030_usb");
+>>>>>> +	usb_bind_phy("musb-hdrc.0", 0, "twl4030_usb");
+>>>>>
+>>>>> how about moving usb_bind_phy() calls to omap2430.c ?
+>>>>>
+>>>>> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
+>>>>> index f44e8b5..b6abc1a 100644
+>>>>> --- a/drivers/usb/musb/omap2430.c
+>>>>> +++ b/drivers/usb/musb/omap2430.c
+>>>>> @@ -544,6 +544,9 @@ static int omap2430_probe(struct platform_device *pdev)
+>>>>>  
+>>>>>  		pdata->board_data	= data;
+>>>>>  		pdata->config		= config;
+>>>>> +	} else {
+>>>>> +		/* bind the PHY */
+>>>>> +		usb_bind_phy(dev_name(&musb->dev), 0, "twl4030_usb");
 >>>>
->>>> Resetting devices in panic kernel is against kdump policy and seems not to
->>>> be good idea. So I think adding reset code into iommu initialization is
->>>> better. I'll post patches for that.
+>>>> This looks like a hack IMHO to workaround the usb phy library. otherwise it is
+>>>> similar to get_phy_by_name.
 >>>
->>> Of course nobody *wants* to do anything in the panic kernel.  But
->>> simply saying "it's against kdump policy and seems not to be a good
->>> idea" is not a technical argument.  There are things that are
->>> impractical to do in the kdump kernel, so they have to be done in the
->>> panic kernel even though we know the kernel is unreliable and the
->>> attempt may fail.
+>>> actually, this is a workaround to the fact that we're not creating all
+>>> platform_devices in arch/arm/mach-omap2/ :-)
+>>>
+>>> If we had the musb allocation there, we could easily handle
+>>> usb_bind_phy()
+>>>
+>>>>> so that's temporary. It might be better than to reintroduce the IDR in
+>>>>> musb_core.c.
+>>>>
+>>>> that’s needed for generic phy framework anyway :-s
+>>>
+>>> right, but generic phy framework can handle everything just fine, the
+>>> only problem is that names are changing.
 >>
->> Accessing kernel data in panic kernel causes panic again, so
->> - Don't touch kernel data in panic situation
->> - Jump to kdump kernel as quickly as possible, and do things in safe
->>    kernel
->> These are basic "kdump policy". Of course if there are any works which
->> we cannot do in kdump kernel and can do only in panic kernel, for
->> example saving registers or stopping cpus, we should do them in panic
->> kernel.
->>
->> Resetting devices in panic kernel is worth considering if we can safely
->> find pci_dev and reset it, but I have no idea how to do that because
->> for example struct pci_dev may be borken.
+>> right. But if the names change, PHY framework wouldn't be able to return the
+>> reference to the PHY.
 > 
-> Nobody can guarantee that the panic kernel can do *anything* safely
-> because any arbitrary kernel data or text may be corrupted.  But if
-> you consider any specific data structure, e.g., CPU or PCI device
-> lists, it's not very likely that it will be corrupted.
+> with my suggestion they can change whenever they want since we're using
+> dev_name() of the just-created musb platform_device. Right ?
 
-To reset device we need to scan pci device tree using for_each_pci_dev.
-Something like bust_spinlocks() to clear pci_lock forcibly is needed.
-Vivek, adding these into kdump is acceptable for you? Or any other
-ideas? I think iterating over a list like for_each_pci_dev is dangerous.
+right. But the PHY device can be created in a different place from where the
+musb devices are created. And in the PHY framework, the PHY device should have
+the list of controller device (names) it can support (PHY framework does not
+maintain a separate list for binding like how we had in USB PHY library). e.g.
+http://www.mail-archive.com/linux-omap@vger.kernel.org/msg92817.html. In such
+cases how do we pass the device names. Also will the MUSB core device be
+created before twl4030-usb PHY device?
 
-> 
->>> My point about IOMMU and PCI initialization order doesn't go away just
->>> because it doesn't fit "kdump policy."  Having system initialization
->>> occur in a logical order is far more important than making kdump work.
->>
->> My next plan is as follows. I think this is matched to logical order
->> on boot.
->>
->> drivers/pci/pci.c
->> - Add function to reset bus, for example, pci_reset_bus(struct pci_bus *bus)
->>
->> drivers/iommu/intel-iommu.c
->> - On initialization, if IOMMU is already enabled, call this bus reset
->>    function before disabling and re-enabling IOMMU.
-> 
-> I raised this issue because of arches like sparc that enumerate the
-> IOMMU before the PCI devices that use it.  In that situation, I think
-> you're proposing this:
-> 
->    panic kernel
->      enable IOMMU
->      panic
->    kdump kernel
->      initialize IOMMU (already enabled)
->        pci_reset_bus
->        disable IOMMU
->        enable IOMMU
->      enumerate PCI devices
-> 
-> But the problem is that when you call pci_reset_bus(), you haven't
-> enumerated the PCI devices, so you don't know what to reset.
-
-Right, so my idea is adding reset code into "intel-iommu.c". intel-iommu
-initialization is based on the assumption that enumeration of PCI devices 
-is already done. We can find target device from IOMMU page table instead
-of scanning all devices in pci tree.
-
-Therefore, this idea is only for intel-iommu. Other architectures need
-to implement their own reset code.
-
-Thanks,
-Takao Indoh
-
+Thanks
+Kishon
