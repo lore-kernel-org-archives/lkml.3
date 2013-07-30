@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab3G3FTy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 01:19:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:54435 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754285Ab3G3FTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 01:19:53 -0400
-Message-ID: <51F74CEC.8040407@ti.com>
-Date: Tue, 30 Jul 2013 10:49:40 +0530
-From: George Cherian <george.cherian@ti.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+	id S1757326Ab3G3FY7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 01:24:59 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:55461 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002Ab3G3FY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 01:24:58 -0400
+X-AuditID: 9c93016f-b7b50ae0000021a9-bc-51f74e281258
+From: Namhyung Kim <namhyung@kernel.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 8/9] perf tools: add kcore to the object code reading test
+References: <1374760890-30558-1-git-send-email-adrian.hunter@intel.com>
+	<1374760890-30558-9-git-send-email-adrian.hunter@intel.com>
+Date: Tue, 30 Jul 2013 14:24:56 +0900
+In-Reply-To: <1374760890-30558-9-git-send-email-adrian.hunter@intel.com>
+	(Adrian Hunter's message of "Thu, 25 Jul 2013 17:01:29 +0300")
+Message-ID: <87vc3s1uxj.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: <linux-usb@vger.kernel.org>, <balbi@ti.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <linux-omap@vger.kernel.org>, <kishon@ti.com>
-Subject: Re: [PATCH v2 2/4] phy: phy-amxxxx-usb: Add PHY driver for amxxxx
- platform
-References: <1374237277-17769-1-git-send-email-george.cherian@ti.com> <1374237277-17769-3-git-send-email-george.cherian@ti.com> <20130729151754.GB827@linutronix.de>
-In-Reply-To: <20130729151754.GB827@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/29/2013 8:47 PM, Sebastian Andrzej Siewior wrote:
-> * George Cherian | 2013-07-19 18:04:35 [+0530]:
+On Thu, 25 Jul 2013 17:01:29 +0300, Adrian Hunter wrote:
+> Make the "object code reading" test attempt to read from
+> kcore.
 >
->> Adds phy driver support for am33xx platform, the host/device
->> peripheral controller shall get this phy object to control the phy
->> operations.
-> If you rebase this on-top of the two instances patches I've sent earlier
-> then you can bury patch 3 and 4, right?
-
-Yes True. I posted it for completeness.
-
-
+> The test uses objdump which struggles with kcore. i.e.
+> doesn't always work, sometimes takes a long time.
+> The test has been made to work around those issues.
 >
-> I don't like very much the way you obtain the phy id:
->> +		of_property_read_u32(np, "id", &phy->id);
-> with the .dts changes I made you should able to use
->      of_alias_get_id()
-> instead.
->
-> Let me look what you have additionaly:
-> - usbotg_fck
->    Is this really required? I have the phy as a child of the "main"
->    device which has a hwmod property which is associated with this clock.
->    So pm enable/ disable should also enable this clock if possible,
->    right?
->
-> - device wakeup via omap_control_am335x_phy_wkup()
->    Now. that is one thing that the simple phy driver is missing. If you
->    call a magic function for this to happen than I don't have to worry
->    about the missing memory space for this function.
->
-> So from what I see now, it is most likely the easiest thing to just add
-> that wakeup to the phy driver I posted. Do you agree?
+[SNIP]
 
-The whole idea of writing a seperate phy driver was to use the generic phy framework
-and most of the amxxxx devices have the same phy (eg am335x, am437x).
-Now since the register is shared in am335x for phy_wkup (Not in the case of am437x)
-how are you planning to  map it. I feel if omap_control_usb can delegate the writes
-to phy_wkup, phy_on and phy_off, it makes the life simpler.
+> -	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS) {
+> +	if (al.map->dso->symtab_type == DSO_BINARY_TYPE__KALLSYMS &&
+> +	    !dso__is_kcore(al.map->dso)) {
 
-Thoughts???
-
-> If so we need to figure out where the memory for the wakeup register is
-> comming from. We need also to ensure that both phys can not write at the
-> same time. A look would be nice.
->
->> Signed-off-by: George Cherian <george.cherian@ti.com>
-> Sebastian
+I was confused.  So this means that the symbols came from the kallsyms
+but actual binary data came from the kcore, right?
 
 
--- 
--George
+>  		pr_debug("Unexpected kernel address - skipping\n");
+>  		return 0;
+>  	}
 
+[SNIP]
+> +
+> +	/* 2nd time through we just try kcore */
+> +	if (try_kcore && !have_kcore)
+> +		return TEST_CODE_READING_NO_KCORE;
+> +
+> +	/* No point getting kernel events if there is no kernel object */
+> +	if (!have_vmlinux && !have_kcore)
+>  		excl_kernel = true;
+>  
+>  	threads = thread_map__new_by_tid(pid);
+> @@ -457,8 +502,12 @@ static int do_test_code_reading(void)
+>  	if (ret < 0)
+>  		goto out_err;
+>  
+> -	if (!have_vmlinux)
+> +	if (!have_vmlinux && !have_kcore && !try_kcore)
+> +		err = TEST_CODE_READING_NO_KERNEL_OBJ;
+> +	else if (!have_vmlinux && !try_kcore)
+>  		err = TEST_CODE_READING_NO_VMLINUX;
+> +	else if (!have_kcore && try_kcore)
+> +		err = TEST_CODE_READING_NO_KCORE;
+
+It seems that the above line is not reachable since we already bailed
+out the second test if we don't have kcore.
+
+
+>  	else if (excl_kernel)
+>  		err = TEST_CODE_READING_NO_ACCESS;
+>  	else
+> @@ -485,7 +534,9 @@ int test__code_reading(void)
+>  {
+>  	int ret;
+>  
+> -	ret = do_test_code_reading();
+> +	ret = do_test_code_reading(false);
+> +	if (!ret)
+
+Shouldn't it be
+
+	if (ret)
+?
+
+Thanks,
+Namhyung
+
+
+> +		ret = do_test_code_reading(true);
+>  
+>  	switch (ret) {
+>  	case TEST_CODE_READING_OK:
+> @@ -493,9 +544,15 @@ int test__code_reading(void)
+>  	case TEST_CODE_READING_NO_VMLINUX:
+>  		fprintf(stderr, " (no vmlinux)");
+>  		return 0;
+> +	case TEST_CODE_READING_NO_KCORE:
+> +		fprintf(stderr, " (no kcore)");
+> +		return 0;
+>  	case TEST_CODE_READING_NO_ACCESS:
+>  		fprintf(stderr, " (no access)");
+>  		return 0;
+> +	case TEST_CODE_READING_NO_KERNEL_OBJ:
+> +		fprintf(stderr, " (no kernel obj)");
+> +		return 0;
+>  	default:
+>  		return -1;
+>  	};
