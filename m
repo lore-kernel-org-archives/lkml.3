@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab3G3PSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 11:18:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55312 "EHLO
+	id S1755762Ab3G3PTS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 11:19:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55343 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755688Ab3G3PSH (ORCPT
+	with ESMTP id S1756092Ab3G3PSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 11:18:07 -0400
+	Tue, 30 Jul 2013 11:18:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liu ShuoX <shuox.liu@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Mika Kuoppala <mika.kuoppala@intel.com>,
+        Guenter Roeck <linux@roeck-us.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 18/75] PM / Sleep: avoid 'autosleep' in shutdown progress
-Date: Tue, 30 Jul 2013 08:16:47 -0700
-Message-Id: <1375197464-27962-19-git-send-email-kamal@canonical.com>
+Subject: [PATCH 06/75] Partially revert "drm/i915: unconditionally use mt forcewake on hsw/ivb"
+Date: Tue, 30 Jul 2013 08:16:35 -0700
+Message-Id: <1375197464-27962-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,46 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu ShuoX <shuox.liu@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit e5248a111bf4048a9f3fab1a9c94c4630a10592a upstream.
+commit c11e5f35ab490bd30591563816fbc83526521777 upstream.
 
-Prevent automatic system suspend from happening during system
-shutdown by making try_to_suspend() check system_state and return
-immediately if it is not SYSTEM_RUNNING.
+This patch partially reverts commit 36ec8f877481449bdfa072e6adf2060869e2b970 for
+IvyBridge CPUs.
 
-This prevents the following breakage from happening (scenario from
-Zhang Yanmin):
+The original commit results in repeated 'Timed out waiting for forcewake old
+ack to clear' messages on a Supermicro C7H61 board (BIOS version 2.00 and 2.00b)
+with i7-3770K CPU. It ultimately results in a hangup if the system is highly
+loaded. Reverting the commit for IvyBridge CPUs fixes the issue.
 
- Kernel starts shutdown and calls all device driver's shutdown
- callback.  When a driver's shutdown is called, the last wakelock is
- released and suspend-to-ram starts.  However, as some driver's shut
- down callbacks already shut down devices and disabled runtime pm,
- the suspend-to-ram calls driver's suspend callback without noticing
- that device is already off and causes crash.
+Issue a warning if the CPU is IvyBridge and mt forcewake is disabled, since
+this condition can result in secondary issues.
 
-[rjw: Changelog]
-Signed-off-by: Liu ShuoX <shuox.liu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+v2: Only revert patch for Ivybridge CPUs
+    Issue info message if mt forcewake is disabled on Ivybridge
+
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60541
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Mika Kuoppala <mika.kuoppala@intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=66139
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/power/autosleep.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/i915/intel_pm.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/power/autosleep.c b/kernel/power/autosleep.c
-index ca304046..ab79ecb 100644
---- a/kernel/power/autosleep.c
-+++ b/kernel/power/autosleep.c
-@@ -32,7 +32,8 @@ static void try_to_suspend(struct work_struct *work)
- 
- 	mutex_lock(&autosleep_lock);
- 
--	if (!pm_save_wakeup_count(initial_count)) {
-+	if (!pm_save_wakeup_count(initial_count) ||
-+		system_state != SYSTEM_RUNNING) {
- 		mutex_unlock(&autosleep_lock);
- 		goto out;
- 	}
+diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
+index 253bcf3..e8c7ade 100644
+--- a/drivers/gpu/drm/i915/intel_pm.c
++++ b/drivers/gpu/drm/i915/intel_pm.c
+@@ -4411,9 +4411,38 @@ void intel_gt_init(struct drm_device *dev)
+ 	if (IS_VALLEYVIEW(dev)) {
+ 		dev_priv->gt.force_wake_get = vlv_force_wake_get;
+ 		dev_priv->gt.force_wake_put = vlv_force_wake_put;
+-	} else if (IS_IVYBRIDGE(dev) || IS_HASWELL(dev)) {
++	} else if (IS_HASWELL(dev)) {
+ 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_mt_get;
+ 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_mt_put;
++	} else if (IS_IVYBRIDGE(dev)) {
++		u32 ecobus;
++
++		/* IVB configs may use multi-threaded forcewake */
++
++		/* A small trick here - if the bios hasn't configured
++		 * MT forcewake, and if the device is in RC6, then
++		 * force_wake_mt_get will not wake the device and the
++		 * ECOBUS read will return zero. Which will be
++		 * (correctly) interpreted by the test below as MT
++		 * forcewake being disabled.
++		 */
++		mutex_lock(&dev->struct_mutex);
++		__gen6_gt_force_wake_mt_get(dev_priv);
++		ecobus = I915_READ_NOTRACE(ECOBUS);
++		__gen6_gt_force_wake_mt_put(dev_priv);
++		mutex_unlock(&dev->struct_mutex);
++
++		if (ecobus & FORCEWAKE_MT_ENABLE) {
++			dev_priv->gt.force_wake_get =
++						__gen6_gt_force_wake_mt_get;
++			dev_priv->gt.force_wake_put =
++						__gen6_gt_force_wake_mt_put;
++		} else {
++			DRM_INFO("No MT forcewake available on Ivybridge, this can result in issues\n");
++			DRM_INFO("when using vblank-synced partial screen updates.\n");
++			dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
++			dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
++		}
+ 	} else if (IS_GEN6(dev)) {
+ 		dev_priv->gt.force_wake_get = __gen6_gt_force_wake_get;
+ 		dev_priv->gt.force_wake_put = __gen6_gt_force_wake_put;
 -- 
 1.8.1.2
 
