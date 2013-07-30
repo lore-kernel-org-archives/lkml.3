@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab3G3OrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:47:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42117 "EHLO mx2.suse.de"
+	id S1753259Ab3G3Ora (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:47:30 -0400
+Received: from mga14.intel.com ([143.182.124.37]:61459 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751456Ab3G3OrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:47:17 -0400
-Date: Tue, 30 Jul 2013 16:47:15 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, dave.hansen@intel.com,
-        kosaki.motohiro@jp.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
-        bp@suse.de, Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH resend] drop_caches: add some documentation and info
- message
-Message-ID: <20130730144715.GH15847@dhcp22.suse.cz>
-References: <1374842669-22844-1-git-send-email-mhocko@suse.cz>
- <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org>
- <20130730074531.GA10584@dhcp22.suse.cz>
- <20130730012544.2f33ebf6.akpm@linux-foundation.org>
- <20130730125525.GB15847@dhcp22.suse.cz>
- <20130730073956.3047e3c7.akpm@linux-foundation.org>
+	id S1752719Ab3G3Or2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 10:47:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.89,778,1367996400"; 
+   d="scan'208";a="275317770"
+Message-ID: <51F7D1F0.20309@intel.com>
+Date: Tue, 30 Jul 2013 07:47:12 -0700
+From: Dave Hansen <dave.hansen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730073956.3047e3c7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michal Hocko <mhocko@suse.cz>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, kosaki.motohiro@jp.fujitsu.com,
+        kamezawa.hiroyu@jp.fujitsu.com, bp@suse.de,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH resend] drop_caches: add some documentation and info message
+References: <1374842669-22844-1-git-send-email-mhocko@suse.cz> <20130729135743.c04224fb5d8e64b2730d8263@linux-foundation.org> <20130730074531.GA10584@dhcp22.suse.cz> <20130730012544.2f33ebf6.akpm@linux-foundation.org> <20130730125525.GB15847@dhcp22.suse.cz>
+In-Reply-To: <20130730125525.GB15847@dhcp22.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 30-07-13 07:39:56, Andrew Morton wrote:
-> On Tue, 30 Jul 2013 14:55:25 +0200 Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > > > I am OK with that  but can we use a top bit instead. Maybe we never have
-> > > > other entities to drop in the future but it would be better to have a room for them
-> > > > just in case.
-> > > 
-> > > If we add another flag in the future it can use bit 3?
-> > 
-> > What if we get crazy and need more of them?
-> 
-> Then we use bit 4.  Then 5.  Then 6.
-> 
-> I'm really not understanding your point here ;)
+On 07/30/2013 05:55 AM, Michal Hocko wrote:
+>> > If we add another flag in the future it can use bit 3?
+> What if we get crazy and need more of them?
 
-I meant let's keep entities to drop in the low bits and the mode of
-printing in the top so they are separated.
+I really hate using bits for these kinds of interfaces.  I'm forgetful
+and never remember which bit is which, and they're possible to run out of.
 
--- 
-Michal Hocko
-SUSE Labs
+I'm not saying do it now, but we can switch over to:
+
+	echo 'slab|pagecache' > drop_caches
+or
+	echo 'quiet|slab' > drop_caches
+
+any time we want and still have compatibility with the existing bitwise
+interface.
