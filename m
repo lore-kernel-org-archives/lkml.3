@@ -1,98 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758572Ab3G3Xxx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:53:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49634 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758142Ab3G3Xxw (ORCPT
+	id S1758556Ab3G3X6n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:58:43 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:59709 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab3G3X6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:53:52 -0400
-Date: Tue, 30 Jul 2013 16:55:08 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Luis R. Rodriguez" <rodrigue@qca.qualcomm.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Hector Palacios <hector.palacios@digi.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "gustavo@padovan.org" <gustavo@padovan.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        mcgrof@do-not-panic.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "surajs@qca.qualcomm.com" <surajs@qca.qualcomm.com>,
-        jjohnson@qca.qualcomm.com, Adrian Chadd <adrian@freebsd.org>,
-        ddahlby@qca.qualcomm.com, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: ROM Patching (was: [PATCH] bluetooth: remove wrong dependency
- for BT_ATH3K)
-Message-ID: <20130730235508.GA25319@kroah.com>
-References: <1375114325-25498-1-git-send-email-hector.palacios@digi.com>
- <5438CD3C-E28C-485C-94B8-F743E8B13D4A@holtmann.org>
- <51F7722E.9050708@digi.com>
- <20130730205601.GI17130@pogo>
- <2C94C740-76BA-4058-B0D7-C37D44875CA1@holtmann.org>
- <20130730224809.GN17130@pogo>
+	Tue, 30 Jul 2013 19:58:42 -0400
+Date: Wed, 31 Jul 2013 02:58:34 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Dave Jones <davej@redhat.com>, Kees Cook <keescook@chromium.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        ksummit-2013-discuss@lists.linuxfoundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Ksummit-2013-discuss] [ARM ATTEND] catching up on exploit
+ mitigations
+Message-ID: <20130730235834.GD30725@blackmetal.musicnaut.iki.fi>
+References: <CAGXu5jKv9Vt+Hu0mFYaxggLLDZ46U3KR9MKegUoHH8StXCkBtQ@mail.gmail.com>
+ <20130730221435.GA22240@redhat.com>
+ <20130730231120.GC30725@blackmetal.musicnaut.iki.fi>
+ <20130730231533.GA26824@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130730224809.GN17130@pogo>
+In-Reply-To: <20130730231533.GA26824@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 03:48:09PM -0700, Luis R. Rodriguez wrote:
-> > We are planning to take one extra step and split this into a
-> > mini-driver approach similar to what has been done for usbnet, but we
-> > are not there yet.
-> 
-> Neat. Perhaps we need something that we can share with 802.11 or other
-> hardare I highly doubt we're the only ones patching ROM. Don't we even
-> patch up core CPUs? I'm wondering if firmware_class could be expanded to
-> support serialized ROM patching. The biggest hurdle I see with splititng
-> ROM patching from a single firmware is serializing that, addressing
-> revision dependencies and of course kernel dependencies.
+Hi,
 
-What does the firmware_class need to do here that it doesn't do today?
+On Tue, Jul 30, 2013 at 07:15:33PM -0400, Dave Jones wrote:
+> On Wed, Jul 31, 2013 at 02:11:20AM +0300, Aaro Koskinen wrote:
+>  > On Tue, Jul 30, 2013 at 06:14:35PM -0400, Dave Jones wrote:
+>  > > On Tue, Jul 30, 2013 at 12:05:40PM -0700, Kees Cook wrote:
+>  > >  > - fuzzing (is anyone running trinity or similar on the ARM tree?)
+>  > >  
+>  > > Someone was kind enough to send me an arm chromebook, so I tried this just
+>  > > last week (albeit, on the 3.4 kernel it shipped with). The results make
+>  > > me think the answer is a resounding 'no'.
+>  > 
+>  > Shouldn't you run trinity only under QEMU or similar virtual
+>  > environment? Don't know about chromebook, but on some of my ARM boards
+>  > a misbehaving kernel could at least in theory brick the board...
+>  
+> I like to live dangerously.  Don't imitate everything you see on TV,
+> or read about on lkml.
 
-> > However the ROM patching drivers need to be in the kernel since
-> > otherwise they will race with the core init sequence.
-> 
-> Sure and depending on the architecture -- if this is kicked off to
-> userspace helpers or not then we may need to consider dbus in
-> kernel thing to help with speed / races, dependenecies / async
-> loading, -EPROBE_DEFER, etc.
+Sadly I have no TV. :)
 
-How would dbus in the kernel change anything here?
+Anyway, I think it would be interesting to learn about arch-specific
+bugs discovered with trinity. Quickly thinking, the results should be
+mostly same regardless of the architecture since the code being tested
+is generic especially when running as a regular user. But of course
+there are 32/64-bit and big-endian/little-endian and such differences,
+and maybe some permission bugs (likely in vendor kernels).
 
-> > There are also just firmware download drivers that do nothing else
-> > than just loading the firmware. And here it can be done via userspace
-> > or kernel space. In the Bluetooth world we have seen both, but
-> > generally the kernel ones stayed around while the userspace ones had a
-> > hard time to work with udev, libusb, libusb1 etc.
-> 
-> Ah I see. Perhaps we can address this once we get some form of dbus in
-> kernel.
-
-The kernel directly loads firmware from the filesystem now, no userspace
-helpers are involved, so no need for udev, libusb, etc.  And as such, no
-need for any "dbus" in the kernel to do this either.
-
-> > For UART based drivers it is a little bit different since we had to
-> > bring up the line discipline from userspace anyway and configure all
-> > the UART parameters. For these drivers the firmware download or ROM
-> > patching has been done normally via userspace since there is full
-> > exclusive access before the Bluetooth subsystem knows about the
-> > device.
-> 
-> Is this something that dbus in kernel can help clean up a bit?
-
-I don't understand how it could, please explain.
-
-Also note, for those not knowing, we have been working on dbus in the
-kernel (google "kdbus" for the github repo), but it is all
-outward-facing (i.e. userspace using the kdbus code to interact with
-other processes with a dbus-like protocol, not for in-kernel dbus
-things, although adding it wouldn't be that hard, just really strange.
-
-thanks,
-
-greg k-h
+A.
