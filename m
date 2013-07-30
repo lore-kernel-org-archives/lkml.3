@@ -1,117 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab3G3Lda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 07:33:30 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11008 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753590Ab3G3Lby (ORCPT
+	id S1754375Ab3G3LjL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 07:39:11 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:45807 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239Ab3G3LjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 07:31:54 -0400
-X-Authority-Analysis: v=2.0 cv=P6i4d18u c=1 sm=0 a=Sro2XwOs0tJUSHxCKfOySw==:17 a=Drc5e87SC40A:10 a=Ciwy3NGCPMMA:10 a=m8Pfgv50XzoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=KGjhK52YXX0A:10 a=nZekNazA9lsA:10 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=3nbZYyFuAAAA:8 a=x79F7FTOO-CCiT12Jg8A:9 a=jEp0ucaQiEUA:10 a=EvKJbDF4Ut8A:10 a=jeBq3FmKZ4MA:10 a=Sro2XwOs0tJUSHxCKfOySw==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.255.60.225
-Message-Id: <20130730113152.279015307@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Tue, 30 Jul 2013 07:27:20 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [for-next-3.11][PATCH 2/8] tracing: Change event_enable/disable_read() to verify i_private !=
- NULL
-References: <20130730112718.273490378@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Change-event_enable-disable_read-to-verify-i.patch
+	Tue, 30 Jul 2013 07:39:09 -0400
+Date: Tue, 30 Jul 2013 13:38:57 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@kernel.org>, Andrea Arcangeli <aarcange@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Linux-MM <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sched, numa: Use {cpu, pid} to create task groups for shared
+ faults
+Message-ID: <20130730113857.GR3008@twins.programming.kicks-ass.net>
+References: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1373901620-2021-1-git-send-email-mgorman@suse.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Oleg Nesterov <oleg@redhat.com>
 
-tracing_open_generic_file() is racy, ftrace_event_file can be
-already freed by rmdir or trace_remove_event_call().
+Subject: sched, numa: Use {cpu, pid} to create task groups for shared faults
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Tue Jul 30 10:40:20 CEST 2013
 
-Change event_enable_read() and event_disable_read() to read and
-verify "file = i_private" under event_mutex.
+A very simple/straight forward shared fault task grouping
+implementation.
 
-This fixes nothing, but now we can change debugfs_remove("enable")
-callers to nullify ->i_private and fix the the problem.
+Concerns are that grouping on a single shared fault might be too
+aggressive -- this only works because Mel is excluding DSOs for faults,
+otherwise we'd have the world in a single group.
 
-Link: http://lkml.kernel.org/r/20130726172536.GA3612@redhat.com
+Future work could explore more complex means of picking groups. We
+could for example track one group for the entire scan (using something
+like PDM) and join it at the end of the scan if we deem it shared a
+sufficient amount of memory.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Another avenue to explore is that to do with tasks where private faults
+are predominant. Should we exclude them from the group or treat them as
+secondary, creating a graded group that tries hardest to collate shared
+tasks but also tries to move private tasks near when possible.
+
+Also, the grouping information is completely unused, its up to future
+patches to do this.
+
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 ---
- kernel/trace/trace_events.c |   30 ++++++++++++++++++++----------
- 1 file changed, 20 insertions(+), 10 deletions(-)
+ include/linux/sched.h |    4 +
+ kernel/sched/core.c   |    4 +
+ kernel/sched/fair.c   |  156 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 153 insertions(+), 11 deletions(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index c2d13c5..3dfa841 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -684,15 +684,25 @@ static ssize_t
- event_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
- 		  loff_t *ppos)
- {
--	struct ftrace_event_file *file = filp->private_data;
-+	struct ftrace_event_file *file;
-+	unsigned long flags;
- 	char buf[4] = "0";
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1338,6 +1338,10 @@ struct task_struct {
+ 	u64 node_stamp;			/* migration stamp  */
+ 	struct callback_head numa_work;
  
--	if (file->flags & FTRACE_EVENT_FL_ENABLED &&
--	    !(file->flags & FTRACE_EVENT_FL_SOFT_DISABLED))
-+	mutex_lock(&event_mutex);
-+	file = event_file_data(filp);
-+	if (likely(file))
-+		flags = file->flags;
-+	mutex_unlock(&event_mutex);
++	spinlock_t numa_lock; /* for numa_entry / numa_group */
++	struct list_head numa_entry;
++	struct numa_group *numa_group;
 +
-+	if (!file)
-+		return -ENODEV;
+ 	/*
+ 	 * Exponential decaying average of faults on a per-node basis.
+ 	 * Scheduling placement decisions are made based on the these counts.
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1730,6 +1730,10 @@ static void __sched_fork(struct task_str
+ 	p->numa_work.next = &p->numa_work;
+ 	p->numa_faults = NULL;
+ 	p->numa_faults_buffer = NULL;
 +
-+	if (flags & FTRACE_EVENT_FL_ENABLED &&
-+	    !(flags & FTRACE_EVENT_FL_SOFT_DISABLED))
- 		strcpy(buf, "1");
++	spin_lock_init(&p->numa_lock);
++	INIT_LIST_HEAD(&p->numa_entry);
++	p->numa_group = NULL;
+ #endif /* CONFIG_NUMA_BALANCING */
+ }
  
--	if (file->flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
--	    file->flags & FTRACE_EVENT_FL_SOFT_MODE)
-+	if (flags & FTRACE_EVENT_FL_SOFT_DISABLED ||
-+	    flags & FTRACE_EVENT_FL_SOFT_MODE)
- 		strcat(buf, "*");
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1160,6 +1160,17 @@ static void numa_migrate_preferred(struc
+ 	p->numa_migrate_retry = jiffies + HZ/10;
+ }
  
- 	strcat(buf, "\n");
-@@ -704,13 +714,10 @@ static ssize_t
- event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 		   loff_t *ppos)
++struct numa_group {
++	atomic_t refcount;
++
++	spinlock_t lock; /* nr_tasks, tasks */
++	int nr_tasks;
++	struct list_head task_list;
++
++	struct rcu_head rcu;
++	atomic_long_t faults[0];
++};
++
+ static void task_numa_placement(struct task_struct *p)
  {
--	struct ftrace_event_file *file = filp->private_data;
-+	struct ftrace_event_file *file;
- 	unsigned long val;
- 	int ret;
+ 	int seq, nid, max_nid = -1;
+@@ -1168,6 +1179,7 @@ static void task_numa_placement(struct t
+ 	seq = ACCESS_ONCE(p->mm->numa_scan_seq);
+ 	if (p->numa_scan_seq == seq)
+ 		return;
++
+ 	p->numa_scan_seq = seq;
+ 	p->numa_migrate_seq++;
+ 	p->numa_scan_period_max = task_scan_max(p);
+@@ -1178,14 +1190,24 @@ static void task_numa_placement(struct t
+ 		int priv, i;
  
--	if (!file)
--		return -EINVAL;
+ 		for (priv = 0; priv < 2; priv++) {
++			long diff;
++
+ 			i = task_faults_idx(nid, priv);
+ 
++			diff = -p->numa_faults[i];
++
+ 			/* Decay existing window, copy faults since last scan */
+ 			p->numa_faults[i] >>= 1;
+ 			p->numa_faults[i] += p->numa_faults_buffer[i];
+ 			p->numa_faults_buffer[i] = 0;
+ 
++			diff += p->numa_faults[i];
+ 			faults += p->numa_faults[i];
++
++			if (p->numa_group) {
++				/* safe because we can only change our own group */
++				atomic_long_add(diff, &p->numa_group->faults[i]);
++			}
+ 		}
+ 
+ 		if (faults > max_faults) {
+@@ -1222,13 +1244,117 @@ static void task_numa_placement(struct t
+ 	}
+ }
+ 
++static inline int get_numa_group(struct numa_group *grp)
++{
++	return atomic_inc_not_zero(&grp->refcount);
++}
++
++static inline void put_numa_group(struct numa_group *grp)
++{
++	if (atomic_dec_and_test(&grp->refcount))
++		kfree_rcu(grp, rcu);
++}
++
++static void double_lock(spinlock_t *l1, spinlock_t *l2)
++{
++	if (l1 > l2)
++		swap(l1, l2);
++
++	spin_lock(l1);
++	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
++}
++
++void task_numa_group(struct task_struct *p, int cpu, int pid)
++{
++	struct task_struct *tsk;
++	struct numa_group *grp, *my_grp;
++	unsigned int size = sizeof(struct numa_group) +
++			    2*nr_node_ids*sizeof(atomic_long_t);
++	int i;
++
++	if (unlikely(!p->numa_group)) {
++		grp = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
++		if (!grp)
++			return;
++
++		atomic_set(&grp->refcount, 1);
++		spin_lock_init(&grp->lock);
++		INIT_LIST_HEAD(&grp->task_list);
++
++		spin_lock(&p->numa_lock);
++		list_add(&p->numa_entry, &grp->task_list);
++		grp->nr_tasks++;
++		rcu_assign_pointer(p->numa_group, grp);
++		spin_unlock(&p->numa_lock);
++	}
++
++	rcu_read_lock();
++	tsk = ACCESS_ONCE(cpu_rq(cpu)->curr);
++
++	if ((tsk->pid & LAST__PID_MASK) != pid)
++		goto unlock;
++
++	grp = rcu_dereference(tsk->numa_group);
++	if (!grp)
++		goto unlock;
++
++	my_grp = p->numa_group;
++	if (grp == my_grp)
++		goto unlock;
++
++	/*
++	 * Only join the other group if its bigger; if we're the bigger group,
++	 * the other task will join us.
++	 */
++	if (my_grp->nr_tasks > grp->nr_tasks)
++	    	goto unlock;
++
++	/*
++	 * Tie-break on the grp address.
++	 */
++	if (my_grp->nr_tasks == grp->nr_tasks && my_grp > grp)
++		goto unlock;
++
++	if (!get_numa_group(grp))
++		goto unlock;
++
++	rcu_read_unlock();
++
++	/* join with @grp */
++
++	for (i = 0; i < 2*nr_node_ids; i++) {
++		atomic_long_sub(p->numa_faults[i], &my_grp->faults[i]);
++		atomic_long_add(p->numa_faults[i], &grp->faults[i]);
++	}
++
++	spin_lock(&p->numa_lock);
++	double_lock(&my_grp->lock, &grp->lock);
++
++	list_move(&p->numa_entry, &grp->task_list);
++	my_grp->nr_tasks--;
++	grp->nr_tasks++;
++
++	spin_unlock(&my_grp->lock);
++	spin_unlock(&grp->lock);
++
++	rcu_assign_pointer(p->numa_group, grp);
++	spin_unlock(&p->numa_lock);
++
++	put_numa_group(my_grp);
++	return;
++
++
++unlock:
++	rcu_read_unlock();
++}
++
+ /*
+  * Got a PROT_NONE fault for a page on @node.
+  */
+ void task_numa_fault(int last_cpupid, int node, int pages, bool migrated)
+ {
+ 	struct task_struct *p = current;
+-	int priv;
++	int priv, cpu, pid;
+ 
+ 	if (!sched_feat_numa(NUMA))
+ 		return;
+@@ -1237,21 +1363,12 @@ void task_numa_fault(int last_cpupid, in
+ 	if (!p->mm)
+ 		return;
+ 
+-	/*
+-	 * First accesses are treated as private, otherwise consider accesses
+-	 * to be private if the accessing pid has not changed
+-	 */
+-	if (!cpupid_pid_unset(last_cpupid))
+-		priv = ((p->pid & LAST__PID_MASK) == cpupid_to_pid(last_cpupid));
+-	else
+-		priv = 1;
 -
- 	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
- 	if (ret)
- 		return ret;
-@@ -722,8 +729,11 @@ event_enable_write(struct file *filp, const char __user *ubuf, size_t cnt,
- 	switch (val) {
- 	case 0:
- 	case 1:
-+		ret = -ENODEV;
- 		mutex_lock(&event_mutex);
--		ret = ftrace_event_enable_disable(file, val);
-+		file = event_file_data(filp);
-+		if (likely(file))
-+			ret = ftrace_event_enable_disable(file, val);
- 		mutex_unlock(&event_mutex);
- 		break;
+ 	/* Allocate buffer to track faults on a per-node basis */
+ 	if (unlikely(!p->numa_faults)) {
+ 		int size = sizeof(*p->numa_faults) * 2 * nr_node_ids;
  
--- 
-1.7.10.4
-
-
+ 		/* numa_faults and numa_faults_buffer share the allocation */
+-		p->numa_faults = kzalloc(size * 2, GFP_KERNEL);
++		p->numa_faults = kzalloc(size * 2, GFP_KERNEL | __GFP_NOWARN);
+ 		if (!p->numa_faults)
+ 			return;
+ 
+@@ -1260,6 +1377,23 @@ void task_numa_fault(int last_cpupid, in
+ 	}
+ 
+ 	/*
++	 * First accesses are treated as private, otherwise consider accesses
++	 * to be private if the accessing pid has not changed
++	 */
++	if (unlikely(last_cpupid == (-1 & LAST_CPUPID_MASK))) {
++		cpu = raw_smp_processor_id();
++		pid = p->pid & LAST__PID_MASK;
++	} else {
++		cpu = cpupid_to_cpu(last_cpupid);
++		pid = cpupid_to_pid(last_cpupid);
++	}
++
++	priv = (pid == (p->pid & LAST__PID_MASK));
++
++	if (!priv)
++		task_numa_group(p, cpu, pid);
++
++	/*
+ 	 * If pages are properly placed (did not migrate) then scan slower.
+ 	 * This is reset periodically in case of phase changes
+ 	 *
