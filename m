@@ -1,147 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab3G3Kc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:32:58 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59336 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307Ab3G3Kca (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:32:30 -0400
-From: Richard Genoud <richard.genoud@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Cc: Bo Shen <voice.shen@atmel.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com,
-        Richard Genoud <richard.genoud@gmail.com>
-Subject: [PATCH v6 1/8] ASoC: wm8731: add rates constraints
-Date: Tue, 30 Jul 2013 12:32:02 +0200
-Message-Id: <1375180329-4860-2-git-send-email-richard.genoud@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com>
-References: <1375180329-4860-1-git-send-email-richard.genoud@gmail.com>
+	id S1751266Ab3G3Kie (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:38:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49272 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab3G3Kid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 06:38:33 -0400
+Date: Tue, 30 Jul 2013 12:38:28 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: jaharkes@cs.cmu.edu, coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH trivial] include/linux/coda.h: remove useless '#else'
+In-Reply-To: <51F76B7D.2090602@asianux.com>
+Message-ID: <alpine.LNX.2.00.1307301238230.18809@pobox.suse.cz>
+References: <51F76B7D.2090602@asianux.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on the mclk (or crystal) selected, the wm8731 codec have some
-constraints on its data sampling rates:
-e.g. with a 12.288MHz or 18.432MHz crystal, the authorized rates are
-8KHz, 32KHz, 48KHz and 96KHz.
+On Tue, 30 Jul 2013, Chen Gang wrote:
 
-Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
----
- sound/soc/codecs/wm8731.c |   60 ++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 57 insertions(+), 3 deletions(-)
+> '#else' is useless, need remove.
+> 
+> Signed-off-by: Chen Gang <gang.chen@asianux.com>
+> ---
+>  include/linux/coda.h |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/coda.h b/include/linux/coda.h
+> index cff544f..d30209b 100644
+> --- a/include/linux/coda.h
+> +++ b/include/linux/coda.h
+> @@ -60,7 +60,6 @@ Mellon the rights to redistribute these changes without encumbrance.
+>  
+>  #if defined(__linux__)
+>  typedef unsigned long long u_quad_t;
+> -#else
+>  #endif
+>  #include <uapi/linux/coda.h>
+>  #endif 
 
-diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-index 5276062..456bb8c 100644
---- a/sound/soc/codecs/wm8731.c
-+++ b/sound/soc/codecs/wm8731.c
-@@ -45,6 +45,7 @@ static const char *wm8731_supply_names[WM8731_NUM_SUPPLIES] = {
- struct wm8731_priv {
- 	struct regmap *regmap;
- 	struct regulator_bulk_data supplies[WM8731_NUM_SUPPLIES];
-+	const struct snd_pcm_hw_constraint_list *constraints;
- 	unsigned int sysclk;
- 	int sysclk_type;
- 	int playback_fs;
-@@ -290,6 +291,36 @@ static const struct _coeff_div coeff_div[] = {
- 	{12000000, 88200, 136, 0xf, 0x1, 0x1},
- };
- 
-+/* rates constraints */
-+static const unsigned int wm8731_rates_12000000[] = {
-+	8000, 32000, 44100, 48000, 96000, 88200,
-+};
-+
-+static const unsigned int wm8731_rates_12288000_18432000[] = {
-+	8000, 32000, 48000, 96000,
-+};
-+
-+static const unsigned int wm8731_rates_11289600_16934400[] = {
-+	8000, 44100, 88200,
-+};
-+
-+static const struct snd_pcm_hw_constraint_list wm8731_constraints_12000000 = {
-+	.list = wm8731_rates_12000000,
-+	.count = ARRAY_SIZE(wm8731_rates_12000000),
-+};
-+
-+static const
-+struct snd_pcm_hw_constraint_list wm8731_constraints_12288000_18432000 = {
-+	.list = wm8731_rates_12288000_18432000,
-+	.count = ARRAY_SIZE(wm8731_rates_12288000_18432000),
-+};
-+
-+static const
-+struct snd_pcm_hw_constraint_list wm8731_constraints_11289600_16934400 = {
-+	.list = wm8731_rates_11289600_16934400,
-+	.count = ARRAY_SIZE(wm8731_rates_11289600_16934400),
-+};
-+
- static inline int get_coeff(int mclk, int rate)
- {
- 	int i;
-@@ -362,17 +393,26 @@ static int wm8731_set_dai_sysclk(struct snd_soc_dai *codec_dai,
- 	}
- 
- 	switch (freq) {
--	case 11289600:
-+	case 0:
-+		wm8731->constraints = NULL;
-+		break;
- 	case 12000000:
-+		wm8731->constraints = &wm8731_constraints_12000000;
-+		break;
- 	case 12288000:
--	case 16934400:
- 	case 18432000:
--		wm8731->sysclk = freq;
-+		wm8731->constraints = &wm8731_constraints_12288000_18432000;
-+		break;
-+	case 16934400:
-+	case 11289600:
-+		wm8731->constraints = &wm8731_constraints_11289600_16934400;
- 		break;
- 	default:
- 		return -EINVAL;
- 	}
- 
-+	wm8731->sysclk = freq;
-+
- 	snd_soc_dapm_sync(&codec->dapm);
- 
- 	return 0;
-@@ -475,12 +515,26 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
- 	return 0;
- }
- 
-+static int wm8731_startup(struct snd_pcm_substream *substream,
-+	struct snd_soc_dai *dai)
-+{
-+	struct wm8731_priv *wm8731 = snd_soc_codec_get_drvdata(dai->codec);
-+
-+	if (wm8731->constraints)
-+		snd_pcm_hw_constraint_list(substream->runtime, 0,
-+					   SNDRV_PCM_HW_PARAM_RATE,
-+					   wm8731->constraints);
-+
-+	return 0;
-+}
-+
- #define WM8731_RATES SNDRV_PCM_RATE_8000_96000
- 
- #define WM8731_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S20_3LE |\
- 	SNDRV_PCM_FMTBIT_S24_LE)
- 
- static const struct snd_soc_dai_ops wm8731_dai_ops = {
-+	.startup	= wm8731_startup,
- 	.hw_params	= wm8731_hw_params,
- 	.digital_mute	= wm8731_mute,
- 	.set_sysclk	= wm8731_set_dai_sysclk,
+Applied.
+
 -- 
-1.7.10.4
-
+Jiri Kosina
+SUSE Labs
