@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab3G3Jdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 05:33:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53362 "EHLO
+	id S932728Ab3G3Jhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 05:37:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:53383 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611Ab3G3Jdv (ORCPT
+	with ESMTP id S932655Ab3G3Jdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 05:33:51 -0400
+	Tue, 30 Jul 2013 05:33:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ian Abbott <abbotti@mev.co.uk>,
+Cc: Enrico Mioso <mrkiko.rs@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 090/106] staging: comedi: COMEDI_CANCEL ioctl should wake up read/write
-Date: Tue, 30 Jul 2013 10:31:49 +0100
-Message-Id: <1375176725-5825-91-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 094/106] usb: serial: option: Add ONYX 3G device support
+Date: Tue, 30 Jul 2013 10:31:53 +0100
+Message-Id: <1375176725-5825-95-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
 References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
@@ -28,60 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Enrico Mioso <mrkiko.rs@gmail.com>
 
-commit 69acbaac303e8cb948801a9ddd0ac24e86cc4a1b upstream.
+commit 63b5df963f52ccbab6fabedf05b7ac6b465789a4 upstream.
 
-Comedi devices can do blocking read() or write() (or poll()) if an
-asynchronous command has been set up, blocking for data (for read()) or
-buffer space (for write()).  Various events associated with the
-asynchronous command will wake up the blocked reader or writer (or
-poller).  It is also possible to force the asynchronous command to
-terminate by issuing a `COMEDI_CANCEL` ioctl.  That shuts down the
-asynchronous command, but does not currently wake up the blocked reader
-or writer (or poller).  If the blocked task could be woken up, it would
-see that the command is no longer active and return.  The caller of the
-`COMEDI_CANCEL` ioctl could attempt to wake up the blocked task by
-sending a signal, but that's a nasty workaround.
+This patch adds support for the ONYX 3G device (version 1) from ALFA
+NETWORK.
 
-Change `do_cancel_ioctl()` to wake up the wait queue after it returns
-from `do_cancel()`.  `do_cancel()` can propagate an error return value
-from the low-level comedi driver's cancel routine, but it always shuts
-the command down regardless, so `do_cancel_ioctl()` can wake up he wait
-queue regardless of the return value from `do_cancel()`.
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: Enrico Mioso <mrkiko.rs@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.5: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/staging/comedi/comedi_fops.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/usb/serial/option.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index b08cbbe..d028e8c 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1659,6 +1659,7 @@ static int do_cancel_ioctl(struct comedi_device *dev, unsigned int arg,
- 			   void *file)
- {
- 	struct comedi_subdevice *s;
-+	int ret;
- 
- 	if (arg >= dev->n_subdevices)
- 		return -EINVAL;
-@@ -1675,7 +1676,11 @@ static int do_cancel_ioctl(struct comedi_device *dev, unsigned int arg,
- 	if (s->busy != file)
- 		return -EBUSY;
- 
--	return do_cancel(dev, s);
-+	ret = do_cancel(dev, s);
-+	if (comedi_get_subdevice_runflags(s) & SRF_USER)
-+		wake_up_interruptible(&s->async->wait_head);
-+
-+	return ret;
- }
- 
- /*
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 5e3e4b6..d2d4a48 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -798,6 +798,7 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(KYOCERA_VENDOR_ID, KYOCERA_PRODUCT_KPC680) },
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6000)}, /* ZTE AC8700 */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x6613)}, /* Onda H600/ZTE MF330 */
++	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x0023)}, /* ONYX 3G device */
+ 	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9000)}, /* SIMCom SIM5218 */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6280) }, /* BP3-USB & BP3-EXT HSDPA */
+ 	{ USB_DEVICE(CMOTECH_VENDOR_ID, CMOTECH_PRODUCT_6008) },
 -- 
 1.8.3.2
 
