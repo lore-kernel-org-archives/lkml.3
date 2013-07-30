@@ -1,89 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab3G3EIY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 00:08:24 -0400
-Received: from haggis.pcug.org.au ([203.10.76.10]:35278 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745Ab3G3EIW (ORCPT
+	id S1755157Ab3G3EMu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 00:12:50 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:39137 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab3G3EMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 00:08:22 -0400
-Date: Tue, 30 Jul 2013 14:08:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Felipe Balbi <balbi@ti.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rong Wang <Rong.Wang@csr.com>, Greg KH <greg@kroah.com>
-Subject: linux-next: manual merge of the usb-gadget tree with the
- usb.current tree
-Message-Id: <20130730140810.a61155d064e33248faef323b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta4 (GTK+ 2.24.20; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__30_Jul_2013_14_08_10_+1000_KqQ5SSRfOOYTgVOG"
+	Tue, 30 Jul 2013 00:12:49 -0400
+Message-ID: <51F73BB8.6090908@huawei.com>
+Date: Tue, 30 Jul 2013 12:06:16 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130620 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>, Paul Bolle <pebolle@tiscali.nl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Rafael <rjw@sisk.pl>, Hanjun Guo <guohanjun@huawei.com>,
+        Jiang Liu <jiang.liu@huawei.com>, Oliver Neukum <oneukum@suse.de>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>
+Subject: Re: [PATCH -v3 3/3] PCI,pciehp: use PCIe DSN to identify device change
+ during suspend
+References: <1373621543-54836-1-git-send-email-wangyijing@huawei.com> <1373621543-54836-4-git-send-email-wangyijing@huawei.com> <CAErSpo4XhONYq3CZnPKgdMD4V5o8fgFc=NGVUGgFz0y5zM3GyA@mail.gmail.com> <51F73730.9070402@huawei.com> <CAErSpo6Zw3Q=bzw6tAR70TCcXs1+UB9BNW3y7w8qNusT2c79tg@mail.gmail.com>
+In-Reply-To: <CAErSpo6Zw3Q=bzw6tAR70TCcXs1+UB9BNW3y7w8qNusT2c79tg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__30_Jul_2013_14_08_10_+1000_KqQ5SSRfOOYTgVOG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+>>
+>> Hi Bjorn,
+>>    I'm reworking this patch, but found some strange info about vpd serial number.
+>> I have two x86 machines, they almost have the same hardware topology. But by lspci,
+>> I found two different Broadcom BCM5709 NIC in different machine have the same vpd serial
+>> number. If this is normal, vpd serial number seems to be useless for identify device change.
+> 
+> I wouldn't say it's completely useless.  If the VPD serial number
+> changes, we can be pretty confident that the card has changed.  It's
+> just that if the VPD serial number is unchanged, we might incorrectly
+> assume it's the same device.
+> 
+> But we currently *always* assume it's the same device, since we don't
+> look at serial numbers at all.  If we can detect some changes, that
+> should be an improvement over what we have today even though it's not
+> perfect.
 
-Hi Felipe,
+Hmmm, Yes, different VPD serial number must comes from different device.
+Although the same serial number maybe not the same device.
 
-Today's linux-next merge of the usb-gadget tree got a conflict in
-drivers/usb/gadget/udc-core.c between commit 1894870eb424 ("usb: gadget:
-udc-core: fix the typo of udc state attribute") from the usb.current tree
-and commit 5702f75375aa ("usb: gadget: udc-core: move sysfs_notify() to a
-workqueue") from the usb-gadget tree.
+I will send out the new version patchset soon.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Thanks!
+Yijing.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+>> The first machine:
+>> linux:/home/yijing # lspci -vvv -s 0000:01:00.0
+>> 01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet (rev 20)
+>>         Subsystem: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+>>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+>>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>         Latency: 0, Cache Line Size: 256 bytes
+>>         Interrupt: pin A routed to IRQ 28
+>>         Region 0: Memory at c0000000 (64-bit, non-prefetchable) [size=32M]
+>>         Capabilities: [48] Power Management version 3
+>>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+>>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+>>         Capabilities: [50] Vital Product Data
+>>                 Product Name: Broadcom NetXtreme II Ethernet Controller
+>>                 Read-only fields:
+>>                         [PN] Part number: BCM95706A0
+>>                         [EC] Engineering changes: 220197-2
+>>                         [SN] Serial number: 0123456789
+>>                         [MN] Manufacture ID: 31 34 65 34
+>>                         [RV] Reserved: checksum good, 31 byte(s) reserved
+>>                 End
+>>         Capabilities: [58] MSI: Enable- Count=1/16 Maskable- 64bit+
+>>                 Address: 0000000000000000  Data: 0000
+>>         ..............[snip]...................
+>>
+>> The second machine:
+>> linux-suse-vmdq:~/pciutils-3.2.0 # ./lspci -vvv -s 01:00.0
+>> 01:00.0 Ethernet controller: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet (rev 20)
+>>         Subsystem: Broadcom Corporation NetXtreme II BCM5709 Gigabit Ethernet
+>>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+>>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>         Latency: 0, Cache Line Size: 256 bytes
+>>         Interrupt: pin A routed to IRQ 28
+>>         Region 0: Memory at f6000000 (64-bit, non-prefetchable) [size=32M]
+>>         Capabilities: [48] Power Management version 3
+>>                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+>>                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=1 PME-
+>>         Capabilities: [50] Vital Product Data
+>>                 Product Name: Broadcom NetXtreme II Ethernet Controller
+>>                 Read-only fields:
+>>                         [PN] Part number: BCM95706A0
+>>                         [EC] Engineering changes: 220197-2
+>>                         [SN] Serial number: 0123456789
+>>                         [MN] Manufacture ID: 31 34 65 34
+>>                         [RV] Reserved: checksum good, 31 byte(s) reserved
+>>                 End
+>>         .......[snip]........
+>>
+>>
+>>>
+>>> Also, I think it's possible to use acpiphp for ExpressCard slots, and
+>>> this patch doesn't help acpiphp detect card swaps.  I don't see any
+>>> mention of suspend/resume in acpiphp, so I don't know if it does
+>>> anything at all to detect card changes while suspended.  Maybe Rafael
+>>> can shed some light?
+>>>
+>>> I put the first two patches on a pci/yijing-dsn-v3 branch while we
+>>> work out the details of this one.
+>>>
+>>> Bjorn
+>>>
+>>>>         } else if (!list_empty(&pbus->devices)) {
+>>>>                 pciehp_disable_slot(slot);
+>>>>         }
+>>>> --
+>>>> 1.7.1
+>>>>
+>>>>
+>>>
+>>> .
+>>>
+>>
+>>
+>> --
+>> Thanks!
+>> Yijing
+>>
+> 
+> .
+> 
 
-diff --cc drivers/usb/gadget/udc-core.c
-index 13e25f8,3122ab9..0000000
---- a/drivers/usb/gadget/udc-core.c
-+++ b/drivers/usb/gadget/udc-core.c
-@@@ -105,6 -106,13 +106,13 @@@ EXPORT_SYMBOL_GPL(usb_gadget_unmap_requ
- =20
-  /* ----------------------------------------------------------------------=
---- */
- =20
-+ static void usb_gadget_state_work(struct work_struct *work)
-+ {
-+ 	struct usb_gadget	*gadget =3D work_to_gadget(work);
-+=20
- -	sysfs_notify(&gadget->dev.kobj, NULL, "status");
-++	sysfs_notify(&gadget->dev.kobj, NULL, "state");
-+ }
-+=20
-  void usb_gadget_set_state(struct usb_gadget *gadget,
-  		enum usb_device_state state)
-  {
 
---Signature=_Tue__30_Jul_2013_14_08_10_+1000_KqQ5SSRfOOYTgVOG
-Content-Type: application/pgp-signature
+-- 
+Thanks!
+Yijing
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.20 (GNU/Linux)
-
-iQIcBAEBCAAGBQJR9zwuAAoJEECxmPOUX5FEI14P/3qO6PCDKF9R8YlKTZqhM5xf
-UVZpeQdx5DC79dcPtVp2Q5r0sn2dg9uk9EKBVY4alxWcPxb3ToIVNEErC3bYmpjD
-da1IOOgcvrMozf/H4i0amSeH9wcGbh/60JsSZ89eor5fIiyWQVuxItOpYD8xyNTE
-qpaxhCHF43li3BOjfzPphk2yyxEynQfKDO8JIpxqX7SoEQub9V6fcknuZAB67uzG
-HCga5XZWm8wDxcI/41EHi0OPDOz8HpGngHLKvWui2h9Q7dzwsMTeyKGQPCtCVyY4
-AcQM4j4WmNmPG5jJcuwl08LgtzboowAqtpagmV+z3XgebDHQ058QoGXi4Vi3Csbr
-GWvo/G8oLRNrEldrkmeDS0ktvepMw0+L4CGFuQkW5tb2jzLAgQDcZ+h3x2EkKnDR
-zER1dZNgBzz6whRHwP6LgMKngu9RI+++Rb+zRc3DMRTn6auTOO62Jc0LdZB0MotZ
-VdpzEXrxcdMHiiGMtSzdOIOaTMWr4eaG/dV7RFI1xikGzZLGD2oC4aHn++e0mtZS
-LCESGVfxQFKwa4GkKEYnXxDBdE/mCIZHlMg0qZM+AVBTP1gmb0LV4GvWXnja/U33
-BkB+fe2/KEunl6FqE8gEcGJlGJ3u1fryKgRDuM/fBv4bp8h/b33Xanjdj4QvmLCH
-yf4gZ84pAqXoDvDOcGNS
-=lzMB
------END PGP SIGNATURE-----
-
---Signature=_Tue__30_Jul_2013_14_08_10_+1000_KqQ5SSRfOOYTgVOG--
