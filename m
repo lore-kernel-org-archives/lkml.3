@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab3G3Mkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 08:40:52 -0400
-Received: from void.printf.net ([89.145.121.20]:50807 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601Ab3G3Mki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753656Ab3G3Mku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 08:40:50 -0400
+Received: from mail-qe0-f52.google.com ([209.85.128.52]:58460 "EHLO
+	mail-qe0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab3G3Mki (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 30 Jul 2013 08:40:38 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/5] Optional regulator support
-References: <20130730114502.GQ9858@sirena.org.uk>
-Date: Tue, 30 Jul 2013 13:40:28 +0100
-In-Reply-To: <20130730114502.GQ9858@sirena.org.uk> (Mark Brown's message of
-	"Tue, 30 Jul 2013 12:45:02 +0100")
-Message-ID: <864nbcte4j.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com
+Cc: shli@kernel.org, Tejun Heo <tj@kernel.org>, Chris Ball <cjb@laptop.org>,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH 3/9] mmc: WQ_NON_REENTRANT is meaningless and going away
+Date: Tue, 30 Jul 2013 08:40:22 -0400
+Message-Id: <1375188028-11910-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1375188028-11910-1-git-send-email-tj@kernel.org>
+References: <1375188028-11910-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Tue, Jul 30 2013, Mark Brown wrote:
-> This patch series adds a variant of regulator_get() which allows
-> regulator consumers to tell the core that the supply they are requesting
-> may genuinely be absent in the system.  The goal is to help address some
-> of the problems with handling errors in regulator_get() in drivers that
-> are newly converted to the regulator API by allowing the core to provide
-> stub regulators for supplies that aren't hooked up without disrupting
-> the operation of drivers like MMC drivers which may genuinely not have
-> some of their supplies hooked up.
->
-> Currently the code simply introduces a new API call with exactly the
-> same implementation as regulator_get() so there should be zero impact
-> from the series other than a slightly larger kernel.
+Please route this through the subsystem tree.  As written in the
+description, this shouldn't make any functional difference and just
+prepares for the removal of WQ_NON_REENTRANT which is already noop.
 
-Looks good:
+Thanks.
 
-Acked-by: Chris Ball <cjb@laptop.org>
+------ 8< -------
+dbf2576e37 ("workqueue: make all workqueues non-reentrant") made
+WQ_NON_REENTRANT no-op and the flag is going away.  Remove its usages.
 
-> Right now all the MMC users are converted over as-is, though it does
-> look like drivers such as sdhci really ought to be insisting on having a
-> regulator for VMMC in the same way that the MMC core helper does (and
-> indeed in that case it looks like it ought to be converted over to the
-> core code).
+This patch doesn't introduce any behavior changes.
 
-I didn't follow this part -- I don't think the MMC core insists on a
-VMMC regulator, and I don't think sdhci should either, because e.g.
-an x86 laptop isn't going to have one.  What am I missing?
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org
+---
+ drivers/mmc/host/dw_mmc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-
-- Chris.
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index ee5f167..b37e3c2 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -2340,7 +2340,7 @@ int dw_mci_probe(struct dw_mci *host)
+ 
+ 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
+ 	host->card_workqueue = alloc_workqueue("dw-mci-card",
+-			WQ_MEM_RECLAIM | WQ_NON_REENTRANT, 1);
++					       WQ_MEM_RECLAIM, 1);
+ 	if (!host->card_workqueue) {
+ 		ret = -ENOMEM;
+ 		goto err_dmaunmap;
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+1.8.3.1
+
