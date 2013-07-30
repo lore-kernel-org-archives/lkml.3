@@ -1,122 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab3G3Xo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:44:56 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:57127 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab3G3Xoy (ORCPT
+	id S1758522Ab3G3XuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:50:11 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:56185 "EHLO
+	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755837Ab3G3XuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:44:54 -0400
+	Tue, 30 Jul 2013 19:50:09 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 30 Jul 2013 19:50:09 EDT
+X-AuditID: 9c93017e-b7b62ae000000eeb-69-51f84daa21ad
+Date: Wed, 31 Jul 2013 08:35:30 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
+Message-ID: <20130730233530.GA19340@bbox>
+References: <20130730142957.GG15847@dhcp22.suse.cz>
+ <1375195560-23888-1-git-send-email-mhocko@suse.cz>
+ <20130730145834.GA32226@laptop.programming.kicks-ass.net>
+ <20130730152333.GJ15847@dhcp22.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com>
-References: <1375101368-17645-1-git-send-email-linus.walleij@linaro.org>
-	<CACxGe6uNJNMdZ1HYGgCtLM2t2TWGCR6btjOHVmP=vDXXvvFfRg@mail.gmail.com>
-Date: Wed, 31 Jul 2013 01:44:53 +0200
-Message-ID: <CACRpkdYjJL6FZwEbB7XLnb9QtjB=3LeE9Ny6KQ4PkM3zpdNqqg@mail.gmail.com>
-Subject: Re: [PATCH] RFC: interrupt consistency check for OF GPIO IRQs
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Alexander Holler <holler@ahsoftware.de>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Enric Balletbo i Serra <eballetbo@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>, Balaji T K <balajitk@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Jon Hunter <jgchunter@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730152333.GJ15847@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 6:30 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Mon, Jul 29, 2013 at 6:36 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->> To solve this dilemma, perform an interrupt consistency check
->> when adding a GPIO chip: if the chip is both gpio-controller and
->> interrupt-controller, walk all children of the device tree,
->> check if these in turn reference the interrupt-controller, and
->> if they do, loop over the interrupts used by that child and
->> perform gpio_reques() and gpio_direction_input() on these,
->> making them unreachable from the GPIO side.
->
-> Ugh, that's pretty awful, and it doesn't actually solve the root
-> problem of the GPIO and IRQ subsystems not cooperating. It's also a
-> very DT-centric solution even though we're going to see the exact same
-> issue on ACPI machines.
+On Tue, Jul 30, 2013 at 05:23:33PM +0200, Michal Hocko wrote:
+> On Tue 30-07-13 16:58:34, Peter Zijlstra wrote:
+> > On Tue, Jul 30, 2013 at 04:46:00PM +0200, Michal Hocko wrote:
+> [...]
+> > > +/*
+> > > + * Now, reclaim path never holds hugetlbfs_inode->i_mmap_mutex while it could
+> > > + * hold normal inode->i_mmap_mutex so this annotation avoids a lockdep splat.
+> > 
+> > How about something like:
+> > 
+> > /*
+> >  * Hugetlbfs is not reclaimable; therefore its i_mmap_mutex will never
+> >  * be taken from reclaim -- unlike regular filesystems. This needs an
+> >  * annotation because huge_pmd_share() does an allocation under
+> >  * i_mmap_mutex.
+> >  */
+> > 
+> > It clarifies the exact conditions and makes easier to verify the
+> > validity of the annotation.
+> 
+> Yes, looks much better. Thanks!
+> ---
+> >From 673cbe2ca7df0decd7320987d97585660542e468 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Tue, 30 Jul 2013 17:22:14 +0200
+> Subject: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
+> 
+> Dave has reported the following lockdep splat:
+> [128095.470960] =================================
+> [128095.471315] [ INFO: inconsistent lock state ]
+> [128095.471660] 3.11.0-rc1+ #9 Not tainted
+> [128095.472156] ---------------------------------
+> [128095.472905] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+> [128095.473650] kswapd0/49 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> [128095.474373]  (&mapping->i_mmap_mutex){+.+.?.}, at: [<c114971b>] page_referenced+0x87/0x5e3
+> [128095.475128] {RECLAIM_FS-ON-W} state was registered at:
+> [128095.475866]   [<c10a6232>] mark_held_locks+0x81/0xe7
+> [128095.476597]   [<c10a8db3>] lockdep_trace_alloc+0x5e/0xbc
+> [128095.477322]   [<c112316b>] __alloc_pages_nodemask+0x8b/0x9b6
+> [128095.478049]   [<c1123ab6>] __get_free_pages+0x20/0x31
+> [128095.478769]   [<c1123ad9>] get_zeroed_page+0x12/0x14
+> [128095.479477]   [<c113fe1e>] __pmd_alloc+0x1c/0x6b
+> [128095.480138]   [<c1155ea7>] huge_pmd_share+0x265/0x283
+> [128095.480138]   [<c1155f22>] huge_pte_alloc+0x5d/0x71
+> [128095.480138]   [<c115612e>] hugetlb_fault+0x7c/0x64a
+> [128095.480138]   [<c114087c>] handle_mm_fault+0x255/0x299
+> [128095.480138]   [<c15bbab0>] __do_page_fault+0x142/0x55c
+> [128095.480138]   [<c15bbed7>] do_page_fault+0xd/0x16
+> [128095.480138]   [<c15b927c>] error_code+0x6c/0x74
+> [128095.480138] irq event stamp: 3136917
+> [128095.480138] hardirqs last  enabled at (3136917): [<c15b8139>] _raw_spin_unlock_irq+0x27/0x50
+> [128095.480138] hardirqs last disabled at (3136916): [<c15b7f4e>] _raw_spin_lock_irq+0x15/0x78
+> [128095.480138] softirqs last  enabled at (3136180): [<c1048e4a>] __do_softirq+0x137/0x30f
+> [128095.480138] softirqs last disabled at (3136175): [<c1049195>] irq_exit+0xa8/0xaa
+> [128095.480138]
+> other info that might help us debug this:
+> [128095.480138]  Possible unsafe locking scenario:
+> [128095.480138]        CPU0
+> [128095.480138]        ----
+> [128095.480138]   lock(&mapping->i_mmap_mutex);
+> [128095.480138]   <Interrupt>
+> [128095.480138]     lock(&mapping->i_mmap_mutex);
+> [128095.480138]
+>  *** DEADLOCK ***
+> [128095.480138] no locks held by kswapd0/49.
+> [128095.480138]
+> stack backtrace:
+> [128095.480138] CPU: 1 PID: 49 Comm: kswapd0 Not tainted 3.11.0-rc1+ #9
+> [128095.480138] Hardware name: Dell Inc.                 Precision WorkStation 490    /0DT031, BIOS A08 04/25/2008
+> [128095.480138]  c1d32630 00000000 ee39fb18 c15b001e ee395780 ee39fb54 c15acdcb c1751845
+> [128095.480138]  c1751bbf 00000031 00000000 00000000 00000000 00000000 00000001 00000001
+> [128095.480138]  c1751bbf 00000008 ee395c44 00000100 ee39fb88 c10a6130 00000008 0000d8fb
+> [128095.480138] Call Trace:
+> [128095.480138]  [<c15b001e>] dump_stack+0x4b/0x79
+> [128095.480138]  [<c15acdcb>] print_usage_bug+0x1d9/0x1e3
+> [128095.480138]  [<c10a6130>] mark_lock+0x1e0/0x261
+> [128095.480138]  [<c10a5878>] ? check_usage_backwards+0x109/0x109
+> [128095.480138]  [<c10a6cde>] __lock_acquire+0x623/0x17f2
+> [128095.480138]  [<c107aa43>] ? sched_clock_cpu+0xcd/0x130
+> [128095.480138]  [<c107a7e8>] ? sched_clock_local+0x42/0x12e
+> [128095.480138]  [<c10a84cf>] lock_acquire+0x7d/0x195
+> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> [128095.480138]  [<c15b3671>] mutex_lock_nested+0x6c/0x3a7
+> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> [128095.480138]  [<c114971b>] ? page_referenced+0x87/0x5e3
+> [128095.480138]  [<c11661d5>] ? mem_cgroup_charge_statistics.isra.24+0x61/0x9e
+> [128095.480138]  [<c114971b>] page_referenced+0x87/0x5e3
+> [128095.480138]  [<f8433030>] ? raid0_congested+0x26/0x8a [raid0]
+> [128095.480138]  [<c112b9c7>] shrink_page_list+0x3d9/0x947
+> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
+> [128095.480138]  [<c112c3cf>] shrink_inactive_list+0x155/0x4cb
+> [128095.480138]  [<c112cd07>] shrink_lruvec+0x300/0x5ce
+> [128095.480138]  [<c112d028>] shrink_zone+0x53/0x14e
+> [128095.480138]  [<c112e531>] kswapd+0x517/0xa75
+> [128095.480138]  [<c112e01a>] ? mem_cgroup_shrink_node_zone+0x280/0x280
+> [128095.480138]  [<c10661ff>] kthread+0xa8/0xaa
+> [128095.480138]  [<c10a6457>] ? trace_hardirqs_on+0xb/0xd
+> [128095.480138]  [<c15bf737>] ret_from_kernel_thread+0x1b/0x28
+> [128095.480138]  [<c1066157>] ? insert_kthread_work+0x63/0x63
+> 
+> which is a false positive caused by hugetlb pmd sharing code which
+> allocates a new pmd from withing mappint->i_mmap_mutex. If this
+> allocation causes reclaim then the lockdep detector complains that we
+> might self-deadlock.
+> 
+> This is not correct though, because hugetlb pages are not reclaimable so
+> their mapping will be never touched from the reclaim path.
+> 
+> The patch tells lockup detector that hugetlb i_mmap_mutex is special
+> by assigning it a separate lockdep class so it won't report possible
+> deadlocks on unrelated mappings.
+> 
+> [peterz@infradead.org: comment for annotation]
+> Reported-by: Dave Jones <davej@redhat.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Reviewed-by: Minchan Kim <minchan@kernel.org>
 
-The problem is that the patches for OMAP that I applied
-and now have had to revert solves it in an even uglier way,
-leading to breaking boards, as was noticed.
+Thanks, Michal!
+Only remained thing is Dave's testing.
 
-The approach in this patch has the potential to actually
-work without regressing a bunch of boards...
-
-Whether this is a problem in ACPI or not remains to be seen,
-but I'm not sure about that. Device trees allows for a GPIO line
-to be used as an interrupt source and GPIO line orthogonally,
-and that is the root of this problem. Does ACPI have the same
-problem, or does it impose natural restrictions on such use
-cases?
-
-> We have to solve the problem in a better way than that. Rearranging
-> your patch description, here are some of the points you brought up so
-> I can comment on them...
->
->> This has the following undesired effects:
->>
->> - The GPIOlib subsystem is not aware that the line is in use
->>   and willingly lets some other consumer perform gpio_request()
->>   on it, leading to a complex resource conflict if it occurs.
->
-> If a gpio line is being both requested as a gpio and used as an
-> interrupt line, then either a) it's a bug, or b) the gpio line needs
-> to be used as input only so it is compatible with irq usage. b) should
-> be supportable.
-
-Yes this is what I'm saying too I think...
-
-The bug in (a) manifested itself in the OMAP patch with
-no real solution in sight.
-
->> - The GPIO debugfs file claims this GPIO line is "free".
->
-> Surely we can fix this. I still don't see a problem of having the
-> controller request the gpio when it is claimed as an irq if we can get
-> around the problem of another user performing a /valid/ request on the
-> same GPIO line. The solution may be to have a special form of request
-> or flag that allows it to be shared.
-
-I don't see how sharing works here, or how another user,
-i.e. another one than the user wanting to recieve the IRQ,
-can validly request such a line? What would the usecase for
-that valid request be?
-
-Basically I believe these two things need to be exclusive in
-the DT world:
-
-A: request_irq(a resource passed from "interrupts");
-     -> core implicitly performs gpio_request()
-         gpio_direction_input()
-
-B: gpio_request(a resource passed from "gpios");
-     gpio_direction_input()
-     request_irq(gpio_to_irq())
-
-Never both. And IIUC that was what happened in the
-OMAP case.
-
->> - The line direction of the interrupt GPIO line is not
->>   explicitly set as input, even though it is obvious that such
->>   a line need to be set up in this way, often making the system
->>   depend on boot-on defaults for this kind of settings.
->
-> Should also be solvable if the gpio request problem is solved.
-
-Agreed...
-
-Yours,
-Linus Walleij
+- 
+Kind regards,
+Minchan Kim
