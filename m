@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757314Ab3G3Sqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 14:46:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56560 "EHLO
+	id S1757426Ab3G3Srb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 14:47:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56552 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756950Ab3G3Spf (ORCPT
+	with ESMTP id S1756904Ab3G3Spe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 14:45:35 -0400
+	Tue, 30 Jul 2013 14:45:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Anton Blanchard <anton@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Mathias Krause <minipli@googlemail.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 42/75] powerpc/modules: Module CRC relocation fix causes perf issues
-Date: Tue, 30 Jul 2013 11:44:46 -0700
-Message-Id: <1375209919-1768-9-git-send-email-kamal@canonical.com>
+Subject: [PATCH 51/75] af_key: fix info leaks in notify messages
+Date: Tue, 30 Jul 2013 11:44:55 -0700
+Message-Id: <1375209919-1768-18-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1375197464-27962-1-git-send-email-kamal@canonical.com>
 References: <1375197464-27962-1-git-send-email-kamal@canonical.com>
@@ -28,79 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Mathias Krause <minipli@googlemail.com>
 
-commit 0e0ed6406e61434d3f38fb58aa8464ec4722b77e upstream.
+[ Upstream commit a5cc68f3d63306d0d288f31edfc2ae6ef8ecd887 ]
 
-Module CRCs are implemented as absolute symbols that get resolved by
-a linker script. We build an intermediate .o that contains an
-unresolved symbol for each CRC. genksysms parses this .o, calculates
-the CRCs and writes a linker script that "resolves" the symbols to
-the calculated CRC.
+key_notify_sa_flush() and key_notify_policy_flush() miss to initialize
+the sadb_msg_reserved member of the broadcasted message and thereby
+leak 2 bytes of heap memory to listeners. Fix that.
 
-Unfortunately the ppc64 relocatable kernel sees these CRCs as symbols
-that need relocating and relocates them at boot. Commit d4703aef
-(module: handle ppc64 relocating kcrctabs when CONFIG_RELOCATABLE=y)
-added a hook to reverse the bogus relocations. Part of this patch
-created a symbol at 0x0:
-
-# head -2 /proc/kallsyms
-0000000000000000 T reloc_start
-c000000000000000 T .__start
-
-This reloc_start symbol is causing lots of confusion to perf. It
-thinks reloc_start is a massive function that stretches from 0x0 to
-0xc000000000000000 and we get various cryptic errors out of perf,
-including:
-
-problem incrementing symbol count, skipping event
-
-This patch removes the  reloc_start linker script label and instead
-defines it as PHYSICAL_START. We also need to wrap it with
-CONFIG_PPC64 because the ppc32 kernel can set a non zero
-PHYSICAL_START at compile time and we wouldn't want to subtract
-it from the CRCs in that case.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Mathias Krause <minipli@googlemail.com>
+Cc: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/include/asm/module.h | 5 ++---
- arch/powerpc/kernel/vmlinux.lds.S | 3 ---
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ net/key/af_key.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/arch/powerpc/include/asm/module.h b/arch/powerpc/include/asm/module.h
-index c1df590..49fa55b 100644
---- a/arch/powerpc/include/asm/module.h
-+++ b/arch/powerpc/include/asm/module.h
-@@ -82,10 +82,9 @@ struct exception_table_entry;
- void sort_ex_table(struct exception_table_entry *start,
- 		   struct exception_table_entry *finish);
+diff --git a/net/key/af_key.c b/net/key/af_key.c
+index 5b426a6..891db6c 100644
+--- a/net/key/af_key.c
++++ b/net/key/af_key.c
+@@ -1705,6 +1705,7 @@ static int key_notify_sa_flush(const struct km_event *c)
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
++	hdr->sadb_msg_reserved = 0;
  
--#ifdef CONFIG_MODVERSIONS
-+#if defined(CONFIG_MODVERSIONS) && defined(CONFIG_PPC64)
- #define ARCH_RELOCATES_KCRCTAB
--
--extern const unsigned long reloc_start[];
-+#define reloc_start PHYSICAL_START
- #endif
- #endif /* __KERNEL__ */
- #endif	/* _ASM_POWERPC_MODULE_H */
-diff --git a/arch/powerpc/kernel/vmlinux.lds.S b/arch/powerpc/kernel/vmlinux.lds.S
-index 65d1c08..7703569 100644
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -38,9 +38,6 @@ jiffies = jiffies_64 + 4;
- #endif
- SECTIONS
- {
--	. = 0;
--	reloc_start = .;
--
- 	. = KERNELBASE;
+ 	pfkey_broadcast(skb, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
  
- /*
+@@ -2689,6 +2690,7 @@ static int key_notify_policy_flush(const struct km_event *c)
+ 	hdr->sadb_msg_version = PF_KEY_V2;
+ 	hdr->sadb_msg_errno = (uint8_t) 0;
+ 	hdr->sadb_msg_len = (sizeof(struct sadb_msg) / sizeof(uint64_t));
++	hdr->sadb_msg_reserved = 0;
+ 	pfkey_broadcast(skb_out, GFP_ATOMIC, BROADCAST_ALL, NULL, c->net);
+ 	return 0;
+ 
 -- 
 1.8.1.2
 
