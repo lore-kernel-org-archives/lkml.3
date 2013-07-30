@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab3G3Rm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 13:42:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62813 "EHLO mx1.redhat.com"
+	id S1756224Ab3G3Rmh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 13:42:37 -0400
+Received: from 7of9.schinagl.nl ([88.159.158.68]:39232 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752220Ab3G3Rm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 13:42:27 -0400
-Date: Tue, 30 Jul 2013 13:42:17 -0400
-From: Dave Jones <davej@redhat.com>
-To: linux-btrfs@vger.kernel.org
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Fix leak in __btrfs_map_block error path
-Message-ID: <20130730174217.GA892@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	linux-btrfs@vger.kernel.org,
-	Linux Kernel Development <linux-kernel@vger.kernel.org>
+	id S1754396Ab3G3Rm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 13:42:29 -0400
+Message-ID: <51F7FA37.2010407@schinagl.nl>
+Date: Tue, 30 Jul 2013 19:39:03 +0200
+From: Oliver Schinagl <oliver+list@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: Oliver Schinagl <oliver@schinagl.nl>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-sunxi@googlegroups.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        andy.shevchenko@gmail.com, linux@arm.linux.org.uk,
+        linus.walleij@linaro.org
+Subject: Re: [linux-sunxi] Re: [PATCH 1/2] Initial support for Allwinner's
+ Security ID fuses
+References: <20130626175144.GC2222@kroah.com> <51D674BF.9030207@schinagl.nl> <20130706193646.GB9778@kroah.com> <51E466A3.4010503@schinagl.nl> <20130716064107.GA10868@kroah.com> <20130717114650.GN3125@lukather> <20130717161758.GA9822@kroah.com> <20130719094211.GD5106@lukather> <20130719234944.GA11498@kroah.com> <51F7BE2F.3060004@schinagl.nl> <20130730142047.GA28696@kroah.com>
+In-Reply-To: <20130730142047.GA28696@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we bail out when the stripe alloc fails, we need to undo the
-earlier allocation of raid_map.
+On 30-07-13 16:20, Greg KH wrote:
+> On Tue, Jul 30, 2013 at 03:22:55PM +0200, Oliver Schinagl wrote:
+>>> Let me go look at how I can make this work "easier", give me a few days.
+>> Not wanting to be rude, but it has been a little more then a few
+>> days, any progress? Just want to know what I have to modify my
+>> driver to so it can go into the next merge window :)
+>
+> What?  Oh crap.
+>
+> I saw this old email in my todo box last week and for some stupid reason
+> I thought I had already taken care of this, otherwise why would I have
+> left it around for so long?...
+>
+> Ugh, very sorry about that...
+>
+> Hm, this is a mess.  I hate platform devices...
+>
+> Anyway, as you want to get this into 3.12, and I'm not going to be able
+> to get the core infrastructure into the platform device by then, just go
+> ahead and do a sysfs_create_group() call in your device probe callback
+> for now.  That will register the needed files for the device (not the
+> driver, DOH that was stupid of me...) and all should be ok.
+>
+> Yes, you will still race with userspace, but as right now, there's no
+> way that _any_ platform driver can do this "correctly", you will be in
+> good company.  I'll clean up all platform drivers in a sweep of the tree
+> after 3.12 or so when I get the needed infrastructure in place for the
+> platform_driver code.
+>
+> Again, very sorry for all of this, you have helped me out a lot in
+> figuring out that this is a mess, and should be fixed up better, but in
+> the end, you are pretty much back at the beginning of what you
+> originally wanted to do, right?
+Alright, I'll modify it to use sysfs_create_group() and try to leave it 
+as much as it is no to ease the transition.
+>
+> I owe you a beer, at the least, my apologies...
+Pff, free booze is far better ;) I kid I kid, though Maxime helped a lot 
+there.
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Ok expect a v6 I think for review and hopefully merge tomorrow.
 
-diff --git a/fs/btrfs/volumes.c b/fs/btrfs/volumes.c
-index 78b8717..6a0f52f 100644
---- a/fs/btrfs/volumes.c
-+++ b/fs/btrfs/volumes.c
-@@ -4671,6 +4671,7 @@ static int __btrfs_map_block(struct btrfs_fs_info *fs_info, int rw,
- 	}
- 	bbio = kzalloc(btrfs_bio_size(num_alloc_stripes), GFP_NOFS);
- 	if (!bbio) {
-+		kfree(raid_map);
- 		ret = -ENOMEM;
- 		goto out;
- 	}
+oliver
+
+>
+> greg k-h
+>
+
