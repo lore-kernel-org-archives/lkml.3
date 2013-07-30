@@ -1,87 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3G3NIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:08:48 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:54742 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755780Ab3G3NIo (ORCPT
+	id S1755916Ab3G3NJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:09:38 -0400
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:40291 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab3G3NJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:08:44 -0400
+	Tue, 30 Jul 2013 09:09:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <1375187900-17582-1-git-send-email-B44344@freescale.com>
-References: <1375187900-17582-1-git-send-email-B44344@freescale.com>
-Date: Tue, 30 Jul 2013 15:08:43 +0200
-X-Google-Sender-Auth: 64bMi3pNwtiV2KD7LouOj-TDgcw
-Message-ID: <CAMuHMdXP3-uKbftP-2UeZdE6X_iTi1podNDh0aVF3bJwDYssdg@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Make PPC macro spin_event_timeout() architecture independent
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arpit Goel <B44344@freescale.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Philip Blundell <philb@gnu.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        "David S. Miller" <davem@davemloft.net>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Sam Ravnborg <sam@ravnborg.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        "Linux/m68k" <linux-m68k@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        sparclinux <sparclinux@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <51F775B5.201@canonical.com>
+References: <20130701082221.GA14112@gmail.com>
+	<CA+55aFwfsz6e5oQAdZw-YyYzwJXCPjKJKiLEXxn7ujU7KWX97Q@mail.gmail.com>
+	<51D3C4C8.8060701@canonical.com>
+	<20130705062345.GA29487@gmail.com>
+	<51F775B5.201@canonical.com>
+Date: Tue, 30 Jul 2013 09:09:33 -0400
+Message-ID: <CADnq5_PLu7w=Aqq2N1Mpy+tQtugGSvxm1wckEOtqDGc8u4wFpw@mail.gmail.com>
+Subject: Re: [PATCH] mutex: fix deadlock injection
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 2:38 PM, Arpit Goel <B44344@freescale.com> wrote:
-> This patch-set moves USECS_PER_JIFFY to architecture timex.h from architecture
-> specific C files. Patch-set further uses this to make PPC macro
-> spin_event_timeout() architecture independent. This change enables drivers to
-> use spin_event_timeout() even in non-PowerPC based SoC's.
+On Tue, Jul 30, 2013 at 4:13 AM, Maarten Lankhorst
+<maarten.lankhorst@canonical.com> wrote:
+> The check needs to be for > 1, because ctx->acquired is already incremented.
+> This will prevent ww_mutex_lock_slow from returning -EDEADLK and not locking
+> the mutex. It caused a lot of false gpu lockups on radeon with
+> CONFIG_DEBUG_WW_MUTEX_SLOWPATH=y because a function that shouldn't be able
+> to return -EDEADLK did.
 >
-> This patchset has been compiled for ARM, PowerPC and x86.
+
+I haven't followed the new reservation stuff too closely, but seems plausible.
+
+Acked-by: Alex Deucher <alexander.deucher@amd.com>
+
+> Cc: Alex Deucher <alexander.deucher@amd.com>
+> Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+> ---
+> diff --git a/kernel/mutex.c b/kernel/mutex.c
+> index ff05f4b..a52ee7bb 100644
+> --- a/kernel/mutex.c
+> +++ b/kernel/mutex.c
+> @@ -686,7 +686,7 @@ __ww_mutex_lock(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+>         might_sleep();
+>         ret =  __mutex_lock_common(&lock->base, TASK_UNINTERRUPTIBLE,
+>                                    0, &ctx->dep_map, _RET_IP_, ctx);
+> -       if (!ret && ctx->acquired > 0)
+> +       if (!ret && ctx->acquired > 1)
+>                 return ww_mutex_deadlock_injection(lock, ctx);
 >
-> Patch[1/2] : Moves USECS_PER_JIFFY to architecture specific timex.h files from
->              architecture specific C files.
-
->  arch/arm/include/asm/timex.h      |  2 ++
->  arch/arm/kernel/time.c            |  3 ---
->  arch/m32r/include/asm/timex.h     |  2 ++
->  arch/m32r/kernel/time.c           |  3 ---
->  arch/m68k/hp300/time.c            |  4 +---
->  arch/m68k/include/asm/timex.h     |  2 ++
->  arch/s390/include/asm/timex.h     |  2 ++
->  arch/s390/kernel/time.c           |  2 --
->  arch/sparc/include/asm/timex_32.h |  2 ++
->  arch/sparc/include/asm/timex_64.h |  2 ++
->  arch/sparc/kernel/pcic.c          |  1 -
-
-As the definition is the same on all architectures, why not move it to
-<linux/delay.h>?
-
-> Patch[2/2] : Converts PPC macro spin_event_timeout() in architecture independent
->              macro.
-
->  include/linux/delay.h             | 40 +++++++++++++++++++++++++++++++++++++++
-
-After your first patch, USECS_PER_JIFFY is still available only on
-arm/m32r/m68k/s390/sparc. What about other architectures?
-If anyone uses spin_event_timeout() on e.g. x86, it will fail to compile.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+>         return ret;
+> @@ -702,7 +702,7 @@ __ww_mutex_lock_interruptible(struct ww_mutex *lock, struct ww_acquire_ctx *ctx)
+>         ret = __mutex_lock_common(&lock->base, TASK_INTERRUPTIBLE,
+>                                   0, &ctx->dep_map, _RET_IP_, ctx);
+>
+> -       if (!ret && ctx->acquired > 0)
+> +       if (!ret && ctx->acquired > 1)
+>                 return ww_mutex_deadlock_injection(lock, ctx);
+>
+>         return ret;
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
