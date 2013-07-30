@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab3G3Xih (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 19:38:37 -0400
-Received: from hydra.sisk.pl ([212.160.235.94]:48072 "EHLO hydra.sisk.pl"
+	id S1758496Ab3G3XjK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 19:39:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53703 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758140Ab3G3Xif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 19:38:35 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Myron Stowe <myron.stowe@gmail.com>, linux-pci <linux-pci@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org, iommu@lists.linux-foundation.org,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, shuah.kh@samsung.com
-Subject: Re: Linux Plumbers ACPI/PM, PCI Microconference
-Date: Wed, 31 Jul 2013 01:48:45 +0200
-Message-ID: <1476124.sWE2ygoo2D@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.10.0+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <CAKocOOOgEb5h1dZWP_2UqBKhSK9U-kxKUbvTdzHfds=RiDzNJg@mail.gmail.com>
-References: <CAL-B5D03ki8NHsM6EuESTH2K-Eh+XyFHNXPDYwgDq+oagDjtMQ@mail.gmail.com> <CAKocOOOgEb5h1dZWP_2UqBKhSK9U-kxKUbvTdzHfds=RiDzNJg@mail.gmail.com>
+	id S1758140Ab3G3XjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 30 Jul 2013 19:39:08 -0400
+Date: Tue, 30 Jul 2013 19:37:23 -0400
+From: Dave Jones <davej@redhat.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Michal Hocko <mhocko@suse.cz>, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] hugetlb: fix lockdep splat caused by pmd sharing
+Message-ID: <20130730233722.GA28747@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Minchan Kim <minchan@kernel.org>, Michal Hocko <mhocko@suse.cz>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Rik van Riel <riel@redhat.com>,
+	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Hillf Danton <dhillf@gmail.com>, linux-kernel@vger.kernel.org,
+	linux-mm@kvack.org
+References: <20130730142957.GG15847@dhcp22.suse.cz>
+ <1375195560-23888-1-git-send-email-mhocko@suse.cz>
+ <20130730145834.GA32226@laptop.programming.kicks-ass.net>
+ <20130730152333.GJ15847@dhcp22.suse.cz>
+ <20130730233530.GA19340@bbox>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130730233530.GA19340@bbox>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 17, 2013 08:31:55 AM Shuah Khan wrote:
-> Myron,
-> 
-> On Tue, Jul 16, 2013 at 8:21 PM, Myron Stowe <myron.stowe@gmail.com> wrote:
-> 
-> >
-> > Shuah - You brought up the idea about "Converting drivers from Legacy
-> > PM ops to dev_pm_ops"; would you like to present what you have
-> > done/encountered so far?
-> >
-> 
-> Awesome. Yes, I would like to present what I have done so far and I do
-> have a couple of things that could benefit from a face to face
-> discussion which would help me make progress on the rest of the work
-> that needs to get done.
+On Wed, Jul 31, 2013 at 08:35:30AM +0900, Minchan Kim wrote:
+ > > which is a false positive caused by hugetlb pmd sharing code which
+ > > allocates a new pmd from withing mappint->i_mmap_mutex. If this
+ > > allocation causes reclaim then the lockdep detector complains that we
+ > > might self-deadlock.
+ > > 
+ > > This is not correct though, because hugetlb pages are not reclaimable so
+ > > their mapping will be never touched from the reclaim path.
+ > > 
+ > > The patch tells lockup detector that hugetlb i_mmap_mutex is special
+ > > by assigning it a separate lockdep class so it won't report possible
+ > > deadlocks on unrelated mappings.
+ > > 
+ > > [peterz@infradead.org: comment for annotation]
+ > > Reported-by: Dave Jones <davej@redhat.com>
+ > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+ > Reviewed-by: Minchan Kim <minchan@kernel.org>
+ > 
+ > Thanks, Michal!
+ > Only remained thing is Dave's testing.
 
-Care to sumbit a formal proposal through the LPC web page?
+I've added it to my builds, all is quiet so far..
 
-Rafael
+	Dave
+
+
+
+
 
