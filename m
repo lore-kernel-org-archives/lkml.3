@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757195Ab3G3VOk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 17:14:40 -0400
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:50480 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756732Ab3G3VOi (ORCPT
+	id S1757429Ab3G3VPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 17:15:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39335 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756870Ab3G3VPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 17:14:38 -0400
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: lm-sensors@lm-sensors.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
-Subject: [PATCH] hwmon: (max6697) fix MAX6581 ideality
-Date: Tue, 30 Jul 2013 17:14:34 -0400
-Message-Id: <1375218874-10882-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 1.8.3.4
+	Tue, 30 Jul 2013 17:15:15 -0400
+Date: Tue, 30 Jul 2013 22:15:01 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: David Brown <davidb@codeaurora.org>, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
+Message-ID: <20130730211501.GT24642@n2100.arm.linux.org.uk>
+References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org> <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without this patch, the values for ideality (register 0x4b) and ideality
-selection mask (register 0x4c) are inverted.
+On Wed, Jul 24, 2013 at 01:54:28PM -0700, Stephen Boyd wrote:
+> One more step to allowing MSM to participate in the
+> multi-platform defconfig.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+> ---
+>  arch/arm/Kconfig.debug                             |  9 +++-
+>  .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
+>  arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
+>  arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
+>  arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
+>  arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
+>  arch/arm/mach-msm/io.c                             | 40 +++++++-------
+>  7 files changed, 58 insertions(+), 108 deletions(-)
+>  rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
+>  delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
+> 
+> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> index e401a76..4a62a8d 100644
+> --- a/arch/arm/Kconfig.debug
+> +++ b/arch/arm/Kconfig.debug
+> @@ -777,6 +777,11 @@ config DEBUG_LL_INCLUDE
+>  				 DEBUG_IMX6SL_UART
+>  	default "debug/keystone.S" if DEBUG_KEYSTONE_UART0 || \
+>  				      DEBUG_KEYSTONE_UART1
+> +	default "debug/msm.S" if DEBUG_MSM_UART1 || \
+> +				 DEBUG_MSM_UART2 || \
+> +				 DEBUG_MSM_UART3 || \
+> +				 DEBUG_MSM8660_UART || \
+> +				 DEBUG_MSM8960_UART
+>  	default "debug/mvebu.S" if DEBUG_MVEBU_UART || \
+>  				   DEBUG_MVEBU_UART_ALTERNATE
+>  	default "debug/mxs.S" if DEBUG_IMX23_UART || DEBUG_IMX28_UART
+> @@ -804,13 +809,13 @@ config DEBUG_LL_INCLUDE
+>  
+>  config DEBUG_UNCOMPRESS
+>  	bool
+> -	default y if ARCH_MULTIPLATFORM && DEBUG_LL && \
+> +	default y if (ARCH_MULTIPLATFORM || ARCH_MSM) && DEBUG_LL && \
+>  		     !DEBUG_OMAP2PLUS_UART && \
+>  		     !DEBUG_TEGRA_UART
+>  
+>  config UNCOMPRESS_INCLUDE
+>  	string
+> -	default "debug/uncompress.h" if ARCH_MULTIPLATFORM
+> +	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || ARCH_MSM
+>  	default "mach/uncompress.h"
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- drivers/hwmon/max6697.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I hope the above two aren't going to grow.
 
-diff --git a/drivers/hwmon/max6697.c b/drivers/hwmon/max6697.c
-index 328fb03..a41b5f3 100644
---- a/drivers/hwmon/max6697.c
-+++ b/drivers/hwmon/max6697.c
-@@ -605,12 +605,12 @@ static int max6697_init_chip(struct i2c_client *client)
- 		if (ret < 0)
- 			return ret;
- 		ret = i2c_smbus_write_byte_data(client, MAX6581_REG_IDEALITY,
--						pdata->ideality_mask >> 1);
-+						pdata->ideality_value);
- 		if (ret < 0)
- 			return ret;
- 		ret = i2c_smbus_write_byte_data(client,
- 						MAX6581_REG_IDEALITY_SELECT,
--						pdata->ideality_value);
-+						pdata->ideality_mask >> 1);
- 		if (ret < 0)
- 			return ret;
- 	}
--- 
-1.8.3.4
+>  	{
+>  		.virtual =  (unsigned long) MSM_SHARED_RAM_BASE,
+>  		.pfn = __phys_to_pfn(MSM_SHARED_RAM_PHYS),
+>  		.length =   MSM_SHARED_RAM_SIZE,
+>  		.type =     MT_DEVICE,
+>  	},
 
+A comment here mentioning that the below must be the last entry would
+probably be a good idea as you overwrite the virtual/pfn members of this
+last entry.
+
+> +#if defined(CONFIG_DEBUG_MSM_UART1) || defined(CONFIG_DEBUG_MSM_UART2) || \
+> +		defined(CONFIG_DEBUG_MSM_UART3)
+> +	{
+> +		/* virtual and pfn filled in by debug_ll_addr() */
+> +		.length = SZ_4K,
+> +		.type = MT_DEVICE_NONSHARED,
+> +	}
+> +#endif
+
+Other than that, this seems to be fine.
