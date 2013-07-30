@@ -1,56 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab3G3OUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 10:20:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40646 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab3G3OUw (ORCPT
+	id S1756229Ab3G3OU7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 10:20:59 -0400
+Received: from mail-ob0-f195.google.com ([209.85.214.195]:33659 "EHLO
+	mail-ob0-f195.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754216Ab3G3OUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 10:20:52 -0400
-Date: Tue, 30 Jul 2013 07:22:09 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>,
-        Konstantin Khlebnikov <khlebnikov@openvz.org>
-Subject: Re: [char-misc 3.11 V2] mei: me: fix hardware reset flow
-Message-ID: <20130730142209.GA28956@kroah.com>
-References: <1375182711-10253-1-git-send-email-tomas.winkler@intel.com>
+	Tue, 30 Jul 2013 10:20:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375182711-10253-1-git-send-email-tomas.winkler@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Tue, 30 Jul 2013 18:20:54 +0400
+Message-ID: <CABWXVkNiEAodbhx=7sfHfnsxOh0ZdesT8+iHvLrJmwM-0KcXzg@mail.gmail.com>
+Subject: [PATCH] ideapad-slidebar: add new input driver
+From: Andrey Moiseev <o2g.org.ru@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 02:11:51PM +0300, Tomas Winkler wrote:
-> Both H_IS and H_IE needs to be set to receive H_RDY 
-> interrupt
-> 
-> 1. Assert H_IS to clear the interrupts during hw reset
-> and use mei_me_reg_write instead of mei_hcsr_set as the later
-> strips down the H_IS
-> 
-> 2. fix interrupt disablement embarrassing typo
->   hcsr |= ~H_IE -> hcsr &= ~H_IE;
-> this will remove the unwanted interrupt on power down
-> 
-> 3. remove useless debug print outs
-> 
-> Cc: Shuah Khan <shuah.kh@samsung.com>
-> Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-> ---
-> 
-> V2: Fixed typo in Shuah email
-> 
-> Hope this finally resolve the ME reset issue for all
+ideapad-slidebar is a new driver which enables slidebars on some
+Lenovo IdeaPad laptops.
 
-Can I get a "Tested-by:" from someone to ensure that it really does
-solve the problem?
+Fixes this: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/543119
 
-thanks,
+Registers 'IdeaPad Slidebar' input device and
+/sys/devices/platform/ideapad_slidebar/slidebar_mode
+for switching slidebar's modes.
 
-greg k-h
+Now works on:
+* Lenovo IdeaPad Y550P
+
+The developing git tree as reference:
+git://kernel.ubuntu.com/ikepanhc/ideapad-laptop.git
+
+This patch made against linux-3.10.4.
+
+Git tree for reference: https://github.com/o2genum/ideapad-slidebar.git
+
+Signed-off-by: Andrey Moiseev <o2g.org.ru@gmail.com>
+---
+diff -upNr /usr/src/linux-3.10.4/drivers/input/misc/ideapad_slidebar.c
+linux-3.10.4-devel/drivers/input/misc/ideapad_slidebar.c
+--- /usr/src/linux-3.10.4/drivers/input/misc/ideapad_slidebar.c
+1970-01-01 03:00:00.000000000 +0300
++++ linux-3.10.4-devel/drivers/input/misc/ideapad_slidebar.c
+2013-07-30 17:51:32.511678658 +0400
+@@ -0,0 +1,354 @@
++/*
++ * Input driver for slidebars on some Lenovo IdeaPad laptops
++ *
++ * Copyright (C) 2013 Andrey Moiseev <o2g.org.ru@gmail.com>
++ *
++ * Reverse-engineered from Lenovo SlideNav software (SBarHook.dll).
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the Free
++ * Software Foundation; either version 2 of the License, or (at your option)
++ * any later version.
++ *
++ * Trademarks are the property of their respective owners.
++ */
++
++/* Currently tested and works on:
++ * Lenovo IdeaPad Y550P
++ *
++ * Other models can be added easily. To test,
++ * load with 'force' parameter set 'true'.
++ *
++ * LEDs blinking and input mode are managed via sysfs,
++ * (hex, unsigned byte value):
++ * /sys/devices/platform/ideapad_slidebar/slidebar_mode
++ *
++ * The value is in byte range, however, I only figured out
++ * how bits 0b10011001 work. Some other bits, probably,
++ * are meaningfull too.
++ *
++ * Possible states:
++ *
++ * STD_INT, ONMOV_INT, OFF_INT, LAST_POLL, OFF_POLL
++ *
++ * Meaning:
++ *           released      touched
++ * STD       'heartbeat'   lights follow the finger
++ * ONMOV     no lights     lights follow the finger
++ * LAST      at last pos   lights follow the finger
++ * OFF       no lights     no lights
++ *
++ * INT       all input events are generated, interrupts are used
++ * POLL      no input events by default, to get them, send 0b10000000
+(read below)
++ *
++ * Commands: write
++ *
++ * All      |  0b01001 -> STD_INT
++ * possible |  0b10001 -> ONMOV_INT
++ * states   |  0b01000 -> OFF_INT
++ *
++ *                      |  0b0 -> LAST_POLL
++ * STD_INT or ONMOV_INT |
++ *                      |  0b1 -> STD_INT
++ *
++ *                      |  0b0 -> OFF_POLL
++ * OFF_INT or OFF_POLL  |
++ *                      |  0b1 -> OFF_INT
++ *
++ * Any state |   0b10000000 -> if the slidebar has updated data, produce one
++ *                             input event (last position), switch to
+respective
++ *                             POLL mode (like 0x0), if not in POLL mode yet.
++ *
++ * Get current state: read
++ *
++ * masked by 0x11 read value means:
++ *
++ * 0x00   LAST
++ * 0x01   STD
++ * 0x10   OFF
++ * 0x11   ONMOV
++ */
++
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/dmi.h>
++#include <linux/spinlock.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++#include <linux/input.h>
++#include <asm/io.h>
++
++static bool force;
++module_param(force, bool, 0);
++MODULE_PARM_DESC(force, "Force driver load, ignore DMI data");
++
++#define KBD_IRQ 1
++
++spinlock_t sio_lock = __SPIN_LOCK_UNLOCKED(sio_lock);
++
++static int prev_scancode = 0x00;
++static int touched = 0;
++static struct input_dev *slidebar_input_dev;
++static struct platform_device *slidebar_platform_dev;
++
++/* Hardware interacting */
++static int slidebar_pos_get(void)
++{
++ int res;
++ unsigned long flags;
++ spin_lock_irqsave(&sio_lock, flags);
++ outb(0xf4, 0xff29);
++ outb(0xbf, 0xff2a);
++ res = inb(0xff2b);
++ spin_unlock_irqrestore(&sio_lock, flags);
++ return res;
++}
++
++static unsigned char slidebar_mode_get(void)
++{
++ int res;
++ unsigned long flags;
++ spin_lock_irqsave(&sio_lock, flags);
++ outb(0xf7, 0xff29);
++ outb(0x8b, 0xff2a);
++ res = inb(0xff2b);
++ spin_unlock_irqrestore(&sio_lock, flags);
++ return res;
++}
++
++static void slidebar_mode_set(unsigned char mode)
++{
++ unsigned long flags;
++ spin_lock_irqsave(&sio_lock, flags);
++ outb(0xf7, 0xff29);
++ outb(0x8b, 0xff2a);
++ outb(mode, 0xff2b);
++ spin_unlock_irqrestore(&sio_lock, flags);
++}
++
++/* Keyboard handler */
++static irq_handler_t kbd_irq_handler(int irq, void *dev_id,
++ struct pt_regs *regs)
++{
++ /* Scancodes: e03b on move, bb on release */
++ int scancode = inb(0x60);
++ if (scancode == 0xbb) {
++ touched = 0;
++ input_report_key(slidebar_input_dev, BTN_TOUCH, 0);
++ input_sync(slidebar_input_dev);
++ } else if (prev_scancode == 0xe0 && scancode == 0x3b) {
++ if(!touched) input_report_key(slidebar_input_dev, BTN_TOUCH, 1);
++ touched = 1;
++ input_report_abs(slidebar_input_dev, ABS_X, slidebar_pos_get());
++ input_sync(slidebar_input_dev);
++ }
++ prev_scancode = scancode;
++ return (irq_handler_t) IRQ_HANDLED;
++}
++
++/* Input device */
++static int setup_input_dev(void)
++{
++ int err;
++ err = request_irq(KBD_IRQ, (irq_handler_t) kbd_irq_handler, IRQF_SHARED,
++ "ideapad_slidebar", (void *)(kbd_irq_handler));
++ if (err) {
++ pr_err("ideapad_slidebar: Can't allocate irq %d\n", KBD_IRQ);
++ return -EBUSY;
++ }
++
++ slidebar_input_dev = input_allocate_device();
++ if (!slidebar_input_dev) {
++ pr_err("ideapad_slidebar: Not enough memory\n");
++ err = -ENOMEM;
++ goto err_free_irq;
++ }
++
++ slidebar_input_dev->name = "IdeaPad Slidebar";
++ slidebar_input_dev->id.bustype = BUS_HOST;
++ slidebar_input_dev->dev.parent = &slidebar_platform_dev->dev;
++ input_set_capability(slidebar_input_dev, EV_KEY, BTN_TOUCH);
++ input_set_capability(slidebar_input_dev, EV_ABS, ABS_X);
++ input_alloc_absinfo(slidebar_input_dev);
++ input_set_abs_params(slidebar_input_dev, ABS_X, 0, 0xff, 0, 0);
++
++ err = input_register_device(slidebar_input_dev);
++ if (err) {
++ pr_err("ideapad_slidebar: Failed to register device\n");
++ goto err_free_dev;
++ }
++ return 0;
++
++ err_free_dev:
++ input_free_device(slidebar_input_dev);
++ err_free_irq:
++ free_irq(KBD_IRQ, (void *)(kbd_irq_handler));
++ return err;
++}
++
++static void remove_input_dev(void)
++{
++ free_irq(KBD_IRQ, (void *)(kbd_irq_handler));
++ input_unregister_device(slidebar_input_dev);
++ input_free_device(slidebar_input_dev);
++}
++
++/* Sysfs slidebar_mode interface */
++static ssize_t show_slidebar_mode(struct device *dev,
++ struct device_attribute *attr,
++ char *buf)
++{
++ return sprintf(buf, "%x\n", slidebar_mode_get());
++}
++
++static ssize_t store_slidebar_mode(struct device *dev,
++ struct device_attribute *attr,
++ const char *buf, size_t count) {
++ int mode;
++ if (!count)
++ return 0;
++
++ if(sscanf(buf, "%x", &mode) != 1)
++ return -EINVAL;
++
++ slidebar_mode_set(mode);
++ return count;
++}
++
++static DEVICE_ATTR(slidebar_mode, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
++ show_slidebar_mode, store_slidebar_mode);
++
++static struct attribute *ideapad_attributes[] = {
++ &dev_attr_slidebar_mode.attr,
++ NULL
++};
++
++static struct attribute_group ideapad_attribute_group = {
++ .attrs = ideapad_attributes
++};
++
++static int setup_slidebar_mode_dev(void) {
++ return sysfs_create_group(&slidebar_platform_dev->dev.kobj,
++  &ideapad_attribute_group);
++}
++
++static void remove_slidebar_mode_dev(void) {
++ return sysfs_remove_group(&slidebar_platform_dev->dev.kobj,
++  &ideapad_attribute_group);
++}
++
++/* Platform device */
++static int setup_platform_dev(void) {
++ int err;
++ slidebar_platform_dev = platform_device_alloc("ideapad_slidebar", -1);
++ if (!slidebar_platform_dev) {
++ pr_err("ideapad_slidebar: Not enough memory\n");
++ return -ENOMEM;
++ }
++
++ err = platform_device_add(slidebar_platform_dev);
++ if (err) {
++ pr_err("ideapad_slidebar: Failed to register plarform device\n");
++ goto err_free_platform_device;
++ }
++ return 0;
++
++ err_free_platform_device:
++ platform_device_put(slidebar_platform_dev);
++ return err;
++}
++
++static void remove_platform_dev(void) {
++ platform_device_del(slidebar_platform_dev);
++ platform_device_put(slidebar_platform_dev);
++}
++
++/* Platform driver */
++static struct platform_driver slidebar_drv = {
++ .driver = {
++ .name = "ideapad_slidebar",
++ .owner = THIS_MODULE,
++ },
++};
++
++static int register_platform_drv(void) {
++ int err;
++ err = platform_driver_register(&slidebar_drv);
++ if (err) {
++ pr_err("ideapad_slidebar: Failed to register platform driver\n");
++ }
++ return err;
++}
++
++static void unregister_platform_drv(void) {
++ platform_driver_unregister(&slidebar_drv);
++}
++
++/* DMI */
++static int ideapad_dmi_check(const struct dmi_system_id *id) {
++ pr_info("ideapad_slidebar: Laptop model '%s'\n", id->ident);
++ return 1;
++}
++
++static struct dmi_system_id __initdata ideapad_dmi_table[] = {
++ {
++ .ident = "Lenovo IdeaPad Y550P",
++ .matches = {
++ DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
++ DMI_MATCH(DMI_PRODUCT_NAME, "20035"),
++ DMI_MATCH(DMI_PRODUCT_VERSION, "Lenovo IdeaPad Y550P")
++ },
++ .callback = ideapad_dmi_check
++ }
++};
++
++/* Init and cleanup */
++static int __init slidebar_init(void) {
++ int err;
++
++ if(!force && !dmi_check_system(ideapad_dmi_table))
++ return -ENODEV;
++
++ err = setup_platform_dev();
++ if (err)
++ return err;
++
++ err = register_platform_drv();
++ if (err)
++ goto err_remove_platform_dev;
++
++ err = setup_input_dev();
++ if (err)
++ goto err_unregister_platform_drv;
++
++ err = setup_slidebar_mode_dev();
++ if (err)
++ goto err_remove_input_dev;
++ return 0;
++
++ err_remove_input_dev:
++ remove_input_dev();
++ err_unregister_platform_drv:
++ unregister_platform_drv();
++ err_remove_platform_dev:
++ remove_platform_dev();
++ return err;
++}
++
++static void __exit slidebar_exit(void) {
++ remove_slidebar_mode_dev();
++ remove_input_dev();
++ remove_platform_dev();
++ unregister_platform_drv();
++}
++
++module_init(slidebar_init);
++module_exit(slidebar_exit);
++
++MODULE_AUTHOR("Andrey Moiseev <o2g.org.ru@gmail.com>");
++MODULE_DESCRIPTION("Slidebar input support for some Lenovo IdeaPad laptops");
++MODULE_LICENSE("GPL");
++MODULE_VERSION("0.1");
++
++MODULE_ALIAS("dmi:*:svnLENOVO:pn20035:pvrLenovoIdeaPadY550P:*");
+diff -upNr /usr/src/linux-3.10.4/drivers/input/misc/Kconfig
+linux-3.10.4-devel/drivers/input/misc/Kconfig
+--- /usr/src/linux-3.10.4/drivers/input/misc/Kconfig 2013-07-29
+03:30:49.000000000 +0400
++++ linux-3.10.4-devel/drivers/input/misc/Kconfig 2013-07-30
+17:50:14.215430337 +0400
+@@ -637,4 +637,13 @@ config INPUT_XEN_KBDDEV_FRONTEND
+   To compile this driver as a module, choose M here: the
+   module will be called xen-kbdfront.
+
++config INPUT_IDEAPAD_SLIDEBAR
++ tristate "IdeaPad Laptop Slidebar"
++ depends on INPUT
++ help
++  Input driver for slidebars on some Lenovo IdeaPad laptops.
++
++  If you have an IdeaPad laptop with a slidebar, say Y or M here.
++  Module name is ideapad_slidebar.
++
+ endif
+diff -upNr /usr/src/linux-3.10.4/drivers/input/misc/Makefile
+linux-3.10.4-devel/drivers/input/misc/Makefile
+--- /usr/src/linux-3.10.4/drivers/input/misc/Makefile 2013-07-29
+03:30:49.000000000 +0400
++++ linux-3.10.4-devel/drivers/input/misc/Makefile 2013-07-30
+17:50:14.218763647 +0400
+@@ -60,3 +60,4 @@ obj-$(CONFIG_INPUT_WISTRON_BTNS) += wist
+ obj-$(CONFIG_INPUT_WM831X_ON) += wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND) += xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK) += yealink.o
++obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR) += ideapad_slidebar.o
