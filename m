@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab3G3Uxh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 16:53:37 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:7596 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757123Ab3G3Uxf convert rfc822-to-8bit (ORCPT
+	id S1757895Ab3G3Uzg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 16:55:36 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:34180 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756925Ab3G3Uze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 16:53:35 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Tue, 30 Jul 2013 13:52:10 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-CC: "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "ian.campbell@citrix.com" <ian.campbell@citrix.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "ian@slimlogic.co.uk" <ian@slimlogic.co.uk>,
-        "j-keerthy@ti.com" <j-keerthy@ti.com>,
-        "gg@slimlogic.co.uk" <gg@slimlogic.co.uk>,
-        Rhyland Klein <rklein@nvidia.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 30 Jul 2013 13:53:32 -0700
-Subject: RE: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Topic: [PATCH] mfd: palmas: Add DVFS mux setting
-Thread-Index: Ac6NYjfx9/s/TdTKTLuFEvla2/xk8wABHpAw
-Message-ID: <643E69AA4436674C8F39DCC2C05F763862A1274697@HQMAIL03.nvidia.com>
-References: <1374871308-490-1-git-send-email-achew@nvidia.com>
- <51F2E74E.2060107@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A12740FB@HQMAIL03.nvidia.com>
- <51F2EC66.2080200@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A1274113@HQMAIL03.nvidia.com>
- <51F2F22B.500@wwwdotorg.org>
- <643E69AA4436674C8F39DCC2C05F763862A1274137@HQMAIL03.nvidia.com>
- <51F398F8.5070602@nvidia.com> <51F81FF5.4020600@wwwdotorg.org>
-In-Reply-To: <51F81FF5.4020600@wwwdotorg.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 30 Jul 2013 16:55:34 -0400
+Date: Tue, 30 Jul 2013 13:55:32 -0700
+From: David Brown <davidb@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Jason Cooper <jason@lakedaemon.net>, Nicolas Pitre <nico@linaro.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v2 3/9] ARM: msm: Move debug-macro.S to include/debug
+Message-ID: <20130730205532.GA18638@codeaurora.org>
+References: <1374699274-18388-1-git-send-email-sboyd@codeaurora.org>
+ <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1374699274-18388-4-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 07/27/2013 03:55 AM, Laxman Dewangan wrote:
-> > On Saturday 27 July 2013 03:42 AM, Andrew Chew wrote:
-> >> I wrote:
-> >>> Andrew wrote:
-> >>>> [adding a third pinmux configuration property to Palmas's DT]
-> >>>
-> >>> How does this interact with the pinctrl driver that Laxman just sent
-> >>> for Palmas?
-> >>>
-> >>> https://lkml.org/lkml/2013/7/26/141
-> >>> [PATCH 0/2] pinctrl: palmas: add pincontrol driver
-> ..
-> >> Abandoning this patch.
-> ...
-> > once we will have the pincontrol driver then mux pads are become
-> redundant.
-> 
-> OK. The driver should probably operate like this then:
-> 
-> * During probe(), parse the ti,mux-pad* parameters, if present, and apply
-> them. This is needed to maintain compatibility with old DTs that may contain
-> these properties.
-> 
-> * At the end of probe(), register the pinctrl driver. If standard pinctrl
-> properties are present in DT, these will then be applied. These may override
-> the values set by any ti,mux-pad* properties if they were present.
-> 
-> Also, we should remove, or mark deprecated, the ti,mux-pad* properties in
-> the binding document when adding pinctrl support.
+On Wed, Jul 24, 2013 at 01:54:28PM -0700, Stephen Boyd wrote:
+>One more step to allowing MSM to participate in the
+>multi-platform defconfig.
 
-Sounds reasonable to me.  The fate of my patch hasn't really been discussed, though.
-Can we apply it, to make the ti,mux-pad* stuff complete?
+Full patch: https://patchwork.kernel.org/patch/2833034/
+
+>Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>---
+> arch/arm/Kconfig.debug                             |  9 +++-
+> .../mach/debug-macro.S => include/debug/msm.S}     | 32 ++++++++++-
+> arch/arm/mach-msm/include/mach/msm_iomap-8960.h    |  5 --
+> arch/arm/mach-msm/include/mach/msm_iomap-8x60.h    |  5 --
+> arch/arm/mach-msm/include/mach/msm_iomap.h         | 12 -----
+> arch/arm/mach-msm/include/mach/uncompress.h        | 63 ----------------------
+> arch/arm/mach-msm/io.c                             | 40 +++++++-------
+> 7 files changed, 58 insertions(+), 108 deletions(-)
+> rename arch/arm/{mach-msm/include/mach/debug-macro.S => include/debug/msm.S} (61%)
+> delete mode 100644 arch/arm/mach-msm/include/mach/uncompress.h
+
+Any comments on this?  This is mostly an MSM change, but I'd like to
+get an Ack from someone because of the file moving into
+arch/arm/include/debug.
+
+Thanks,
+David
+
+-- 
+sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
