@@ -1,92 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab3G3KFI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 06:05:08 -0400
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:40607 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758626Ab3G3KE7 (ORCPT
+	id S1759016Ab3G3KFs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 06:05:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:52908 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758444Ab3G3JcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 06:04:59 -0400
-Message-ID: <51F78FCB.2020004@linaro.org>
-Date: Tue, 30 Jul 2013 12:04:59 +0200
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130510 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Stephen Boyd <sboyd@codeaurora.org>
-CC: John Stultz <john.stultz@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH v4 07/17] clocksource: bcm2835: Switch to sched_clock_register()
-References: <1374189690-10810-1-git-send-email-sboyd@codeaurora.org> <1374189690-10810-8-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1374189690-10810-8-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 30 Jul 2013 05:32:14 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 002/106] writeback: Fix periodic writeback after fs mount
+Date: Tue, 30 Jul 2013 10:30:21 +0100
+Message-Id: <1375176725-5825-3-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+References: <1375176725-5825-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2013 01:21 AM, Stephen Boyd wrote:
-> The 32 bit sched_clock interface now supports 64 bits. Upgrade to
-> the 64 bit function to allow us to remove the 32 bit registration
-> interface.
-> 
-> Cc: Stephen Warren <swarren@wwwdotorg.org>
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
+3.5.7.18 -stable review patch.  If anyone has any objections, please let me know.
 
-Hi Stephen,
+------------------
 
-you sent a series with tick and clocksource changes.
+From: Jan Kara <jack@suse.cz>
 
-John is recipient of part of them. I replaced him to maintain the
-clocksource drivers.
+commit a5faeaf9109578e65e1a32e2a3e76c8b47e7dcb6 upstream.
 
-Is the series you sent for clocksource drivers supposed to be taken by
-me or by Russell ?
+Code in blkdev.c moves a device inode to default_backing_dev_info when
+the last reference to the device is put and moves the device inode back
+to its bdi when the first reference is acquired. This includes moving to
+wb.b_dirty list if the device inode is dirty. The code however doesn't
+setup timer to wake corresponding flusher thread and while wb.b_dirty
+list is non-empty __mark_inode_dirty() will not set it up either. Thus
+periodic writeback is effectively disabled until a sync(2) call which can
+lead to unexpected data loss in case of crash or power failure.
 
-In the future if there are no dependencies, it would be preferable to
-group the clocksource drivers changes into a series and send them to me.
+Fix the problem by setting up a timer for periodic writeback in case we
+add the first dirty inode to wb.b_dirty list in bdev_inode_switch_bdi().
 
-Thanks
-  -- Daniel
+Reported-by: Bert De Jonghe <Bert.DeJonghe@amplidata.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+[ luis: backported to 3.5: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/block_dev.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
->  drivers/clocksource/bcm2835_timer.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/clocksource/bcm2835_timer.c b/drivers/clocksource/bcm2835_timer.c
-> index 07ea7ce..26ed331 100644
-> --- a/drivers/clocksource/bcm2835_timer.c
-> +++ b/drivers/clocksource/bcm2835_timer.c
-> @@ -49,7 +49,7 @@ struct bcm2835_timer {
->  
->  static void __iomem *system_clock __read_mostly;
->  
-> -static u32 notrace bcm2835_sched_read(void)
-> +static u64 notrace bcm2835_sched_read(void)
->  {
->  	return readl_relaxed(system_clock);
->  }
-> @@ -110,7 +110,7 @@ static void __init bcm2835_timer_init(struct device_node *node)
->  		panic("Can't read clock-frequency");
->  
->  	system_clock = base + REG_COUNTER_LO;
-> -	setup_sched_clock(bcm2835_sched_read, 32, freq);
-> +	sched_clock_register(bcm2835_sched_read, 32, freq);
->  
->  	clocksource_mmio_init(base + REG_COUNTER_LO, node->name,
->  		freq, 300, 32, clocksource_mmio_readl_up);
-> 
-
-
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1244094..7da78cf 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -57,17 +57,24 @@ static void bdev_inode_switch_bdi(struct inode *inode,
+ 			struct backing_dev_info *dst)
+ {
+ 	struct backing_dev_info *old = inode->i_data.backing_dev_info;
++	bool wakeup_bdi = false;
+ 
+ 	if (unlikely(dst == old))		/* deadlock avoidance */
+ 		return;
+ 	bdi_lock_two(&old->wb, &dst->wb);
+ 	spin_lock(&inode->i_lock);
+ 	inode->i_data.backing_dev_info = dst;
+-	if (inode->i_state & I_DIRTY)
++	if (inode->i_state & I_DIRTY) {
++		if (bdi_cap_writeback_dirty(dst) && !wb_has_dirty_io(&dst->wb))
++			wakeup_bdi = true;
+ 		list_move(&inode->i_wb_list, &dst->wb.b_dirty);
++	}
+ 	spin_unlock(&inode->i_lock);
+ 	spin_unlock(&old->wb.list_lock);
+ 	spin_unlock(&dst->wb.list_lock);
++
++	if (wakeup_bdi)
++		bdi_wakeup_thread_delayed(dst);
+ }
+ 
+ sector_t blkdev_max_block(struct block_device *bdev)
 -- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+1.8.3.2
 
