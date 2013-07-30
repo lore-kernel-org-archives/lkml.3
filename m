@@ -1,64 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab3G3NJK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:09:10 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:50028 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803Ab3G3NJF (ORCPT
+	id S1755854Ab3G3NIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:08:48 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:54742 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755780Ab3G3NIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:09:05 -0400
-Date: Tue, 30 Jul 2013 21:07:08 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org, neilb@suse.de,
-        djbw@fb.com
-Subject: Re: [patch 1/3] raid5: offload stripe handle to workqueue
-Message-ID: <20130730130708.GA30352@kernel.org>
-References: <20130730055207.698660010@kernel.org>
- <20130730055257.527231772@kernel.org>
- <20130730125306.GC2599@htj.dyndns.org>
+	Tue, 30 Jul 2013 09:08:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130730125306.GC2599@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1375187900-17582-1-git-send-email-B44344@freescale.com>
+References: <1375187900-17582-1-git-send-email-B44344@freescale.com>
+Date: Tue, 30 Jul 2013 15:08:43 +0200
+X-Google-Sender-Auth: 64bMi3pNwtiV2KD7LouOj-TDgcw
+Message-ID: <CAMuHMdXP3-uKbftP-2UeZdE6X_iTi1podNDh0aVF3bJwDYssdg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Make PPC macro spin_event_timeout() architecture independent
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arpit Goel <B44344@freescale.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Philip Blundell <philb@gnu.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        "David S. Miller" <davem@davemloft.net>,
+        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Greg KH <gregkh@linuxfoundation.org>, Sam Ravnborg <sam@ravnborg.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        "Linux/m68k" <linux-m68k@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        sparclinux <sparclinux@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 08:53:06AM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Tue, Jul 30, 2013 at 01:52:08PM +0800, shli@kernel.org wrote:
-> > +static void raid5_wakeup_stripe_thread(struct stripe_head *sh)
-> > +{
-> > +	struct r5conf *conf = sh->raid_conf;
-> > +	struct r5worker_group *group;
-> > +	int i;
-> > +
-> > +	if (conf->worker_cnt_per_group == 0) {
-> > +		md_wakeup_thread(conf->mddev->thread);
-> > +		return;
-> > +	}
-> > +
-> > +	group = conf->worker_groups + cpu_to_group(sh->cpu);
-> > +
-> > +	for (i = 0; i < conf->worker_cnt_per_group; i++)
-> > +		queue_work_on(sh->cpu, raid5_wq, &group->workers[i].work);
-> > +}
-> 
-> Another general suggestion.  Using workqueue mechanism simply as
-> thread dispatching mechanism like above and then buliding your own
-> work dispatching code on top is usually a poor form.  It usually is
-> much better to assign a single unit of work to a single work item as
-> it allows things like per work unit flushing and much easier
-> implementation of freezing.  It's possible that you have some
-> overriding constraints here but if so it'd be nice if you can explain
-> it.
+On Tue, Jul 30, 2013 at 2:38 PM, Arpit Goel <B44344@freescale.com> wrote:
+> This patch-set moves USECS_PER_JIFFY to architecture timex.h from architecture
+> specific C files. Patch-set further uses this to make PPC macro
+> spin_event_timeout() architecture independent. This change enables drivers to
+> use spin_event_timeout() even in non-PowerPC based SoC's.
+>
+> This patchset has been compiled for ARM, PowerPC and x86.
+>
+> Patch[1/2] : Moves USECS_PER_JIFFY to architecture specific timex.h files from
+>              architecture specific C files.
 
-Ok, I should explain here. I can't add a work_struct for each stripe, because
-this will stress workqueue very hard. My system handles > 1M/s stripes, which
-makes workqueue pool lock contended very hard.
+>  arch/arm/include/asm/timex.h      |  2 ++
+>  arch/arm/kernel/time.c            |  3 ---
+>  arch/m32r/include/asm/timex.h     |  2 ++
+>  arch/m32r/kernel/time.c           |  3 ---
+>  arch/m68k/hp300/time.c            |  4 +---
+>  arch/m68k/include/asm/timex.h     |  2 ++
+>  arch/s390/include/asm/timex.h     |  2 ++
+>  arch/s390/kernel/time.c           |  2 --
+>  arch/sparc/include/asm/timex_32.h |  2 ++
+>  arch/sparc/include/asm/timex_64.h |  2 ++
+>  arch/sparc/kernel/pcic.c          |  1 -
 
-Thanks,
-Shaohua
+As the definition is the same on all architectures, why not move it to
+<linux/delay.h>?
+
+> Patch[2/2] : Converts PPC macro spin_event_timeout() in architecture independent
+>              macro.
+
+>  include/linux/delay.h             | 40 +++++++++++++++++++++++++++++++++++++++
+
+After your first patch, USECS_PER_JIFFY is still available only on
+arm/m32r/m68k/s390/sparc. What about other architectures?
+If anyone uses spin_event_timeout() on e.g. x86, it will fail to compile.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
