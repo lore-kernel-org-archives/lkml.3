@@ -1,69 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753660Ab3G3QJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 12:09:17 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:55355 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751040Ab3G3QJQ (ORCPT
+	id S1753903Ab3G3QLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 12:11:54 -0400
+Received: from mx2.parallels.com ([199.115.105.18]:48981 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab3G3QLw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 12:09:16 -0400
+	Tue, 30 Jul 2013 12:11:52 -0400
+From: James Bottomley <jbottomley@parallels.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
+Thread-Topic: [PATCH 25/36] SCSI: sd: convert class code to use dev_groups
+Thread-Index: AQHOiLn9lIPAkmLJT0q4B8AZLxq1S5l94uSA
+Date: Tue, 30 Jul 2013 16:11:52 +0000
+Message-ID: <1375200711.2065.10.camel@dabdike.int.hansenpartnership.com>
+References: <1374703539-9705-1-git-send-email-gregkh@linuxfoundation.org>
+	 <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <1374703539-9705-26-git-send-email-gregkh@linuxfoundation.org>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [24.17.213.192]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <954CC08C8DEFCF48853BC234E38C3EE0@sw.swsoft.com>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <20130730155212.GB32226@laptop.programming.kicks-ass.net>
-References: <CABPqkBTETCE7unsE=zvcC5n865ZN-QTW5Y0j-meTO9x-8=BJog@mail.gmail.com>
-	<20130628095828.GG29209@dyad.programming.kicks-ass.net>
-	<CABPqkBSfkg+rPw4A=n8wmPg=iwn1Qf8PdYA4ycxxooOv3GrvmA@mail.gmail.com>
-	<20130708081919.GV23916@twins.programming.kicks-ass.net>
-	<CABPqkBSesQsfeutY2qu1n3uMka0dOFOT2tzqCWYGV=2p6F8Y9w@mail.gmail.com>
-	<20130730083758.GH3008@twins.programming.kicks-ass.net>
-	<CABPqkBTxovrj11sskW50TZzf6e_V0tObT-qDPAbxHcrpLJNNZg@mail.gmail.com>
-	<20130730090202.GL3008@twins.programming.kicks-ass.net>
-	<CABPqkBRX-A5i26w1aMBmjb7GVmYUBS6k03ePN6qoASS9Z9xkmg@mail.gmail.com>
-	<CABPqkBQeNEidngxK08O-eAA4aJhqe8R-F-8Vk8DA-Z1qtKdU_Q@mail.gmail.com>
-	<20130730155212.GB32226@laptop.programming.kicks-ass.net>
-Date: Tue, 30 Jul 2013 18:09:15 +0200
-Message-ID: <CABPqkBQFpJjHLYuErcMdxTNKe4-JW_JZfYkEWrX5JHTZmWOqDg@mail.gmail.com>
-Subject: Re: [PATCH 0/8] perf: add ability to sample physical data addresses
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 30, 2013 at 5:52 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, Jul 30, 2013 at 04:21:41PM +0200, Stephane Eranian wrote:
->> Peter,
->>
->> One thing that bothers me with the MMAP2 approach is that
->> it forces integration into perf.
->
-> This is a good (TM) thing, yes? ;-)
->
+On Wed, 2013-07-24 at 15:05 -0700, Greg Kroah-Hartman wrote:
+> The dev_attrs field of struct class is going away soon, dev_groups
+> should be used instead.  This converts the scsi disk class code to use
+> the correct field.
+> 
+> It required some functions to be moved around to place the show and
+> store functions next to each other, the old order seemed to make no
+> sense at all.
+> 
+> Cc: James E.J. Bottomley <JBottomley@parallels.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> ---
+> 
+> James, feel free to take this through your tree, or ACK it and I can
+> take it through mine.
 
-Well, that's one way to look at it. But I'd like the API to
-be able to support more than one tool easily. If the barrier
-for any advanced analysis is too high from the raw kernel
-API then we will only have one tool. I don't think that sane.
+Just found this ... I have the stable folder rule be git-send-email and
+from you, so it picks up your patches as well.
+
+I'll take it through my tree, just in case we're mucking about with
+attributes this cycle around.
+
+Thanks,
+
+James
 
 
->> Now, you will need to analyze
->> the MMAP2 records. With my sample_type approach, you
->> simply needed a cmdline option on perf record, and then
->> you could dump the sample using perf report -D and feed
->> them into a post-processing script. But now, the analysis
->> needs to be integrated into perf or the tool needs to parse
->> the full perf.data file.
->
-> So the disadvantage of the sample_type approach is that it generates
-> more data and bloats the fast path.
->
-> If its useful it shouldn't live in a script anyway ;-) Also if the
-> script muck can't deal with the side-band information its a worse broken
-> piece of crap than I thought it was.
+>  drivers/scsi/sd.c | 149 +++++++++++++++++++++++++++---------------------------
+>  1 file changed, 75 insertions(+), 74 deletions(-)
+> 
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 80f39b8b..fdcbf567 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+> @@ -132,8 +132,8 @@ static const char *sd_cache_types[] = {
+>  };
+>  
+>  static ssize_t
+> -sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+> -		    const char *buf, size_t count)
+> +cache_type_store(struct device *dev, struct device_attribute *attr,
+> +		 const char *buf, size_t count)
+>  {
+>  	int i, ct = -1, rcd, wce, sp;
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+> @@ -199,8 +199,18 @@ sd_store_cache_type(struct device *dev, struct device_attribute *attr,
+>  }
+>  
+>  static ssize_t
+> -sd_store_manage_start_stop(struct device *dev, struct device_attribute *attr,
+> -			   const char *buf, size_t count)
+> +manage_start_stop_show(struct device *dev, struct device_attribute *attr,
+> +		       char *buf)
+> +{
+> +	struct scsi_disk *sdkp = to_scsi_disk(dev);
+> +	struct scsi_device *sdp = sdkp->device;
+> +
+> +	return snprintf(buf, 20, "%u\n", sdp->manage_start_stop);
+> +}
+> +
+> +static ssize_t
+> +manage_start_stop_store(struct device *dev, struct device_attribute *attr,
+> +			const char *buf, size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	struct scsi_device *sdp = sdkp->device;
+> @@ -212,10 +222,19 @@ sd_store_manage_start_stop(struct device *dev, struct device_attribute *attr,
+>  
+>  	return count;
+>  }
+> +static DEVICE_ATTR_RW(manage_start_stop);
+>  
+>  static ssize_t
+> -sd_store_allow_restart(struct device *dev, struct device_attribute *attr,
+> -		       const char *buf, size_t count)
+> +allow_restart_show(struct device *dev, struct device_attribute *attr, char *buf)
+> +{
+> +	struct scsi_disk *sdkp = to_scsi_disk(dev);
+> +
+> +	return snprintf(buf, 40, "%d\n", sdkp->device->allow_restart);
+> +}
+> +
+> +static ssize_t
+> +allow_restart_store(struct device *dev, struct device_attribute *attr,
+> +		    const char *buf, size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	struct scsi_device *sdp = sdkp->device;
+> @@ -230,47 +249,30 @@ sd_store_allow_restart(struct device *dev, struct device_attribute *attr,
+>  
+>  	return count;
+>  }
+> +static DEVICE_ATTR_RW(allow_restart);
+>  
+>  static ssize_t
+> -sd_show_cache_type(struct device *dev, struct device_attribute *attr,
+> -		   char *buf)
+> +cache_type_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	int ct = sdkp->RCD + 2*sdkp->WCE;
+>  
+>  	return snprintf(buf, 40, "%s\n", sd_cache_types[ct]);
+>  }
+> +static DEVICE_ATTR_RW(cache_type);
+>  
+>  static ssize_t
+> -sd_show_fua(struct device *dev, struct device_attribute *attr, char *buf)
+> +FUA_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+>  	return snprintf(buf, 20, "%u\n", sdkp->DPOFUA);
+>  }
+> +static DEVICE_ATTR_RO(FUA);
+>  
+>  static ssize_t
+> -sd_show_manage_start_stop(struct device *dev, struct device_attribute *attr,
+> -			  char *buf)
+> -{
+> -	struct scsi_disk *sdkp = to_scsi_disk(dev);
+> -	struct scsi_device *sdp = sdkp->device;
+> -
+> -	return snprintf(buf, 20, "%u\n", sdp->manage_start_stop);
+> -}
+> -
+> -static ssize_t
+> -sd_show_allow_restart(struct device *dev, struct device_attribute *attr,
+> -		      char *buf)
+> -{
+> -	struct scsi_disk *sdkp = to_scsi_disk(dev);
+> -
+> -	return snprintf(buf, 40, "%d\n", sdkp->device->allow_restart);
+> -}
+> -
+> -static ssize_t
+> -sd_show_protection_type(struct device *dev, struct device_attribute *attr,
+> -			char *buf)
+> +protection_type_show(struct device *dev, struct device_attribute *attr,
+> +		     char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+> @@ -278,8 +280,8 @@ sd_show_protection_type(struct device *dev, struct device_attribute *attr,
+>  }
+>  
+>  static ssize_t
+> -sd_store_protection_type(struct device *dev, struct device_attribute *attr,
+> -			 const char *buf, size_t count)
+> +protection_type_store(struct device *dev, struct device_attribute *attr,
+> +		      const char *buf, size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	unsigned int val;
+> @@ -298,10 +300,11 @@ sd_store_protection_type(struct device *dev, struct device_attribute *attr,
+>  
+>  	return count;
+>  }
+> +static DEVICE_ATTR_RW(protection_type);
+>  
+>  static ssize_t
+> -sd_show_protection_mode(struct device *dev, struct device_attribute *attr,
+> -			char *buf)
+> +protection_mode_show(struct device *dev, struct device_attribute *attr,
+> +		     char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	struct scsi_device *sdp = sdkp->device;
+> @@ -320,24 +323,26 @@ sd_show_protection_mode(struct device *dev, struct device_attribute *attr,
+>  
+>  	return snprintf(buf, 20, "%s%u\n", dix ? "dix" : "dif", dif);
+>  }
+> +static DEVICE_ATTR_RO(protection_mode);
+>  
+>  static ssize_t
+> -sd_show_app_tag_own(struct device *dev, struct device_attribute *attr,
+> -		    char *buf)
+> +app_tag_own_show(struct device *dev, struct device_attribute *attr, char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+>  	return snprintf(buf, 20, "%u\n", sdkp->ATO);
+>  }
+> +static DEVICE_ATTR_RO(app_tag_own);
+>  
+>  static ssize_t
+> -sd_show_thin_provisioning(struct device *dev, struct device_attribute *attr,
+> -			  char *buf)
+> +thin_provisioning_show(struct device *dev, struct device_attribute *attr,
+> +		       char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+>  	return snprintf(buf, 20, "%u\n", sdkp->lbpme);
+>  }
+> +static DEVICE_ATTR_RO(thin_provisioning);
+>  
+>  static const char *lbp_mode[] = {
+>  	[SD_LBP_FULL]		= "full",
+> @@ -349,8 +354,8 @@ static const char *lbp_mode[] = {
+>  };
+>  
+>  static ssize_t
+> -sd_show_provisioning_mode(struct device *dev, struct device_attribute *attr,
+> -			  char *buf)
+> +provisioning_mode_show(struct device *dev, struct device_attribute *attr,
+> +		       char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+> @@ -358,8 +363,8 @@ sd_show_provisioning_mode(struct device *dev, struct device_attribute *attr,
+>  }
+>  
+>  static ssize_t
+> -sd_store_provisioning_mode(struct device *dev, struct device_attribute *attr,
+> -			   const char *buf, size_t count)
+> +provisioning_mode_store(struct device *dev, struct device_attribute *attr,
+> +			const char *buf, size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	struct scsi_device *sdp = sdkp->device;
+> @@ -385,10 +390,11 @@ sd_store_provisioning_mode(struct device *dev, struct device_attribute *attr,
+>  
+>  	return count;
+>  }
+> +static DEVICE_ATTR_RW(provisioning_mode);
+>  
+>  static ssize_t
+> -sd_show_max_medium_access_timeouts(struct device *dev,
+> -				   struct device_attribute *attr, char *buf)
+> +max_medium_access_timeouts_show(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+> @@ -396,9 +402,9 @@ sd_show_max_medium_access_timeouts(struct device *dev,
+>  }
+>  
+>  static ssize_t
+> -sd_store_max_medium_access_timeouts(struct device *dev,
+> -				    struct device_attribute *attr,
+> -				    const char *buf, size_t count)
+> +max_medium_access_timeouts_store(struct device *dev,
+> +				 struct device_attribute *attr, const char *buf,
+> +				 size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	int err;
+> @@ -410,10 +416,11 @@ sd_store_max_medium_access_timeouts(struct device *dev,
+>  
+>  	return err ? err : count;
+>  }
+> +static DEVICE_ATTR_RW(max_medium_access_timeouts);
+>  
+>  static ssize_t
+> -sd_show_write_same_blocks(struct device *dev, struct device_attribute *attr,
+> -			  char *buf)
+> +max_write_same_blocks_show(struct device *dev, struct device_attribute *attr,
+> +			   char *buf)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  
+> @@ -421,8 +428,8 @@ sd_show_write_same_blocks(struct device *dev, struct device_attribute *attr,
+>  }
+>  
+>  static ssize_t
+> -sd_store_write_same_blocks(struct device *dev, struct device_attribute *attr,
+> -			   const char *buf, size_t count)
+> +max_write_same_blocks_store(struct device *dev, struct device_attribute *attr,
+> +			    const char *buf, size_t count)
+>  {
+>  	struct scsi_disk *sdkp = to_scsi_disk(dev);
+>  	struct scsi_device *sdp = sdkp->device;
+> @@ -451,35 +458,29 @@ sd_store_write_same_blocks(struct device *dev, struct device_attribute *attr,
+>  
+>  	return count;
+>  }
+> -
+> -static struct device_attribute sd_disk_attrs[] = {
+> -	__ATTR(cache_type, S_IRUGO|S_IWUSR, sd_show_cache_type,
+> -	       sd_store_cache_type),
+> -	__ATTR(FUA, S_IRUGO, sd_show_fua, NULL),
+> -	__ATTR(allow_restart, S_IRUGO|S_IWUSR, sd_show_allow_restart,
+> -	       sd_store_allow_restart),
+> -	__ATTR(manage_start_stop, S_IRUGO|S_IWUSR, sd_show_manage_start_stop,
+> -	       sd_store_manage_start_stop),
+> -	__ATTR(protection_type, S_IRUGO|S_IWUSR, sd_show_protection_type,
+> -	       sd_store_protection_type),
+> -	__ATTR(protection_mode, S_IRUGO, sd_show_protection_mode, NULL),
+> -	__ATTR(app_tag_own, S_IRUGO, sd_show_app_tag_own, NULL),
+> -	__ATTR(thin_provisioning, S_IRUGO, sd_show_thin_provisioning, NULL),
+> -	__ATTR(provisioning_mode, S_IRUGO|S_IWUSR, sd_show_provisioning_mode,
+> -	       sd_store_provisioning_mode),
+> -	__ATTR(max_write_same_blocks, S_IRUGO|S_IWUSR,
+> -	       sd_show_write_same_blocks, sd_store_write_same_blocks),
+> -	__ATTR(max_medium_access_timeouts, S_IRUGO|S_IWUSR,
+> -	       sd_show_max_medium_access_timeouts,
+> -	       sd_store_max_medium_access_timeouts),
+> -	__ATTR_NULL,
+> +static DEVICE_ATTR_RW(max_write_same_blocks);
+> +
+> +static struct attribute *sd_disk_attrs[] = {
+> +	&dev_attr_cache_type.attr,
+> +	&dev_attr_FUA.attr,
+> +	&dev_attr_allow_restart.attr,
+> +	&dev_attr_manage_start_stop.attr,
+> +	&dev_attr_protection_type.attr,
+> +	&dev_attr_protection_mode.attr,
+> +	&dev_attr_app_tag_own.attr,
+> +	&dev_attr_thin_provisioning.attr,
+> +	&dev_attr_provisioning_mode.attr,
+> +	&dev_attr_max_write_same_blocks.attr,
+> +	&dev_attr_max_medium_access_timeouts.attr,
+> +	NULL,
+>  };
+> +ATTRIBUTE_GROUPS(sd_disk);
+>  
+>  static struct class sd_disk_class = {
+>  	.name		= "scsi_disk",
+>  	.owner		= THIS_MODULE,
+>  	.dev_release	= scsi_disk_release,
+> -	.dev_attrs	= sd_disk_attrs,
+> +	.dev_groups	= sd_disk_groups,
+>  };
+>  
+>  static const struct dev_pm_ops sd_pm_ops = {
 
-I never use the scripting support. Don't know its current shape.
+
