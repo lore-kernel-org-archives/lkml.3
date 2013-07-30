@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754670Ab3G3NWH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 30 Jul 2013 09:22:07 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:51656 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754233Ab3G3NWC (ORCPT
+	id S1754502Ab3G3NXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 30 Jul 2013 09:23:00 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:55383 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab3G3NW6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 30 Jul 2013 09:22:02 -0400
-Date: Tue, 30 Jul 2013 15:21:14 +0200
-From: Robert Richter <rric@kernel.org>
-To: Jed Davis <jld@mozilla.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Fix handling of arch_perf_out_copy_user return
- value.
-Message-ID: <20130730131818.GA31198@rric.localhost>
-References: <1375146761-4339-1-git-send-email-jld@mozilla.com>
+	Tue, 30 Jul 2013 09:22:58 -0400
+X-IronPort-AV: E=Sophos;i="4.89,778,1367971200"; 
+   d="scan'208";a="38241596"
+From: Ben Guthro <benjamin.guthro@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jan Beulich <jbeulich@suse.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        <linux-kernel@vger.kernel.org>, <linux-acpi@vger.kernel.org>,
+        <xen-devel@lists.xen.org>
+CC: Ben Guthro <benjamin.guthro@citrix.com>,
+        <tboot-devel@lists.sourceforge.net>, Gang Wei <gang.wei@intel.com>
+Subject: [PATCH v8.1] x86/tboot: Fail extended mode reduced hardware sleep
+Date: Tue, 30 Jul 2013 09:22:37 -0400
+Message-ID: <1375190557-21474-1-git-send-email-benjamin.guthro@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1411346.4e01ECe1J5@vostro.rjw.lan>
+References: <1411346.4e01ECe1J5@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1375146761-4339-1-git-send-email-jld@mozilla.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-Originating-IP: [10.204.241.11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.07.13 18:12:40, Jed Davis wrote:
-> All architectures except x86 use __copy_from_user_inatomic to provide
-> arch_perf_out_copy_user; like the other copy_from routines, it returns
-> the number of bytes not copied.  perf was expecting the number of bytes
-> that had been copied.  This change corrects that, and thereby allows
-> PERF_SAMPLE_STACK_USER to be enabled on non-x86 architectures.
-> 
-> x86 uses copy_from_user_nmi, which deviates from the other copy_from
-> routines by returning the number of bytes copied.  (This cancels out
-> the effect of perf being backwards; apparently this code has only ever
-> been tested on x86.)  This change therefore adds a second wrapper to
-> re-reverse it for perf; the next patch in this series will clean it up.
-> 
-> Signed-off-by: Jed Davis <jld@mozilla.com>
-> ---
->  arch/x86/include/asm/perf_event.h |  9 ++++++++-
->  kernel/events/internal.h          | 11 ++++++++++-
->  2 files changed, 18 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-> index 8249df4..ddae5bd 100644
-> --- a/arch/x86/include/asm/perf_event.h
-> +++ b/arch/x86/include/asm/perf_event.h
-> @@ -274,6 +274,13 @@ static inline void perf_check_microcode(void) { }
->   static inline void amd_pmu_disable_virt(void) { }
->  #endif
->  
-> -#define arch_perf_out_copy_user copy_from_user_nmi
-> +static inline unsigned long copy_from_user_nmi_for_perf(void *to,
-> +							const void __user *from,
-> +							unsigned long n)
-> +{
-> +	return n - copy_from_user_nmi(to, from, n);
-> +}
-> +
-> +#define arch_perf_out_copy_user copy_from_user_nmi_for_perf
+Register for the extended sleep callback from acpi.
+As tboot currently does not support the reduced hardware sleep
+interface, fail this extended call.
 
-I like your change of copy_from_user_nmi() to return bytes not copied
-since it makes callers simpler and has the same i/f as other copy
-functions.
+Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Signed-off-by: Ben Guthro <benjamin.guthro@citrix.com>
+Cc: tboot-devel@lists.sourceforge.net
+Cc: Gang Wei <gang.wei@intel.com>
+Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ arch/x86/kernel/tboot.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-Please do not introduce code that you later remove, instead merge this
-patch with your next.
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index addf7b5..91a4496 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -301,6 +301,15 @@ static int tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+ 	return 0;
+ }
+ 
++static int tboot_extended_sleep(u8 sleep_state, u32 val_a, u32 val_b)
++{
++	if (!tboot_enabled())
++		return 0;
++
++	pr_warning("tboot is not able to suspend on platforms with reduced hardware sleep (ACPIv5)");
++	return -ENODEV;
++}
++
+ static atomic_t ap_wfs_count;
+ 
+ static int tboot_wait_for_aps(int num_aps)
+@@ -422,6 +431,7 @@ static __init int tboot_late_init(void)
+ #endif
+ 
+ 	acpi_os_set_prepare_sleep(&tboot_sleep);
++	acpi_os_set_prepare_extended_sleep(&tboot_extended_sleep);
+ 	return 0;
+ }
+ 
+-- 
+1.7.9.5
 
->  
->  #endif /* _ASM_X86_PERF_EVENT_H */
-> diff --git a/kernel/events/internal.h b/kernel/events/internal.h
-> index ca65997..e61b22c 100644
-> --- a/kernel/events/internal.h
-> +++ b/kernel/events/internal.h
-> @@ -81,6 +81,7 @@ static inline unsigned long perf_data_size(struct ring_buffer *rb)
->  	return rb->nr_pages << (PAGE_SHIFT + page_order(rb));
->  }
->  
-> +/* The memcpy_func must return the number of bytes successfully copied. */
->  #define DEFINE_OUTPUT_COPY(func_name, memcpy_func)			\
->  static inline unsigned int						\
->  func_name(struct perf_output_handle *handle,				\
-> @@ -122,11 +123,19 @@ DEFINE_OUTPUT_COPY(__output_copy, memcpy_common)
->  
->  DEFINE_OUTPUT_COPY(__output_skip, MEMCPY_SKIP)
->  
-> +/* arch_perf_out_copy_user must return the number of bytes not copied. */
->  #ifndef arch_perf_out_copy_user
->  #define arch_perf_out_copy_user __copy_from_user_inatomic
->  #endif
->  
-> -DEFINE_OUTPUT_COPY(__output_copy_user, arch_perf_out_copy_user)
-> +static inline unsigned long perf_memcpy_from_user(void *to,
-> +						  const void __user *from,
-> +						  unsigned long n)
-> +{
-> +	return n - arch_perf_out_copy_user(to, from, n);
-> +}
-> +
-> +DEFINE_OUTPUT_COPY(__output_copy_user, perf_memcpy_from_user)
-
-Better modify DEFINE_OUTPUT_COPY() to deal with bytes-not-copied as
-return value for memcpy_func(). Other users of DEFINE_OUTPUT_COPY()
-could be fixed easily.
-
--Robert
